@@ -9,11 +9,13 @@ import { useAuth } from '@/lib/auth';
 import {
   buildChangedFields,
   formDataFromUser,
-  PERSONAL_FIELDS,
+  editablePersonalFields,
+  isRutLocked,
   EMERGENCY_FIELDS,
   type ProfileFormData,
 } from './profile-form';
 import { settingsApi } from '@/lib/api/settings.service';
+import { PreferencesSection } from './PreferencesSection';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
@@ -650,7 +652,7 @@ export default function PerfilPage() {
                       size="sm"
                       hideArrow
                       isLoading={isSaving}
-                      onClick={() => handleSaveProfile(PERSONAL_FIELDS)}
+                      onClick={() => handleSaveProfile(editablePersonalFields(user))}
                       disabled={isSaving}
                       className="gap-1.5 rounded-md bg-primary text-primary-fg hover:bg-primary-hover"
                     >
@@ -735,12 +737,22 @@ export default function PerfilPage() {
                     {t('profile.idNumber')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input
-                      type="text"
-                      value={formData.rut}
-                      onChange={(e) => handleInputChange('rut', e.target.value)}
-                      className="w-full rounded-xl bg-surface-muted"
-                    />
+                    <>
+                      <Input
+                        type="text"
+                        value={formData.rut}
+                        onChange={(e) => handleInputChange('rut', e.target.value)}
+                        disabled={isRutLocked(user)}
+                        className="w-full rounded-xl bg-surface-muted"
+                      />
+                      {isRutLocked(user) && (
+                        <p className="mt-2 text-xs text-fg-subtle">
+                          {locale === 'es'
+                            ? 'Para modificar tu número de documento, contacta al soporte de Leasefy.'
+                            : 'To change your document number, contact Leasefy support.'}
+                        </p>
+                      )}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <Shield className="w-4 h-4 text-fg-subtle" />
@@ -879,6 +891,9 @@ export default function PerfilPage() {
                 </div>
               </div>
             </div>
+
+            {/* Housing preferences (tenant_preferences table — authoritative) */}
+            <PreferencesSection />
 
             {/* Danger Zone */}
             <div className="rounded-xl border border-danger/30 bg-danger-soft/30 p-6">

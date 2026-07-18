@@ -14,6 +14,11 @@ import { useTenantApplications } from '@/lib/hooks/useApplications';
 import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { TenantDashboardEmpty } from '@/components/tenant/TenantDashboardEmpty';
+import {
+  deriveTenantOnboardingStatus,
+  readTenantOnboardingCacheStatus,
+  rehydrateTenantOnboardingCache,
+} from '@/lib/onboarding/tenant-onboarding-status';
 import { ScoreCard } from '@/components/tenant/ScoreCard';
 import { ScoreDetailSheet } from '@/components/tenant/ScoreDetailSheet';
 import { ScoreShareModal } from '@/components/tenant/ScoreShareModal';
@@ -28,7 +33,7 @@ import type { Property } from '@/lib/types/property';
  * Handles both new users (empty states) and active users (with data)
  */
 export default function InquilinoPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { greeting } = useTimeGreeting();
   const { t, locale, formatCurrency: i18nFormatCurrency } = useI18n();
   const firstName = user?.name?.split(' ')[0] || (locale === 'es' ? 'Usuario' : 'User');
@@ -56,40 +61,48 @@ export default function InquilinoPage() {
     downloadScorePDF(name, score, evaluation.verificationCode, evaluation.paidAt, evaluation.expiresAt);
   };
 
-  // Onboarding state - check if profile is complete
-  const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
+  // Onboarding completeness — the BACKEND (GET /users/me via the auth context)
+  // is the source of truth: a profile whose onboardingCompletedAt flag is
+  // stamped NEVER sees the empty "Configura tu perfil" dashboard, regardless
+  // of localStorage; a flag-less profile (e.g. auto-provisioned OAuth with a
+  // Google-metadata name) always sees the checklist to confirm its data.
+  // The localStorage wizard cache is only read as a fallback while no backend
+  // user is available (dev/test storage-seeded auth).
+  const backendOnboarding = deriveTenantOnboardingStatus(user);
+  const hasBackendProfile = user?.profileSource === 'backend';
+  const userId = user?.id;
+  const [localCacheComplete, setLocalCacheComplete] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const checkOnboardingStatus = () => {
-      const saved = localStorage.getItem('plan_onboarding_tenant');
-      if (!saved) {
-        setIsOnboardingComplete(false);
-        return;
-      }
-      try {
-        const parsed = JSON.parse(saved);
-        const rawSteps = parsed.completedSteps || [];
-        const completedSteps = rawSteps.filter((s: number) => s <= 2);
-        // Migrate: old step 3 (employment) was removed; if it was completed,
-        // treat step 2 (now preferences) as completed too
-        if (rawSteps.includes(3) && !completedSteps.includes(2)) {
-          completedSteps.push(2);
-        }
-        setIsOnboardingComplete(completedSteps.length >= 2);
-      } catch {
-        setIsOnboardingComplete(false);
-      }
+    const checkLocalCache = () => {
+      // Another account's cached payload is treated as absent (PII scoping).
+      setLocalCacheComplete(readTenantOnboardingCacheStatus(userId).isComplete);
     };
 
-    checkOnboardingStatus();
+    checkLocalCache();
 
-    window.addEventListener('storage', checkOnboardingStatus);
-    window.addEventListener('onboarding-updated', checkOnboardingStatus);
+    window.addEventListener('storage', checkLocalCache);
+    window.addEventListener('onboarding-updated', checkLocalCache);
     return () => {
-      window.removeEventListener('storage', checkOnboardingStatus);
-      window.removeEventListener('onboarding-updated', checkOnboardingStatus);
+      window.removeEventListener('storage', checkLocalCache);
+      window.removeEventListener('onboarding-updated', checkLocalCache);
     };
-  }, []);
+  }, [userId]);
+
+  // Self-heal: when the backend says complete but the local wizard cache was
+  // cleared (reset button, fresh device), rehydrate it so localStorage-driven
+  // UI (sidebar progress) stays consistent. No-ops when already in sync.
+  // Only a real backend profile may rehydrate — the degraded session fallback
+  // fabricates onboardingCompleted and must never poison the cache.
+  useEffect(() => {
+    if (user?.profileSource === 'backend') rehydrateTenantOnboardingCache(user);
+  }, [user]);
+
+  // Backend completeness is only trusted for real backend profiles; the
+  // degraded session fallback keeps the previous cache-based gate.
+  const isOnboardingComplete: boolean | null = hasBackendProfile
+    ? backendOnboarding.isComplete
+    : localCacheComplete;
 
   const handleViewProperty = (property: Property) => {
     setSelectedProperty(property);
@@ -113,8 +126,8 @@ export default function InquilinoPage() {
   // Featured properties for recommendation (always show)
   const { properties: featuredProperties, isLoading: featuredLoading } = useFeaturedProperties(4);
 
-  // Loading state — wait for real data so the "new user" banner doesn't flash
-  if (isOnboardingComplete === null || applicationsLoading || leasesLoading) {
+  // Loading state — wait for auth + real data so the "new user" banner doesn't flash
+  if (authLoading || isOnboardingComplete === null || applicationsLoading || leasesLoading) {
     return (
       <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
         <Spinner size="lg" />

@@ -168,11 +168,15 @@ export default function ConfiguracionPage() {
   };
 
   const handleResetOnboarding = () => {
+    // Only the local wizard draft/cache is cleared — the backend profile stays
+    // intact (it is the source of truth for onboarding completeness), so the
+    // dashboard keeps rendering fully and no logout/registration is involved.
     localStorage.removeItem('plan_onboarding_tenant');
     // Dispatch custom event to notify sidebar
     window.dispatchEvent(new Event('onboarding-updated'));
     toast.success(locale === 'es' ? 'Onboarding reiniciado' : 'Onboarding reset');
-    setTimeout(() => router.push('/inquilino'), 500);
+    // Take the user to the wizard to redo their info.
+    setTimeout(() => router.push('/onboarding/inquilino'), 500);
   };
 
   return (

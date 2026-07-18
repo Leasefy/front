@@ -14,6 +14,10 @@ import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@leasefy/cadence';
 import { useMyApplications } from '@/lib/hooks/useApplications';
 import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
+import { useContracts } from '@/lib/hooks/useContracts';
+import { useMyPaymentRequests } from '@/lib/hooks/useLeases';
+import { DownloadContractPdfButton } from '@/components/contract/DownloadContractPdfButton';
+import type { TenantPaymentRequestStatus } from '@/lib/api/tenant-payment-requests.types';
 
 // Document type labels and icons
 const DOC_TYPE_CONFIG: Record<string, { label: string; labelEn: string; icon: typeof FileText }> = {
@@ -31,18 +35,43 @@ const DOC_TYPE_CONFIG: Record<string, { label: string; labelEn: string; icon: ty
   PAY_STUB: { label: 'Desprendible de nómina', labelEn: 'Pay Stub', icon: Money },
   CREDIT_REPORT: { label: 'Reporte crediticio', labelEn: 'Credit Report', icon: FileText },
   OTHER: { label: 'Otro documento', labelEn: 'Other Document', icon: FileText },
+  // Lease documents (arriendo) — surfaced in the "Documentos del arriendo" section
+  CONTRATO: { label: 'Contrato firmado', labelEn: 'Signed lease', icon: FileText },
+  RECIBO: { label: 'Comprobante interno', labelEn: 'Internal receipt', icon: Money },
 };
 
 const ITEMS_PER_PAGE = 6;
+
+const MONTH_NAMES_ES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+];
+const MONTH_NAMES_EN = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+// Estado del comprobante interno (tenant-payment-request) — copy + badge color.
+const PAYMENT_REQUEST_STATUS: Record<TenantPaymentRequestStatus, { es: string; en: string; className: string }> = {
+  PENDING_VALIDATION: { es: 'En validación', en: 'Under review', className: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]' },
+  APPROVED: { es: 'Aprobado', en: 'Approved', className: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]' },
+  REJECTED: { es: 'Rechazado', en: 'Rejected', className: 'bg-[#FBEAEA] text-[#B4322E] dark:bg-[#B4322E]/15 dark:text-[#E06B67]' },
+  DISPUTED: { es: 'En disputa', en: 'Disputed', className: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]' },
+  CANCELLED: { es: 'Cancelado', en: 'Cancelled', className: 'bg-surface-muted text-fg-muted dark:bg-[#2a2a2c] dark:text-fg-subtle' },
+};
 
 /**
  * Tenant Documents Page - Connected to Real API
  * Shows documents from the tenant's applications
  */
 export default function DocumentosPage() {
-  const { t, locale } = useI18n();
+  const { t, locale, formatCurrency } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
   const { applications, isLoading: isLoadingApps } = useMyApplications();
+
+  // Lease documents (arriendo) — real sources, degrade to [] on 403/404 (see hooks).
+  const { contracts, isLoading: contractsLoading } = useContracts();
+  const { requests: paymentRequests, isLoading: paymentRequestsLoading } = useMyPaymentRequests();
 
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -76,7 +105,13 @@ export default function DocumentosPage() {
     }
   }, [isOnboardingComplete, applications, fetchAllDocuments]);
 
-  const isLoading = isOnboardingLoading || isLoadingApps || isLoadingDocs;
+  const isLoading = isOnboardingLoading || isLoadingApps || isLoadingDocs || contractsLoading || paymentRequestsLoading;
+
+  // "Contrato firmado" = ambas partes firmaron (signed/active/expired/cancelled).
+  const signedContracts = contracts.filter((c) =>
+    ['signed', 'active', 'expired', 'cancelled'].includes(c.status)
+  );
+  const hasLeaseDocs = signedContracts.length > 0 || paymentRequests.length > 0;
 
   // Get unique document types for filter pills
   const docTypes = Array.from(new Set(documents.map((d) => d.type)));
@@ -123,11 +158,16 @@ export default function DocumentosPage() {
   const getDocIcon = (type: string) => DOC_TYPE_CONFIG[type]?.icon ?? FileText;
 
   const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
     });
+
+  const formatPeriod = (month: number, year: number) => {
+    const names = locale === 'es' ? MONTH_NAMES_ES : MONTH_NAMES_EN;
+    return `${names[month - 1] ?? ''} ${year}`.trim();
+  };
 
   const formatSize = (bytes: number) =>
     bytes > 1024 * 1024
@@ -174,6 +214,128 @@ export default function DocumentosPage() {
             {t('documents.subtitle')}
           </p>
         </motion.header>
+
+        {/* Documentos del arriendo (contrato firmado + recibos) */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="mb-8"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-fg dark:text-white">
+              {locale === 'es' ? 'Documentos del arriendo' : 'Lease documents'}
+            </h2>
+          </div>
+
+          {hasLeaseDocs ? (
+            <div className="space-y-6">
+              {/* Contrato firmado — descarga vía signed URL (DownloadContractPdfButton) */}
+              {signedContracts.length > 0 && (
+                <div>
+                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-3">
+                    {getDocLabel('CONTRATO')}
+                  </p>
+                  <div className="space-y-2">
+                    {signedContracts.map((c) => {
+                      const ContratoIcon = getDocIcon('CONTRATO');
+                      const subline = [c.propertyAddress, c.propertyCity].filter(Boolean).join(', ');
+                      return (
+                        <div
+                          key={c.id}
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c]"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+                            <ContratoIcon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-fg dark:text-white">
+                              {getDocLabel('CONTRATO')}
+                            </p>
+                            {subline && (
+                              <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">
+                                {subline}
+                              </p>
+                            )}
+                          </div>
+                          <DownloadContractPdfButton
+                            contractId={c.id}
+                            contractStatus={c.status}
+                            variant="secondary"
+                            label={locale === 'es' ? 'Descargar contrato' : 'Download lease'}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Recibos — comprobantes internos (nunca fiscal; sin PDF descargable todavía) */}
+              {paymentRequests.length > 0 && (
+                <div>
+                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">
+                    {locale === 'es' ? 'Recibos (comprobante interno)' : 'Receipts (internal receipt)'}
+                  </p>
+                  <p className="text-xs text-fg-muted dark:text-fg-subtle mb-3">
+                    {locale === 'es'
+                      ? 'Registro interno de tus pagos. El comprobante en PDF descargable llegará con Pagos.'
+                      : 'Internal record of your payments. The downloadable receipt PDF will arrive with Payments.'}
+                  </p>
+                  <div className="space-y-2">
+                    {paymentRequests.map((r) => {
+                      const ReciboIcon = getDocIcon('RECIBO');
+                      const statusMeta = PAYMENT_REQUEST_STATUS[r.status];
+                      return (
+                        <div
+                          key={r.id}
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c]"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+                            <ReciboIcon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-fg dark:text-white truncate">
+                              {locale === 'es' ? 'Comprobante interno' : 'Internal receipt'} · {formatPeriod(r.periodMonth, r.periodYear)}
+                            </p>
+                            <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">
+                              <span className="font-mono tabular-nums">{formatCurrency(r.amount)}</span>
+                              {r.bankName ? ` · ${r.bankName}` : ''} · {formatDate(r.paymentDate)}
+                            </p>
+                          </div>
+                          {statusMeta && (
+                            <span
+                              className={cn(
+                                'px-2.5 py-1 text-xs font-medium rounded-full flex-shrink-0',
+                                statusMeta.className
+                              )}
+                            >
+                              {locale === 'es' ? statusMeta.es : statusMeta.en}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-10 text-center">
+              <div className="w-14 h-14 rounded-full bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-7 h-7 text-fg-subtle" />
+              </div>
+              <h3 className="font-semibold text-fg dark:text-white mb-2">
+                {locale === 'es' ? 'Aún no tienes documentos del arriendo' : 'No lease documents yet'}
+              </h3>
+              <p className="text-sm text-fg-muted dark:text-fg-subtle max-w-sm mx-auto">
+                {locale === 'es'
+                  ? 'Cuando tu contrato quede firmado y registres pagos, aparecerán aquí.'
+                  : 'Once your lease is signed and payments are recorded, they will appear here.'}
+              </p>
+            </div>
+          )}
+        </motion.section>
 
         {/* Stats Grid */}
         <motion.div

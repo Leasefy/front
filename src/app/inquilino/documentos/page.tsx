@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, X, CaretLeft, CaretRight, FolderOpen, IdentificationCard, Money, Briefcase, Bank, Trash, Lock, ShieldCheck } from '@phosphor-icons/react';
+import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, X, CaretLeft, CaretRight, FolderOpen, IdentificationCard, Money, Briefcase, Bank, Trash, Lock, ShieldCheck, Certificate } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -20,7 +20,8 @@ import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
 import { useSignedDocUrl } from '@/lib/hooks/useDocuments';
 import { createEmptyDocumentConsent, type DocumentConsent } from '@/lib/api/documents.types';
 import { useContracts } from '@/lib/hooks/useContracts';
-import { useMyPaymentRequests } from '@/lib/hooks/useLeases';
+import { useLeases, useMyPaymentRequests } from '@/lib/hooks/useLeases';
+import { leaseDocumentsApi } from '@/lib/api/lease-documents.service';
 import { DownloadContractPdfButton } from '@/components/contract/DownloadContractPdfButton';
 import type { TenantPaymentRequestStatus } from '@/lib/api/tenant-payment-requests.types';
 
@@ -77,6 +78,17 @@ export default function DocumentosPage() {
   // Lease documents (arriendo) — real sources, degrade to [] on 403/404 (see hooks).
   const { contracts, isLoading: contractsLoading } = useContracts();
   const { requests: paymentRequests, isLoading: paymentRequestsLoading } = useMyPaymentRequests();
+
+  // Active lease — anchors the paz y salvo / cert. retención generation requests.
+  const { getActive } = useLeases();
+  const activeLeaseId = getActive()[0]?.id;
+
+  // Paz y salvo (DOCU-02) + cert. retención 3.5% (DOCU-03) are LEGAL/FISCAL documents
+  // generated + certified SERVER-SIDE. No backend endpoint exists today, so both
+  // surfaces stay on an honest "Próximamente" empty-state. `generatingDoc` only tracks
+  // the in-flight request that the contract exercises — it never produces a fabricated
+  // document, "sin deuda" status, or computed 3.5% number.
+  const [generatingDoc, setGeneratingDoc] = useState<'pazYSalvo' | 'certRetencion' | null>(null);
 
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -234,6 +246,42 @@ export default function DocumentosPage() {
     maybeRecordConsent(doc.id);
     setViewingDocument(doc);
   }, [consent, maybeRecordConsent]);
+
+  // Paz y salvo / cert. retención — exercises the leaseDocumentsApi contract WITHOUT
+  // fabricating output. Models the avalúo async flow (request id → poll status →
+  // presigned downloadUrl). Because no backend endpoint is live, the request rethrows
+  // as unavailable and the UI stays honestly on "Próximamente": no generated PDF, no
+  // "sin deuda" assertion, and no client-computed 3.5% number is ever rendered. The
+  // presigned `downloadUrl` is only ever opened if the BACKEND itself reports `ready`.
+  const handleGenerateLeaseDoc = useCallback(
+    async (kind: 'pazYSalvo' | 'certRetencion') => {
+      if (!activeLeaseId) return;
+      setGeneratingDoc(kind);
+      const comingSoon = locale === 'es'
+        ? 'Este certificado estará disponible próximamente.'
+        : 'This certificate will be available soon.';
+      try {
+        const req = kind === 'pazYSalvo'
+          ? await leaseDocumentsApi.requestPazYSalvo(activeLeaseId)
+          : await leaseDocumentsApi.requestCertRetencion(activeLeaseId, new Date().getFullYear());
+        const status = await leaseDocumentsApi.getStatus(req.id);
+        if (status.status === 'ready' && status.downloadUrl) {
+          // Future path (backend live): the presigned, tenant-authorized URL is opened
+          // ONLY because the backend reported it ready. Never reached today — no URL is
+          // fabricated client-side.
+          window.location.href = status.downloadUrl;
+          return;
+        }
+        toast(comingSoon);
+      } catch {
+        // No backend endpoint yet (403/404/offline) → honest "Próximamente".
+        toast(comingSoon);
+      } finally {
+        setGeneratingDoc(null);
+      }
+    },
+    [activeLeaseId, locale]
+  );
 
   // ARCO supresión — real DELETE /documents/:id behind the "ELIMINAR" type-to-confirm gate.
   // The signed contrato firmado is a Contract (rendered via DownloadContractPdfButton), NOT a
@@ -451,6 +499,100 @@ export default function DocumentosPage() {
               </p>
             </div>
           )}
+        </motion.section>
+
+        {/* Paz y salvo (DOCU-02) + Certificado de retención en la fuente 3.5% (DOCU-03).
+            Both are LEGAL/FISCAL documents generated + certified SERVER-SIDE. No backend
+            endpoint exists today → honest "Próximamente" empty-state (DESIGN.md §11). We
+            never render a generated document, a "sin deuda" status, or a computed 3.5%
+            number. The contract (leaseDocumentsApi) is wired; the UI degrades honestly. */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.075 }}
+          className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6"
+        >
+          {/* Paz y salvo */}
+          <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+                <FileText className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-fg dark:text-white">
+                  {locale === 'es' ? 'Paz y salvo' : 'Clearance certificate'}
+                </h2>
+                <p className="text-sm text-fg-muted dark:text-fg-subtle">
+                  {locale === 'es'
+                    ? 'Certificado que emite Leasefy contra tu estado de cuenta. Es un documento legal generado y certificado por el sistema, no una declaración manual.'
+                    : 'A certificate issued by Leasefy against your ledger. It is a legal document generated and certified by the system, not a manual statement.'}
+                </p>
+              </div>
+            </div>
+            <EmptyState
+              icon={Clock}
+              title={locale === 'es' ? 'Próximamente' : 'Coming soon'}
+              description={locale === 'es'
+                ? 'La generación automática del paz y salvo estará disponible de forma self-service cuando se habilite el módulo.'
+                : 'Self-service, auto-generated clearance certificates will be available once the module is enabled.'}
+            />
+            <div className="flex justify-center">
+              <Button
+                variant="secondary"
+                hideArrow
+                disabled={!activeLeaseId || generatingDoc === 'pazYSalvo'}
+                isLoading={generatingDoc === 'pazYSalvo'}
+                onClick={() => handleGenerateLeaseDoc('pazYSalvo')}
+                title={!activeLeaseId
+                  ? (locale === 'es' ? 'Requiere un arriendo activo' : 'Requires an active lease')
+                  : undefined}
+              >
+                {locale === 'es' ? 'Solicitar paz y salvo' : 'Request clearance'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Certificado de retención en la fuente (3.5%) */}
+          <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+                <Certificate className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-fg dark:text-white">
+                  {locale === 'es'
+                    ? 'Certificado de retención en la fuente (3.5%)'
+                    : 'Withholding tax certificate (3.5%)'}
+                </h2>
+                <p className="text-sm text-fg-muted dark:text-fg-subtle">
+                  {locale === 'es'
+                    ? 'Certificado fiscal auto-generado por el sistema para tu declaración. El valor retenido lo calcula y certifica Leasefy conforme a la normativa DIAN.'
+                    : 'A fiscal certificate auto-generated by the system for your tax filing. The withheld amount is computed and certified by Leasefy per DIAN rules.'}
+                </p>
+              </div>
+            </div>
+            <EmptyState
+              icon={Clock}
+              title={locale === 'es' ? 'Próximamente' : 'Coming soon'}
+              description={locale === 'es'
+                ? 'La descarga del certificado de retención estará disponible cuando se habilite el módulo fiscal.'
+                : 'The withholding certificate download will be available once the fiscal module is enabled.'}
+            />
+            <div className="flex justify-center">
+              <Button
+                variant="secondary"
+                hideArrow
+                disabled={!activeLeaseId || generatingDoc === 'certRetencion'}
+                isLoading={generatingDoc === 'certRetencion'}
+                onClick={() => handleGenerateLeaseDoc('certRetencion')}
+                title={!activeLeaseId
+                  ? (locale === 'es' ? 'Requiere un arriendo activo' : 'Requires an active lease')
+                  : undefined}
+              >
+                {locale === 'es' ? 'Solicitar certificado' : 'Request certificate'}
+              </Button>
+            </div>
+          </div>
         </motion.section>
 
         {/* Stats Grid */}

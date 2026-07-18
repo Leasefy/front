@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, X, CaretLeft, CaretRight, FolderOpen, IdentificationCard, Money, Briefcase, Bank } from '@phosphor-icons/react';
+import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, X, CaretLeft, CaretRight, FolderOpen, IdentificationCard, Money, Briefcase, Bank, Trash, Lock, ShieldCheck } from '@phosphor-icons/react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
@@ -11,9 +12,13 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { IconButton } from '@leasefy/cadence';
 import { useMyApplications } from '@/lib/hooks/useApplications';
 import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
+import { useSignedDocUrl } from '@/lib/hooks/useDocuments';
+import { createEmptyDocumentConsent, type DocumentConsent } from '@/lib/api/documents.types';
 import { useContracts } from '@/lib/hooks/useContracts';
 import { useMyPaymentRequests } from '@/lib/hooks/useLeases';
 import { DownloadContractPdfButton } from '@/components/contract/DownloadContractPdfButton';
@@ -79,6 +84,32 @@ export default function DocumentosPage() {
   const [selectedType, setSelectedType] = useState('all');
   const [viewingDocument, setViewingDocument] = useState<DocumentItem | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // ── Habeas Data (Ley 1581) — per-purpose consent gate (DOCU-04).
+  // Both booleans default FALSE (createEmptyDocumentConsent) — never pre-ticked.
+  // The MANDATORY `purposeDocAccess` is what actually gates document access below;
+  // this UI gate is the real enforcement (server-side persistence is best-effort).
+  const [consent, setConsent] = useState<DocumentConsent>(() => createEmptyDocumentConsent('v1'));
+  const canAccessDocs = consent.purposeDocAccess;
+  // Tracks docs we already best-effort POSTed consent for, so we don't spam the endpoint.
+  const recordedConsentRef = useRef<Set<string>>(new Set());
+
+  // ── ARCO (supresión) — real delete behind a type-to-confirm gate.
+  const [deletingDocument, setDeletingDocument] = useState<DocumentItem | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const requiredDeleteText = locale === 'es' ? 'ELIMINAR' : 'DELETE';
+
+  // Anti-IDOR: the viewer preview binds a backend-signed, short-lived URL (blob-safe),
+  // fetched only while a doc is open (enabled gate) — not the raw persistent Supabase URL.
+  const { url: viewerSignedUrl, isLoading: viewerUrlLoading } = useSignedDocUrl(
+    viewingDocument?.id,
+    { enabled: !!viewingDocument }
+  );
+  // TODO(backend): /documents/:id/signed-url not live — raw URL fallback is the disclosed
+  // IDOR gap (DOCU-04), not a frontend-satisfiable claim. Prefer the signed URL; the
+  // `?? viewingDocument?.url` fallback is the honestly-disclosed backend dependency.
+  const previewUrl = viewerSignedUrl ?? viewingDocument?.url;
 
   // Fetch documents for all applications
   const fetchAllDocuments = useCallback(async () => {
@@ -149,6 +180,82 @@ export default function DocumentosPage() {
     setSearchQuery(query);
     setCurrentPage(1);
   };
+
+  // Best-effort SIC-audit consent record per accessed doc (once). The backend store is
+  // authoritative; a missing endpoint degrades to a silent no-op (documentsApi.recordConsent
+  // resolves on 404/403). The real enforcement is the unchecked-default gate, not this call —
+  // so we deliberately do NOT surface a "consentimiento guardado" confirmation here.
+  const maybeRecordConsent = useCallback((docId: string) => {
+    if (!consent.purposeDocAccess) return;
+    if (recordedConsentRef.current.has(docId)) return;
+    recordedConsentRef.current.add(docId);
+    void documentsApi.recordConsent(docId, consent).catch(() => {});
+  }, [consent]);
+
+  // Anti-IDOR download: fetch the backend-signed URL → blob → programmatic <a download> →
+  // revoke, so the raw Supabase URL never lands in the address bar. Modeled on
+  // DownloadContractPdfButton. Gated by the mandatory consent (purposeDocAccess).
+  const handleDownload = useCallback(async (doc: DocumentItem) => {
+    if (!consent.purposeDocAccess) return;
+    maybeRecordConsent(doc.id);
+    let blobUrl: string | null = null;
+    try {
+      let sourceUrl: string;
+      try {
+        const signed = await documentsApi.getSignedUrl(doc.id);
+        sourceUrl = signed.url;
+      } catch {
+        // TODO(backend): /documents/:id/signed-url not live — raw URL fallback is the disclosed
+        // IDOR gap (DOCU-04), not a frontend-satisfiable claim.
+        sourceUrl = doc.url;
+      }
+      const response = await fetch(sourceUrl);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = doc.fileName || 'documento';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message
+        : (locale === 'es' ? 'No se pudo descargar el documento' : 'Could not download the document');
+      toast.error(msg);
+    } finally {
+      // Free the blob URL after a tick — the click already triggered the download.
+      if (blobUrl) setTimeout(() => URL.revokeObjectURL(blobUrl!), 1000);
+    }
+  }, [consent, maybeRecordConsent, locale]);
+
+  const handleView = useCallback((doc: DocumentItem) => {
+    if (!consent.purposeDocAccess) return;
+    maybeRecordConsent(doc.id);
+    setViewingDocument(doc);
+  }, [consent, maybeRecordConsent]);
+
+  // ARCO supresión — real DELETE /documents/:id behind the "ELIMINAR" type-to-confirm gate.
+  // The signed contrato firmado is a Contract (rendered via DownloadContractPdfButton), NOT a
+  // DocumentItem, so it can never reach this handler — a legal record with statutory retention.
+  const handleDeleteDocument = useCallback(async () => {
+    if (!deletingDocument) return;
+    if (deleteConfirmText !== requiredDeleteText) return;
+    setIsDeleting(true);
+    try {
+      await documentsApi.delete(deletingDocument.id);
+      setDocuments((docs) => docs.filter((d) => d.id !== deletingDocument.id));
+      toast.success(locale === 'es' ? 'Documento eliminado' : 'Document deleted');
+      setDeletingDocument(null);
+      setDeleteConfirmText('');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message
+        : (locale === 'es' ? 'No se pudo eliminar el documento' : 'Could not delete the document');
+      toast.error(msg);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [deletingDocument, deleteConfirmText, requiredDeleteText, locale]);
 
   const getDocLabel = (type: string) =>
     locale === 'es'
@@ -233,8 +340,17 @@ export default function DocumentosPage() {
               {/* Contrato firmado — descarga vía signed URL (DownloadContractPdfButton) */}
               {signedContracts.length > 0 && (
                 <div>
-                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-3">
+                  <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">
                     {getDocLabel('CONTRATO')}
+                  </p>
+                  {/* Statutory retention: the signed contract is a legal record. It is a Contract
+                      (not a DocumentItem) so it has no delete affordance by construction — this note
+                      makes the exclusion explicit, not accidental. */}
+                  <p className="text-xs text-fg-muted dark:text-fg-subtle mb-3 flex items-center gap-1.5">
+                    <Lock className="w-3 h-3 flex-shrink-0" />
+                    {locale === 'es'
+                      ? 'Documento legal — no eliminable (retención legal).'
+                      : 'Legal document — cannot be deleted (statutory retention).'}
                   </p>
                   <div className="space-y-2">
                     {signedContracts.map((c) => {
@@ -432,6 +548,91 @@ export default function DocumentosPage() {
           )}
         </motion.div>
 
+        {/* Habeas Data (Ley 1581) — per-purpose consent gate. Blocks doc access until the
+            mandatory purpose is granted. Avalúo model: separate booleans, unchecked default,
+            one purpose each, Ley 1581 notice. Shown only when there are documents to access. */}
+        {documents.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mb-6"
+          >
+            <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+                  <ShieldCheck className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-fg dark:text-white">
+                    {locale === 'es' ? 'Consentimiento de datos personales' : 'Personal data consent'}
+                  </h2>
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
+                    {locale === 'es'
+                      ? 'Autorizá el tratamiento de tus documentos del arriendo para poder consultarlos y descargarlos.'
+                      : 'Authorize the processing of your lease documents so you can view and download them.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Consent 1 — purposeDocAccess (MANDATORY): gates doc access */}
+              <div className="space-y-1">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="consent-doc-access"
+                    checked={consent.purposeDocAccess}
+                    onCheckedChange={(v) => setConsent((c) => ({ ...c, purposeDocAccess: v === true }))}
+                    aria-required="true"
+                    aria-describedby="consent-doc-access-desc"
+                  />
+                  <label
+                    htmlFor="consent-doc-access"
+                    className="text-sm text-fg dark:text-white leading-snug cursor-pointer"
+                  >
+                    {locale === 'es'
+                      ? 'Autorizo a Leasefy a tratar mis documentos del arriendo para que pueda consultarlos y descargarlos.'
+                      : 'I authorize Leasefy to process my lease documents so I can view and download them.'}
+                  </label>
+                </div>
+                <p id="consent-doc-access-desc" className="text-xs text-fg-muted dark:text-fg-subtle pl-7">
+                  {locale === 'es' ? 'Necesario para acceder a tus documentos.' : 'Required to access your documents.'}
+                </p>
+                {!consent.purposeDocAccess && (
+                  <p className="text-xs text-warning pl-7">
+                    {locale === 'es'
+                      ? 'Debés aceptar este consentimiento para ver o descargar tus documentos.'
+                      : 'You must accept this consent to view or download your documents.'}
+                  </p>
+                )}
+              </div>
+
+              {/* Consent 2 — purposeThirdPartyShare (OPTIONAL) */}
+              <div className="flex items-start gap-3 mt-4">
+                <Checkbox
+                  id="consent-third-party"
+                  checked={consent.purposeThirdPartyShare}
+                  onCheckedChange={(v) => setConsent((c) => ({ ...c, purposeThirdPartyShare: v === true }))}
+                />
+                <label
+                  htmlFor="consent-third-party"
+                  className="text-sm text-fg dark:text-white leading-snug cursor-pointer"
+                >
+                  {locale === 'es'
+                    ? 'Autorizo compartir mis certificados (paz y salvo / retención) con terceros que yo designe. (Opcional)'
+                    : 'I authorize sharing my certificates (paz y salvo / retention) with third parties I designate. (Optional)'}
+                </label>
+              </div>
+
+              {/* Ley 1581 policy notice */}
+              <p className="text-xs text-fg-muted dark:text-fg-subtle leading-relaxed mt-4">
+                {locale === 'es'
+                  ? 'Tus datos son tratados conforme a la Ley 1581 de 2012 (Habeas Data) y la política de privacidad de Leasefy.'
+                  : 'Your data is processed in accordance with Law 1581 of 2012 (Habeas Data) and Leasefy’s privacy policy.'}
+              </p>
+            </div>
+          </motion.section>
+        )}
+
         {/* Documents Grid */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
@@ -517,28 +718,40 @@ export default function DocumentosPage() {
                           </div>
                         </div>
 
-                        {/* Actions */}
+                        {/* Actions — view/download gated behind the mandatory consent; delete is
+                            the ARCO supresión affordance (application DocumentItem cards only). */}
                         <div className="flex items-center border-t border-border-faint dark:border-border-strong">
                           <Button
                             variant="ghost"
                             hideArrow
-                            onClick={() => setViewingDocument(doc)}
-                            className="flex-1 rounded-none py-3 text-sm font-medium text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c] hover:text-[#1A40FF] dark:hover:text-[#1A40FF]"
+                            onClick={() => handleView(doc)}
+                            disabled={!canAccessDocs}
+                            title={!canAccessDocs ? (locale === 'es' ? 'Aceptá el consentimiento para ver' : 'Accept consent to view') : undefined}
+                            className="flex-1 rounded-none py-3 text-sm font-medium text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                           >
                             <Eye className="w-4 h-4" />
                             {t('documents.view')}
                           </Button>
                           <div className="w-px h-8 bg-surface-muted dark:bg-surface-muted" />
-                          <a
-                            href={doc.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            download
-                            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors"
+                          <button
+                            type="button"
+                            onClick={() => handleDownload(doc)}
+                            disabled={!canAccessDocs}
+                            title={!canAccessDocs ? (locale === 'es' ? 'Aceptá el consentimiento para descargar' : 'Accept consent to download') : undefined}
+                            className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-fg-muted dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-[#2a2a2c] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                           >
                             <Download className="w-4 h-4" />
                             {t('documents.download')}
-                          </a>
+                          </button>
+                          <div className="w-px h-8 bg-surface-muted dark:bg-surface-muted" />
+                          <button
+                            type="button"
+                            onClick={() => { setDeletingDocument(doc); setDeleteConfirmText(''); }}
+                            aria-label={locale === 'es' ? 'Eliminar documento' : 'Delete document'}
+                            className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-fg-muted dark:text-fg-subtle hover:bg-error-bg dark:hover:bg-error/10 hover:text-error dark:hover:text-error transition-colors"
+                          >
+                            <Trash className="w-4 h-4" />
+                          </button>
                         </div>
                       </motion.div>
                     );
@@ -653,16 +866,14 @@ export default function DocumentosPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <a
-                    href={viewingDocument.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(viewingDocument)}
                     className="flex items-center gap-2 px-4 py-2 bg-ink dark:bg-surface text-white dark:text-fg rounded-full text-sm font-medium hover:bg-ink dark:hover:bg-surface-muted transition-colors"
                   >
                     <Download className="w-4 h-4" />
                     {t('documents.download')}
-                  </a>
+                  </button>
                   <IconButton
                     variant="ghost"
                     onClick={() => setViewingDocument(null)}
@@ -676,16 +887,18 @@ export default function DocumentosPage() {
               {/* Document Preview Area */}
               <div className="flex-1 bg-surface-muted dark:bg-[#0f0f10] p-6 overflow-auto">
                 <div className="bg-surface dark:bg-[#1a1a1c] h-full rounded-xl flex items-center justify-center min-h-[400px]">
-                  {viewingDocument.mimeType?.startsWith('image/') ? (
+                  {viewerUrlLoading ? (
+                    <Spinner size="lg" variant="current" className="text-primary" />
+                  ) : viewingDocument.mimeType?.startsWith('image/') ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={viewingDocument.url}
+                      src={previewUrl}
                       alt={getDocLabel(viewingDocument.type)}
                       className="max-w-full max-h-[60vh] rounded-md object-contain"
                     />
                   ) : viewingDocument.mimeType === 'application/pdf' ? (
                     <iframe
-                      src={viewingDocument.url}
+                      src={previewUrl}
                       className="w-full h-full min-h-[500px] rounded-md"
                       title={getDocLabel(viewingDocument.type)}
                     />
@@ -698,16 +911,14 @@ export default function DocumentosPage() {
                       <p className="text-sm text-fg-muted dark:text-fg-subtle mb-4">
                         {viewingDocument.mimeType?.split('/')[1]?.toUpperCase() ?? 'Archivo'} · {formatSize(viewingDocument.size)}
                       </p>
-                      <a
-                        href={viewingDocument.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download
+                      <button
+                        type="button"
+                        onClick={() => handleDownload(viewingDocument)}
                         className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A40FF] hover:opacity-90 text-white rounded-full text-sm font-medium transition-colors"
                       >
                         <Download className="w-4 h-4" />
                         {locale === 'es' ? 'Descargar archivo' : 'Download file'}
-                      </a>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -716,6 +927,87 @@ export default function DocumentosPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ARCO supresión — type-to-confirm delete for application documents. Real
+          documentsApi.delete (no setTimeout theater). The contrato firmado is excluded
+          by construction (it's a Contract, never a DocumentItem — see the "no eliminable" note). */}
+      <Dialog
+        open={!!deletingDocument}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingDocument(null);
+            setDeleteConfirmText('');
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {locale === 'es' ? 'Eliminar documento' : 'Delete document'}
+            </DialogTitle>
+            <DialogDescription>
+              {locale === 'es'
+                ? 'Esta acción es permanente. Ejercés tu derecho de supresión (ARCO, Ley 1581) sobre este documento.'
+                : 'This action is permanent. You are exercising your right to erasure (ARCO, Law 1581) over this document.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+              {locale === 'es' ? (
+                <>
+                  Para confirmar, escribe{' '}
+                  <span className="font-mono font-semibold text-error">ELIMINAR</span>{' '}
+                  en el campo de abajo:
+                </>
+              ) : (
+                <>
+                  To confirm, type{' '}
+                  <span className="font-mono font-semibold text-error">DELETE</span>{' '}
+                  in the field below:
+                </>
+              )}
+            </p>
+            <Input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+              placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
+              aria-label={locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}
+              className="w-full rounded-xl font-mono text-center tracking-widest"
+            />
+            {deletingDocument && (
+              <p className="text-xs text-fg-subtle truncate">
+                {getDocLabel(deletingDocument.type)} · {deletingDocument.fileName}
+              </p>
+            )}
+          </div>
+
+          <DialogFooter className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              hideArrow
+              onClick={() => {
+                setDeletingDocument(null);
+                setDeleteConfirmText('');
+              }}
+            >
+              {locale === 'es' ? 'Cancelar' : 'Cancel'}
+            </Button>
+            <Button
+              variant="destructive"
+              hideArrow
+              isLoading={isDeleting}
+              onClick={handleDeleteDocument}
+              disabled={deleteConfirmText !== requiredDeleteText || isDeleting}
+            >
+              {isDeleting
+                ? (locale === 'es' ? 'Eliminando...' : 'Deleting...')
+                : (locale === 'es' ? 'Eliminar documento' : 'Delete document')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

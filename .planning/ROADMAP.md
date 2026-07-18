@@ -100,7 +100,11 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
   3. El inquilino configura, cambia y cancela autopago (domiciliación tokenizada) (PAGO-04).
   4. El saldo/estado de mora traza a `tenant-payment-requests` (única fuente de verdad), sin computar su propio número; el costo total (cuota de manejo/recargo) se muestra **antes** de elegir método, sin método de mayor comisión pre-seleccionado y sin guilt-tripping (PAGO-05, guardrails PITFALLS 8/9).
 **External deps**: Wompi/Bold **productivo** habilitado para arriendo (hoy PSE-mock); `WOMPI_INTEGRITY_SECRET` server-only; webhook rent-specific en NestJS para reconciliar `TenantPaymentRequest`. Autopago tokenizado depende de soporte Wompi + backend. Frontend-first: la ruta server-side + `WompiPayButton` entran ya; la data real se activa cuando la pasarela productiva esté lista.
-**Plans**: TBD
+**Plans**: 4 plans
+- [ ] v7-04-01-PLAN.md — Ruta server-only `POST /api/inquilino/pagos/wompi-session` + helper puro (hash, monto server-side, period lock, runtime=nodejs, secret server-only) + tests (PAGO-02)
+- [ ] v7-04-02-PLAN.md — Swap del seam `/pse-mock`: `PayRentModal` → checkout hosted Wompi (solo `{ leaseId }`, sin amount cliente, solo `monthlyRent` real) (PAGO-02, PAGO-05)
+- [ ] v7-04-03-PLAN.md — Pagos page: return "confirmando" (sin premature success) + saldo única fuente + comprobante interno → "Próximamente" + fix es-CO (PAGO-03, PAGO-05)
+- [ ] v7-04-04-PLAN.md — Autopago tokenizado: contrato api-client + `AutopagoSection` + "Próximamente" honesto (PAGO-04)
 **UI hint**: yes
 
 ### v7-05: Comunicación atada al arriendo/caso
@@ -165,7 +169,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 | v7-01. Fundación & Limpieza | v7.0 | 4/4 | Complete | 2026-07-16 |
 | v7-02. Documentos del Arriendo | v7.0 | 4/4 | Complete | 2026-07-17 |
 | v7-03. Estado de Casos (Hub) | v7.0 | 3/3 | Complete | 2026-07-18 |
-| v7-04. Pagos Reales (Wompi) | v7.0 | 0/TBD | Not started | - |
+| v7-04. Pagos Reales (Wompi) | v7.0 | 0/4 | Not started | - |
 | v7-05. Comunicación | v7.0 | 0/TBD | Not started | - |
 | v7-06. Solicitudes / PQRS | v7.0 | 0/TBD | Not started | - |
 | v7-07. Acuerdos de Pago | v7.0 | 0/TBD | Not started | - |

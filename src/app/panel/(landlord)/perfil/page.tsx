@@ -218,7 +218,9 @@ export default function PropietarioPerfilPage() {
       setIsDeleting(false);
       setDeleteStep(3);
       setTimeout(() => {
-        toast.success(locale === 'es' ? 'Tu cuenta ha sido eliminada' : 'Your account has been deleted');
+        toast.success(locale === 'es'
+          ? 'Tu cuenta se eliminará definitivamente en 30 días. Inicia sesión antes para recuperarla con todos tus datos.'
+          : 'Your account will be permanently deleted in 30 days. Sign in before then to recover it with all your data.');
         handleCloseDeleteModal();
         router.push('/');
       }, 1500);
@@ -746,7 +748,7 @@ export default function PropietarioPerfilPage() {
               <div className="p-8 text-center">
                 <div className="w-16 h-16 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-4"><CheckCircle className="w-8 h-8 text-fg-muted" /></div>
                 <h3 className="text-xl font-semibold text-fg mb-2">{locale === 'es' ? 'Cuenta eliminada' : 'Account deleted'}</h3>
-                <p className="text-sm text-fg-muted">{locale === 'es' ? 'Tu cuenta ha sido eliminada exitosamente.' : 'Your account has been successfully deleted.'}</p>
+                <p className="text-sm text-fg-muted">{locale === 'es' ? 'Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese plazo, se recuperará automáticamente con todos tus datos.' : 'Your account will be permanently deleted in 30 days. If you sign in before then, it will be automatically recovered with all your data.'}</p>
               </div>
             )}
           </motion.div>

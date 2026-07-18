@@ -1090,8 +1090,8 @@ export default function PerfilPage() {
                 </h3>
                 <p className="text-sm text-fg-muted">
                   {locale === 'es'
-                    ? 'Tu cuenta ha sido eliminada exitosamente. Gracias por usar Leasefy.'
-                    : 'Your account has been successfully deleted. Thank you for using Leasefy.'}
+                    ? 'Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese plazo, se recuperará automáticamente con todos tus datos. Gracias por usar Leasefy.'
+                    : 'Your account will be permanently deleted in 30 days. If you sign in before then, it will be automatically recovered with all your data. Thank you for using Leasefy.'}
                 </p>
               </div>
             )}

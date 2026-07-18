@@ -9,6 +9,8 @@ import { Bell, Shield, DeviceMobile, Envelope, Globe, Moon, Eye, CreditCard, Dow
 import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/auth';
+import { settingsApi } from '@/lib/api/settings.service';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
@@ -79,6 +81,7 @@ const mockSessions = [
 
 export default function ConfiguracionPage() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { t, locale, setLocale } = useI18n();
   const [mounted, setMounted] = useState(false);
@@ -161,10 +164,29 @@ export default function ConfiguracionPage() {
       return;
     }
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsLoading(false);
-    toast.success('Cuenta eliminada. Serás redirigido...');
-    setTimeout(() => router.push('/'), 2000);
+    try {
+      // Real soft-delete (same flow as /inquilino/perfil). The backend keeps a
+      // 30-day recovery window: signing in again reactivates the account.
+      await settingsApi.deleteAccount();
+      setIsLoading(false);
+      setShowDeleteModal(false);
+      toast.success(
+        locale === 'es'
+          ? 'Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese plazo, se recuperará automáticamente con todos tus datos.'
+          : 'Your account will be permanently deleted in 30 days. If you sign in before then, it will be automatically recovered with all your data.',
+      );
+      // Let the user read the message, then clear the session and leave.
+      setTimeout(() => {
+        void signOut();
+        router.push('/');
+      }, 2000);
+    } catch (err) {
+      setIsLoading(false);
+      const message = err instanceof Error && err.message
+        ? err.message
+        : (locale === 'es' ? 'No se pudo eliminar la cuenta' : 'Could not delete the account');
+      toast.error(message);
+    }
   };
 
   const handleResetOnboarding = () => {
@@ -590,9 +612,11 @@ export default function ConfiguracionPage() {
               <Warning className="w-5 h-5 text-danger" />
             </div>
             <div>
-              <p className="text-sm font-medium text-danger">Esta acción no se puede deshacer</p>
+              <p className="text-sm font-medium text-danger">Eliminarás tu cuenta y todos tus datos</p>
               <p className="text-xs text-danger mt-1">
-                Todos tus datos, historial de pagos, documentos y configuraciones serán eliminados permanentemente.
+                Todos tus datos, historial de pagos, documentos y configuraciones serán eliminados.
+                Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese
+                plazo, se recuperará automáticamente con todos tus datos.
               </p>
             </div>
           </div>

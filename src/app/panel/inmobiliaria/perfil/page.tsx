@@ -244,12 +244,24 @@ export default function InmobiliariaPerfilPage() {
     try {
       await settingsApi.deleteAccount();
       setDeleteStep(3);
-      toast.success(locale === 'es' ? 'Tu cuenta ha sido eliminada' : 'Your account has been deleted');
-      // Right-to-erasure: actually sign out and leave the panel.
-      await logout();
-      window.location.replace('/auth');
-    } catch {
-      toast.error(locale === 'es' ? 'No se pudo eliminar tu cuenta. Intenta de nuevo.' : 'Could not delete your account. Please try again.');
+      toast.success(locale === 'es'
+        ? 'Tu cuenta se eliminará definitivamente en 30 días. Inicia sesión antes para recuperarla con todos tus datos.'
+        : 'Your account will be permanently deleted in 30 days. Sign in before then to recover it with all your data.');
+      // Let the user read the goodbye screen + toast (same pattern as the
+      // tenant/landlord flows), THEN sign out and leave the panel.
+      setTimeout(() => {
+        // Right-to-erasure: actually sign out and leave the panel.
+        void logout().finally(() => {
+          window.location.replace('/auth');
+        });
+      }, 2000);
+    } catch (err) {
+      // Surface the backend's reason (e.g. 403: active leases /
+      // last-agency-admin, in Spanish) instead of a generic message.
+      const message = err instanceof Error && err.message
+        ? err.message
+        : (locale === 'es' ? 'No se pudo eliminar tu cuenta. Intenta de nuevo.' : 'Could not delete your account. Please try again.');
+      toast.error(message);
     } finally {
       setIsDeleting(false);
     }
@@ -916,8 +928,8 @@ export default function InmobiliariaPerfilPage() {
                 </h3>
                 <p className="text-sm text-fg-muted">
                   {locale === 'es'
-                    ? 'Tu cuenta ha sido eliminada exitosamente. Gracias por usar Leasefy.'
-                    : 'Your account has been successfully deleted. Thank you for using Leasefy.'}
+                    ? 'Tu cuenta se eliminará definitivamente en 30 días. Si inicias sesión antes de ese plazo, se recuperará automáticamente con todos tus datos. Gracias por usar Leasefy.'
+                    : 'Your account will be permanently deleted in 30 days. If you sign in before then, it will be automatically recovered with all your data. Thank you for using Leasefy.'}
                 </p>
               </div>
             )}

@@ -69,7 +69,7 @@ completed: 2026-07-18
 
 Single atomic commit per the launching agent's staging directive (3 new src files + this SUMMARY):
 
-1. **Task 1 + Task 2 (backbone):** `<hash>` (feat) — TenantCase view-model, useTenantCases aggregator, unit spec
+1. **Task 1 + Task 2 (backbone):** `c0102f8a` (feat) — TenantCase view-model, useTenantCases aggregator, unit spec
 
 _TDD flow for Task 2 was RED (spec fails on missing module) → GREEN (hook created, 12/12 pass), committed together as one `feat` per parent instruction._
 
@@ -104,7 +104,7 @@ None affecting behavior or scope. One benign adaptation: the plan `<interfaces>`
 - `src/lib/types/tenant-case.ts` — FOUND
 - `src/lib/hooks/use-tenant-cases.ts` — FOUND
 - `src/lib/hooks/use-tenant-cases.test.ts` — FOUND
-- Commit hash recorded below after commit.
+- Commit `c0102f8a` — FOUND (git log verified)
 
 ---
 *Phase: v7-03-estado-casos-hub*

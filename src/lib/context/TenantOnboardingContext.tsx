@@ -106,6 +106,19 @@ interface TenantOnboardingContextTextT {
 const STORAGE_KEY = 'plan_onboarding_tenant'
 
 /**
+ * Rejection type for "the profile WAS saved but the session refresh failed
+ * (twice)". Distinguishable from a failed save so callers (the wizard shell)
+ * know not to navigate — the auth user is still stale. Resubmitting is safe:
+ * the backend onboarding upsert is idempotent.
+ */
+export class TenantOnboardingSessionRefreshError extends Error {
+  constructor(readonly refreshCause?: unknown) {
+    super('Onboarding saved but session refresh failed')
+    this.name = 'TenantOnboardingSessionRefreshError'
+  }
+}
+
+/**
  * Seed empty draft fields from the backend profile.
  *
  * Product rule: the backend is the single source of truth — profile data must
@@ -304,6 +317,10 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
   // FloppyDisk progress to localStorage on changes
   useEffect(() => {
     if (!isHydrated) return
+    // Once complete, the explicit completionData written by submitOnboarding
+    // (which carries `isComplete: true` for ProtectedRoute's cache fallback)
+    // is authoritative — this progress writer must not clobber it.
+    if (isComplete) return
 
     const data = {
       // Stamp ownership whenever an authenticated user is known so other
@@ -317,7 +334,7 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
     // Dispatch custom event to notify sidebar and other components
     window.dispatchEvent(new Event('onboarding-updated'))
-  }, [draft, currentStep, completedSteps, isHydrated, userId])
+  }, [draft, currentStep, completedSteps, isHydrated, userId, isComplete])
 
   const updateDraft = useCallback((updates: Partial<TenantOnboardingDraft>) => {
     setDraft((prev) => ({ ...prev, ...updates }))
@@ -394,26 +411,57 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
       // too (backend stores them as onboardingData JSON and returns them on
       // GET /users/me) so onboarding completeness is derivable from the
       // backend on any device — localStorage is only a draft cache.
-      await apiClient.post('/users/me/onboarding', {
-        firstName,
-        lastName,
-        phone: draft.phone || undefined,
-        // Document number: the backend only writes it when the user has none
-        // (immutable once set — changes go through Leasefy support).
-        rut: draft.rut || undefined,
-        userType: 'TENANT',
-        preferredContact: draft.preferredContact,
-        budgetMin: draft.budgetMin,
-        budgetMax: draft.budgetMax,
-        preferredZones: draft.preferredZones,
-        preferredAmenities: draft.preferredAmenities,
-        moveInDate: draft.moveInDate || undefined,
-        hasPets: draft.hasPets ?? false,
-        petDetails: draft.petDetails || undefined,
-      })
+      try {
+        await apiClient.post('/users/me/onboarding', {
+          firstName,
+          lastName,
+          phone: draft.phone || undefined,
+          // Document number: the backend only writes it when the user has none
+          // (immutable once set — changes go through Leasefy support).
+          rut: draft.rut || undefined,
+          userType: 'TENANT',
+          preferredContact: draft.preferredContact,
+          budgetMin: draft.budgetMin,
+          budgetMax: draft.budgetMax,
+          preferredZones: draft.preferredZones,
+          preferredAmenities: draft.preferredAmenities,
+          moveInDate: draft.moveInDate || undefined,
+          hasPets: draft.hasPets ?? false,
+          petDetails: draft.petDetails || undefined,
+        })
+      } catch (error) {
+        console.error('Error submitting tenant onboarding:', error)
+        // Save genuinely failed — the user stays on the step with the draft
+        // intact and can retry.
+        toast.error('No pudimos guardar tu perfil. Revisa tu conexión e intenta de nuevo.')
+        throw error
+      }
 
-      // Refresh user in auth context so role/onboardingCompleted updates
-      await refreshUser()
+      // POST succeeded: the profile IS saved server-side from this point on —
+      // any failure below must never claim the save failed.
+      // Refresh the auth context so role/onboardingCompleted update; retry
+      // once on a transient failure.
+      try {
+        await refreshUser()
+      } catch {
+        try {
+          await refreshUser()
+        } catch (refreshError) {
+          console.error('Onboarding saved but session refresh failed:', refreshError)
+          // ACCURATE message: the save worked, only the session refresh failed.
+          toast.error(
+            'Tu perfil se guardó correctamente, pero no pudimos actualizar tu sesión. Intenta de nuevo.',
+          )
+          // Distinguishable rejection so the shell does NOT navigate: the auth
+          // user is still stale (onboardingCompleted false) and we have not
+          // written the completion cache, so ProtectedRoute (its onboarding
+          // gate checks `user.onboardingCompleted` and the cache's isComplete)
+          // would bounce /inquilino straight back to /onboarding/seleccionar-rol.
+          // The submit button stays usable — a resubmit re-runs POST+refresh
+          // and the backend upsert is idempotent.
+          throw new TenantOnboardingSessionRefreshError(refreshError)
+        }
+      }
 
       // Mark all steps as completed
       const allSteps = [1, 2]
@@ -433,12 +481,6 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
       window.dispatchEvent(new Event('onboarding-updated'))
 
       setIsComplete(true)
-    } catch (error) {
-      console.error('Error submitting tenant onboarding:', error)
-      // Surface the failure (was console-only): the user stays on the step
-      // with the draft intact and can retry.
-      toast.error('No pudimos guardar tu perfil. Revisa tu conexión e intenta de nuevo.')
-      throw error
     } finally {
       setIsSubmitting(false)
     }

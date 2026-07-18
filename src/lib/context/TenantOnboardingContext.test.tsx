@@ -22,10 +22,11 @@ void React // jsx-preserve
 // react-dom/client needs this flag to recognize our act() wrapping.
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { postMock, toastErrorMock, getPrefsMock, authState } = vi.hoisted(() => ({
+const { postMock, toastErrorMock, getPrefsMock, refreshUserMock, authState } = vi.hoisted(() => ({
   postMock: vi.fn(),
   toastErrorMock: vi.fn(),
   getPrefsMock: vi.fn(),
+  refreshUserMock: vi.fn(),
   // Settable per-test so identity-scoping (userId stamping/purging) and
   // backend-first draft seeding can be exercised.
   authState: { user: undefined as Record<string, unknown> | undefined },
@@ -50,7 +51,7 @@ vi.mock('@/lib/api/tenant-preferences.service', async (importOriginal) => {
 
 vi.mock('@/lib/auth/use-auth', () => ({
   useAuth: () => ({
-    refreshUser: vi.fn().mockResolvedValue(undefined),
+    refreshUser: (...args: unknown[]) => refreshUserMock(...args),
     user: authState.user,
   }),
 }))
@@ -101,6 +102,8 @@ beforeEach(() => {
   toastErrorMock.mockReset()
   getPrefsMock.mockReset()
   getPrefsMock.mockResolvedValue(null)
+  refreshUserMock.mockReset()
+  refreshUserMock.mockResolvedValue(undefined)
 })
 
 afterEach(async () => {
@@ -423,6 +426,80 @@ describe('TenantOnboardingContext — blank-name defense (restored draft)', () =
     expect(String(toastErrorMock.mock.calls[0][0])).toMatch(/nombre/i)
     expect(captured!.isComplete).toBe(false)
     expect(captured!.isSubmitting).toBe(false)
+  })
+})
+
+describe('TenantOnboardingContext — split error handling (POST vs refreshUser)', () => {
+  const SAVE_ERROR = 'No pudimos guardar tu perfil. Revisa tu conexión e intenta de nuevo.'
+  const REFRESH_ERROR =
+    'Tu perfil se guardó correctamente, pero no pudimos actualizar tu sesión. Intenta de nuevo.'
+
+  it('(a) POST failure → save-error toast, no completion cache, no isComplete', async () => {
+    postMock.mockRejectedValue(new Error('500'))
+    await renderProvider()
+    await act(async () => {
+      captured!.updateDraft({ displayName: 'Ana Pérez' })
+    })
+    await act(async () => {
+      await expect(captured!.submitOnboarding()).rejects.toThrow()
+    })
+
+    expect(refreshUserMock).not.toHaveBeenCalled()
+    expect(toastErrorMock).toHaveBeenCalledTimes(1)
+    expect(String(toastErrorMock.mock.calls[0][0])).toBe(SAVE_ERROR)
+    expect(captured!.isComplete).toBe(false)
+    // No completion cache write — only the in-progress draft payload exists.
+    const cache = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(cache.isComplete).not.toBe(true)
+    expect(cache.completedSteps ?? []).not.toContain(2)
+  })
+
+  it('(b) POST ok + refreshUser fails twice → accurate "se guardó" toast, rejection, no completion state', async () => {
+    postMock.mockResolvedValue({})
+    refreshUserMock.mockRejectedValue(new Error('network'))
+    await renderProvider()
+    await act(async () => {
+      captured!.updateDraft({ displayName: 'Ana Pérez' })
+    })
+    await act(async () => {
+      await expect(captured!.submitOnboarding()).rejects.toThrow()
+    })
+
+    // POST once, refresh attempted twice (one retry).
+    expect(postMock).toHaveBeenCalledTimes(1)
+    expect(refreshUserMock).toHaveBeenCalledTimes(2)
+    // The ACCURATE message — never the save-error one (the profile WAS saved).
+    expect(toastErrorMock).toHaveBeenCalledTimes(1)
+    expect(String(toastErrorMock.mock.calls[0][0])).toBe(REFRESH_ERROR)
+    // No completion state: the shell must not navigate (stale auth user would
+    // bounce off ProtectedRoute's onboarding gate) and the button stays usable.
+    expect(captured!.isComplete).toBe(false)
+    expect(captured!.isSubmitting).toBe(false)
+    const cache = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(cache.isComplete).not.toBe(true)
+  })
+
+  it('(c) POST ok + refreshUser fails once then succeeds on retry → full success, single POST', async () => {
+    postMock.mockResolvedValue({})
+    refreshUserMock
+      .mockRejectedValueOnce(new Error('blip'))
+      .mockResolvedValueOnce(undefined)
+    await renderProvider()
+    await act(async () => {
+      captured!.updateDraft({ displayName: 'Ana Pérez' })
+    })
+    await act(async () => {
+      await captured!.submitOnboarding()
+    })
+
+    expect(postMock).toHaveBeenCalledTimes(1)
+    expect(refreshUserMock).toHaveBeenCalledTimes(2)
+    expect(toastErrorMock).not.toHaveBeenCalled()
+    // Full success path (the shell's post-resolve push fires on this).
+    expect(captured!.isComplete).toBe(true)
+    const cache = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(cache.isComplete).toBe(true)
+    expect(cache.completedSteps).toEqual([1, 2])
   })
 })
 

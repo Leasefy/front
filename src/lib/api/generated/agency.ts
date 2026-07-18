@@ -48,6 +48,15 @@ export type OnboardingSessionMembersResponse =
   AgentComponents['schemas']['OnboardingSessionMembersResponse']
 export type OnboardingSessionPaymentProviderRequest =
   AgentComponents['schemas']['OnboardingSessionPaymentProviderRequest']
+/**
+ * Alternate body for the same endpoint — `{ skip: true }` lets an inmobiliaria
+ * finish onboarding without a payment gateway (configured later from the
+ * dashboard). Mixing `skip` with credential fields in the same body is a 400.
+ * The wizard now sends this exclusively (no user-facing payment-provider
+ * step) — see `PaymentProviderAutoSkipStep`.
+ */
+export type OnboardingSessionPaymentProviderSkipRequest =
+  AgentComponents['schemas']['OnboardingSessionPaymentProviderSkipRequest']
 export type OnboardingSessionPaymentProviderResponse =
   AgentComponents['schemas']['OnboardingSessionPaymentProviderResponse']
 export type OnboardingSessionPolicyRequest =

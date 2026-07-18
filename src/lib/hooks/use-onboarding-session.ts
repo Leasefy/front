@@ -40,6 +40,7 @@ import type {
   OnboardingSessionMembersRequest,
   OnboardingSessionMembersResponse,
   OnboardingSessionPaymentProviderRequest,
+  OnboardingSessionPaymentProviderSkipRequest,
   OnboardingSessionPaymentProviderResponse,
   OnboardingSessionPolicyRequest,
   OnboardingSessionPolicyResponse,
@@ -83,7 +84,7 @@ export interface UseOnboardingSessionResult {
     body: OnboardingSessionMembersRequest,
   ) => Promise<OnboardingSessionMembersResponse | null>
   submitPaymentProvider: (
-    body: OnboardingSessionPaymentProviderRequest,
+    body: OnboardingSessionPaymentProviderRequest | OnboardingSessionPaymentProviderSkipRequest,
   ) => Promise<OnboardingSessionPaymentProviderResponse | null>
   submitPolicy: (
     body: OnboardingSessionPolicyRequest,
@@ -218,7 +219,7 @@ export function useOnboardingSession(sessionId: string): UseOnboardingSessionRes
     [runStep, sessionId],
   )
   const submitPaymentProvider = useCallback(
-    (body: OnboardingSessionPaymentProviderRequest) =>
+    (body: OnboardingSessionPaymentProviderRequest | OnboardingSessionPaymentProviderSkipRequest) =>
       runStep(() => submitPaymentProviderStep(sessionId, body)),
     [runStep, sessionId],
   )

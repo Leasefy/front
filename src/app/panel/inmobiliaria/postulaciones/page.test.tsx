@@ -52,8 +52,19 @@ vi.mock('@/components/data-display/EmptyState', () => ({
 }))
 
 vi.mock('@/components/ui/error-state', () => ({
-  ErrorState: ({ title }: { title: string }) =>
-    React.createElement('div', { 'data-testid': 'error-state' }, title),
+  ErrorState: ({ title, onRetry }: { title: string; onRetry?: () => void }) =>
+    React.createElement(
+      'div',
+      { 'data-testid': 'error-state' },
+      title,
+      onRetry
+        ? React.createElement(
+            'button',
+            { 'data-testid': 'error-state-retry', onClick: onRetry },
+            'Intentar de nuevo',
+          )
+        : null,
+    ),
 }))
 
 vi.mock('@leasefy/cadence', () => ({

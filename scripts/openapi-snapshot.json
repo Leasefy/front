@@ -945,6 +945,21 @@
           "draft"
         ]
       },
+      "OnboardingPaymentProviderSkipRequest": {
+        "type": "object",
+        "properties": {
+          "skip": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "skip"
+        ],
+        "additionalProperties": false
+      },
       "OnboardingPaymentCredentials": {
         "type": "object",
         "properties": {
@@ -990,7 +1005,8 @@
         "required": [
           "provider",
           "credentials"
-        ]
+        ],
+        "additionalProperties": false
       },
       "OnboardingPolicyResponse": {
         "type": "object",
@@ -1604,6 +1620,25 @@
           "draft"
         ]
       },
+      "OnboardingSessionPaymentProviderSkipRequest": {
+        "type": "object",
+        "properties": {
+          "skip": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "skip"
+        ],
+        "additionalProperties": false
+      },
       "OnboardingSessionPaymentCredentials": {
         "type": "object",
         "properties": {
@@ -1649,7 +1684,8 @@
         "required": [
           "provider",
           "credentials"
-        ]
+        ],
+        "additionalProperties": false
       },
       "OnboardingSessionPolicyResponse": {
         "type": "object",
@@ -14452,7 +14488,7 @@
     "/onboarding/{token}/payment-provider": {
       "post": {
         "summary": "Onboarding step 3: payment provider + sealed credentials",
-        "description": "PUBLIC route — magic-link token IS the auth surface. Stores the provider name in draft.paymentProvider and a SEALED envelope of the credentials in draft.paymentCredentialsEncrypted (T-15-07 interim base64; KMS AES-256-GCM seal at /onboarding/complete). Raw credentials are NEVER logged or echoed back to the client.",
+        "description": "PUBLIC route — magic-link token IS the auth surface. Stores the provider name in draft.paymentProvider and a SEALED envelope of the credentials in draft.paymentCredentialsEncrypted (T-15-07 interim base64; KMS AES-256-GCM seal at /onboarding/complete). Raw credentials are NEVER logged or echoed back to the client. Accepts either the credentials body OR `{ skip: true }` — an inmobiliaria may finish onboarding without a payment gateway and configure one later from the dashboard; draft.paymentProviderSkipped=true is recorded instead.",
         "tags": [
           "onboarding"
         ],
@@ -14473,7 +14509,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OnboardingPaymentProviderRequest"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OnboardingPaymentProviderSkipRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/OnboardingPaymentProviderRequest"
+                  }
+                ]
               }
             }
           }
@@ -15200,7 +15243,7 @@
     "/onboarding/session/{sessionId}/payment-provider": {
       "post": {
         "summary": "JWT onboarding wizard step 3: payment provider + sealed credentials",
-        "description": "JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/payment-provider via the payment-provider-core step handler. Raw credentials are NEVER logged or echoed back to the client.",
+        "description": "JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/payment-provider via the payment-provider-core step handler. Raw credentials are NEVER logged or echoed back to the client. Accepts either the credentials body OR `{ skip: true }` — an inmobiliaria may finish onboarding without a payment gateway and configure one later from the dashboard; draft.paymentProviderSkipped=true is recorded instead.",
         "tags": [
           "onboarding"
         ],
@@ -15226,7 +15269,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OnboardingSessionPaymentProviderRequest"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/OnboardingSessionPaymentProviderSkipRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/OnboardingSessionPaymentProviderRequest"
+                  }
+                ]
               }
             }
           }

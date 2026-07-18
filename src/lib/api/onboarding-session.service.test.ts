@@ -30,6 +30,7 @@ import type {
   OnboardingSessionAgencyRequest,
   OnboardingSessionMembersRequest,
   OnboardingSessionPaymentProviderRequest,
+  OnboardingSessionPaymentProviderSkipRequest,
   OnboardingSessionPolicyRequest,
   OnboardingSessionHabeasDataPresignRequest,
   OnboardingSessionHabeasDataConfirmRequest,
@@ -261,6 +262,26 @@ describe('remaining write steps — happy path smoke tests', () => {
 
     const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
     expect(url).toBe(`${AGENT_URL}/onboarding/session/${SESSION_ID}/payment-provider`)
+    expect(result).toEqual(RESPONSE)
+  })
+
+  // Payment-provider gating was removed from the onboarding wizard — the
+  // wizard now auto-submits `{ skip: true }` instead of showing the form.
+  it('submitPaymentProvider POSTs a { skip: true } body to /payment-provider', async () => {
+    const body: OnboardingSessionPaymentProviderSkipRequest = { skip: true }
+    const RESPONSE = {
+      sessionId: SESSION_ID,
+      currentStep: 'payment_provider',
+      nextStep: 'policy',
+      draft: { paymentProviderSkipped: true },
+    }
+    const fetchMock = mockFetchOnce(jsonResponse(RESPONSE))
+
+    const result = await submitPaymentProvider(SESSION_ID, body)
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe(`${AGENT_URL}/onboarding/session/${SESSION_ID}/payment-provider`)
+    expect(JSON.parse(init.body as string)).toEqual({ skip: true })
     expect(result).toEqual(RESPONSE)
   })
 

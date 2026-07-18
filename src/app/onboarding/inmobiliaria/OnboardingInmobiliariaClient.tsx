@@ -16,11 +16,11 @@ import {
   type AgencyStepPreStepValues,
 } from '@/components/onboarding/inmobiliaria/agency-step-prefill'
 import { MembersStepForm, type PendingMembersInvites } from '@/components/onboarding/inmobiliaria/MembersStepForm'
-import { PaymentProviderStepForm } from '@/components/onboarding/inmobiliaria/PaymentProviderStepForm'
+import { PaymentProviderAutoSkipStep } from '@/components/onboarding/inmobiliaria/PaymentProviderAutoSkipStep'
 import { PolicyStepForm } from '@/components/onboarding/inmobiliaria/PolicyStepForm'
 import { HabeasDataStepForm } from '@/components/onboarding/inmobiliaria/HabeasDataStepForm'
 import { CompleteStepForm } from '@/components/onboarding/inmobiliaria/CompleteStepForm'
-import { WIZARD_STEPS } from '@/components/onboarding/inmobiliaria/wizard-steps'
+import { wizardStepLabel } from '@/components/onboarding/inmobiliaria/wizard-steps'
 import type { OnboardingSessionMembersRequest } from '@/lib/api/generated/agency'
 import type { OnboardingWizardStep } from '@/lib/hooks/use-onboarding-session'
 
@@ -162,7 +162,7 @@ function OnboardingWizard({
   // While the invite-links screen is pending, keep the stepper/header pinned
   // to "Miembros" instead of following the hook's already-advanced `currentStep`.
   const displayStep = pendingMembersInvites ? 'members' : effectiveStep
-  const stepLabel = WIZARD_STEPS.find((s) => s.key === displayStep)?.label ?? 'Agencia'
+  const stepLabel = wizardStepLabel(displayStep)
 
   return (
     <div className="min-h-screen bg-bg">
@@ -211,10 +211,14 @@ function OnboardingWizard({
                 onContinueAfterInvites={() => setPendingMembersInvites(null)}
               />
             ) : effectiveStep === 'payment_provider' ? (
-              <PaymentProviderStepForm
+              // Invisible step (fix/onboarding-skip-payment) — an inmobiliaria
+              // can finish onboarding without a payment gateway and configure
+              // one later from the dashboard. Auto-submits `{ skip: true }`
+              // instead of showing PaymentProviderStepForm (kept in the
+              // codebase, unreachable from the wizard, for future panel reuse).
+              <PaymentProviderAutoSkipStep
                 isSubmitting={isSubmitting}
-                onSubmit={withOverrideClear(submitPaymentProvider)}
-                submitError={error !== null && error.kind === 'validation' ? error.message : null}
+                onSkip={() => withOverrideClear(submitPaymentProvider)({ skip: true })}
               />
             ) : effectiveStep === 'policy' ? (
               <PolicyStepForm

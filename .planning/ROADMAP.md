@@ -79,12 +79,15 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 **Depends on**: v7-01
 **Requirements**: CASO-01, CASO-02, CASO-03
 **Success Criteria** (what must be TRUE):
-  1. El inquilino ve "Mis casos": un hub que agrega PQRS + mantenimiento + acuerdos + pagos abiertos, cada uno con su estado y responsable (CASO-01).
+  1. El inquilino ve "Mis casos": un hub que agrega sus casos abiertos con estado y responsable (rol). Con data **REAL** en v7-03: pagos abiertos + aplicaciones en proceso (el lease activo = header de contexto, no fila). **PQRS + mantenimiento (v7-06) y acuerdos (v7-07) se muestran como secciones "Próximamente" honestas** — sin fabricar casos — hasta que exista su backend tenant; un inquilino totalmente al día ve un empty-state neutro "todo al día" (CASO-01).
   2. Cada caso enlaza a su detalle (solicitud, acuerdo o conversación) y muestra su timeline de estados; el inquilino solo ve sus propios casos (las notas internas de la agencia quedan excluidas de la vista tenant) (CASO-02).
   3. El inquilino recibe notificación in-app al cambiar el estado de un caso; push/WhatsApp entra cuando el canal esté disponible, con empty-state honesto mientras tanto (CASO-03).
   4. Los estados y el SLA mostrados trazan a los servicios existentes (no computan un segundo número) y los casos "al día" usan estados neutros — sin badges de alarma ni urgencia inventada (guardrail PITFALLS 8).
 **External deps**: push/WhatsApp proactivo real depende de rutas tenant en `agent` + gateway de mensajería (frontend-first: notificación in-app ya funciona; push = "Próximamente"). Realtime tenant-scoped depende de RLS tenant en `agent`; fallback hoy = polling (`useVisibilityPolling`).
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] v7-03-01-PLAN.md — Case view-model `tenant-case.ts` + `useTenantCases()` aggregator (pago abiertos + application-journey; read projection, 0 rows para forward-refs) (CASO-01)
+- [ ] v7-03-02-PLAN.md — Hub "Mis casos" + stat card dashboard + nav; secciones "Próximamente" PQRS/mantenimiento/acuerdos; CASO-03 in-app + push/WhatsApp "Próximamente" (CASO-01, CASO-03)
+- [ ] v7-03-03-PLAN.md — Detalle de caso + timeline de estados (solo timestamps de la fuente) + own-cases-only; fix es-CL→es-CO (CASO-02)
 **UI hint**: yes
 
 ### v7-04: Pagos Reales (Wompi)
@@ -161,7 +164,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 |-------|-----------|----------------|--------|-----------|
 | v7-01. Fundación & Limpieza | v7.0 | 4/4 | Complete | 2026-07-16 |
 | v7-02. Documentos del Arriendo | v7.0 | 4/4 | Complete | 2026-07-17 |
-| v7-03. Estado de Casos (Hub) | v7.0 | 0/TBD | Not started | - |
+| v7-03. Estado de Casos (Hub) | v7.0 | 0/3 | Not started | - |
 | v7-04. Pagos Reales (Wompi) | v7.0 | 0/TBD | Not started | - |
 | v7-05. Comunicación | v7.0 | 0/TBD | Not started | - |
 | v7-06. Solicitudes / PQRS | v7.0 | 0/TBD | Not started | - |

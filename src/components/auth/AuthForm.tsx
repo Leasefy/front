@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { AuthInput } from './AuthInput';
 import { Eyebrow } from '@/components/brand';
 import { useAuth } from '@/lib/auth/use-auth';
+import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
 import {
@@ -150,6 +151,21 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
 
   const returnUrl = sanitizeReturnUrl(returnUrlProp || searchParams.get('returnUrl'), '/');
 
+  // A fatal auth-bootstrap error (e.g. 409: this email already belongs to
+  // another account) is handed over by auth-context via sessionStorage across
+  // the forced sign-out redirect — surface it in the existing error banner.
+  React.useEffect(() => {
+    try {
+      const message = sessionStorage.getItem(AUTH_BOOTSTRAP_ERROR_KEY);
+      if (message) {
+        sessionStorage.removeItem(AUTH_BOOTSTRAP_ERROR_KEY);
+        setError(message);
+      }
+    } catch {
+      // sessionStorage unavailable — nothing to surface
+    }
+  }, []);
+
   // Redirigir automáticamente SOLO cuando el usuario inició sesión en este formulario
   React.useEffect(() => {
     if (!didAuthenticateInForm.current) return;
@@ -277,6 +293,21 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     try {
       didAuthenticateInForm.current = true;
       const userData = await signInWithEmail(data.email, data.password);
+      if (!userData) {
+        // Supabase accepted the credentials but the profile bootstrap failed
+        // WITHOUT throwing (e.g. 409 duplicate identity: fetchUser stored the
+        // backend message in sessionStorage and signed the session out).
+        // Surface it inline here — the mount-only reader above already ran
+        // before this attempt, so it cannot cover this path.
+        didAuthenticateInForm.current = false;
+        let message: string | null = null;
+        try {
+          message = sessionStorage.getItem(AUTH_BOOTSTRAP_ERROR_KEY);
+          if (message) sessionStorage.removeItem(AUTH_BOOTSTRAP_ERROR_KEY);
+        } catch {}
+        setError(message || 'Error al iniciar sesión. Intenta de nuevo.');
+        return;
+      }
       onSuccess?.();
       // El useEffect de arriba se encargará de la redirección al detectar el cambio de auth
     } catch (err: unknown) {
@@ -289,6 +320,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       } else {
         setError('Error al iniciar sesión. Intenta de nuevo.');
       }
+    } finally {
       setIsLoading(false);
     }
   };

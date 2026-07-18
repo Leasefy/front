@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
 import { PRODUCTS, PRODUCT_SLUGS } from '@/lib/landing/products'
 
 interface FooterLink {
@@ -33,9 +34,10 @@ export function LandingFooter() {
   return (
     <footer className="landing-footer">
       <div className="landing-footer__brand">
-        <Link href="/" aria-label="Leasefy — inicio" className="landing-footer__logo">
+        {/* Brand — authenticated users go to their dashboard, not the landing */}
+        <BrandHomeLink aria-label="Leasefy — inicio" className="landing-footer__logo">
           Leasefy
-        </Link>
+        </BrandHomeLink>
         <p>
           El sistema operativo inteligente para inmobiliarias: CRM, ERP y agentes AI para operar
           arriendos de punta a punta.

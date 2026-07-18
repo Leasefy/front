@@ -9,6 +9,9 @@ import { Bell, Shield, DeviceMobile, Envelope, Globe, Moon, Eye, CreditCard, Dow
 import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/auth';
+import { settingsApi } from '@/lib/api/settings.service';
+import { accountDeletionCopy } from '@/lib/account-deletion/copy';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
@@ -79,6 +82,7 @@ const mockSessions = [
 
 export default function ConfiguracionPage() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { t, locale, setLocale } = useI18n();
   const [mounted, setMounted] = useState(false);
@@ -155,24 +159,46 @@ export default function ConfiguracionPage() {
     toast.success('Se te enviará un correo con tus datos en las próximas 24 horas');
   };
 
+  // Canonical deletion strings (single source of truth for all five flows).
+  const deletionCopy = accountDeletionCopy(locale);
+
   const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'ELIMINAR') {
-      toast.error('Escribe ELIMINAR para confirmar');
+    if (deleteConfirmText !== deletionCopy.confirmWord) {
+      toast.error(deletionCopy.confirmInstruction);
       return;
     }
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsLoading(false);
-    toast.success('Cuenta eliminada. Serás redirigido...');
-    setTimeout(() => router.push('/'), 2000);
+    try {
+      // Real soft-delete (same flow as /inquilino/perfil). The backend keeps a
+      // 30-day recovery window: signing in again reactivates the account.
+      await settingsApi.deleteAccount();
+      setIsLoading(false);
+      setShowDeleteModal(false);
+      toast.success(deletionCopy.successToast);
+      // Let the user read the message, then clear the session and leave.
+      setTimeout(() => {
+        void signOut();
+        router.push('/');
+      }, 2000);
+    } catch (err) {
+      setIsLoading(false);
+      const message = err instanceof Error && err.message
+        ? err.message
+        : deletionCopy.errorFallback;
+      toast.error(message);
+    }
   };
 
   const handleResetOnboarding = () => {
+    // Only the local wizard draft/cache is cleared — the backend profile stays
+    // intact (it is the source of truth for onboarding completeness), so the
+    // dashboard keeps rendering fully and no logout/registration is involved.
     localStorage.removeItem('plan_onboarding_tenant');
     // Dispatch custom event to notify sidebar
     window.dispatchEvent(new Event('onboarding-updated'));
     toast.success(locale === 'es' ? 'Onboarding reiniciado' : 'Onboarding reset');
-    setTimeout(() => router.push('/inquilino'), 500);
+    // Take the user to the wizard to redo their info.
+    setTimeout(() => router.push('/onboarding/inquilino'), 500);
   };
 
   return (
@@ -579,29 +605,29 @@ export default function ConfiguracionPage() {
       </Modal>
 
       {/* Delete Account Modal */}
-      <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Eliminar cuenta">
+      <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title={deletionCopy.modalTitle}>
         <div className="space-y-4">
           <div className="p-4 bg-danger-soft border border-danger/30 rounded-xl flex gap-3">
             <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
               <Warning className="w-5 h-5 text-danger" />
             </div>
             <div>
-              <p className="text-sm font-medium text-danger">Esta acción no se puede deshacer</p>
+              <p className="text-sm font-medium text-danger">{deletionCopy.warningTitle}</p>
               <p className="text-xs text-danger mt-1">
-                Todos tus datos, historial de pagos, documentos y configuraciones serán eliminados permanentemente.
+                {deletionCopy.warningBody}
               </p>
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-fg mb-2">
-              Escribe <span className="font-bold text-danger">ELIMINAR</span> para confirmar
+              {deletionCopy.confirmShortPrefix} <span className="font-bold text-danger">{deletionCopy.confirmWord}</span> {deletionCopy.confirmShortSuffix}
             </label>
             <Input
               type="text"
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
               className="w-full h-12 rounded-xl bg-surface focus-visible:border-danger/30 focus-visible:ring-danger/20"
-              placeholder="ELIMINAR"
+              placeholder={deletionCopy.inputPlaceholder}
             />
           </div>
           <div className="flex gap-3 pt-2">
@@ -621,11 +647,11 @@ export default function ConfiguracionPage() {
               hideArrow
               isLoading={isLoading}
               onClick={handleDeleteAccount}
-              disabled={isLoading || deleteConfirmText !== 'ELIMINAR'}
+              disabled={isLoading || deleteConfirmText !== deletionCopy.confirmWord}
               className="flex-1"
             >
               {!isLoading && <TrashSimple className="w-4 h-4" />}
-              {isLoading ? 'Eliminando...' : 'Eliminar cuenta'}
+              {isLoading ? deletionCopy.deleting : deletionCopy.deleteButton}
             </Button>
           </div>
         </div>

@@ -16,6 +16,7 @@ import { useLeases } from '@/lib/hooks/useLeases';
 import { useVisits } from '@/lib/hooks/useVisits';
 import { useNotificationSettings } from '@/lib/hooks/useSettings';
 import { settingsApi } from '@/lib/api/settings.service';
+import { accountDeletionCopy } from '@/lib/account-deletion/copy';
 import { getSupabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { SettingsModal } from '@/components/settings/SettingsModal';
@@ -174,7 +175,7 @@ export default function ConfiguracionPage() {
       toast.success(t('landlordSettings.toasts.accountDeleted'));
       setTimeout(() => router.push('/'), 2000);
     } catch (err) {
-      toast.error((err as Error).message || 'Error al eliminar cuenta');
+      toast.error((err as Error).message || accountDeletionCopy(locale).errorFallback);
     } finally {
       setIsLoading(false);
     }

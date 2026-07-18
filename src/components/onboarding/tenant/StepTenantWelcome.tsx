@@ -7,9 +7,15 @@ import { User, Phone, SignIn, IdentificationCard } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
+import { useAuth } from '@/lib/auth/use-auth'
 
 export function StepTenantWelcome() {
   const { draft, updateDraft, canProceed } = useTenantOnboarding()
+  const { user } = useAuth()
+
+  // The document number is immutable once set on the backend profile —
+  // changes go through Leasefy support (the backend enforces this too).
+  const rutLocked = user?.profileSource === 'backend' && !!user.rut
 
   // Set WhatsApp as default contact preference
   useEffect(() => {
@@ -63,9 +69,15 @@ export function StepTenantWelcome() {
             value={draft.rut || ''}
             onChange={(e) => updateDraft({ rut: e.target.value })}
             placeholder="Ej: 1090525663"
+            disabled={rutLocked}
             className={cn('h-12 pl-12 rounded-xl', draft.rut && 'border-primary/30')}
           />
         </div>
+        {rutLocked && (
+          <p className="mt-2 text-xs text-fg-subtle">
+            Para modificar tu número de documento, contacta al soporte de Leasefy.
+          </p>
+        )}
       </motion.div>
 
       {/* Phone */}

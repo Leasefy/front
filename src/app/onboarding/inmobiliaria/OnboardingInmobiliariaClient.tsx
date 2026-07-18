@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { LeasefyLogo } from '@/components/brand'
 import Link from 'next/link'
+import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
 import { useOnboardingSession } from '@/lib/hooks/use-onboarding-session'
 import { useOnboardingProvisioning } from '@/lib/hooks/use-onboarding-provisioning'
 import { OnboardingWizardStepper } from '@/components/onboarding/inmobiliaria/OnboardingWizardStepper'
@@ -169,9 +170,9 @@ function OnboardingWizard({
       <header className="sticky top-0 z-20 bg-surface/95 backdrop-blur-sm border-b border-border-faint">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
+            <BrandHomeLink className="flex items-center gap-2">
               <LeasefyLogo size={28} tone="brand" />
-            </Link>
+            </BrandHomeLink>
             <OnboardingWizardStepper currentStep={displayStep} />
           </div>
         </div>

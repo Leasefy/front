@@ -9,6 +9,8 @@ import type { User } from '@/lib/auth'
 import {
   buildChangedFields,
   formDataFromUser,
+  editablePersonalFields,
+  isRutLocked,
   PERSONAL_FIELDS,
   EMERGENCY_FIELDS,
 } from './profile-form'
@@ -52,6 +54,34 @@ describe('buildChangedFields', () => {
     const emptyUser: User = { ...USER, phone: undefined }
     const form = formDataFromUser(emptyUser)
     expect(buildChangedFields(PERSONAL_FIELDS, form, emptyUser)).toEqual({})
+  })
+})
+
+describe('rut immutability (support-request rule)', () => {
+  it('locks only when the user already has a rut', () => {
+    expect(isRutLocked(USER)).toBe(true)
+    expect(isRutLocked({ ...USER, rut: undefined })).toBe(false)
+    expect(isRutLocked(null)).toBe(false)
+  })
+
+  it('excludes rut from the editable fields when locked', () => {
+    expect(editablePersonalFields(USER)).not.toContain('rut')
+    expect(editablePersonalFields({ ...USER, rut: undefined })).toEqual(PERSONAL_FIELDS)
+  })
+
+  it('never includes rut in the PATCH payload when locked, even if the form value differs', () => {
+    const form = { ...formDataFromUser(USER), rut: '999999999', phone: '3009999999' }
+    expect(buildChangedFields(editablePersonalFields(USER), form, USER)).toEqual({
+      phone: '3009999999',
+    })
+  })
+
+  it('still allows the first-time set (no rut yet)', () => {
+    const emptyRutUser: User = { ...USER, rut: undefined }
+    const form = { ...formDataFromUser(emptyRutUser), rut: '1090525663' }
+    expect(buildChangedFields(editablePersonalFields(emptyRutUser), form, emptyRutUser)).toEqual({
+      rut: '1090525663',
+    })
   })
 })
 

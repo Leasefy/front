@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { List, X, User, SignOut, SquaresFour, FileText, CaretDown, House, Key, MagnifyingGlass, Bank, Medal, ShieldCheck, Wallet, PencilLine, Tray, ShieldPlus, ArrowRight, Terminal, Trophy } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth/use-auth";
+import { BrandHomeLink } from "@/components/brand/BrandHomeLink";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { LeasefyLogo } from "@/components/brand";
@@ -154,13 +155,13 @@ export function Navbar() {
           {/* Left side - Logo + Nav Link */}
           <div className="flex items-center gap-10">
             {/* Logo */}
-            <Link href="/" className="flex items-center" aria-label="Leasefy — inicio">
+            <BrandHomeLink className="flex items-center" aria-label="Leasefy — inicio">
               <LeasefyLogo
                 size={26}
                 tone={isScrolled ? "brand" : "white"}
                 className="transition-colors duration-300"
               />
-            </Link>
+            </BrandHomeLink>
 
             {/* Nav Links - Desktop */}
             <div className="hidden md:flex items-center gap-6">

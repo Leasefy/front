@@ -32,7 +32,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - [x] **v7-01: Fundación & Limpieza del Portal** — Shell real post-firma: dashboard con estado real, estado de cuenta, perfil Colombia, config, nav; borra dead code. ✅ 2026-07-16
 - [x] **v7-02: Documentos del Arriendo** — Docs del arriendo (contrato, recibos, paz y salvo, cert. retención) con disciplina Habeas Data. ✅ 2026-07-17 (paz y salvo + cert. retención = "Próximamente" contract-first)
 - [x] **v7-03: Estado de Casos (Hub)** — "Mis casos" unificado (PQRS + mantenimiento + acuerdos + pagos) con estado, responsable y timeline. Fija P1. ✅ 2026-07-18 (real: pagos + aplicaciones; PQRS/mant v7-06 + acuerdos v7-07 = "Próximamente")
-- [ ] **v7-04: Pagos Reales (Wompi)** — Pago de arriendo con Wompi/Bold real, comprobantes PDF, autopago; reemplaza el PSE-mock.
+- [x] **v7-04: Pagos Reales (Wompi)** — Pago de arriendo con Wompi/Bold real, comprobantes PDF, autopago; reemplaza el PSE-mock. ✅ 2026-07-18 (checkout initiation real + seguridad server-side; gateway productivo/webhook + recibo PDF + autopago = "Próximamente")
 - [ ] **v7-05: Comunicación atada al arriendo/caso** — Chat lease-scoped, adjuntos y acciones reales, saliente respeta el gate de contacto.
 - [ ] **v7-06: Solicitudes / PQRS** — Abrir/seguir mantenimiento y PQRS tipadas (reusa `pqrs.types.ts`) con SLA 15 días visible.
 - [ ] **v7-07: Acuerdos de Pago (LAST)** — Ver/aceptar/pagar acuerdo aprobado por la agencia; nunca auto-aprueba. Contract-first hasta que `agent` exponga RLS tenant.
@@ -169,7 +169,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 | v7-01. Fundación & Limpieza | v7.0 | 4/4 | Complete | 2026-07-16 |
 | v7-02. Documentos del Arriendo | v7.0 | 4/4 | Complete | 2026-07-17 |
 | v7-03. Estado de Casos (Hub) | v7.0 | 3/3 | Complete | 2026-07-18 |
-| v7-04. Pagos Reales (Wompi) | v7.0 | 0/4 | Not started | - |
+| v7-04. Pagos Reales (Wompi) | v7.0 | 4/4 | Complete | 2026-07-18 |
 | v7-05. Comunicación | v7.0 | 0/TBD | Not started | - |
 | v7-06. Solicitudes / PQRS | v7.0 | 0/TBD | Not started | - |
 | v7-07. Acuerdos de Pago | v7.0 | 0/TBD | Not started | - |

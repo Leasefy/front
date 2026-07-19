@@ -175,9 +175,13 @@ export function ChatContainer({ className }: ChatContainerProps) {
       {hasMessages ? (
         <>
           {/* Messages area */}
+          {/* data-lenis-prevent: Lenis hijacks wheel events globally; without it
+              this nested scroller only moves via the scrollbar. Scrollbar is
+              hidden (same idiom as tabs.tsx) since wheel/touch handles it. */}
           <div
             ref={messagesAreaRef}
-            className="relative flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-5"
+            data-lenis-prevent
+            className="relative flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-6 space-y-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             aria-live="polite"
             aria-label={t('beta.a11y.newMessageRegion')}
           >
@@ -354,7 +358,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
         </>
       ) : (
         /* Empty state — Manus-style: greeting + hero input + pills, all centered */
-        <div className="relative flex-1 overflow-y-auto">
+        <div data-lenis-prevent className="relative flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <BetaWelcome
             onPromptClick={sendMessage}
             inputSlot={<ChatInput variant="hero" onSend={sendMessage} disabled={isBusy} />}

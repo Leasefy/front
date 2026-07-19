@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Buildings,
@@ -233,6 +233,9 @@ function PropiedadesContent() {
   const [editingProperty, setEditingProperty] = useState<AgencyProperty | null>(null);
   const [deletingProperty, setDeletingProperty] = useState<AgencyProperty | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Once content has loaded, background refresh failures must NOT swap the
+  // page for the full ErrorState (silent auto-refresh contract).
+  const hasLoadedRef = useRef(false);
 
   const fetchProperties = useCallback(async () => {
     setIsLoading(true);
@@ -242,8 +245,11 @@ function PropiedadesContent() {
         ? await propertiesApi.getAssigned()
         : await propertiesApi.getMine();
       setProperties(data);
+      hasLoadedRef.current = true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar propiedades');
+      if (!hasLoadedRef.current) {
+        setError(err instanceof Error ? err.message : 'Error al cargar propiedades');
+      }
     } finally {
       setIsLoading(false);
     }

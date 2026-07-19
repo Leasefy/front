@@ -45,3 +45,17 @@ export interface BackendTenantPaymentRequest {
     propertyCity: string;
   };
 }
+
+/**
+ * Signed, expiring URL to the internal payment receipt ("comprobante interno").
+ * Same shape/discipline as v7-02 `ContractSignedPdf { url, expiresAt }`: the backend
+ * signs and stamps the expiry; the frontend never fabricates the URL.
+ *
+ * NOTE: this is an INTERNAL receipt, not a DIAN electronic invoice (FE) — the real
+ * tax invoice is a separate, later capability. The backend endpoint that returns this
+ * does not exist yet, so `getReceiptUrl` resolves to `null` today (→ UI "Próximamente").
+ */
+export interface TenantReceiptUrl {
+  url: string;
+  expiresAt: string;
+}

@@ -16,6 +16,8 @@ vi.mock('next/navigation', () => ({
 }))
 
 import { LandingHeader } from './LandingHeader'
+import { AuthContext } from '@/lib/auth/auth-context'
+import type { AuthContextType } from '@/lib/auth/types'
 
 let container: HTMLDivElement
 let root: Root
@@ -36,12 +38,25 @@ afterEach(() => {
 })
 
 describe('<LandingHeader>', () => {
-  it('renders the logo linking to home', () => {
+  it('renders the logo linking to home for anonymous visitors (no AuthProvider needed)', () => {
     act(() => {
       root.render(<LandingHeader />)
     })
     const logo = container.querySelector('[data-testid="landing-header-logo"]')
     expect(logo?.getAttribute('href')).toBe('/')
+  })
+
+  it('links the logo to the dashboard for an authenticated user (owner rule: logged in → dashboard)', () => {
+    const auth = { user: { id: 'u1', role: 'tenant' } } as unknown as AuthContextType
+    act(() => {
+      root.render(
+        <AuthContext.Provider value={auth}>
+          <LandingHeader />
+        </AuthContext.Provider>,
+      )
+    })
+    const logo = container.querySelector('[data-testid="landing-header-logo"]')
+    expect(logo?.getAttribute('href')).toBe('/inquilino')
   })
 
   it('renders every nav link to a real route with no # fragment', () => {

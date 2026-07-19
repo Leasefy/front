@@ -4,6 +4,8 @@ import { LeasefyLogo } from '@/components/brand';
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/use-auth'
+import { getUserHomeRoute } from '@/lib/auth/role-routes'
+import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Check, Rocket, User, House, Shield, Clock, Lightning, Info, Eye, SealCheck } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
@@ -62,7 +64,7 @@ const STEP_WHY_CONTENT = {
 
 export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) {
   const router = useRouter()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const { locale } = useI18n()
   const {
     currentStep,
@@ -130,9 +132,20 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
 
   const handleNext = () => {
     if (isLastStep) {
-      submitOnboarding().catch((err) => {
-        console.error('[Onboarding] submitOnboarding failed:', err)
-      })
+      submitOnboarding()
+        .then(() => {
+          // Owner rule: after completing the wizard, land DIRECTLY on the
+          // dashboard — no intermediate stop. submitOnboarding resolves AFTER
+          // refreshUser(), so /inquilino renders with the fresh backend flag
+          // (no empty-state flash). The wizard just provisioned a TENANT: if
+          // this closure's `user` is still the pre-submit null, route as a
+          // tenant rather than to the public landing.
+          router.push(getUserHomeRoute(user ?? { role: 'tenant' }))
+        })
+        .catch((err) => {
+          // Stay in the wizard — the context already surfaced the error toast.
+          console.error('[Onboarding] submitOnboarding failed:', err)
+        })
     } else {
       nextStep()
     }
@@ -148,10 +161,9 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
       <header className="sticky top-0 z-20 bg-surface/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center">
+            <BrandHomeLink className="flex items-center">
               <LeasefyLogo size={28} tone="brand" />
-            </Link>
+            </BrandHomeLink>
 
             {/* Progress - Mobile */}
             <div className="sm:hidden text-sm font-mono tabular-nums text-fg-muted">

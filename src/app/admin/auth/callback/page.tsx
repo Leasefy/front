@@ -33,6 +33,15 @@ function CallbackInner() {
         return
       }
 
+      // The SSR browser client auto-exchanges ?code= on init (detectSessionInUrl),
+      // racing this page's explicit exchange. getSession() awaits that init; if the
+      // session already exists the code was consumed — just navigate.
+      const { data: existing } = await sb.auth.getSession()
+      if (existing.session) {
+        window.location.href = next
+        return
+      }
+
       // Flavor 2 — implicit hash tokens.
       if (typeof window !== 'undefined' && window.location.hash) {
         const raw = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash

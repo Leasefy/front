@@ -27,6 +27,22 @@ export const PERSONAL_FIELDS = [
 
 export const EMERGENCY_FIELDS = ['emergencyContactName', 'emergencyContactPhone'] as const;
 
+/** The document number (rut/CC) is immutable once set — changes go through a
+ *  Leasefy support request (the backend enforces this as well). First-time
+ *  set (no rut yet) stays editable. */
+export function isRutLocked(user: User | null): boolean {
+  return !!user?.rut;
+}
+
+/** Personal fields the user may edit right now. Excludes `rut` when locked so
+ *  it is never included in the PATCH payload — belt and suspenders on top of
+ *  the disabled input and the backend rejection. */
+export function editablePersonalFields(
+  user: User | null,
+): readonly (keyof ProfileFormData)[] {
+  return isRutLocked(user) ? PERSONAL_FIELDS.filter((f) => f !== 'rut') : PERSONAL_FIELDS;
+}
+
 export type UpdateProfilePayload = Partial<Record<keyof ProfileFormData, string | null>>;
 
 export function formDataFromUser(user: User | null): ProfileFormData {

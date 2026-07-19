@@ -12,6 +12,7 @@ import { Button, Input, Spinner } from '@/components/ui';
 import { IconButton } from '@leasefy/cadence';
 import { permissionsApi } from '@/lib/api/inmobiliaria.service';
 import { settingsApi } from '@/lib/api/settings.service';
+import { accountDeletionCopy } from '@/lib/account-deletion/copy';
 
 // Setup steps definition
 interface SetupStep {
@@ -236,20 +237,32 @@ export default function InmobiliariaPerfilPage() {
     setIsDeleting(false);
   };
 
+  // Canonical deletion strings (single source of truth for all five flows).
+  const deletionCopy = accountDeletionCopy(locale);
+
   const handleDeleteAccount = async () => {
-    const requiredText = locale === 'es' ? 'ELIMINAR' : 'DELETE';
-    if (deleteConfirmText !== requiredText) return;
+    if (deleteConfirmText !== deletionCopy.confirmWord) return;
 
     setIsDeleting(true);
     try {
       await settingsApi.deleteAccount();
       setDeleteStep(3);
-      toast.success(locale === 'es' ? 'Tu cuenta ha sido eliminada' : 'Your account has been deleted');
-      // Right-to-erasure: actually sign out and leave the panel.
-      await logout();
-      window.location.replace('/auth');
-    } catch {
-      toast.error(locale === 'es' ? 'No se pudo eliminar tu cuenta. Intenta de nuevo.' : 'Could not delete your account. Please try again.');
+      toast.success(deletionCopy.successToast);
+      // Let the user read the goodbye screen + toast (same pattern as the
+      // tenant/landlord flows), THEN sign out and leave the panel.
+      setTimeout(() => {
+        // Right-to-erasure: actually sign out and leave the panel.
+        void logout().finally(() => {
+          window.location.replace('/auth');
+        });
+      }, 2000);
+    } catch (err) {
+      // Surface the backend's reason (e.g. 403: active leases /
+      // last-agency-admin, in Spanish) instead of a generic message.
+      const message = err instanceof Error && err.message
+        ? err.message
+        : deletionCopy.errorFallback;
+      toast.error(message);
     } finally {
       setIsDeleting(false);
     }
@@ -793,10 +806,10 @@ export default function InmobiliariaPerfilPage() {
                     <Warning className="w-8 h-8 text-danger" />
                   </div>
                   <h3 className="text-base font-semibold text-danger">
-                    {locale === 'es' ? '¿Eliminar tu cuenta?' : 'Delete your account?'}
+                    {deletionCopy.warningTitle}
                   </h3>
                   <p className="text-sm text-danger mt-1">
-                    {locale === 'es' ? 'Esta acción es permanente e irreversible' : 'This action is permanent and irreversible'}
+                    {deletionCopy.recovery}
                   </p>
                 </div>
 
@@ -857,26 +870,16 @@ export default function InmobiliariaPerfilPage() {
 
                 <div className="p-6">
                   <p className="text-sm text-fg-muted mb-4">
-                    {locale === 'es' ? (
-                      <>
-                        Para confirmar la eliminación de tu cuenta, escribe{' '}
-                        <span className="font-semibold text-danger">ELIMINAR</span>{' '}
-                        en el campo de abajo:
-                      </>
-                    ) : (
-                      <>
-                        To confirm account deletion, type{' '}
-                        <span className="font-semibold text-danger">DELETE</span>{' '}
-                        in the field below:
-                      </>
-                    )}
+                    {deletionCopy.confirmInstructionPrefix}{' '}
+                    <span className="font-semibold text-danger">{deletionCopy.confirmWord}</span>{' '}
+                    {deletionCopy.confirmInstructionSuffix}
                   </p>
 
                   <Input
                     type="text"
                     value={deleteConfirmText}
                     onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
-                    placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
+                    placeholder={deletionCopy.inputPlaceholder}
                     className="text-center tracking-widest focus-visible:ring-danger/30"
                   />
 
@@ -889,15 +892,15 @@ export default function InmobiliariaPerfilPage() {
                       hideArrow
                       className="flex-1 justify-center"
                       onClick={handleDeleteAccount}
-                      disabled={(locale === 'es' ? deleteConfirmText !== 'ELIMINAR' : deleteConfirmText !== 'DELETE') || isDeleting}
+                      disabled={deleteConfirmText !== deletionCopy.confirmWord || isDeleting}
                     >
                       {isDeleting ? (
                         <>
                           <Spinner size="sm" variant="current" />
-                          {locale === 'es' ? 'Eliminando...' : 'Deleting...'}
+                          {deletionCopy.deleting}
                         </>
                       ) : (
-                        locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account'
+                        deletionCopy.deleteButton
                       )}
                     </Button>
                   </div>
@@ -912,12 +915,10 @@ export default function InmobiliariaPerfilPage() {
                   <CheckCircle className="w-8 h-8 text-fg-muted" />
                 </div>
                 <h3 className="text-base font-semibold text-fg mb-2">
-                  {locale === 'es' ? 'Cuenta eliminada' : 'Account deleted'}
+                  {deletionCopy.goodbyeTitle}
                 </h3>
                 <p className="text-sm text-fg-muted">
-                  {locale === 'es'
-                    ? 'Tu cuenta ha sido eliminada exitosamente. Gracias por usar Leasefy.'
-                    : 'Your account has been successfully deleted. Thank you for using Leasefy.'}
+                  {deletionCopy.goodbyeBody}
                 </p>
               </div>
             )}

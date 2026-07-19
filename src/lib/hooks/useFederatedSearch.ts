@@ -37,6 +37,9 @@ export interface SearchResult {
 
 export interface SearchSourceContext {
   agencyId: string | null;
+  /** Per-item permission gate — sources with per-result permissions use this
+   *  (a SearchSource-level `permission` gates the whole source instead). */
+  canAccess?: (module: string, action: string) => boolean;
 }
 
 export interface SearchSource {

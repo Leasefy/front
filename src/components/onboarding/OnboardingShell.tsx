@@ -5,6 +5,7 @@ import { LeasefyLogo } from '@/components/brand'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/use-auth'
+import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, ArrowRight, Check, Rocket, User, House, Users, CreditCard, X, Shield, Money, SealCheck, Question, CaretRight } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
@@ -100,10 +101,9 @@ export function OnboardingShell({ children }: OnboardingShellProps) {
       <header className="sticky top-0 z-20 bg-surface border-b border-border">
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5">
+            <BrandHomeLink className="flex items-center gap-2.5">
               <LeasefyLogo size={28} tone="brand" />
-            </Link>
+            </BrandHomeLink>
 
             {/* Desktop: Step indicator + Skip */}
             <div className="hidden lg:flex items-center gap-6">

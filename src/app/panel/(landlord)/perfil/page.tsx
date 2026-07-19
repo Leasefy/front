@@ -12,6 +12,7 @@ import { IconButton } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { useRouter } from 'next/navigation';
 import { settingsApi } from '@/lib/api/settings.service';
+import { accountDeletionCopy } from '@/lib/account-deletion/copy';
 import { getSupabase } from '@/lib/supabase/client';
 
 // Setup steps definition
@@ -205,9 +206,11 @@ export default function PropietarioPerfilPage() {
   const handleOpenDeleteModal = () => { setShowDeleteModal(true); setDeleteStep(1); setDeleteConfirmText(''); };
   const handleCloseDeleteModal = () => { setShowDeleteModal(false); setDeleteStep(1); setDeleteConfirmText(''); setIsDeleting(false); };
 
+  // Canonical deletion strings (single source of truth for all five flows).
+  const deletionCopy = accountDeletionCopy(locale);
+
   const handleDeleteAccount = async () => {
-    const requiredText = locale === 'es' ? 'ELIMINAR' : 'DELETE';
-    if (deleteConfirmText !== requiredText) return;
+    if (deleteConfirmText !== deletionCopy.confirmWord) return;
     setIsDeleting(true);
     try {
       // Real, irreversible deletion (soft-delete + sign-out). Never show the
@@ -218,13 +221,13 @@ export default function PropietarioPerfilPage() {
       setIsDeleting(false);
       setDeleteStep(3);
       setTimeout(() => {
-        toast.success(locale === 'es' ? 'Tu cuenta ha sido eliminada' : 'Your account has been deleted');
+        toast.success(deletionCopy.successToast);
         handleCloseDeleteModal();
         router.push('/');
       }, 1500);
     } catch (err) {
       setIsDeleting(false);
-      toast.error((err as Error)?.message || (locale === 'es' ? 'Error al eliminar cuenta' : 'Error deleting account'));
+      toast.error((err as Error)?.message || deletionCopy.errorFallback);
     }
   };
 
@@ -685,8 +688,8 @@ export default function PropietarioPerfilPage() {
                   <div className="w-16 h-16 rounded-full bg-[#F8EAE7] dark:bg-[#C4503B]/15 flex items-center justify-center mx-auto mb-4">
                     <Warning className="w-8 h-8 text-[#C4503B] dark:text-[#E0664D]" />
                   </div>
-                  <h3 className="text-xl font-semibold text-[#C4503B] dark:text-[#E0664D]">{locale === 'es' ? '¿Eliminar tu cuenta?' : 'Delete your account?'}</h3>
-                  <p className="text-sm text-[#C4503B] dark:text-[#E0664D] mt-1">{locale === 'es' ? 'Esta acción es permanente e irreversible' : 'This action is permanent and irreversible'}</p>
+                  <h3 className="text-xl font-semibold text-[#C4503B] dark:text-[#E0664D]">{deletionCopy.warningTitle}</h3>
+                  <p className="text-sm text-[#C4503B] dark:text-[#E0664D] mt-1">{deletionCopy.recovery}</p>
                 </div>
                 <div className="p-6">
                   <p className="text-sm font-medium text-fg mb-3">{locale === 'es' ? 'Se eliminará permanentemente:' : 'Will be permanently deleted:'}</p>
@@ -723,9 +726,11 @@ export default function PropietarioPerfilPage() {
                 </div>
                 <div className="p-6">
                   <p className="text-sm text-fg-muted mb-4">
-                    {locale === 'es' ? <>Para confirmar, escribe <span className="font-mono font-semibold text-[#C4503B] dark:text-[#E0664D]">ELIMINAR</span>:</> : <>To confirm, type <span className="font-mono font-semibold text-[#C4503B] dark:text-[#E0664D]">DELETE</span>:</>}
+                    {deletionCopy.confirmInstructionPrefix}{' '}
+                    <span className="font-mono font-semibold text-[#C4503B] dark:text-[#E0664D]">{deletionCopy.confirmWord}</span>{' '}
+                    {deletionCopy.confirmInstructionSuffix}
                   </p>
-                  <Input type="text" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())} placeholder={locale === 'es' ? 'Escribe ELIMINAR' : 'Type DELETE'}
+                  <Input type="text" value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())} placeholder={deletionCopy.inputPlaceholder}
                     className="font-mono text-center tracking-widest focus-visible:ring-[#C4503B]/30" />
                   <div className="flex gap-3 mt-6">
                     <Button variant="outline" hideArrow onClick={() => setDeleteStep(1)} className="flex-1 justify-center">{locale === 'es' ? 'Volver' : 'Back'}</Button>
@@ -733,10 +738,10 @@ export default function PropietarioPerfilPage() {
                       variant="destructive"
                       hideArrow
                       onClick={handleDeleteAccount}
-                      disabled={(locale === 'es' ? deleteConfirmText !== 'ELIMINAR' : deleteConfirmText !== 'DELETE') || isDeleting}
+                      disabled={deleteConfirmText !== deletionCopy.confirmWord || isDeleting}
                       className="flex-1 justify-center gap-2"
                     >
-                      {isDeleting ? <><Spinner size="sm" variant="current" />{locale === 'es' ? 'Eliminando...' : 'Deleting...'}</> : (locale === 'es' ? 'Eliminar mi cuenta' : 'Delete my account')}
+                      {isDeleting ? <><Spinner size="sm" variant="current" />{deletionCopy.deleting}</> : deletionCopy.deleteButton}
                     </Button>
                   </div>
                 </div>
@@ -745,8 +750,8 @@ export default function PropietarioPerfilPage() {
             {deleteStep === 3 && (
               <div className="p-8 text-center">
                 <div className="w-16 h-16 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-4"><CheckCircle className="w-8 h-8 text-fg-muted" /></div>
-                <h3 className="text-xl font-semibold text-fg mb-2">{locale === 'es' ? 'Cuenta eliminada' : 'Account deleted'}</h3>
-                <p className="text-sm text-fg-muted">{locale === 'es' ? 'Tu cuenta ha sido eliminada exitosamente.' : 'Your account has been successfully deleted.'}</p>
+                <h3 className="text-xl font-semibold text-fg mb-2">{deletionCopy.goodbyeTitle}</h3>
+                <p className="text-sm text-fg-muted">{deletionCopy.goodbyeBody}</p>
               </div>
             )}
           </motion.div>

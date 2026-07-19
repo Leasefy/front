@@ -2,8 +2,13 @@
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from 'react'
 import { toast } from 'sonner'
-import type { TenantOnboardingData } from '@/lib/auth/types'
+import type { TenantOnboardingData, User } from '@/lib/auth/types'
 import { apiClient } from '@/lib/api/client'
+import {
+  getTenantPreferences,
+  mergeTablePreferencesOverSnapshot,
+  type TenantPreferences,
+} from '@/lib/api/tenant-preferences.service'
 import { useAuth } from '@/lib/auth/use-auth'
 
 // ============================================================================
@@ -100,6 +105,110 @@ interface TenantOnboardingContextTextT {
 
 const STORAGE_KEY = 'plan_onboarding_tenant'
 
+/**
+ * Rejection type for "the profile WAS saved but the session refresh failed
+ * (twice)". Distinguishable from a failed save so callers (the wizard shell)
+ * know not to navigate — the auth user is still stale. Resubmitting is safe:
+ * the backend onboarding upsert is idempotent.
+ */
+export class TenantOnboardingSessionRefreshError extends Error {
+  constructor(readonly refreshCause?: unknown) {
+    super('Onboarding saved but session refresh failed')
+    this.name = 'TenantOnboardingSessionRefreshError'
+  }
+}
+
+/**
+ * Seed empty draft fields from the backend profile.
+ *
+ * Product rule: the backend is the single source of truth — profile data must
+ * be visible from any device; the local draft is only an in-progress buffer.
+ * Merge rule: a non-empty locally typed value ALWAYS wins (the user may be
+ * mid-wizard); empty/absent fields fill from the backend so the wizard never
+ * opens blank or stale after the profile was edited elsewhere.
+ *
+ * Fields whose initial draft value is a real default (preferredContact
+ * 'whatsapp', hasPets false) treat that default as "absent" so a backend
+ * stored choice can surface — the trade-off (a mid-wizard explicit re-pick of
+ * the default gets overridden by a differing backend value) is accepted.
+ *
+ * Preference source: the authoritative `tenant_preferences` table row
+ * (`tablePrefs`, from GET /users/me/preferences) is preferred per-field over
+ * the legacy `user.tenantOnboardingData` JSON snapshot — perfil edits land in
+ * the table, so the snapshot can be stale. The snapshot remains the fallback
+ * for profiles without a row.
+ *
+ * Only trusts real backend profiles (`profileSource === 'backend'`); returns
+ * the SAME draft reference when nothing fills, so effects can no-op cheaply.
+ */
+export function seedTenantDraftFromBackend(
+  draft: TenantOnboardingDraft,
+  user: User | null | undefined,
+  tablePrefs?: TenantPreferences | null,
+): TenantOnboardingDraft {
+  if (!user || user.profileSource !== 'backend') return draft
+  const merged = mergeTablePreferencesOverSnapshot(
+    tablePrefs ?? null,
+    user.tenantOnboardingData,
+  )
+  const next = { ...draft }
+  let changed = false
+
+  const fillString = (
+    key: 'displayName' | 'phone' | 'rut' | 'moveInDate' | 'petDetails',
+    value: string | undefined,
+  ) => {
+    if (value && !(next[key] || '').trim()) {
+      next[key] = value
+      changed = true
+    }
+  }
+
+  // Canonical name split duplicates a single-word name into lastName — don't
+  // rebuild "Ana Ana" for those profiles.
+  const backendName =
+    user.lastName && user.lastName !== user.firstName
+      ? `${user.firstName ?? ''} ${user.lastName}`.trim()
+      : (user.firstName ?? '').trim()
+  fillString('displayName', backendName || undefined)
+  fillString('phone', user.phone)
+  fillString('rut', user.rut)
+  fillString('moveInDate', merged.moveInDate ?? undefined)
+  fillString('petDetails', merged.petDetails ?? undefined)
+
+  if (next.budgetMin == null && merged.minBudget != null) {
+    next.budgetMin = merged.minBudget
+    changed = true
+  }
+  if (next.budgetMax == null && merged.maxBudget != null) {
+    next.budgetMax = merged.maxBudget
+    changed = true
+  }
+  if ((next.preferredZones?.length ?? 0) === 0 && merged.preferredCities.length) {
+    next.preferredZones = merged.preferredCities
+    changed = true
+  }
+  if ((next.preferredAmenities?.length ?? 0) === 0 && merged.preferredAmenities.length) {
+    next.preferredAmenities = merged.preferredAmenities
+    changed = true
+  }
+  if (!next.hasPets && merged.petFriendly) {
+    next.hasPets = true
+    changed = true
+  }
+  if (
+    merged.preferredContact &&
+    merged.preferredContact !== next.preferredContact &&
+    (!next.preferredContact ||
+      next.preferredContact === initialTenantOnboardingDraft.preferredContact)
+  ) {
+    next.preferredContact = merged.preferredContact as TenantOnboardingDraft['preferredContact']
+    changed = true
+  }
+
+  return changed ? next : draft
+}
+
 // ============================================================================
 // Context
 // ============================================================================
@@ -111,7 +220,8 @@ const TenantOnboardingContext = createContext<TenantOnboardingContextTextT | nul
 // ============================================================================
 
 export function TenantOnboardingProvider({ children }: { children: ReactNode }) {
-  const { refreshUser } = useAuth()
+  const { refreshUser, user } = useAuth()
+  const userId = user?.id
   const [draft, setDraft] = useState<TenantOnboardingDraft>(initialTenantOnboardingDraft)
   const [currentStep, setCurrentStep] = useState(1)
   const [completedSteps, setCompletedSteps] = useState<number[]>([])
@@ -147,11 +257,75 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
     setIsHydrated(true)
   }, [totalSteps])
 
+  // PII scoping: a saved payload stamped with a DIFFERENT user's id is another
+  // account's draft on a shared browser — discard it (state + storage) as soon
+  // as the authenticated user is known. Unstamped payloads are anonymous
+  // pre-auth drafts (the wizard runs before the backend user record exists)
+  // and stay usable; the save effect below stamps them with the current user.
+  useEffect(() => {
+    if (!userId || !isHydrated) return
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (!saved) return
+      const parsed = JSON.parse(saved) as { userId?: string }
+      if (parsed?.userId && parsed.userId !== userId) {
+        setDraft(initialTenantOnboardingDraft)
+        setCurrentStep(1)
+        setCompletedSteps([])
+        setIsComplete(false)
+        localStorage.removeItem(STORAGE_KEY)
+        window.dispatchEvent(new Event('onboarding-updated'))
+      }
+    } catch {
+      // Corrupt cache — the save effect below rewrites it.
+    }
+  }, [userId, isHydrated])
+
+  // Authoritative preferences row (tenant_preferences) for seeding.
+  // undefined = fetch not settled yet; null = no row / fetch failed
+  // (snapshot fallback applies).
+  const [tablePrefs, setTablePrefs] = useState<TenantPreferences | null | undefined>(undefined)
+  useEffect(() => {
+    if (user?.profileSource !== 'backend') return
+    let cancelled = false
+    getTenantPreferences()
+      .then((row) => {
+        if (!cancelled) setTablePrefs(row)
+      })
+      .catch(() => {
+        if (!cancelled) setTablePrefs(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [user?.profileSource])
+
+  // Backend-first prefill: fill EMPTY draft fields from the authenticated
+  // backend profile so the wizard opens with current data on any device.
+  // Waits for the tenant_preferences fetch to settle so the authoritative
+  // table wins over the (possibly stale) onboardingData snapshot — seeding
+  // the snapshot first would occupy the fields and block the fresh values.
+  // Declared after the foreign-draft purge above so its functional update
+  // applies to the purged draft; locally typed values always win (see
+  // seedTenantDraftFromBackend).
+  useEffect(() => {
+    if (!isHydrated || user?.profileSource !== 'backend') return
+    if (tablePrefs === undefined) return
+    setDraft((prev) => seedTenantDraftFromBackend(prev, user, tablePrefs))
+  }, [isHydrated, user, tablePrefs])
+
   // FloppyDisk progress to localStorage on changes
   useEffect(() => {
     if (!isHydrated) return
+    // Once complete, the explicit completionData written by submitOnboarding
+    // (which carries `isComplete: true` for ProtectedRoute's cache fallback)
+    // is authoritative — this progress writer must not clobber it.
+    if (isComplete) return
 
     const data = {
+      // Stamp ownership whenever an authenticated user is known so other
+      // accounts on this browser treat the payload as absent.
+      userId,
       draft,
       currentStep,
       completedSteps,
@@ -160,7 +334,7 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
     // Dispatch custom event to notify sidebar and other components
     window.dispatchEvent(new Event('onboarding-updated'))
-  }, [draft, currentStep, completedSteps, isHydrated])
+  }, [draft, currentStep, completedSteps, isHydrated, userId, isComplete])
 
   const updateDraft = useCallback((updates: Partial<TenantOnboardingDraft>) => {
     setDraft((prev) => ({ ...prev, ...updates }))
@@ -233,16 +407,61 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
       const firstName = nameParts[0]
       const lastName = nameParts.slice(1).join(' ') || firstName
 
-      // Call backend onboarding endpoint
-      await apiClient.post('/users/me/onboarding', {
-        firstName,
-        lastName,
-        phone: draft.phone || undefined,
-        userType: 'TENANT',
-      })
+      // Call backend onboarding endpoint. Housing preferences are persisted
+      // too (backend stores them as onboardingData JSON and returns them on
+      // GET /users/me) so onboarding completeness is derivable from the
+      // backend on any device — localStorage is only a draft cache.
+      try {
+        await apiClient.post('/users/me/onboarding', {
+          firstName,
+          lastName,
+          phone: draft.phone || undefined,
+          // Document number: the backend only writes it when the user has none
+          // (immutable once set — changes go through Leasefy support).
+          rut: draft.rut || undefined,
+          userType: 'TENANT',
+          preferredContact: draft.preferredContact,
+          budgetMin: draft.budgetMin,
+          budgetMax: draft.budgetMax,
+          preferredZones: draft.preferredZones,
+          preferredAmenities: draft.preferredAmenities,
+          moveInDate: draft.moveInDate || undefined,
+          hasPets: draft.hasPets ?? false,
+          petDetails: draft.petDetails || undefined,
+        })
+      } catch (error) {
+        console.error('Error submitting tenant onboarding:', error)
+        // Save genuinely failed — the user stays on the step with the draft
+        // intact and can retry.
+        toast.error('No pudimos guardar tu perfil. Revisa tu conexión e intenta de nuevo.')
+        throw error
+      }
 
-      // Refresh user in auth context so role/onboardingCompleted updates
-      await refreshUser()
+      // POST succeeded: the profile IS saved server-side from this point on —
+      // any failure below must never claim the save failed.
+      // Refresh the auth context so role/onboardingCompleted update; retry
+      // once on a transient failure.
+      try {
+        await refreshUser()
+      } catch {
+        try {
+          await refreshUser()
+        } catch (refreshError) {
+          console.error('Onboarding saved but session refresh failed:', refreshError)
+          // ACCURATE message: the save worked, only the session refresh failed.
+          toast.error(
+            'Tu perfil se guardó correctamente, pero no pudimos actualizar tu sesión. Intenta de nuevo.',
+          )
+          // Distinguishable rejection so the shell does NOT navigate: the auth
+          // user is still stale (onboardingCompleted false) and we have not
+          // written the completion cache, so ProtectedRoute (its onboarding
+          // gate checks `user.onboardingCompleted` and the cache's isComplete)
+          // would bounce /inquilino straight back to /onboarding/seleccionar-rol.
+          // The submit button stays usable — a resubmit re-runs POST+refresh
+          // and the backend upsert is idempotent.
+          throw new TenantOnboardingSessionRefreshError(refreshError)
+        }
+      }
 
       // Mark all steps as completed
       const allSteps = [1, 2]
@@ -250,6 +469,7 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
 
       // Save completion status to localStorage (dashboard sidebar checks this)
       const completionData = {
+        userId,
         draft,
         currentStep: totalSteps,
         completedSteps: allSteps,
@@ -261,16 +481,10 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
       window.dispatchEvent(new Event('onboarding-updated'))
 
       setIsComplete(true)
-    } catch (error) {
-      console.error('Error submitting tenant onboarding:', error)
-      // Surface the failure (was console-only): the user stays on the step
-      // with the draft intact and can retry.
-      toast.error('No pudimos guardar tu perfil. Revisa tu conexión e intenta de nuevo.')
-      throw error
     } finally {
       setIsSubmitting(false)
     }
-  }, [totalSteps, draft, refreshUser])
+  }, [totalSteps, draft, refreshUser, userId])
 
   const resetDraft = useCallback(() => {
     setDraft(initialTenantOnboardingDraft)

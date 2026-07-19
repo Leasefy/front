@@ -35,6 +35,7 @@ import {
   CaretLeft,
   MagnifyingGlass,
   ArrowUpRight,
+  ChatCircle,
   XCircle,
   User,
   type Icon,
@@ -193,13 +194,24 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
           </div>
         </dl>
 
-        <div className="pt-1">
+        <div className="pt-1 flex flex-wrap items-center gap-2">
           <Button asChild variant="secondary" size="sm">
             <Link href={caso.sourceLink} className="inline-flex items-center gap-1.5">
               {locale === 'es'
                 ? `Ver en ${sourceLabel(caso.type, locale)}`
                 : `View in ${sourceLabel(caso.type, locale)}`}
               <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+            </Link>
+          </Button>
+          {/*
+            Real "contactar" affordance for the case → the messages INBOX only.
+            TenantCase carries no applicationId/leaseId, so we deep-link to the
+            inbox and NEVER fabricate a preselected thread (no fabricated query param).
+          */}
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/inquilino/mensajes" className="inline-flex items-center gap-1.5">
+              <ChatCircle className="w-4 h-4" aria-hidden="true" />
+              {locale === 'es' ? 'Escribir a la inmobiliaria' : 'Message the agency'}
             </Link>
           </Button>
         </div>

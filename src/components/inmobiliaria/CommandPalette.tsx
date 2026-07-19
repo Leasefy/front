@@ -41,6 +41,7 @@ import {
   Envelope,
   Warning,
   CaretRight,
+  Plus,
   X,
 } from '@phosphor-icons/react';
 
@@ -54,6 +55,7 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext';
 import { useCommandPalette } from '@/lib/context/CommandPaletteContext';
 import { useFederatedSearch } from '@/lib/hooks/useFederatedSearch';
 import type { SearchResult, SearchSource, SearchSourceContext } from '@/lib/hooks/useFederatedSearch';
+import { navigationSource } from '@/lib/search/sources/navigation-source';
 import { debtorsSource } from '@/lib/search/sources/debtors-source';
 import { propietariosSource } from '@/lib/search/sources/propietarios-source';
 import { agentesSource } from '@/lib/search/sources/agentes-source';
@@ -137,6 +139,13 @@ interface QuickAction {
 }
 
 const QUICK_ACTIONS: QuickAction[] = [
+  {
+    id: 'qa-nueva-propiedad',
+    labelKey: 'inmobiliaria.commandPalette.quickActions.nuevaPropiedad',
+    icon: Plus,
+    href: '/publicar',
+    permission: { module: 'portafolio', action: 'create' },
+  },
   {
     id: 'qa-cobranza',
     labelKey: 'inmobiliaria.commandPalette.quickActions.cobranza',
@@ -761,6 +770,8 @@ export function CommandPalette() {
   // Build sources (filtered by permissions)
   const sources = useMemo((): SearchSource[] => {
     const all: SearchSource[] = [
+      // Group: Navegación — panel pages + their in-page actions, always first
+      navigationSource,
       // Group: Cobranza
       debtorsSource,
       // Group: Inmobiliario
@@ -777,7 +788,7 @@ export function CommandPalette() {
     );
   }, [canAccess]);
 
-  const ctx = useMemo((): SearchSourceContext => ({ agencyId }), [agencyId]);
+  const ctx = useMemo((): SearchSourceContext => ({ agencyId, canAccess }), [agencyId, canAccess]);
 
   const { bySource, flat, isAnyLoading } = useFederatedSearch(query, sources, ctx);
 

@@ -7901,6 +7901,7 @@
       "noResults": "Sin resultados para \"{{query}}\"",
       "novedades": "Novedades",
       "sources": {
+        "navegacion": "Navegación",
         "debtors": "Deudores",
         "propietarios": "Propietarios",
         "agentes": "Agentes",
@@ -7911,6 +7912,7 @@
       },
       "quickActions": {
         "title": "Acciones rápidas",
+        "nuevaPropiedad": "Crear propiedad",
         "cobranza": "Ir a Cobranza",
         "cotizador": "Ir a Asegurabilidad",
         "reportes": "Ver reportes",

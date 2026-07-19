@@ -2,49 +2,41 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   X,
-  Bank,
   CheckCircle,
   WarningCircle,
   Clock,
-  ArrowRight,
-  CaretLeft,
   Receipt,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { MonoLabel } from '@leasefy/cadence';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useI18n } from '@/lib/i18n';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import { leasesApi } from '@/lib/api/leases.service';
-import { psePaymentsApi } from '@/lib/api/pse-payments.service';
+import { getAccessToken } from '@/lib/api/client';
+import {
+  buildWompiCheckoutUrl,
+  type WompiRentSession,
+} from '@/lib/payments/wompi-rent-session';
 import type { BackendPaymentInfo } from '@/lib/api/leases.types';
-import type {
-  PseBank,
-  PseProcessDto,
-  PseProcessResponse,
-  PseDocumentType,
-  PsePersonType,
-} from '@/lib/api/pse-payments.types';
 
 interface PayRentModalProps {
   open: boolean;
   leaseId: string;
   /** Callback cuando se cierra el modal (éxito o cancelación). */
   onClose: () => void;
-  /** Callback cuando un pago se procesó con éxito o queda PENDING — para refrescar historial. */
-  onPaid?: (result: PseProcessResponse) => void;
-  /** Valores iniciales sugeridos (ej. para pre-rellenar el form). */
+  /**
+   * Compat con los dos call sites (pagos + arriendo). YA NO se invoca:
+   * el pago se confirma del lado del servidor cuando el inquilino vuelve de
+   * Wompi (v7-04-03) — el navegador abandona la página en el redirect, así que
+   * no hay resultado in-page que reportar.
+   */
+  onPaid?: () => void;
+  /** Valores iniciales sugeridos (compat con los call sites). */
   prefill?: {
     fullName?: string;
     email?: string;
@@ -55,26 +47,19 @@ type Step =
   | 'loading'
   | 'period-blocked' // currentPeriodStatus === PENDING_VALIDATION | APPROVED
   | 'confirm'
-  | 'form'
-  | 'processing'
-  | 'result';
-
-const DOCUMENT_TYPES: { value: PseDocumentType; label: string }[] = [
-  { value: 'CC', label: 'Cédula de ciudadanía' },
-  { value: 'CE', label: 'Cédula de extranjería' },
-  { value: 'NIT', label: 'NIT' },
-  { value: 'PASAPORTE', label: 'Pasaporte' },
-];
+  | 'redirecting'; // mientras se pide la sesión Wompi y se redirige al checkout
 
 /**
- * Modal de pago de arriendo via PSE (mock). Flujo:
- *  1. loading → carga /leases/:id/payment-info + /pse-mock/banks
- *  2. confirm → muestra monto + período, CTA "Continuar"
- *  3. form → select banco + datos del pagador
- *  4. processing → spinner mientras /pse-mock/process responde
- *  5. result → SUCCESS / FAILURE / PENDING con copy del backend
+ * Modal de pago de arriendo vía Wompi (hosted checkout). Flujo:
+ *  1. loading  → carga /leases/:id/payment-info (fuente de verdad del monto)
+ *  2. period-blocked → PENDING_VALIDATION | APPROVED (sin doble-pago)
+ *  3. confirm  → muestra período + monto real, CTA "PAGAR ARRIENDO"
+ *  4. redirecting → POST /api/inquilino/pagos/wompi-session { leaseId } y redirect
+ *
+ * El monto lo resuelve el servidor (anti-tamper): el cliente NUNCA envía amount.
+ * Los métodos (PSE, tarjeta, Nequi) se eligen en la página segura de Wompi.
  */
-export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRentModalProps) {
+export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
   const { formatCurrency, locale } = useI18n();
   const lenis = useLenis();
 
@@ -87,21 +72,9 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
 
   const [step, setStep] = useState<Step>('loading');
   const [paymentInfo, setPaymentInfo] = useState<BackendPaymentInfo | null>(null);
-  const [banks, setBanks] = useState<PseBank[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Form state
-  const [personType, setPersonType] = useState<PsePersonType>('NATURAL');
-  const [documentType, setDocumentType] = useState<PseDocumentType>('CC');
-  const [documentNumber, setDocumentNumber] = useState('');
-  const [fullName, setFullName] = useState(prefill?.fullName ?? '');
-  const [email, setEmail] = useState(prefill?.email ?? '');
-  const [bankCode, setBankCode] = useState<string>('');
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
-  const [result, setResult] = useState<PseProcessResponse | null>(null);
-
-  // Cargar /payment-info + /banks al abrir
+  // Cargar /payment-info al abrir
   useEffect(() => {
     if (!open) return;
 
@@ -109,11 +82,11 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
     setStep('loading');
     setLoadError(null);
 
-    Promise.all([leasesApi.getPaymentInfo(leaseId), psePaymentsApi.getBanks()])
-      .then(([info, banksList]) => {
+    leasesApi
+      .getPaymentInfo(leaseId)
+      .then((info) => {
         if (cancelled) return;
         setPaymentInfo(info);
-        setBanks(banksList);
         // Pre-flight: si ya hay request en validación o pago aprobado, bloquear.
         // REJECTED y NONE caen al confirm (REJECTED muestra el motivo en el confirm).
         if (
@@ -134,74 +107,49 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
     return () => { cancelled = true; };
   }, [open, leaseId]);
 
-  // Reset form al cerrar
+  // Reset al cerrar
   useEffect(() => {
     if (!open) {
       setStep('loading');
       setPaymentInfo(null);
-      setBanks([]);
       setLoadError(null);
-      setPersonType('NATURAL');
-      setDocumentType('CC');
-      setDocumentNumber('');
-      setFullName(prefill?.fullName ?? '');
-      setEmail(prefill?.email ?? '');
-      setBankCode('');
-      setFormErrors({});
-      setResult(null);
     }
-  }, [open, prefill?.fullName, prefill?.email]);
+  }, [open]);
 
-  // Validación form
-  const validateForm = useCallback((): boolean => {
-    const errors: Record<string, string> = {};
-    if (!/^\d{6,15}$/.test(documentNumber.trim())) errors.documentNumber = 'Entre 6 y 15 dígitos.';
-    if (fullName.trim().length < 3) errors.fullName = 'Requerido (mínimo 3 caracteres).';
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) errors.email = 'Email inválido.';
-    if (!bankCode) errors.bankCode = 'Seleccioná un banco.';
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  }, [documentNumber, fullName, email, bankCode]);
-
-  const handleProcess = useCallback(async () => {
+  // Inicia la sesión Wompi y redirige al hosted checkout.
+  // Envía SOLO { leaseId } (+ Bearer) — el monto lo resuelve y firma el servidor.
+  const handlePayWithWompi = useCallback(async () => {
     if (!paymentInfo) return;
-    if (!validateForm()) return;
-    setStep('processing');
+    setStep('redirecting');
     try {
-      const dto: PseProcessDto = {
-        leaseId,
-        amount: paymentInfo.monthlyRent,
-        periodMonth: paymentInfo.currentPeriod.month,
-        periodYear: paymentInfo.currentPeriod.year,
-        personType,
-        documentType,
-        documentNumber: documentNumber.trim(),
-        fullName: fullName.trim(),
-        email: email.trim(),
-        bankCode,
-      };
-      const res = await psePaymentsApi.processPayment(dto);
-      setResult(res);
-      setStep('result');
-      if (res.status === 'SUCCESS' || res.status === 'PENDING') {
-        onPaid?.(res);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al procesar el pago.';
-      // Backend tira 409 Conflict si el período ya fue pagado → mostrar como fallido inline.
-      setResult({
-        transactionId: '',
-        status: 'FAILURE',
-        message: msg,
-        bankName: banks.find((b) => b.code === bankCode)?.name ?? '',
-        timestamp: new Date().toISOString(),
+      const token = getAccessToken();
+      const res = await fetch('/api/inquilino/pagos/wompi-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ leaseId }), // ONLY leaseId — nunca un amount (anti-tamper)
       });
-      setStep('result');
+
+      if (res.status === 409) {
+        toast.error('Este período ya está pagado o en verificación.');
+        setStep('confirm');
+        return;
+      }
+      if (!res.ok) throw new Error(`session_failed:${res.status}`);
+
+      const session = (await res.json()) as WompiRentSession;
+      const url = buildWompiCheckoutUrl({
+        ...session,
+        redirectUrl: window.location.origin + '/inquilino/pagos',
+      });
+      window.location.href = url;
+    } catch {
+      toast.error('No pudimos iniciar el pago. Intentá nuevamente.');
+      setStep('confirm');
     }
-  }, [
-    paymentInfo, validateForm, leaseId, personType, documentType, documentNumber,
-    fullName, email, bankCode, banks, onPaid,
-  ]);
+  }, [paymentInfo, leaseId]);
 
   const monthName = paymentInfo
     ? new Date(paymentInfo.currentPeriod.year, paymentInfo.currentPeriod.month - 1, 1)
@@ -216,7 +164,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={step === 'processing' ? undefined : onClose}
+          onClick={step === 'redirecting' ? undefined : onClose}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
@@ -236,7 +184,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                     Pagar arriendo
                   </h2>
                   <p className="text-xs text-fg-muted mt-0.5">
-                    {step === 'form' ? 'Datos del pagador' : 'Método: PSE'}
+                    Método: Wompi (PSE, tarjeta o Nequi)
                   </p>
                 </div>
               </div>
@@ -245,7 +193,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                disabled={step === 'processing'}
+                disabled={step === 'redirecting'}
                 aria-label="Cerrar"
               >
                 <X className="w-5 h-5" />
@@ -310,112 +258,19 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                     </p>
                   </div>
                   <p className="text-xs text-fg-muted">
-                    El pago se procesa a través de <strong>PSE</strong>. Vas a completar los datos de
-                    tu cuenta en el siguiente paso.
+                    Vas a completar el pago en la página segura de <strong>Wompi</strong> (PSE,
+                    tarjeta o Nequi). La confirmación aparece en tu historial una vez verificado.
                   </p>
                 </div>
               )}
 
-              {/* Step: form */}
-              {step === 'form' && paymentInfo && (
-                <div className="space-y-4">
-                  {/* Resumen */}
-                  <div className="rounded-[14px] border border-border bg-surface-muted px-3 py-2 flex items-center justify-between text-xs">
-                    <span className="text-fg-muted capitalize">{monthName}</span>
-                    <span className="font-semibold text-fg font-mono tabular-nums">
-                      {formatCurrency(paymentInfo.monthlyRent)}
-                    </span>
-                  </div>
-
-                  {/* Banco */}
-                  <Field label="Banco" error={formErrors.bankCode}>
-                    <Select value={bankCode} onValueChange={setBankCode}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Seleccioná tu banco" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {banks.map((b) => (
-                          <SelectItem key={b.code} value={b.code}>{b.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Tipo de persona">
-                      <Select
-                        value={personType}
-                        onValueChange={(v) => setPersonType(v as PsePersonType)}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NATURAL">Natural</SelectItem>
-                          <SelectItem value="JURIDICA">Jurídica</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                    <Field label="Tipo doc.">
-                      <Select
-                        value={documentType}
-                        onValueChange={(v) => setDocumentType(v as PseDocumentType)}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {DOCUMENT_TYPES.map((d) => (
-                            <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  </div>
-
-                  <Field label="Número de documento" error={formErrors.documentNumber}>
-                    <Input
-                      inputMode="numeric"
-                      value={documentNumber}
-                      onChange={(e) => setDocumentNumber(e.target.value.replace(/\D/g, ''))}
-                      className="font-mono tabular-nums"
-                      placeholder="1234567890"
-                    />
-                  </Field>
-
-                  <Field label="Nombre completo" error={formErrors.fullName}>
-                    <Input
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                    />
-                  </Field>
-
-                  <Field label="Email" error={formErrors.email}>
-                    <Input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </Field>
-                </div>
-              )}
-
-              {/* Step: processing */}
-              {step === 'processing' && (
+              {/* Step: redirecting */}
+              {step === 'redirecting' && (
                 <div className="py-10 flex flex-col items-center justify-center gap-3 text-center">
                   <Spinner size="xl" variant="current" className="text-primary" />
-                  <p className="text-sm font-medium text-fg">Procesando pago...</p>
+                  <p className="text-sm font-medium text-fg">Te estamos llevando al pago seguro…</p>
                   <p className="text-xs text-fg-muted">No cierres esta ventana.</p>
                 </div>
-              )}
-
-              {/* Step: result */}
-              {step === 'result' && result && (
-                <ResultPanel
-                  result={result}
-                  amount={paymentInfo?.monthlyRent ?? 0}
-                  formatCurrency={formatCurrency}
-                />
               )}
             </div>
 
@@ -443,46 +298,15 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                   </Button>
                   <Button
                     type="button"
-                    onClick={() => setStep('form')}
+                    onClick={handlePayWithWompi}
                     disabled={!paymentInfo}
                     hideArrow
                   >
-                    {paymentInfo?.currentPeriodStatus === 'REJECTED' ? 'Reintentar pago' : 'Continuar'}
-                    <ArrowRight className="w-4 h-4" />
+                    {paymentInfo?.currentPeriodStatus === 'REJECTED'
+                      ? 'Reintentar pago'
+                      : 'PAGAR ARRIENDO'}
                   </Button>
                 </>
-              )}
-
-              {step === 'form' && (
-                <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setStep('confirm')}
-                  >
-                    <CaretLeft className="w-4 h-4" />
-                    Atrás
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handleProcess}
-                    hideArrow
-                  >
-                    <Bank className="w-4 h-4" />
-                    Pagar con PSE
-                  </Button>
-                </>
-              )}
-
-              {step === 'result' && (
-                <Button
-                  type="button"
-                  onClick={onClose}
-                  hideArrow
-                  className="ml-auto"
-                >
-                  Cerrar
-                </Button>
               )}
             </div>
           </motion.div>
@@ -493,90 +317,6 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
 }
 
 // ─── Subcomponents ──────────────────────────────────────────────────────────
-
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-xs font-medium text-fg">{label}</label>
-      {children}
-      {error && <p className="text-xs text-danger">{error}</p>}
-    </div>
-  );
-}
-
-function ResultPanel({
-  result,
-  amount,
-  formatCurrency,
-}: {
-  result: PseProcessResponse;
-  amount: number;
-  formatCurrency: (n: number) => string;
-}) {
-  if (result.status === 'SUCCESS') {
-    return (
-      <div className="py-6 flex flex-col items-center text-center space-y-3">
-        <div className="w-14 h-14 rounded-full bg-success-soft flex items-center justify-center">
-          <CheckCircle className="w-8 h-8 text-success" />
-        </div>
-        <div>
-          <p className="text-lg font-semibold text-fg">¡Pago procesado!</p>
-          <p className="text-sm text-fg-muted mt-1">{result.message}</p>
-        </div>
-        <div className="rounded-[14px] border border-border bg-surface-muted p-3 w-full space-y-1 text-xs">
-          <Row label="Monto" value={formatCurrency(amount)} mono />
-          <Row label="Banco" value={result.bankName} />
-          <Row label="Transacción" value={result.transactionId} mono />
-        </div>
-        <p className="text-xs text-fg-muted">
-          Tu pago quedó registrado. Lo vas a ver en tu historial.
-        </p>
-      </div>
-    );
-  }
-
-  if (result.status === 'PENDING') {
-    return (
-      <div className="py-6 flex flex-col items-center text-center space-y-3">
-        <div className="w-14 h-14 rounded-full bg-warning-soft flex items-center justify-center">
-          <Clock className="w-8 h-8 text-warning" />
-        </div>
-        <div>
-          <p className="text-lg font-semibold text-fg">En verificación bancaria</p>
-          <p className="text-sm text-fg-muted mt-1">{result.message}</p>
-        </div>
-        <div className="rounded-[14px] border border-border bg-surface-muted p-3 w-full space-y-1 text-xs">
-          <Row label="Banco" value={result.bankName} />
-          <Row label="Transacción" value={result.transactionId} mono />
-        </div>
-      </div>
-    );
-  }
-
-  // FAILURE
-  return (
-    <div className="py-6 flex flex-col items-center text-center space-y-3">
-      <div className="w-14 h-14 rounded-full bg-danger-soft flex items-center justify-center">
-        <WarningCircle className="w-8 h-8 text-danger" />
-      </div>
-      <div>
-        <p className="text-lg font-semibold text-fg">Pago no procesado</p>
-        <p className="text-sm text-danger mt-1">{result.message}</p>
-      </div>
-      <p className="text-xs text-fg-muted">
-        Podés intentar con otro banco o revisar los datos ingresados.
-      </p>
-    </div>
-  );
-}
 
 function Row({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
@@ -627,7 +367,7 @@ function PeriodBlockedPanel({
     );
   }
 
-  // PENDING_VALIDATION — viene del caso PSE PENDING (verificación bancaria)
+  // PENDING_VALIDATION — período en verificación (no volver a pagar)
   return (
     <div className="py-6 flex flex-col items-center text-center space-y-3">
       <div className="w-14 h-14 rounded-full bg-warning-soft flex items-center justify-center">
@@ -643,10 +383,9 @@ function PeriodBlockedPanel({
         <Row label="Monto" value={formatCurrency(amount)} mono />
       </div>
       <p className="text-xs text-fg-muted">
-        Tu banco está verificando el pago. No hace falta volver a pagar — vas a
+        Tu pago está en verificación. No hace falta volver a pagar — vas a
         ver la confirmación en tu historial cuando termine.
       </p>
     </div>
   );
 }
-

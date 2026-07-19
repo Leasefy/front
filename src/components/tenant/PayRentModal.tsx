@@ -53,7 +53,7 @@ type Step =
  * Modal de pago de arriendo vía Wompi (hosted checkout). Flujo:
  *  1. loading  → carga /leases/:id/payment-info (fuente de verdad del monto)
  *  2. period-blocked → PENDING_VALIDATION | APPROVED (sin doble-pago)
- *  3. confirm  → muestra período + monto real, CTA "PAGAR ARRIENDO"
+ *  3. confirm  → muestra período + monto real, CTA "Pagar arriendo"
  *  4. redirecting → POST /api/inquilino/pagos/wompi-session { leaseId } y redirect
  *
  * El monto lo resuelve el servidor (anti-tamper): el cliente NUNCA envía amount.
@@ -304,7 +304,7 @@ export function PayRentModal({ open, leaseId, onClose }: PayRentModalProps) {
                   >
                     {paymentInfo?.currentPeriodStatus === 'REJECTED'
                       ? 'Reintentar pago'
-                      : 'PAGAR ARRIENDO'}
+                      : 'Pagar arriendo'}
                   </Button>
                 </>
               )}

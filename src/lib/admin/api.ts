@@ -24,11 +24,20 @@ export class ApiError extends Error {
   }
 }
 
+// Token is pushed in by the panel layout's onAuthStateChange subscription
+// instead of pulled via getSession(): calling getSession() while
+// AuthProvider's auth callback is mid-flight deadlocks (see auth-context.tsx
+// "rely exclusively on onAuthStateChange"). The layout wraps every admin
+// screen, so the cache is populated before any adminApi call and refreshed
+// on every auth event while the panel is mounted.
+let cachedToken: string | null = null
+
+export function setAdminToken(token: string | null): void {
+  cachedToken = token
+}
+
 async function bearer(): Promise<string | null> {
-  const sb = getSupabase()
-  if (!sb) return null
-  const { data } = await sb.auth.getSession()
-  return data.session?.access_token ?? null
+  return cachedToken
 }
 
 export interface ApiOptions {

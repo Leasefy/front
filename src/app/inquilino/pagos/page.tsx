@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import { Progress } from '@/components/ui/progress';
 import { PayRentModal } from '@/components/tenant/PayRentModal';
+import { AutopagoSection } from '@/components/tenant/AutopagoSection';
 import { tenantPaymentRequestsApi } from '@/lib/api/tenant-payment-requests.service';
 import type {
   BackendTenantPaymentRequest,
@@ -555,6 +556,10 @@ function PagosPageContent() {
                 ))}
               </div>
             </div>
+
+            {/* Autopago (domiciliación tokenizada) — PAGO-04. Backend-gated: shows an
+                honest "Próximamente" until Wompi tokenization + the scheduler exist. */}
+            <AutopagoSection leaseId={primaryLease?.id ?? null} />
           </motion.div>
         </div>
       </div>

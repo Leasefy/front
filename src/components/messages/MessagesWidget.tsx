@@ -471,6 +471,32 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                   <div className="flex-1 flex overflow-hidden">
                     {/* Messages Area */}
                     <div className={cn('flex-1 flex flex-col', showInfoPanel && 'hidden lg:flex')}>
+                      {/*
+                        Tenant-only arriendo context header (COMU-01). Ties the chat
+                        VISUALLY to the arriendo NOW using the REAL `property` field —
+                        never a fabricated arriendo. Renders nothing when `property`
+                        is empty; landlord/agency (actor!=='tenant') see NOTHING new
+                        (byte-identical). No presence/liveness indicators anywhere.
+                      */}
+                      {isTenant && selectedConversation.property && (
+                        <div className="flex items-start gap-3 px-6 py-3 border-b border-border bg-muted/40">
+                          <div className="w-8 h-8 rounded-md bg-card flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <House className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {locale === 'es'
+                                ? `Sobre tu arriendo — ${selectedConversation.property}`
+                                : `About your rental — ${selectedConversation.property}`}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {locale === 'es'
+                                ? 'Estamos conectando cada chat a su arriendo; el hilo por arriendo llega próximamente.'
+                                : "We're tying each chat to its rental; per-rental threads are coming soon."}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex-1 overflow-y-auto p-6 bg-muted/30">
                         {isLoadingMessages ? (
                           <MessagesSkeleton />

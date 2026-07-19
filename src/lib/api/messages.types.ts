@@ -26,6 +26,18 @@ export interface BackendLastMessage {
 export interface BackendConversation {
   id: string;
   applicationId: string;
+  /**
+   * Lease this conversation belongs to. OPTIONAL — the current backend groups
+   * chat by `applicationId` only and does NOT return this yet (COMU-01 external
+   * dep: NestJS lease-scoped `messages.service.ts`). Present only once the
+   * server groups by lease; never derived from `applicationId` client-side.
+   */
+  leaseId?: string;
+  /**
+   * Caso this conversation belongs to. OPTIONAL — same external dep as
+   * `leaseId`; carried through only when the backend returns it.
+   */
+  caseId?: string;
   property: { id: string; title: string };
   otherParticipant: BackendParticipant;
   lastMessage: BackendLastMessage | null;
@@ -55,6 +67,10 @@ export interface BackendChatMessage {
 export interface BackendConversationWithMessages {
   id: string;
   applicationId: string;
+  /** Lease this thread belongs to — OPTIONAL (COMU-01 external dep; see `BackendConversation.leaseId`). */
+  leaseId?: string;
+  /** Caso this thread belongs to — OPTIONAL (COMU-01 external dep; see `BackendConversation.caseId`). */
+  caseId?: string;
   messages: BackendChatMessage[];
 }
 
@@ -65,6 +81,10 @@ export interface BackendConversationWithMessages {
 export interface ChatConversation {
   id: string;
   applicationId: string;
+  /** Lease id — OPTIONAL, carried through only when the backend returns it (COMU-01 external dep). */
+  leaseId?: string;
+  /** Caso id — OPTIONAL, carried through only when the backend returns it (COMU-01 external dep). */
+  caseId?: string;
   name: string;
   role: string;
   email: string;
@@ -124,6 +144,10 @@ export function mapToConversation(backend: BackendConversation): ChatConversatio
   return {
     id: backend.id,
     applicationId: backend.applicationId,
+    // Passthrough ONLY when the backend returns them (COMU-01 external dep) —
+    // stays `undefined` today; never fabricated or derived from applicationId.
+    leaseId: backend.leaseId,
+    caseId: backend.caseId,
     name: formatName(otherParticipant.firstName, otherParticipant.lastName),
     role: formatRole(otherParticipant.role),
     email: otherParticipant.email,

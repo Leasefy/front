@@ -117,7 +117,10 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
   3. Todo mensaje/recordatorio saliente respeta el gate de contacto del `agent` (Ley 2300/2023: máx 1/día, 1 canal/semana): el frontend no envía por su cuenta vía Twilio ni pregunta "por qué" la mora (art. 7); WhatsApp es canal de primera pero ruteado por el `agent` (COMU-03, guardrails PITFALLS 3/5).
   4. El chat expone una ventana de respuesta esperada (consistente con el SLA de PQRS), sin implicar respuesta humana instantánea (guardrail PITFALLS UX).
 **External deps**: NestJS messages.service.ts lease-scoped + upload de adjuntos; WhatsApp/recordatorios salientes ruteados por el contact-ledger/gate del `agent` (bloqueante para envío real — frontend-first: in-app funciona, saliente detrás del gate).
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] v7-05-01-PLAN.md — Chat compuesto en el arriendo/caso: contrato lease-scoped (`getMessagesByLease`) + honest-unavailable, header de contexto del arriendo (tenant), deep-link desde el detalle de caso (COMU-01)
+- [ ] v7-05-02-PLAN.md — Adjuntos (picker real, envío "Próximamente") + acciones archivar/silenciar/reportar reales (service + toast + AlertDialog), reemplazan `alert()`; sin "por qué" la mora (COMU-02)
+- [ ] v7-05-03-PLAN.md — Gate de contacto: contrato `agent-contact` (`canContact`, default-gated), WhatsApp ruteado por el `agent` "Próximamente", ventana de respuesta (15 días hábiles); sin sender saliente, sin presencia falsa (COMU-03 + PITFALLS UX)
 **UI hint**: yes
 
 ### v7-06: Solicitudes / PQRS
@@ -170,7 +173,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 | v7-02. Documentos del Arriendo | v7.0 | 4/4 | Complete | 2026-07-17 |
 | v7-03. Estado de Casos (Hub) | v7.0 | 3/3 | Complete | 2026-07-18 |
 | v7-04. Pagos Reales (Wompi) | v7.0 | 4/4 | Complete | 2026-07-18 |
-| v7-05. Comunicación | v7.0 | 0/TBD | Not started | - |
+| v7-05. Comunicación | v7.0 | 0/3 | Not started | - |
 | v7-06. Solicitudes / PQRS | v7.0 | 0/TBD | Not started | - |
 | v7-07. Acuerdos de Pago | v7.0 | 0/TBD | Not started | - |
 

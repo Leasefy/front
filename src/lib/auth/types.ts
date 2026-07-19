@@ -163,6 +163,10 @@ export interface User {
   backendRole?: BackendRole
   /** True if the user has an email+password credential (false = Google-only) */
   hasPassword?: boolean
+  /** Where this profile came from: 'backend' = GET /users/me (authoritative),
+   *  'session' = degraded Supabase-session fallback while the backend is
+   *  unreachable (fabricates onboardingCompleted — never trust it as truth). */
+  profileSource?: 'backend' | 'session'
   // Onboarding fields
   onboardingCompleted?: boolean
   onboardingStep?: number

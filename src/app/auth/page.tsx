@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { LeasefyLogo, LeasefyWordmark, LeasefyMark } from '@/components/brand';
+import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import Link from 'next/link';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { motion } from 'framer-motion';
@@ -87,9 +88,10 @@ export default function AuthPage() {
         <div className="relative z-10 flex flex-col justify-between p-10 lg:p-12 w-full">
           {/* Top — wordmark (the symbol now lives in the centered watermark behind) */}
           <div>
-            <Link href="/" className="inline-flex items-center group">
+            {/* Brand — authenticated users go to their dashboard, not the landing */}
+            <BrandHomeLink className="inline-flex items-center group">
               <LeasefyWordmark className="text-white" style={{ fontSize: 21 }} />
-            </Link>
+            </BrandHomeLink>
           </div>
 
           {/* Bottom — title, subtitle, benefits, metrics */}
@@ -159,11 +161,11 @@ export default function AuthPage() {
               Inicio
             </Link>
 
-            {/* Mobile logo */}
+            {/* Mobile logo — authenticated users go to their dashboard */}
             <div className="lg:hidden">
-              <Link href="/" className="inline-flex items-center justify-center">
+              <BrandHomeLink className="inline-flex items-center justify-center">
                 <LeasefyLogo size={24} tone="brand" />
-              </Link>
+              </BrandHomeLink>
             </div>
           </div>
 

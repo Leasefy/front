@@ -6,6 +6,7 @@ import { toFrontendRole } from './types'
 import { fetchAgencyProfile, type AgencyFetchResult } from './agency-fetch'
 import { getSupabase } from '@/lib/supabase/client'
 import { apiClient, ApiError, setAccessToken } from '@/lib/api/client'
+import { TENANT_ONBOARDING_STORAGE_KEY } from '@/lib/onboarding/tenant-onboarding-status'
 import { requestNotificationPermission, removeFcmToken } from '@/lib/firebase/messaging'
 import type { Session } from '@supabase/supabase-js'
 
@@ -17,6 +18,13 @@ import type { Session } from '@supabase/supabase-js'
  * Falls back to Supabase session data when backend is unavailable.
  */
 export const AuthContext = createContext<AuthContextType | null>(null)
+
+/**
+ * sessionStorage key used to hand a fatal auth-bootstrap error message
+ * (e.g. 409 duplicate-identity on GET /users/me) to the /auth screen across
+ * the forced sign-out redirect. AuthForm reads and clears it on mount.
+ */
+export const AUTH_BOOTSTRAP_ERROR_KEY = 'leasefy:auth:bootstrap-error'
 
 interface AuthProviderProps {
   children: ReactNode
@@ -71,7 +79,12 @@ function mapBackendUser(data: Record<string, unknown>, emailConfirmedAt?: string
     emailConfirmedAt,
     role: frontendRole,
     backendRole: backendRole as import('./types').BackendRole,
-    onboardingCompleted: !!data.firstName,
+    profileSource: 'backend',
+    // Flag-based (backend contract): onboardingCompletedAt is stamped ONLY
+    // when POST /users/me/onboarding actually completes. Auto-provisioned
+    // OAuth users have a firstName from Google metadata but a null flag —
+    // they must still confirm their data through the wizard.
+    onboardingCompleted: data.onboardingCompletedAt != null,
     onboardingData,
     tenantOnboardingData,
   }
@@ -93,6 +106,7 @@ function mapSupabaseUser(session: Session): User {
     avatar: meta.avatar_url || meta.picture || undefined,
     emailConfirmedAt: supabaseUser.email_confirmed_at ?? undefined,
     role: 'tenant',
+    profileSource: 'session',
     // When the backend is unreachable we have no way to confirm onboarding status.
     // Default to true so the user isn't incorrectly sent to the onboarding flow —
     // the panel will gracefully degrade on its own since all API calls will fail too.
@@ -203,6 +217,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // JWT valid but user doesn't exist in public.users yet → needs onboarding
       if (isUserNotFoundError(err)) {
         return { user: null, needsOnboarding: true }
+      }
+      // 409: this Supabase identity's email already belongs to another account.
+      // Never fall back to the degraded session user (that would loop on every
+      // request) — surface the backend message and drop the Supabase session
+      // so the user can log in with their original account.
+      // The message travels via sessionStorage (this file's decoupling
+      // precedent — see 'leasefy:preferences:loaded' above): a toast fired
+      // here would unmount with the panel during the sign-out redirect, and
+      // the /auth screen (AuthForm) owns the visible error banner.
+      if (err instanceof ApiError && err.status === 409) {
+        const message =
+          err.message ||
+          'Ya existe una cuenta registrada con este correo. Inicia sesión con tu cuenta original.'
+        if (typeof window !== 'undefined') {
+          try {
+            window.sessionStorage.setItem(AUTH_BOOTSTRAP_ERROR_KEY, message)
+          } catch {}
+        }
+        try {
+          getSupabase()?.auth.signOut({ scope: 'local' }).catch(() => {})
+        } catch {}
+        return { user: null, needsOnboarding: false }
       }
       // Any other 401 = real token failure → logout (handled by caller returning null user)
       if (err instanceof ApiError && err.status === 401) {
@@ -568,6 +604,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         Object.keys(window.sessionStorage)
           .filter((k) => k.startsWith('sb-') || k.startsWith('supabase.'))
           .forEach((k) => window.sessionStorage.removeItem(k))
+        // The tenant onboarding wizard cache carries this account's PII
+        // (phone, budget, zones, pets) — never leave it behind for the next
+        // account on a shared browser.
+        window.localStorage.removeItem(TENANT_ONBOARDING_STORAGE_KEY)
       } catch {}
     }
 

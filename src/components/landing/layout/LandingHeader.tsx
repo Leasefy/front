@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
 import { useHeaderScrollState } from './useHeaderScrollState'
 import { MegaMenu } from './MegaMenu'
 
@@ -48,9 +49,10 @@ export function LandingHeader({ forceSolid }: LandingHeaderProps) {
 
   return (
     <header data-state={solid ? 'solid' : 'overlay-dark'} className="landing-header">
-      <Link href="/" aria-label="Leasefy — inicio" data-testid="landing-header-logo" className="landing-header__logo">
+      {/* Brand — authenticated users go to their dashboard, not the landing */}
+      <BrandHomeLink aria-label="Leasefy — inicio" data-testid="landing-header-logo" className="landing-header__logo">
         Leasefy
-      </Link>
+      </BrandHomeLink>
       <nav aria-label="Navegación principal" className="landing-header__nav">
         <MegaMenu />
         {NAV_ITEMS.map((item) => {

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { LeasefyLogo } from '@/components/brand';
+import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, Eye, EyeSlash, CheckCircle, ArrowRight } from '@phosphor-icons/react';
@@ -97,11 +98,11 @@ export default function UpdatePasswordPage() {
     <ForceLightMode>
       <div className="min-h-screen bg-bg flex items-center justify-center px-4">
         <div className="w-full max-w-[400px]">
-          {/* Logo */}
+          {/* Logo — authenticated users go to their dashboard */}
           <div className="flex justify-center mb-8">
-            <Link href="/">
+            <BrandHomeLink>
               <LeasefyLogo size={28} tone="brand" />
-            </Link>
+            </BrandHomeLink>
           </div>
 
           {success ? (

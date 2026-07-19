@@ -9,6 +9,10 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
+import {
+  deriveTenantOnboardingStatus,
+  readTenantOnboardingCacheStatus,
+} from '@/lib/onboarding/tenant-onboarding-status';
 
 interface SetupStep {
   id: number;
@@ -74,35 +78,18 @@ export function TenantDashboardEmpty() {
   const { greeting } = useTimeGreeting();
   const firstName = user?.name?.split(' ')[0] || (locale === 'es' ? 'Usuario' : 'User');
 
-  const [steps, setSteps] = useState(SETUP_STEPS);
+  const [localCache, setLocalCache] = useState<{ completedSteps: number[]; isComplete: boolean }>({
+    completedSteps: [],
+    isComplete: false,
+  });
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load progress from localStorage (migrate old 3-step data to 2-step)
+  // Local wizard progress cache (in-progress drafts only; migrates old 3-step
+  // data). Scoped to the current user: another account's payload reads as absent.
+  const userId = user?.id;
   useEffect(() => {
     const loadProgress = () => {
-      const saved = localStorage.getItem('plan_onboarding_tenant');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          const completedSteps = (parsed.completedSteps || []).filter((s: number) => s <= 2);
-
-          // Migrate: if old data had step 3 completed (employment, now removed),
-          // treat step 2 as completed since it was the old step 3 (preferences)
-          const oldCompletedSteps = parsed.completedSteps || [];
-          if (oldCompletedSteps.includes(3) && !completedSteps.includes(2)) {
-            completedSteps.push(2);
-          }
-
-          setSteps(prev =>
-            prev.map(step => ({
-              ...step,
-              completed: completedSteps.includes(step.id),
-            }))
-          );
-        } catch (e) {
-          console.error('Error loading onboarding progress:', e);
-        }
-      }
+      setLocalCache(readTenantOnboardingCacheStatus(userId));
       setIsLoaded(true);
     };
 
@@ -110,16 +97,31 @@ export function TenantDashboardEmpty() {
     loadProgress();
 
     // Listen for onboarding updates (dispatched by TenantOnboardingContext)
-    const handleOnboardingUpdate = () => {
-      loadProgress();
-    };
-
-    window.addEventListener('onboarding-updated', handleOnboardingUpdate);
+    window.addEventListener('onboarding-updated', loadProgress);
 
     return () => {
-      window.removeEventListener('onboarding-updated', handleOnboardingUpdate);
+      window.removeEventListener('onboarding-updated', loadProgress);
     };
-  }, []);
+  }, [userId]);
+
+  // Step status: the backend profile (name+phone / saved housing preferences)
+  // is the source of truth; the local cache only adds in-progress wizard steps
+  // that were passed locally but not yet submitted to the backend.
+  // A cache claiming FULL completion while the authoritative backend flag says
+  // the wizard never completed is stale (a real submit always stamps the flag):
+  // ignore it entirely so the checklist and its Continue CTA stay actionable.
+  const backendStatus = deriveTenantOnboardingStatus(user);
+  const staleCompleteCache =
+    user?.profileSource === 'backend' && !user.onboardingCompleted && localCache.isComplete;
+  const localCompletedSteps = staleCompleteCache ? [] : localCache.completedSteps;
+  const steps = SETUP_STEPS.map(step => ({
+    ...step,
+    completed:
+      localCompletedSteps.includes(step.id) ||
+      (step.key === 'basic'
+        ? backendStatus.basicInfoComplete
+        : backendStatus.preferencesComplete),
+  }));
 
   const completedCount = steps.filter(s => s.completed).length;
   const totalSteps = steps.length;

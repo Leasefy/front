@@ -13,9 +13,11 @@ import { ownerPortalApi } from '@/lib/api/owner-portal.service';
 import { ownerFinanzasApi } from '@/lib/api/owner-finanzas.service';
 import { ownerSeleccionApi } from '@/lib/api/owner-seleccion.service';
 import { ownerSolicitudesApi } from '@/lib/api/owner-solicitudes.service';
+import { ownerNovedadesApi } from '@/lib/api/owner-novedades.service';
 import type { OwnerPerfil } from '@/lib/api/owner-portal.types';
 import type { EleccionProceso, EleccionComparacion } from '@/lib/api/owner-seleccion.types';
 import type { Solicitud, SolicitudDetalle } from '@/lib/api/owner-solicitudes.types';
+import type { DanosResponse, DigestListItem, Digest } from '@/lib/api/owner-novedades.types';
 import type {
   FinanzasPortafolio,
   FinanzasInmueble,
@@ -313,4 +315,80 @@ export function useOwnerSolicitud(requestId: string): UseOwnerSolicitudResult {
 
   const unavailable = !agencyId || (!isLoading && detalle === null);
   return { detalle, isLoading, unavailable, agencyId };
+}
+
+export interface UseOwnerNovedadesResult {
+  digests: DigestListItem[];
+  danos: DanosResponse | null;
+  isLoading: boolean;
+  /** unavailable = portal no cableado (sin agencyId) → "Próximamente". */
+  unavailable: boolean;
+  agencyId: string | null;
+}
+
+/**
+ * Hub de novedades (F5): digests + daños en paralelo. `danos` puede venir con `available:false`
+ * (fail-soft de la tabla de Martín) — eso lo maneja la vista como "Próximamente" SOLO para daños.
+ */
+export function useOwnerNovedades(): UseOwnerNovedadesResult {
+  const agencyId = useOwnerAgencyId();
+  const [digests, setDigests] = useState<DigestListItem[]>([]);
+  const [danos, setDanos] = useState<DanosResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    if (!agencyId) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    Promise.all([ownerNovedadesApi.getDigests(agencyId), ownerNovedadesApi.getDanos(agencyId)]).then(
+      ([d, dn]) => {
+        if (!alive) return;
+        setDigests(d);
+        setDanos(dn);
+        setIsLoading(false);
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, [agencyId]);
+
+  return { digests, danos, isLoading, unavailable: !agencyId, agencyId };
+}
+
+export interface UseOwnerDigestResult {
+  digest: Digest | null;
+  isLoading: boolean;
+  unavailable: boolean;
+  agencyId: string | null;
+}
+
+/** Detalle de un digest mensual (F5). */
+export function useOwnerDigest(periodo: string): UseOwnerDigestResult {
+  const agencyId = useOwnerAgencyId();
+  const [digest, setDigest] = useState<Digest | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    if (!agencyId || !periodo) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    ownerNovedadesApi.getDigest(agencyId, periodo).then((d) => {
+      if (!alive) return;
+      setDigest(d);
+      setIsLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [agencyId, periodo]);
+
+  const unavailable = !agencyId || (!isLoading && digest === null);
+  return { digest, isLoading, unavailable, agencyId };
 }

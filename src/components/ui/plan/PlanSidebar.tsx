@@ -23,11 +23,9 @@ import {
 import {
   SidebarSection,
   SidebarItem,
-  SidebarWorkspaceSwitcher,
   SidebarSearch,
   SidebarInviteCard,
   SidebarUpgradeButton,
-  type SidebarWorkspace,
 } from '@leasefy/cadence';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -106,12 +104,8 @@ export interface PlanSidebarProps {
   onSearchClick?: () => void;
   /** Placeholder for the cadence SidebarSearch field. */
   searchPlaceholder?: string;
-  /** Workspace name shown in the header switcher (defaults to `logo.title`). */
+  /** Workspace name shown in the static header brand row (defaults to `logo.title`). */
   workspaceName?: string;
-  /** Workspaces listed in the header switcher dropdown. */
-  workspaces?: SidebarWorkspace[];
-  /** Fired when a workspace row is chosen. */
-  onWorkspaceSelect?: (id: string) => void;
   /** Show the "Invita a tu equipo" footer card (cadence §Navigation). */
   showInvite?: boolean;
   /** Handler for the invite-card button. */
@@ -324,8 +318,6 @@ interface SidebarContentProps {
   onSearchClick?: () => void;
   searchPlaceholder?: string;
   workspaceName?: string;
-  workspaces?: SidebarWorkspace[];
-  onWorkspaceSelect?: (id: string) => void;
   showInvite?: boolean;
   onInvite?: () => void;
 }
@@ -346,8 +338,6 @@ function SidebarContent({
   onSearchClick,
   searchPlaceholder,
   workspaceName,
-  workspaces,
-  onWorkspaceSelect,
   showInvite = false,
   onInvite,
 }: SidebarContentProps) {
@@ -415,13 +405,24 @@ function SidebarContent({
             <LeasefyMark variant="tile" size={32} />
           </Link>
         </div>
-      ) : workspaceName || (workspaces && workspaces.length > 0) ? (
+      ) : workspaceName ? (
+        // Static brand row — profiles can't be switched, so no dropdown,
+        // no bordered box, no caret: brand tile + workspace name linking home.
         <div className="px-3 pt-3">
-          <SidebarWorkspaceSwitcher
-            name={workspaceName ?? logo?.title ?? 'Leasefy'}
-            workspaces={workspaces}
-            onSelect={onWorkspaceSelect}
-          />
+          <Link
+            href="/"
+            onClick={onItemClick}
+            aria-label="Leasefy — inicio"
+            className="flex w-full items-center gap-[10px] rounded-[12px] px-[10px] py-[8px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <LeasefyMark variant="tile" size={28} />
+            <span className="flex min-w-0 flex-1 flex-col items-start leading-[1.2]">
+              <span className="truncate font-display text-[14px] font-semibold text-fg">
+                {workspaceName}
+              </span>
+              <span className="font-mono text-[10px] text-fg-subtle">Workspace</span>
+            </span>
+          </Link>
         </div>
       ) : (
         // Fallback for layouts that don't opt into the switcher — original brand logo.
@@ -627,8 +628,6 @@ export function PlanSidebar({
   onSearchClick,
   searchPlaceholder,
   workspaceName,
-  workspaces,
-  onWorkspaceSelect,
   showInvite = false,
   onInvite,
 }: PlanSidebarProps) {
@@ -671,8 +670,6 @@ export function PlanSidebar({
           onSearchClick={onSearchClick}
           searchPlaceholder={searchPlaceholder}
           workspaceName={workspaceName}
-          workspaces={workspaces}
-          onWorkspaceSelect={onWorkspaceSelect}
           showInvite={showInvite}
           onInvite={onInvite}
         />
@@ -709,8 +706,6 @@ export function PlanSidebar({
             }
             searchPlaceholder={searchPlaceholder}
             workspaceName={workspaceName}
-            workspaces={workspaces}
-            onWorkspaceSelect={onWorkspaceSelect}
             showInvite={showInvite}
             onInvite={
               onInvite

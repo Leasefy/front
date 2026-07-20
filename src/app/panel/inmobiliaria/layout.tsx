@@ -284,16 +284,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
           title: t('inmobiliaria.common.title'),
           href: '/panel/inmobiliaria',
         }}
-        // cadence §Navigation: workspace switcher + search-opens-⌘K + footer cards
+        // cadence §Navigation: static brand row + search-opens-⌘K + footer cards
         workspaceName={t('inmobiliaria.common.title')}
-        workspaces={[
-          {
-            id: 'current',
-            name: t('inmobiliaria.common.title'),
-            description: 'Panel de tu inmobiliaria',
-            active: true,
-          },
-        ]}
         onSearchClick={openCommandPalette}
         searchPlaceholder="Buscar"
         showInvite

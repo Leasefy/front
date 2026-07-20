@@ -139,14 +139,14 @@ function RegistroContent() {
   // ─── Auto-accept / auto-complete ─────────────────────────────────────────
   // Fires whenever the user is authenticated and has an invitation token loaded.
   // Covers two cases:
-  //   A) codeFromUrl present  → user just confirmed email, may exist as TENANT via trigger
+  //   A) codeFromUrl present  → user just confirmed email (brand-new signup)
   //   B) no codeFromUrl       → user was already logged in, just needs to accept
-  // In both cases we ensure role = AGENT via onboarding before accepting.
   useEffect(() => {
     if (!isAuthenticated || !token || !invitation) return;
-    // needsOnboarding: true  → user has no DB record (no trigger)
-    // needsOnboarding: false + user exists → Supabase trigger created them as TENANT
-    // Both paths need onboarding with AGENT role before accepting.
+    // needsOnboarding: true  → JWT valid but NO backend public.users record yet
+    //                          (genuinely new, un-onboarded user → create as AGENT)
+    // needsOnboarding: false → the user already has a real backend profile
+    //                          (TENANT/LANDLORD/agency) → accept membership only
     if (!needsOnboarding && !user) return; // still loading
 
     setAutoCompleting(true);
@@ -155,8 +155,24 @@ function RegistroContent() {
     const saved = savedRaw ? JSON.parse(savedRaw) as { firstName: string; lastName: string } : null;
 
     const doComplete = async () => {
-      // Only update role if not already AGENT/INMOBILIARIA
-      if (user?.role !== 'agency') {
+      // PERSONAL-ROLE SAFETY: only create/flip the profile to AGENT for a
+      // genuinely new, un-onboarded user (needsOnboarding = no backend
+      // public.users record yet). An EXISTING account (!needsOnboarding —
+      // already TENANT/LANDLORD/agency) must NEVER have its personal User.role
+      // overwritten by accepting an agency membership; acceptInvitation grants
+      // the AgencyMember row independently of the personal role, so we skip the
+      // onboarding/role call entirely.
+      //
+      // Reachability note: in practice this branch is NOT hit here. The auth
+      // context guarantees needsOnboarding===true ⟹ user===null ⟹
+      // isAuthenticated===false (auth-context.tsx:630 `isAuthenticated:!!user`,
+      // :219 `{user:null, needsOnboarding:true}`), and this effect already
+      // early-returns on `!isAuthenticated` above — so when it runs,
+      // needsOnboarding is always false and this effect only ACCEPTS for
+      // existing users. Genuinely new invited users fall through to the manual
+      // "Completá tu perfil" form, whose handleCompleteProfile onboards as
+      // AGENT then accepts. This guard is retained as defense-in-depth.
+      if (needsOnboarding) {
         await apiClient.post('/users/me/onboarding', {
           firstName: saved?.firstName || user?.firstName || '',
           lastName: saved?.lastName || user?.lastName || '',

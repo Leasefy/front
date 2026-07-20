@@ -13,7 +13,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - ✅ **v4.0 AI Agent Beta** — Phases 17-25 (shipped 2026-02-10)
 - ⏸️ **v5.0 Agency Plan-Gated Features** — Phases 26-33 (paused 2026-05-12)
 - ✅ **v6.0 Backoffice Unificado ERP·CRM·Autopilot** — Phases v6-01..v6-08 (frontend-first; **8/8 COMPLETO** 2026-05-30) → detalle en `milestones/v6.0-ROADMAP.md`
-- 🚧 **v7.0 Portal del Inquilino** — Phases v7-01..v7-07 (frontend-first; **en progreso** 2026-07-16) → este documento
+- ✅ **v7.0 Portal del Inquilino** — Phases v7-01..v7-07 (frontend-first; **7/7 COMPLETO** 2026-07-20) → este documento
 
 ---
 
@@ -35,7 +35,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - [x] **v7-04: Pagos Reales (Wompi)** — Pago de arriendo con Wompi/Bold real, comprobantes PDF, autopago; reemplaza el PSE-mock. ✅ 2026-07-18 (checkout initiation real + seguridad server-side; gateway productivo/webhook + recibo PDF + autopago = "Próximamente")
 - [x] **v7-05: Comunicación atada al arriendo/caso** — Chat lease-scoped, adjuntos y acciones reales, saliente respeta el gate de contacto. ✅ 2026-07-19 (header de contexto del arriendo + acciones archivar/silenciar/reportar reales + `alert()`→toast + gate de contacto `canContact` default-gated + hint SLA 15 días hábiles; thread lease-scoped/envío de adjuntos/WhatsApp saliente = "Próximamente" detrás del gate del `agent`)
 - [x] **v7-06: Solicitudes / PQRS** — Abrir/seguir mantenimiento y PQRS tipadas (reusa `pqrs.types.ts`) con SLA 15 días visible. ✅ 2026-07-19 (crear solicitud + adjuntos reales + PQRS sin forkear el tipo + SLA "estimado" nunca en blanco + Ley 820 cost-card con aprobar-cotización; CRUD backend `/pqrs`·`/pqrs/mine`·aprobar + `slaVenceAt` real + valor de `costoResponsable` = "Próximamente" contract-first)
-- [ ] **v7-07: Acuerdos de Pago (LAST)** — Ver/aceptar/pagar acuerdo aprobado por la agencia; nunca auto-aprueba. Contract-first hasta que `agent` exponga RLS tenant.
+- [x] **v7-07: Acuerdos de Pago (LAST)** — Ver/aceptar/pagar acuerdo aprobado por la agencia; nunca auto-aprueba. Contract-first hasta que `agent` exponga RLS tenant. ✅ 2026-07-20 (ver acuerdos + cuota plan verbatim, aceptar firmando (SignaturePad + OTP generalizado, sin botón aprobar/editar términos — T-323/A5), pagar cuota en el rail Wompi de v7-04 (monto server-side), solicitar plan pre-mora propone-solo sin "por qué"/centrales; toda la DATA + settlement = "Próximamente" contract-first hasta que `agent` exponga rutas + RLS tenant)
 
 ## Phase Details
 
@@ -186,7 +186,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 | v7-04. Pagos Reales (Wompi) | v7.0 | 4/4 | Complete | 2026-07-18 |
 | v7-05. Comunicación | v7.0 | 3/3 | Complete | 2026-07-19 |
 | v7-06. Solicitudes / PQRS | v7.0 | 4/4 | Complete | 2026-07-19 |
-| v7-07. Acuerdos de Pago | v7.0 | 0/7 | Not started | - |
+| v7-07. Acuerdos de Pago | v7.0 | 7/7 | Complete | 2026-07-20 |
 
 ---
 

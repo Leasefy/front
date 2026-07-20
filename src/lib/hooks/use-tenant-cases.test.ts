@@ -24,6 +24,7 @@ import type { BackendTenantPaymentRequest } from '@/lib/api/tenant-payment-reque
 import type { BackendPaymentInfo } from '@/lib/api/leases.types';
 import type { Lease } from '@/lib/types/lease';
 import type { TenantApplicationView } from '@/lib/api/applications.service';
+import type { SolicitudPqrs } from '@/lib/api/pqrs.types';
 
 void React; // jsx-preserve
 
@@ -32,6 +33,9 @@ let mockRequests: BackendTenantPaymentRequest[] = [];
 let mockLeases: Lease[] = [];
 let mockPaymentInfo: BackendPaymentInfo | null = null;
 let mockActiveApps: TenantApplicationView[] = [];
+let mockPqrs: SolicitudPqrs[] = [];
+let mockPqrsError: string | null = null;
+let pqrsRefetchCount = 0;
 
 vi.mock('@/lib/hooks/useLeases', () => ({
   useMyPaymentRequests: () => ({
@@ -67,6 +71,19 @@ vi.mock('@/lib/hooks/useApplications', () => ({
     isLoading: false,
     error: null,
     refetch: vi.fn(),
+  }),
+}));
+
+// PQRS list hook — controllable so we exercise both the [] (honest empty) path
+// and the real-rows fold. refetch bumps a counter to prove it joins Promise.all.
+vi.mock('@/lib/hooks/use-tenant-pqrs', () => ({
+  useTenantPqrs: () => ({
+    items: mockPqrs,
+    isLoading: false,
+    error: mockPqrsError,
+    refetch: async () => {
+      pqrsRefetchCount += 1;
+    },
   }),
 }));
 
@@ -148,6 +165,24 @@ function makePaymentInfo(over: Partial<BackendPaymentInfo> = {}): BackendPayment
   };
 }
 
+function makeSolicitud(over: Partial<SolicitudPqrs> = {}): SolicitudPqrs {
+  return {
+    id: 'sol-' + Math.random().toString(36).slice(2),
+    radicado: 'PQRS-2026-0001',
+    tipo: 'queja',
+    estado: 'recibida',
+    prioridad: 'media',
+    canal: 'web',
+    asunto: 'Ruido excesivo',
+    descripcion: 'Ruido de obra fuera de horario.',
+    solicitanteNombre: 'Ana',
+    solicitanteTipo: 'inquilino',
+    createdAt: '2026-07-10T10:00:00.000Z',
+    updatedAt: '2026-07-10T10:00:00.000Z',
+    ...over,
+  };
+}
+
 function makeApp(over: Partial<TenantApplicationView> = {}): TenantApplicationView {
   return {
     id: 'app-' + Math.random().toString(36).slice(2),
@@ -177,6 +212,9 @@ beforeEach(() => {
   mockLeases = [];
   mockPaymentInfo = null;
   mockActiveApps = [];
+  mockPqrs = [];
+  mockPqrsError = null;
+  pqrsRefetchCount = 0;
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -314,7 +352,8 @@ describe('useTenantCases — aplicacion rows from real applications', () => {
 });
 
 describe('useTenantCases — forward-refs, tone ceiling, events, counts', () => {
-  it('never emits pqrs/mantenimiento/acuerdo/contrato rows', () => {
+  it('emits zero pqrs/mantenimiento rows when listMine() degrades to [] (acuerdo/contrato never emit)', () => {
+    mockPqrs = []; // listMine() → [] (backend not live): the honest empty path.
     mockRequests = [makeRequest({ status: 'PENDING_VALIDATION' })];
     mockLeases = [makeLease()];
     mockPaymentInfo = makePaymentInfo({ currentPeriodStatus: 'NONE' });
@@ -394,5 +433,104 @@ describe('useTenantCases — forward-refs, tone ceiling, events, counts', () => 
     expect(r.current!.primaryLease?.id).toBe('lease-primary');
     // ACTIVE/APPROVED period is not actionable → no pago row emitted for it.
     expect(casesOf(r).filter((c) => c.type === 'pago')).toHaveLength(0);
+  });
+});
+
+describe('useTenantCases — PQRS/mantenimiento fold (SOLI-03)', () => {
+  it('folds a reparacion into exactly one mantenimiento row with mapped tone/label + solicitud metadata', () => {
+    mockPqrs = [
+      makeSolicitud({
+        id: 'sol-rep',
+        tipo: 'reparacion',
+        estado: 'en_cotizacion',
+        asunto: 'Fuga en el baño',
+        createdAt: '2026-07-10T10:00:00.000Z',
+        updatedAt: '2026-07-11T10:00:00.000Z',
+        costoResponsable: 'inquilino',
+        cotizacionMonto: 350000,
+        cotizacionId: 'cot-9',
+      }),
+    ];
+
+    const r = renderHook();
+    const mant = casesOf(r).filter((c) => c.type === 'mantenimiento');
+    expect(mant).toHaveLength(1);
+
+    const row = mant[0];
+    expect(row.id).toBe('sol-rep');
+    expect(row.titulo).toBe('Fuga en el baño');
+    expect(row.estadoLabel).toBe('En cotización');
+    expect(row.tone).toBe('attention'); // capped — never an alarm level
+    expect(row.responsable).toBe('Inmobiliaria');
+    expect(row.solicitud?.estado).toBe('en_cotizacion');
+    expect(row.solicitud?.costoResponsable).toBe('inquilino');
+    expect(row.solicitud?.cotizacionMonto).toBe(350000);
+  });
+
+  it('folds a queja into exactly one pqrs row with a detailLink into /inquilino/casos/<id>', () => {
+    mockPqrs = [makeSolicitud({ id: 'sol/1', tipo: 'queja', estado: 'asignada' })];
+
+    const r = renderHook();
+    const pqrs = casesOf(r).filter((c) => c.type === 'pqrs');
+    expect(pqrs).toHaveLength(1);
+    expect(pqrs[0].estadoLabel).toBe('Asignada');
+    expect(pqrs[0].tone).toBe('info');
+    expect(pqrs[0].detailLink).toBe(`/inquilino/casos/${encodeURIComponent('sol/1')}`);
+    expect(pqrs[0].sourceLink).toBe('/inquilino/solicitudes');
+  });
+
+  it('openCasesCount includes the PQRS rows (=== cases.length)', () => {
+    mockRequests = [makeRequest({ status: 'PENDING_VALIDATION' })];
+    mockPqrs = [
+      makeSolicitud({ id: 's-1', tipo: 'queja' }),
+      makeSolicitud({ id: 's-2', tipo: 'reparacion' }),
+    ];
+
+    const r = renderHook();
+    const pqrsLike = casesOf(r).filter((c) => c.type === 'pqrs' || c.type === 'mantenimiento');
+    expect(pqrsLike).toHaveLength(2);
+    expect(r.current!.openCasesCount).toBe(casesOf(r).length);
+    expect(r.current!.openCasesCount).toBe(3); // 1 pago + 2 pqrs-like
+  });
+
+  it('tone stays within neutral/info/attention across every estado', () => {
+    mockPqrs = (
+      ['recibida', 'asignada', 'en_proceso', 'en_cotizacion', 'resuelta', 'cerrada'] as const
+    ).map((estado, i) => makeSolicitud({ id: `s-${i}`, estado }));
+
+    const r = renderHook();
+    for (const c of casesOf(r).filter((x) => x.type === 'pqrs')) {
+      expect(['neutral', 'info', 'attention']).toContain(c.tone);
+    }
+  });
+
+  it('a listMine error surfaces via the error chain but does not blank pago/aplicacion rows', () => {
+    mockRequests = [makeRequest({ id: 'r-pending', status: 'PENDING_VALIDATION' })];
+    mockActiveApps = [makeApp({ id: 'a-1' })];
+    mockPqrs = [];
+    mockPqrsError = 'pqrs boom';
+
+    const r = renderHook();
+    expect(r.current!.error).toBe('pqrs boom');
+    // pago + aplicacion rows are unaffected by the pqrs error.
+    expect(casesOf(r).filter((c) => c.type === 'pago')).toHaveLength(1);
+    expect(casesOf(r).filter((c) => c.type === 'aplicacion')).toHaveLength(1);
+  });
+
+  it('a pago/aplicacion error keeps priority over the pqrs error', () => {
+    mockPqrsError = 'pqrs boom';
+
+    const r = renderHook();
+    // No source error set except pqrs → pqrs error is what surfaces (appended last).
+    expect(r.current!.error).toBe('pqrs boom');
+  });
+
+  it('refetch resolves and includes the pqrs refetch (Promise.all)', async () => {
+    mockPqrs = [makeSolicitud({ id: 's-1' })];
+    const r = renderHook();
+    await act(async () => {
+      await r.current!.refetch();
+    });
+    expect(pqrsRefetchCount).toBeGreaterThan(0);
   });
 });

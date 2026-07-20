@@ -160,3 +160,44 @@ describe('ProtectedRoute — invited NEW user (needsOnboarding)', () => {
     expect(replaceMock).not.toHaveBeenCalledWith('/registro')
   })
 })
+
+describe('ProtectedRoute — incomplete onboarding vs active agency membership', () => {
+  it('active-membership TENANT with incomplete onboarding is NOT funneled to seleccionar-rol (renders the agency panel)', async () => {
+    // On /panel/inmobiliaria (the mocked pathname): the effect returns without
+    // redirecting (already there) and the render guard exempts them.
+    authState.user = { id: 'u1', role: 'tenant', onboardingCompleted: false }
+    authState.isAuthenticated = true
+    authState.needsOnboarding = false
+    authState.hasActiveAgencyMembership = true
+    authState.agencyMembershipChecked = true
+
+    await renderPanel()
+
+    expect(replaceMock).not.toHaveBeenCalledWith('/onboarding/seleccionar-rol')
+    expect(childMounted()).toBe(true)
+  })
+
+  it('no-membership TENANT with incomplete onboarding IS sent to seleccionar-rol (unchanged)', async () => {
+    authState.user = { id: 'u2', role: 'tenant', onboardingCompleted: false }
+    authState.isAuthenticated = true
+    authState.needsOnboarding = false
+    authState.hasActiveAgencyMembership = false
+    authState.agencyMembershipChecked = true
+
+    await renderPanel()
+
+    expect(replaceMock).toHaveBeenCalledWith('/onboarding/seleccionar-rol')
+  })
+
+  it('pure-agency user is unaffected by the onboarding gate (isAgencyUser skip)', async () => {
+    authState.user = { id: 'u3', role: 'agency', backendRole: 'AGENT', onboardingCompleted: false }
+    authState.isAuthenticated = true
+    authState.needsOnboarding = false
+    authState.hasActiveAgencyMembership = false
+
+    await renderPanel()
+
+    expect(replaceMock).not.toHaveBeenCalledWith('/onboarding/seleccionar-rol')
+    expect(childMounted()).toBe(true)
+  })
+})

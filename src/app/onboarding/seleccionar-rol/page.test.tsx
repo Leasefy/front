@@ -14,7 +14,10 @@ void React
 
 const { replaceMock, authState } = vi.hoisted(() => ({
   replaceMock: vi.fn(),
-  authState: { user: null as Record<string, unknown> | null },
+  authState: {
+    user: null as Record<string, unknown> | null,
+    hasActiveAgencyMembership: false,
+  },
 }))
 
 vi.mock('next/navigation', () => ({
@@ -22,7 +25,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 vi.mock('@/lib/auth/use-auth', () => ({
-  useAuth: () => ({ user: authState.user }),
+  useAuth: () => ({ user: authState.user, hasActiveAgencyMembership: authState.hasActiveAgencyMembership }),
 }))
 
 import SeleccionarRolPage from './page'
@@ -34,6 +37,7 @@ beforeEach(() => {
   localStorage.clear()
   replaceMock.mockClear()
   authState.user = null
+  authState.hasActiveAgencyMembership = false
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -67,5 +71,14 @@ describe('SeleccionarRolPage — invitation guard', () => {
 
     expect(replaceMock).not.toHaveBeenCalledWith('/registro')
     expect(container.textContent).toContain('Inquilino')
+  })
+
+  it('redirects an ACTIVE agency member to the agency panel (never the picker)', async () => {
+    authState.hasActiveAgencyMembership = true
+
+    await render()
+
+    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')
+    expect(container.textContent).not.toContain('Propietario')
   })
 })

@@ -850,7 +850,8 @@ export const inmobiliariaConfigApi = {
   },
 
   async toggleIntegration(id: string, enabled: boolean): Promise<AgencyIntegration> {
-    return apiClient.patch<AgencyIntegration>(`${BASE}/agency/integrations/${id}`, { isEnabled: enabled });
+    // Backend route is @Put (agency.controller.ts PUT integrations/:id) — must match verb.
+    return apiClient.put<AgencyIntegration>(`${BASE}/agency/integrations/${id}`, { isEnabled: enabled });
   },
 };
 
@@ -1023,5 +1024,13 @@ export const permissionsApi = {
   async updateMemberRole(memberId: string, role: string): Promise<unknown> {
     // Backend route is @Put (agency.controller.ts PUT members/:id/role) — must match verb.
     return apiClient.put(`${BASE}/agency/members/${memberId}/role`, { role });
+  },
+
+  /**
+   * PUT /inmobiliaria/agency/members/:memberId/status
+   * Activates / deactivates a member (admin only). Body: { active: boolean }.
+   */
+  async updateMemberStatus(memberId: string, active: boolean): Promise<unknown> {
+    return apiClient.put(`${BASE}/agency/members/${memberId}/status`, { active });
   },
 };

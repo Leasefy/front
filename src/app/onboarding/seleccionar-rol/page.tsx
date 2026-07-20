@@ -15,7 +15,7 @@ const PENDING_INVITATION_KEY = 'pending-invitation-token'
 
 export default function SeleccionarRolPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, hasActiveAgencyMembership } = useAuth()
   const [selected, setSelected] = useState<RoleChoice>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -29,6 +29,13 @@ export default function SeleccionarRolPage() {
       router.replace('/registro')
       return null
     }
+  }
+
+  // An ACTIVE agency member must never see the personal role picker either —
+  // they already have an agency destination. Send them to the agency panel.
+  if (hasActiveAgencyMembership) {
+    router.replace('/panel/inmobiliaria')
+    return null
   }
 
   // If user already completed onboarding, redirect to their dashboard

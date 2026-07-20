@@ -123,6 +123,16 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
     // Agency users (owners and invited agents) skip the generic onboarding —
     // their onboarding happens via the invitation flow or the inmobiliaria setup.
     if (user && !user.onboardingCompleted && !tenantOnboardingDone && !pathname.startsWith('/onboarding') && !isAgencyUser) {
+      // An ACTIVE agency member with a personal role (tenant/landlord) and
+      // incomplete PERSONAL onboarding still has a valid destination — the
+      // agency panel. NEVER funnel them to the personal role picker; send them
+      // to /panel/inmobiliaria (unless they're already there).
+      if (hasActiveAgencyMembership) {
+        if (!pathname.startsWith('/panel/inmobiliaria')) {
+          router.replace('/panel/inmobiliaria')
+        }
+        return
+      }
       // If there's a pending invitation token (user confirmed email but lost the URL),
       // send them back to /registro so the auto-accept can fire with the stored token.
       const pendingInvitation = (() => {
@@ -202,7 +212,12 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
       return false
     }
   })()
-  if (user && !user.onboardingCompleted && !tenantOnboardingDoneRender && !pathname.startsWith('/onboarding') && !isAgencyUser) {
+  // Exempt an ACTIVE agency member already on the agency panel: the effect does
+  // NOT redirect them (it's their valid destination), so blocking here would
+  // hang a permanent "Redirigiendo..." spinner. Active members elsewhere ARE
+  // being redirected to the panel, so the spinner is still shown for them.
+  const onAgencyPanelAsMember = hasActiveAgencyMembership && pathname.startsWith('/panel/inmobiliaria')
+  if (user && !user.onboardingCompleted && !tenantOnboardingDoneRender && !pathname.startsWith('/onboarding') && !isAgencyUser && !onAgencyPanelAsMember) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">

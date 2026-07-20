@@ -44,6 +44,7 @@ import {
 
 import { useTenantCases } from '@/lib/hooks/use-tenant-cases';
 import { resolveExpectedResponse } from '@/lib/date/business-days';
+import { CostoResponsabilidadCard } from '@/components/tenant/CostoResponsabilidadCard';
 import { useI18n } from '@/lib/i18n';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
@@ -266,6 +267,12 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
           </Button>
         </div>
       </section>
+
+      {/* Ley 820 cost responsibility + approve-only quote affordance (SOLI-04) —
+          shown only for PQRS cases with a backend-set cost determination. */}
+      {caso.solicitud && caso.solicitud.costoResponsable && (
+        <CostoResponsabilidadCard caseId={caso.id} solicitud={caso.solicitud} />
+      )}
 
       {/* State timeline (CASO-02 core) — source-timestamp-only events */}
       <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6">

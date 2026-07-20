@@ -56,7 +56,6 @@ import { useNotificationSettings } from '@/lib/hooks/useSettings';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import type {
   UpdateAgencyPayload,
-  AgencyUser,
   AgencyIntegration,
   RolePermissions,
   AgencyRole,
@@ -266,11 +265,18 @@ function ConfiguracionContent() {
 
   const handleInviteUser = async (invite: UserInvite) => {
     try {
-      await inmobiliariaConfigApi.inviteUser(invite);
+      const result = await inmobiliariaConfigApi.inviteUser(invite);
       await refetchUsers();
-      toast.success(t('inmobiliaria.config.toasts.inviteSent'), {
-        description: t('inmobiliaria.config.toasts.inviteSentDesc'),
-      });
+      if (result.emailDelivered === false) {
+        // Member row was created, but the email failed to send — partial success.
+        toast.warning(t('inmobiliaria.config.toasts.inviteEmailNotDelivered'), {
+          description: t('inmobiliaria.config.toasts.inviteEmailNotDeliveredDesc'),
+        });
+      } else {
+        toast.success(t('inmobiliaria.config.toasts.inviteSent'), {
+          description: t('inmobiliaria.config.toasts.inviteSentDesc'),
+        });
+      }
     } catch (error) {
       toast.error('Error al invitar usuario', {
         description: error instanceof Error ? error.message : undefined,
@@ -280,11 +286,14 @@ function ConfiguracionContent() {
 
   const handleUpdateRole = async (userId: string, role: AgencyRole) => {
     try {
-      await inmobiliariaConfigApi.updateUser(userId, { role });
+      // Backend: PUT /inmobiliaria/agency/members/:id/role with the uppercase enum.
+      await permissionsApi.updateMemberRole(userId, role.toUpperCase());
       await refetchUsers();
       toast.success(t('inmobiliaria.config.toasts.roleUpdated'));
     } catch (error) {
-      toast.error('Error al actualizar rol');
+      toast.error('Error al actualizar rol', {
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   };
 
@@ -292,22 +301,33 @@ function ConfiguracionContent() {
     try {
       const user = users.find((u) => u.id === userId);
       if (!user) return;
-      const newStatus: AgencyUser['status'] = user.status === 'active' ? 'inactive' : 'active';
-      await inmobiliariaConfigApi.updateUser(userId, { status: newStatus });
+      // Backend: PUT /inmobiliaria/agency/members/:id/status { active }. getMembers
+      // returns lowercase statuses, so "currently active" ⟹ deactivate (active:false).
+      const active = user.status !== 'active';
+      await permissionsApi.updateMemberStatus(userId, active);
       await refetchUsers();
       toast.success(t('inmobiliaria.config.toasts.userStatusUpdated'));
     } catch (error) {
-      toast.error('Error al actualizar estado');
+      toast.error('Error al actualizar estado', {
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   };
 
   const handleResendInvite = async (userId: string) => {
     try {
       const user = users.find((u) => u.id === userId);
-      await agencyApi.resendInvitation(userId);
-      toast.success(t('inmobiliaria.config.toasts.inviteResent'), {
-        description: user ? t('inmobiliaria.config.toasts.inviteResentDesc', { email: user.email }) : t('inmobiliaria.config.toasts.inviteSent'),
-      });
+      const result = await agencyApi.resendInvitation(userId);
+      if (result.emailDelivered === false) {
+        // Member still active, but the resend email failed to send.
+        toast.warning(t('inmobiliaria.config.toasts.resendEmailNotDelivered'), {
+          description: t('inmobiliaria.config.toasts.resendEmailNotDeliveredDesc'),
+        });
+      } else {
+        toast.success(t('inmobiliaria.config.toasts.inviteResent'), {
+          description: user ? t('inmobiliaria.config.toasts.inviteResentDesc', { email: user.email }) : t('inmobiliaria.config.toasts.inviteSent'),
+        });
+      }
     } catch (error) {
       toast.error('Error al reenviar invitación', {
         description: error instanceof Error ? error.message : undefined,
@@ -317,11 +337,14 @@ function ConfiguracionContent() {
 
   const handleDeleteUser = async (userId: string) => {
     try {
+      // Backend: DELETE /inmobiliaria/agency/members/:id (uses the member id).
       await inmobiliariaConfigApi.deleteUser(userId);
       await refetchUsers();
       toast.success(t('inmobiliaria.config.toasts.userDeleted'));
     } catch (error) {
-      toast.error('Error al eliminar usuario');
+      toast.error('Error al eliminar usuario', {
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   };
 
@@ -347,13 +370,22 @@ function ConfiguracionContent() {
           return permissionsApi.updateMemberPermissions(member.id, permMap);
         });
 
+      // Nothing to persist (no active non-admin members) — update the local
+      // config but do NOT claim a server-side success.
+      if (updatePromises.length === 0) {
+        setPermissions(newPermissions);
+        return;
+      }
+
       await Promise.all(updatePromises);
       setPermissions(newPermissions);
       toast.success(t('inmobiliaria.config.toasts.permissionsSaved'), {
         description: t('inmobiliaria.config.toasts.permissionsSavedDesc'),
       });
-    } catch {
-      toast.error(t('inmobiliaria.config.toasts.error') || 'Error al guardar permisos');
+    } catch (error) {
+      toast.error(t('inmobiliaria.config.toasts.error') || 'Error al guardar permisos', {
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   };
 
@@ -367,7 +399,9 @@ function ConfiguracionContent() {
       await refetchIntegrations();
       toast.success(enabled ? t('inmobiliaria.config.toasts.integrationEnabled') : t('inmobiliaria.config.toasts.integrationDisabled'));
     } catch (error) {
-      toast.error('Error al actualizar integración');
+      toast.error('Error al actualizar integración', {
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   };
 

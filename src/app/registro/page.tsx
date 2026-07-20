@@ -139,14 +139,14 @@ function RegistroContent() {
   // ─── Auto-accept / auto-complete ─────────────────────────────────────────
   // Fires whenever the user is authenticated and has an invitation token loaded.
   // Covers two cases:
-  //   A) codeFromUrl present  → user just confirmed email, may exist as TENANT via trigger
+  //   A) codeFromUrl present  → user just confirmed email (brand-new signup)
   //   B) no codeFromUrl       → user was already logged in, just needs to accept
-  // In both cases we ensure role = AGENT via onboarding before accepting.
   useEffect(() => {
     if (!isAuthenticated || !token || !invitation) return;
-    // needsOnboarding: true  → user has no DB record (no trigger)
-    // needsOnboarding: false + user exists → Supabase trigger created them as TENANT
-    // Both paths need onboarding with AGENT role before accepting.
+    // needsOnboarding: true  → JWT valid but NO backend public.users record yet
+    //                          (genuinely new, un-onboarded user → create as AGENT)
+    // needsOnboarding: false → the user already has a real backend profile
+    //                          (TENANT/LANDLORD/agency) → accept membership only
     if (!needsOnboarding && !user) return; // still loading
 
     setAutoCompleting(true);
@@ -155,23 +155,42 @@ function RegistroContent() {
     const saved = savedRaw ? JSON.parse(savedRaw) as { firstName: string; lastName: string } : null;
 
     const doComplete = async () => {
-      // Only update role if not already AGENT/INMOBILIARIA
-      if (user?.role !== 'agency') {
+      if (needsOnboarding) {
+        // NEW invited user (defense-in-depth; in practice handled by the manual
+        // "Completá tu perfil" form). ONE transactional call: passing
+        // invitationToken makes /users/me/onboarding create the profile AND
+        // accept the invitation atomically (membership ACTIVE on return,
+        // response { user, agencyMemberId, agencyId, onboardingStep:
+        // 'invitation_accepted' }) — no separate acceptInvitation, no orphan.
+        // Errors: 400 (invalid/expired token), 409 (conflict/already-member).
         await apiClient.post('/users/me/onboarding', {
           firstName: saved?.firstName || user?.firstName || '',
           lastName: saved?.lastName || user?.lastName || '',
           userType: 'AGENT',
+          invitationToken: token,
         });
+      } else {
+        // PERSONAL-ROLE SAFETY: an EXISTING account (!needsOnboarding — already
+        // TENANT/LANDLORD/agency) must NEVER have its personal User.role
+        // overwritten. It does NOT onboard; accept the membership only (the
+        // AgencyMember join is role-independent).
+        await agencyApi.acceptInvitation(token);
       }
-      await agencyApi.acceptInvitation(token);
       localStorage.removeItem(PENDING_INVITATION_KEY);
       localStorage.removeItem(PENDING_NAME_KEY);
       window.location.replace('/panel/inmobiliaria');
     };
 
-    doComplete().catch(() => {
+    doComplete().catch((err) => {
       setAutoCompleting(false);
-      setFormError('No se pudo completar el registro. Intentá de nuevo.');
+      // Surface the backend reason (token invalid/expired/single-agency
+      // conflict). Do NOT clear the pending token on failure — the removeItem
+      // above only runs on the success path.
+      setFormError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'No se pudo completar el registro. Intentá de nuevo.',
+      );
     });
   }, [isAuthenticated, needsOnboarding, user, token, invitation]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -212,19 +231,34 @@ function RegistroContent() {
     setIsSubmitting(true);
     setFormError(null);
     try {
+      // ONE transactional call: with invitationToken present, the backend
+      // creates the profile (AGENT) AND accepts the invitation atomically (the
+      // membership is ACTIVE on return) — no separate acceptInvitation, closing
+      // the orphan-membership state. Confirmed success response:
+      //   { user, agencyMemberId, agencyId, onboardingStep: 'invitation_accepted' }
+      // We don't need any field for routing (fixed panel URL), so we don't
+      // read the body — a 2xx is the join. Errors: 400 (invalid/expired token),
+      // 409 (single-agency conflict / already a member).
       await apiClient.post('/users/me/onboarding', {
         firstName: data.firstName.trim(),
         lastName: data.lastName.trim(),
         phone: data.phone?.trim() || undefined,
         userType: 'AGENT',
+        invitationToken: token ?? undefined,
       });
-      await agencyApi.acceptInvitation(token ?? '');
       localStorage.removeItem(PENDING_INVITATION_KEY);
       localStorage.removeItem(PENDING_NAME_KEY);
       // Hard navigation so ProtectedRoute reads the updated role from backend fresh
       window.location.replace('/panel/inmobiliaria');
-    } catch {
-      setFormError('No se pudo completar el registro. Intentá de nuevo.');
+    } catch (err) {
+      // Surface the backend message (400 invalid/expired token, 409
+      // single-agency conflict/already-member). The token is NOT cleared
+      // (removeItem runs only on success), so the user can retry.
+      setFormError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'No se pudo completar el registro. Intentá de nuevo.',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -334,10 +368,24 @@ function RegistroContent() {
             {/* ── Step: Complete profile (Supabase session exists, no backend profile) ── */}
             {needsOnboarding ? (
               <>
-                <div className="mb-6">
+                <div className="mb-4">
                   <h2 className="text-[16px] font-semibold text-foreground">Completá tu perfil</h2>
                   <p className="text-[13px] text-muted-foreground mt-1">
-                    Tu cuenta fue creada. Solo necesitamos tus datos para unirte a <strong>{invitation.agencyName}</strong>.
+                    Tu cuenta fue creada. Solo necesitamos tus datos.
+                  </p>
+                </div>
+
+                {/* Read-only confirmation of the role + agency they were invited
+                    to (the agent does NOT choose the role). Reuses ROLE_LABELS. */}
+                <div
+                  data-testid="invite-confirmation"
+                  className="mb-5 flex items-start gap-2 p-3 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
+                >
+                  <CheckCircle className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF] mt-0.5 shrink-0" weight="fill" />
+                  <p className="text-[13px] text-foreground">
+                    Te uniste al equipo de{' '}
+                    <strong>{invitation.agencyName ?? 'una inmobiliaria'}</strong> como{' '}
+                    <strong>{ROLE_LABELS[invitation.role] ?? invitation.role}</strong>.
                   </p>
                 </div>
 

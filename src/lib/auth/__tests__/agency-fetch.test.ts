@@ -50,23 +50,32 @@ describe('parseAgencyResponse', () => {
     })
     expect(result.agency).toEqual({ id: 'agency-1', name: 'Inmobiliaria Test' })
     expect(result.role).toBe('ADMIN')
+    // memberStatus is surfaced so callers can gate access on ACTIVE membership.
+    expect(result.memberStatus).toBe('ACTIVE')
   })
 
-  it('tolerates a legacy shape missing memberRole — agency still populated, role null', () => {
+  it('surfaces an INVITED (not-yet-accepted) member status', () => {
+    const result = parseAgencyResponse({ id: 'agency-1', name: 'X', memberStatus: 'INVITED' })
+    expect(result.memberStatus).toBe('INVITED')
+    expect(result.agency?.id).toBe('agency-1')
+  })
+
+  it('tolerates a legacy shape missing memberRole/memberStatus — agency populated, role & status null', () => {
     const result = parseAgencyResponse({ id: 'agency-1', name: 'Inmobiliaria Test' })
     expect(result.agency).toEqual({ id: 'agency-1', name: 'Inmobiliaria Test' })
     expect(result.role).toBeNull()
+    expect(result.memberStatus).toBeNull()
   })
 
-  it('returns null for a non-object payload', () => {
-    expect(parseAgencyResponse(null)).toEqual({ agency: null, role: null })
-    expect(parseAgencyResponse(undefined)).toEqual({ agency: null, role: null })
-    expect(parseAgencyResponse('oops')).toEqual({ agency: null, role: null })
-    expect(parseAgencyResponse([])).toEqual({ agency: null, role: null })
+  it('returns all-null for a non-object payload', () => {
+    expect(parseAgencyResponse(null)).toEqual({ agency: null, role: null, memberStatus: null })
+    expect(parseAgencyResponse(undefined)).toEqual({ agency: null, role: null, memberStatus: null })
+    expect(parseAgencyResponse('oops')).toEqual({ agency: null, role: null, memberStatus: null })
+    expect(parseAgencyResponse([])).toEqual({ agency: null, role: null, memberStatus: null })
   })
 
-  it('returns null when the payload has no string id', () => {
-    expect(parseAgencyResponse({ name: 'No id here' })).toEqual({ agency: null, role: null })
+  it('returns all-null when the payload has no string id', () => {
+    expect(parseAgencyResponse({ name: 'No id here' })).toEqual({ agency: null, role: null, memberStatus: null })
   })
 })
 
@@ -85,31 +94,56 @@ describe('describeAgencyFetchFailure', () => {
 })
 
 describe('fetchAgencyProfile', () => {
-  it('resolves the agency + role on success', async () => {
+  it('resolves agency + role + memberStatus on success (neither confirmed-none nor transient)', async () => {
     globalThis.fetch = mockFetchOk({ id: 'agency-1', name: 'Test', memberRole: 'ADMIN', memberStatus: 'ACTIVE' }) as typeof globalThis.fetch
     const result = await fetchAgencyProfile('token-123')
-    expect(result).toEqual({ agency: { id: 'agency-1', name: 'Test' }, role: 'ADMIN' })
+    expect(result).toEqual({
+      agency: { id: 'agency-1', name: 'Test' },
+      role: 'ADMIN',
+      memberStatus: 'ACTIVE',
+      confirmedNoMembership: false,
+      transientFailure: false,
+    })
   })
 
-  it('never throws and warns with a diagnosable reason on failure (e.g. transient 500)', async () => {
+  it('flags a transient 500 as transientFailure (keep last state) and warns', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     globalThis.fetch = mockFetchStatus(500, { message: 'boom' }) as typeof globalThis.fetch
 
     const result = await fetchAgencyProfile('token-123')
 
-    expect(result).toEqual({ agency: null, role: null })
+    expect(result).toEqual({
+      agency: null, role: null, memberStatus: null,
+      confirmedNoMembership: false, transientFailure: true,
+    })
     expect(warnSpy).toHaveBeenCalledTimes(1)
     expect(warnSpy.mock.calls[0][0]).toContain('500')
     expect(warnSpy.mock.calls[0][0]).toContain('boom')
   })
 
-  it('warns on a real network failure without throwing', async () => {
+  it('flags 404/403 as confirmedNoMembership (safe to downgrade) without warning', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    globalThis.fetch = mockFetchStatus(404, { message: 'no membership' }) as typeof globalThis.fetch
+
+    const result = await fetchAgencyProfile('token-123')
+
+    expect(result).toEqual({
+      agency: null, role: null, memberStatus: null,
+      confirmedNoMembership: true, transientFailure: false,
+    })
+    expect(warnSpy).not.toHaveBeenCalled()
+  })
+
+  it('flags a real network failure as transientFailure and warns', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     globalThis.fetch = vi.fn().mockRejectedValueOnce(new TypeError('Failed to fetch')) as typeof globalThis.fetch
 
     const result = await fetchAgencyProfile('token-123')
 
-    expect(result).toEqual({ agency: null, role: null })
+    expect(result).toEqual({
+      agency: null, role: null, memberStatus: null,
+      confirmedNoMembership: false, transientFailure: true,
+    })
     expect(warnSpy).toHaveBeenCalledTimes(1)
   })
 })

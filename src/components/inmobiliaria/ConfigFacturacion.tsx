@@ -188,9 +188,14 @@ export function ConfigFacturacion({
     },
   ], [t]);
 
-  // Calculate usage percentages
+  // Calculate usage percentages. Guarded: billing / usage / limits can be
+  // absent (billing-less or un-provisioned agency) — never crash on the maths.
   const usagePercentages = useMemo(() => {
-    const { usage, limits } = billing;
+    const usage = billing?.usage;
+    const limits = billing?.limits;
+    if (!usage || !limits) {
+      return { properties: 0, users: 0, agents: 0 };
+    }
     return {
       properties:
         limits.maxProperties === -1
@@ -236,7 +241,7 @@ export function ConfigFacturacion({
   // Handle plan upgrade
   const handleUpgrade = useCallback(
     async (plan: BillingPlan) => {
-      if (plan === billing.plan) return;
+      if (plan === billing?.plan) return;
 
       setIsUpgrading(true);
       try {
@@ -252,7 +257,7 @@ export function ConfigFacturacion({
         setIsUpgrading(false);
       }
     },
-    [billing.plan, onUpgrade, t]
+    [billing?.plan, onUpgrade, t]
   );
 
   // Handle payment method update
@@ -275,6 +280,26 @@ export function ConfigFacturacion({
           <div className="h-48 bg-muted rounded-xl" />
         </div>
         <div className="h-64 bg-muted rounded-xl" />
+      </div>
+    );
+  }
+
+  // Billing payload absent or incomplete (billing-less / un-provisioned agency,
+  // or a partial response). Render a safe empty state instead of crashing — this
+  // single guard makes every `billing.*` access below unconditionally safe.
+  if (!billing || !billing.usage || !billing.limits || !billing.plan || !PLAN_CONFIG[billing.plan]) {
+    return (
+      <div className="p-5 rounded-xl bg-card border border-border">
+        <div className="flex items-center gap-2 mb-4">
+          <Receipt className="w-5 h-5 text-fg-muted" />
+          <h2 className="text-base font-semibold text-fg">{t('inmobiliaria.config.billing.title')}</h2>
+        </div>
+        <div className="py-8 text-center">
+          <Info className="w-10 h-10 mx-auto text-muted-foreground/50 mb-2" />
+          <p className="text-sm text-muted-foreground">
+            {t('inmobiliaria.config.billing.unavailable')}
+          </p>
+        </div>
       </div>
     );
   }

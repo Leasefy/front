@@ -16,5 +16,7 @@ import { getUserHomeRoute } from '@/lib/auth/role-routes'
  */
 export function BrandHomeLink(props: Omit<ComponentProps<typeof Link>, 'href'>) {
   const auth = useContext(AuthContext)
-  return <Link href={getUserHomeRoute(auth?.user)} {...props} />
+  // For dual-context users the destination follows the active context; for
+  // single-context users activeContext mirrors their role, so this is a no-op.
+  return <Link href={getUserHomeRoute(auth?.user, auth?.activeContext)} {...props} />
 }

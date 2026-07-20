@@ -272,3 +272,69 @@ describe('AuthProvider — agency self-healing', () => {
     container.remove()
   })
 })
+
+describe('AuthProvider — dual-context TENANT self-heal (lastProbeTransient path)', () => {
+  const TENANT_BACKEND = {
+    id: 'u-tenant',
+    email: 'tenant@test.com',
+    firstName: 'Tina',
+    lastName: 'Tenant',
+    role: 'TENANT',
+    onboardingCompletedAt: '2026-01-01T00:00:00Z',
+  }
+
+  it('a TRANSIENT probe failure arms self-heal for a personal-role TENANT and resolves ACTIVE', async () => {
+    fetchUserGetMock.mockResolvedValue(TENANT_BACKEND)
+    fetchAgencyProfileMock
+      // INITIAL_SESSION probe → transient failure (arms lastProbeTransient)
+      .mockResolvedValueOnce({ agency: null, role: null, memberStatus: null, confirmedNoMembership: false, transientFailure: true })
+      // self-heal attempt 0 → ACTIVE
+      .mockResolvedValueOnce({ agency: { id: 'AGY-9', name: 'Recovered' }, role: 'AGENTE', memberStatus: 'ACTIVE', confirmedNoMembership: false, transientFailure: false })
+
+    const { ref, root, container } = mountHarness()
+    await fireInitialSession()
+    await flushPromises()
+
+    // A TENANT is NOT agency-capable, so only the transient signal armed self-heal.
+    expect(ref.current?.user?.role).toBe('tenant')
+    expect(ref.current?.agency).toBeNull()
+
+    // Self-heal attempt 0 fires at +0ms.
+    await act(async () => {
+      vi.advanceTimersByTime(0)
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(ref.current?.agency).toEqual({ id: 'AGY-9', name: 'Recovered' })
+    expect(ref.current?.hasActiveAgencyMembership).toBe(true)
+
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('a CONFIRMED no-membership TENANT is NOT retried (no self-heal storm)', async () => {
+    fetchUserGetMock.mockResolvedValue(TENANT_BACKEND)
+    fetchAgencyProfileMock.mockResolvedValue({ agency: null, role: null, memberStatus: null, confirmedNoMembership: true, transientFailure: false })
+
+    const { ref, root, container } = mountHarness()
+    await fireInitialSession()
+    await flushPromises()
+    const callsAfterInitial = fetchAgencyProfileMock.mock.calls.length
+
+    // Advance well past the entire backoff schedule.
+    await act(async () => {
+      vi.advanceTimersByTime(60_000)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    // Confirmed no-membership does NOT arm lastProbeTransient → zero retries.
+    expect(fetchAgencyProfileMock.mock.calls.length).toBe(callsAfterInitial)
+    expect(ref.current?.agency).toBeNull()
+    expect(ref.current?.hasActiveAgencyMembership).toBe(false)
+
+    act(() => root.unmount())
+    container.remove()
+  })
+})

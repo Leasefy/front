@@ -7,7 +7,7 @@ import { RadioCardGroup, RadioCard } from '@leasefy/cadence';
 export type AgencyMemberRoleOption = 'AGENTE' | 'CONTADOR' | 'ADMIN' | 'VIEWER';
 
 const ROLE_OPTIONS: { value: AgencyMemberRoleOption; label: string; description: string }[] = [
-  { value: 'AGENTE', label: 'Agente', description: 'Gestiona propiedades y candidatos asignados' },
+  { value: 'AGENTE', label: 'Agente', description: 'Gestiona propiedades y candidatos de la agencia' },
   { value: 'CONTADOR', label: 'Contador', description: 'Acceso a cobros, dispersiones y reportes financieros' },
   { value: 'ADMIN', label: 'Administrador', description: 'Acceso completo al panel, puede gestionar el equipo' },
   { value: 'VIEWER', label: 'Solo lectura', description: 'Puede ver información pero no realizar cambios' },

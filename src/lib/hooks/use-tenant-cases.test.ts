@@ -25,6 +25,7 @@ import type { BackendPaymentInfo } from '@/lib/api/leases.types';
 import type { Lease } from '@/lib/types/lease';
 import type { TenantApplicationView } from '@/lib/api/applications.service';
 import type { SolicitudPqrs } from '@/lib/api/pqrs.types';
+import type { AcuerdoDetail } from '@/lib/api/tenant-acuerdos.types';
 
 void React; // jsx-preserve
 
@@ -36,6 +37,9 @@ let mockActiveApps: TenantApplicationView[] = [];
 let mockPqrs: SolicitudPqrs[] = [];
 let mockPqrsError: string | null = null;
 let pqrsRefetchCount = 0;
+let mockAcuerdos: AcuerdoDetail[] = [];
+let mockAcuerdosError: string | null = null;
+let acuerdosRefetchCount = 0;
 
 vi.mock('@/lib/hooks/useLeases', () => ({
   useMyPaymentRequests: () => ({
@@ -83,6 +87,19 @@ vi.mock('@/lib/hooks/use-tenant-pqrs', () => ({
     error: mockPqrsError,
     refetch: async () => {
       pqrsRefetchCount += 1;
+    },
+  }),
+}));
+
+// Acuerdos list hook (v7-07) — controllable so we exercise both the [] (honest
+// empty) path and the real-rows fold. refetch bumps a counter for Promise.all.
+vi.mock('@/lib/hooks/use-tenant-acuerdos', () => ({
+  useTenantAcuerdos: () => ({
+    items: mockAcuerdos,
+    isLoading: false,
+    error: mockAcuerdosError,
+    refetch: async () => {
+      acuerdosRefetchCount += 1;
     },
   }),
 }));
@@ -203,6 +220,31 @@ function makeApp(over: Partial<TenantApplicationView> = {}): TenantApplicationVi
   };
 }
 
+function makeAcuerdo(over: Partial<AcuerdoDetail> = {}): AcuerdoDetail {
+  return {
+    planId: 'plan-' + Math.random().toString(36).slice(2),
+    tenantId: 't-1',
+    debtorId: 'd-1',
+    stage: 'S2',
+    status: 'active',
+    paymentProvider: 'wompi',
+    paymentUrl: null,
+    totalDueCop: 1_500_000,
+    initialAmountCop: 500_000,
+    discountAppliedPct: 0,
+    discountKind: 'none',
+    offeredAt: '2026-07-10T10:00:00.000Z',
+    acceptedAt: '2026-07-12T09:00:00.000Z',
+    defaultedAt: null,
+    installments: [
+      { number: 1, dueDate: '2026-08-05', amountCop: 500_000, status: 'pending', paidAt: null },
+      { number: 2, dueDate: '2026-09-05', amountCop: 500_000, status: 'pending', paidAt: null },
+      { number: 3, dueDate: '2026-10-05', amountCop: 500_000, status: 'pending', paidAt: null },
+    ],
+    ...over,
+  };
+}
+
 // ── React harness (repo convention: raw react-dom/client + act) ─────────────
 let container: HTMLDivElement;
 let root: Root;
@@ -215,6 +257,9 @@ beforeEach(() => {
   mockPqrs = [];
   mockPqrsError = null;
   pqrsRefetchCount = 0;
+  mockAcuerdos = [];
+  mockAcuerdosError = null;
+  acuerdosRefetchCount = 0;
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -532,5 +577,102 @@ describe('useTenantCases — PQRS/mantenimiento fold (SOLI-03)', () => {
       await r.current!.refetch();
     });
     expect(pqrsRefetchCount).toBeGreaterThan(0);
+  });
+});
+
+describe('useTenantCases — acuerdo fold (ACUE-01)', () => {
+  it('emits ZERO acuerdo rows when listMine() degrades to [] (hub keeps "Próximamente")', () => {
+    mockAcuerdos = []; // listMine() → [] (backend not live): the honest empty path.
+    mockRequests = [makeRequest({ status: 'PENDING_VALIDATION' })];
+    mockLeases = [makeLease()];
+    mockPaymentInfo = makePaymentInfo({ currentPeriodStatus: 'NONE' });
+
+    const r = renderHook();
+    expect(casesOf(r).filter((c) => c.type === 'acuerdo')).toHaveLength(0);
+    // Existing pago rows are unaffected by the empty acuerdo path.
+    expect(casesOf(r).filter((c) => c.type === 'pago').length).toBeGreaterThan(0);
+  });
+
+  it('folds one AcuerdoDetail into exactly one acuerdo row with mapped tone/label + pass-through metadata', () => {
+    mockAcuerdos = [
+      makeAcuerdo({
+        planId: 'plan-9',
+        status: 'active',
+        totalDueCop: 1_500_000,
+        paymentUrl: 'https://checkout.wompi.co/l/abc',
+        acceptedAt: '2026-07-12T09:00:00.000Z',
+      }),
+    ];
+
+    const r = renderHook();
+    const acuerdos = casesOf(r).filter((c) => c.type === 'acuerdo');
+    expect(acuerdos).toHaveLength(1);
+
+    const row = acuerdos[0];
+    expect(row.id).toBe('plan-9');
+    expect(row.titulo).toBe('Acuerdo de pago');
+    expect(row.estadoLabel).toBe('Activo');
+    expect(row.tone).toBe('info'); // capped — never an alarm level
+    expect(row.responsable).toBe('Inmobiliaria');
+    expect(row.detailLink).toBe(`/inquilino/acuerdos/${encodeURIComponent('plan-9')}`);
+    expect(row.sourceLink).toBe('/inquilino/acuerdos');
+    // Pass-through metadata carried verbatim (no recomputed saldo).
+    expect(row.acuerdo?.status).toBe('active');
+    expect(row.acuerdo?.totalDueCop).toBe(1_500_000);
+    expect(row.acuerdo?.paymentUrl).toBe('https://checkout.wompi.co/l/abc');
+    expect(row.acuerdo?.installments).toHaveLength(3);
+  });
+
+  it('an offered plan caps at attention tone (never above)', () => {
+    mockAcuerdos = [makeAcuerdo({ planId: 'plan-off', status: 'offered', acceptedAt: null })];
+    const r = renderHook();
+    const row = casesOf(r).find((c) => c.id === 'plan-off')!;
+    expect(row.tone).toBe('attention');
+    expect(['neutral', 'info', 'attention']).toContain(row.tone);
+  });
+
+  it('openCasesCount includes the acuerdo rows (=== cases.length)', () => {
+    mockRequests = [makeRequest({ status: 'PENDING_VALIDATION' })];
+    mockAcuerdos = [
+      makeAcuerdo({ planId: 'p-1' }),
+      makeAcuerdo({ planId: 'p-2' }),
+    ];
+
+    const r = renderHook();
+    const acuerdoRows = casesOf(r).filter((c) => c.type === 'acuerdo');
+    expect(acuerdoRows).toHaveLength(2);
+    expect(r.current!.openCasesCount).toBe(casesOf(r).length);
+    expect(r.current!.openCasesCount).toBe(3); // 1 pago + 2 acuerdo
+  });
+
+  it('a listMine (acuerdo) error surfaces via the error chain but does not blank pago/pqrs rows', () => {
+    mockRequests = [makeRequest({ id: 'r-pending', status: 'PENDING_VALIDATION' })];
+    mockPqrs = [makeSolicitud({ id: 's-1', tipo: 'queja' })];
+    mockAcuerdos = [];
+    mockAcuerdosError = 'acuerdo boom';
+
+    const r = renderHook();
+    expect(r.current!.error).toBe('acuerdo boom');
+    // pago + pqrs rows are unaffected by the acuerdo error.
+    expect(casesOf(r).filter((c) => c.type === 'pago')).toHaveLength(1);
+    expect(casesOf(r).filter((c) => c.type === 'pqrs')).toHaveLength(1);
+  });
+
+  it('the acuerdo error is appended LAST — a pqrs error keeps priority over it', () => {
+    mockPqrsError = 'pqrs boom';
+    mockAcuerdosError = 'acuerdo boom';
+
+    const r = renderHook();
+    // pqrs is earlier in the ?? chain, so it wins over the acuerdo error.
+    expect(r.current!.error).toBe('pqrs boom');
+  });
+
+  it('refetch resolves and includes the acuerdo refetch (Promise.all)', async () => {
+    mockAcuerdos = [makeAcuerdo({ planId: 'p-1' })];
+    const r = renderHook();
+    await act(async () => {
+      await r.current!.refetch();
+    });
+    expect(acuerdosRefetchCount).toBeGreaterThan(0);
   });
 });

@@ -21,10 +21,16 @@
  *                        pure `pqrsToCase`. `listMine()` degrades to `[]` on not-live,
  *                        so an unavailable backend yields ZERO rows and the hub keeps
  *                        its "Próximamente" sections — never a fabricated case.
+ *   - `'acuerdo'`      (v7-07, ACUE-01) — one row per `AcuerdoDetail` from
+ *                        `useTenantAcuerdos` (→ `acuerdosApi.listMine()`), mapped via
+ *                        the pure PASS-THROUGH `acuerdoToCase` (NO saldo recompute,
+ *                        PITFALLS 9). `listMine()` degrades to `[]` on not-live, so an
+ *                        unavailable backend yields ZERO rows and the hub keeps its
+ *                        Acuerdos "Próximamente" section — never a fabricated acuerdo.
  *
- * Forward-ref types (acuerdo/contrato) still contribute ZERO rows — they are honest
- * "Próximamente" sections rendered by the hub page (v7-03-02), reserved for v7-07.
- * There is no hardcoded/placeholder case array here.
+ * The remaining forward-ref type (`contrato`) still contributes ZERO rows — an honest
+ * "Próximamente" section rendered by the hub page (v7-03-02). There is no
+ * hardcoded/placeholder case array here.
  */
 
 import { useCallback, useMemo } from 'react';
@@ -35,6 +41,7 @@ import {
 } from '@/lib/hooks/useLeases';
 import { useTenantApplications } from '@/lib/hooks/useApplications';
 import { useTenantPqrs } from '@/lib/hooks/use-tenant-pqrs';
+import { useTenantAcuerdos } from '@/lib/hooks/use-tenant-acuerdos';
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling';
 import type { Lease } from '@/lib/types/lease';
 import type { BackendTenantPaymentRequest } from '@/lib/api/tenant-payment-requests.types';
@@ -42,6 +49,7 @@ import type { TenantApplicationView } from '@/lib/api/applications.service';
 import {
   type CaseEvent,
   type TenantCase,
+  acuerdoToCase,
   applicationStatusToLabel,
   applicationStatusToTone,
   paymentStatusToLabel,
@@ -202,6 +210,13 @@ export function useTenantCases(): UseTenantCasesResult {
     refetch: refetchPqrs,
   } = useTenantPqrs();
 
+  const {
+    items: acuerdoRows,
+    isLoading: acuerdosLoading,
+    error: acuerdosError,
+    refetch: refetchAcuerdos,
+  } = useTenantAcuerdos();
+
   const cases = useMemo<TenantCase[]>(() => {
     const out: TenantCase[] = [];
 
@@ -229,23 +244,42 @@ export function useTenantCases(): UseTenantCasesResult {
 
     // PQRS / MANTENIMIENTO (v7-06, SOLI-03) — one row per own SolicitudPqrs. When
     // listMine() degrades to [], pqrsRows is [] and this loop emits nothing, so the
-    // hub keeps its "Próximamente" sections. acuerdo/contrato still emit no rows.
+    // hub keeps its "Próximamente" section.
     for (const s of pqrsRows) {
       out.push(pqrsToCase(s));
     }
 
+    // ACUERDO (v7-07, ACUE-01) — one row per own AcuerdoDetail via the pure
+    // PASS-THROUGH acuerdoToCase (no saldo recompute). When acuerdosApi.listMine()
+    // degrades to [], acuerdoRows is [] and this loop emits nothing, so the hub keeps
+    // its Acuerdos "Próximamente" section. contrato still emits no rows.
+    for (const p of acuerdoRows) {
+      out.push(acuerdoToCase(p));
+    }
+
     return out;
-  }, [requests, primaryLease, paymentInfo, activeApplications, pqrsRows]);
+  }, [requests, primaryLease, paymentInfo, activeApplications, pqrsRows, acuerdoRows]);
 
   const isLoading =
-    requestsLoading || leasesLoading || paymentInfoLoading || applicationsLoading || pqrsLoading;
+    requestsLoading ||
+    leasesLoading ||
+    paymentInfoLoading ||
+    applicationsLoading ||
+    pqrsLoading ||
+    acuerdosLoading;
 
   // Surface the first source error; a single failed source has already degraded
   // to its empty list (403/404 → [] tolerance in the source hooks), so the hub
-  // is never fully blanked. The pqrs error is appended last so pago/aplicacion
-  // errors keep priority.
+  // is never fully blanked. The pqrs then acuerdo errors are appended LAST so
+  // pago/aplicacion errors keep priority.
   const error =
-    requestsError ?? leasesError ?? paymentInfoError ?? applicationsError ?? pqrsError ?? null;
+    requestsError ??
+    leasesError ??
+    paymentInfoError ??
+    applicationsError ??
+    pqrsError ??
+    acuerdosError ??
+    null;
 
   const refetch = useCallback(async () => {
     await Promise.all([
@@ -254,8 +288,16 @@ export function useTenantCases(): UseTenantCasesResult {
       refetchPaymentInfo(),
       refetchApplications(),
       refetchPqrs(),
+      refetchAcuerdos(),
     ]);
-  }, [refetchRequests, refetchLeases, refetchPaymentInfo, refetchApplications, refetchPqrs]);
+  }, [
+    refetchRequests,
+    refetchLeases,
+    refetchPaymentInfo,
+    refetchApplications,
+    refetchPqrs,
+    refetchAcuerdos,
+  ]);
 
   // Tab-gated aggregate refresh (realtime fallback). The source hooks own their
   // first fetch; this only polls + refreshes on re-focus. No SSE/WebSocket here.

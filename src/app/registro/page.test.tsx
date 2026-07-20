@@ -85,7 +85,7 @@ let originalReplace: typeof window.location.replace
 beforeEach(() => {
   localStorage.clear()
   postMock.mockReset().mockResolvedValue({})
-  getInvitationMock.mockReset().mockResolvedValue({ invitedEmail: 'nuevo@agencia.com', role: 'AGENTE' })
+  getInvitationMock.mockReset().mockResolvedValue({ invitedEmail: 'nuevo@agencia.com', role: 'AGENTE', agencyName: 'Inmobiliaria ABC' })
   acceptInvitationMock.mockReset().mockResolvedValue({ id: 'member-1' })
   authState.isAuthenticated = true
   authState.isLoading = false
@@ -182,6 +182,31 @@ describe('registro invitation flow — personal-role safety', () => {
     expect(acceptInvitationMock).not.toHaveBeenCalled()
     // Token cleared on success.
     expect(localStorage.getItem('pending-invitation-token')).toBeNull()
+  })
+
+  it('shows the read-only role + agency confirmation for an invited NEW user', async () => {
+    authState.needsOnboarding = true
+    authState.isAuthenticated = false
+    authState.user = null
+
+    await renderAndSettle()
+
+    const confirmation = container.querySelector('[data-testid="invite-confirmation"]')
+    expect(confirmation).not.toBeNull()
+    // Agency name + friendly role label (ROLE_LABELS['AGENTE'] = 'Agente').
+    expect(confirmation!.textContent).toContain('Inmobiliaria ABC')
+    expect(confirmation!.textContent).toContain('Agente')
+    // Read-only confirmation — no role picker/selector in the form.
+    expect(container.querySelector('select')).toBeNull()
+  })
+
+  it('does NOT show the invite confirmation on the existing-account path (no profile form)', async () => {
+    authState.needsOnboarding = false
+    authState.user = { id: 'u1', role: 'tenant', firstName: 'Juan', lastName: 'Existente' }
+
+    await renderAndSettle()
+
+    expect(container.querySelector('[data-testid="invite-confirmation"]')).toBeNull()
   })
 
   it('surfaces the backend error and does NOT clear the pending token on failure', async () => {

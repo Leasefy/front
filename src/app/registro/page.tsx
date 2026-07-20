@@ -368,10 +368,24 @@ function RegistroContent() {
             {/* ── Step: Complete profile (Supabase session exists, no backend profile) ── */}
             {needsOnboarding ? (
               <>
-                <div className="mb-6">
+                <div className="mb-4">
                   <h2 className="text-[16px] font-semibold text-foreground">Completá tu perfil</h2>
                   <p className="text-[13px] text-muted-foreground mt-1">
-                    Tu cuenta fue creada. Solo necesitamos tus datos para unirte a <strong>{invitation.agencyName}</strong>.
+                    Tu cuenta fue creada. Solo necesitamos tus datos.
+                  </p>
+                </div>
+
+                {/* Read-only confirmation of the role + agency they were invited
+                    to (the agent does NOT choose the role). Reuses ROLE_LABELS. */}
+                <div
+                  data-testid="invite-confirmation"
+                  className="mb-5 flex items-start gap-2 p-3 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
+                >
+                  <CheckCircle className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF] mt-0.5 shrink-0" weight="fill" />
+                  <p className="text-[13px] text-foreground">
+                    Te uniste al equipo de{' '}
+                    <strong>{invitation.agencyName ?? 'una inmobiliaria'}</strong> como{' '}
+                    <strong>{ROLE_LABELS[invitation.role] ?? invitation.role}</strong>.
                   </p>
                 </div>
 

@@ -31,6 +31,7 @@ import {
   ClipboardText,
   CheckCircle,
   Clock,
+  CalendarBlank,
   Warning,
   CaretLeft,
   MagnifyingGlass,
@@ -42,6 +43,7 @@ import {
 } from '@phosphor-icons/react';
 
 import { useTenantCases } from '@/lib/hooks/use-tenant-cases';
+import { resolveExpectedResponse } from '@/lib/date/business-days';
 import { useI18n } from '@/lib/i18n';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
@@ -143,6 +145,21 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
     icon: TypeIcon,
   }));
 
+  // "Respuesta esperada" (SOLI-03) — computed ONLY for PQRS/mantenimiento cases
+  // that carry `caso.solicitud` metadata. Two-tier: the authoritative server
+  // `slaVenceAt` wins; otherwise a soft, weekday-only estimate labeled "estimado".
+  // Never blank, neutral tone — no countdown, no red styling, no "vence el".
+  const sla = caso.solicitud
+    ? resolveExpectedResponse(caso.solicitud.createdAt, caso.solicitud.slaVenceAt)
+    : null;
+  const slaDate = sla
+    ? new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }).format(sla.date)
+    : '';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -192,6 +209,39 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
               </dd>
             </div>
           </div>
+
+          {/* Respuesta esperada (SOLI-03) — gated on solicitud metadata; never blank. */}
+          {sla && (
+            <div className="flex items-center gap-2.5">
+              <CalendarBlank className="w-4 h-4 text-fg-subtle flex-shrink-0" aria-hidden="true" />
+              <div className="min-w-0">
+                <dt className="text-xs text-fg-subtle dark:text-fg-muted">
+                  {locale === 'es' ? 'Respuesta esperada' : 'Expected response'}
+                </dt>
+                <dd className="text-sm font-medium text-fg dark:text-white">
+                  {sla.estimated
+                    ? locale === 'es'
+                      ? `Respuesta estimada hacia el ${slaDate}`
+                      : `Estimated response around ${slaDate}`
+                    : locale === 'es'
+                      ? `Respuesta a más tardar el ${slaDate}`
+                      : `Response by ${slaDate}`}
+                  {sla.estimated && (
+                    <span
+                      className="ml-1.5 font-normal text-fg-subtle dark:text-fg-muted"
+                      title={
+                        locale === 'es'
+                          ? 'Fecha estimada; tu inmobiliaria confirma la definitiva.'
+                          : 'Estimated date; your agency confirms the final one.'
+                      }
+                    >
+                      · {locale === 'es' ? 'estimado' : 'estimate'}
+                    </span>
+                  )}
+                </dd>
+              </div>
+            </div>
+          )}
         </dl>
 
         <div className="pt-1 flex flex-wrap items-center gap-2">

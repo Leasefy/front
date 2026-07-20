@@ -49,6 +49,13 @@ export interface BackendConversationsResponse {
   conversations: BackendConversation[];
 }
 
+/**
+ * A single chat message as the backend returns it TODAY. NOTE: there is no
+ * `attachment` field — in-thread attachments are a backend seam (COMU-02, see
+ * `ChatMessageAttachment` + `messagesApi.sendAttachment`). Do NOT add one
+ * client-side and do NOT fabricate an attachment bubble; the picker discloses an
+ * honest "Próximamente" until the server both accepts and returns attachments.
+ */
 export interface BackendChatMessage {
   id: string;
   conversationId: string;
@@ -73,6 +80,44 @@ export interface BackendConversationWithMessages {
   caseId?: string;
   messages: BackendChatMessage[];
 }
+
+// ============================================================================
+// Chat attachments + conversation actions — CONTRACT ONLY (COMU-02)
+//
+// Two backend gaps block real in-thread attachments today (RESEARCH §2):
+//   1. No chat-attachment endpoint (no POST bound to the conversation).
+//   2. `BackendChatMessage` has NO attachment field — the server never returns
+//      one, so the UI cannot render an in-thread attachment bubble.
+// Until BOTH land, the composer's file picker is REAL but the SEND resolves to an
+// honest "Próximamente" (see `messagesApi.sendAttachment`). These types are the
+// forward contract; they are intentionally NOT wired into `BackendChatMessage`
+// (the backend seam) so nothing fabricates a persisted attachment.
+// ============================================================================
+
+/** A file the user picked in the chat composer, pending a real attachment endpoint. */
+export interface ChatAttachmentDraft {
+  file: File;
+}
+
+/**
+ * Shape of an attachment once the backend returns one in-thread (FUTURE). Declared
+ * here so the eventual `BackendChatMessage.attachment` has a typed target; it is
+ * intentionally NOT added to `BackendChatMessage` yet (backend seam). Any future
+ * bytes retrieval MUST go through `documentsApi.getSignedUrl` (no raw URL — IDOR).
+ */
+export interface ChatMessageAttachment {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+}
+
+/**
+ * Result of a conversation action (archive/mute/report): `'ok'` when the endpoint
+ * answered, `'unavailable'` when the route is not live yet (404/403/0) — the UI
+ * then shows an honest "Próximamente", never a fabricated success.
+ */
+export type ConversationActionResult = 'ok' | 'unavailable';
 
 // ============================================================================
 // Frontend mapped types

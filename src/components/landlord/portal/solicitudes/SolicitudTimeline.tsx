@@ -16,7 +16,7 @@ export function SolicitudTimeline({ timeline }: { timeline: TimelineEntry[] }) {
   const { formatDate } = useI18n();
 
   if (timeline.length === 0) {
-    return <p className="text-sm text-muted-foreground">Todavía no hay movimientos registrados.</p>;
+    return <p className="text-sm text-fg-muted">Todavía no hay movimientos registrados.</p>;
   }
 
   // Newest first (defensivo: el back puede venir ordenado, pero no lo asumimos).
@@ -28,7 +28,7 @@ export function SolicitudTimeline({ timeline }: { timeline: TimelineEntry[] }) {
         <li key={i} className="flex gap-3">
           <div className="mt-0.5 shrink-0">
             {entry.kind === 'llamado' ? (
-              <Megaphone className="w-4 h-4 text-muted-foreground" />
+              <Megaphone className="w-4 h-4 text-fg-muted" />
             ) : (
               <CheckCircle className="w-4 h-4 text-primary" />
             )}
@@ -37,7 +37,7 @@ export function SolicitudTimeline({ timeline }: { timeline: TimelineEntry[] }) {
             {entry.kind === 'llamado' ? (
               <>
                 <p className="text-sm font-medium">Llamado de atención</p>
-                <p className="text-sm text-muted-foreground capitalize">
+                <p className="text-sm text-fg-muted capitalize">
                   {entry.situationKey.replace(/_/g, ' ')}
                 </p>
               </>
@@ -45,19 +45,19 @@ export function SolicitudTimeline({ timeline }: { timeline: TimelineEntry[] }) {
               <>
                 <p className="text-sm font-medium capitalize">{entry.tipo.replace(/_/g, ' ')}</p>
                 {entry.from && entry.to && (
-                  <p className="text-sm text-muted-foreground inline-flex items-center gap-1">
+                  <p className="text-sm text-fg-muted inline-flex items-center gap-1">
                     {STATUS_LABELS[entry.from] ?? entry.from}
                     <ArrowRight className="w-3 h-3" />
                     {STATUS_LABELS[entry.to] ?? entry.to}
                   </p>
                 )}
-                {entry.motivo && <p className="text-sm text-muted-foreground">{entry.motivo}</p>}
+                {entry.motivo && <p className="text-sm text-fg-muted">{entry.motivo}</p>}
                 {entry.rejectionReason && (
-                  <p className="text-sm text-muted-foreground">{entry.rejectionReason}</p>
+                  <p className="text-sm text-fg-muted">{entry.rejectionReason}</p>
                 )}
               </>
             )}
-            <p className="text-xs text-muted-foreground mt-0.5">{formatDate(entry.at)}</p>
+            <p className="text-xs text-fg-muted mt-0.5">{formatDate(entry.at)}</p>
           </div>
         </li>
       ))}

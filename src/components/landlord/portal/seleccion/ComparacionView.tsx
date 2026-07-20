@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { CaretLeft, ShieldCheck, CheckCircle, Warning } from '@phosphor-icons/react';
 import { Button, Card, Spinner } from '@/components/ui';
+import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/toast';
 import { ownerSeleccionApi } from '@/lib/api/owner-seleccion.service';
 import type { EleccionComparacion } from '@/lib/api/owner-seleccion.types';
@@ -64,13 +65,13 @@ export function ComparacionView({ agencyId, processId, comparacion, reload }: Co
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <Link
           href="/panel/seleccion"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
+          className="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg mb-4"
         >
           <CaretLeft className="w-4 h-4" /> Elegir inquilino
         </Link>
 
         <h1 className="text-2xl font-semibold">Compará y elegí</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-fg-muted mt-1">
           Postulados asegurables de tu inmueble. Tu elección se auto-valida y habilita el contrato.
         </p>
 
@@ -85,7 +86,7 @@ export function ComparacionView({ agencyId, processId, comparacion, reload }: Co
 
         {comparacion.candidates.length === 0 ? (
           <Card className="p-6 mt-6">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-fg-muted">
               Todavía no hay postulados para comparar en este proceso.
             </p>
           </Card>
@@ -98,31 +99,29 @@ export function ComparacionView({ agencyId, processId, comparacion, reload }: Co
                 <Card key={c.id} className="p-4 flex flex-col gap-3">
                   <div>
                     <p className="font-medium truncate">{c.candidateName}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{c.stage.replace(/_/g, ' ')}</p>
+                    <p className="text-xs text-fg-muted capitalize">{c.stage.replace(/_/g, ' ')}</p>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${
-                        c.elegible ? 'bg-primary-soft text-primary' : 'bg-surface-muted text-muted-foreground'
-                      }`}
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5" />
+                    <Badge variant={c.elegible ? 'success' : 'secondary'}>
+                      <ShieldCheck className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
                       {c.insurabilityVerdict ?? (c.elegible ? 'Asegurable' : 'Sin verdicto')}
-                    </span>
+                    </Badge>
                     {c.score != null && (
-                      <span className="text-xs text-muted-foreground">Score {c.score}</span>
+                      <span className="text-xs text-fg-muted">
+                        Score <span className="font-mono tabular-nums text-fg">{c.score}</span>
+                      </span>
                     )}
                   </div>
 
                   <div className="mt-auto pt-1">
                     {!canChoose ? (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-fg-muted">
                         {chosenName ? 'Proceso resuelto' : 'No elegible'}
                       </p>
                     ) : isPending ? (
                       <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground flex items-start gap-1">
+                        <p className="text-xs text-fg-muted flex items-start gap-1">
                           <Warning className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                           Elegir a {c.candidateName} habilita el contrato. ¿Confirmás?
                         </p>

@@ -43,7 +43,7 @@ export default function SeleccionPage() {
 
         {procesos.length === 0 ? (
           <Card className="p-6 mt-8">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-fg-muted">
               No tenés procesos de elección abiertos. Cuando tu inmobiliaria reúna postulados
               asegurables para uno de tus inmuebles, aparecerá acá para que elijas.
             </p>
@@ -56,11 +56,11 @@ export default function SeleccionPage() {
                 <li key={p.id}>
                   <Link
                     href={`/panel/seleccion/${p.id}`}
-                    className="flex items-center justify-between gap-4 p-4 rounded-xl bg-surface border border-faint hover:bg-surface-muted transition-colors"
+                    className="flex items-center justify-between gap-4 p-4 rounded-xl bg-surface border border-border hover:bg-surface-muted transition-colors"
                   >
                     <div className="min-w-0">
                       <p className="font-medium truncate">{p.propertyLabel}</p>
-                      <p className="text-sm text-muted-foreground capitalize">
+                      <p className="text-sm text-fg-muted capitalize">
                         {resuelto ? 'Inquilino elegido' : p.status.replace(/_/g, ' ')}
                       </p>
                     </div>
@@ -70,7 +70,7 @@ export default function SeleccionPage() {
                       ) : (
                         <span className="text-xs font-medium text-primary">Comparar</span>
                       )}
-                      <CaretRight className="w-4 h-4 text-muted-foreground" />
+                      <CaretRight className="w-4 h-4 text-fg-muted" />
                     </div>
                   </Link>
                 </li>

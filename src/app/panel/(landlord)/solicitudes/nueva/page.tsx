@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CaretLeft, ChatCircleText } from '@phosphor-icons/react';
 import { Button, Card, Spinner } from '@/components/ui';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { useOwnerFinanzas } from '@/lib/hooks/useOwnerPortal';
 import { ownerSolicitudesApi } from '@/lib/api/owner-solicitudes.service';
@@ -75,72 +77,67 @@ export default function NuevaSolicitudPage() {
     );
   }
 
-  const selectClass =
-    'w-full rounded-lg border border-faint bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30';
-
   return (
     <div className="min-h-screen bg-bg">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <Link
           href="/panel/solicitudes"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
+          className="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg mb-4"
         >
           <CaretLeft className="w-4 h-4" /> Solicitudes
         </Link>
 
         <h1 className="text-2xl font-semibold">Nueva solicitud</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-fg-muted mt-1">
           Tu inmobiliaria la gestiona e intermedia con el inquilino. Con debido proceso.
         </p>
 
         <Card className="p-4 sm:p-6 mt-6">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="inmueble" className="block text-sm font-medium mb-1">Inmueble</label>
+              <label className="block text-sm font-medium mb-1">Inmueble</label>
               {inmuebles.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-fg-muted">
                   No hay inmuebles disponibles para crear una solicitud.
                 </p>
               ) : (
-                <select
-                  id="inmueble"
-                  value={propertyRef}
-                  onChange={(e) => setPropertyRef(e.target.value)}
-                  className={selectClass}
-                >
-                  <option value="" disabled>Elegí un inmueble…</option>
-                  {inmuebles.map((inm) => (
-                    <option key={inm.propertyRef} value={inm.propertyRef}>{inm.label}</option>
-                  ))}
-                </select>
+                <Select value={propertyRef} onValueChange={setPropertyRef}>
+                  <SelectTrigger aria-label="Inmueble">
+                    <SelectValue placeholder="Elegí un inmueble…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {inmuebles.map((inm) => (
+                      <SelectItem key={inm.propertyRef} value={inm.propertyRef}>{inm.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             </div>
 
             <div>
-              <label htmlFor="tipo" className="block text-sm font-medium mb-1">Tipo</label>
-              <select
-                id="tipo"
-                value={tipo}
-                onChange={(e) => setTipo(e.target.value as SolicitudTipo)}
-                className={selectClass}
-              >
-                {REQUEST_TYPE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
+              <label className="block text-sm font-medium mb-1">Tipo</label>
+              <Select value={tipo} onValueChange={(v) => setTipo(v as SolicitudTipo)}>
+                <SelectTrigger aria-label="Tipo">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {REQUEST_TYPE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
               <label htmlFor="descripcion" className="block text-sm font-medium mb-1">Descripción</label>
-              <textarea
+              <Textarea
                 id="descripcion"
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value.slice(0, MAX_DESC))}
                 rows={5}
                 placeholder="Contanos qué necesitás…"
-                className={`${selectClass} resize-y`}
               />
-              <p className="text-xs text-muted-foreground mt-1 text-right">
+              <p className="text-xs text-fg-muted mt-1 text-right font-mono tabular-nums">
                 {descripcion.length}/{MAX_DESC}
               </p>
             </div>

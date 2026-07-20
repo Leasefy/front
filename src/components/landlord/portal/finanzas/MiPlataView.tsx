@@ -52,9 +52,9 @@ export function MiPlataView({ agencyId, portafolio, inmuebles, proyeccion, recau
         <Card className="p-4 sm:p-6 mt-6">
           <h2 className="text-base font-semibold mb-4">Mis inmuebles</h2>
           {inmuebles.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Todavía no hay inmuebles para mostrar.</p>
+            <p className="text-sm text-fg-muted">Todavía no hay inmuebles para mostrar.</p>
           ) : (
-            <ul className="divide-y divide-faint">
+            <ul className="divide-y divide-border">
               {inmuebles.map((inm) => (
                 <li key={inm.propertyRef}>
                   <Link
@@ -63,7 +63,7 @@ export function MiPlataView({ agencyId, portafolio, inmuebles, proyeccion, recau
                   >
                     <div className="min-w-0">
                       <p className="font-medium truncate">{inm.label}</p>
-                      <p className="text-sm text-muted-foreground truncate">
+                      <p className="text-sm text-fg-muted truncate">
                         {inm.contract?.tenantDisplayName
                           ? `Inquilino: ${inm.contract.tenantDisplayName}`
                           : inm.occupancyStatus}
@@ -72,13 +72,13 @@ export function MiPlataView({ agencyId, portafolio, inmuebles, proyeccion, recau
                     <div className="flex items-center gap-3 shrink-0">
                       {inm.contract && (
                         <div className="text-right">
-                          <p className="font-medium">{formatCurrency(inm.contract.canonCop)}</p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="font-medium font-mono tabular-nums">{formatCurrency(inm.contract.canonCop)}</p>
+                          <p className="text-xs text-fg-muted">
                             Vence {formatDate(inm.contract.endDate)}
                           </p>
                         </div>
                       )}
-                      <CaretRight className="w-4 h-4 text-muted-foreground" />
+                      <CaretRight className="w-4 h-4 text-fg-muted" />
                     </div>
                   </Link>
                 </li>
@@ -91,22 +91,22 @@ export function MiPlataView({ agencyId, portafolio, inmuebles, proyeccion, recau
         {portafolio.contractsExpiring.length > 0 && (
           <Card className="p-4 sm:p-6 mt-6">
             <h2 className="text-base font-semibold mb-1">Contratos por vencer</h2>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-fg-muted mb-4">
               Con tiempo para decidir. Tu inmobiliaria te acompaña en la renovación o el cierre.
             </p>
-            <ul className="divide-y divide-faint">
+            <ul className="divide-y divide-border">
               {portafolio.contractsExpiring.map((c) => (
                 <li key={c.propertyRef} className="py-3 flex items-center justify-between gap-4">
                   <div className="min-w-0">
                     <p className="font-medium truncate">{c.propertyLabel}</p>
-                    <p className="text-sm text-muted-foreground truncate">
+                    <p className="text-sm text-fg-muted truncate">
                       {c.tenantDisplayName ?? 'Sin inquilino'}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm">Vence {formatDate(c.endDate)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {c.daysLeft} días · {c.preaviso.windowOpen ? 'ventana de preaviso abierta' : 'preaviso más adelante'}
+                    <p className="text-xs text-fg-muted">
+                      <span className="font-mono tabular-nums">{c.daysLeft}</span> días · {c.preaviso.windowOpen ? 'ventana de preaviso abierta' : 'preaviso más adelante'}
                     </p>
                   </div>
                 </li>
@@ -120,12 +120,13 @@ export function MiPlataView({ agencyId, portafolio, inmuebles, proyeccion, recau
           {recaudoAnual && recaudoAnual.totals.length > 0 && (
             <Card className="p-4 sm:p-6">
               <h2 className="text-base font-semibold mb-4">Recaudo {recaudoAnual.year} por concepto</h2>
-              <ul className="divide-y divide-faint">
+              <ul className="divide-y divide-border">
                 {recaudoAnual.totals.map((row) => (
                   <li key={row.concepto} className="py-2.5 flex items-center justify-between gap-4">
                     <span className="text-sm capitalize">{row.concepto}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {row.paymentsCount} pagos · <span className="font-medium text-foreground">{formatCurrency(row.totalCop)}</span>
+                    <span className="text-sm text-fg-muted">
+                      <span className="font-mono tabular-nums">{row.paymentsCount}</span> pagos ·{' '}
+                      <span className="font-medium font-mono tabular-nums text-fg">{formatCurrency(row.totalCop)}</span>
                     </span>
                   </li>
                 ))}
@@ -137,18 +138,18 @@ export function MiPlataView({ agencyId, portafolio, inmuebles, proyeccion, recau
           {proyeccion && proyeccion.months.length > 0 && (
             <Card className="p-4 sm:p-6">
               <h2 className="text-base font-semibold mb-4">Proyección de ingresos</h2>
-              <ul className="divide-y divide-faint">
+              <ul className="divide-y divide-border">
                 {proyeccion.months.map((m) => (
                   <li key={m.month} className="py-2.5 flex items-center justify-between gap-4">
-                    <span className="text-sm">{m.month}</span>
-                    <span className="text-sm font-medium">{formatCurrency(m.totalCop)}</span>
+                    <span className="text-sm font-mono tabular-nums">{m.month}</span>
+                    <span className="text-sm font-medium font-mono tabular-nums">{formatCurrency(m.totalCop)}</span>
                   </li>
                 ))}
               </ul>
               {proyeccion.assumptions.length > 0 && (
                 <ul className="mt-4 space-y-1">
                   {proyeccion.assumptions.map((a, i) => (
-                    <li key={i} className="text-xs text-muted-foreground">• {a}</li>
+                    <li key={i} className="text-xs text-fg-muted">• {a}</li>
                   ))}
                 </ul>
               )}

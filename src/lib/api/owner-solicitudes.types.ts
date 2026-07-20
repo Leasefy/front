@@ -49,6 +49,23 @@ export const STATUS_LABELS: Record<string, string> = {
   rechazada: 'Rechazada',
 };
 
+/** Variant de `Badge` (DS) por estado — feedback tokens (§12). */
+export function statusBadgeVariant(
+  status: string,
+): 'secondary' | 'warning' | 'success' | 'destructive' {
+  switch (status) {
+    case 'en_gestion':
+      return 'warning';
+    case 'resuelta':
+    case 'cerrada':
+      return 'success';
+    case 'rechazada':
+      return 'destructive';
+    default:
+      return 'secondary';
+  }
+}
+
 /** `GET /solicitudes` / `POST /solicitudes` — una solicitud. */
 export interface Solicitud {
   id: string;

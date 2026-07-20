@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { CaretLeft, ChatCircleText } from '@phosphor-icons/react';
 import { Card, Spinner } from '@/components/ui';
+import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/lib/i18n';
 import { useOwnerSolicitud } from '@/lib/hooks/useOwnerPortal';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
 import { SolicitudTimeline } from '@/components/landlord/portal/solicitudes/SolicitudTimeline';
-import { STATUS_LABELS, REQUEST_TYPE_OPTIONS } from '@/lib/api/owner-solicitudes.types';
+import { STATUS_LABELS, REQUEST_TYPE_OPTIONS, statusBadgeVariant } from '@/lib/api/owner-solicitudes.types';
 
 const TIPO_LABELS: Record<string, string> = Object.fromEntries(
   REQUEST_TYPE_OPTIONS.map((o) => [o.value, o.label]),
@@ -48,26 +49,24 @@ export default function SolicitudDetallePage() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <Link
           href="/panel/solicitudes"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
+          className="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg mb-4"
         >
           <CaretLeft className="w-4 h-4" /> Solicitudes
         </Link>
 
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-2xl font-semibold">{TIPO_LABELS[detalle.tipo] ?? detalle.tipo}</h1>
-          <span className="inline-flex rounded-full px-2.5 py-0.5 text-xs bg-surface-muted text-muted-foreground">
-            {STATUS_LABELS[detalle.status] ?? detalle.status}
-          </span>
+          <Badge variant={statusBadgeVariant(detalle.status)}>{STATUS_LABELS[detalle.status] ?? detalle.status}</Badge>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">Creada el {formatDate(detalle.createdAt)}</p>
+        <p className="text-xs text-fg-muted mt-1">Creada el {formatDate(detalle.createdAt)}</p>
 
         <Card className="p-4 sm:p-6 mt-6">
           <h2 className="text-sm font-medium mb-1">Descripción</h2>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{detalle.descripcion}</p>
+          <p className="text-sm text-fg-muted whitespace-pre-wrap">{detalle.descripcion}</p>
           {detalle.rejectionReason && (
-            <div className="mt-4 pt-4 border-t border-faint">
+            <div className="mt-4 pt-4 border-t border-border">
               <h2 className="text-sm font-medium mb-1">Motivo de rechazo</h2>
-              <p className="text-sm text-muted-foreground">{detalle.rejectionReason}</p>
+              <p className="text-sm text-fg-muted">{detalle.rejectionReason}</p>
             </div>
           )}
         </Card>

@@ -22,6 +22,7 @@
  * panel never approves/sets terms, T-323/A5); es-CO dates; additive route only.
  */
 
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -33,19 +34,22 @@ import {
   SealCheck,
   MagnifyingGlass,
   XCircle,
+  CreditCard,
   type Icon,
 } from '@phosphor-icons/react';
 
 import { useTenantAcuerdos } from '@/lib/hooks/use-tenant-acuerdos';
 import { acuerdoStatusToTone, acuerdoStatusToLabel } from '@/lib/types/tenant-case';
 import type { CaseTone } from '@/lib/types/tenant-case';
-import type { AcuerdoDetail } from '@/lib/api/tenant-acuerdos.types';
+import { acuerdosApi } from '@/lib/api/tenant-acuerdos.service';
+import type { AcuerdoDetail, AcuerdoInstallment } from '@/lib/api/tenant-acuerdos.types';
 import { useI18n } from '@/lib/i18n';
 import { CuotaPlanTable } from '@/components/tenant/CuotaPlanTable';
 import { AcuerdoAcceptPanel } from '@/components/tenant/AcuerdoAcceptPanel';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
 import type { BadgeProps } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/PlanActivityTimeline';
 
@@ -68,6 +72,138 @@ function formatLongDate(iso: string, locale: string): string {
     month: 'long',
     year: 'numeric',
   }).format(d);
+}
+
+// ============================================================================
+// Pagar cuota (ACUE-03) — GATED on the read-side contract, no premature success
+// ============================================================================
+
+// A cuota that is settled/closed is not payable. Neutral string compare only —
+// the amount is NEVER computed here; the server resolves it from the agent record.
+const SETTLED_CUOTA_STATUSES = new Set(['paid', 'pagada', 'cancelled', 'cancelada']);
+
+/** First cuota that still owes money (source order preserved). */
+function nextPayableCuota(installments: AcuerdoInstallment[]): AcuerdoInstallment | undefined {
+  return installments.find((c) => !SETTLED_CUOTA_STATUSES.has(c.status));
+}
+
+type PagoState =
+  | { kind: 'checking' }
+  | { kind: 'unavailable' } // getCuotaPaymentUrl → null (not-live) or a soft error
+  | { kind: 'ready'; url: string }
+  | { kind: 'redirecting' };
+
+/**
+ * "Pagar cuota" affordance for the next owed cuota. It asks the read-side contract
+ * `acuerdosApi.getCuotaPaymentUrl(planId, cuotaNumber)` for a SERVER-provided hosted
+ * checkout URL: `null` (today, the agent route is not live) → the button is DISABLED
+ * with a "Próximamente" title and never a fabricated URL; a URL → the tenant redirects
+ * to the agent's Wompi hosted checkout. On return, settlement is webhook-only — the
+ * cuota keeps its recorded status and the copy says it stays "confirmando" until
+ * verified. No client amount, no optimistic success, no invoice ("comprobante interno").
+ */
+function CuotaPagoSection({
+  planId,
+  cuota,
+  locale,
+}: {
+  planId: string;
+  cuota: AcuerdoInstallment;
+  locale: string;
+}) {
+  const es = locale === 'es';
+  const [state, setState] = useState<PagoState>({ kind: 'checking' });
+
+  // Resolve the gate up-front so the button reflects availability immediately.
+  useEffect(() => {
+    let cancelled = false;
+    setState({ kind: 'checking' });
+    acuerdosApi
+      .getCuotaPaymentUrl(planId, cuota.number)
+      .then((url) => {
+        if (cancelled) return;
+        setState(url ? { kind: 'ready', url } : { kind: 'unavailable' });
+      })
+      .catch(() => {
+        // Any non-not-live error still keeps the affordance honestly gated —
+        // never an enabled button that would fail or fabricate a checkout URL.
+        if (!cancelled) setState({ kind: 'unavailable' });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [planId, cuota.number]);
+
+  const handlePay = useCallback(() => {
+    setState((prev) => {
+      if (prev.kind !== 'ready') return prev;
+      // Redirect to the agent-provided hosted checkout. The browser leaves this page;
+      // there is no in-page success — settlement flips only via the backend webhook.
+      window.location.href = prev.url;
+      return { kind: 'redirecting' };
+    });
+  }, []);
+
+  const isReady = state.kind === 'ready';
+  const isRedirecting = state.kind === 'redirecting';
+  const label = isRedirecting
+    ? es
+      ? 'Confirmando…'
+      : 'Confirming…'
+    : es
+      ? `Pagar cuota ${cuota.number}`
+      : `Pay installment ${cuota.number}`;
+
+  return (
+    <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+          <CreditCard className="w-5 h-5 text-fg-muted dark:text-fg-subtle" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-fg dark:text-white">
+            {es ? 'Pago de cuota' : 'Installment payment'}
+          </h2>
+          <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
+            {es
+              ? `Próxima cuota por pagar: cuota ${cuota.number}`
+              : `Next installment due: installment ${cuota.number}`}
+          </p>
+        </div>
+      </div>
+
+      <Button
+        type="button"
+        onClick={handlePay}
+        disabled={!isReady}
+        isLoading={isRedirecting}
+        hideArrow
+        title={
+          state.kind === 'unavailable'
+            ? es
+              ? 'Próximamente'
+              : 'Coming soon'
+            : undefined
+        }
+      >
+        {label}
+      </Button>
+
+      {state.kind === 'unavailable' && (
+        <p className="mt-3 text-xs text-fg-muted dark:text-fg-subtle">
+          {es
+            ? 'El pago de cuotas estará disponible pronto.'
+            : 'Installment payments will be available soon.'}
+        </p>
+      )}
+
+      <p className="mt-3 text-xs text-fg-subtle dark:text-fg-muted">
+        {es
+          ? 'Cuando pagues, el estado de la cuota queda en confirmando hasta que se verifique; se confirma en tu historial una vez validado. Cualquier recibo es un comprobante interno.'
+          : 'After you pay, the installment stays confirming until verified; it is confirmed in your history once validated. Any receipt is an internal voucher.'}
+      </p>
+    </section>
+  );
 }
 
 // ============================================================================
@@ -111,6 +247,10 @@ function AcuerdoDetailView({
   const es = locale === 'es';
   const badge = TONE_BADGE[acuerdoStatusToTone(plan.status)];
   const ToneIcon = badge.icon;
+
+  // Pay a cuota only once the acuerdo is accepted (active) and one is still owed.
+  const nextCuota =
+    plan.acceptedAt !== null ? nextPayableCuota(plan.installments) : undefined;
 
   // Timeline from SOURCE TIMESTAMPS only — offered, then accepted when present.
   // Nothing synthesized, reordered, or padded (T-v7-07 / PITFALLS 2).
@@ -192,6 +332,11 @@ function AcuerdoDetailView({
             </div>
           </div>
         </section>
+      )}
+
+      {/* Pagar cuota (ACUE-03) — gated on getCuotaPaymentUrl; only for an accepted plan */}
+      {nextCuota && (
+        <CuotaPagoSection planId={plan.planId} cuota={nextCuota} locale={locale} />
       )}
 
       {/* State timeline — source-timestamp-only events */}

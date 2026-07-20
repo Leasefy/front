@@ -24,12 +24,25 @@
  * PRESENTATION concern (v7-06-03/04). The "never recompute a saldo/SLA/status"
  * doctrine holds.
  *
+ * v7-07 (ACUE-01) folds approved acuerdos de pago in via `acuerdoToCase`, REUSING
+ * the agent's single `AcuerdoDetail`/`AcuerdoInstallment` record shape (never a
+ * parallel model). It too NORMALIZES-not-computes: it projects the plan
+ * `status`/timestamps and carries the raw `totalDueCop`/`installments`/`paymentUrl`
+ * verbatim on an OPTIONAL `acuerdo` metadata block — it does NOT recompute a saldo
+ * (PITFALLS 9; the agent is the sole saldo authority — the cuota plan renders
+ * verbatim downstream). `detailLink` is the dedicated interactive
+ * `/inquilino/acuerdos/[id]`. The "never recompute a saldo/SLA/status" doctrine holds.
+ *
  * Consumer-law note (Ley 1480, PITFALLS 8): `CaseTone` deliberately omits an
  * alarm/danger level so the type cannot express an alarmist tone. `en_cotizacion`
  * caps at `'attention'`; reparacion/urgente never reach an alarm color. Labels
  * here are factual — no credit-bureau references, no urgency/countdown copy.
  */
 
+import type {
+  AcuerdoDetail,
+  AcuerdoInstallment,
+} from '@/lib/api/tenant-acuerdos.types';
 import type {
   CostoResponsable,
   PqrsEstado,
@@ -106,6 +119,21 @@ export interface TenantCase {
     cotizacionMonto?: number;
     cotizacionId?: string;
     cotizacionAprobadaAt?: string;
+  };
+  /**
+   * Acuerdo-only pass-through metadata (v7-07). Carries the agent's plan `status`,
+   * the single `totalDueCop`, the `installments[]` (rendered VERBATIM downstream),
+   * the server-provided `paymentUrl`, and `acceptedAt` so the list/detail layer can
+   * render the cuota plan (ACUE-01). These are PROJECTED verbatim — NO saldo is
+   * recomputed here (PITFALLS 9; the agent is the sole saldo authority). Internal
+   * `debtorId` / audit fields are intentionally excluded (CASO-02 IDOR).
+   */
+  acuerdo?: {
+    status: string;
+    totalDueCop: number;
+    installments: AcuerdoInstallment[];
+    paymentUrl: string | null;
+    acceptedAt: string | null;
   };
 }
 
@@ -281,6 +309,96 @@ export function pqrsToCase(s: SolicitudPqrs): TenantCase {
       cotizacionMonto: s.cotizacionMonto,
       cotizacionId: s.cotizacionId,
       cotizacionAprobadaAt: s.cotizacionAprobadaAt,
+    },
+  };
+}
+
+// ============================================================================
+// Acuerdos de pago — pure, TOTAL mappers + pass-through projection (v7-07)
+// ============================================================================
+
+/**
+ * Acuerdo plan `status` → tone. The agent `status` is a FREE string (not a closed
+ * enum), so this is a `switch` with a safe DEFAULT (not `assertNever`): `offered`
+ * caps at `'attention'` (the tenant may need to accept the plan — ACUE-02); `active`
+ * is `'info'`; `completed`/`cancelled` settle to `'neutral'`; any unknown status
+ * degrades to `'info'`. The return type is `CaseTone`, which cannot express an alarm
+ * level — a mora/acuerdo case NEVER reaches that color (PITFALLS 8, Ley 1480).
+ */
+export function acuerdoStatusToTone(status: string): CaseTone {
+  switch (status) {
+    case 'offered':
+      return 'attention';
+    case 'active':
+      return 'info';
+    case 'completed':
+    case 'cancelled':
+      return 'neutral';
+    default:
+      return 'info';
+  }
+}
+
+/**
+ * Acuerdo plan `status` → factual es-CO label, with a safe generic default for an
+ * unknown status. No credit-bureau references, no urgency/countdown copy — just the
+ * plan's state.
+ */
+export function acuerdoStatusToLabel(status: string): string {
+  switch (status) {
+    case 'offered':
+      return 'Propuesto';
+    case 'active':
+      return 'Activo';
+    case 'completed':
+      return 'Completado';
+    case 'cancelled':
+      return 'Cancelado';
+    default:
+      return 'Acuerdo de pago';
+  }
+}
+
+/**
+ * `AcuerdoDetail` → `TenantCase`. A pure PROJECTION mirroring `pqrsToCase`: it
+ * normalizes the plan `status`/timestamps and PASSES THROUGH the raw record
+ * (`status`, `totalDueCop`, `installments`, `paymentUrl`, `acceptedAt`) on the
+ * OPTIONAL `acuerdo` metadata block — it does NOT compute or recompute a saldo
+ * (PITFALLS 9; the agent is the sole saldo authority). `installments` is carried by
+ * REFERENCE (no reduce/sum over cuota amounts — no derived saldo field). Events are
+ * built from SOURCE timestamps ONLY (`offeredAt`, and `acceptedAt` when present) —
+ * nothing synthesized/padded. `detailLink` is the dedicated interactive detail
+ * `/inquilino/acuerdos/[id]`; internal `debtorId`/audit fields never cross (CASO-02).
+ */
+export function acuerdoToCase(p: AcuerdoDetail): TenantCase {
+  const events: CaseEvent[] = [
+    { id: `${p.planId}:offered`, label: 'Propuesto', timestamp: p.offeredAt },
+  ];
+  // An acceptance milestone only when a real accept timestamp exists.
+  if (p.acceptedAt) {
+    events.push({ id: `${p.planId}:accepted`, label: 'Aceptado', timestamp: p.acceptedAt });
+  }
+
+  return {
+    id: p.planId,
+    type: 'acuerdo',
+    titulo: 'Acuerdo de pago',
+    estadoLabel: acuerdoStatusToLabel(p.status),
+    tone: acuerdoStatusToTone(p.status),
+    responsable: RESPONSABLE_INMOBILIARIA,
+    // Real source timestamps only — accepted when present, else offered.
+    updatedAt: p.acceptedAt ?? p.offeredAt,
+    // Dedicated interactive acuerdo detail; sourceLink is the "ver en origen" out-link.
+    detailLink: `/inquilino/acuerdos/${encodeURIComponent(p.planId)}`,
+    sourceLink: '/inquilino/acuerdos',
+    events,
+    // Pass-through record metadata — NO saldo math here (agent is the sole authority).
+    acuerdo: {
+      status: p.status,
+      totalDueCop: p.totalDueCop,
+      installments: p.installments,
+      paymentUrl: p.paymentUrl,
+      acceptedAt: p.acceptedAt,
     },
   };
 }

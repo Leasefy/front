@@ -149,7 +149,8 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
   // "Respuesta esperada" (SOLI-03) — computed ONLY for PQRS/mantenimiento cases
   // that carry `caso.solicitud` metadata. Two-tier: the authoritative server
   // `slaVenceAt` wins; otherwise a soft, weekday-only estimate labeled "estimado".
-  // Never blank, neutral tone — no countdown, no red styling, no "vence el".
+  // Never blank, neutral tone — no live countdown, no red styling, no hard
+  // deadline framing on the estimate (soft "hacia el …", not a due-date claim).
   const sla = caso.solicitud
     ? resolveExpectedResponse(caso.solicitud.createdAt, caso.solicitud.slaVenceAt)
     : null;

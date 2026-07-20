@@ -79,6 +79,24 @@ pay. Verified: fork=0, A6-IDOR=0, `NEXT_PUBLIC_WOMPI`=0, A5-no-approve=0, 0 new 
 - v7-04: productive Wompi gateway + rent reconciliation webhook; receipt PDF; tokenized autopago.
 - v7-05 (planned): lease-scoped `messages.service`; attachment send; archive/report methods; proactive WhatsApp/reminders (agent contact-ledger).
 
+## Handoffs de integración (2026-07-20, post-milestone)
+
+Se escribieron/mejoraron los handoffs para Victor (para que se entiendan sin contexto previo — problema,
+solución paso por paso, qué hace, si tiene agentes, output esperado):
+
+- **Inquilino** — `~/rent/mvp-portal-inquilino/.planning/HANDOFF-VICTOR-v7.0.md` (commit `fbc1a4f5`,
+  reescritura completa sobre el ledger inicial `19158ef9`). Secciones: §0 En 30 seg · §1 El problema (P1) ·
+  §2 La solución · §3 ¿Tiene agentes? (NO — frontend; usa 3 gates del `agent`: canContact/requiresHumanReview/
+  cartera) · §4 las 7 fases paso por paso (problema/qué hace/output/Próximamente) · §5–11 estado, correr,
+  cross-repo (tabla de ~17 rutas backend/agent), mapa de archivos, smoke.
+- **Propietario** (OTRO proyecto — es BACKEND, el front lo hace Victor) — se le agregó un bloque de contexto
+  arriba (§0 + problema + 4 pilares + ¿agentes? v1 cero-LLM + 5 fases) dejando su contrato de integración
+  intacto. Vive en el repo **`agent`**, rama `project/portal-propietario`, commit `ada3accd`.
+  **Se re-creó el worktree `~/rent/agent-portal-propietario`** para poder editarlo (el temp original
+  `/private/tmp/leasefy-portal` fue borrado; el repo `agent` estaba en otra rama sucia → NO se le cambió).
+  NO confundir con **Avali** (`aprobaciones-propietario`) — ese es otro agente.
+- Copias de lectura en `~/Desktop/HANDOFF-Portal-{Inquilino-v7.0,Propietario}.md` (temporales).
+
 ## Gotchas / lessons (don't relearn these)
 
 1. **ENV BREAKAGE (2026-07-19 date boundary):** a `claude-code` auto-update (symlink recreated
@@ -95,6 +113,13 @@ pay. Verified: fork=0, A6-IDOR=0, `NEXT_PUBLIC_WOMPI`=0, A5-no-approve=0, 0 new 
    verify committed state + gates + build by hand, reconstruct any missing SUMMARY, re-launch cleanly.
 5. **Sequential execution** for the shared worktree (git index + `.next` race in parallel).
 6. Disk was tight (~22G) — executors clear regenerable `.next` on ENOSPC (never source).
+7. **Cursor "Agents"-only window (2026-07-20):** when Cursor's only open window is the background-agents
+   dashboard ("Cursor Agents"), it **ignores ALL CLI file-opens** (`cursor <f>`, `open -a Cursor <f>`,
+   `--new-window`, folder-open — all leave only "Cursor Agents"). **Fix that worked:** AppleScript to force
+   an editor window first, then open — `osascript` activate Cursor → System Events `keystroke "n" using
+   {command down, shift down}` (File→New Window) → THEN `open -a Cursor <files>` land as tabs. Also: files on
+   a worktree branch are NOT in the sibling main-repo checkout, so opening the wrong folder shows nothing.
+   Guaranteed fallback: `open -a TextEdit <files>` (always visible) or paste content.
 
 ## How to open the worktree
 

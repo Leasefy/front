@@ -66,7 +66,7 @@ de propietario real. Cuando Victor prenda el flag, la misma UI se llena con data
 | Fase | Entrega | Endpoints back | Estado |
 |------|---------|----------------|--------|
 | **v8-01 · Fundación** | owner-service + tipos (re-export del schema del back), cableado a `/api/portal/…propietario/*`, nav "Portal" en `(landlord)`, idiom empty-state, F1 perfil | `GET /perfil` | ✅ Completo |
-| **v8-02 · Ver mi plata (F3)** | portafolio consolidado, detalle inmueble, pagos, recaudo anual, proyección, descargar informe PDF | `portafolio · inmuebles · inmuebles/{ref} · inmuebles/{ref}/pagos · recaudo · recaudo/anual · proyeccion · informe.pdf` | ⏳ Pendiente |
+| **v8-02 · Ver mi plata (F3)** | portafolio consolidado, detalle inmueble, pagos, recaudo anual, proyección, descargar informe PDF | `portafolio · inmuebles · inmuebles/{ref} · inmuebles/{ref}/pagos · recaudo · recaudo/anual · proyeccion · informe.pdf` | ✅ Completo |
 | **v8-03 · Elegir inquilino (F2)** | comparación simultánea de postulados asegurables + elección one-click WYSIWYS | `procesos · procesos/{id}/comparacion · POST procesos/{id}/eleccion` | ⏳ Pendiente |
 | **v8-04 · Solicitudes (F4)** | crear/listar solicitud + detalle con timeline de debido proceso | `GET/POST solicitudes · GET solicitudes/{id}` | ⏳ Pendiente |
 | **v8-05 · Daños + digest (F5)** | vista de daños fail-soft + digest mensual + preferencias de consentimiento | `danos · digest/{periodo} · digests` | ⏳ Pendiente |
@@ -76,7 +76,7 @@ de propietario real. Cuando Victor prenda el flag, la misma UI se llena con data
 | Fase | Plan | Ejecución | Verificación |
 |------|------|-----------|--------------|
 | v8-01 | ✅ | ✅ | ✅ GOAL ACHIEVED |
-| v8-02 | ⏳ | — | — |
-| v8-03 | — | — | — |
+| v8-02 | ✅ | ✅ | ✅ GOAL ACHIEVED |
+| v8-03 | ⏳ | — | — |
 | v8-04 | — | — | — |
 | v8-05 | — | — | — |

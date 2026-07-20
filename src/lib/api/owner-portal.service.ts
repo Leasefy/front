@@ -18,29 +18,8 @@
  * — incl. 401/403/404 por flag-OFF —, red caída/CORS, parse) → `null` = **no-disponible**.
  * La UI traduce `null` a "Próximamente" (DESIGN.md §11). NUNCA se fabrica data.
  */
-import { agentAuthHeaders } from './agent-auth';
+import { ownerGet } from './owner-portal.http';
 import type { OwnerPerfil } from './owner-portal.types';
-
-/** GET tipado contra el agent, scoped al propietario de una agencia. `null` = no-disponible. */
-async function ownerGet<T>(agencyId: string | null, path: string): Promise<T | null> {
-  const base = process.env.NEXT_PUBLIC_AGENT_URL;
-  // Sin agent URL o sin agencyId (owner-JWT no cableado aún) → no-disponible, honesto.
-  if (!base || !agencyId) return null;
-
-  try {
-    const res = await globalThis.fetch(
-      `${base}/api/portal/${agencyId}/propietario${path}`,
-      { headers: agentAuthHeaders() },
-    );
-    // 401/403/404 (flag-OFF / no cableado) o 5xx → no-disponible. Sin excepciones ruidosas.
-    if (!res.ok) return null;
-    const text = await res.text();
-    return text ? (JSON.parse(text) as T) : null;
-  } catch {
-    // Red caída, CORS o JSON inválido → no-disponible.
-    return null;
-  }
-}
 
 export const ownerPortalApi = {
   /**

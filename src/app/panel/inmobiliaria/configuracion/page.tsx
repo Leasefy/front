@@ -266,11 +266,18 @@ function ConfiguracionContent() {
 
   const handleInviteUser = async (invite: UserInvite) => {
     try {
-      await inmobiliariaConfigApi.inviteUser(invite);
+      const result = await inmobiliariaConfigApi.inviteUser(invite);
       await refetchUsers();
-      toast.success(t('inmobiliaria.config.toasts.inviteSent'), {
-        description: t('inmobiliaria.config.toasts.inviteSentDesc'),
-      });
+      if (result.emailDelivered === false) {
+        // Member row was created, but the email failed to send — partial success.
+        toast.warning(t('inmobiliaria.config.toasts.inviteEmailNotDelivered'), {
+          description: t('inmobiliaria.config.toasts.inviteEmailNotDeliveredDesc'),
+        });
+      } else {
+        toast.success(t('inmobiliaria.config.toasts.inviteSent'), {
+          description: t('inmobiliaria.config.toasts.inviteSentDesc'),
+        });
+      }
     } catch (error) {
       toast.error('Error al invitar usuario', {
         description: error instanceof Error ? error.message : undefined,
@@ -304,10 +311,17 @@ function ConfiguracionContent() {
   const handleResendInvite = async (userId: string) => {
     try {
       const user = users.find((u) => u.id === userId);
-      await agencyApi.resendInvitation(userId);
-      toast.success(t('inmobiliaria.config.toasts.inviteResent'), {
-        description: user ? t('inmobiliaria.config.toasts.inviteResentDesc', { email: user.email }) : t('inmobiliaria.config.toasts.inviteSent'),
-      });
+      const result = await agencyApi.resendInvitation(userId);
+      if (result.emailDelivered === false) {
+        // Member still active, but the resend email failed to send.
+        toast.warning(t('inmobiliaria.config.toasts.resendEmailNotDelivered'), {
+          description: t('inmobiliaria.config.toasts.resendEmailNotDeliveredDesc'),
+        });
+      } else {
+        toast.success(t('inmobiliaria.config.toasts.inviteResent'), {
+          description: user ? t('inmobiliaria.config.toasts.inviteResentDesc', { email: user.email }) : t('inmobiliaria.config.toasts.inviteSent'),
+        });
+      }
     } catch (error) {
       toast.error('Error al reenviar invitación', {
         description: error instanceof Error ? error.message : undefined,

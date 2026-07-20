@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Envelope, X, FileText, House, Users, Buildings, Chat, Clock, Heart, Compass } from '@phosphor-icons/react';
+import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Envelope, X, FileText, House, Users, Buildings, Chat, Clock, Heart, Compass, Warning } from '@phosphor-icons/react';
 import { SegmentedControl } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
@@ -97,10 +97,13 @@ export function PlanHeader({
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [teamInviteOpen, setTeamInviteOpen] = useState(false);
   const [activeTab, setNotifTab] = useState<'all' | 'unread'>('all');
+  const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteEmailError, setInviteEmailError] = useState('');
   const [inviteRole, setInviteRole] = useState<TeamRole>('viewer');
   const [inviteSent, setInviteSent] = useState(false);
+  // true when the member row was created but the invitation email failed to send.
+  const [inviteEmailUndelivered, setInviteEmailUndelivered] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
 
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -651,18 +654,34 @@ export function PlanHeader({
 
                   <div className="p-5">
                     {inviteSent ? (
-                      /* Success state */
+                      /* Result state — success or partial-success (email not delivered) */
                       <div className="text-center py-4">
-                        <div className="w-12 h-12 bg-plan-status-green-bg rounded-full flex items-center justify-center mx-auto mb-3">
-                          <Check className="w-6 h-6 text-[#2C7A53]" />
-                        </div>
-                        <p className="text-[14px] font-medium text-plan-primary">Invitación enviada</p>
-                        <p className="text-[12px] text-plan-secondary mt-1">
-                          Se envió un correo a {inviteEmail}
-                        </p>
+                        {inviteEmailUndelivered ? (
+                          <>
+                            <div className="w-12 h-12 bg-warning-soft rounded-full flex items-center justify-center mx-auto mb-3">
+                              <Warning className="w-6 h-6 text-warning" />
+                            </div>
+                            <p className="text-[14px] font-medium text-plan-primary">Invitación creada</p>
+                            <p className="text-[12px] text-plan-secondary mt-1">
+                              No pudimos enviar el correo a {inviteEmail}. Usa &quot;Reenviar invitación&quot; o verifica la dirección.
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-12 h-12 bg-plan-status-green-bg rounded-full flex items-center justify-center mx-auto mb-3">
+                              <Check className="w-6 h-6 text-[#2C7A53]" />
+                            </div>
+                            <p className="text-[14px] font-medium text-plan-primary">Invitación enviada</p>
+                            <p className="text-[12px] text-plan-secondary mt-1">
+                              Se envió un correo a {inviteEmail}
+                            </p>
+                          </>
+                        )}
                         <button
                           onClick={() => {
                             setInviteSent(false);
+                            setInviteEmailUndelivered(false);
+                            setInviteName('');
                             setInviteEmail('');
                             setInviteRole('viewer');
                           }}
@@ -674,6 +693,24 @@ export function PlanHeader({
                     ) : (
                       /* Invite form */
                       <>
+                        {/* Name input */}
+                        <div className="mb-4">
+                          <label className="block text-[12px] font-medium text-foreground mb-1.5">
+                            Nombre
+                          </label>
+                          <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
+                            <input
+                              type="text"
+                              value={inviteName}
+                              onChange={(e) => setInviteName(e.target.value)}
+                              placeholder="Nombre del colaborador"
+                              aria-label="Nombre del colaborador"
+                              className="w-full h-10 pl-9 pr-4 bg-muted border border-plan-border rounded-xl text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
+                            />
+                          </div>
+                        </div>
+
                         {/* Email input */}
                         <div className="mb-4">
                           <label className="block text-[12px] font-medium text-foreground mb-1.5">
@@ -754,11 +791,12 @@ export function PlanHeader({
                             if (!inviteEmail || !isValidEmail(inviteEmail)) return;
                             setInviteLoading(true);
                             try {
-                              await inmobiliariaConfigApi.inviteUser({
+                              const result = await inmobiliariaConfigApi.inviteUser({
                                 email: inviteEmail,
-                                name: '',
+                                name: inviteName.trim(),
                                 role: inviteRole,
                               });
+                              setInviteEmailUndelivered(result.emailDelivered === false);
                               setInviteSent(true);
                             } catch {
                               toast.error('No se pudo enviar la invitación. Intentá de nuevo.');

@@ -1639,6 +1639,18 @@ export interface AgencyMember extends AgencyUser {
   permissions?: Record<string, string[]> | null;
 }
 
+/**
+ * Response of the invite (POST /inmobiliaria/agency/members) and resend
+ * (POST .../:memberId/resend-invitation) endpoints: the created/updated
+ * member row with an `emailDelivered` flag merged on top.
+ * `emailDelivered === false` = the row persists but the email failed to send
+ * (partial success — surface a warning, offer resend). Additive: existing
+ * member-field reads are unaffected.
+ */
+export interface AgencyInviteResult extends AgencyMember {
+  emailDelivered: boolean;
+}
+
 // ============================================================================
 // Agency Onboarding Status (backend response)
 // ============================================================================

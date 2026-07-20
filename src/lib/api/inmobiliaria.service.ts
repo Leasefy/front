@@ -46,6 +46,7 @@ import type {
   ReportDefinition,
   InvitationInfo,
   AgencyMember,
+  AgencyInviteResult,
   AgencyOnboardingStatus,
 } from '@/lib/types/inmobiliaria';
 
@@ -788,7 +789,7 @@ export const inmobiliariaConfigApi = {
     return Array.isArray(res) ? res : res.data;
   },
 
-  async inviteUser(invite: UserInvite): Promise<AgencyUser> {
+  async inviteUser(invite: UserInvite): Promise<AgencyInviteResult> {
     // Backend enum: ADMIN | AGENTE | CONTADOR | VIEWER — just uppercase the frontend value
     // Backend DTO rejects: message (UI-only), phone (not in DTO)
     const { message: _msg, phone: _phone, ...rest } = invite;
@@ -796,7 +797,8 @@ export const inmobiliariaConfigApi = {
       ...rest,
       role: invite.role.toUpperCase(),
     };
-    return apiClient.post<AgencyUser>(`${BASE}/agency/members`, payload);
+    // Response merges `emailDelivered` onto the created member.
+    return apiClient.post<AgencyInviteResult>(`${BASE}/agency/members`, payload);
   },
 
   async updateUser(id: string, data: Partial<AgencyUser>): Promise<AgencyUser> {
@@ -896,8 +898,9 @@ export const agencyApi = {
    * POST /inmobiliaria/agency/members/:memberId/resend-invitation
    * Resends the invitation email for a pending member.
    */
-  async resendInvitation(memberId: string): Promise<AgencyMember> {
-    return apiClient.post<AgencyMember>(`${BASE}/agency/members/${memberId}/resend-invitation`);
+  async resendInvitation(memberId: string): Promise<AgencyInviteResult> {
+    // Response merges `emailDelivered` onto the member.
+    return apiClient.post<AgencyInviteResult>(`${BASE}/agency/members/${memberId}/resend-invitation`);
   },
 
   /**
@@ -1009,7 +1012,8 @@ export const permissionsApi = {
    * Updates a member's custom permissions (admin only). Pass null to reset to role defaults.
    */
   async updateMemberPermissions(memberId: string, permissions: Record<string, string[]> | null): Promise<MemberPermissionsResponse> {
-    return apiClient.patch<MemberPermissionsResponse>(`${BASE}/agency/members/${memberId}/permissions`, { permissions });
+    // Backend route is @Put (agency.controller.ts PUT members/:id/permissions) — must match verb.
+    return apiClient.put<MemberPermissionsResponse>(`${BASE}/agency/members/${memberId}/permissions`, { permissions });
   },
 
   /**
@@ -1017,6 +1021,7 @@ export const permissionsApi = {
    * Updates a member's role (admin only).
    */
   async updateMemberRole(memberId: string, role: string): Promise<unknown> {
-    return apiClient.patch(`${BASE}/agency/members/${memberId}/role`, { role });
+    // Backend route is @Put (agency.controller.ts PUT members/:id/role) — must match verb.
+    return apiClient.put(`${BASE}/agency/members/${memberId}/role`, { role });
   },
 };

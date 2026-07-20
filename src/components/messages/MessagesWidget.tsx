@@ -28,7 +28,18 @@ import { useI18n } from '@/lib/i18n';
 import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { useConversations, useChat } from '@/lib/hooks/useMessages';
 import { messagesApi } from '@/lib/api/messages.service';
@@ -124,6 +135,9 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [showOptionsList, setShowOptionsList] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [isReporting, setIsReporting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const optionsListRef = useRef<HTMLDivElement>(null);
@@ -236,29 +250,70 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
     [selectedConversation, locale],
   );
 
-  // Acciones placeholder (backend no las soporta aún — mantenemos alert con copy i18n).
-  const handleArchive = () => {
+  // Conversation actions (COMU-02) — SHARED by tenant + landlord/agency. The
+  // endpoints are not live yet, so each degrades to an honest "Próximamente"
+  // toast via the typed service ('unavailable' on 404/403/0) — never `alert`,
+  // never a fabricated success. `report` is a safety action → AlertDialog confirm.
+  const handleArchive = useCallback(async () => {
     setShowOptionsList(false);
-    alert(
-      locale === 'es'
-        ? `Conversacion con ${selectedConversation?.name ?? ''} archivada`
-        : `Conversation with ${selectedConversation?.name ?? ''} archived`,
-    );
-  };
+    if (!selectedConversation) return;
+    const result = await messagesApi.archiveConversation(selectedConversation.id);
+    if (result === 'ok') {
+      toast.success(locale === 'es' ? 'Conversación archivada' : 'Conversation archived');
+      // Optimistically drop the archived thread from view, then re-sync.
+      setSelectedApplicationId(null);
+      setShowMobileChat(false);
+      refetchConversations();
+    } else {
+      toast.info(
+        locale === 'es'
+          ? 'Archivar conversaciones estará disponible próximamente.'
+          : 'Archiving conversations will be available soon.',
+      );
+    }
+  }, [selectedConversation, locale, refetchConversations]);
 
-  const handleMute = () => {
+  const handleMute = useCallback(async () => {
     setShowOptionsList(false);
-    alert(
-      locale === 'es'
-        ? `Notificaciones de ${selectedConversation?.name ?? ''} silenciadas`
-        : `Notifications from ${selectedConversation?.name ?? ''} muted`,
-    );
-  };
+    if (!selectedConversation) return;
+    const result = await messagesApi.muteConversation(selectedConversation.id);
+    if (result === 'ok') {
+      toast.success(locale === 'es' ? 'Notificaciones silenciadas' : 'Notifications muted');
+    } else {
+      toast.info(
+        locale === 'es'
+          ? 'Silenciar estará disponible próximamente.'
+          : 'Muting will be available soon.',
+      );
+    }
+  }, [selectedConversation, locale]);
 
-  const handleReport = () => {
+  const handleReport = useCallback(() => {
     setShowOptionsList(false);
-    alert(locale === 'es' ? 'Conversacion reportada' : 'Conversation reported');
-  };
+    setReportOpen(true);
+  }, []);
+
+  const confirmReport = useCallback(async () => {
+    if (!selectedConversation) return;
+    setIsReporting(true);
+    const trimmed = reportReason.trim();
+    const result = await messagesApi.reportConversation(
+      selectedConversation.id,
+      trimmed.length > 0 ? trimmed : undefined,
+    );
+    setIsReporting(false);
+    setReportOpen(false);
+    setReportReason('');
+    if (result === 'ok') {
+      toast.success(locale === 'es' ? 'Conversación reportada' : 'Conversation reported');
+    } else {
+      toast.info(
+        locale === 'es'
+          ? 'Reportar estará disponible próximamente.'
+          : 'Reporting will be available soon.',
+      );
+    }
+  }, [selectedConversation, reportReason, locale]);
 
   return (
     <div className="h-[calc(100vh-64px)] bg-bg overflow-hidden flex flex-col">
@@ -762,6 +817,63 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
           </div>
         </motion.div>
       </div>
+
+      {/*
+        Report confirm — Radix AlertDialog (role="alertdialog", focus-trapped, no
+        outside-dismiss). The reason is a SINGLE OPTIONAL free-text field: never
+        required and never a suggested reason-for-non-payment prompt (Ley 2300
+        art. 7). Shared by tenant + landlord/agency.
+      */}
+      <AlertDialog
+        open={reportOpen}
+        onOpenChange={(open) => {
+          setReportOpen(open);
+          if (!open) setReportReason('');
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {locale === 'es' ? '¿Reportar esta conversación?' : 'Report this conversation?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === 'es'
+                ? 'Nuestro equipo revisará esta conversación. Si querés, contanos qué pasó.'
+                : 'Our team will review this conversation. If you want, tell us what happened.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-2">
+            <label htmlFor="report-reason" className="text-sm text-muted-foreground">
+              {locale === 'es' ? 'Cuéntanos qué pasó (opcional)' : 'Tell us what happened (optional)'}
+            </label>
+            <Textarea
+              id="report-reason"
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              placeholder={locale === 'es' ? 'Escribe aquí (opcional)' : 'Write here (optional)'}
+              maxLength={500}
+              rows={3}
+            />
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isReporting}>
+              {locale === 'es' ? 'Cancelar' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                // Handle the report ourselves; the toast fires after the call.
+                e.preventDefault();
+                confirmReport();
+              }}
+              disabled={isReporting}
+            >
+              {locale === 'es' ? 'Reportar conversación' : 'Report conversation'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -33,7 +33,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 - [x] **v7-02: Documentos del Arriendo** — Docs del arriendo (contrato, recibos, paz y salvo, cert. retención) con disciplina Habeas Data. ✅ 2026-07-17 (paz y salvo + cert. retención = "Próximamente" contract-first)
 - [x] **v7-03: Estado de Casos (Hub)** — "Mis casos" unificado (PQRS + mantenimiento + acuerdos + pagos) con estado, responsable y timeline. Fija P1. ✅ 2026-07-18 (real: pagos + aplicaciones; PQRS/mant v7-06 + acuerdos v7-07 = "Próximamente")
 - [x] **v7-04: Pagos Reales (Wompi)** — Pago de arriendo con Wompi/Bold real, comprobantes PDF, autopago; reemplaza el PSE-mock. ✅ 2026-07-18 (checkout initiation real + seguridad server-side; gateway productivo/webhook + recibo PDF + autopago = "Próximamente")
-- [ ] **v7-05: Comunicación atada al arriendo/caso** — Chat lease-scoped, adjuntos y acciones reales, saliente respeta el gate de contacto.
+- [x] **v7-05: Comunicación atada al arriendo/caso** — Chat lease-scoped, adjuntos y acciones reales, saliente respeta el gate de contacto. ✅ 2026-07-19 (header de contexto del arriendo + acciones archivar/silenciar/reportar reales + `alert()`→toast + gate de contacto `canContact` default-gated + hint SLA 15 días hábiles; thread lease-scoped/envío de adjuntos/WhatsApp saliente = "Próximamente" detrás del gate del `agent`)
 - [ ] **v7-06: Solicitudes / PQRS** — Abrir/seguir mantenimiento y PQRS tipadas (reusa `pqrs.types.ts`) con SLA 15 días visible.
 - [ ] **v7-07: Acuerdos de Pago (LAST)** — Ver/aceptar/pagar acuerdo aprobado por la agencia; nunca auto-aprueba. Contract-first hasta que `agent` exponga RLS tenant.
 
@@ -173,7 +173,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 | v7-02. Documentos del Arriendo | v7.0 | 4/4 | Complete | 2026-07-17 |
 | v7-03. Estado de Casos (Hub) | v7.0 | 3/3 | Complete | 2026-07-18 |
 | v7-04. Pagos Reales (Wompi) | v7.0 | 4/4 | Complete | 2026-07-18 |
-| v7-05. Comunicación | v7.0 | 0/3 | Not started | - |
+| v7-05. Comunicación | v7.0 | 3/3 | Complete | 2026-07-19 |
 | v7-06. Solicitudes / PQRS | v7.0 | 0/TBD | Not started | - |
 | v7-07. Acuerdos de Pago | v7.0 | 0/TBD | Not started | - |
 

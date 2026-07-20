@@ -16,11 +16,25 @@
  * data (CASO-02 IDOR). `responsable` is a ROLE string; `id` is the opaque source
  * UUID.
  *
+ * v7-06 (SOLI-02) folds PQRS/maintenance in via `pqrsToCase`, REUSING the shared
+ * `PqrsEstado`/`CostoResponsable` vocabulary (never a parallel enum). That mapper
+ * still NORMALIZES-not-computes: it projects the source estado/timestamps and
+ * carries the raw SLA/cost fields verbatim on an OPTIONAL `solicitud` metadata
+ * block. It does NOT derive the SLA — the sanctioned business-day estimate is a
+ * PRESENTATION concern (v7-06-03/04). The "never recompute a saldo/SLA/status"
+ * doctrine holds.
+ *
  * Consumer-law note (Ley 1480, PITFALLS 8): `CaseTone` deliberately omits an
- * alarm/danger level so the type cannot express an alarmist tone. Labels here are
- * factual — no credit-bureau references, no urgency/countdown copy.
+ * alarm/danger level so the type cannot express an alarmist tone. `en_cotizacion`
+ * caps at `'attention'`; reparacion/urgente never reach an alarm color. Labels
+ * here are factual — no credit-bureau references, no urgency/countdown copy.
  */
 
+import type {
+  CostoResponsable,
+  PqrsEstado,
+  SolicitudPqrs,
+} from '@/lib/api/pqrs.types';
 import type { TenantPaymentRequestStatus } from '@/lib/api/tenant-payment-requests.types';
 import {
   APPLICATION_STATUS_LABELS,
@@ -76,6 +90,23 @@ export interface TenantCase {
   sourceLink: string;
   /** Milestones built from source timestamps only. */
   events: CaseEvent[];
+  /**
+   * PQRS-only pass-through metadata (v7-06). Carries the raw source estado, the
+   * creation timestamp, and the optional SLA/cost fields so the detail/list layer
+   * can render the SLA estimate + cost responsibility (SOLI-03/04). These are
+   * PROJECTED verbatim — the SLA is NOT computed here (that estimate lives in the
+   * presentation layer). Internal responsible-party ids / agency notes are
+   * intentionally excluded (CASO-02).
+   */
+  solicitud?: {
+    estado: PqrsEstado;
+    createdAt: string;
+    slaVenceAt?: string;
+    costoResponsable?: CostoResponsable;
+    cotizacionMonto?: number;
+    cotizacionId?: string;
+    cotizacionAprobadaAt?: string;
+  };
 }
 
 // ============================================================================
@@ -154,4 +185,102 @@ export function applicationStatusToTone(status: TenantApplicationStatus): CaseTo
  */
 export function applicationStatusToLabel(status: TenantApplicationStatus): string {
   return APPLICATION_STATUS_LABELS[status];
+}
+
+// ============================================================================
+// PQRS / mantenimiento — pure, TOTAL mappers + pass-through projection (v7-06)
+// ============================================================================
+
+const RESPONSABLE_INMOBILIARIA = 'Inmobiliaria';
+
+/**
+ * PQRS estado → tone. In-flight states are `info`; `en_cotizacion` caps at
+ * `'attention'` (the tenant may need to approve a quote — SOLI-04); terminal
+ * states settle to `neutral`. Total over the 6-member `PqrsEstado` via
+ * `assertNever`; the return type is `CaseTone`, which cannot express an alarm
+ * level — so `reparacion`/urgente never map to an alarm color (Ley 1480).
+ */
+export function pqrsStatusToTone(estado: PqrsEstado): CaseTone {
+  switch (estado) {
+    case 'recibida':
+    case 'asignada':
+    case 'en_proceso':
+      return 'info';
+    case 'en_cotizacion':
+      return 'attention';
+    case 'resuelta':
+    case 'cerrada':
+      return 'neutral';
+    default:
+      return assertNever(estado);
+  }
+}
+
+/**
+ * PQRS estado → factual es-CO label. Mirrors the agency's own vocabulary — no
+ * urgency/countdown copy, no credit-bureau references.
+ */
+export function pqrsStatusToLabel(estado: PqrsEstado): string {
+  switch (estado) {
+    case 'recibida':
+      return 'Recibida';
+    case 'asignada':
+      return 'Asignada';
+    case 'en_proceso':
+      return 'En proceso';
+    case 'en_cotizacion':
+      return 'En cotización';
+    case 'resuelta':
+      return 'Resuelta';
+    case 'cerrada':
+      return 'Cerrada';
+    default:
+      return assertNever(estado);
+  }
+}
+
+/**
+ * `SolicitudPqrs` → `TenantCase`. A pure PROJECTION mirroring `paymentRequestToCase`:
+ * it normalizes estado/timestamps and PASSES THROUGH the raw SLA/cost fields on the
+ * optional `solicitud` metadata — it does NOT compute the SLA (the sanctioned
+ * business-day estimate is a presentation concern, v7-06-03/04). `tipo` `reparacion`
+ * lands in the `'mantenimiento'` lane; every other tipo in `'pqrs'`. Events are built
+ * from SOURCE timestamps only — nothing synthesized/padded.
+ */
+export function pqrsToCase(s: SolicitudPqrs): TenantCase {
+  const events: CaseEvent[] = [
+    { id: `${s.id}:recibida`, label: 'Recibida', timestamp: s.createdAt },
+  ];
+  // A quote milestone only when the request actually moved into cotización.
+  if (s.estado === 'en_cotizacion' && s.updatedAt !== s.createdAt) {
+    events.push({ id: `${s.id}:cotizacion`, label: 'En cotización', timestamp: s.updatedAt });
+  }
+  // A resolution milestone only when a real close timestamp exists.
+  if (s.resueltaAt) {
+    events.push({ id: `${s.id}:resuelta`, label: 'Resuelta', timestamp: s.resueltaAt });
+  }
+
+  return {
+    id: s.id,
+    type: s.tipo === 'reparacion' ? 'mantenimiento' : 'pqrs',
+    titulo: s.asunto,
+    estadoLabel: pqrsStatusToLabel(s.estado),
+    tone: pqrsStatusToTone(s.estado),
+    responsable: RESPONSABLE_INMOBILIARIA,
+    updatedAt: s.updatedAt,
+    // Unified case detail (timeline). sourceLink is the "ver en origen" out-link.
+    detailLink: `/inquilino/casos/${encodeURIComponent(s.id)}`,
+    sourceLink: '/inquilino/solicitudes',
+    events,
+    // Pass-through raw metadata — NO SLA math here (presentation layer computes it).
+    solicitud: {
+      estado: s.estado,
+      createdAt: s.createdAt,
+      slaVenceAt: s.slaVenceAt,
+      costoResponsable: s.costoResponsable,
+      cotizacionMonto: s.cotizacionMonto,
+      cotizacionId: s.cotizacionId,
+      cotizacionAprobadaAt: s.cotizacionAprobadaAt,
+    },
+  };
 }

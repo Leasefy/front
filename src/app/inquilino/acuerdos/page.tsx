@@ -23,6 +23,7 @@
  * credit-bureau copy). Buttons/labels sentence case (DESIGN §4).
  */
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -40,7 +41,9 @@ import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { useI18n } from '@/lib/i18n';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { CuotaPlanTable } from '@/components/tenant/CuotaPlanTable';
+import { SolicitarPlanPagoModal } from '@/components/tenant/SolicitarPlanPagoModal';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { BadgeProps } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
@@ -124,7 +127,10 @@ function AcuerdoRow({ p, index, locale }: { p: AcuerdoDetail; index: number; loc
 export default function AcuerdosPage() {
   const { locale } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
-  const { items, isLoading, error } = useTenantAcuerdos();
+  const { items, isLoading, error, refetch } = useTenantAcuerdos();
+
+  // The only mutation entry point on this read surface: propose a payment plan.
+  const [requestOpen, setRequestOpen] = useState(false);
 
   // Loading gate — never flash a fake-empty while a source is in flight.
   if (isOnboardingLoading || isLoading) {
@@ -171,16 +177,26 @@ export default function AcuerdosPage() {
         <motion.header
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
         >
-          <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
-            {locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
-          </h1>
-          <p className="mt-1 text-fg-muted dark:text-fg-subtle">
-            {locale === 'es'
-              ? 'Consulta los acuerdos de pago aprobados por tu inmobiliaria y su plan de cuotas.'
-              : 'Review the payment agreements approved by your agency and their installment plan.'}
-          </p>
+          <div>
+            <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
+              {locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
+            </h1>
+            <p className="mt-1 text-fg-muted dark:text-fg-subtle">
+              {locale === 'es'
+                ? 'Consulta los acuerdos de pago aprobados por tu inmobiliaria y su plan de cuotas.'
+                : 'Review the payment agreements approved by your agency and their installment plan.'}
+            </p>
+          </div>
+          <Button
+            type="button"
+            onClick={() => setRequestOpen(true)}
+            hideArrow
+            className="flex-shrink-0"
+          >
+            {locale === 'es' ? 'Solicitar un plan de pago' : 'Request a payment plan'}
+          </Button>
         </motion.header>
 
         {/* List — real own-acuerdos, or an honest empty-state (incl. not-live []) */}
@@ -196,18 +212,30 @@ export default function AcuerdosPage() {
               ))}
             </div>
           ) : (
-            <EmptyState
-              icon={Scroll}
-              title={locale === 'es' ? 'Aún no tienes acuerdos de pago' : 'No payment agreements yet'}
-              description={
-                locale === 'es'
-                  ? 'Cuando tu inmobiliaria te apruebe un acuerdo, aparecerá aquí con su plan de cuotas.'
-                  : 'When your agency approves an agreement, it will show up here with its installment plan.'
-              }
-            />
+            <div className="flex flex-col items-center gap-5">
+              <EmptyState
+                icon={Scroll}
+                title={locale === 'es' ? 'Aún no tienes acuerdos de pago' : 'No payment agreements yet'}
+                description={
+                  locale === 'es'
+                    ? 'Cuando tu inmobiliaria te apruebe un acuerdo, aparecerá aquí con su plan de cuotas.'
+                    : 'When your agency approves an agreement, it will show up here with its installment plan.'
+                }
+              />
+              <Button type="button" onClick={() => setRequestOpen(true)} hideArrow>
+                {locale === 'es' ? 'Solicitar un plan de pago' : 'Request a payment plan'}
+              </Button>
+            </div>
           )}
         </motion.section>
       </div>
+
+      {/* Propose-a-plan modal — intent only; the agency defines and approves terms. */}
+      <SolicitarPlanPagoModal
+        open={requestOpen}
+        onClose={() => setRequestOpen(false)}
+        onRequested={refetch}
+      />
     </div>
   );
 }

@@ -150,7 +150,14 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
   3. El inquilino paga una cuota de su acuerdo con el mismo rail Wompi (vía `agent` `cartera/payment-plans` → `paymentUrl`) (ACUE-03).
   4. El inquilino puede solicitar un plan de pago pre-mora que alimenta el pipeline de aprobación de la agencia (propone, no fija términos); ningún form pregunta "por qué" la mora ni menciona centrales de riesgo sin el gate de 3 partes (ACUE-04, guardrails PITFALLS 4/5).
 **External deps** (HARD, cross-repo): rutas + RLS tenant-scoped en el repo `agent` para leer/persistir acuerdos y pagar cuotas; los gates `requiresHumanReview`/`canContact` expuestos vía HTTP. Hasta que existan → UI shell + contrato types-only (`tenant-acuerdos.types.ts`) + empty-state honesto "Próximamente" (igual que la página agency de acuerdos ya hace). **NO fake data** en un path que un inquilino real pueda alcanzar.
-**Plans**: TBD
+**Plans**: 7 plans
+- [ ] v7-07-01-PLAN.md — Fundación: types re-exportados del `agent` (sin fork) + servicio tolerante `tenant-acuerdos.service.ts` (listMine→[], accept/requestPremoraPlan→AcuerdoUnavailableError, getCuotaPaymentUrl→null) vía BFF (A6, no la ruta agency), con tests (ACUE-01..04)
+- [ ] v7-07-02-PLAN.md — Generalizar `OTPVerification` aditivamente (adapter OTP inyectado + `resolveOtpAdapter`) sin romper la firma de contratos, con test puro (ACUE-02)
+- [ ] v7-07-03-PLAN.md — Capa de datos: mappers `acuerdoStatusToTone/Label` + `acuerdoToCase` (pass-through, sin saldo) + hook `useTenantAcuerdos` + fold al hub `useTenantCases` (0 filas cuando `[]`), con tests (ACUE-01)
+- [ ] v7-07-04-PLAN.md — Vista: `CuotaPlanTable` (installments verbatim, sin saldo) + página `/inquilino/acuerdos` (empty-state honesto), nav "Acuerdos" + swap del ProximamenteSection en el hub (ACUE-01)
+- [ ] v7-07-05-PLAN.md — Aceptar: `AcuerdoAcceptPanel` (SignaturePad + OTP generalizado, "lo aprueba tu inmobiliaria", sin aprobar/fijar términos) + detalle `/inquilino/acuerdos/[id]` (find own-only, timeline) (ACUE-01/02)
+- [ ] v7-07-06-PLAN.md — Pagar cuota: ruta Wompi `acuerdos/wompi-session` (v7-04 clone, monto server-resolved del `agent`, sin `body.amount`) + botón "Pagar cuota" gated (ACUE-03)
+- [ ] v7-07-07-PLAN.md — Solicitar plan pre-mora: `SolicitarPlanPagoModal` (propone, no fija; sin "por qué" la mora, sin centrales de riesgo) + CTA en la lista (ACUE-04)
 **UI hint**: yes
 
 ## Traceability (REQ → Phase)
@@ -179,7 +186,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 | v7-04. Pagos Reales (Wompi) | v7.0 | 4/4 | Complete | 2026-07-18 |
 | v7-05. Comunicación | v7.0 | 3/3 | Complete | 2026-07-19 |
 | v7-06. Solicitudes / PQRS | v7.0 | 4/4 | Complete | 2026-07-19 |
-| v7-07. Acuerdos de Pago | v7.0 | 0/TBD | Not started | - |
+| v7-07. Acuerdos de Pago | v7.0 | 0/7 | Not started | - |
 
 ---
 

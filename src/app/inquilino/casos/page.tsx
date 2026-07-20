@@ -15,8 +15,10 @@
  *     `CaseTone` type itself cannot express an alarm level.
  *   - "al día"/none → an honest neutral "Todo al día" empty-state, never a
  *     fabricated count or padded list.
- *   - Forward-ref types (PQRS / mantenimiento / acuerdos) are honest
- *     "Próximamente" EmptyState sections — they render ZERO rows.
+ *   - "Más en tu portal" surfaces one REAL entry point per adjacent surface:
+ *     Solicitudes (PQRS / mantenimiento → /inquilino/solicitudes) and Acuerdos
+ *     (→ /inquilino/acuerdos). Those pages own their own honest empty/"Próximamente"
+ *     state when their backend is not yet live — this hub never fabricates a count.
  *
  * CASO-03: in-app notifications are ALREADY real (`useTenantNotifications` →
  * `/notifications`, polling, `actionUrl` deep-links). The hub only SURFACES this
@@ -141,43 +143,6 @@ function CaseRow({ c, index, locale }: { c: TenantCase; index: number; locale: s
         </div>
       </Link>
     </motion.div>
-  );
-}
-
-// ============================================================================
-// Forward-ref "Próximamente" section (honest — renders NO rows)
-// ============================================================================
-
-function ProximamenteSection({
-  icon: SectionIcon,
-  title,
-  description,
-  detail,
-  locale,
-}: {
-  icon: Icon;
-  title: string;
-  description: string;
-  detail: string;
-  locale: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6 space-y-4">
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
-          <SectionIcon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
-        </div>
-        <div>
-          <h2 className="text-lg font-semibold text-fg dark:text-white">{title}</h2>
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">{description}</p>
-        </div>
-      </div>
-      <EmptyState
-        icon={Clock}
-        title={locale === 'es' ? 'Próximamente' : 'Coming soon'}
-        description={detail}
-      />
-    </div>
   );
 }
 
@@ -357,17 +322,31 @@ export default function CasosPage() {
               </span>
             </Link>
 
-            <ProximamenteSection
-              icon={Handshake}
-              title={locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
-              description={locale === 'es'
-                ? 'Consulta y gestiona acuerdos de pago con tu inmobiliaria.'
-                : 'Review and manage payment agreements with your agency.'}
-              detail={locale === 'es'
-                ? 'La gestión de acuerdos de pago estará disponible cuando se habilite el módulo.'
-                : 'Managing payment agreements will be available once the module is enabled.'}
-              locale={locale}
-            />
+            {/* Real entry point — approved acuerdos now flow through /inquilino/acuerdos */}
+            <Link
+              href="/inquilino/acuerdos"
+              className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6 space-y-4 block hover:border-primary/40 transition-colors"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+                  <Handshake className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-fg dark:text-white group-hover:text-primary transition-colors">
+                    {locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
+                  </h2>
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
+                    {locale === 'es'
+                      ? 'Consulta y gestiona tus acuerdos de pago.'
+                      : 'Review and manage your payment agreements.'}
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
+                {locale === 'es' ? 'Ver acuerdos' : 'View agreements'}
+                <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+              </span>
+            </Link>
           </div>
         </motion.section>
 

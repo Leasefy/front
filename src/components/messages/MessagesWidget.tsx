@@ -43,6 +43,7 @@ import {
 import { toast } from 'sonner';
 import { useConversations, useChat } from '@/lib/hooks/useMessages';
 import { messagesApi } from '@/lib/api/messages.service';
+import { agentContactApi } from '@/lib/api/agent-contact.service';
 import type { ChatConversation } from '@/lib/api/messages.types';
 import { PQRS_SLA_BUSINESS_DAYS } from '@/lib/constants/response-sla';
 
@@ -139,6 +140,11 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [isReporting, setIsReporting] = useState(false);
+  // COMU-03: WhatsApp is a first-class channel but ROUTED BY THE AGENT — the
+  // frontend never dispatches it. This flag is fed ONLY by the agent's
+  // contact-ledger gate (agentContactApi.canContact), which returns
+  // `allowed: false` today, so the WhatsApp affordance stays disabled.
+  const [whatsappRoutingAllowed, setWhatsappRoutingAllowed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const optionsListRef = useRef<HTMLDivElement>(null);
@@ -180,6 +186,26 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
+
+  // COMU-03: ask the agent's contact-ledger whether WhatsApp routing is
+  // permitted for this thread (tenant only). The frontend never dispatches —
+  // it only reflects the gate. Today canContact resolves `allowed:false`
+  // (endpoint not live → 'unavailable'), so the affordance stays disabled.
+  const selectedConvId = selectedConversation?.id;
+  const selectedConvLeaseId = selectedConversation?.leaseId;
+  useEffect(() => {
+    if (!isTenant || !selectedConvId) {
+      setWhatsappRoutingAllowed(false);
+      return;
+    }
+    let active = true;
+    agentContactApi.canContact('whatsapp', selectedConvLeaseId).then((res) => {
+      if (active) setWhatsappRoutingAllowed(res.allowed);
+    });
+    return () => {
+      active = false;
+    };
+  }, [isTenant, selectedConvId, selectedConvLeaseId]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -809,6 +835,28 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                                 {locale === 'es' ? 'Acciones rapidas' : 'Quick actions'}
                               </MonoLabel>
                               <div className="space-y-2">
+                                {/*
+                                  WhatsApp — first-class channel but ROUTED BY THE
+                                  AGENT (COMU-03). Disabled affordance (tenant only),
+                                  never a send button: its state is wired to the
+                                  agent's contact-ledger via canContact, which
+                                  returns allowed:false today → stays "Próximamente".
+                                  No portal-side reminder counter, no dispatch.
+                                */}
+                                {isTenant && (
+                                  <div
+                                    aria-disabled={!whatsappRoutingAllowed}
+                                    title={locale === 'es' ? 'Aún no disponible' : 'Not available yet'}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground bg-muted/50 rounded-xl select-none cursor-not-allowed"
+                                  >
+                                    <ChatCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                                    <span>
+                                      {locale === 'es'
+                                        ? 'WhatsApp — ruteado por tu inmobiliaria · Próximamente'
+                                        : 'WhatsApp — routed by your agency · Coming soon'}
+                                    </span>
+                                  </div>
+                                )}
                                 <button
                                   onClick={handleMute}
                                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted rounded-xl transition-colors"

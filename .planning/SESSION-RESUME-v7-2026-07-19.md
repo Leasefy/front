@@ -18,7 +18,7 @@
   **open Claude in `~/rent/mvp-portal-inquilino`** and run the GSD commands natively there.
 - **main is never touched.** Nothing is pushed. Freeze/tag/PR is Victor's call.
 
-## Milestone progress: 6/7 phases DONE, v7-07 next (LAST)
+## Milestone progress: 🎉 7/7 phases DONE — v7.0 COMPLETE (2026-07-20)
 
 | Phase | Status | Commits (feat + docs) |
 |-------|--------|-----------------------|
@@ -28,7 +28,7 @@
 | **v7-04** Pagos Reales (Wompi) | ✅ DONE (GOAL ACHIEVED, frontend-first, security-verified) | `8f2a6168` `63aff8d9` `f86c9a86` `e1f95bcf` `ffc7ad87` `77067453` `fb9db3b1` (+ docs `a8b314d3` `8d6ad769` `50b62aef`) |
 | **v7-05** Comunicación (contact-gate crux) | ✅ DONE (GOAL ACHIEVED, frontend-first, legal-verified) | `d58b9526` `c59aef4b` `8e83d12c` · `63f6d026` `437a50d8` `ae9446d5` · `4b51fed4` `41a44150` `6722195f` (+ docs `d93c8e9c` `12b7a24f` `3a6e32e6`, check `8639e185`, verify `805e4098`) |
 | **v7-06** Solicitudes / PQRS | ✅ DONE (GOAL ACHIEVED, frontend-first; no fork of `pqrs.types.ts`) | `ba4907b5` `609cd9e6` `14c499b4` · `cbb11c0b` `c1488285` `f3e1d17a` · `c677bb64` `90982c41` `5b843590` · `9ec7cb57` `8258884c` (+ docs `0b8428e3` `ea5e05fd` `3fb76ae2` `e510693d` `1988fce4`, plan `2526cdbc`, check `e0f33119`, verify `9818c209`) |
-| **v7-07** Acuerdos de Pago (LAST) | ⬜ **not started — NEXT** (hard cross-repo dep on `agent` RLS tenant; NEVER auto-approve) | — |
+| **v7-07** Acuerdos de Pago (LAST) | ✅ DONE (GOAL ACHIEVED, frontend-first / contract-first; T-323 accept-only; re-export not fork; Wompi money-verified) | `a79a6d9c` `f98a05c4` · `4a1915ba` `b3ef283b` · `6369e37f` `3a2fd9db` `d0341eac` · `d33a08e2` `17d3d193` `2c67c26e` · `4f44c707` `55a440d9` · `99371de5` `1cb1ec67` · `5c8bd524` `8a8c12d9` (+ docs, plan `350c8bf6`, check `ea5944d4`, verify `86c5028e`) |
 
 Each done phase has `.planning/phases/<phase>/…-VERIFICATION.md` (verdict), the `NN-PLAN.md`s, and
 `NN-SUMMARY.md`s. Build green on every phase; `pnpm test` = 601/608 (**7 PRE-EXISTING** unrelated
@@ -47,30 +47,30 @@ failures documented in `.planning/phases/v7-01-fundacion-limpieza/deferred-items
    unreliable all session, so **do the goal-backward verification by hand**, then write `VERIFICATION.md`.
 8. Mark the ROADMAP phase complete (checkbox + Progress row) + commit.
 
-## NEXT STEP (resume here)
+## 🎉 MILESTONE COMPLETE — nothing left to build here
 
-**v7-06 is DONE + verified** (checker BLOCK→resolved `e0f33119`, 12 feat + docs commits, phase verify
-`9818c209` GOAL ACHIEVED; ROADMAP row = 6/7 Complete; `pqrs.types.ts` reused NOT forked, fork-gate=1).
-Resume at the **LAST phase — v7-07 Acuerdos de Pago**:
-1. Recon (parallel): `gsd-pattern-mapper` + `gsd-phase-researcher` → `PATTERNS.md` + `RESEARCH.md`.
-2. `gsd-planner` → `NN-PLAN.md`s, then `gsd-plan-checker`, apply nits, present for the execution GO, execute
-   **sequentially**, verify by hand (gates + `pnpm build`).
-   - **Legal crux for v7-07 (hardest):** acuerdos de pago **NEVER auto-approve** (T-323/2024 + SIC 001/2025 —
-     the approval is the `agent`'s `requiresHumanReview` gate; the tenant portal only VIEWS/ACCEPTS/PAYS an
-     already-agency-approved acuerdo, and may REQUEST a pre-mora plan). Saldo/acuerdo trace to
-     `tenant-payment-requests` (single source of truth), no dark patterns. Reuse the v7-04 Wompi rail for cuotas.
-   - **HARD cross-repo dep on `agent`:** needs routes + tenant RLS in the `Leasefy/agent` repo. Contract-first:
-     even the agency-facing surface is disabled "Próximamente" until `agent` exposes them. Frontend ships the
-     types + api-client contract + honest "Próximamente" — NO fabricated acuerdo/cuota rows. This is why v7-07
-     is LAST (ACUE-01..04). Enlaza al hub de v7-03 (casos) y usa el rail de pago de v7-04.
-3. After v7-07 verified → the milestone is **7/7 COMPLETE**; write the milestone-close note; still local, Victor
-   integrates (tren de versiones).
+**All 7 phases are DONE + verified.** v7.0 Portal del Inquilino is **7/7 COMPLETE** (2026-07-20, verify
+`86c5028e`; 94 commits on `plan/v7.0-portal-inquilino`, **local, not pushed**, main intact `e5e0f825`).
 
-**v7-06 shape (shipped):** 01 additive `pqrs.types.ts` + pure `business-days` SLA helper + tolerant
-`pqrs.service.ts` (SOLI-01/02/03/04) · 02 pure mappers + `useTenantPqrs` + fold into `useTenantCases`
-(0 rows when `[]`) · 03 `NuevaSolicitudModal` (real photos, no fake radicado) + `/inquilino/solicitudes`
-list · 04 caso-detail SLA row "estimado" (never blank) + Ley 820 `CostoResponsabilidadCard` + approve-only
-quote. Verified: fork-gate=1 (no fork), anti-IDOR, 0 red/self-close tokens, 0 new npm packages, build EXIT 0.
+**Next step = hand to integration (Victor), NOT more building here:**
+- Victor freezes the cut (`git tag`) + integrates at his pace via the **tren de versiones**. Nico/Victor
+  decide the cut line — do NOT push or open a PR autonomously.
+- The honest "Próximamente" boundaries across all 7 phases are unblocked by **cross-repo work in `Leasefy/agent`**
+  (+ productive Wompi + reconciliation webhooks): tenant-scoped RLS routes for docs/config-sessions (v7-01/02),
+  lease-scoped chat + attachments + the contact-ledger `canContact` over HTTP (v7-05), PQRS CRUD + SLA engine +
+  `costoResponsable` (v7-06), and acuerdos/cartera + cuota `paymentUrl` + `requiresHumanReview`/`canContact`
+  gates over HTTP (v7-07). All the frontend + api-client contracts + honest-degrade already ship; only the
+  backend behind them remains. **NO fabricated data anywhere on a real-tenant path.**
+- If new ADDITIVE work on the portal is requested: open a NEW open version of the train (do not touch main),
+  same GSD flow (recon → plan → check → execute sequentially → verify by hand).
+
+**v7-07 shape (shipped, contract-first — the most gated phase):** 01 types re-exported from the agent schema
+(no fork) + tolerant BFF `tenant-acuerdos.service.ts` (A6) · 02 generalized `OTPVerification` (adapter,
+contract-signing byte-unchanged) · 03 `acuerdoToCase` pass-through + `useTenantAcuerdos` + hub fold (0 rows
+when `[]`) · 04 `CuotaPlanTable` verbatim + `/inquilino/acuerdos` list · 05 `AcuerdoAcceptPanel` sign-to-accept
+(T-323/A5: no approve/terms) + `/inquilino/acuerdos/[id]` detail · 07 `SolicitarPlanPagoModal` propose-only
+(no "por qué"/bureau) · 06 cuota Wompi route (server-side amount, no `body.amount`, secret server-only) + gated
+pay. Verified: fork=0, A6-IDOR=0, `NEXT_PUBLIC_WOMPI`=0, A5-no-approve=0, 0 new npm packages, 103/103 tests, build EXIT 0.
 
 ## "Próximamente" boundaries accepted so far (backend-gated, NOT faked)
 
@@ -100,6 +100,6 @@ quote. Verified: fork-gate=1 (no fork), anti-IDOR, 0 red/self-close tokens, 0 ne
 
 ```bash
 cd ~/rent/mvp-portal-inquilino   # branch plan/v7.0-portal-inquilino
-git log --oneline -5             # HEAD = 9818c209 (v7-06 verification, 6/7 done)
-# resume: plan v7-07 (Acuerdos de Pago, LAST) — recon → planner → checker → execute → verify.
+git log --oneline -5             # HEAD = 86c5028e (v7-07 verification, milestone 7/7 COMPLETE)
+# nothing left to build — hand to Victor (tren de versiones). New additive work → new open train version.
 ```

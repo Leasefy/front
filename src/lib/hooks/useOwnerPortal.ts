@@ -11,7 +11,9 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth/use-auth';
 import { ownerPortalApi } from '@/lib/api/owner-portal.service';
 import { ownerFinanzasApi } from '@/lib/api/owner-finanzas.service';
+import { ownerSeleccionApi } from '@/lib/api/owner-seleccion.service';
 import type { OwnerPerfil } from '@/lib/api/owner-portal.types';
+import type { EleccionProceso, EleccionComparacion } from '@/lib/api/owner-seleccion.types';
 import type {
   FinanzasPortafolio,
   FinanzasInmueble,
@@ -165,4 +167,78 @@ export function useOwnerInmueble(propertyRef: string): UseOwnerInmuebleResult {
 
   const unavailable = !agencyId || (!isLoading && detalle === null);
   return { detalle, pagos, isLoading, unavailable, agencyId };
+}
+
+export interface UseOwnerProcesosResult {
+  procesos: EleccionProceso[];
+  isLoading: boolean;
+  unavailable: boolean;
+  agencyId: string | null;
+}
+
+/**
+ * Lista de procesos de elección del propietario (F2). `unavailable` = portal no cableado
+ * (sin agencyId) → "Próximamente". Una lista vacía CON agencyId es un estado legítimo
+ * ("no tenés procesos de elección"), NO "Próximamente" — lo distingue la página.
+ */
+export function useOwnerProcesos(): UseOwnerProcesosResult {
+  const agencyId = useOwnerAgencyId();
+  const [procesos, setProcesos] = useState<EleccionProceso[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    if (!agencyId) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    ownerSeleccionApi.getProcesos(agencyId).then((p) => {
+      if (!alive) return;
+      setProcesos(p);
+      setIsLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [agencyId]);
+
+  return { procesos, isLoading, unavailable: !agencyId, agencyId };
+}
+
+export interface UseOwnerComparacionResult {
+  comparacion: EleccionComparacion | null;
+  isLoading: boolean;
+  unavailable: boolean;
+  agencyId: string | null;
+  /** Fuerza recarga de la comparación (p.ej. tras `terms_changed`). */
+  reload: () => void;
+}
+
+/** Comparación de postulados de un proceso (F2), con `reload` para el caso WYSIWYS `terms_changed`. */
+export function useOwnerComparacion(processId: string): UseOwnerComparacionResult {
+  const agencyId = useOwnerAgencyId();
+  const [comparacion, setComparacion] = useState<EleccionComparacion | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [nonce, setNonce] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    if (!agencyId || !processId) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    ownerSeleccionApi.getComparacion(agencyId, processId).then((c) => {
+      if (!alive) return;
+      setComparacion(c);
+      setIsLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [agencyId, processId, nonce]);
+
+  const unavailable = !agencyId || (!isLoading && comparacion === null);
+  return { comparacion, isLoading, unavailable, agencyId, reload: () => setNonce((n) => n + 1) };
 }

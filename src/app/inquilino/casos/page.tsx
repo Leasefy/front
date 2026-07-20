@@ -41,6 +41,7 @@ import {
   Bell,
   ArrowUpRight,
   XCircle,
+  Lifebuoy,
   type Icon,
 } from '@phosphor-icons/react';
 
@@ -320,38 +321,42 @@ export default function CasosPage() {
           )}
         </motion.section>
 
-        {/* Forward-ref types — honest "Próximamente" (NO fabricated rows) */}
+        {/* More in the portal — one REAL entry point (Solicitudes) + honest Próximamente (Acuerdos) */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
         >
           <h2 className="text-sm font-mono uppercase tracking-wide text-fg-subtle dark:text-fg-muted mb-4">
-            {locale === 'es' ? 'Próximamente' : 'Coming soon'}
+            {locale === 'es' ? 'Más en tu portal' : 'More in your portal'}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <ProximamenteSection
-              icon={ChatCircle}
-              title="PQRS"
-              description={locale === 'es'
-                ? 'Radica peticiones, quejas y reclamos, y hazles seguimiento en un solo lugar.'
-                : 'File petitions, complaints and claims, and track them in one place.'}
-              detail={locale === 'es'
-                ? 'La radicación y el seguimiento de PQRS estarán disponibles cuando se habilite el módulo.'
-                : 'Filing and tracking PQRS will be available once the module is enabled.'}
-              locale={locale}
-            />
-            <ProximamenteSection
-              icon={Wrench}
-              title={locale === 'es' ? 'Mantenimiento' : 'Maintenance'}
-              description={locale === 'es'
-                ? 'Reporta daños o solicitudes de mantenimiento y sigue su estado.'
-                : 'Report damages or maintenance requests and follow their status.'}
-              detail={locale === 'es'
-                ? 'El reporte y seguimiento de mantenimiento estará disponible cuando se habilite el módulo.'
-                : 'Reporting and tracking maintenance will be available once the module is enabled.'}
-              locale={locale}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Real entry point — PQRS + mantenimiento now flow through /inquilino/solicitudes */}
+            <Link
+              href="/inquilino/solicitudes"
+              className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6 space-y-4 block hover:border-primary/40 transition-colors"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+                  <Lifebuoy className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-fg dark:text-white group-hover:text-primary transition-colors">
+                    {locale === 'es' ? 'Solicitudes' : 'Requests'}
+                  </h2>
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
+                    {locale === 'es'
+                      ? 'Abre y sigue tus solicitudes de mantenimiento y PQRS.'
+                      : 'Open and track your maintenance requests and PQRS.'}
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
+                {locale === 'es' ? 'Nueva solicitud' : 'New request'}
+                <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+              </span>
+            </Link>
+
             <ProximamenteSection
               icon={Handshake}
               title={locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}

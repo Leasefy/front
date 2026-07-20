@@ -44,6 +44,7 @@ import { toast } from 'sonner';
 import { useConversations, useChat } from '@/lib/hooks/useMessages';
 import { messagesApi } from '@/lib/api/messages.service';
 import type { ChatConversation } from '@/lib/api/messages.types';
+import { PQRS_SLA_BUSINESS_DAYS } from '@/lib/constants/response-sla';
 
 // ============================================================================
 // Widget props
@@ -710,6 +711,24 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                             <PaperPlaneTilt className="w-5 h-5" />
                           </Button>
                         </div>
+
+                        {/*
+                          Static expected-response hint (COMU-04, tenant only).
+                          Neutral and consistent with the PQRS SLA (Ley 1480/2011
+                          art. 58 → 15 días hábiles). It MUST NOT imply an instant
+                          human reply and is NOT a live countdown — the real SLA
+                          clock is v7-06. landlord/agency see nothing new.
+                        */}
+                        {isTenant && (
+                          <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
+                            <Info className="w-3.5 h-3.5 flex-shrink-0 mt-px" aria-hidden="true" />
+                            <span>
+                              {locale === 'es'
+                                ? `Respondemos en horario hábil. Los reclamos formales tienen respuesta en hasta ${PQRS_SLA_BUSINESS_DAYS} días hábiles.`
+                                : `We reply during business hours. Formal claims are answered within ${PQRS_SLA_BUSINESS_DAYS} business days.`}
+                            </span>
+                          </p>
+                        )}
                       </div>
                     </div>
 

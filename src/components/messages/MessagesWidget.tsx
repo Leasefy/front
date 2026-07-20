@@ -29,7 +29,9 @@ import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
+import { toast } from 'sonner';
 import { useConversations, useChat } from '@/lib/hooks/useMessages';
+import { messagesApi } from '@/lib/api/messages.service';
 import type { ChatConversation } from '@/lib/api/messages.types';
 
 // ============================================================================
@@ -125,6 +127,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const optionsListRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { messages, isLoading: isLoadingMessages, isSending, sendMessage, markAsRead } = useChat(selectedApplicationId);
 
@@ -193,6 +196,45 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
     await sendMessage(text);
     refetchConversations();
   }, [messageText, isSending, sendMessage, refetchConversations]);
+
+  // Attachments (COMU-02): the file picker is REAL, the SEND is honestly pending.
+  // Reuse one hidden <input>; set `accept` per button before opening it.
+  const openAttachmentPicker = useCallback((accept: string) => {
+    const input = fileInputRef.current;
+    if (!input) return;
+    input.accept = accept;
+    input.click();
+  }, []);
+
+  const handleAttachmentSelected = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      // Reset so re-selecting the SAME file fires onChange again.
+      e.target.value = '';
+      if (!file || !selectedConversation) return;
+
+      const MAX_BYTES = 10 * 1024 * 1024; // 10 MB size cap
+      if (file.size > MAX_BYTES) {
+        toast.error(
+          locale === 'es'
+            ? 'El archivo supera el límite de 10 MB.'
+            : 'The file exceeds the 10 MB limit.',
+        );
+        return;
+      }
+
+      // Contract stub: no chat-attachment endpoint + no message attachment field
+      // yet, so this resolves `null`. Show an HONEST "Próximamente" — never a fake
+      // "enviado", never an orphaned upload to the documents store from the chat.
+      await messagesApi.sendAttachment(selectedConversation.id, file);
+      toast.info(
+        locale === 'es'
+          ? 'El envío de adjuntos estará disponible pronto.'
+          : 'Sending attachments will be available soon.',
+      );
+    },
+    [selectedConversation, locale],
+  );
 
   // Acciones placeholder (backend no las soporta aún — mantenemos alert con copy i18n).
   const handleArchive = () => {
@@ -561,15 +603,24 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                       {/* Message Input */}
                       <div className="px-6 py-4 border-t border-border bg-card">
                         <div className="flex items-center gap-3">
+                          {/* Hidden picker reused by both buttons (accept set per button). */}
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            className="hidden"
+                            onChange={handleAttachmentSelected}
+                          />
                           <div className="flex items-center gap-1">
                             <IconButton
                               variant="ghost"
+                              onClick={() => openAttachmentPicker('image/*,application/pdf')}
                               className="rounded-full text-muted-foreground hover:text-foreground"
                               aria-label={locale === 'es' ? 'Adjuntar archivo' : 'Attach file'}
                               icon={<Paperclip className="w-5 h-5" />}
                             />
                             <IconButton
                               variant="ghost"
+                              onClick={() => openAttachmentPicker('image/*')}
                               className="rounded-full text-muted-foreground hover:text-foreground"
                               aria-label={locale === 'es' ? 'Enviar imagen' : 'Send image'}
                               icon={<Image className="w-5 h-5" />}

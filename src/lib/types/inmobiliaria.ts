@@ -1340,42 +1340,49 @@ export interface UserInvite {
 }
 
 // Helper functions for users/roles
-export function getRoleLabel(role: AgencyRole): string {
+// Neutral fallback color (a valid "bg-… text-…" pair so callers that
+// `.split(' ')` the class string never crash on an unknown/undefined role).
+const NEUTRAL_BADGE_COLOR =
+  'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300';
+
+export function getRoleLabel(role: AgencyRole | null | undefined): string {
   const labels: Record<AgencyRole, string> = {
     admin: 'Administrador',
     agente: 'Agente',
     contador: 'Contador',
     viewer: 'Solo Lectura',
   };
-  return labels[role];
+  // Unknown/undefined role (e.g. an invited member with incomplete data) → '—'.
+  return (role && labels[role]) || '—';
 }
 
-export function getRoleColor(role: AgencyRole): string {
+export function getRoleColor(role: AgencyRole | null | undefined): string {
   const colors: Record<AgencyRole, string> = {
     admin: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
     agente: 'bg-primary-soft text-primary',
     contador: 'bg-success-soft text-success',
     viewer: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
   };
-  return colors[role];
+  // Always a valid color-class string, even for an unknown/undefined role.
+  return (role && colors[role]) || NEUTRAL_BADGE_COLOR;
 }
 
-export function getUserStatusColor(status: AgencyUser['status']): string {
+export function getUserStatusColor(status: AgencyUser['status'] | null | undefined): string {
   const colors = {
     active: 'bg-success-soft text-success',
     invited: 'bg-warning-soft text-warning',
     inactive: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400',
   };
-  return colors[status];
+  return (status && colors[status]) || NEUTRAL_BADGE_COLOR;
 }
 
-export function getUserStatusLabel(status: AgencyUser['status']): string {
+export function getUserStatusLabel(status: AgencyUser['status'] | null | undefined): string {
   const labels = {
     active: 'Activo',
     invited: 'Invitado',
     inactive: 'Inactivo',
   };
-  return labels[status];
+  return (status && labels[status]) || '—';
 }
 
 export function getModuleLabel(module: PermissionModule): string {

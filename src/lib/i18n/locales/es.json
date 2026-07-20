@@ -1435,7 +1435,8 @@
           "paid": "Pagado",
           "pending": "Pendiente",
           "failed": "Fallido"
-        }
+        },
+        "unavailable": "La información de facturación no está disponible."
       }
     },
     "propietarios": {

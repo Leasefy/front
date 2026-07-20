@@ -101,7 +101,7 @@ function EditRoleModal({ open, onOpenChange, user, onSubmit, isLoading }: EditRo
 
   // Update selected role when user changes
   useState(() => {
-    if (user) setSelectedRole(user.role);
+    if (user) setSelectedRole(user.role ?? 'agente');
   });
 
   const handleSubmit = (e: React.FormEvent) => {

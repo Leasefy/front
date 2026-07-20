@@ -1434,7 +1434,8 @@
           "paid": "Paid",
           "pending": "Pending",
           "failed": "Failed"
-        }
+        },
+        "unavailable": "Billing information is unavailable."
       }
     },
     "propietarios": {

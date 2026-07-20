@@ -260,8 +260,8 @@ export function ConfigUsuarios({
       if (search) {
         const searchLower = search.toLowerCase();
         if (
-          !user.name.toLowerCase().includes(searchLower) &&
-          !user.email.toLowerCase().includes(searchLower)
+          !(user.name ?? '').toLowerCase().includes(searchLower) &&
+          !(user.email ?? '').toLowerCase().includes(searchLower)
         ) {
           return false;
         }
@@ -291,10 +291,13 @@ export function ConfigUsuarios({
     };
   }, [users]);
 
-  // Get initials for avatar fallback
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
+  // Get initials for avatar fallback. Falls back to the email when a member
+  // has no name yet (e.g. an invited member who has not completed onboarding).
+  const getInitials = (name?: string, email?: string) => {
+    const source = (name && name.trim()) || (email && email.trim()) || '';
+    if (!source) return '?';
+    return source
+      .split(/\s+/)
       .map((n) => n[0])
       .join('')
       .slice(0, 2)
@@ -412,7 +415,7 @@ export function ConfigUsuarios({
           <TableBody>
             <AnimatePresence mode="popLayout">
               {filteredUsers.map((user, index) => {
-                const initials = getInitials(user.name);
+                const initials = getInitials(user.name, user.email);
                 const roleColor = getRoleColor(user.role);
                 const statusColor = getUserStatusColor(user.status);
 
@@ -446,7 +449,7 @@ export function ConfigUsuarios({
                         )}
                         <div className="min-w-0">
                           <p className="font-medium text-fg dark:text-white truncate max-w-[200px]">
-                            {user.name}
+                            {user.name?.trim() || user.email}
                           </p>
                           <div className="flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle">
                             <EnvelopeSimple className="w-3.5 h-3.5 shrink-0" />

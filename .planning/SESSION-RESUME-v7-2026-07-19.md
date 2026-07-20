@@ -18,7 +18,7 @@
   **open Claude in `~/rent/mvp-portal-inquilino`** and run the GSD commands natively there.
 - **main is never touched.** Nothing is pushed. Freeze/tag/PR is Victor's call.
 
-## Milestone progress: 5/7 phases DONE, v7-06 next
+## Milestone progress: 6/7 phases DONE, v7-07 next (LAST)
 
 | Phase | Status | Commits (feat + docs) |
 |-------|--------|-----------------------|
@@ -27,8 +27,8 @@
 | **v7-03** Estado de Casos (Hub — **fija P1**) | ✅ DONE (GOAL ACHIEVED) | `c0102f8a` `20c3b90f` `d9e90458` `ee785269` `d559e54b` (+ docs `45b89410` `7980701b` `c8f0df23`) |
 | **v7-04** Pagos Reales (Wompi) | ✅ DONE (GOAL ACHIEVED, frontend-first, security-verified) | `8f2a6168` `63aff8d9` `f86c9a86` `e1f95bcf` `ffc7ad87` `77067453` `fb9db3b1` (+ docs `a8b314d3` `8d6ad769` `50b62aef`) |
 | **v7-05** Comunicación (contact-gate crux) | ✅ DONE (GOAL ACHIEVED, frontend-first, legal-verified) | `d58b9526` `c59aef4b` `8e83d12c` · `63f6d026` `437a50d8` `ae9446d5` · `4b51fed4` `41a44150` `6722195f` (+ docs `d93c8e9c` `12b7a24f` `3a6e32e6`, check `8639e185`, verify `805e4098`) |
-| **v7-06** Solicitudes / PQRS | ⬜ **not started — NEXT** (reuse `pqrs.types.ts`, SLA 15 días hábiles) | — |
-| **v7-07** Acuerdos de Pago (LAST) | ⬜ not started (hard cross-repo dep on `agent`) | — |
+| **v7-06** Solicitudes / PQRS | ✅ DONE (GOAL ACHIEVED, frontend-first; no fork of `pqrs.types.ts`) | `ba4907b5` `609cd9e6` `14c499b4` · `cbb11c0b` `c1488285` `f3e1d17a` · `c677bb64` `90982c41` `5b843590` · `9ec7cb57` `8258884c` (+ docs `0b8428e3` `ea5e05fd` `3fb76ae2` `e510693d` `1988fce4`, plan `2526cdbc`, check `e0f33119`, verify `9818c209`) |
+| **v7-07** Acuerdos de Pago (LAST) | ⬜ **not started — NEXT** (hard cross-repo dep on `agent` RLS tenant; NEVER auto-approve) | — |
 
 Each done phase has `.planning/phases/<phase>/…-VERIFICATION.md` (verdict), the `NN-PLAN.md`s, and
 `NN-SUMMARY.md`s. Build green on every phase; `pnpm test` = 601/608 (**7 PRE-EXISTING** unrelated
@@ -49,23 +49,28 @@ failures documented in `.planning/phases/v7-01-fundacion-limpieza/deferred-items
 
 ## NEXT STEP (resume here)
 
-**v7-05 is DONE + verified** (checker PASS-WITH-NITS `8639e185`, 9 feat + 3 docs commits, phase verify
-`805e4098` GOAL ACHIEVED; ROADMAP row = 5/7 Complete). Resume at **v7-06 Solicitudes / PQRS**:
+**v7-06 is DONE + verified** (checker BLOCK→resolved `e0f33119`, 12 feat + docs commits, phase verify
+`9818c209` GOAL ACHIEVED; ROADMAP row = 6/7 Complete; `pqrs.types.ts` reused NOT forked, fork-gate=1).
+Resume at the **LAST phase — v7-07 Acuerdos de Pago**:
 1. Recon (parallel): `gsd-pattern-mapper` + `gsd-phase-researcher` → `PATTERNS.md` + `RESEARCH.md`.
-2. `gsd-planner` → `NN-PLAN.md`s (**reuse `pqrs.types.ts` — do NOT fork**; `solicitanteTipo:'inquilino'`),
-   then `gsd-plan-checker`, apply nits, present for the execution GO, execute **sequentially**, verify by hand.
-   - **Legal crux for v7-06:** SLA PQRS = **15 días hábiles** (Ley 1480/2011) computed + visible, never blank;
-     interim value labeled "estimado" (`createdAt + 15 días hábiles`, Colombia calendar). Cost-responsibility
-     transparency (Ley 820: dueño/inquilino/split); tenant-cost repairs require quote approval before execution.
-   - Backend (NestJS/agent PQRS CRUD tenant-scoped) can lag → frontend-first: contract reusing `pqrs.types.ts`
-     + honest "Próximamente" where the triage/SLA engine isn't live. Enlaza al hub de v7-03.
-3. Then **v7-07 (Acuerdos**, LAST — contract-first, HARD cross-repo dep on `agent` RLS tenant; even the agency
-   page is disabled "Próximamente"; acuerdos NEVER auto-approve — T-323/2024 + SIC 001/2025).
+2. `gsd-planner` → `NN-PLAN.md`s, then `gsd-plan-checker`, apply nits, present for the execution GO, execute
+   **sequentially**, verify by hand (gates + `pnpm build`).
+   - **Legal crux for v7-07 (hardest):** acuerdos de pago **NEVER auto-approve** (T-323/2024 + SIC 001/2025 —
+     the approval is the `agent`'s `requiresHumanReview` gate; the tenant portal only VIEWS/ACCEPTS/PAYS an
+     already-agency-approved acuerdo, and may REQUEST a pre-mora plan). Saldo/acuerdo trace to
+     `tenant-payment-requests` (single source of truth), no dark patterns. Reuse the v7-04 Wompi rail for cuotas.
+   - **HARD cross-repo dep on `agent`:** needs routes + tenant RLS in the `Leasefy/agent` repo. Contract-first:
+     even the agency-facing surface is disabled "Próximamente" until `agent` exposes them. Frontend ships the
+     types + api-client contract + honest "Próximamente" — NO fabricated acuerdo/cuota rows. This is why v7-07
+     is LAST (ACUE-01..04). Enlaza al hub de v7-03 (casos) y usa el rail de pago de v7-04.
+3. After v7-07 verified → the milestone is **7/7 COMPLETE**; write the milestone-close note; still local, Victor
+   integrates (tren de versiones).
 
-**v7-05 shape (shipped):** 01 chat composed into arriendo/caso + lease-scoped contract w/ honest-unavailable
-(COMU-01) · 02 real file-picker (send "Próximamente") + archive/mute/report `alert()`→toast + AlertDialog
-report confirm (COMU-02) · 03 contact-gate `canContact` default-gated + WhatsApp ruteado "Próximamente" +
-static PQRS-SLA hint (COMU-03/04). Verified: 0 outbound senders repo-wide, 0 "por qué la mora", 0 fake presence.
+**v7-06 shape (shipped):** 01 additive `pqrs.types.ts` + pure `business-days` SLA helper + tolerant
+`pqrs.service.ts` (SOLI-01/02/03/04) · 02 pure mappers + `useTenantPqrs` + fold into `useTenantCases`
+(0 rows when `[]`) · 03 `NuevaSolicitudModal` (real photos, no fake radicado) + `/inquilino/solicitudes`
+list · 04 caso-detail SLA row "estimado" (never blank) + Ley 820 `CostoResponsabilidadCard` + approve-only
+quote. Verified: fork-gate=1 (no fork), anti-IDOR, 0 red/self-close tokens, 0 new npm packages, build EXIT 0.
 
 ## "Próximamente" boundaries accepted so far (backend-gated, NOT faked)
 
@@ -95,6 +100,6 @@ static PQRS-SLA hint (COMU-03/04). Verified: 0 outbound senders repo-wide, 0 "po
 
 ```bash
 cd ~/rent/mvp-portal-inquilino   # branch plan/v7.0-portal-inquilino
-git log --oneline -5             # HEAD = 805e4098 (v7-05 verification, 5/7 done)
-# resume: plan v7-06 (Solicitudes / PQRS) — recon → planner → checker → execute → verify.
+git log --oneline -5             # HEAD = 9818c209 (v7-06 verification, 6/7 done)
+# resume: plan v7-07 (Acuerdos de Pago, LAST) — recon → planner → checker → execute → verify.
 ```

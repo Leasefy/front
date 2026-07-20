@@ -5,6 +5,8 @@
  * Backend uses uppercase roles (Prisma enum).
  */
 
+import type { ActiveContext } from './active-context'
+
 // ============================================================================
 // Roles
 // ============================================================================
@@ -191,10 +193,23 @@ export interface AuthState {
    * Callers should redirect to /onboarding/seleccionar-rol when this is true.
    */
   needsOnboarding: boolean
-  /** Agency the user belongs to (populated for AGENT / INMOBILIARIA roles) */
+  /** Agency the user belongs to (populated for AGENT / INMOBILIARIA roles AND
+   *  for personal-role users who hold an agency membership — coexistence) */
   agency: Agency | null
   /** The user's role within the agency */
   agencyRole: AgencyMemberRole | null
+  /** Membership status within the agency ('ACTIVE' | 'INVITED' | …) or null. */
+  agencyMemberStatus: string | null
+  /** True ONLY when the user is an ACTIVE agency member — this is what grants
+   *  agency-panel access. An INVITED (not-yet-accepted) member is false. */
+  hasActiveAgencyMembership: boolean
+  /** True once the agency-membership probe has settled for the current session.
+   *  The agency panel HOLDS (spinner) rather than bouncing a personal-role user
+   *  while this is false, so a dual-context user isn't redirected mid-probe. */
+  agencyMembershipChecked: boolean
+  /** Effective active context. Pure agency → 'agency'; pure tenant/landlord →
+   *  'personal'; dual-context → the user's persisted choice (default personal). */
+  activeContext: ActiveContext
 }
 
 
@@ -222,6 +237,9 @@ export interface AuthContextType extends AuthState {
    *  "Intentar de nuevo" button). Also re-arms the automatic self-heal
    *  backstop in `AuthProvider` if it had already given up retrying. */
   refreshAgency: () => Promise<void>
+  /** Switch the active context for a DUAL-CONTEXT user. Persisted per-user;
+   *  a no-op for single-context users. */
+  setActiveContext: (context: ActiveContext) => void
 }
 
 /**

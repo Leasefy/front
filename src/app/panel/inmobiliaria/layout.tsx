@@ -324,8 +324,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
  * Specialized dashboard for real estate agencies managing multiple properties and owners
  */
 export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps) {
+  // allowAgencyMembers: dual-context users (personal role + ACTIVE agency
+  // membership) are admitted alongside pure-agency users.
   return (
-    <ProtectedRoute allowedRoles={['agency']}>
+    <ProtectedRoute allowedRoles={['agency']} allowAgencyMembers>
       <I18nProvider>
         <PermissionsProvider>
           <PanelPrefsProvider>

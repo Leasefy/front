@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth/use-auth'
-import { getRoleHomeRoute } from '@/lib/auth/role-routes'
+import { getRoleHomeRoute, isPanelRoleAllowed } from '@/lib/auth/role-routes'
 import type { AgencyMemberRole } from '@/lib/auth/types'
 
 const AUTH_STORAGE_KEY = 'arriendo-facil-auth'
@@ -23,6 +23,12 @@ interface ProtectedRouteProps {
    * Blocked users are redirected to /panel/inmobiliaria.
    */
   blockedAgencyRoles?: AgencyMemberRole[]
+  /**
+   * When set (agency panel), a user with an ACTIVE agency membership is admitted
+   * even when their personal role (tenant/landlord) is not in `allowedRoles` —
+   * personal-role + agency coexistence. Pure-agency users still pass via role.
+   */
+  allowAgencyMembers?: boolean
 }
 
 /**
@@ -39,8 +45,8 @@ interface ProtectedRouteProps {
  * // Landlord only
  * <ProtectedRoute allowedRoles={['landlord']}>{children}</ProtectedRoute>
  */
-export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading, mfaRequired, needsOnboarding, agencyRole } = useAuth()
+export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, allowAgencyMembers }: ProtectedRouteProps) {
+  const { user, isAuthenticated, isLoading, mfaRequired, needsOnboarding, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [isCheckingStorage, setIsCheckingStorage] = useState(true)
@@ -131,8 +137,13 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles }: P
     }
 
     // Check role restriction
-    if (allowedRoles && effectiveUser && !allowedRoles.includes(effectiveUser.role as 'tenant' | 'landlord' | 'agency')) {
-      // User is authenticated but doesn't have required role
+    if (allowedRoles && effectiveUser && !isPanelRoleAllowed(effectiveUser.role, allowedRoles, { allowAgencyMembers, hasActiveAgencyMembership })) {
+      // On an agency-member route, do NOT bounce a personal-role user until the
+      // membership probe has settled — a dual-context member would otherwise be
+      // redirected mid-probe. The render guard keeps a spinner up meanwhile.
+      if (allowAgencyMembers && !agencyMembershipChecked) return
+      // User is authenticated but doesn't have required role (and, for the
+      // agency panel, has no ACTIVE agency membership either).
       // Redirect to appropriate dashboard based on their role
       router.replace(getRoleHomeRoute(effectiveUser.role))
       return
@@ -143,7 +154,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles }: P
       router.replace('/panel/inmobiliaria')
       return
     }
-  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, blockedAgencyRoles, agencyRole, pathname, router, mfaRequired, user, needsOnboarding])
+  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, blockedAgencyRoles, allowAgencyMembers, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole, isAgencyUser, pathname, router, mfaRequired, user, needsOnboarding])
 
   // Show loading state while checking auth
   if (isLoading || isCheckingStorage) {
@@ -209,12 +220,19 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles }: P
   }
 
   // Check role restriction
-  if (allowedRoles && effectiveUser && !allowedRoles.includes(effectiveUser.role as 'tenant' | 'landlord' | 'agency')) {
+  if (allowedRoles && effectiveUser && !isPanelRoleAllowed(effectiveUser.role, allowedRoles, { allowAgencyMembers, hasActiveAgencyMembership })) {
+    // Distinguish HOLD (waiting for the membership probe — the effect is NOT
+    // redirecting yet, up to ~8s) from an imminent REDIRECT (probe settled,
+    // access denied). The hold shows the neutral auth-loading copy; only a real
+    // redirect shows "Redirigiendo...".
+    const holdingForMembership = allowAgencyMembers && !agencyMembershipChecked
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Redirigiendo...</p>
+          <p className="text-sm text-muted-foreground">
+            {holdingForMembership ? 'Verificando acceso...' : 'Redirigiendo...'}
+          </p>
         </div>
       </div>
     )

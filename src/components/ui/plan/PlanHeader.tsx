@@ -7,6 +7,9 @@ import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear
 import { SegmentedControl } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
+import { getUserHomeRoute } from '@/lib/auth/role-routes';
+import { type ActiveContext } from '@/lib/auth/active-context';
+import { ContextSwitcher } from './ContextSwitcher';
 import { useI18n } from '@/lib/i18n';
 import { getPlanById, PLANS } from '@/lib/constants/subscription-plans';
 import { useMySubscription } from '@/lib/hooks/useSubscription';
@@ -82,10 +85,15 @@ export function PlanHeader({
   tenantSubscription,
   leftSlot,
 }: PlanHeaderProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, agency, hasActiveAgencyMembership, activeContext, setActiveContext } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const { t, locale } = useI18n();
+  // Context switcher navigation: persist the chosen context, then route.
+  const handleSwitchContext = (ctx: ActiveContext) => {
+    setActiveContext(ctx);
+    router.push(ctx === 'agency' ? '/panel/inmobiliaria' : getUserHomeRoute(user, 'personal'));
+  };
   const [searchQuery, setMagnifyingGlassQuery] = useState('');
   const [searchFocused, setMagnifyingGlassFocused] = useState(false);
   // Mobile (<sm) search pattern: the inline input is hidden and replaced by an
@@ -1073,6 +1081,14 @@ export function PlanHeader({
                 </span>
               </DropdownListLabel>
               <DropdownListSeparator className="bg-surface-muted my-1" />
+              <ContextSwitcher
+                user={user}
+                agencyName={agency?.name}
+                activeContext={activeContext}
+                hasActiveAgencyMembership={hasActiveAgencyMembership}
+                locale={locale}
+                onSwitch={handleSwitchContext}
+              />
               <DropdownListItem asChild>
                 <Link
                   href={user?.role === 'agency' ? "/panel/inmobiliaria/perfil" : isLandlord ? "/panel/perfil" : "/inquilino/perfil"}

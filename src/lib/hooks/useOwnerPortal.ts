@@ -12,8 +12,10 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { ownerPortalApi } from '@/lib/api/owner-portal.service';
 import { ownerFinanzasApi } from '@/lib/api/owner-finanzas.service';
 import { ownerSeleccionApi } from '@/lib/api/owner-seleccion.service';
+import { ownerSolicitudesApi } from '@/lib/api/owner-solicitudes.service';
 import type { OwnerPerfil } from '@/lib/api/owner-portal.types';
 import type { EleccionProceso, EleccionComparacion } from '@/lib/api/owner-seleccion.types';
+import type { Solicitud, SolicitudDetalle } from '@/lib/api/owner-solicitudes.types';
 import type {
   FinanzasPortafolio,
   FinanzasInmueble,
@@ -241,4 +243,74 @@ export function useOwnerComparacion(processId: string): UseOwnerComparacionResul
 
   const unavailable = !agencyId || (!isLoading && comparacion === null);
   return { comparacion, isLoading, unavailable, agencyId, reload: () => setNonce((n) => n + 1) };
+}
+
+export interface UseOwnerSolicitudesResult {
+  solicitudes: Solicitud[];
+  isLoading: boolean;
+  unavailable: boolean;
+  agencyId: string | null;
+}
+
+/**
+ * Lista de solicitudes del propietario (F4). `unavailable` = portal no cableado. Una lista vacía
+ * CON agencyId es estado legítimo ("no tenés solicitudes") — lo distingue la página.
+ */
+export function useOwnerSolicitudes(): UseOwnerSolicitudesResult {
+  const agencyId = useOwnerAgencyId();
+  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    if (!agencyId) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    ownerSolicitudesApi.getSolicitudes(agencyId).then((s) => {
+      if (!alive) return;
+      setSolicitudes(s);
+      setIsLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [agencyId]);
+
+  return { solicitudes, isLoading, unavailable: !agencyId, agencyId };
+}
+
+export interface UseOwnerSolicitudResult {
+  detalle: SolicitudDetalle | null;
+  isLoading: boolean;
+  unavailable: boolean;
+  agencyId: string | null;
+}
+
+/** Detalle + timeline de una solicitud (F4). */
+export function useOwnerSolicitud(requestId: string): UseOwnerSolicitudResult {
+  const agencyId = useOwnerAgencyId();
+  const [detalle, setDetalle] = useState<SolicitudDetalle | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    if (!agencyId || !requestId) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    ownerSolicitudesApi.getSolicitud(agencyId, requestId).then((d) => {
+      if (!alive) return;
+      setDetalle(d);
+      setIsLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [agencyId, requestId]);
+
+  const unavailable = !agencyId || (!isLoading && detalle === null);
+  return { detalle, isLoading, unavailable, agencyId };
 }

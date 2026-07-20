@@ -11,11 +11,25 @@ import { Spinner } from '@/components/ui/spinner'
 
 type RoleChoice = 'tenant' | 'landlord' | 'inmobiliaria' | null
 
+const PENDING_INVITATION_KEY = 'pending-invitation-token'
+
 export default function SeleccionarRolPage() {
   const router = useRouter()
   const { user } = useAuth()
   const [selected, setSelected] = useState<RoleChoice>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  // Defense-in-depth: an invited user must NEVER see the personal role picker.
+  // If a pending invitation token is present, send them to /registro (the
+  // invite name/phone form + atomic join) even if they land here directly.
+  if (typeof window !== 'undefined') {
+    let pendingInvitation: string | null = null
+    try { pendingInvitation = localStorage.getItem(PENDING_INVITATION_KEY) } catch { /* ignore */ }
+    if (pendingInvitation) {
+      router.replace('/registro')
+      return null
+    }
+  }
 
   // If user already completed onboarding, redirect to their dashboard
   if (user?.onboardingCompleted) {

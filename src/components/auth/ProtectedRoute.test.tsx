@@ -133,3 +133,30 @@ describe('ProtectedRoute — agency panel (allowAgencyMembers)', () => {
     expect(replaceMock).not.toHaveBeenCalled()
   })
 })
+
+describe('ProtectedRoute — invited NEW user (needsOnboarding)', () => {
+  it('with a pending invitation token → redirects to /registro, NOT the role picker', async () => {
+    // needsOnboarding ⟹ user null ⟹ isAuthenticated false (auth invariant).
+    authState.user = null
+    authState.isAuthenticated = false
+    authState.needsOnboarding = true
+    localStorage.setItem('pending-invitation-token', 'tok-123')
+
+    await renderPanel()
+
+    expect(replaceMock).toHaveBeenCalledWith('/registro')
+    expect(replaceMock).not.toHaveBeenCalledWith('/onboarding/seleccionar-rol')
+  })
+
+  it('without a token → redirects to /onboarding/seleccionar-rol (unchanged)', async () => {
+    authState.user = null
+    authState.isAuthenticated = false
+    authState.needsOnboarding = true
+    // no pending-invitation-token
+
+    await renderPanel()
+
+    expect(replaceMock).toHaveBeenCalledWith('/onboarding/seleccionar-rol')
+    expect(replaceMock).not.toHaveBeenCalledWith('/registro')
+  })
+})

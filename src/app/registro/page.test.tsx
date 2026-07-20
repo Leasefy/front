@@ -8,8 +8,9 @@
  * user===null ⟹ isAuthenticated===false):
  *  - NEW invited user (needsOnboarding true, isAuthenticated false): the
  *    silent auto-accept effect early-returns; the user completes via the
- *    manual "Completá tu perfil" form → handleCompleteProfile onboards as
- *    AGENT then accepts. (Not a silent auto-accept.)
+ *    manual "Completá tu perfil" form → handleCompleteProfile makes ONE
+ *    transactional /users/me/onboarding call carrying invitationToken (backend
+ *    joins the agency atomically) — NO separate acceptInvitation.
  *  - EXISTING account (needsOnboarding false, isAuthenticated true): the
  *    effect fires and calls acceptInvitation ONLY — no role/onboarding call,
  *    personal role untouched.
@@ -131,20 +132,7 @@ function setInputValue(input: HTMLInputElement, value: string) {
 }
 
 describe('registro invitation flow — personal-role safety', () => {
-  it('NEW invited user (needsOnboarding=true, isAuthenticated=false): NOT auto-accepted; manual form onboards as AGENT then accepts', async () => {
-    // Reachable new-user state — needsOnboarding true forces isAuthenticated false.
-    authState.needsOnboarding = true
-    authState.isAuthenticated = false
-    authState.user = null
-
-    await renderAndSettle()
-
-    // The silent auto-accept effect must NOT fire for a new user (it early-returns
-    // on !isAuthenticated) — no role flip, no silent accept.
-    expect(postMock).not.toHaveBeenCalled()
-    expect(acceptInvitationMock).not.toHaveBeenCalled()
-
-    // The manual "Completá tu perfil" form is rendered — fill and submit it.
+  async function submitManualForm() {
     const firstName = container.querySelector('input[name="firstName"]') as HTMLInputElement
     const lastName = container.querySelector('input[name="lastName"]') as HTMLInputElement
     expect(firstName).not.toBeNull()
@@ -162,21 +150,57 @@ describe('registro invitation flow — personal-role safety', () => {
         await new Promise((r) => setTimeout(r, 0))
       })
     }
+  }
 
-    // handleCompleteProfile onboards as AGENT AND accepts the invitation.
+  it('NEW invited user: manual form makes a SINGLE onboarding call carrying invitationToken, no separate acceptInvitation, token cleared', async () => {
+    // Reachable new-user state — needsOnboarding true forces isAuthenticated false.
+    authState.needsOnboarding = true
+    authState.isAuthenticated = false
+    authState.user = null
+
+    await renderAndSettle()
+
+    // The silent auto-accept effect must NOT fire for a new user (it early-returns
+    // on !isAuthenticated).
+    expect(postMock).not.toHaveBeenCalled()
+    expect(acceptInvitationMock).not.toHaveBeenCalled()
+    // The token was persisted from the URL on mount.
+    expect(localStorage.getItem('pending-invitation-token')).toBe('tok-123')
+
+    await submitManualForm()
+
+    // ONE transactional call: onboarding + invitationToken (atomic join).
     expect(postMock).toHaveBeenCalledTimes(1)
     expect(postMock).toHaveBeenCalledWith('/users/me/onboarding', {
       firstName: 'Ana',
       lastName: 'Nueva',
       phone: undefined,
       userType: 'AGENT',
+      invitationToken: 'tok-123',
     })
-    expect(acceptInvitationMock).toHaveBeenCalledTimes(1)
-    expect(acceptInvitationMock).toHaveBeenCalledWith('tok-123')
-    // Onboarding must precede accept.
-    expect(postMock.mock.invocationCallOrder[0]).toBeLessThan(
-      acceptInvitationMock.mock.invocationCallOrder[0],
-    )
+    // No separate acceptInvitation — the backend joins atomically now.
+    expect(acceptInvitationMock).not.toHaveBeenCalled()
+    // Token cleared on success.
+    expect(localStorage.getItem('pending-invitation-token')).toBeNull()
+  })
+
+  it('surfaces the backend error and does NOT clear the pending token on failure', async () => {
+    authState.needsOnboarding = true
+    authState.isAuthenticated = false
+    authState.user = null
+    postMock.mockReset().mockRejectedValue(new Error('La invitación ya no es válida.'))
+
+    await renderAndSettle()
+    expect(localStorage.getItem('pending-invitation-token')).toBe('tok-123')
+
+    await submitManualForm()
+
+    // Still a single call carrying the token; no acceptInvitation.
+    expect(postMock).toHaveBeenCalledTimes(1)
+    expect(acceptInvitationMock).not.toHaveBeenCalled()
+    // Backend message surfaced; token preserved for a retry.
+    expect(container.textContent).toContain('La invitación ya no es válida.')
+    expect(localStorage.getItem('pending-invitation-token')).toBe('tok-123')
   })
 
   it('existing account (needsOnboarding=false) → NO onboarding/role call, accept only', async () => {

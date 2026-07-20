@@ -155,39 +155,42 @@ function RegistroContent() {
     const saved = savedRaw ? JSON.parse(savedRaw) as { firstName: string; lastName: string } : null;
 
     const doComplete = async () => {
-      // PERSONAL-ROLE SAFETY: only create/flip the profile to AGENT for a
-      // genuinely new, un-onboarded user (needsOnboarding = no backend
-      // public.users record yet). An EXISTING account (!needsOnboarding —
-      // already TENANT/LANDLORD/agency) must NEVER have its personal User.role
-      // overwritten by accepting an agency membership; acceptInvitation grants
-      // the AgencyMember row independently of the personal role, so we skip the
-      // onboarding/role call entirely.
-      //
-      // Reachability note: in practice this branch is NOT hit here. The auth
-      // context guarantees needsOnboarding===true ⟹ user===null ⟹
-      // isAuthenticated===false (auth-context.tsx:630 `isAuthenticated:!!user`,
-      // :219 `{user:null, needsOnboarding:true}`), and this effect already
-      // early-returns on `!isAuthenticated` above — so when it runs,
-      // needsOnboarding is always false and this effect only ACCEPTS for
-      // existing users. Genuinely new invited users fall through to the manual
-      // "Completá tu perfil" form, whose handleCompleteProfile onboards as
-      // AGENT then accepts. This guard is retained as defense-in-depth.
       if (needsOnboarding) {
+        // NEW invited user (defense-in-depth; in practice handled by the manual
+        // "Completá tu perfil" form). ONE transactional call: passing
+        // invitationToken makes /users/me/onboarding create the profile AND
+        // accept the invitation atomically (membership ACTIVE on return,
+        // response { user, agencyMemberId, agencyId, onboardingStep:
+        // 'invitation_accepted' }) — no separate acceptInvitation, no orphan.
+        // Errors: 400 (invalid/expired token), 409 (conflict/already-member).
         await apiClient.post('/users/me/onboarding', {
           firstName: saved?.firstName || user?.firstName || '',
           lastName: saved?.lastName || user?.lastName || '',
           userType: 'AGENT',
+          invitationToken: token,
         });
+      } else {
+        // PERSONAL-ROLE SAFETY: an EXISTING account (!needsOnboarding — already
+        // TENANT/LANDLORD/agency) must NEVER have its personal User.role
+        // overwritten. It does NOT onboard; accept the membership only (the
+        // AgencyMember join is role-independent).
+        await agencyApi.acceptInvitation(token);
       }
-      await agencyApi.acceptInvitation(token);
       localStorage.removeItem(PENDING_INVITATION_KEY);
       localStorage.removeItem(PENDING_NAME_KEY);
       window.location.replace('/panel/inmobiliaria');
     };
 
-    doComplete().catch(() => {
+    doComplete().catch((err) => {
       setAutoCompleting(false);
-      setFormError('No se pudo completar el registro. Intentá de nuevo.');
+      // Surface the backend reason (token invalid/expired/single-agency
+      // conflict). Do NOT clear the pending token on failure — the removeItem
+      // above only runs on the success path.
+      setFormError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'No se pudo completar el registro. Intentá de nuevo.',
+      );
     });
   }, [isAuthenticated, needsOnboarding, user, token, invitation]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -228,19 +231,34 @@ function RegistroContent() {
     setIsSubmitting(true);
     setFormError(null);
     try {
+      // ONE transactional call: with invitationToken present, the backend
+      // creates the profile (AGENT) AND accepts the invitation atomically (the
+      // membership is ACTIVE on return) — no separate acceptInvitation, closing
+      // the orphan-membership state. Confirmed success response:
+      //   { user, agencyMemberId, agencyId, onboardingStep: 'invitation_accepted' }
+      // We don't need any field for routing (fixed panel URL), so we don't
+      // read the body — a 2xx is the join. Errors: 400 (invalid/expired token),
+      // 409 (single-agency conflict / already a member).
       await apiClient.post('/users/me/onboarding', {
         firstName: data.firstName.trim(),
         lastName: data.lastName.trim(),
         phone: data.phone?.trim() || undefined,
         userType: 'AGENT',
+        invitationToken: token ?? undefined,
       });
-      await agencyApi.acceptInvitation(token ?? '');
       localStorage.removeItem(PENDING_INVITATION_KEY);
       localStorage.removeItem(PENDING_NAME_KEY);
       // Hard navigation so ProtectedRoute reads the updated role from backend fresh
       window.location.replace('/panel/inmobiliaria');
-    } catch {
-      setFormError('No se pudo completar el registro. Intentá de nuevo.');
+    } catch (err) {
+      // Surface the backend message (400 invalid/expired token, 409
+      // single-agency conflict/already-member). The token is NOT cleared
+      // (removeItem runs only on success), so the user can retry.
+      setFormError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'No se pudo completar el registro. Intentá de nuevo.',
+      );
     } finally {
       setIsSubmitting(false);
     }

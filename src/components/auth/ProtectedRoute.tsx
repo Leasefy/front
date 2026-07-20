@@ -90,7 +90,13 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
     // in this state `user` is null but the session is valid and we don't want
     // to kick the user back to /auth in a loop.
     if (needsOnboarding && !pathname.startsWith('/onboarding')) {
-      router.replace('/onboarding/seleccionar-rol')
+      // An invited NEW user must complete the invitation flow at /registro
+      // (name/phone form + atomic join), NOT pick a personal role. Mirror the
+      // invite-aware redirect used for existing users below.
+      const pendingInvitation = (() => {
+        try { return localStorage.getItem(PENDING_INVITATION_KEY) } catch { return null }
+      })()
+      router.replace(pendingInvitation ? '/registro' : '/onboarding/seleccionar-rol')
       return
     }
 

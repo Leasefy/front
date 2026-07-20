@@ -133,7 +133,11 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
   3. El inquilino sigue el estado de sus solicitudes/PQRS en un timeline con el SLA (15 días hábiles, Ley 1480/2011) computado y visible — nunca en blanco; interino etiquetado "estimado" (SOLI-03, guardrail PITFALLS 6).
   4. La solicitud muestra transparencia de responsabilidad de costo (Ley 820: dueño/inquilino/split) y, cuando el costo es a cargo del inquilino, requiere aprobación de cotización antes de ejecutar (SOLI-04).
 **External deps**: NestJS/agent PQRS CRUD tenant-scoped (create + list `/pqrs/mine`) — el backend puede ir atrás (frontend-first: contrato reusando `pqrs.types.ts`; motor de triage/SLA/asignación → M1). `slaVenceAt` real del motor; interino = `createdAt + 15 días hábiles` (calendario Colombia, sin festivos) etiquetado "estimado".
-**Plans**: TBD
+**Plans**: 4 plans
+- [ ] v7-06-01-PLAN.md — Fundación: extender `pqrs.types.ts` (aditivo, sin fork) + helper puro `business-days` (SLA días hábiles, sin festivos) + `pqrs.service.ts` tolerante (listMine→[], create/approveCotizacion→PqrsUnavailableError), con tests (SOLI-01..04)
+- [ ] v7-06-02-PLAN.md — Capa de datos: mappers puros `pqrsStatusToTone/Label` + `pqrsToCase` (sin computar SLA) + hook `useTenantPqrs` + fold al hub `useTenantCases` (0 filas cuando `[]`), con tests (SOLI-02/03)
+- [ ] v7-06-03-PLAN.md — Alta + lista: `NuevaSolicitudModal` (tipo + descripción + fotos reales → create → upload; "Próximamente" honesto), página `/inquilino/solicitudes` con SLA "estimado" por fila, nav + entrada en el hub (SOLI-01/02/03)
+- [ ] v7-06-04-PLAN.md — Detalle unificado (`casos/[caseId]`): fila SLA "Respuesta esperada" (nunca en blanco) + `CostoResponsabilidadCard` Ley 820 + aprobación de cotización (solo aprueba, honesto si no está vivo) (SOLI-03/04)
 **UI hint**: yes
 
 ### v7-07: Acuerdos de Pago (LAST)
@@ -174,7 +178,7 @@ Leasefy evoluciona de un frontend con mock data a una plataforma AI-agent donde 
 | v7-03. Estado de Casos (Hub) | v7.0 | 3/3 | Complete | 2026-07-18 |
 | v7-04. Pagos Reales (Wompi) | v7.0 | 4/4 | Complete | 2026-07-18 |
 | v7-05. Comunicación | v7.0 | 3/3 | Complete | 2026-07-19 |
-| v7-06. Solicitudes / PQRS | v7.0 | 0/TBD | Not started | - |
+| v7-06. Solicitudes / PQRS | v7.0 | 0/4 | Not started | - |
 | v7-07. Acuerdos de Pago | v7.0 | 0/TBD | Not started | - |
 
 ---

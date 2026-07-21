@@ -69,6 +69,21 @@ const STATUS_VARIANT: Record<'available' | 'rented' | 'pending', 'default' | 'su
 
 type FilterStatus = 'all' | 'available' | 'rented' | 'pending';
 
+/**
+ * Agent avatar initials + display name, tolerant of null first/last names.
+ * Invited members can be assigned before their profile is filled, so firstName
+ * can be null — falls back to the email so the cell never renders blank and,
+ * crucially, never crashes on `null.charAt`.
+ */
+type AgentLike = { firstName?: string | null; lastName?: string | null; email?: string | null };
+function agentInitials(a: AgentLike): string {
+  const initials = `${a.firstName?.trim()?.[0] ?? ''}${a.lastName?.trim()?.[0] ?? ''}`.toUpperCase();
+  return initials || (a.email?.[0]?.toUpperCase() ?? '?');
+}
+function agentDisplayName(a: AgentLike): string {
+  return [a.firstName, a.lastName].filter(Boolean).join(' ').trim() || (a.email ?? 'Agente');
+}
+
 // ─── Change Agent Modal ────────────────────────────────────────────────────────
 
 interface ChangeAgentModalProps {
@@ -140,12 +155,12 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
                   <span className="text-xs font-medium text-primary">
-                    {currentAgent.firstName.charAt(0)}{currentAgent.lastName.charAt(0)}
+                    {agentInitials(currentAgent)}
                   </span>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-fg">
-                    {currentAgent.firstName} {currentAgent.lastName}
+                    {agentDisplayName(currentAgent)}
                   </p>
                   <p className="text-xs text-fg-muted">{currentAgent.email}</p>
                 </div>
@@ -521,12 +536,12 @@ function PropiedadesContent() {
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
                               <span className="text-xs font-medium text-primary">
-                                {agent.firstName.charAt(0)}{agent.lastName.charAt(0)}
+                                {agentInitials(agent)}
                               </span>
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm text-fg truncate max-w-[120px]">
-                                {agent.firstName} {agent.lastName}
+                                {agentDisplayName(agent)}
                               </p>
                             </div>
                           </div>

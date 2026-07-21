@@ -54,7 +54,7 @@ export const TEAM_ROLES: TeamRoleInfo[] = [
 /** Entrada especial para "Agente" — no es un rol invitable, redirige a la gestión de agentes */
 export const AGENTE_TEAM_ENTRY = {
   name: 'Agente',
-  description: 'Gestiona propiedades y candidatos en su zona',
+  description: 'Gestiona propiedades y candidatos',
   redirectTo: '/panel/inmobiliaria/agentes',
 } as const;
 

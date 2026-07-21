@@ -146,10 +146,17 @@ function AgentesContent() {
 
   const handleCreateAgente = useCallback(async (data: UserInvite) => {
     try {
-      await inmobiliariaConfigApi.inviteUser(data);
-      toast.success(t('inmobiliaria.agentes.toasts.created'), {
-        description: t('inmobiliaria.agentes.toasts.createdDesc', { name: data.name }),
-      });
+      const result = await inmobiliariaConfigApi.inviteUser(data);
+      if (result.emailDelivered === false) {
+        // Agent row was created, but the invitation email failed to send.
+        toast.warning(t('inmobiliaria.agentes.toasts.created'), {
+          description: t('inmobiliaria.agentes.toasts.createdEmailNotDeliveredDesc', { name: data.name }),
+        });
+      } else {
+        toast.success(t('inmobiliaria.agentes.toasts.created'), {
+          description: t('inmobiliaria.agentes.toasts.createdDesc', { name: data.name }),
+        });
+      }
     } catch (error) {
       toast.error('Error al invitar al agente', {
         description: error instanceof Error ? error.message : undefined,

@@ -1100,7 +1100,11 @@
         "configureIntegration": "Configure integration",
         "configureIntegrationDesc": "Opening configuration for {{name}}",
         "updatePaymentMethod": "Update payment method",
-        "updatePaymentMethodDesc": "Opening payment form"
+        "updatePaymentMethodDesc": "Opening payment form",
+        "inviteEmailNotDelivered": "Invitation created, email not sent",
+        "inviteEmailNotDeliveredDesc": "We couldn't send the email. Use \"Resend invitation\" or check the address.",
+        "resendEmailNotDelivered": "Could not resend the email",
+        "resendEmailNotDeliveredDesc": "The member is still active, but the email wasn't sent. Check the address and try again."
       },
       "profile": {
         "title": "Agency Profile",
@@ -1430,7 +1434,8 @@
           "paid": "Paid",
           "pending": "Pending",
           "failed": "Failed"
-        }
+        },
+        "unavailable": "Billing information is unavailable."
       }
     },
     "propietarios": {
@@ -1562,7 +1567,8 @@
         "editTitle": "Edit {{name}}",
         "editDesc": "Edit form available in the next version",
         "created": "Agent created",
-        "createdDesc": "{{name}} has been added to the team"
+        "createdDesc": "{{name}} has been added to the team",
+        "createdEmailNotDeliveredDesc": "{{name}} was added, but we couldn't send the invitation email. Use \"Resend invitation\"."
       },
       "card": {
         "role": {

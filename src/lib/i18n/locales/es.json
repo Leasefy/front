@@ -1101,7 +1101,11 @@
         "configureIntegration": "Configurar integración",
         "configureIntegrationDesc": "Abriendo configuración de {{name}}",
         "updatePaymentMethod": "Actualizar método de pago",
-        "updatePaymentMethodDesc": "Abriendo formulario de pago"
+        "updatePaymentMethodDesc": "Abriendo formulario de pago",
+        "inviteEmailNotDelivered": "Invitación creada, correo no enviado",
+        "inviteEmailNotDeliveredDesc": "No pudimos enviar el correo. Usa \"Reenviar invitación\" o verifica la dirección.",
+        "resendEmailNotDelivered": "No se pudo reenviar el correo",
+        "resendEmailNotDeliveredDesc": "El miembro sigue activo, pero el correo no se envió. Verifica la dirección e inténtalo de nuevo."
       },
       "profile": {
         "title": "Perfil de la Agencia",
@@ -1431,7 +1435,8 @@
           "paid": "Pagado",
           "pending": "Pendiente",
           "failed": "Fallido"
-        }
+        },
+        "unavailable": "La información de facturación no está disponible."
       }
     },
     "propietarios": {
@@ -1563,7 +1568,8 @@
         "editTitle": "Editar {{name}}",
         "editDesc": "Formulario de edición disponible en la próxima versión",
         "created": "Agente creado",
-        "createdDesc": "{{name}} ha sido agregado al equipo"
+        "createdDesc": "{{name}} ha sido agregado al equipo",
+        "createdEmailNotDeliveredDesc": "{{name}} fue agregado, pero no pudimos enviar el correo de invitación. Usa \"Reenviar invitación\"."
       },
       "card": {
         "role": {

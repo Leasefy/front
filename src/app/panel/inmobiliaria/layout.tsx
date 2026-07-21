@@ -34,8 +34,9 @@ import {
   Brain,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
+import { filterAgencyNav, type NavItemWithModule } from '@/lib/nav/agency-nav-filter';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { PermissionsProvider, usePermissionsContext } from '@/lib/context/PermissionsContext';
@@ -97,11 +98,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const showUpgradeCta = subscription?.planId === 'starter';
 
   // All nav items with their corresponding permission module (null = always visible).
-  // Items with children use a helper type that extends NavItem with an optional module field.
-  // `roles` is an optional role-based gate (in addition to module-based gating).
-  // `adminOnly` is a stricter gate: only super-admins see the item (no role list).
-  type NavItemWithModule = NavItem & { module?: string | null; roles?: AgencyRole[]; adminOnly?: boolean };
-
+  // `NavItemWithModule` (imported) extends NavItem with an optional `module`
+  // permission gate, an optional `roles` role gate, and `adminOnly`.
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ── PRINCIPAL ──
     { kind: 'section', label: t('inmobiliaria.nav.secInicio'), href: '#sec-inicio', icon: SquaresFour, module: null },
@@ -201,7 +199,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // ── PORTAFOLIO ──
     { kind: 'section', label: t('inmobiliaria.nav.secPortafolio'), href: '#sec-portafolio', icon: Buildings, module: null },
     { label: t('inmobiliaria.nav.propiedades'),  href: '/panel/inmobiliaria/propiedades',  icon: House,         module: 'portafolio' },
-    { label: t('inmobiliaria.nav.contratos'),    href: '/panel/inmobiliaria/contratos',    icon: FilePlus,      module: 'portafolio' },
+    // 'contratos' is its own AGENCY_MODULES key (all roles have contratos:['view']);
+    // gating it on 'portafolio' wrongly hid it from CONTADOR (portafolio: []).
+    { label: t('inmobiliaria.nav.contratos'),    href: '/panel/inmobiliaria/contratos',    icon: FilePlus,      module: 'contratos' },
     { label: t('inmobiliaria.nav.portafolio'),   href: '/panel/inmobiliaria/portafolio',   icon: Buildings,     module: 'portafolio' },
     { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', icon: UserCircle,    module: 'propietarios' },
     { label: t('inmobiliaria.nav.pipeline'),     href: '/panel/inmobiliaria/pipeline',     icon: Kanban,        module: 'pipeline' },
@@ -215,9 +215,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // ── ANÁLISIS ──
     { kind: 'section', label: t('inmobiliaria.nav.secAnalisis'), href: '#sec-analisis', icon: ChartLine, module: null },
     // Resumen del negocio: el antiguo "Dashboard" (sin su parte de agentes IA),
-    // ahora vive en Análisis como el resumen ejecutivo. module:null para preservar
-    // su visibilidad siempre-presente; la página gatea sus propios datos internamente.
-    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria/dashboard',    icon: SquaresFour,   exact: true, module: null },
+    // ahora vive en Análisis como el resumen ejecutivo. Gated por el módulo
+    // 'dashboard' que lo gobierna (todos los roles lo tienen ⇒ visible tras
+    // cargar permisos; oculto durante la carga — fail-closed).
+    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria/dashboard',    icon: SquaresFour,   exact: true, module: 'dashboard' },
     { label: t('inmobiliaria.nav.reportes'),     href: '/panel/inmobiliaria/reportes',     icon: ChartLine,     module: 'reportes' },
     { label: t('inmobiliaria.nav.analitica'),    href: '/panel/inmobiliaria/analytics',    icon: ChartLineUp,   module: 'analytics' },
     // ── OPERACIONES ──
@@ -228,46 +229,19 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     { label: t('inmobiliaria.nav.mensajes'),     href: '/panel/inmobiliaria/mensajes',     icon: Chat,          badge: 5, module: null },
     // ── BOTTOM ──
     { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos',   icon: FileText,      module: 'documentos' },
-    { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', icon: Gear,         module: null, dataTourTarget: 'sidebar-configuraciones' },
+    // Configuración → gated on 'configuracion': only ADMIN has it in the matrix
+    // (AGENTE/CONTADOR/VIEWER all have configuracion:[]) ⇒ effectively admin-only.
+    { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', icon: Gear,         module: 'configuracion', dataTourTarget: 'sidebar-configuraciones' },
   ], [t]);
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {
-    // Always filter by permission/role. While permissions load, canAccess()
-    // returns false for every gated module (and isAdmin/agencyRole are null),
-    // so the result is the conservative always-visible subset — gated items
-    // (cobranza/cotizador/conciliación/…) only appear once access is confirmed
-    // and never flash in then disappear. The desktop sidebar shows a skeleton
-    // during this window instead (PlanSidebar `loading` prop below).
-    const filterItem = (item: NavItemWithModule): NavItemWithModule | null => {
-      // Module-based gate (unchanged): cobranza/cotizador use agent permissions;
-      // other modules use the legacy effectivePermissions map.
-      if (item.module && !canAccess(item.module, 'view')) return null;
-      // Role-based gate: if the item declares `roles`, the current user must
-      // be a super-admin (isAdmin) OR have an agencyRole that is in the list.
-      // isAdmin bypasses role gating so Supabase service-role users always pass.
-      if (item.roles && item.roles.length > 0) {
-        const roleAllowed =
-          isAdmin ||
-          (agencyRole !== null && (item.roles as string[]).includes(agencyRole));
-        if (!roleAllowed) return null;
-      }
-      if (item.children && item.children.length > 0) {
-        const filteredChildren = (item.children as NavItemWithModule[])
-          .map(filterItem)
-          .filter((c): c is NavItemWithModule => c !== null);
-        return { ...item, children: filteredChildren };
-      }
-      return item;
-    };
-
-    const filtered = ALL_NAV_ITEMS.map(filterItem).filter((item): item is NavItem => item !== null);
-    // Drop a section header left with no real items after permission filtering.
-    return filtered.filter((item, idx) => {
-      if (item.kind !== 'section') return true;
-      const next = filtered[idx + 1];
-      return next != null && next.kind !== 'section';
-    });
-  }, [ALL_NAV_ITEMS, agencyRole, canAccess, isAdmin, permissionsLoading]);
+    // Filter by permission/role via the shared, unit-tested helper. While
+    // permissions load, canAccess() returns false for every gated module (and
+    // isAdmin/agencyRole are null), so only ungated items survive — gated tabs
+    // never flash in then disappear. The desktop sidebar shows a skeleton during
+    // this window instead (PlanSidebar `loading` prop below).
+    return filterAgencyNav(ALL_NAV_ITEMS, { canAccess, isAdmin, agencyRole });
+  }, [ALL_NAV_ITEMS, agencyRole, canAccess, isAdmin]);
 
   return (
     <div className="min-h-screen bg-plan-page">
@@ -324,8 +298,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
  * Specialized dashboard for real estate agencies managing multiple properties and owners
  */
 export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps) {
+  // allowAgencyMembers: dual-context users (personal role + ACTIVE agency
+  // membership) are admitted alongside pure-agency users.
   return (
-    <ProtectedRoute allowedRoles={['agency']}>
+    <ProtectedRoute allowedRoles={['agency']} allowAgencyMembers>
       <I18nProvider>
         <PermissionsProvider>
           <PanelPrefsProvider>

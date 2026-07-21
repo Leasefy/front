@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { agencyApi, inmobiliariaConfigApi } from '../inmobiliaria.service';
+import { agencyApi, inmobiliariaConfigApi, permissionsApi } from '../inmobiliaria.service';
 import { ApiError, setAccessToken } from '../client';
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {
@@ -155,5 +155,57 @@ describe('inmobiliariaConfigApi — nonexistent backend routes removed', () => {
     expect(api.update).toBeUndefined();
     expect(api.updateBranding).toBeUndefined();
     expect(api.updateDefaults).toBeUndefined();
+  });
+});
+
+// ── (6) team-action HTTP verbs ───────────────────────────────────────────────
+
+describe('team-action HTTP verbs match the backend routes', () => {
+  it('updateMemberRole → PUT /inmobiliaria/agency/members/:id/role { role }', async () => {
+    const fetchMock = mockFetchOnce({ id: 'm-1' });
+    await permissionsApi.updateMemberRole('m-1', 'AGENTE');
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/agency/members/m-1/role')).toBe(true);
+    expect(opts.method).toBe('PUT');
+    expect(JSON.parse(opts.body as string)).toEqual({ role: 'AGENTE' });
+  });
+
+  it('updateMemberStatus → PUT /inmobiliaria/agency/members/:id/status { active }', async () => {
+    const fetchMock = mockFetchOnce({ id: 'm-1' });
+    await permissionsApi.updateMemberStatus('m-1', false);
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/agency/members/m-1/status')).toBe(true);
+    expect(opts.method).toBe('PUT');
+    expect(JSON.parse(opts.body as string)).toEqual({ active: false });
+  });
+
+  it('toggleIntegration → PUT /inmobiliaria/agency/integrations/:id { isEnabled }', async () => {
+    const fetchMock = mockFetchOnce({ id: 'int-1', isEnabled: true });
+    await inmobiliariaConfigApi.toggleIntegration('int-1', true);
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/agency/integrations/int-1')).toBe(true);
+    expect(opts.method).toBe('PUT');
+    expect(JSON.parse(opts.body as string)).toEqual({ isEnabled: true });
+  });
+
+  it('deleteUser → DELETE /inmobiliaria/agency/members/:id (works with the member id)', async () => {
+    const fetchMock = mockFetchOnce({}, { status: 204 });
+    await inmobiliariaConfigApi.deleteUser('m-1');
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/agency/members/m-1')).toBe(true);
+    expect(opts.method).toBe('DELETE');
+  });
+
+  it('updateMemberRole surfaces the backend message on a non-2xx (ApiError)', async () => {
+    mockFetchOnce({ message: 'Solo un administrador puede cambiar roles' }, { ok: false, status: 403 });
+    await expect(permissionsApi.updateMemberRole('m-1', 'ADMIN')).rejects.toMatchObject({
+      name: 'ApiError',
+      status: 403,
+      message: 'Solo un administrador puede cambiar roles',
+    });
   });
 });

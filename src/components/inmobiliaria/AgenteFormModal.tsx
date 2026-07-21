@@ -80,10 +80,12 @@ export function AgenteFormModal({
 
   const showAgentFields = variant === 'agent' || systemRole === 'agente';
 
-  const AGENT_ROLE_OPTIONS: { value: AgenteRole; label: string; description: string }[] = [
+  // Director is not selectable yet — only Agente and Coordinador are enabled for
+  // now. The option stays visible (disabled) so the hierarchy is discoverable.
+  const AGENT_ROLE_OPTIONS: { value: AgenteRole; label: string; description: string; disabled?: boolean }[] = [
     { value: 'agent', label: t('inmobiliaria.agente.roleAgent'), description: t('inmobiliaria.agente.roleAgentDesc') },
     { value: 'coordinator', label: t('inmobiliaria.agente.roleCoordinator'), description: t('inmobiliaria.agente.roleCoordinatorDesc') },
-    { value: 'director', label: t('inmobiliaria.agente.roleDirector'), description: t('inmobiliaria.agente.roleDirectorDesc') },
+    { value: 'director', label: t('inmobiliaria.agente.roleDirector'), description: t('inmobiliaria.agente.roleDirectorDesc'), disabled: true },
   ];
 
   const SYSTEM_ROLE_OPTIONS: { value: AgencyRole; label: string }[] = [
@@ -293,6 +295,7 @@ export function AgenteFormModal({
                             value={opt.value}
                             label={opt.label}
                             description={opt.description}
+                            disabled={opt.disabled}
                           />
                         ))}
                       </RadioCardGroup>

@@ -117,7 +117,9 @@ function RegistroContent() {
       .catch((err) => {
         // Distinguish a dead token (expired / already-accepted / not-found) from a
         // transient network error, so we don't wipe a still-valid token on a blip.
-        const dead = err instanceof ApiError && [400, 404, 410].includes(err.status);
+        // 409 = "already accepted": conclusively dead, not transient — treating it
+        // as retryable was what left a consumed invite looping instead of clearing.
+        const dead = err instanceof ApiError && [400, 404, 409, 410].includes(err.status);
         setInvitationDead(dead);
         setInvitationError(
           dead

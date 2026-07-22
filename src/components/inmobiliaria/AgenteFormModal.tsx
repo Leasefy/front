@@ -13,13 +13,14 @@ import {
   Buildings,
   UserCircle,
   PaperPlaneTilt,
-  Briefcase,
 } from '@phosphor-icons/react';
 import { Button, Input, Textarea } from '@/components/ui';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -45,9 +46,34 @@ interface AgenteFormModalProps {
   isLoading?: boolean;
 }
 
-const ZONE_OPTIONS = [
-  'Norte', 'Sur', 'Este', 'Oeste', 'Centro',
-  'Chapinero', 'Usaquen', 'Suba', 'Kennedy', 'Fontibon',
+// Colombian departments grouped by natural region.
+const ZONE_GROUPS: { label: string; zones: string[] }[] = [
+  {
+    label: 'Andina',
+    zones: [
+      'Bogotá D.C.', 'Antioquia', 'Boyacá', 'Caldas', 'Cundinamarca', 'Huila',
+      'Norte de Santander', 'Quindío', 'Risaralda', 'Santander', 'Tolima',
+    ],
+  },
+  {
+    label: 'Caribe',
+    zones: [
+      'Atlántico', 'Bolívar', 'Cesar', 'Córdoba', 'La Guajira', 'Magdalena',
+      'Sucre', 'San Andrés y Providencia',
+    ],
+  },
+  {
+    label: 'Pacífica',
+    zones: ['Cauca', 'Chocó', 'Nariño', 'Valle del Cauca'],
+  },
+  {
+    label: 'Orinoquía',
+    zones: ['Arauca', 'Casanare', 'Meta', 'Vichada'],
+  },
+  {
+    label: 'Amazonía',
+    zones: ['Amazonas', 'Caquetá', 'Guainía', 'Guaviare', 'Putumayo', 'Vaupés'],
+  },
 ];
 
 export function AgenteFormModal({
@@ -71,19 +97,20 @@ export function AgenteFormModal({
   // Agent-specific fields
   const [agentRole, setAgentRole] = useState<AgenteRole>('agent');
   const [zone, setZone] = useState('');
-  const [specialization, setSpecialization] = useState<'residential' | 'commercial' | 'both'>('residential');
+  const [specialization, setSpecialization] = useState<'apartment' | 'house' | 'studio' | 'room' | 'all'>('all');
   const [commissionSplit, setCommissionSplit] = useState(50);
 
   // Member-only fields
-  const [position, setPosition] = useState('');
   const [message, setMessage] = useState('');
 
   const showAgentFields = variant === 'agent' || systemRole === 'agente';
 
-  const AGENT_ROLE_OPTIONS: { value: AgenteRole; label: string; description: string }[] = [
+  // Director is not selectable yet — only Agente and Coordinador are enabled for
+  // now. The option stays visible (disabled) so the hierarchy is discoverable.
+  const AGENT_ROLE_OPTIONS: { value: AgenteRole; label: string; description: string; disabled?: boolean }[] = [
     { value: 'agent', label: t('inmobiliaria.agente.roleAgent'), description: t('inmobiliaria.agente.roleAgentDesc') },
     { value: 'coordinator', label: t('inmobiliaria.agente.roleCoordinator'), description: t('inmobiliaria.agente.roleCoordinatorDesc') },
-    { value: 'director', label: t('inmobiliaria.agente.roleDirector'), description: t('inmobiliaria.agente.roleDirectorDesc') },
+    { value: 'director', label: t('inmobiliaria.agente.roleDirector'), description: t('inmobiliaria.agente.roleDirectorDesc'), disabled: true },
   ];
 
   const SYSTEM_ROLE_OPTIONS: { value: AgencyRole; label: string }[] = [
@@ -93,10 +120,13 @@ export function AgenteFormModal({
     { value: 'viewer', label: 'Viewer' },
   ];
 
+  // Specialization by property type (matches the PropertyType enum) + "Todos".
   const SPECIALIZATION_OPTIONS = [
-    { value: 'residential', label: t('inmobiliaria.agente.specResidential') },
-    { value: 'commercial', label: t('inmobiliaria.agente.specCommercial') },
-    { value: 'both', label: t('inmobiliaria.agente.specBoth') },
+    { value: 'apartment', label: 'Apartamento' },
+    { value: 'house', label: 'Casa' },
+    { value: 'studio', label: 'Estudio' },
+    { value: 'room', label: 'Habitación' },
+    { value: 'all', label: 'Todos' },
   ];
 
   useEffect(() => { setMounted(true); }, []);
@@ -115,8 +145,8 @@ export function AgenteFormModal({
   const resetForm = useCallback(() => {
     setName(''); setEmail(''); setPhone('');
     setSystemRole(variant === 'agent' ? 'agente' : 'agente');
-    setAgentRole('agent'); setZone(''); setSpecialization('residential');
-    setCommissionSplit(50); setPosition(''); setMessage('');
+    setAgentRole('agent'); setZone(''); setSpecialization('all');
+    setCommissionSplit(50); setMessage('');
     setErrors({});
   }, [variant]);
 
@@ -144,7 +174,6 @@ export function AgenteFormModal({
       };
 
       if (variant === 'member') {
-        invite.position = position.trim() || undefined;
         invite.message = message || undefined;
       }
 
@@ -259,17 +288,6 @@ export function AgenteFormModal({
                   </div>
                 )}
 
-                {/* Position / Cargo — member variant only */}
-                {variant === 'member' && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                      <Briefcase className="w-4 h-4 text-muted-foreground" />
-                      Cargo
-                    </label>
-                    <Input type="text" value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Ej: Agente Senior, Administrador General" maxLength={100} />
-                  </div>
-                )}
-
                 {/* ──── Agent-specific fields ──── */}
                 {showAgentFields && (
                   <>
@@ -293,33 +311,40 @@ export function AgenteFormModal({
                             value={opt.value}
                             label={opt.label}
                             description={opt.description}
+                            disabled={opt.disabled}
                           />
                         ))}
                       </RadioCardGroup>
                     </div>
 
-                    {/* Zone + Specialization — disabled until backend supports them */}
-                    <div className="grid grid-cols-2 gap-4 opacity-50 pointer-events-none select-none">
+                    {/* Zone + Specialization — persisted on the AgencyMember (backend
+                        InviteMemberDto supports zone + specialization). */}
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <label className="text-sm font-medium text-foreground flex items-center gap-2">
                           <MapPin className="w-4 h-4 text-muted-foreground" />
                           {t('inmobiliaria.agente.zone')}
                         </label>
-                        <Select disabled value={zone || undefined} onValueChange={setZone}>
+                        <Select value={zone || undefined} onValueChange={setZone}>
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder={t('inmobiliaria.agente.selectZone')} />
                           </SelectTrigger>
                           <SelectContent>
-                            {ZONE_OPTIONS.map((z) => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                            {ZONE_GROUPS.map((g) => (
+                              <SelectGroup key={g.label}>
+                                <SelectLabel>{g.label}</SelectLabel>
+                                {g.zones.map((z) => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                              </SelectGroup>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <label className="text-sm font-medium text-foreground flex items-center gap-2">
                           <Buildings className="w-4 h-4 text-muted-foreground" />
                           {t('inmobiliaria.agente.specialization')}
                         </label>
-                        <Select disabled value={specialization} onValueChange={(v) => setSpecialization(v as typeof specialization)}>
+                        <Select value={specialization} onValueChange={(v) => setSpecialization(v as typeof specialization)}>
                           <SelectTrigger className="w-full">
                             <SelectValue />
                           </SelectTrigger>

@@ -84,7 +84,7 @@ export interface Agente {
   assignedPropertyIds: string[];
   hireDate: string;
   zone?: string; // Geographic zone they cover
-  specialization?: 'residential' | 'commercial' | 'both';
+  specialization?: 'apartment' | 'house' | 'studio' | 'room' | 'all';
   metrics: AgenteMetrics;
   createdAt: string;
   updatedAt: string;
@@ -97,7 +97,7 @@ export interface AgenteFormData {
   role: AgenteRole;
   commissionSplit: number;
   zone?: string;
-  specialization?: 'residential' | 'commercial' | 'both';
+  specialization?: 'apartment' | 'house' | 'studio' | 'room' | 'all';
 }
 
 // ============================================================================

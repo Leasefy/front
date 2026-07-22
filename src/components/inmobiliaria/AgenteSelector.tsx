@@ -57,9 +57,11 @@ export function AgenteSelector({
   };
 
   const SPECIALIZATION_LABELS: Record<NonNullable<Agente['specialization']>, string> = {
-    residential: t('inmobiliaria.agente.specResidential'),
-    commercial: t('inmobiliaria.agente.specCommercial'),
-    both: t('inmobiliaria.agente.specMixed'),
+    apartment: 'Apartamento',
+    house: 'Casa',
+    studio: 'Estudio',
+    room: 'Habitación',
+    all: 'Todos',
   };
 
   // Get unique zones for filter

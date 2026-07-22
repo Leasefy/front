@@ -21,9 +21,17 @@ import { cn } from '@/lib/utils';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { propertiesApi } from '@/lib/api/properties.service';
+import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { IconTooltip } from '@/components/ui/icon-tooltip';
 import { Button, Input, EmptyState, Badge, Spinner, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -98,6 +106,13 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
   const [error, setError] = useState<string | null>(null);
 
   const currentAgent = property.agents[0] ?? null;
+
+  // Active agents of the agency, minus the one already assigned to this property.
+  const { agentes, isLoading: agentesLoading } = useAgentes();
+  const assignableAgents = useMemo(
+    () => agentes.filter((a) => a.email && a.email !== currentAgent?.email),
+    [agentes, currentAgent?.email],
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,16 +199,25 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
               <label className="text-sm font-medium text-fg">
                 {currentAgent ? 'Asignar nuevo agente' : 'Asignar agente'}
               </label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="agente@inmobiliaria.com"
-                autoFocus
-              />
-              <p className="text-xs text-fg-muted">
-                El usuario debe tener rol de Agente en el sistema.
-              </p>
+              <Select value={email || undefined} onValueChange={setEmail}>
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={agentesLoading ? 'Cargando agentes…' : 'Selecciona un agente'}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {assignableAgents.map((a) => (
+                    <SelectItem key={a.id} value={a.email}>
+                      {(a.name || a.email) + (a.zone ? ` · ${a.zone}` : '')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!agentesLoading && assignableAgents.length === 0 && (
+                <p className="text-xs text-fg-muted">
+                  No hay agentes activos disponibles. Crea uno en la sección Agentes.
+                </p>
+              )}
             </div>
 
             {error && (

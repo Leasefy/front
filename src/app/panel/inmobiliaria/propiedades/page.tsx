@@ -21,9 +21,17 @@ import { cn } from '@/lib/utils';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { propertiesApi } from '@/lib/api/properties.service';
+import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { IconTooltip } from '@/components/ui/icon-tooltip';
 import { Button, Input, EmptyState, Badge, Spinner, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,6 +77,21 @@ const STATUS_VARIANT: Record<'available' | 'rented' | 'pending', 'default' | 'su
 
 type FilterStatus = 'all' | 'available' | 'rented' | 'pending';
 
+/**
+ * Agent avatar initials + display name, tolerant of null first/last names.
+ * Invited members can be assigned before their profile is filled, so firstName
+ * can be null — falls back to the email so the cell never renders blank and,
+ * crucially, never crashes on `null.charAt`.
+ */
+type AgentLike = { firstName?: string | null; lastName?: string | null; email?: string | null };
+function agentInitials(a: AgentLike): string {
+  const initials = `${a.firstName?.trim()?.[0] ?? ''}${a.lastName?.trim()?.[0] ?? ''}`.toUpperCase();
+  return initials || (a.email?.[0]?.toUpperCase() ?? '?');
+}
+function agentDisplayName(a: AgentLike): string {
+  return [a.firstName, a.lastName].filter(Boolean).join(' ').trim() || (a.email ?? 'Agente');
+}
+
 // ─── Change Agent Modal ────────────────────────────────────────────────────────
 
 interface ChangeAgentModalProps {
@@ -83,6 +106,13 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
   const [error, setError] = useState<string | null>(null);
 
   const currentAgent = property.agents[0] ?? null;
+
+  // Active agents of the agency, minus the one already assigned to this property.
+  const { agentes, isLoading: agentesLoading } = useAgentes();
+  const assignableAgents = useMemo(
+    () => agentes.filter((a) => a.email && a.email !== currentAgent?.email),
+    [agentes, currentAgent?.email],
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,12 +170,12 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
                   <span className="text-xs font-medium text-primary">
-                    {currentAgent.firstName.charAt(0)}{currentAgent.lastName.charAt(0)}
+                    {agentInitials(currentAgent)}
                   </span>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-fg">
-                    {currentAgent.firstName} {currentAgent.lastName}
+                    {agentDisplayName(currentAgent)}
                   </p>
                   <p className="text-xs text-fg-muted">{currentAgent.email}</p>
                 </div>
@@ -169,16 +199,25 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
               <label className="text-sm font-medium text-fg">
                 {currentAgent ? 'Asignar nuevo agente' : 'Asignar agente'}
               </label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="agente@inmobiliaria.com"
-                autoFocus
-              />
-              <p className="text-xs text-fg-muted">
-                El usuario debe tener rol de Agente en el sistema.
-              </p>
+              <Select value={email || undefined} onValueChange={setEmail}>
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={agentesLoading ? 'Cargando agentes…' : 'Selecciona un agente'}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {assignableAgents.map((a) => (
+                    <SelectItem key={a.id} value={a.email}>
+                      {(a.name || a.email) + (a.zone ? ` · ${a.zone}` : '')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!agentesLoading && assignableAgents.length === 0 && (
+                <p className="text-xs text-fg-muted">
+                  No hay agentes activos disponibles. Crea uno en la sección Agentes.
+                </p>
+              )}
             </div>
 
             {error && (
@@ -341,12 +380,10 @@ function PropiedadesContent() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight text-fg">
-            {isAgent ? 'Mis propiedades' : 'Propiedades'}
+            Propiedades
           </h1>
           <p className="text-sm text-fg-muted max-w-2xl">
-            {isAgent
-              ? 'Propiedades asignadas a tu cuenta'
-              : 'Todas las propiedades de la inmobiliaria'}
+            Todas las propiedades de la inmobiliaria
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -521,12 +558,12 @@ function PropiedadesContent() {
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
                               <span className="text-xs font-medium text-primary">
-                                {agent.firstName.charAt(0)}{agent.lastName.charAt(0)}
+                                {agentInitials(agent)}
                               </span>
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm text-fg truncate max-w-[120px]">
-                                {agent.firstName} {agent.lastName}
+                                {agentDisplayName(agent)}
                               </p>
                             </div>
                           </div>

@@ -86,9 +86,11 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
   };
 
   const specializationLabels: Record<string, string> = {
-    residential: t('inmobiliaria.agente.specResidential'),
-    commercial: t('inmobiliaria.agente.specCommercial'),
-    both: t('inmobiliaria.agente.specBoth'),
+    apartment: 'Apartamento',
+    house: 'Casa',
+    studio: 'Estudio',
+    room: 'Habitación',
+    all: 'Todos',
   };
 
   const formatHireDate = (dateString: string) => {

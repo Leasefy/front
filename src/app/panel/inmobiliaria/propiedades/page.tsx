@@ -380,12 +380,10 @@ function PropiedadesContent() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight text-fg">
-            {isAgent ? 'Mis propiedades' : 'Propiedades'}
+            Propiedades
           </h1>
           <p className="text-sm text-fg-muted max-w-2xl">
-            {isAgent
-              ? 'Propiedades asignadas a tu cuenta'
-              : 'Todas las propiedades de la inmobiliaria'}
+            Todas las propiedades de la inmobiliaria
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">

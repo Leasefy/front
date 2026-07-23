@@ -205,16 +205,14 @@ async function renderProvider(props: ProviderProps) {
 
   await act(async () => {
     root.render(
-      React.createElement(
-        ApplicationProvider,
-        {
-          propertyId: props.propertyId ?? 'prop-test',
-          mode: props.mode ?? 'create',
-          existingApplicationId: props.existingApplicationId,
-          initialApplication: props.initialApplication as never,
-        },
-        React.createElement(Probe),
-      )
+      <ApplicationProvider
+        propertyId={props.propertyId ?? 'prop-test'}
+        mode={props.mode ?? 'create'}
+        existingApplicationId={props.existingApplicationId}
+        initialApplication={props.initialApplication as never}
+      >
+        <Probe />
+      </ApplicationProvider>
     );
   });
 

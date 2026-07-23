@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import type { Session } from '@supabase/supabase-js'
 import { getSupabase } from '@/lib/supabase/client'
-import { adminApi, ApiError } from '@/lib/admin/api'
+import { adminApi, ApiError, setAdminToken } from '@/lib/admin/api'
 import type { Me } from '@/lib/admin/types'
 import { Nav } from '@/components/admin/Nav'
 import { Wordmark } from '@/components/admin/Wordmark'
@@ -50,11 +50,37 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           router.replace('/admin/forbidden')
           return
         }
+        console.error('[admin-gate] /me check failed:', err)
         setStatus('error')
       }
     }
 
-    sb.auth.getSession().then(({ data }) => check(data.session))
+    // getSession() deadlocks while AuthProvider's auth callback is mid-flight
+    // (project convention: rely exclusively on onAuthStateChange — see
+    // auth-context.tsx). INITIAL_SESSION fires on subscribe with the
+    // persisted session; we only act on the first event.
+    let checked = false
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
+      setAdminToken(session?.access_token ?? null)
+      if (checked) return
+      checked = true
+      void check(session)
+    })
+
+    // Safety net (same pattern as auth-context.tsx): some refresh flows never
+    // emit INITIAL_SESSION — without this the gate would spin forever.
+    const safetyTimeout = setTimeout(() => {
+      if (!checked && !cancelled) {
+        console.error('[admin-gate] no auth event within 5s — cannot verify access')
+        setStatus('error')
+      }
+    }, 5000)
+
+    return () => {
+      cancelled = true
+      clearTimeout(safetyTimeout)
+      subscription.unsubscribe()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

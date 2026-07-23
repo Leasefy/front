@@ -212,8 +212,8 @@ async function renderProvider(props: ProviderProps) {
           mode: props.mode ?? 'create',
           existingApplicationId: props.existingApplicationId,
           initialApplication: props.initialApplication as never,
-        },
-        React.createElement(Probe)
+          children: React.createElement(Probe),
+        }
       )
     );
   });

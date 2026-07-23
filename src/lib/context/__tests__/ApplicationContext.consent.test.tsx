@@ -199,8 +199,8 @@ async function renderProvider(props: {
           mode: props.mode ?? 'create',
           existingApplicationId: props.existingApplicationId,
           initialApplication: props.initialApplication as never,
-        },
-        probe
+          children: probe,
+        }
       )
     );
   });

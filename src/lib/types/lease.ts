@@ -60,6 +60,16 @@ export interface Lease {
   insuranceUrl?: string;
   inventoryUrl?: string;
 
+  // Pending renewal proposed by the agency (tenant sees "en renovación")
+  renovacion?: {
+    id: string;
+    status: string;
+    proposedRent: number;
+    proposedAdminFee: number | null;
+    newEndDate: string | null;
+    tenantAcceptedAt: string | null;
+  } | null;
+
   // Metadata
   createdAt: string;
   updatedAt: string;

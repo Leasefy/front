@@ -16,6 +16,7 @@ import {
   ChartLine,
   ChartLineUp,
   Wrench,
+  ArrowsClockwise,
   UserCircle,
   PaperPlaneTilt,
   ChatCircleText,
@@ -223,6 +224,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     { label: t('inmobiliaria.nav.analitica'),    href: '/panel/inmobiliaria/analytics',    icon: ChartLineUp,   module: 'analytics' },
     // ── OPERACIONES ──
     { kind: 'section', label: t('inmobiliaria.nav.secOperaciones'), href: '#sec-operaciones', icon: Wrench, module: null },
+    { label: t('inmobiliaria.nav.renovaciones'), href: '/panel/inmobiliaria/renovaciones',  icon: ArrowsClockwise, module: 'operaciones' },
     { label: t('inmobiliaria.nav.operaciones'),  href: '/panel/inmobiliaria/operaciones',  icon: Wrench,        module: 'operaciones' },
     { label: t('inmobiliaria.nav.pqrs'),         href: '/panel/inmobiliaria/pqrs',         icon: Lifebuoy,      module: null },
     { label: t('inmobiliaria.nav.agenda'),       href: '/panel/inmobiliaria/agenda',       icon: CalendarBlank, module: null },

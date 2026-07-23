@@ -227,7 +227,7 @@ function OperacionesContent() {
 
   const handleNotifyTenant = useCallback(async (renovacion: Renovacion) => {
     try {
-      await renovacionesApi.updateStatus(renovacion.id, 'notified');
+      await renovacionesApi.updateStage(renovacion.id, { status: 'notified' });
       toast.success(t('inmobiliaria.operaciones.toasts.notificationSent'), {
         description: t('inmobiliaria.operaciones.toasts.notificationSentDesc', { name: renovacion.tenantName }),
       });
@@ -671,14 +671,38 @@ function OperacionesContent() {
           renovacion={selectedRenovacion}
           open={isRenovacionWorkflowOpen}
           onClose={handleRenovacionWorkflowClose}
-          onStepComplete={async (newStatus) => {
+          onSendNotification={async (message, nr, naf) => {
+            await renovacionesApi.updateStage(selectedRenovacion.id, {
+              status: 'notified',
+              notificationMessage: message,
+              ...(nr ? { negotiatedRent: nr } : {}),
+              ...(naf ? { negotiatedAdminFee: naf } : {}),
+            });
+            toast.success('Propuesta enviada al inquilino');
+          }}
+          onUploadDocument={async (file) => {
+            await renovacionesApi.uploadDocument(selectedRenovacion.id, file);
+            toast.success('Documento de renovación subido');
+          }}
+          onStepComplete={async (newStatus, negotiatedRent, negotiatedAdminFee, notificationMessage) => {
             try {
-              await renovacionesApi.updateStatus(selectedRenovacion.id, newStatus);
+              await renovacionesApi.updateStage(selectedRenovacion.id, {
+                status: newStatus,
+                ...(negotiatedRent ? { negotiatedRent } : {}),
+                ...(negotiatedAdminFee ? { negotiatedAdminFee } : {}),
+                ...(notificationMessage ? { notificationMessage } : {}),
+              });
               // Update local state
               setRenovacionesData((prev) =>
                 prev ? prev.map((r) =>
                   r.id === selectedRenovacion.id
-                    ? { ...r, status: newStatus, updatedAt: new Date().toISOString() }
+                    ? {
+                        ...r,
+                        status: newStatus,
+                        ...(negotiatedRent ? { negotiatedRent } : {}),
+                        ...(negotiatedAdminFee ? { negotiatedAdminFee } : {}),
+                        updatedAt: new Date().toISOString(),
+                      }
                     : r
                 ) : []
               );
@@ -689,7 +713,10 @@ function OperacionesContent() {
           }}
           onTerminate={async (reason) => {
             try {
-              await renovacionesApi.updateStatus(selectedRenovacion.id, 'terminated');
+              await renovacionesApi.updateStage(selectedRenovacion.id, {
+                status: 'terminated',
+                ...(reason ? { historyNote: reason } : {}),
+              });
               // Update local state
               setRenovacionesData((prev) =>
                 prev ? prev.map((r) =>

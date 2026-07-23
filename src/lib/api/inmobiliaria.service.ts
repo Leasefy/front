@@ -543,39 +543,126 @@ export const mantenimientoApi = {
 // Renovaciones
 // ============================================================================
 
+/** Front lowercase RenovacionStatus → backend RenovacionStatus enum value. */
+const RENOVACION_STATUS_TO_BACKEND: Record<string, string> = {
+  pending: 'RENOV_PENDING',
+  notified: 'NOTIFIED',
+  negotiating: 'NEGOTIATING',
+  approved: 'RENOV_APPROVED',
+  signed: 'RENOV_SIGNED',
+  completed: 'RENOV_COMPLETED',
+  terminated: 'RENOV_TERMINATED',
+};
+
+/** Backend RenovacionStatus enum value → front lowercase status. */
+const RENOVACION_STATUS_TO_FRONT: Record<string, string> = {
+  RENOV_PENDING: 'pending',
+  NOTIFIED: 'notified',
+  NEGOTIATING: 'negotiating',
+  RENOV_APPROVED: 'approved',
+  RENOV_SIGNED: 'signed',
+  RENOV_COMPLETED: 'completed',
+  RENOV_TERMINATED: 'terminated',
+};
+
+/** Derive the front urgency bucket from days until lease expiry. */
+function urgencyFromDays(days: number): Renovacion['urgencyBucket'] {
+  if (days <= 30) return '0-30';
+  if (days <= 60) return '31-60';
+  if (days <= 90) return '61-90';
+  return '90+';
+}
+
+/**
+ * Boundary mapper: the backend returns the RenovacionStatus enum in UPPER_SNAKE
+ * (the front uses lowercase) and does NOT send urgencyBucket (only
+ * daysUntilExpiry). Without this the stepper/filters never match the status and
+ * the urgency badges/stats render blank.
+ */
+function mapRenovacion(raw: Renovacion): Renovacion {
+  return {
+    ...raw,
+    status: (RENOVACION_STATUS_TO_FRONT[raw.status] ?? raw.status) as Renovacion['status'],
+    urgencyBucket: raw.urgencyBucket ?? urgencyFromDays(raw.daysUntilExpiry),
+    // The list endpoint does not include history; guarantee an array so the
+    // workflow's history timeline never maps over undefined.
+    history: raw.history ?? [],
+  };
+}
+
 export const renovacionesApi = {
   async getAll(): Promise<Renovacion[]> {
-    const res = await apiClient.get<{ data: Renovacion[] }>(`${BASE}/renovaciones`);
-    return res.data;
+    // The backend returns a bare array here (findMany), not a { data } wrapper.
+    const rows = await apiClient.get<Renovacion[]>(`${BASE}/renovaciones`);
+    return (Array.isArray(rows) ? rows : []).map(mapRenovacion);
   },
 
   async getById(id: string): Promise<Renovacion> {
-    return apiClient.get<Renovacion>(`${BASE}/renovaciones/${id}`);
+    return mapRenovacion(await apiClient.get<Renovacion>(`${BASE}/renovaciones/${id}`));
   },
 
   async create(data: Partial<Renovacion>): Promise<Renovacion> {
-    return apiClient.post<Renovacion>(`${BASE}/renovaciones`, data);
-  },
-
-  async notify(id: string): Promise<void> {
-    await apiClient.patch(`${BASE}/renovaciones/${id}/notify`, {});
-  },
-
-  async accept(id: string): Promise<void> {
-    await apiClient.patch(`${BASE}/renovaciones/${id}/accept`, {});
-  },
-
-  async reject(id: string): Promise<void> {
-    await apiClient.patch(`${BASE}/renovaciones/${id}/reject`, {});
+    return mapRenovacion(await apiClient.post<Renovacion>(`${BASE}/renovaciones`, data));
   },
 
   async getUpcoming(): Promise<Renovacion[]> {
-    const res = await apiClient.get<{ data: Renovacion[] }>(`${BASE}/renovaciones/upcoming`);
-    return res.data;
+    const rows = await apiClient.get<Renovacion[]>(`${BASE}/renovaciones/upcoming`);
+    return (Array.isArray(rows) ? rows : []).map(mapRenovacion);
   },
 
-  async updateStatus(id: string, status: string): Promise<void> {
-    await apiClient.patch(`${BASE}/renovaciones/${id}/status`, { status });
+  /**
+   * Advance a renovación to a new stage via the real backend endpoint
+   * (PUT /renovaciones/:id/stage). Maps the front lowercase status to the
+   * backend RenovacionStatus enum and forwards the admin-editable negotiated
+   * canon and admin fee so the completed renewal bills at the new values.
+   */
+  async updateStage(
+    id: string,
+    payload: {
+      status: string;
+      negotiatedRent?: number;
+      negotiatedAdminFee?: number;
+      proposedRent?: number;
+      ipcRate?: number;
+      historyNote?: string;
+      notificationMessage?: string;
+    },
+  ): Promise<void> {
+    const { status, ...rest } = payload;
+    await apiClient.put(`${BASE}/renovaciones/${id}/stage`, {
+      status: RENOVACION_STATUS_TO_BACKEND[status] ?? status,
+      ...rest,
+    });
+  },
+
+  /** Upload the renewal document (multipart). Returns the stored name/path. */
+  async uploadDocument(
+    id: string,
+    file: File,
+  ): Promise<{ documentName: string; documentPath: string }> {
+    const token = getAccessToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'}${BASE}/renovaciones/${id}/document`,
+      {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      },
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al subir el documento');
+    }
+    return res.json();
+  },
+
+  /** Get a short-lived signed URL to download the renewal document. */
+  async getDocumentUrl(id: string): Promise<{ url: string; name: string }> {
+    return apiClient.get<{ url: string; name: string }>(
+      `${BASE}/renovaciones/${id}/document/url`,
+    );
   },
 
   async addNote(id: string, note: string): Promise<void> {

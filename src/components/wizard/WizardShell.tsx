@@ -74,6 +74,7 @@ export function WizardShell({
     prevStep,
     submitApplication,
     isLoading,
+    submissionError,
     canSubmit,
     currentStepValidation,
     currentStepMissingFields,
@@ -376,6 +377,18 @@ export function WizardShell({
                       </ul>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Submission error — otherwise a failed submit (e.g. 403 for a
+                  non-tenant account, a blocked consent, or a server error) is
+                  invisible and the button looks stuck on "Enviar solicitud". */}
+              {submissionError && (
+                <div
+                  role="alert"
+                  className="mx-4 mb-3 rounded-lg border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger lg:mx-6"
+                >
+                  {submissionError}
                 </div>
               )}
 

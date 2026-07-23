@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock } from '@phosphor-icons/react';
 
+import { toast } from 'sonner';
 import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
+import { leasesApi } from '@/lib/api/leases.service';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
@@ -219,6 +221,45 @@ export default function ArriendoPage() {
 
                           {/* Content */}
                           <div className="flex-1 p-6">
+                            {lease.renovacion && (
+                              <div className="mb-4 rounded-lg border border-primary/30 bg-primary-soft/40 p-3">
+                                <p className="text-sm font-medium text-primary flex items-center gap-1.5">
+                                  <ArrowUpRight className="w-4 h-4" />
+                                  {locale === 'es' ? 'Tu contrato está en proceso de renovación' : 'Your contract is up for renewal'}
+                                </p>
+                                <p className="text-xs text-fg-muted mt-1">
+                                  {locale === 'es' ? 'Nuevo canon propuesto: ' : 'Proposed new rent: '}
+                                  <span className="font-semibold text-fg">
+                                    {formatCurrency(lease.renovacion.proposedRent + (lease.renovacion.proposedAdminFee ?? 0))}
+                                  </span>
+                                </p>
+                                {lease.renovacion.tenantAcceptedAt ? (
+                                  <p className="mt-2 text-xs font-medium text-success flex items-center gap-1.5">
+                                    <CheckCircle className="w-4 h-4" weight="fill" />
+                                    {locale === 'es' ? 'Aceptaste la renovación' : 'You accepted the renewal'}
+                                  </p>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={async (e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      try {
+                                        await leasesApi.acceptRenovacion(lease.id);
+                                        toast.success(locale === 'es' ? 'Renovación aceptada' : 'Renewal accepted');
+                                        refetch();
+                                      } catch {
+                                        toast.error(locale === 'es' ? 'No se pudo aceptar' : 'Could not accept');
+                                      }
+                                    }}
+                                    className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90 transition-colors"
+                                  >
+                                    <CheckCircle className="w-4 h-4" />
+                                    {locale === 'es' ? 'Aceptar renovación' : 'Accept renewal'}
+                                  </button>
+                                )}
+                              </div>
+                            )}
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                               <div>
                                 <h3 className="text-lg font-semibold text-fg group-hover:text-primary transition-colors">

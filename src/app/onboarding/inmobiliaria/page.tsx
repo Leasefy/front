@@ -8,6 +8,7 @@ import { ArrowRight, ArrowLeft, Check, SpinnerGap, Shield, Storefront, User, Pho
 import { cn, sanitizeReturnUrl } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { useI18n } from '@/lib/i18n'
+import { apiClient, ApiError } from '@/lib/api/client'
 
 // ============================================================================
 // Types & Constants
@@ -43,7 +44,7 @@ interface OnboardingData {
 function OnboardingInmobiliariaContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { signInWithGoogle, isAuthenticated, isLoading: authLoading, user } = useAuth()
+  const { signInWithGoogle, isAuthenticated, isLoading: authLoading, user, refreshUser } = useAuth()
   const { t } = useI18n()
   const rawReturnUrl = searchParams.get('returnUrl')
   const returnUrl = rawReturnUrl ? sanitizeReturnUrl(rawReturnUrl, '/panel/inmobiliaria') : null
@@ -179,6 +180,42 @@ function OnboardingInmobiliariaContent() {
         return
       }
 
+      // Split the contact person into first/last name for the backend
+      const nameParts = data.contactPerson.trim().split(/\s+/)
+      const firstName = nameParts[0] || ''
+      const lastName = nameParts.slice(1).join(' ') || firstName
+
+      // Strip spaces from phone — backend expects 3XXXXXXXXX or +573XXXXXXXXX
+      const rawPhone = data.phone?.replace(/\s/g, '') || ''
+      const phone = rawPhone.length >= 10 ? rawPhone : undefined
+
+      // Create the agency and complete onboarding in the backend.
+      // The backend creates the agency record, links the user as its owner,
+      // and flips onboardingCompleted — mirrors the landlord flow.
+      await apiClient.post('/users/me/onboarding', {
+        firstName,
+        lastName,
+        phone,
+        preferredContact: data.preferredContact,
+        userType: 'INMOBILIARIA',
+        agency: {
+          name: data.agencyName,
+          nit: data.nit || undefined,
+          city: data.city || undefined,
+          phone: rawPhone || undefined,
+          portfolioSize: data.portfolioSize || undefined,
+          yearsInBusiness: data.yearsInBusiness ? parseInt(data.yearsInBusiness) : undefined,
+          services: data.services,
+        },
+      })
+
+      // Refresh user in auth context so role/onboardingCompleted/agency update.
+      // Fire-and-forget: don't await because supabase.auth.getSession() can hang
+      // when called right after a state change. The critical API call already succeeded.
+      refreshUser().catch((err) =>
+        console.warn('refreshUser failed after onboarding (non-blocking):', err)
+      )
+
       // Save onboarding data to localStorage
       const completionData = {
         draft: {
@@ -205,7 +242,12 @@ function OnboardingInmobiliariaContent() {
       setIsComplete(true)
     } catch (error) {
       console.error('Error:', error)
-      setAuthError(t('inmobiliaria.onboarding.register.errors.unexpected'))
+      // Surface the backend message (validation, agency already exists, etc.)
+      // instead of always showing the generic "unexpected" copy.
+      const message = error instanceof ApiError && error.message
+        ? error.message
+        : t('inmobiliaria.onboarding.register.errors.unexpected')
+      setAuthError(message)
     } finally {
       setIsSubmitting(false)
     }

@@ -15,7 +15,17 @@ import { scheduleToWindows, windowsToSchedule } from '@/lib/utils/availability-s
  * Agent working-hours for visits. A single weekly schedule set from the agent's
  * profile that governs every property they manage (fanned out on save).
  */
-export function AgenteHorarioVisitas({ agenteId }: { agenteId: string }) {
+/**
+ * @param agenteId  admin viewing an agent's profile (`/agentes/[id]`)
+ * @param self      the logged-in agent managing their own hours (`/perfil`)
+ */
+export function AgenteHorarioVisitas({
+  agenteId,
+  self = false,
+}: {
+  agenteId?: string;
+  self?: boolean;
+}) {
   const { t } = useI18n();
   const k = (s: string) => `inmobiliaria.agenda.${s}`;
 
@@ -25,8 +35,10 @@ export function AgenteHorarioVisitas({ agenteId }: { agenteId: string }) {
 
   useEffect(() => {
     let active = true;
-    agendaApi
-      .getAgenteDisponibilidad(agenteId)
+    const loader = self
+      ? agendaApi.getMiDisponibilidad()
+      : agendaApi.getAgenteDisponibilidad(agenteId ?? '');
+    loader
       .then((windows) => {
         if (!active) return;
         setSlotDuration(windows[0]?.slotDuration ?? 30);
@@ -38,16 +50,16 @@ export function AgenteHorarioVisitas({ agenteId }: { agenteId: string }) {
     return () => {
       active = false;
     };
-  }, [agenteId]);
+  }, [agenteId, self]);
 
   const handleSave = useCallback(async () => {
     if (!schedule) return;
     setSaving(true);
     try {
-      const { applied } = await agendaApi.setAgenteDisponibilidad(
-        agenteId,
-        scheduleToWindows(schedule, slotDuration),
-      );
+      const windows = scheduleToWindows(schedule, slotDuration);
+      const { applied } = self
+        ? await agendaApi.setMiDisponibilidad(windows)
+        : await agendaApi.setAgenteDisponibilidad(agenteId ?? '', windows);
       toast.success(t(k('horarioAgenteGuardado'), { count: applied }));
     } catch (err) {
       toast.error(t(k('horarioAgenteError')), {
@@ -56,7 +68,7 @@ export function AgenteHorarioVisitas({ agenteId }: { agenteId: string }) {
     } finally {
       setSaving(false);
     }
-  }, [schedule, slotDuration, agenteId, t]);
+  }, [schedule, slotDuration, agenteId, self, t]);
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -88,7 +100,7 @@ export function AgenteHorarioVisitas({ agenteId }: { agenteId: string }) {
             </div>
 
             <AvailabilityScheduleEditor
-              key={agenteId}
+              key={self ? 'self' : agenteId}
               schedule={schedule}
               onSave={() => {}}
               onChange={setSchedule}

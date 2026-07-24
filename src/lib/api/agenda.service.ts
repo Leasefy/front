@@ -88,6 +88,18 @@ export const agendaApi = {
       { windows },
     );
   },
+
+  /** GET my own visit schedule (self-service, logged-in agent). */
+  async getMiDisponibilidad(): Promise<AvailabilityWindow[]> {
+    return apiClient.get<AvailabilityWindow[]>('/inmobiliaria/agentes/mi-disponibilidad');
+  },
+
+  /** PUT my own visit schedule (self-service). */
+  async setMiDisponibilidad(windows: AvailabilityWindow[]): Promise<{ applied: number }> {
+    return apiClient.put<{ applied: number }>('/inmobiliaria/agentes/mi-disponibilidad', {
+      windows,
+    });
+  },
 };
 
 /** One recurring weekly availability window. dayOfWeek: 0=Sun … 6=Sat. */

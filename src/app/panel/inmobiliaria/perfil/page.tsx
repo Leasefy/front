@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { User, Envelope, Phone, MapPin, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, X, Warning, TrashSimple, Pencil, Upload, Buildings } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
+import { AgenteHorarioVisitas } from '@/components/inmobiliaria/AgenteHorarioVisitas';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
@@ -285,7 +286,8 @@ export default function InmobiliariaPerfilPage() {
           </p>
         </div>
 
-        {/* Setup Progress Section */}
+        {/* Setup Progress Section — hidden once the profile is 100% complete */}
+        {completionPercentage < 100 && (
         <section className="rounded-xl bg-primary-soft border border-border p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             {/* Progress Info */}
@@ -399,6 +401,10 @@ export default function InmobiliariaPerfilPage() {
             })}
           </div>
         </section>
+        )}
+
+        {/* Visit hours — each agent sets their own schedule for visits */}
+        <AgenteHorarioVisitas self />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Card */}

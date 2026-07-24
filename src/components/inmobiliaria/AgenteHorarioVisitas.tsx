@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Clock } from '@phosphor-icons/react';
+import { Clock, CaretDown } from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui';
 import { Spinner } from '@/components/ui/spinner';
@@ -32,6 +33,7 @@ export function AgenteHorarioVisitas({
   const [schedule, setSchedule] = useState<AvailabilitySchedule | null>(null);
   const [slotDuration, setSlotDuration] = useState(30);
   const [saving, setSaving] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -72,17 +74,24 @@ export function AgenteHorarioVisitas({
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
-        <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-surface-muted/40 transition-colors"
+      >
+        <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
           <Clock className="w-4 h-4 text-primary" />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <h3 className="text-base font-semibold text-fg">{t(k('horarioAgenteTitle'))}</h3>
           <p className="text-xs text-fg-muted mt-0.5">{t(k('horarioAgenteDesc'))}</p>
         </div>
-      </div>
+        <CaretDown className={cn('w-4 h-4 text-fg-muted flex-shrink-0 transition-transform', open && 'rotate-180')} />
+      </button>
 
-      <div className="p-5">
+      {open && (
+      <div className="p-5 border-t border-border">
         {schedule ? (
           <div className="space-y-4">
             <div>
@@ -119,6 +128,7 @@ export function AgenteHorarioVisitas({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

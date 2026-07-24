@@ -16,6 +16,7 @@ import {
   MapPin,
   User,
   Percent,
+  CalendarPlus,
 } from '@phosphor-icons/react';
 import { IconButton } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
@@ -46,6 +47,7 @@ interface ConsignacionTableProps {
   agentesMap?: Record<string, { name: string; avatar?: string }>; // id -> { name, avatar }
   onView: (consignacion: Consignacion) => void;
   onEdit: (consignacion: Consignacion) => void;
+  onAgendarCita?: (consignacion: Consignacion) => void;
 }
 
 // Property type icons
@@ -91,6 +93,7 @@ export function ConsignacionTable({
   agentesMap = {},
   onView,
   onEdit,
+  onAgendarCita,
 }: ConsignacionTableProps) {
   const { t } = useI18n();
   const [sortField, setSortField] = useState<SortField>('propertyTitle');
@@ -373,6 +376,15 @@ export function ConsignacionTable({
                         <PencilSimple className="w-4 h-4" />
                         <span className="text-sm">{t('inmobiliaria.consignaciones.table.edit')}</span>
                       </DropdownListItem>
+                      {onAgendarCita && (
+                        <DropdownListItem
+                          className="gap-3"
+                          onClick={() => onAgendarCita(consignacion)}
+                        >
+                          <CalendarPlus className="w-4 h-4" />
+                          <span className="text-sm">{t('inmobiliaria.agenda.pedirCita')}</span>
+                        </DropdownListItem>
+                      )}
                     </DropdownListContent>
                   </DropdownList>
                 </TableCell>

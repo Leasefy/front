@@ -29,12 +29,23 @@ interface PedirCitaModalProps {
   onClose: () => void;
   /** Called after a visit is scheduled so the agenda can refetch. */
   onCreated: () => void;
+  /** When set, the visit is scheduled for this property (selector is locked). */
+  presetPropertyId?: string;
+  presetPropertyTitle?: string;
 }
 
-export function PedirCitaModal({ isOpen, onClose, onCreated }: PedirCitaModalProps) {
+export function PedirCitaModal({
+  isOpen,
+  onClose,
+  onCreated,
+  presetPropertyId,
+  presetPropertyTitle,
+}: PedirCitaModalProps) {
   const { t } = useI18n();
   const k = (s: string) => `inmobiliaria.agenda.${s}`;
   const lenis = useLenis();
+
+  const isPreset = !!presetPropertyId;
 
   // Only properties that carry a real propertyId can host a PropertyVisit.
   const { consignaciones } = useConsignaciones();
@@ -64,7 +75,7 @@ export function PedirCitaModal({ isOpen, onClose, onCreated }: PedirCitaModalPro
 
   useEffect(() => {
     if (isOpen) {
-      setPropertyId('');
+      setPropertyId(presetPropertyId ?? '');
       setContactName('');
       setContactEmail('');
       setContactPhone('');
@@ -74,7 +85,7 @@ export function PedirCitaModal({ isOpen, onClose, onCreated }: PedirCitaModalPro
       setVisitType('IN_PERSON');
       setNotes('');
     }
-  }, [isOpen]);
+  }, [isOpen, presetPropertyId]);
 
   const canSubmit =
     !submitting &&
@@ -132,18 +143,24 @@ export function PedirCitaModal({ isOpen, onClose, onCreated }: PedirCitaModalPro
             <label className="mb-1.5 block text-caption text-muted-foreground">
               {t(k('citaProperty'))} <span className="text-danger">*</span>
             </label>
-            <Select value={propertyId || undefined} onValueChange={setPropertyId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t(k('citaSelectProperty'))} />
-              </SelectTrigger>
-              <SelectContent>
-                {properties.map((c) => (
-                  <SelectItem key={c.id} value={c.propertyId}>
-                    {c.propertyTitle}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {isPreset ? (
+              <div className="w-full rounded-lg border border-border bg-surface-muted px-3 py-2 text-sm text-fg">
+                {presetPropertyTitle ?? presetPropertyId}
+              </div>
+            ) : (
+              <Select value={propertyId || undefined} onValueChange={setPropertyId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t(k('citaSelectProperty'))} />
+                </SelectTrigger>
+                <SelectContent>
+                  {properties.map((c) => (
+                    <SelectItem key={c.id} value={c.propertyId}>
+                      {c.propertyTitle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Contact */}

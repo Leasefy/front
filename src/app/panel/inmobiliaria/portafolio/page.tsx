@@ -27,6 +27,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { ConsignacionCard } from '@/components/inmobiliaria/ConsignacionCard';
 import { ConsignacionTable } from '@/components/inmobiliaria/ConsignacionTable';
 import { ConsignacionFilters, ConsignacionFiltersState } from '@/components/inmobiliaria/ConsignacionFilters';
+import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 
 type ViewMode = 'grid' | 'table';
 
@@ -44,6 +45,7 @@ function PortafolioContent() {
   const { agentes: allAgentes } = useAgentes();
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [currentPage, setCurrentPage] = useState(1);
+  const [citaFor, setCitaFor] = useState<Consignacion | null>(null);
   const [filters, setFilters] = useState<ConsignacionFiltersState>({
     search: '',
     availability: 'available',
@@ -158,6 +160,10 @@ function PortafolioContent() {
   const handleImportar = useCallback(() => {
     router.push('/panel/inmobiliaria/portafolio/importar');
   }, [router]);
+
+  const handleAgendarCita = useCallback((consignacion: Consignacion) => {
+    setCitaFor(consignacion);
+  }, []);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -292,6 +298,7 @@ function PortafolioContent() {
                         onClick={() => handleView(consignacion)}
                         onView={() => handleView(consignacion)}
                         onEdit={() => handleEdit(consignacion)}
+                        onAgendarCita={() => handleAgendarCita(consignacion)}
                       />
                     ))}
                   </div>
@@ -317,6 +324,7 @@ function PortafolioContent() {
                     agentesMap={agentesMap}
                     onView={handleView}
                     onEdit={handleEdit}
+                    onAgendarCita={handleAgendarCita}
                   />
                 ) : (
                   <EmptyState
@@ -374,6 +382,14 @@ function PortafolioContent() {
           </div>
         )}
       </motion.div>
+
+      <PedirCitaModal
+        isOpen={!!citaFor}
+        onClose={() => setCitaFor(null)}
+        onCreated={() => {}}
+        presetPropertyId={citaFor?.propertyId}
+        presetPropertyTitle={citaFor?.propertyTitle}
+      />
     </div>
   );
 }

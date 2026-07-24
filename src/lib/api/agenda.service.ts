@@ -37,4 +37,30 @@ export const agendaApi = {
   async createCita(input: CreateCitaInput): Promise<void> {
     await apiClient.post('/inmobiliaria/agenda/citas', input);
   },
+
+  /** GET visit availability windows for one of the agency's properties. */
+  async getDisponibilidad(propertyId: string): Promise<AvailabilityWindow[]> {
+    return apiClient.get<AvailabilityWindow[]>(
+      `/inmobiliaria/agenda/propiedades/${propertyId}/disponibilidad`,
+    );
+  },
+
+  /** PUT — replace the full weekly availability for a property. */
+  async setDisponibilidad(
+    propertyId: string,
+    windows: AvailabilityWindow[],
+  ): Promise<AvailabilityWindow[]> {
+    return apiClient.put<AvailabilityWindow[]>(
+      `/inmobiliaria/agenda/propiedades/${propertyId}/disponibilidad`,
+      { windows },
+    );
+  },
 };
+
+/** One recurring weekly availability window. dayOfWeek: 0=Sun … 6=Sat. */
+export interface AvailabilityWindow {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  slotDuration: number;
+}

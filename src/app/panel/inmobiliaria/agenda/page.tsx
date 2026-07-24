@@ -49,6 +49,9 @@ const ESTADO_BADGE: Record<EventoEstado, string> = {
   cancelado: 'bg-neutral-400/10 text-muted-foreground',
 };
 
+/** Recover the raw PropertyVisit id from an agenda event id (`visit-<uuid>`). */
+const visitIdOf = (eventId: string) => eventId.replace(/^visit-/, '');
+
 function AgendaContent() {
   const { t, locale } = useI18n();
   const k = (s: string) => `inmobiliaria.agenda.${s}`;
@@ -57,6 +60,7 @@ function AgendaContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [citaOpen, setCitaOpen] = useState(false);
+  const [actingId, setActingId] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setIsLoading(true);
@@ -67,6 +71,23 @@ function AgendaContent() {
       .catch(() => setError(true))
       .finally(() => setIsLoading(false));
   }, []);
+
+  // Confirm / reject / cancel a visit straight from the feed, then refresh.
+  const runCitaAction = useCallback(
+    async (visitId: string, action: () => Promise<void>) => {
+      setActingId(visitId);
+      try {
+        await action();
+        toast.success(t(k('citaAccionOk')));
+        load();
+      } catch {
+        toast.error(t(k('citaAccionError')));
+      } finally {
+        setActingId(null);
+      }
+    },
+    [load, t],
+  );
 
   useEffect(() => {
     load();
@@ -205,9 +226,42 @@ function AgendaContent() {
                       {e.responsableNombre ?? t(k('sinVinculo'))}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium', ESTADO_BADGE[e.estado])}>
-                        {t(k(`estado_${e.estado}`))}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium', ESTADO_BADGE[e.estado])}>
+                          {t(k(`estado_${e.estado}`))}
+                        </span>
+                        {e.tipo === 'visita' && e.estadoRaw === 'PENDING' && (
+                          <span className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              disabled={actingId === visitIdOf(e.id)}
+                              onClick={() => runCitaAction(visitIdOf(e.id), () => agendaApi.aceptarCita(visitIdOf(e.id)))}
+                              className="text-caption font-medium text-success-600 dark:text-success-400 hover:underline disabled:opacity-50"
+                            >
+                              {t(k('citaConfirmar'))}
+                            </button>
+                            <span className="text-border">·</span>
+                            <button
+                              type="button"
+                              disabled={actingId === visitIdOf(e.id)}
+                              onClick={() => runCitaAction(visitIdOf(e.id), () => agendaApi.rechazarCita(visitIdOf(e.id)))}
+                              className="text-caption font-medium text-error-600 dark:text-error-400 hover:underline disabled:opacity-50"
+                            >
+                              {t(k('citaRechazar'))}
+                            </button>
+                          </span>
+                        )}
+                        {e.tipo === 'visita' && e.estadoRaw === 'ACCEPTED' && (
+                          <button
+                            type="button"
+                            disabled={actingId === visitIdOf(e.id)}
+                            onClick={() => runCitaAction(visitIdOf(e.id), () => agendaApi.cancelarCita(visitIdOf(e.id)))}
+                            className="text-caption font-medium text-muted-foreground hover:underline disabled:opacity-50"
+                          >
+                            {t(k('citaCancelar'))}
+                          </button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

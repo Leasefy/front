@@ -55,6 +55,39 @@ export const agendaApi = {
       { windows },
     );
   },
+
+  /** PATCH — confirm a visit. */
+  async aceptarCita(visitId: string): Promise<void> {
+    await apiClient.patch(`/inmobiliaria/agenda/citas/${visitId}/aceptar`, {});
+  },
+
+  /** PATCH — reject a visit (optional reason). */
+  async rechazarCita(visitId: string, reason?: string): Promise<void> {
+    await apiClient.patch(`/inmobiliaria/agenda/citas/${visitId}/rechazar`, { reason });
+  },
+
+  /** PATCH — cancel a visit (optional reason). */
+  async cancelarCita(visitId: string, reason?: string): Promise<void> {
+    await apiClient.patch(`/inmobiliaria/agenda/citas/${visitId}/cancelar`, { reason });
+  },
+
+  /** GET the agent's single visit schedule (governs all their properties). */
+  async getAgenteDisponibilidad(agentId: string): Promise<AvailabilityWindow[]> {
+    return apiClient.get<AvailabilityWindow[]>(
+      `/inmobiliaria/agentes/${agentId}/disponibilidad`,
+    );
+  },
+
+  /** PUT — set the agent's schedule once; fans out to all their properties. */
+  async setAgenteDisponibilidad(
+    agentId: string,
+    windows: AvailabilityWindow[],
+  ): Promise<{ applied: number }> {
+    return apiClient.put<{ applied: number }>(
+      `/inmobiliaria/agentes/${agentId}/disponibilidad`,
+      { windows },
+    );
+  },
 };
 
 /** One recurring weekly availability window. dayOfWeek: 0=Sun … 6=Sat. */

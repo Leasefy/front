@@ -6,16 +6,11 @@ import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { CaretLeft, Buildings, X, CalendarPlus, Clock } from '@phosphor-icons/react';
+import { CaretLeft, Buildings, X, CalendarPlus } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
-import { Spinner } from '@/components/ui/spinner';
-import { AvailabilityScheduleEditor } from '@/components/panel/AvailabilityScheduleEditor';
-import { type AvailabilitySchedule, DEFAULT_AVAILABILITY_SCHEDULE } from '@/lib/types/property';
-import { agendaApi } from '@/lib/api/agenda.service';
-import { scheduleToWindows, windowsToSchedule } from '@/lib/utils/availability-schedule';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -177,8 +172,6 @@ function ConsignacionDetailContent() {
   const [showTerminateDialog, setShowTerminateDialog] = useState(false);
   const [isTerminating, setIsTerminating] = useState(false);
   const [showCitaModal, setShowCitaModal] = useState(false);
-  const [showHorarios, setShowHorarios] = useState(false);
-  const [horariosSchedule, setHorariosSchedule] = useState<AvailabilitySchedule | null>(null);
 
   // Fetch data
   const { consignacion: fetchedConsignacion } = useConsignacion(consignacionId);
@@ -297,38 +290,6 @@ function ConsignacionDetailContent() {
   }, []);
 
   // Load the property's visit availability, then open the schedule editor.
-  const handleOpenHorarios = useCallback(async () => {
-    if (!consignacion?.propertyId) return;
-    setHorariosSchedule(null);
-    setShowHorarios(true);
-    try {
-      const windows = await agendaApi.getDisponibilidad(consignacion.propertyId);
-      setHorariosSchedule(
-        windows.length > 0 ? windowsToSchedule(windows) : DEFAULT_AVAILABILITY_SCHEDULE,
-      );
-    } catch {
-      setHorariosSchedule(DEFAULT_AVAILABILITY_SCHEDULE);
-    }
-  }, [consignacion?.propertyId]);
-
-  const handleSaveHorarios = useCallback(
-    async (schedule: AvailabilitySchedule) => {
-      if (!consignacion?.propertyId) return;
-      try {
-        await agendaApi.setDisponibilidad(
-          consignacion.propertyId,
-          scheduleToWindows(schedule),
-        );
-        setShowHorarios(false);
-      } catch (err) {
-        toast.error(t('inmobiliaria.portafolio.detail.toasts.updateError'), {
-          description: err instanceof Error ? err.message : undefined,
-        });
-      }
-    },
-    [consignacion?.propertyId, t],
-  );
-
   // 404 if not found
   if (!consignacion) {
     return (
@@ -365,16 +326,10 @@ function ConsignacionDetailContent() {
             {consignacion.propertyTitle}
           </span>
         </nav>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" hideArrow onClick={handleOpenHorarios}>
-            <Clock className="w-4 h-4" />
-            {t('inmobiliaria.agenda.horariosVisita')}
-          </Button>
-          <Button hideArrow onClick={() => setShowCitaModal(true)}>
-            <CalendarPlus className="w-4 h-4" />
-            {t('inmobiliaria.agenda.pedirCita')}
-          </Button>
-        </div>
+        <Button hideArrow className="shrink-0" onClick={() => setShowCitaModal(true)}>
+          <CalendarPlus className="w-4 h-4" />
+          {t('inmobiliaria.agenda.pedirCita')}
+        </Button>
       </div>
 
       {/* Header */}
@@ -525,26 +480,6 @@ function ConsignacionDetailContent() {
         presetPropertyId={consignacion.propertyId}
         presetPropertyTitle={consignacion.propertyTitle}
       />
-
-      {/* Visit availability editor */}
-      <Modal
-        open={showHorarios}
-        onClose={() => setShowHorarios(false)}
-        title={t('inmobiliaria.agenda.horariosVisita')}
-        size="lg"
-      >
-        {horariosSchedule ? (
-          <AvailabilityScheduleEditor
-            key={consignacion.propertyId}
-            schedule={horariosSchedule}
-            onSave={handleSaveHorarios}
-          />
-        ) : (
-          <div className="py-12 flex justify-center">
-            <Spinner />
-          </div>
-        )}
-      </Modal>
     </div>
   );
 }

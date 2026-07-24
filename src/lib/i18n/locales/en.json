@@ -7817,6 +7817,12 @@
       "sinVinculo": "—",
       "pedirCita": "Schedule visit",
       "horariosVisita": "Visit hours",
+      "duracionCita": "Length of each visit",
+      "horariosGuardados": "Visit hours saved",
+      "horarioAgenteTitle": "Visit hours",
+      "horarioAgenteDesc": "One schedule for all of this agent's properties.",
+      "horarioAgenteGuardado": "Schedule applied to {count} properties",
+      "horarioAgenteError": "Could not save the schedule",
       "citaTitle": "Schedule a visit",
       "citaProperty": "Property",
       "citaSelectProperty": "Pick a property",
@@ -7832,7 +7838,12 @@
       "citaNotes": "Note (optional)",
       "citaSubmit": "Schedule visit",
       "citaSuccess": "Visit scheduled",
-      "citaError": "Could not schedule the visit"
+      "citaError": "Could not schedule the visit",
+      "citaConfirmar": "Confirm",
+      "citaRechazar": "Reject",
+      "citaCancelar": "Cancel",
+      "citaAccionOk": "Visit updated",
+      "citaAccionError": "Could not update the visit"
     },
     "terceroIA": {
       "errorTooLarge": "The image exceeds the maximum size (8 MB). Use a smaller photo.",

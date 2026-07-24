@@ -7818,6 +7818,12 @@
       "sinVinculo": "—",
       "pedirCita": "Pedir cita",
       "horariosVisita": "Horarios de visita",
+      "duracionCita": "Duración de cada visita",
+      "horariosGuardados": "Horarios de visita guardados",
+      "horarioAgenteTitle": "Horario de visitas",
+      "horarioAgenteDesc": "Un solo horario para todas las propiedades de este agente.",
+      "horarioAgenteGuardado": "Horario aplicado a {count} propiedades",
+      "horarioAgenteError": "No se pudo guardar el horario",
       "citaTitle": "Agendar una cita",
       "citaProperty": "Propiedad",
       "citaSelectProperty": "Elegí una propiedad",
@@ -7833,7 +7839,12 @@
       "citaNotes": "Nota (opcional)",
       "citaSubmit": "Agendar cita",
       "citaSuccess": "Cita agendada",
-      "citaError": "No se pudo agendar la cita"
+      "citaError": "No se pudo agendar la cita",
+      "citaConfirmar": "Confirmar",
+      "citaRechazar": "Rechazar",
+      "citaCancelar": "Cancelar",
+      "citaAccionOk": "Cita actualizada",
+      "citaAccionError": "No se pudo actualizar la cita"
     },
     "terceroIA": {
       "errorTooLarge": "La imagen supera el tamaño máximo (8 MB). Usa una foto más liviana.",

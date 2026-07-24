@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FileText, MapPin, Clock, CheckCircle, XCircle, ArrowUpRight, GridFour, List, CaretLeft, CaretRight, ListBullets, Warning } from '@phosphor-icons/react';
 import { SegmentedControl, IconButton } from '@leasefy/cadence';
@@ -141,6 +142,10 @@ function nextStepForApproved(contract: Contract | undefined, locale: string): st
  */
 export default function AplicacionesPage() {
   const { t, locale, formatCurrency } = useI18n();
+  const router = useRouter();
+  // Statuses where scheduling a property visit still makes sense.
+  const canScheduleVisit = (s: string) =>
+    ['submitted', 'under_review', 'needs_info', 'pre_approved'].includes(s);
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
   const { active: activeApplications, completed: completedApplications, contractsByApp, isLoading: isAppsLoading, error } = useTenantApplications();
 
@@ -531,10 +536,21 @@ export default function AplicacionesPage() {
                                       </p>
                                     </div>
                                   </div>
-                                  <span className="flex items-center gap-1 text-sm font-medium text-primary group-hover:text-primary transition-colors">
-                                    {locale === 'es' ? 'Ver detalle' : 'View details'}
-                                    <ArrowUpRight className="w-4 h-4" />
-                                  </span>
+                                  <div className="flex items-center gap-3">
+                                    {canScheduleVisit(application.status) && application.propertyId && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/propiedades/${application.propertyId}`); }}
+                                        className="text-sm font-medium text-primary hover:underline"
+                                      >
+                                        {locale === 'es' ? 'Agendar visita' : 'Schedule visit'}
+                                      </button>
+                                    )}
+                                    <span className="flex items-center gap-1 text-sm font-medium text-primary group-hover:text-primary transition-colors">
+                                      {locale === 'es' ? 'Ver detalle' : 'View details'}
+                                      <ArrowUpRight className="w-4 h-4" />
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             </div>

@@ -13,6 +13,7 @@ import { ContextSwitcher } from './ContextSwitcher';
 import { useI18n } from '@/lib/i18n';
 import { getPlanById, PLANS } from '@/lib/constants/subscription-plans';
 import { useMySubscription } from '@/lib/hooks/useSubscription';
+import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { useLandlordNotifications, useTenantNotifications } from '@/lib/hooks/useNotifications';
 import { LANDLORD_CATEGORIES, TENANT_CATEGORIES, formatNotificationTime } from '@/lib/types/notification';
 import type { BaseNotification, LandlordNotificationCategory, TenantNotificationCategory } from '@/lib/types/notification';
@@ -165,14 +166,26 @@ export function PlanHeader({
     error: subscriptionError,
     refetch: subscriptionRefetch,
   } = useMySubscription();
+  // In the agency context, read the REAL agency subscription (the system the
+  // payment actually activates) instead of the legacy per-user /subscriptions/me,
+  // so the header reflects the plan the agency pays for. Landlord/tenant keep the
+  // legacy source (hook disabled there → no wasted /inmobiliaria/subscription call).
+  const { currentPlanId: agencyPlanId, error: agencyError } =
+    useAgencySubscription(isInmobiliaria);
+  const effectiveSubError = isInmobiliaria ? agencyError : subscriptionError;
+
   // Keep 'starter' as a silent fallback for avatar badge styling only.
-  // Never use planId for plan-name display when subscriptionError is set.
-  const planId = subscription?.planId ?? 'starter';
+  // Never use planId for plan-name display when the subscription failed to load.
+  const planId = isInmobiliaria
+    ? agencyError
+      ? 'starter'
+      : agencyPlanId ?? 'starter'
+    : subscription?.planId ?? 'starter';
   const currentPlan = getPlanById(planId);
 
   // Tier helpers — false when error to avoid asserting a tier we didn't load.
-  const isBaseTier = !subscriptionError && planId === 'starter';
-  const isTopTier = !subscriptionError && planId === 'flex';
+  const isBaseTier = !effectiveSubError && planId === 'starter';
+  const isTopTier = !effectiveSubError && planId === 'flex';
   const teamMembers = getTeamMembers();
   const pendingInvites = getPendingInvites();
 

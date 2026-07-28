@@ -7,8 +7,8 @@ import { CreditCard, CheckCircle, Shield, Sparkle, Lock, ArrowRight, Crown, Robo
 import { BackButton } from '@/components/ui/back-button';
 import { PricingTable } from '@/components/pricing';
 import { Button } from '@/components/ui/button';
-import { useMySubscription } from '@/lib/hooks/useSubscription';
 import { useAgencyPlans } from '@/lib/hooks/useSubscription';
+import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { getAgencyPlanById } from '@/lib/constants/subscription-plans';
 import type { AgencyPlanId } from '@/lib/types/subscription';
 
@@ -18,14 +18,14 @@ import type { AgencyPlanId } from '@/lib/types/subscription';
  */
 function AgencyUpgradeContent() {
   const router = useRouter();
-  const { subscription, error: subscriptionError, refetch: subscriptionRefetch } = useMySubscription();
+  const { currentPlanId: agencyPlanId, error: subscriptionError, refetch: subscriptionRefetch } = useAgencySubscription();
   const { plans, isLoading } = useAgencyPlans();
 
-  // On error, leave currentPlanId undefined so PricingTable does not falsely
-  // highlight 'starter' as the active plan — we genuinely don't know it.
+  // Read the REAL agency subscription (not the legacy /subscriptions/me). On error,
+  // leave currentPlanId undefined so PricingTable does not falsely highlight a plan.
   const currentPlanId = (subscriptionError
     ? undefined
-    : subscription?.planId ?? 'starter') as AgencyPlanId | undefined;
+    : agencyPlanId ?? 'starter') as AgencyPlanId | undefined;
   const [selectedPlan, setSelectedPlan] = useState<AgencyPlanId | null>(null);
 
   // currentPlan is null when subscription failed to load (currentPlanId is undefined).

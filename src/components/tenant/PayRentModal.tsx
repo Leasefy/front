@@ -192,7 +192,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
 
     const poll = async () => {
       try {
-        const st = await pseCheckoutApi.getRequestStatus(leaseId, requestId);
+        const st = await pseCheckoutApi.verifyRequest(leaseId, requestId);
         if (cancelled) return;
         setPollError(null);
 
@@ -222,7 +222,13 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
 
     poll();
     const id = setInterval(poll, POLL_INTERVAL_MS);
-    return () => { cancelled = true; clearInterval(id); };
+    // Background tabs throttle setInterval — re-check on return from the Wompi tab.
+    window.addEventListener('focus', poll);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      window.removeEventListener('focus', poll);
+    };
   }, [step, requestId, leaseId]);
 
   // Validación form

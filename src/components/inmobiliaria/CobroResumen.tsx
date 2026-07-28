@@ -107,8 +107,11 @@ export function CobroResumen({
 
   const rateInfo = getCollectionRateInfo(summary.collectionRate);
 
-  // Format month for display
-  const monthDisplay = formatDate(new Date(summary.month + '-01'), {
+  // Format month for display. Build the Date in LOCAL time — parsing 'YYYY-MM-01'
+  // as a string is UTC and shifts to the previous month in negative-offset zones
+  // (Colombia UTC-5 rendered July as "junio").
+  const [summaryYear, summaryMonthNum] = summary.month.split('-').map(Number);
+  const monthDisplay = formatDate(new Date(summaryYear, summaryMonthNum - 1, 1), {
     month: 'long',
     year: 'numeric',
   });

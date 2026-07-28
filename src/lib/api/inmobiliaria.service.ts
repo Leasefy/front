@@ -415,6 +415,19 @@ export const pipelineApi = {
 // Cobros
 // ============================================================================
 
+/**
+ * Backend returns Cobro rows with UPPER enums (status PAID/PARTIAL/COBRO_PENDING/…)
+ * and, depending on the endpoint, either a bare array or `{ data: [...] }`. The
+ * front `Cobro` type uses lowercase status, so normalize both here.
+ */
+function normalizeCobro(raw: Cobro): Cobro {
+  const s = String((raw as { status?: string }).status ?? '').toLowerCase();
+  return {
+    ...raw,
+    status: (s === 'cobro_pending' ? 'pending' : s) as Cobro['status'],
+  };
+}
+
 export const cobrosApi = {
   async getAll(params?: { month?: string; status?: string; propietarioId?: string }): Promise<Cobro[]> {
     const query = new URLSearchParams();
@@ -422,8 +435,11 @@ export const cobrosApi = {
     if (params?.status) query.set('status', params.status);
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
     const qs = query.toString();
-    const res = await apiClient.get<{ data: Cobro[] }>(`${BASE}/cobros${qs ? `?${qs}` : ''}`);
-    return res.data;
+    const res = await apiClient.get<Cobro[] | { data: Cobro[] }>(
+      `${BASE}/cobros${qs ? `?${qs}` : ''}`,
+    );
+    const rows = Array.isArray(res) ? res : res?.data ?? [];
+    return rows.map(normalizeCobro);
   },
 
   async getById(id: string): Promise<Cobro> {
@@ -440,8 +456,37 @@ export const cobrosApi = {
   },
 
   async getSummary(month: string): Promise<CobroSummary> {
-    const res = await apiClient.get<{ data: CobroSummary }>(`${BASE}/cobros/summary?month=${month}`);
-    return res.data;
+    // Backend returns { month, totalCobros, totalExpected, totalCollected,
+    // totalPending, totalLate, countByStatus } (bare or wrapped in { data }).
+    // The front CobroSummary needs collectionRate + per-status counts, so derive
+    // them here and default every field (avoids undefined.toFixed crashes).
+    const res = await apiClient.get<Record<string, unknown> | { data: Record<string, unknown> }>(
+      `${BASE}/cobros/summary?month=${month}`,
+    );
+    const raw = ((res as { data?: Record<string, unknown> })?.data ?? res ?? {}) as {
+      month?: string;
+      totalExpected?: number;
+      totalCollected?: number;
+      totalPending?: number;
+      totalLate?: number;
+      collectionRate?: number;
+      countByStatus?: Record<string, number>;
+    };
+    const totalExpected = raw.totalExpected ?? 0;
+    const totalCollected = raw.totalCollected ?? 0;
+    const counts = raw.countByStatus ?? {};
+    return {
+      month: raw.month ?? month,
+      totalExpected,
+      totalCollected,
+      totalPending: raw.totalPending ?? 0,
+      totalLate: raw.totalLate ?? 0,
+      collectionRate:
+        raw.collectionRate ?? (totalExpected > 0 ? (totalCollected / totalExpected) * 100 : 0),
+      cobrosPaid: counts['PAID'] ?? 0,
+      cobrosPending: (counts['COBRO_PENDING'] ?? 0) + (counts['PARTIAL'] ?? 0),
+      cobrosLate: counts['LATE'] ?? 0,
+    };
   },
 
   async generate(month: string): Promise<void> {

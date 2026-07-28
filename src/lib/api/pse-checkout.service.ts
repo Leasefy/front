@@ -36,4 +36,16 @@ export const pseCheckoutApi = {
       `/leases/${leaseId}/payment-requests/${requestId}`,
     );
   },
+
+  /**
+   * POST /leases/:leaseId/pse/requests/:requestId/verify — reconcile the request
+   * against Wompi (queries the real tx status and promotes it) then returns fresh
+   * state. Self-heals a lost/delayed webhook so the payment confirms without it.
+   */
+  verifyRequest(leaseId: string, requestId: string): Promise<PsePaymentRequestState> {
+    return apiClient.post<PsePaymentRequestState>(
+      `/leases/${leaseId}/pse/requests/${requestId}/verify`,
+      {},
+    );
+  },
 };

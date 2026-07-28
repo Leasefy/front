@@ -10,6 +10,8 @@ import {
   Table,
   SquaresFour,
   Plus,
+  CaretLeft,
+  CaretRight,
 } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -331,11 +333,26 @@ function CobrosContent() {
   }, []);
 
 
-  // Format month for display
-  const monthDisplay = new Date(filters.month + '-01').toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
-    month: 'long',
-    year: 'numeric',
-  });
+  // Step the selected month backward/forward (handles year rollover).
+  const shiftMonth = useCallback((delta: number) => {
+    setFilters((prev) => {
+      const [y, m] = prev.month.split('-').map(Number);
+      const d = new Date(y, m - 1 + delta, 1);
+      return {
+        ...prev,
+        month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      };
+    });
+  }, []);
+
+  // Format month for display. Build the Date in LOCAL time (Y, M-1, 1) — parsing
+  // `'YYYY-MM-01'` as a string is treated as UTC and shifts to the previous month
+  // in negative-offset timezones (e.g. Colombia UTC-5 rendered July as "junio").
+  const [monthDisplayYear, monthDisplayMonth] = filters.month.split('-').map(Number);
+  const monthDisplay = new Date(monthDisplayYear, monthDisplayMonth - 1, 1).toLocaleDateString(
+    locale === 'es' ? 'es-CL' : 'en-US',
+    { month: 'long', year: 'numeric' },
+  );
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -414,9 +431,32 @@ function CobrosContent() {
               },
             ]}
           />
-          <span className="text-xs text-fg-muted tabular-nums">
-            {filteredCobros.length} {t('inmobiliaria.nav.cobros').toLowerCase()}
-          </span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => shiftMonth(-1)}
+                aria-label="Mes anterior"
+                className="p-1 rounded-md text-fg-muted hover:text-fg hover:bg-muted transition-colors"
+              >
+                <CaretLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm font-medium text-fg capitalize text-center tabular-nums min-w-[7rem]">
+                {monthDisplay}
+              </span>
+              <button
+                type="button"
+                onClick={() => shiftMonth(1)}
+                aria-label="Mes siguiente"
+                className="p-1 rounded-md text-fg-muted hover:text-fg hover:bg-muted transition-colors"
+              >
+                <CaretRight className="w-4 h-4" />
+              </button>
+            </div>
+            <span className="text-xs text-fg-muted tabular-nums">
+              {filteredCobros.length} {t('inmobiliaria.nav.cobros').toLowerCase()}
+            </span>
+          </div>
         </div>
 
         {/* Filters Section - SECOND (Search + collapsible filters) */}

@@ -243,24 +243,28 @@ export function CobroTable({
                         {cobro.tenantName}
                       </p>
                       <div className="flex items-center gap-2">
-                        <a
-                          href={`mailto:${cobro.tenantEmail}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-1 rounded hover:bg-muted transition-colors"
-                          title={t('inmobiliaria.cobros.table.sendEmail')}
-                        >
-                          <Envelope className="w-3.5 h-3.5 text-muted-foreground" />
-                        </a>
-                        <a
-                          href={`https://wa.me/${cobro.tenantPhone.replace(/\D/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-1 rounded hover:bg-success-soft dark:hover:bg-success/30 transition-colors"
-                          title="WhatsApp"
-                        >
-                          <WhatsappLogo className="w-3.5 h-3.5 text-success" weight="fill" />
-                        </a>
+                        {cobro.tenantEmail && (
+                          <a
+                            href={`mailto:${cobro.tenantEmail}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1 rounded hover:bg-muted transition-colors"
+                            title={t('inmobiliaria.cobros.table.sendEmail')}
+                          >
+                            <Envelope className="w-3.5 h-3.5 text-muted-foreground" />
+                          </a>
+                        )}
+                        {cobro.tenantPhone && (
+                          <a
+                            href={`https://wa.me/${cobro.tenantPhone.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1 rounded hover:bg-success-soft dark:hover:bg-success/30 transition-colors"
+                            title="WhatsApp"
+                          >
+                            <WhatsappLogo className="w-3.5 h-3.5 text-success" weight="fill" />
+                          </a>
+                        )}
                       </div>
                     </div>
                   </div>

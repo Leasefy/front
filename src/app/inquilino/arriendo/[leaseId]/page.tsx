@@ -122,11 +122,15 @@ export default function LeaseDetailPage() {
         return { label: locale === 'es' ? 'Aprobado' : 'Approved', bgColor: 'bg-success-soft', textColor: 'text-success', icon: CheckCircle };
       case 'PENDING_VALIDATION':
         return { label: locale === 'es' ? 'En verificación' : 'In verification', bgColor: 'bg-warning-soft', textColor: 'text-warning', icon: Clock };
+      case 'PROCESSING':
+        return { label: locale === 'es' ? 'Procesando' : 'Processing', bgColor: 'bg-warning-soft', textColor: 'text-warning', icon: Clock };
       case 'REJECTED':
       case 'DISPUTED':
         return { label: locale === 'es' ? 'Rechazado' : 'Rejected', bgColor: 'bg-danger-soft', textColor: 'text-danger', icon: XCircle };
       case 'CANCELLED':
         return { label: locale === 'es' ? 'Cancelado' : 'Cancelled', bgColor: 'bg-surface-muted', textColor: 'text-fg-muted', icon: Prohibit };
+      default:
+        return { label: status, bgColor: 'bg-surface-muted', textColor: 'text-fg-muted', icon: Clock };
     }
   };
 

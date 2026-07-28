@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -9,6 +9,7 @@ import {
   WarningCircle,
   Clock,
   ArrowRight,
+  ArrowSquareOut,
   CaretLeft,
   Receipt,
 } from '@phosphor-icons/react';
@@ -27,23 +28,22 @@ import {
 import { useI18n } from '@/lib/i18n';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import { leasesApi } from '@/lib/api/leases.service';
-import { psePaymentsApi } from '@/lib/api/pse-payments.service';
+import { pseCheckoutApi } from '@/lib/api/pse-checkout.service';
 import type { BackendPaymentInfo } from '@/lib/api/leases.types';
 import type {
-  PseBank,
-  PseProcessDto,
-  PseProcessResponse,
-  PseDocumentType,
-  PsePersonType,
-} from '@/lib/api/pse-payments.types';
+  PseCheckoutDto,
+  PseFinancialInstitution,
+  PseLegalIdType,
+  PseUserType,
+} from '@/lib/api/pse-checkout.types';
 
 interface PayRentModalProps {
   open: boolean;
   leaseId: string;
   /** Callback cuando se cierra el modal (éxito o cancelación). */
   onClose: () => void;
-  /** Callback cuando un pago se procesó con éxito o queda PENDING — para refrescar historial. */
-  onPaid?: (result: PseProcessResponse) => void;
+  /** Callback cuando el pago se confirmó / cambió de estado — para refrescar historial. */
+  onPaid?: () => void;
   /** Valores iniciales sugeridos (ej. para pre-rellenar el form). */
   prefill?: {
     fullName?: string;
@@ -56,23 +56,34 @@ type Step =
   | 'period-blocked' // currentPeriodStatus === PENDING_VALIDATION | APPROVED
   | 'confirm'
   | 'form'
-  | 'processing'
+  | 'redirecting' // POST /checkout en curso
+  | 'awaiting' // pago abierto en pestaña nueva — polleando confirmación del webhook
   | 'result';
 
-const DOCUMENT_TYPES: { value: PseDocumentType; label: string }[] = [
+type PayResultKind = 'success' | 'failure' | 'cancelled';
+interface PayResult {
+  kind: PayResultKind;
+  message: string;
+}
+
+const DOCUMENT_TYPES: { value: PseLegalIdType; label: string }[] = [
   { value: 'CC', label: 'Cédula de ciudadanía' },
   { value: 'CE', label: 'Cédula de extranjería' },
   { value: 'NIT', label: 'NIT' },
-  { value: 'PASAPORTE', label: 'Pasaporte' },
+  { value: 'PP', label: 'Pasaporte' },
 ];
 
+const POLL_INTERVAL_MS = 5_000;
+
 /**
- * Modal de pago de arriendo via PSE (mock). Flujo:
- *  1. loading → carga /leases/:id/payment-info + /pse-mock/banks
- *  2. confirm → muestra monto + período, CTA "Continuar"
- *  3. form → select banco + datos del pagador
- *  4. processing → spinner mientras /pse-mock/process responde
- *  5. result → SUCCESS / FAILURE / PENDING con copy del backend
+ * Modal de pago de arriendo via PSE real (Wompi recaudo). Flujo:
+ *  1. loading      → carga /leases/:id/payment-info + /leases/pse/financial-institutions
+ *  2. confirm      → muestra monto + período, CTA "Continuar"
+ *  3. form         → select banco (códigos PSE reales) + datos del pagador
+ *  4. redirecting  → POST /leases/:id/pse/checkout
+ *  5. awaiting     → abre el pago en una PESTAÑA NUEVA y pollea el estado del request
+ *                    hasta que el webhook de Wompi lo confirme (APPROVED/REJECTED/CANCELLED)
+ *  6. result       → éxito / rechazo / cancelado
  */
 export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRentModalProps) {
   const { formatCurrency, locale } = useI18n();
@@ -85,23 +96,35 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
     return () => lenis.start();
   }, [open, lenis]);
 
+  // onPaid can be an inline function that changes every parent render — keep it in
+  // a ref so the polling effect doesn't resubscribe on each render.
+  const onPaidRef = useRef(onPaid);
+  useEffect(() => {
+    onPaidRef.current = onPaid;
+  }, [onPaid]);
+
   const [step, setStep] = useState<Step>('loading');
   const [paymentInfo, setPaymentInfo] = useState<BackendPaymentInfo | null>(null);
-  const [banks, setBanks] = useState<PseBank[]>([]);
+  const [institutions, setInstitutions] = useState<PseFinancialInstitution[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Form state
-  const [personType, setPersonType] = useState<PsePersonType>('NATURAL');
-  const [documentType, setDocumentType] = useState<PseDocumentType>('CC');
-  const [documentNumber, setDocumentNumber] = useState('');
+  const [userType, setUserType] = useState<PseUserType>('NATURAL');
+  const [legalIdType, setLegalIdType] = useState<PseLegalIdType>('CC');
+  const [legalId, setLegalId] = useState('');
   const [fullName, setFullName] = useState(prefill?.fullName ?? '');
   const [email, setEmail] = useState(prefill?.email ?? '');
-  const [bankCode, setBankCode] = useState<string>('');
+  const [institutionCode, setInstitutionCode] = useState<string>('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const [result, setResult] = useState<PseProcessResponse | null>(null);
+  // Checkout / polling state
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const [asyncUrl, setAsyncUrl] = useState<string | null>(null);
+  const [popupBlocked, setPopupBlocked] = useState(false);
+  const [pollError, setPollError] = useState<string | null>(null);
+  const [result, setResult] = useState<PayResult | null>(null);
 
-  // Cargar /payment-info + /banks al abrir
+  // Cargar /payment-info + bancos PSE reales al abrir
   useEffect(() => {
     if (!open) return;
 
@@ -109,11 +132,14 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
     setStep('loading');
     setLoadError(null);
 
-    Promise.all([leasesApi.getPaymentInfo(leaseId), psePaymentsApi.getBanks()])
+    Promise.all([
+      leasesApi.getPaymentInfo(leaseId),
+      pseCheckoutApi.getFinancialInstitutions(),
+    ])
       .then(([info, banksList]) => {
         if (cancelled) return;
         setPaymentInfo(info);
-        setBanks(banksList);
+        setInstitutions(banksList);
         // Pre-flight: si ya hay request en validación o pago aprobado, bloquear.
         // REJECTED y NONE caen al confirm (REJECTED muestra el motivo en el confirm).
         if (
@@ -134,79 +160,124 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
     return () => { cancelled = true; };
   }, [open, leaseId]);
 
-  // Reset form al cerrar
+  // Reset al cerrar
   useEffect(() => {
     if (!open) {
       setStep('loading');
       setPaymentInfo(null);
-      setBanks([]);
+      setInstitutions([]);
       setLoadError(null);
-      setPersonType('NATURAL');
-      setDocumentType('CC');
-      setDocumentNumber('');
+      setUserType('NATURAL');
+      setLegalIdType('CC');
+      setLegalId('');
       setFullName(prefill?.fullName ?? '');
       setEmail(prefill?.email ?? '');
-      setBankCode('');
+      setInstitutionCode('');
       setFormErrors({});
+      setRequestId(null);
+      setAsyncUrl(null);
+      setPopupBlocked(false);
+      setPollError(null);
       setResult(null);
     }
   }, [open, prefill?.fullName, prefill?.email]);
 
+  // Polling: mientras estemos en 'awaiting', consultar el estado del request cada
+  // POLL_INTERVAL_MS hasta llegar a un estado terminal. El webhook de Wompi es quien
+  // confirma — este endpoint nunca auto-aprueba.
+  useEffect(() => {
+    if (step !== 'awaiting' || !requestId) return;
+
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const st = await pseCheckoutApi.getRequestStatus(leaseId, requestId);
+        if (cancelled) return;
+        setPollError(null);
+
+        if (st.status === 'APPROVED') {
+          setResult({ kind: 'success', message: 'Tu pago fue confirmado.' });
+          setStep('result');
+          onPaidRef.current?.();
+        } else if (st.status === 'REJECTED' || st.status === 'DISPUTED') {
+          setResult({
+            kind: 'failure',
+            message: st.rejectionReason ?? 'El pago fue rechazado por la pasarela.',
+          });
+          setStep('result');
+          onPaidRef.current?.();
+        } else if (st.status === 'CANCELLED') {
+          setResult({ kind: 'cancelled', message: 'El pago fue cancelado.' });
+          setStep('result');
+          onPaidRef.current?.();
+        }
+        // PROCESSING / PENDING_VALIDATION → seguir polleando
+      } catch (err) {
+        if (cancelled) return;
+        // No cortamos el polling: los errores transitorios de red se auto-curan.
+        setPollError(err instanceof Error ? err.message : 'Error consultando el estado.');
+      }
+    };
+
+    poll();
+    const id = setInterval(poll, POLL_INTERVAL_MS);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [step, requestId, leaseId]);
+
   // Validación form
   const validateForm = useCallback((): boolean => {
     const errors: Record<string, string> = {};
-    if (!/^\d{6,15}$/.test(documentNumber.trim())) errors.documentNumber = 'Entre 6 y 15 dígitos.';
+    if (!/^\d{6,15}$/.test(legalId.trim())) errors.legalId = 'Entre 6 y 15 dígitos.';
     if (fullName.trim().length < 3) errors.fullName = 'Requerido (mínimo 3 caracteres).';
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) errors.email = 'Email inválido.';
-    if (!bankCode) errors.bankCode = 'Seleccioná un banco.';
+    if (!institutionCode) errors.institutionCode = 'Seleccioná un banco.';
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
-  }, [documentNumber, fullName, email, bankCode]);
+  }, [legalId, fullName, email, institutionCode]);
 
   const handleProcess = useCallback(async () => {
     if (!paymentInfo) return;
     if (!validateForm()) return;
-    setStep('processing');
+    setStep('redirecting');
+    setPopupBlocked(false);
+    setPollError(null);
     try {
-      const dto: PseProcessDto = {
-        leaseId,
+      const dto: PseCheckoutDto = {
         amount: paymentInfo.monthlyRent,
         periodMonth: paymentInfo.currentPeriod.month,
         periodYear: paymentInfo.currentPeriod.year,
-        personType,
-        documentType,
-        documentNumber: documentNumber.trim(),
-        fullName: fullName.trim(),
+        userType,
+        legalIdType,
+        legalId: legalId.trim(),
+        financialInstitutionCode: institutionCode,
         email: email.trim(),
-        bankCode,
+        fullName: fullName.trim(),
       };
-      const res = await psePaymentsApi.processPayment(dto);
-      setResult(res);
-      setStep('result');
-      if (res.status === 'SUCCESS' || res.status === 'PENDING') {
-        onPaid?.(res);
+      const res = await pseCheckoutApi.checkout(leaseId, dto);
+      setRequestId(res.paymentRequestId);
+      setAsyncUrl(res.asyncPaymentUrl);
+
+      // Abrir el pago en una PESTAÑA NUEVA — nuestra pestaña se queda polleando.
+      if (res.asyncPaymentUrl) {
+        const win = window.open(res.asyncPaymentUrl, '_blank', 'noopener,noreferrer');
+        if (!win) setPopupBlocked(true);
       }
+      setStep('awaiting');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al procesar el pago.';
-      // Backend tira 409 Conflict si el período ya fue pagado → mostrar como fallido inline.
-      setResult({
-        transactionId: '',
-        status: 'FAILURE',
-        message: msg,
-        bankName: banks.find((b) => b.code === bankCode)?.name ?? '',
-        timestamp: new Date().toISOString(),
-      });
+      // 409 (período ya pagado), 403, 503, etc. → mostrar como fallido.
+      const msg = err instanceof Error ? err.message : 'No se pudo iniciar el pago.';
+      setResult({ kind: 'failure', message: msg });
       setStep('result');
     }
-  }, [
-    paymentInfo, validateForm, leaseId, personType, documentType, documentNumber,
-    fullName, email, bankCode, banks, onPaid,
-  ]);
+  }, [paymentInfo, validateForm, leaseId, userType, legalIdType, legalId, institutionCode, email, fullName]);
 
   const monthName = paymentInfo
     ? new Date(paymentInfo.currentPeriod.year, paymentInfo.currentPeriod.month - 1, 1)
         .toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { month: 'long', year: 'numeric' })
     : '';
+
+  const blockClose = step === 'redirecting';
 
   return (
     <AnimatePresence>
@@ -216,7 +287,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={step === 'processing' ? undefined : onClose}
+          onClick={blockClose ? undefined : onClose}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 10 }}
@@ -245,7 +316,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                 variant="ghost"
                 size="icon"
                 onClick={onClose}
-                disabled={step === 'processing'}
+                disabled={blockClose}
                 aria-label="Cerrar"
               >
                 <X className="w-5 h-5" />
@@ -328,14 +399,19 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                   </div>
 
                   {/* Banco */}
-                  <Field label="Banco" error={formErrors.bankCode}>
-                    <Select value={bankCode} onValueChange={setBankCode}>
+                  <Field label="Banco" error={formErrors.institutionCode}>
+                    <Select value={institutionCode} onValueChange={setInstitutionCode}>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Seleccioná tu banco" />
                       </SelectTrigger>
                       <SelectContent>
-                        {banks.map((b) => (
-                          <SelectItem key={b.code} value={b.code}>{b.name}</SelectItem>
+                        {institutions.map((b) => (
+                          <SelectItem
+                            key={b.financial_institution_code}
+                            value={b.financial_institution_code}
+                          >
+                            {b.financial_institution_name}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -344,8 +420,8 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="Tipo de persona">
                       <Select
-                        value={personType}
-                        onValueChange={(v) => setPersonType(v as PsePersonType)}
+                        value={userType}
+                        onValueChange={(v) => setUserType(v as PseUserType)}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue />
@@ -358,8 +434,8 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                     </Field>
                     <Field label="Tipo doc.">
                       <Select
-                        value={documentType}
-                        onValueChange={(v) => setDocumentType(v as PseDocumentType)}
+                        value={legalIdType}
+                        onValueChange={(v) => setLegalIdType(v as PseLegalIdType)}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue />
@@ -373,11 +449,11 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                     </Field>
                   </div>
 
-                  <Field label="Número de documento" error={formErrors.documentNumber}>
+                  <Field label="Número de documento" error={formErrors.legalId}>
                     <Input
                       inputMode="numeric"
-                      value={documentNumber}
-                      onChange={(e) => setDocumentNumber(e.target.value.replace(/\D/g, ''))}
+                      value={legalId}
+                      onChange={(e) => setLegalId(e.target.value.replace(/\D/g, ''))}
                       className="font-mono tabular-nums"
                       placeholder="1234567890"
                     />
@@ -400,12 +476,45 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                 </div>
               )}
 
-              {/* Step: processing */}
-              {step === 'processing' && (
+              {/* Step: redirecting */}
+              {step === 'redirecting' && (
                 <div className="py-10 flex flex-col items-center justify-center gap-3 text-center">
                   <Spinner size="xl" variant="current" className="text-primary" />
-                  <p className="text-sm font-medium text-fg">Procesando pago...</p>
+                  <p className="text-sm font-medium text-fg">Conectando con PSE...</p>
                   <p className="text-xs text-fg-muted">No cierres esta ventana.</p>
+                </div>
+              )}
+
+              {/* Step: awaiting — pago abierto en pestaña nueva, polleando */}
+              {step === 'awaiting' && (
+                <div className="py-8 flex flex-col items-center justify-center gap-4 text-center">
+                  <Spinner size="xl" variant="current" className="text-primary" />
+                  <div>
+                    <p className="text-sm font-medium text-fg">
+                      Esperando la confirmación de tu pago…
+                    </p>
+                    <p className="text-xs text-fg-muted mt-1 max-w-xs">
+                      {asyncUrl
+                        ? 'Completá el pago en la pestaña que abrimos con tu banco. Esta ventana se actualiza sola cuando el pago se confirme.'
+                        : 'Estamos generando el enlace de pago con tu banco. No cierres esta ventana.'}
+                    </p>
+                  </div>
+                  {asyncUrl && (
+                    <a
+                      href={asyncUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-primary underline underline-offset-2"
+                    >
+                      <ArrowSquareOut className="w-3.5 h-3.5" />
+                      {popupBlocked
+                        ? 'No se abrió la pestaña — abrí el pago acá'
+                        : '¿No ves la pestaña? Abrila de nuevo'}
+                    </a>
+                  )}
+                  <p className="text-[11px] text-fg-muted">
+                    Podés cerrar esta ventana — vas a ver la confirmación en tu historial.
+                  </p>
                 </div>
               )}
 
@@ -474,6 +583,18 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                 </>
               )}
 
+              {step === 'awaiting' && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={onClose}
+                  hideArrow
+                  className="ml-auto"
+                >
+                  Cerrar
+                </Button>
+              )}
+
               {step === 'result' && (
                 <Button
                   type="button"
@@ -481,7 +602,7 @@ export function PayRentModal({ open, leaseId, onClose, onPaid, prefill }: PayRen
                   hideArrow
                   className="ml-auto"
                 >
-                  Cerrar
+                  {result?.kind === 'success' ? 'Volver a pagos' : 'Cerrar'}
                 </Button>
               )}
             </div>
@@ -517,24 +638,22 @@ function ResultPanel({
   amount,
   formatCurrency,
 }: {
-  result: PseProcessResponse;
+  result: PayResult;
   amount: number;
   formatCurrency: (n: number) => string;
 }) {
-  if (result.status === 'SUCCESS') {
+  if (result.kind === 'success') {
     return (
       <div className="py-6 flex flex-col items-center text-center space-y-3">
         <div className="w-14 h-14 rounded-full bg-success-soft flex items-center justify-center">
           <CheckCircle className="w-8 h-8 text-success" />
         </div>
         <div>
-          <p className="text-lg font-semibold text-fg">¡Pago procesado!</p>
+          <p className="text-lg font-semibold text-fg">¡Pago confirmado!</p>
           <p className="text-sm text-fg-muted mt-1">{result.message}</p>
         </div>
         <div className="rounded-[14px] border border-border bg-surface-muted p-3 w-full space-y-1 text-xs">
           <Row label="Monto" value={formatCurrency(amount)} mono />
-          <Row label="Banco" value={result.bankName} />
-          <Row label="Transacción" value={result.transactionId} mono />
         </div>
         <p className="text-xs text-fg-muted">
           Tu pago quedó registrado. Lo vas a ver en tu historial.
@@ -543,25 +662,24 @@ function ResultPanel({
     );
   }
 
-  if (result.status === 'PENDING') {
+  if (result.kind === 'cancelled') {
     return (
       <div className="py-6 flex flex-col items-center text-center space-y-3">
-        <div className="w-14 h-14 rounded-full bg-warning-soft flex items-center justify-center">
-          <Clock className="w-8 h-8 text-warning" />
+        <div className="w-14 h-14 rounded-full bg-surface-muted flex items-center justify-center">
+          <Clock className="w-8 h-8 text-fg-muted" />
         </div>
         <div>
-          <p className="text-lg font-semibold text-fg">En verificación bancaria</p>
+          <p className="text-lg font-semibold text-fg">Pago cancelado</p>
           <p className="text-sm text-fg-muted mt-1">{result.message}</p>
         </div>
-        <div className="rounded-[14px] border border-border bg-surface-muted p-3 w-full space-y-1 text-xs">
-          <Row label="Banco" value={result.bankName} />
-          <Row label="Transacción" value={result.transactionId} mono />
-        </div>
+        <p className="text-xs text-fg-muted">
+          Podés volver a intentarlo cuando quieras.
+        </p>
       </div>
     );
   }
 
-  // FAILURE
+  // failure
   return (
     <div className="py-6 flex flex-col items-center text-center space-y-3">
       <div className="w-14 h-14 rounded-full bg-danger-soft flex items-center justify-center">
@@ -627,7 +745,7 @@ function PeriodBlockedPanel({
     );
   }
 
-  // PENDING_VALIDATION — viene del caso PSE PENDING (verificación bancaria)
+  // PENDING_VALIDATION
   return (
     <div className="py-6 flex flex-col items-center text-center space-y-3">
       <div className="w-14 h-14 rounded-full bg-warning-soft flex items-center justify-center">
@@ -649,4 +767,3 @@ function PeriodBlockedPanel({
     </div>
   );
 }
-

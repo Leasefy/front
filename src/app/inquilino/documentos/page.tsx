@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, X, CaretLeft, CaretRight, FolderOpen, IdentificationCard, Money, Briefcase, Bank } from '@phosphor-icons/react';
+import { FileText, Download, Eye, MagnifyingGlass, Calendar, CheckCircle, Clock, X, CaretLeft, CaretRight, FolderOpen, IdentificationCard, Money, Briefcase, Bank, XCircle, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
@@ -14,6 +14,20 @@ import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@leasefy/cadence';
 import { useMyApplications } from '@/lib/hooks/useApplications';
 import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
+import { deriveReviewCounts, getReviewStatusLabel } from '@/lib/documents/review-status';
+import type { DocumentReviewStatus } from '@/lib/api/applications.types';
+
+// Per-status visual config for the tenant-facing document badge.
+// Color is always paired with an icon + label (never color alone) per a11y rules.
+const REVIEW_STATUS_STYLE: Record<
+  DocumentReviewStatus,
+  { className: string; icon: typeof CheckCircle }
+> = {
+  APPROVED: { className: 'bg-success-soft text-success', icon: CheckCircle },
+  IN_REVIEW: { className: 'bg-warning-soft text-warning', icon: Clock },
+  REJECTED: { className: 'bg-danger-soft text-danger', icon: XCircle },
+  PENDING: { className: 'bg-surface-muted text-fg-muted', icon: Clock },
+};
 
 // Document type labels and icons
 const DOC_TYPE_CONFIG: Record<string, { label: string; labelEn: string; icon: typeof FileText }> = {
@@ -134,9 +148,9 @@ export default function DocumentosPage() {
       ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
       : `${Math.round(bytes / 1024)} KB`;
 
-  // Stats
-  const verifiedCount = documents.filter((d) => d.verified).length;
-  const pendingCount = documents.filter((d) => !d.verified).length;
+  // Stats — derived from the REAL review status the backend now returns
+  // (reviewStatus), not the legacy `verified` boolean.
+  const reviewCounts = deriveReviewCounts(documents);
 
   // Loading state
   if (isLoading) {
@@ -180,7 +194,7 @@ export default function DocumentosPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8"
+          className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8"
         >
           {/* Total */}
           <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
@@ -188,39 +202,57 @@ export default function DocumentosPage() {
               <FolderOpen className="w-5 h-5 text-primary" />
             </div>
             <p className="text-sm text-primary mb-1">Total</p>
-            <p className="text-3xl font-bold text-fg tracking-tight">
-              {documents.length}
+            <p className="text-3xl font-bold text-fg tracking-tight tabular-nums">
+              {reviewCounts.total}
             </p>
             <p className="text-sm text-fg-muted mt-2">{t('nav.documents')}</p>
           </div>
 
-          {/* Verified */}
+          {/* Approved */}
           <div className="rounded-xl bg-surface-muted p-6">
             <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
               <CheckCircle className="w-5 h-5 text-success" />
             </div>
             <p className="text-sm text-fg-muted mb-1">
-              {locale === 'es' ? 'Verificados' : 'Verified'}
+              {locale === 'es' ? 'Aprobados' : 'Approved'}
             </p>
-            <p className="text-3xl font-bold text-fg tracking-tight">
-              {verifiedCount}
+            <p className="text-3xl font-bold text-fg tracking-tight tabular-nums">
+              {reviewCounts.approved}
             </p>
             <p className="text-sm text-fg-muted mt-2">
-              {locale === 'es' ? 'Aprobados' : 'Approved'}
+              {locale === 'es' ? 'Verificados' : 'Verified'}
             </p>
           </div>
 
-          {/* Pending */}
+          {/* In review */}
           <div className="rounded-xl bg-surface-muted p-6">
             <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
               <Clock className="w-5 h-5 text-warning" />
             </div>
-            <p className="text-sm text-fg-muted mb-1">{t('common.pending')}</p>
-            <p className="text-3xl font-bold text-fg tracking-tight">
-              {pendingCount}
+            <p className="text-sm text-fg-muted mb-1">
+              {locale === 'es' ? 'En revisión' : 'Under review'}
+            </p>
+            <p className="text-3xl font-bold text-fg tracking-tight tabular-nums">
+              {reviewCounts.inReview + reviewCounts.pending}
             </p>
             <p className="text-sm text-fg-muted mt-2">
-              {locale === 'es' ? 'En revisión' : 'Under review'}
+              {locale === 'es' ? 'Pendientes' : 'Pending'}
+            </p>
+          </div>
+
+          {/* Rejected */}
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <XCircle className="w-5 h-5 text-danger" />
+            </div>
+            <p className="text-sm text-fg-muted mb-1">
+              {locale === 'es' ? 'Rechazados' : 'Rejected'}
+            </p>
+            <p className="text-3xl font-bold text-fg tracking-tight tabular-nums">
+              {reviewCounts.rejected}
+            </p>
+            <p className="text-sm text-fg-muted mt-2">
+              {locale === 'es' ? 'Requieren acción' : 'Need action'}
             </p>
           </div>
         </motion.div>
@@ -318,25 +350,40 @@ export default function DocumentosPage() {
                             <div className="w-12 h-12 rounded-xl bg-surface-muted flex items-center justify-center">
                               <Icon className="w-6 h-6 text-fg-muted" />
                             </div>
-                            <span
-                              className={cn(
-                                'px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1',
-                                doc.verified
-                                  ? 'bg-success-soft text-success'
-                                  : 'bg-warning-soft text-warning'
-                              )}
-                            >
-                              {doc.verified ? (
-                                <><CheckCircle className="w-3 h-3" /> {locale === 'es' ? 'Verificado' : 'Verified'}</>
-                              ) : (
-                                <><Clock className="w-3 h-3" /> {locale === 'es' ? 'En revisión' : 'Under review'}</>
-                              )}
-                            </span>
+                            {(() => {
+                              const style = REVIEW_STATUS_STYLE[doc.reviewStatus];
+                              const StatusIcon = style.icon;
+                              return (
+                                <span
+                                  className={cn(
+                                    'px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1',
+                                    style.className
+                                  )}
+                                >
+                                  <StatusIcon className="w-3 h-3" />
+                                  {getReviewStatusLabel(doc.reviewStatus)}
+                                </span>
+                              );
+                            })()}
                           </div>
 
                           <h3 className="font-semibold text-fg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
                             {getDocLabel(doc.type)}
                           </h3>
+
+                          {doc.reviewStatus === 'REJECTED' && doc.rejectionReason && (
+                            <div className="mb-3 rounded-md bg-danger-soft/60 border border-danger/20 p-2.5 flex items-start gap-2">
+                              <WarningCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium text-danger">
+                                  {locale === 'es' ? 'Motivo del rechazo' : 'Rejection reason'}
+                                </p>
+                                <p className="text-xs text-fg-muted mt-0.5 break-words">
+                                  {doc.rejectionReason}
+                                </p>
+                              </div>
+                            </div>
+                          )}
 
                           <div className="space-y-1.5">
                             <p className="text-xs text-fg-muted flex items-center gap-1.5 truncate">

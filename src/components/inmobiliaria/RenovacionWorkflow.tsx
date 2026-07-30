@@ -36,15 +36,14 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import {
   WorkflowStepper,
-  StepRevision,
   StepNotification,
-  StepNegotiation,
-  StepApproval,
+  StepAceptacion,
   StepSignature,
   StepCompleted,
   WorkflowSidebar,
 } from './RenovacionWorkflowSteps';
 import type { WorkflowStep } from './RenovacionWorkflowSteps';
+import { getCurrentIPC, calculateNewRent } from '@/lib/constants/inmobiliaria-data';
 
 // ============================================================================
 // Types
@@ -52,7 +51,9 @@ import type { WorkflowStep } from './RenovacionWorkflowSteps';
 
 interface RenovacionWorkflowProps {
   renovacion: Renovacion;
-  onStepComplete?: (step: RenovacionStatus) => void;
+  onStepComplete?: (step: RenovacionStatus, negotiatedRent?: number, negotiatedAdminFee?: number, notificationMessage?: string) => void;
+  onSendNotification?: (message: string, newRent: number, newAdminFee: number) => Promise<void>;
+  onUploadDocument?: (file: File) => Promise<void>;
   onTerminate?: (reason: string) => void;
   onNoteAdd?: (note: string) => void;
   onClose?: () => void;
@@ -66,6 +67,8 @@ interface RenovacionWorkflowProps {
 export function RenovacionWorkflow({
   renovacion,
   onStepComplete,
+  onSendNotification,
+  onUploadDocument,
   onTerminate,
   onNoteAdd,
   onClose,
@@ -73,57 +76,51 @@ export function RenovacionWorkflow({
 }: RenovacionWorkflowProps) {
   const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState<RenovacionStatus>(renovacion.status);
-  const [showTerminateDialog, setShowTerminateDialog] = useState(false);
-  const [terminateReason, setTerminateReason] = useState('');
+
+  // The AGENCY sets the new values (IPC is only a suggestion). Lifted to the
+  // workflow so the price chosen in Revisión flows into the notification message
+  // and persists through the whole flow.
+  const ipc = getCurrentIPC();
+  const [newRent, setNewRent] = useState<number>(
+    renovacion.negotiatedRent || calculateNewRent(renovacion.currentRent, ipc.rate),
+  );
+  const [newAdminFee, setNewAdminFee] = useState<number>(
+    renovacion.negotiatedAdminFee ??
+      (renovacion.currentAdminFee
+        ? calculateNewRent(renovacion.currentAdminFee, ipc.rate)
+        : 0),
+  );
 
   const WORKFLOW_STEPS: WorkflowStep[] = useMemo(() => [
     {
       status: 'pending' as RenovacionStatus,
-      label: t('inmobiliaria.operaciones.renovacion.steps.revision.label'),
+      label: 'Propuesta',
       icon: <ClipboardText className="h-5 w-5" />,
-      description: t('inmobiliaria.operaciones.renovacion.steps.revision.desc'),
+      description: 'La inmobiliaria define el precio y envía la propuesta',
     },
     {
       status: 'notified' as RenovacionStatus,
-      label: t('inmobiliaria.operaciones.renovacion.steps.notification.label'),
-      icon: <Bell className="h-5 w-5" />,
-      description: t('inmobiliaria.operaciones.renovacion.steps.notification.desc'),
-    },
-    {
-      status: 'negotiating' as RenovacionStatus,
-      label: t('inmobiliaria.operaciones.renovacion.steps.negotiation.label'),
-      icon: <Handshake className="h-5 w-5" />,
-      description: t('inmobiliaria.operaciones.renovacion.steps.negotiation.desc'),
-    },
-    {
-      status: 'approved' as RenovacionStatus,
-      label: t('inmobiliaria.operaciones.renovacion.steps.approval.label'),
+      label: 'Aceptación',
       icon: <CheckCircle className="h-5 w-5" />,
-      description: t('inmobiliaria.operaciones.renovacion.steps.approval.desc'),
+      description: 'El inquilino acepta la renovación',
     },
     {
       status: 'signed' as RenovacionStatus,
-      label: t('inmobiliaria.operaciones.renovacion.steps.signature.label'),
+      label: 'Firma del contrato',
       icon: <PenNib className="h-5 w-5" />,
-      description: t('inmobiliaria.operaciones.renovacion.steps.signature.desc'),
+      description: 'Se firma el nuevo contrato',
     },
-    {
-      status: 'completed' as RenovacionStatus,
-      label: t('inmobiliaria.operaciones.renovacion.steps.completed.label'),
-      icon: <FlagCheckered className="h-5 w-5" />,
-      description: t('inmobiliaria.operaciones.renovacion.steps.completed.desc'),
-    },
-  ], [t]);
+  ], []);
 
   const currentStepIndex = WORKFLOW_STEPS.findIndex((s) => s.status === currentStep);
   const currentStepInfo = WORKFLOW_STEPS[currentStepIndex];
 
-  const goToNextStep = () => {
+  const goToNextStep = (negotiatedRent?: number, negotiatedAdminFee?: number, notificationMessage?: string) => {
     const nextIndex = currentStepIndex + 1;
     if (nextIndex < WORKFLOW_STEPS.length) {
       const nextStatus = WORKFLOW_STEPS[nextIndex].status;
       setCurrentStep(nextStatus);
-      onStepComplete?.(nextStatus);
+      onStepComplete?.(nextStatus, negotiatedRent, negotiatedAdminFee, notificationMessage);
     }
   };
 
@@ -134,54 +131,48 @@ export function RenovacionWorkflow({
     }
   };
 
-  const handleTerminate = () => {
-    if (terminateReason.trim()) {
-      onTerminate?.(terminateReason);
-      setShowTerminateDialog(false);
-    }
-  };
-
   const renderStepContent = () => {
     switch (currentStep) {
+      // ── 1) PROPUESTA — the agency sets the price and sends it to the tenant ──
       case 'pending':
-        return <StepRevision renovacion={renovacion} onContinue={goToNextStep} />;
-      case 'notified':
         return (
           <StepNotification
             renovacion={renovacion}
-            onNotify={(channel) => {
-              // Handle notification
-              console.log('Notifying via:', channel);
+            newRent={newRent}
+            newAdminFee={newAdminFee}
+            onNewRentChange={setNewRent}
+            onNewAdminFeeChange={setNewAdminFee}
+            onNotify={async (channel, message) => {
+              if (channel === 'whatsapp') {
+                const phone = (renovacion.tenantPhone || '').replace(/\D/g, '');
+                const url = phone
+                  ? `https://wa.me/57${phone}?text=${encodeURIComponent(message)}`
+                  : `https://wa.me/?text=${encodeURIComponent(message)}`;
+                window.open(url, '_blank');
+              }
+              await onSendNotification?.(message, newRent, newAdminFee);
+              goToNextStep(newRent, newAdminFee);
             }}
-            onMarkNotified={goToNextStep}
           />
         );
-      case 'negotiating':
+      // ── 2) ACEPTACIÓN — read-only; the tenant accepts from their own panel ──
+      case 'notified':
         return (
-          <StepNegotiation
+          <StepAceptacion
             renovacion={renovacion}
-            onAccept={(finalRent) => {
-              console.log('Accepted rent:', finalRent);
-              goToNextStep();
-            }}
-            onContinueNegotiation={(note) => {
-              onNoteAdd?.(note);
-            }}
+            onContinue={() => goToNextStep(newRent, newAdminFee)}
           />
         );
-      case 'approved':
-        return (
-          <StepApproval
-            renovacion={renovacion}
-            onOwnerApproved={() => console.log('Owner approved')}
-            onTenantApproved={goToNextStep}
-          />
-        );
+      // ── 3) FIRMA — upload the signed new contract, then complete ──
       case 'signed':
         return (
           <StepSignature
             renovacion={renovacion}
-            onSignatureComplete={goToNextStep}
+            onSignatureComplete={async (file) => {
+              await onUploadDocument?.(file);
+              setCurrentStep('completed');
+              onStepComplete?.('completed', newRent, newAdminFee);
+            }}
           />
         );
       case 'completed':
@@ -264,49 +255,12 @@ export function RenovacionWorkflow({
                 <WorkflowSidebar
                   renovacion={renovacion}
                   onAddNote={(note) => onNoteAdd?.(note)}
-                  onTerminate={() => setShowTerminateDialog(true)}
                 />
               </div>
             </div>
           </div>
         </SheetContent>
       </Sheet>
-
-      {/* Terminate Dialog */}
-      <Dialog open={showTerminateDialog} onOpenChange={setShowTerminateDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('inmobiliaria.operaciones.renovacion.terminateDialog.title')}</DialogTitle>
-            <DialogDescription>
-              {t('inmobiliaria.operaciones.renovacion.terminateDialog.desc')}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="terminateReason">{t('inmobiliaria.operaciones.renovacion.terminateDialog.reason')}</Label>
-              <Textarea
-                id="terminateReason"
-                value={terminateReason}
-                onChange={(e) => setTerminateReason(e.target.value)}
-                placeholder={t('inmobiliaria.operaciones.renovacion.terminateDialog.reasonPlaceholder')}
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTerminateDialog(false)}>
-              {t('inmobiliaria.operaciones.renovacion.terminateDialog.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleTerminate}
-              disabled={!terminateReason.trim()}
-            >
-              {t('inmobiliaria.operaciones.renovacion.terminateDialog.terminate')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

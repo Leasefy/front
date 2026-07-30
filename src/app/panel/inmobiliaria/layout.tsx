@@ -16,6 +16,7 @@ import {
   ChartLine,
   ChartLineUp,
   Wrench,
+  ArrowsClockwise,
   UserCircle,
   PaperPlaneTilt,
   ChatCircleText,
@@ -223,12 +224,14 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     { label: t('inmobiliaria.nav.analitica'),    href: '/panel/inmobiliaria/analytics',    icon: ChartLineUp,   module: 'analytics' },
     // ── OPERACIONES ──
     { kind: 'section', label: t('inmobiliaria.nav.secOperaciones'), href: '#sec-operaciones', icon: Wrench, module: null },
+    { label: t('inmobiliaria.nav.renovaciones'), href: '/panel/inmobiliaria/renovaciones',  icon: ArrowsClockwise, module: 'operaciones' },
     { label: t('inmobiliaria.nav.operaciones'),  href: '/panel/inmobiliaria/operaciones',  icon: Wrench,        module: 'operaciones' },
     { label: t('inmobiliaria.nav.pqrs'),         href: '/panel/inmobiliaria/pqrs',         icon: Lifebuoy,      module: null },
     { label: t('inmobiliaria.nav.agenda'),       href: '/panel/inmobiliaria/agenda',       icon: CalendarBlank, module: null },
     { label: t('inmobiliaria.nav.mensajes'),     href: '/panel/inmobiliaria/mensajes',     icon: Chat,          badge: 5, module: null },
     // ── BOTTOM ──
-    { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos',   icon: FileText,      module: 'documentos' },
+    { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos',   icon: FileText,      module: 'documentos', exact: true },
+    { label: t('inmobiliaria.nav.documentosRevision'), href: '/panel/inmobiliaria/documentos/revision', icon: ListChecks, module: 'documentos' },
     // Configuración → gated on 'configuracion': only ADMIN has it in the matrix
     // (AGENTE/CONTADOR/VIEWER all have configuracion:[]) ⇒ effectively admin-only.
     { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', icon: Gear,         module: 'configuracion', dataTourTarget: 'sidebar-configuraciones' },

@@ -3,13 +3,15 @@
 import { use, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeft } from '@phosphor-icons/react';
+import { ArrowLeft, CheckCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { WizardShell } from '@/components/wizard/WizardShell';
 import { ConfirmationScreen, generateTrackingCode } from '@/components/wizard/ConfirmationScreen';
 import { ApplicationProvider, useApplication } from '@/lib/context/ApplicationContext';
 import { useProperty } from '@/lib/hooks/useProperties';
+import { applicationsApi } from '@/lib/api/applications.service';
+import { getAccessToken } from '@/lib/api/client';
 import type { Property } from '@/lib/types/property';
 
 // Step components
@@ -49,6 +51,56 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   // Get agent attribution from URL params (shareable links)
   const agentCode = searchParams.get('ref') || undefined;
   const linkCode = searchParams.get('link') || undefined;
+
+  // Existing-application detection: an authenticated user who already applied to
+  // this property cannot create a second one (backend 409). Detect it up front
+  // and show a card instead of letting them redo the whole wizard and dead-end
+  // at submit. undefined = still checking, null = none, object = already applied.
+  const isAuthed = !!getAccessToken();
+  const [existingApp, setExistingApp] = useState<
+    { id: string; status: string } | null | undefined
+  >(undefined);
+  const [withdrawing, setWithdrawing] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthed) {
+      setExistingApp(null); // guests can't have an account-bound application
+      return;
+    }
+    let cancelled = false;
+    applicationsApi
+      .getMine()
+      .then((apps) => {
+        if (cancelled) return;
+        // Statuses that block a re-apply (mirror the backend guard, which allows
+        // a new application only after WITHDRAWN/REJECTED).
+        const blocking = ['draft', 'submitted', 'under_review', 'approved'];
+        const active = apps.find(
+          (a) =>
+            a.propertyId === resolvedParams.propertyId &&
+            blocking.includes(a.status),
+        );
+        setExistingApp(active ? { id: active.id, status: active.status } : null);
+      })
+      .catch(() => {
+        // On a failed check, fall through to the wizard rather than blocking.
+        if (!cancelled) setExistingApp(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthed, resolvedParams.propertyId]);
+
+  const handleWithdrawAndReapply = useCallback(async () => {
+    if (!existingApp) return;
+    setWithdrawing(true);
+    try {
+      await applicationsApi.withdraw(existingApp.id);
+      setExistingApp(null); // withdrawn → the wizard can render
+    } catch {
+      setWithdrawing(false);
+    }
+  }, [existingApp]);
 
   // Loading state
   if (isLoading) {
@@ -103,6 +155,27 @@ export default function AplicarPage({ params }: AplicarPageProps) {
     );
   }
 
+  // Still checking whether this authenticated user already applied.
+  if (isAuthed && existingApp === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Already applied → offer to view it or withdraw and start over, instead of a
+  // dead-end wizard that 409s at submit.
+  if (existingApp) {
+    return (
+      <AlreadyAppliedCard
+        applicationId={existingApp.id}
+        onWithdraw={handleWithdrawAndReapply}
+        withdrawing={withdrawing}
+      />
+    );
+  }
+
   return (
     <ApplicationProvider
       propertyId={property.id}
@@ -113,6 +186,58 @@ export default function AplicarPage({ params }: AplicarPageProps) {
     >
       <WizardContent property={property} />
     </ApplicationProvider>
+  );
+}
+
+// ============================================================================
+// Already-applied card
+// ============================================================================
+
+interface AlreadyAppliedCardProps {
+  applicationId: string;
+  onWithdraw: () => void;
+  withdrawing: boolean;
+}
+
+function AlreadyAppliedCard({
+  applicationId,
+  onWithdraw,
+  withdrawing,
+}: AlreadyAppliedCardProps) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-muted px-4">
+      <div className="max-w-md w-full bg-card rounded-xl border border-border p-6 text-center space-y-4">
+        <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center mx-auto">
+          <CheckCircle className="w-6 h-6 text-primary" weight="fill" />
+        </div>
+        <div className="space-y-1">
+          <h1 className="text-xl font-semibold text-foreground">
+            Ya tenés una postulación
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Ya postulaste a esta propiedad. Podés ver el estado de tu postulación,
+            o retirarla para volver a empezar.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Link href={`/inquilino/aplicaciones/${applicationId}`} className="w-full">
+            <Button className="w-full" hideArrow>
+              Ver mi postulación
+            </Button>
+          </Link>
+          <Button
+            variant="ghost"
+            className="w-full"
+            hideArrow
+            onClick={onWithdraw}
+            isLoading={withdrawing}
+            disabled={withdrawing}
+          >
+            Retirar y volver a postular
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import {
   Buildings,
@@ -22,7 +21,8 @@ import {
   FileText,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { EmptyState } from '@/components/ui';
+import { EmptyState, Spinner } from '@/components/ui';
+import { ErrorState } from '@/components/ui/error-state';
 import { MonoLabel, BrandDot, BrandContour } from '@/components/brand';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -253,16 +253,29 @@ export default function InmobiliariaDashboardPage() {
   const { t } = useI18n();
   const { canAccess, isLoading: permLoading } = usePermissions();
 
-  const { kpis: kpisData } = useInmobiliariaDashboard({
+  const {
+    kpis: kpisData,
+    isLoading: kpisLoading,
+    error: kpisError,
+    refetch: refetchKpis,
+  } = useInmobiliariaDashboard({
     skip: permLoading || !canAccess('analytics', 'view'),
+    pollMs: 30000, // refresco en vivo cada 30s
   });
   const kpis = kpisData ?? {
     totalProperties: 0, propertiesAvailable: 0, propertiesRented: 0, propertiesInProcess: 0,
     occupancyRate: 0, expectedRevenue: 0, collectedRevenue: 0, pendingCollections: 0,
-    lateCollections: 0, collectionRate: 0, totalCommissions: 0, activeLeads: 0,
+    lateCollections: 0, collectionRate: 0, totalCommissions: 0,
+    collectionTrend: 0, commissionsTrend: 0, activeLeads: 0,
     scheduledVisits: 0, pendingApplications: 0, contractsInProgress: 0,
     totalAgents: 0, closedThisMonth: 0, avgDaysToClose: 0, totalPropietarios: 0, pendingDispersions: 0,
   };
+
+  // Etiqueta del mes en curso (es-CO) para el resumen financiero.
+  const currentMonthLabel = new Intl.DateTimeFormat('es-CO', {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date());
   const { agentes } = useAgentes({ skip: permLoading || !canAccess('agentes', 'view') });
   const { pipelineItems } = usePipelineItems({ skip: permLoading || !canAccess('pipeline', 'view') });
   const { cobros } = useCobros(undefined, { skip: permLoading || !canAccess('cobros', 'view') });
@@ -285,6 +298,29 @@ export default function InmobiliariaDashboardPage() {
     (m) => m.status !== 'completed' && m.status !== 'cancelled'
   );
 
+  // First load: distinguish "loading" from "empty agency" so the panel never
+  // renders silent zeros while the KPIs are still in flight.
+  if ((permLoading || kpisLoading) && !kpisData) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center p-8">
+        <Spinner />
+      </div>
+    );
+  }
+
+  // Real failure (backend unreachable / server error) with no data to show.
+  if (kpisError && !kpisData) {
+    return (
+      <div className="p-6 lg:p-8">
+        <ErrorState
+          title={t('inmobiliaria.dashboard.title')}
+          description="No pudimos cargar los indicadores de la agencia. Verificá tu conexión e intentá de nuevo."
+          onRetry={refetchKpis}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 lg:p-8 space-y-8">
       {/* Header */}
@@ -306,7 +342,7 @@ export default function InmobiliariaDashboardPage() {
           title={t('inmobiliaria.dashboard.kpi.monthlyCollection')}
           value={formatCurrency(kpis.collectedRevenue)}
           subtitle={t('inmobiliaria.dashboard.kpi.collectionRateLabel', { rate: kpis.collectionRate.toFixed(1) })}
-          trend={{ value: 5.2, isPositive: true }}
+          trend={{ value: Math.abs(kpis.collectionTrend), isPositive: kpis.collectionTrend >= 0 }}
           icon={CurrencyDollar}
           href="/panel/inmobiliaria/cobros"
           brandHero
@@ -322,7 +358,7 @@ export default function InmobiliariaDashboardPage() {
           title={t('inmobiliaria.dashboard.kpi.commissions')}
           value={formatCurrency(kpis.totalCommissions)}
           subtitle={t('inmobiliaria.dashboard.kpi.commissionsGenerated')}
-          trend={{ value: 8.1, isPositive: true }}
+          trend={{ value: Math.abs(kpis.commissionsTrend), isPositive: kpis.commissionsTrend >= 0 }}
           icon={Wallet}
         />
         <KPICard
@@ -496,7 +532,7 @@ export default function InmobiliariaDashboardPage() {
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.financial.title')}</h2>
-            <p className="text-sm text-fg-muted mt-0.5">Febrero 2026</p>
+            <p className="text-sm text-fg-muted mt-0.5 capitalize">{currentMonthLabel}</p>
           </div>
           <Link
             href="/panel/inmobiliaria/reportes"

@@ -162,25 +162,27 @@ export function CobroCard({
             <p className="font-medium text-fg truncate">
               {cobro.tenantName}
             </p>
-            <div className="flex items-center gap-3 mt-1">
-              <a
-                href={`tel:${cobro.tenantPhone}`}
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 text-xs text-fg-muted hover:text-primary transition-colors"
-              >
-                <Phone className="w-3.5 h-3.5" />
-                {cobro.tenantPhone}
-              </a>
-              <a
-                href={`https://wa.me/${cobro.tenantPhone.replace(/\D/g, '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="p-1.5 rounded-md bg-success-soft text-success hover:bg-success/20 transition-colors"
-              >
-                <WhatsappLogo className="w-4 h-4" weight="fill" />
-              </a>
-            </div>
+            {cobro.tenantPhone && (
+              <div className="flex items-center gap-3 mt-1">
+                <a
+                  href={`tel:${cobro.tenantPhone}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1 text-xs text-fg-muted hover:text-primary transition-colors"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  {cobro.tenantPhone}
+                </a>
+                <a
+                  href={`https://wa.me/${cobro.tenantPhone.replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="p-1.5 rounded-md bg-success-soft text-success hover:bg-success/20 transition-colors"
+                >
+                  <WhatsappLogo className="w-4 h-4" weight="fill" />
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </div>

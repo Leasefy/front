@@ -5,7 +5,8 @@ import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, ArrowUpRight, Receipt, Buildings, Wallet, TrendUp, Chat, XCircle, Prohibit } from '@phosphor-icons/react';
+import { MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, ArrowUpRight, Receipt, Buildings, Wallet, TrendUp, Chat, XCircle, Prohibit, ArrowsClockwise } from '@phosphor-icons/react';
+import { toast } from 'sonner';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -15,6 +16,7 @@ import {
   useMyPaymentRequests,
   useLeasePaymentInfo,
 } from '@/lib/hooks/useLeases';
+import { leasesApi } from '@/lib/api/leases.service';
 import { PAYMENT_METHODS } from '@/lib/constants/payment-methods';
 import { useI18n } from '@/lib/i18n';
 import { PayRentModal } from '@/components/tenant/PayRentModal';
@@ -34,11 +36,13 @@ export default function LeaseDetailPage() {
   const params = useParams();
   const leaseId = params.leaseId as string;
 
-  const { lease, isLoading: leaseLoading } = useLease(leaseId);
+  const { lease, isLoading: leaseLoading, refetch: refetchLease } = useLease(leaseId);
   const { getForLease, refetch: refetchRequests } = useMyPaymentRequests();
   const { info: paymentInfo, refetch: refetchPaymentInfo } = useLeasePaymentInfo(leaseId);
   const requests = getForLease(leaseId);
   const [payModalOpen, setPayModalOpen] = useState(false);
+  const [acceptingRenovacion, setAcceptingRenovacion] = useState(false);
+  const [requestingRenovacion, setRequestingRenovacion] = useState(false);
 
   const isActive = lease?.status === 'active' || lease?.status === 'ending_soon';
   const periodStatus = paymentInfo?.currentPeriodStatus;
@@ -118,11 +122,15 @@ export default function LeaseDetailPage() {
         return { label: locale === 'es' ? 'Aprobado' : 'Approved', bgColor: 'bg-success-soft', textColor: 'text-success', icon: CheckCircle };
       case 'PENDING_VALIDATION':
         return { label: locale === 'es' ? 'En verificación' : 'In verification', bgColor: 'bg-warning-soft', textColor: 'text-warning', icon: Clock };
+      case 'PROCESSING':
+        return { label: locale === 'es' ? 'Procesando' : 'Processing', bgColor: 'bg-warning-soft', textColor: 'text-warning', icon: Clock };
       case 'REJECTED':
       case 'DISPUTED':
         return { label: locale === 'es' ? 'Rechazado' : 'Rejected', bgColor: 'bg-danger-soft', textColor: 'text-danger', icon: XCircle };
       case 'CANCELLED':
         return { label: locale === 'es' ? 'Cancelado' : 'Cancelled', bgColor: 'bg-surface-muted', textColor: 'text-fg-muted', icon: Prohibit };
+      default:
+        return { label: status, bgColor: 'bg-surface-muted', textColor: 'text-fg-muted', icon: Clock };
     }
   };
 
@@ -185,6 +193,38 @@ export default function LeaseDetailPage() {
   const handlePaid = () => {
     refetchRequests();
     refetchPaymentInfo();
+  };
+
+  const handleAcceptRenovacion = async () => {
+    setAcceptingRenovacion(true);
+    try {
+      await leasesApi.acceptRenovacion(leaseId);
+      toast.success(locale === 'es' ? 'Renovación aceptada' : 'Renewal accepted');
+      refetchLease();
+    } catch {
+      toast.error(locale === 'es' ? 'No se pudo aceptar la renovación' : 'Could not accept the renewal');
+    } finally {
+      setAcceptingRenovacion(false);
+    }
+  };
+
+  const handleRequestRenovacion = async () => {
+    setRequestingRenovacion(true);
+    try {
+      await leasesApi.requestRenovacion(leaseId);
+      toast.success(
+        locale === 'es'
+          ? 'Le avisamos a tu inmobiliaria que quieres renovar'
+          : 'We let your agency know you want to renew',
+      );
+      refetchLease();
+    } catch {
+      toast.error(
+        locale === 'es' ? 'No se pudo enviar la solicitud' : 'Could not send the request',
+      );
+    } finally {
+      setRequestingRenovacion(false);
+    }
   };
 
   return (
@@ -317,6 +357,103 @@ export default function LeaseDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content - 2 columns */}
           <div className="lg:col-span-2 space-y-6">
+
+            {/* Renewal — request / awaiting proposal / accept, or ending-soon prompt */}
+            {lease.renovacion ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="rounded-xl border border-primary/30 bg-primary-soft/40 p-6 lg:p-8"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <ArrowsClockwise className="w-5 h-5 text-primary" />
+                  <span className="text-sm font-medium text-primary">
+                    {locale === 'es' ? 'Tu contrato está en proceso de renovación' : 'Your contract is up for renewal'}
+                  </span>
+                </div>
+
+                {lease.renovacion.status === 'RENOV_PENDING' && !lease.renovacion.tenantAcceptedAt ? (
+                  // Requested, but the agency hasn't proposed terms yet.
+                  <p className="text-sm text-fg-muted max-w-lg">
+                    {locale === 'es'
+                      ? 'Le avisamos a tu inmobiliaria que quieres continuar. Están preparando la propuesta con el nuevo canon; te avisaremos apenas esté lista.'
+                      : 'We told your agency you want to continue. They are preparing the proposal with the new rent; we will notify you as soon as it is ready.'}
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-fg-muted text-sm mb-1">
+                      {locale === 'es' ? 'Nuevo canon propuesto' : 'Proposed new rent'}
+                    </p>
+                    <p className="text-3xl font-bold text-fg tracking-tight">
+                      {formatCurrency(lease.renovacion.proposedRent + (lease.renovacion.proposedAdminFee ?? 0))}
+                      <span className="text-base font-normal text-fg-muted">/{locale === 'es' ? 'mes' : 'mo'}</span>
+                    </p>
+                    {lease.renovacion.newEndDate && (
+                      <p className="text-sm text-fg-muted mt-1 flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4" />
+                        {locale === 'es' ? 'Nueva vigencia hasta ' : 'New term until '}
+                        {formatFullDate(lease.renovacion.newEndDate)}
+                      </p>
+                    )}
+                    {lease.renovacion.tenantAcceptedAt ? (
+                      <p className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-success">
+                        <CheckCircle className="w-5 h-5" weight="fill" />
+                        {locale === 'es' ? 'Aceptaste la renovación' : 'You accepted the renewal'}
+                      </p>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="lg"
+                        hideArrow
+                        onClick={handleAcceptRenovacion}
+                        disabled={acceptingRenovacion}
+                        className="mt-4"
+                      >
+                        <CheckCircle className="w-5 h-5" />
+                        {locale === 'es' ? 'Aceptar renovación' : 'Accept renewal'}
+                      </Button>
+                    )}
+                  </>
+                )}
+              </motion.div>
+            ) : lease.status === 'ending_soon' ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="rounded-xl border border-warning/30 bg-warning-soft p-6 lg:p-8"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center flex-shrink-0">
+                      <ArrowsClockwise className="w-5 h-5 text-warning" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-warning">
+                        {locale === 'es' ? 'Tu contrato termina pronto' : 'Your contract is ending soon'}
+                      </p>
+                      <p className="text-sm text-fg-muted mt-1 max-w-md">
+                        {locale === 'es'
+                          ? '¿Quieres continuar? Avísale a tu inmobiliaria y prepararán la propuesta de renovación.'
+                          : 'Want to continue? Let your agency know and they will prepare the renewal proposal.'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="lg"
+                    hideArrow
+                    onClick={handleRequestRenovacion}
+                    disabled={requestingRenovacion}
+                    className="flex-shrink-0"
+                  >
+                    <ArrowsClockwise className="w-5 h-5" />
+                    {locale === 'es' ? 'Quiero renovar' : 'I want to renew'}
+                  </Button>
+                </div>
+              </motion.div>
+            ) : null}
 
             {/* Pay Rent CTA — visible cuando lease está activo y se puede pagar */}
             {isActive && paymentInfo && (

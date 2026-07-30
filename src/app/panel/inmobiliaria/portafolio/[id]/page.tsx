@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { CaretLeft, Buildings, X } from '@phosphor-icons/react';
+import { CaretLeft, Buildings, X, CalendarPlus } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -42,6 +42,7 @@ import {
 import { ActaEntregaView } from '@/components/inmobiliaria/ActaEntregaView';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
 import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
+import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 
 /**
  * Modal Component - Uses Portal to escape transformed parents
@@ -170,6 +171,7 @@ function ConsignacionDetailContent() {
   const [consignacionData, setConsignacionData] = useState<Consignacion | null>(null);
   const [showTerminateDialog, setShowTerminateDialog] = useState(false);
   const [isTerminating, setIsTerminating] = useState(false);
+  const [showCitaModal, setShowCitaModal] = useState(false);
 
   // Fetch data
   const { consignacion: fetchedConsignacion } = useConsignacion(consignacionId);
@@ -287,6 +289,7 @@ function ConsignacionDetailContent() {
     inventoryRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  // Load the property's visit availability, then open the schedule editor.
   // 404 if not found
   if (!consignacion) {
     return (
@@ -308,20 +311,26 @@ function ConsignacionDetailContent() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm">
-        <Link
-          href="/panel/inmobiliaria/portafolio"
-          className="flex items-center gap-1.5 text-fg-muted hover:text-primary transition-colors"
-        >
-          <CaretLeft className="w-4 h-4" />
-          {t('inmobiliaria.portafolio.title')}
-        </Link>
-        <span className="text-border">/</span>
-        <span className="text-fg font-medium truncate max-w-[200px]">
-          {consignacion.propertyTitle}
-        </span>
-      </nav>
+      {/* Breadcrumb + agendar cita */}
+      <div className="flex items-center justify-between gap-4">
+        <nav className="flex items-center gap-2 text-sm min-w-0">
+          <Link
+            href="/panel/inmobiliaria/portafolio"
+            className="flex items-center gap-1.5 text-fg-muted hover:text-primary transition-colors"
+          >
+            <CaretLeft className="w-4 h-4" />
+            {t('inmobiliaria.portafolio.title')}
+          </Link>
+          <span className="text-border">/</span>
+          <span className="text-fg font-medium truncate max-w-[200px]">
+            {consignacion.propertyTitle}
+          </span>
+        </nav>
+        <Button hideArrow className="shrink-0" onClick={() => setShowCitaModal(true)}>
+          <CalendarPlus className="w-4 h-4" />
+          {t('inmobiliaria.agenda.pedirCita')}
+        </Button>
+      </div>
 
       {/* Header */}
       <motion.div
@@ -463,6 +472,14 @@ function ConsignacionDetailContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PedirCitaModal
+        isOpen={showCitaModal}
+        onClose={() => setShowCitaModal(false)}
+        onCreated={() => {}}
+        presetPropertyId={consignacion.propertyId}
+        presetPropertyTitle={consignacion.propertyTitle}
+      />
     </div>
   );
 }

@@ -147,6 +147,14 @@ export default function PagosPage() {
           iconBg: 'bg-warning-soft',
           iconColor: 'text-warning',
         };
+      case 'PROCESSING':
+        return {
+          label: locale === 'es' ? 'Procesando' : 'Processing',
+          color: 'bg-warning-soft text-warning',
+          icon: Clock,
+          iconBg: 'bg-warning-soft',
+          iconColor: 'text-warning',
+        };
       case 'REJECTED':
       case 'DISPUTED':
         return {
@@ -161,6 +169,15 @@ export default function PagosPage() {
           label: locale === 'es' ? 'Cancelado' : 'Cancelled',
           color: 'bg-surface-muted text-fg-muted',
           icon: Prohibit,
+          iconBg: 'bg-surface-muted',
+          iconColor: 'text-fg-muted',
+        };
+      default:
+        // Fallback defensivo: cualquier estado nuevo del backend no rompe la UI.
+        return {
+          label: status,
+          color: 'bg-surface-muted text-fg-muted',
+          icon: Clock,
           iconBg: 'bg-surface-muted',
           iconColor: 'text-fg-muted',
         };

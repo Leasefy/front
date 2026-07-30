@@ -159,7 +159,10 @@ export function PropietarioSection({ propietario }: PropietarioSectionProps) {
   }
 
   const isCompany = propietario.documentType === 'NIT';
-  const maskedAccount = `****${propietario.bankAccount.accountNumber.slice(-4)}`;
+  // bankAccount may be missing for owners without payout data loaded yet.
+  const maskedAccount = propietario.bankAccount?.accountNumber
+    ? `****${propietario.bankAccount.accountNumber.slice(-4)}`
+    : null;
 
   return (
     <SectionCard title={t('inmobiliaria.consignaciones.detail.ownerTitle')} icon={<User className="w-4 h-4" />}>
@@ -193,17 +196,19 @@ export function PropietarioSection({ propietario }: PropietarioSectionProps) {
           </Link>
         </div>
 
-        {/* Bank Account */}
-        <div className="p-3 rounded-xl bg-surface-muted dark:bg-[#14130F]">
-          <div className="flex items-center gap-2 mb-2">
-            <Bank className="w-4 h-4 text-fg-subtle" />
-            <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.paymentAccount')}</span>
+        {/* Bank Account — only when payout data exists */}
+        {propietario.bankAccount ? (
+          <div className="p-3 rounded-xl bg-surface-muted dark:bg-[#14130F]">
+            <div className="flex items-center gap-2 mb-2">
+              <Bank className="w-4 h-4 text-fg-subtle" />
+              <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.paymentAccount')}</span>
+            </div>
+            <p className="text-sm font-medium text-fg dark:text-white">
+              {BANK_NAMES[propietario.bankAccount.bank] || propietario.bankAccount.bank} - {propietario.bankAccount.accountType === 'savings' ? t('inmobiliaria.consignaciones.detail.accountTypeSavings') : t('inmobiliaria.consignaciones.detail.accountTypeChecking')}
+            </p>
+            {maskedAccount && <p className="text-sm text-fg-muted dark:text-fg-subtle">{maskedAccount}</p>}
           </div>
-          <p className="text-sm font-medium text-fg dark:text-white">
-            {BANK_NAMES[propietario.bankAccount.bank] || propietario.bankAccount.bank} - {propietario.bankAccount.accountType === 'savings' ? t('inmobiliaria.consignaciones.detail.accountTypeSavings') : t('inmobiliaria.consignaciones.detail.accountTypeChecking')}
-          </p>
-          <p className="text-sm text-fg-muted dark:text-fg-subtle">{maskedAccount}</p>
-        </div>
+        ) : null}
 
         {/* Contact Buttons */}
         <div className="flex items-center gap-2">

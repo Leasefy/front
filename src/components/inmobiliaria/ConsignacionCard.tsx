@@ -14,6 +14,7 @@ import {
   Eye,
   PencilSimple,
   Percent,
+  CalendarPlus,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { IconButton } from '@leasefy/cadence';
@@ -29,6 +30,7 @@ interface ConsignacionCardProps {
   onClick?: () => void;
   onView?: () => void;
   onEdit?: () => void;
+  onAgendarCita?: () => void;
   selected?: boolean;
   variant?: 'default' | 'compact';
 }
@@ -55,6 +57,7 @@ export function ConsignacionCard({
   onClick,
   onView,
   onEdit,
+  onAgendarCita,
   selected,
   variant = 'default',
 }: ConsignacionCardProps) {
@@ -337,6 +340,16 @@ export function ConsignacionCard({
                 title={t('inmobiliaria.portafolio.card.editTitle')}
                 aria-label={t('inmobiliaria.portafolio.card.editTitle')}
                 icon={<PencilSimple className="w-4 h-4" />}
+              />
+            )}
+            {onAgendarCita && (
+              <IconButton
+                variant="solid"
+                size="md"
+                onClick={(e) => { e.stopPropagation(); onAgendarCita(); }}
+                title={t('inmobiliaria.agenda.pedirCita')}
+                aria-label={t('inmobiliaria.agenda.pedirCita')}
+                icon={<CalendarPlus className="w-4 h-4" />}
               />
             )}
           </div>

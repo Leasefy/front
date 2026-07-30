@@ -34,6 +34,16 @@ export interface BackendLease {
   insuranceUrl?: string;
   inventoryUrl?: string;
 
+  // Pending renewal (if the agency started a renovación for this lease)
+  renovacion?: {
+    id: string;
+    status: string;
+    proposedRent: number;
+    proposedAdminFee: number | null;
+    newEndDate: string | null;
+    tenantAcceptedAt: string | null;
+  } | null;
+
   createdAt: string;
   updatedAt: string;
 

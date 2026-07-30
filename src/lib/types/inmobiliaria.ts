@@ -267,8 +267,8 @@ export interface Cobro {
 
   // Tenant info
   tenantName: string;
-  tenantEmail: string;
-  tenantPhone: string;
+  tenantEmail: string | null;
+  tenantPhone: string | null;
 
   // Amounts
   month: string; // '2026-02'
@@ -642,6 +642,10 @@ export interface InmobiliariaDashboardKPIs {
   collectionRate: number;
   totalCommissions: number;
 
+  // Trends (signed % change vs previous month)
+  collectionTrend: number;
+  commissionsTrend: number;
+
   // Pipeline
   activeLeads: number;
   scheduledVisits: number;
@@ -866,8 +870,13 @@ export interface Renovacion {
   proposedRent?: number;   // New rent after IPC
   negotiatedRent?: number; // If different from proposed
 
+  // Building administration fee (administración del conjunto) — also rises
+  currentAdminFee?: number;    // Admin fee before renewal
+  negotiatedAdminFee?: number; // New admin fee set by the admin
+
   // Workflow
   status: RenovacionStatus;
+  tenantAcceptedAt?: string | null;
   history: RenovacionHistoryItem[];
   notifiedAt?: string;
   approvedAt?: string;
@@ -878,6 +887,10 @@ export interface Renovacion {
   newLeaseId?: string;
   newLeaseStartDate?: string;
   newLeaseEndDate?: string;
+
+  // Renewal document (agency-uploaded)
+  documentName?: string;
+  documentPath?: string;
 
   createdAt: string;
   updatedAt: string;

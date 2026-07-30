@@ -5,7 +5,8 @@
 
 import { apiClient, getAccessToken, ApiError } from './client';
 import type { BackendDocumentFull, UploadDocumentDto } from './documents.types';
-import type { BackendDocument } from './applications.types';
+import type { BackendDocument, DocumentReviewStatus } from './applications.types';
+import { normalizeReviewStatus } from '@/lib/documents/review-status';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
@@ -23,11 +24,24 @@ export interface DocumentItem {
   verified: boolean;
   createdAt: string;
   applicationId?: string;
+  /** Review lifecycle status (normalized; defaults to PENDING when absent). */
+  reviewStatus: DocumentReviewStatus;
+  /** ISO timestamp of the last review transition, when available. */
+  reviewedAt?: string | null;
+  /** Reason to surface to the tenant when reviewStatus is REJECTED. */
+  rejectionReason?: string | null;
 }
 
 function mapDocument(bd: BackendDocumentFull | BackendDocument): DocumentItem {
   // BackendDocument uses `originalName` as canonical; BackendDocumentFull uses `fileName`
   const name = ('originalName' in bd ? bd.originalName : undefined) ?? bd.fileName ?? 'documento';
+  const verified = 'verified' in bd ? !!bd.verified : false;
+  const rawReviewStatus = 'reviewStatus' in bd ? bd.reviewStatus : undefined;
+  // Prefer the explicit reviewStatus. Fall back to the legacy `verified` flag so
+  // pre-migration payloads still render an approved badge instead of PENDING.
+  const reviewStatus = normalizeReviewStatus(
+    rawReviewStatus ?? (verified ? 'APPROVED' : undefined),
+  );
   return {
     id: bd.id,
     type: bd.type ?? 'other',
@@ -35,9 +49,12 @@ function mapDocument(bd: BackendDocumentFull | BackendDocument): DocumentItem {
     url: bd.url ?? '',
     mimeType: bd.mimeType ?? 'application/octet-stream',
     size: bd.size ?? 0,
-    verified: 'verified' in bd ? !!bd.verified : false,
+    verified,
     createdAt: bd.createdAt,
     applicationId: bd.applicationId,
+    reviewStatus,
+    reviewedAt: 'reviewedAt' in bd ? bd.reviewedAt : undefined,
+    rejectionReason: 'rejectionReason' in bd ? bd.rejectionReason : undefined,
   };
 }
 

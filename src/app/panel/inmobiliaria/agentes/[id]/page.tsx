@@ -24,6 +24,7 @@ import { AgenteProfile } from '@/components/inmobiliaria/AgenteProfile';
 import { AgenteMetrics } from '@/components/inmobiliaria/AgenteMetrics';
 import { AgentePropertyList } from '@/components/inmobiliaria/AgentePropertyList';
 import { AgentePipeline } from '@/components/inmobiliaria/AgentePipeline';
+import { AgenteHorarioVisitas } from '@/components/inmobiliaria/AgenteHorarioVisitas';
 
 /**
  * Agente Detail Page
@@ -135,6 +136,15 @@ function AgenteDetailContent() {
               consignaciones={consignaciones}
               onAssignProperty={handleAssignProperty}
             />
+          </motion.div>
+
+          {/* Visit working-hours — one schedule for all the agent's properties */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <AgenteHorarioVisitas agenteId={agenteId} />
           </motion.div>
         </div>
 

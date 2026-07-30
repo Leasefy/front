@@ -55,7 +55,12 @@ import type {
 // Generic fetch hook helper
 // ============================================================================
 
-function useApiData<T>(fetcher: () => Promise<T>, deps: unknown[] = [], skip = false) {
+function useApiData<T>(
+  fetcher: () => Promise<T>,
+  deps: unknown[] = [],
+  skip = false,
+  pollMs = 0,
+) {
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +84,19 @@ function useApiData<T>(fetcher: () => Promise<T>, deps: unknown[] = [], skip = f
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
+  // Background refresh that updates data/error WITHOUT flipping the loading
+  // flag — used for live polling so the view never flashes its skeleton.
+  const silentRefetch = useCallback(async (): Promise<void> => {
+    try {
+      const result = await fetcher();
+      setData(result);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al cargar datos');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+
   useEffect(() => {
     if (skip) {
       setIsLoading(false);
@@ -86,6 +104,12 @@ function useApiData<T>(fetcher: () => Promise<T>, deps: unknown[] = [], skip = f
     }
     refetch();
   }, [refetch, skip]);
+
+  useEffect(() => {
+    if (skip || !pollMs) return;
+    const id = setInterval(silentRefetch, pollMs);
+    return () => clearInterval(id);
+  }, [silentRefetch, skip, pollMs]);
 
   return { data, isLoading, error, refetch, setData };
 }
@@ -231,11 +255,12 @@ export function useRenovaciones() {
 // Dashboard KPIs
 // ============================================================================
 
-export function useInmobiliariaDashboard(options?: { skip?: boolean }) {
+export function useInmobiliariaDashboard(options?: { skip?: boolean; pollMs?: number }) {
   const { data, ...rest } = useApiData(
     () => inmobiliariaDashboardApi.getKPIs(),
     [],
-    options?.skip
+    options?.skip,
+    options?.pollMs
   );
   return { kpis: data, ...rest };
 }

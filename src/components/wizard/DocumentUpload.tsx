@@ -52,7 +52,13 @@ export function DocumentUpload({
   hint,
   onDelete,
 }: DocumentUploadProps) {
-  const [state, setState] = useState<UploadState>(value?.file || value?.fileName ? 'success' : 'idle');
+  // A slot with only a fileName (no File in memory, no remoteId on the server)
+  // is STALE — the File object was lost serialising to localStorage on reload.
+  // Treat it as re-uploadable ('idle'), NOT "already uploaded", so the user can
+  // re-attach it instead of being stuck with a preview they can't replace.
+  const [state, setState] = useState<UploadState>(
+    value?.file || value?.remoteId ? 'success' : 'idle',
+  );
   const [uploadError, setUploadError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const generatedId = useId();
@@ -194,7 +200,10 @@ export function DocumentUpload({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const hasFile = value?.file || value?.fileName;
+  // A real, uploadable document: freshly attached (file in memory) or already
+  // on the server (remoteId). A bare fileName is stale (see state init above).
+  const hasRealFile = !!(value?.file || value?.remoteId);
+  const isStale = !!(value?.fileName && !value?.file && !value?.remoteId);
   const displayError = uploadError || error;
 
   return (
@@ -206,7 +215,7 @@ export function DocumentUpload({
       </label>
 
       {/* Upload zone or file preview */}
-      {state === 'success' && hasFile ? (
+      {state === 'success' && hasRealFile ? (
         // Compact file preview - Luxterra style
         <div className="flex items-center gap-3 p-3 bg-success-soft border border-success/30 rounded-sm">
           <div className="flex-shrink-0">
@@ -322,6 +331,14 @@ export function DocumentUpload({
       {/* Hint text */}
       {hint && !displayError && state !== 'error' && (
         <p className="text-xs text-muted-foreground">{hint}</p>
+      )}
+
+      {/* Stale slot — the File was lost serialising to localStorage on reload.
+          Prompt a re-attach so the user knows which document to add again. */}
+      {isStale && state === 'idle' && !displayError && (
+        <p className="text-xs text-warning">
+          Volvé a adjuntar “{value?.fileName}”: se desconectó al recargar la página.
+        </p>
       )}
 
       {/* External error (from form validation) */}

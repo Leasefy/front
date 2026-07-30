@@ -6,6 +6,7 @@
 
 export type TenantPaymentRequestStatus =
   | 'PENDING_VALIDATION'
+  | 'PROCESSING' // pago PSE real en curso — esperando confirmación del webhook Wompi
   | 'APPROVED'
   | 'REJECTED'
   | 'DISPUTED'

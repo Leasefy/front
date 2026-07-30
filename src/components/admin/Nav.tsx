@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { getSupabase } from '@/lib/supabase/client'
 import { Wordmark } from './Wordmark'
 
-/** The 28 nav sections, in order (FRONT.md §5.1). Routes are prefixed /admin. */
+/** The 29 nav sections, in order (FRONT.md §5.1). Routes are prefixed /admin. */
 export const NAV_ITEMS = [
   { href: '/admin', label: 'Resumen', hint: 'dashboard', code: '00' },
   { href: '/admin/agents', label: 'Agentes', hint: 'vapi prompts', code: '01' },
@@ -35,6 +35,7 @@ export const NAV_ITEMS = [
   { href: '/admin/feature-flags', label: 'Flags', hint: 'per-tenant', code: '25' },
   { href: '/admin/pricing-config', label: 'Pricing', hint: 'modelo agencia', code: '26' },
   { href: '/admin/agency-targets', label: 'Targets', hint: 'metas mensuales', code: '27' },
+  { href: '/admin/avaluos', label: 'Avalúos', hint: 'firma certificados', code: '28' },
 ] as const
 
 export function Nav({ userEmail }: { userEmail: string }) {

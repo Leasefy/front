@@ -25,14 +25,16 @@ jobs:
 
       # pnpm is the authoritative package manager for this repo (pnpm-lock.yaml
       # is committed and all docs use `pnpm`). No `packageManager` field exists,
-      # so the version is pinned explicitly here. MUST stay >=11: the repo
-      # migrated to pnpm 11 and pnpm-workspace.yaml uses the `allowBuilds`
-      # settings block, which pnpm 9 rejects ("packages field missing or empty"
-      # on `pnpm store path`, run by setup-node's `cache: pnpm`).
+      # so the version is pinned explicitly here. Pinned to 10.x — a two-sided
+      # constraint: pnpm-workspace.yaml uses the `allowBuilds` settings block,
+      # which pnpm 9 rejects ("packages field missing or empty" on `pnpm store
+      # path`, run by setup-node's `cache: pnpm`); but pnpm 11 needs Node
+      # >=22.13 (imports node:sqlite) and this workflow runs Node 20. 10.x
+      # satisfies both (same major Vercel uses for this repo).
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -109,7 +111,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

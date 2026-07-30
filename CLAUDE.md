@@ -41,6 +41,12 @@ activity feed, execution panel).
 
 - Rutas: `/panel/inmobiliaria/*` (panel agencia, incl. `/ai/cobranza` y `/ai/cotizador`),
   `/panel/(landlord)`, `/inquilino`, `/propiedades`, `/onboarding`, `/aplicar`, `/auth`, `/avaluo`.
+- **Backoffice admin** (`/admin/*`, `src/app/admin/`): panel interno de Leasefy/Portofino
+  (operación cross-tenant). Auth propia (`/admin/login`, allowlist `ADMIN_EMAILS`), sidebar
+  en `src/components/admin/Nav.tsx`. ⚠️ NO usa el design system de shadcn/`DESIGN.md`: tiene
+  el suyo propio (clases `card`/`btn`/`pill`, tokens `fg/bg/brand`, mono) en `admin.css`.
+  Cliente HTTP: `adminApi` (`src/lib/admin/api.ts`, base `NEXT_PUBLIC_ADMIN_API_URL`).
+  Referencia canónica de patrón de pantalla: `/admin/approvals`.
 - Componentes por feature folders en `src/components/` (no atomic design).
 - Patrón páginas de panel: `page.tsx` (Server Component) + `XxxView.tsx` (presentación) +
   `XxxClient.tsx` (interacción).

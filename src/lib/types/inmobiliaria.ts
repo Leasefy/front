@@ -267,8 +267,8 @@ export interface Cobro {
 
   // Tenant info
   tenantName: string;
-  tenantEmail: string;
-  tenantPhone: string;
+  tenantEmail: string | null;
+  tenantPhone: string | null;
 
   // Amounts
   month: string; // '2026-02'

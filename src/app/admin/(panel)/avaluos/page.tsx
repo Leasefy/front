@@ -11,6 +11,7 @@ import {
   CONFIANZA_TONE,
   type PendingReviewItem,
 } from '@/lib/admin/avaluos'
+import { AvaluoRegistros } from './AvaluoRegistros'
 
 // Left-border urgency by confidence: low confidence needs the most eyes.
 function confianzaBorder(item: PendingReviewItem): string {
@@ -120,6 +121,19 @@ export default function AvaluosPage() {
           ))}
         </div>
       )}
+
+      {/* Registros por estado — the full certificate history, filterable by
+          lifecycle state (borrador · en revisión · firmado · rechazado ·
+          entregado). Independent of the "por firmar" queue above. */}
+      <section className="mt-10 pt-8 border-t border-bg-border">
+        <div className="section-label mb-2">registros</div>
+        <h2 className="font-display text-xl tracking-tight text-fg mb-1">Historial por estado</h2>
+        <p className="text-sm text-fg-muted max-w-2xl mb-4">
+          Todos los certificados de avalúo, filtrables por estado del ciclo de vida — no solo
+          la cola por firmar.
+        </p>
+        <AvaluoRegistros />
+      </section>
     </div>
   )
 }

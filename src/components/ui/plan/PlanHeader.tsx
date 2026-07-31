@@ -23,8 +23,8 @@ import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { usePanelPrefsSafe } from '@/lib/context/PanelPrefsContext';
 import type { TenantSubscriptionTextT } from '@/lib/context/TenantProfileContext';
 import { TEAM_ROLES, AGENTE_TEAM_ENTRY, type TeamRole } from '@/lib/types/team';
-import { getTeamMembers, getPendingInvites } from '@/lib/constants/team-data';
 import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service';
+import { useAgencyUsers } from '@/lib/hooks/useInmobiliaria';
 import { toast } from 'sonner';
 import {
   searchData,
@@ -186,8 +186,11 @@ export function PlanHeader({
   // Tier helpers — false when error to avoid asserting a tier we didn't load.
   const isBaseTier = !effectiveSubError && planId === 'starter';
   const isTopTier = !effectiveSubError && planId === 'flex';
-  const teamMembers = getTeamMembers();
-  const pendingInvites = getPendingInvites();
+  // Real agency roster (GET /inmobiliaria/agency/members) — matches the endpoint
+  // the invite form below posts to. Only fetched in the inmobiliaria context;
+  // `skip` avoids a wasted/failing call for landlord/tenant headers.
+  const { users: teamMembers, refetch: refetchTeam } = useAgencyUsers(isInmobiliaria);
+  const pendingInvites = teamMembers.filter((m) => m.status === 'invited');
 
   // MagnifyingGlass functionality
   useEffect(() => {
@@ -819,6 +822,7 @@ export function PlanHeader({
                               });
                               setInviteEmailUndelivered(result.emailDelivered === false);
                               setInviteSent(true);
+                              void refetchTeam();
                             } catch {
                               toast.error('No se pudo enviar la invitación. Intentá de nuevo.');
                             } finally {

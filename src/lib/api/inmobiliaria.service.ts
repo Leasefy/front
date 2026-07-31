@@ -4,6 +4,7 @@
  */
 
 import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
+import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
 import type {
   AgencyProfile,
   UpdateAgencyPayload,
@@ -495,6 +496,112 @@ export const cobrosApi = {
 
   async sendReminder(id: string): Promise<void> {
     await apiClient.post(`${BASE}/cobros/${id}/reminder`, {});
+  },
+};
+
+// ============================================================================
+// Avalúos (agency records-by-state)
+// ============================================================================
+
+/**
+ * One agency avalúo certificate row — the micro's `by-identity` item shape,
+ * proxied verbatim by the back (`GET /inmobiliaria/avaluos`). `valueCop` is null
+ * for a refused valuation; `method` degrades to '—' when the snapshot is missing.
+ */
+export interface AgencyAvaluoItem {
+  id: string;
+  slug: string;
+  state: string;
+  valueCop: number | null;
+  method: string;
+  city: string | null;
+  identity: string;
+  submissionId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  signedAt: string | null;
+}
+
+/** The paginated envelope the back returns (pageSize fixed at 100). */
+export interface AgencyAvaluoListResponse {
+  items: AgencyAvaluoItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/**
+ * POST /inmobiliaria/avaluos/solicitar returns EITHER a fully composed wizard
+ * URL, OR an agency token + wizard path the front composes against its own
+ * configured wizard origin. Both shapes are normalized to `{ wizardUrl }`.
+ */
+export interface AvaluoSolicitarWizardUrlResponse {
+  wizardUrl: string;
+}
+export interface AvaluoSolicitarTokenResponse {
+  agencyToken: string;
+  wizardPath: string;
+}
+export type AvaluoSolicitarResponse =
+  | AvaluoSolicitarWizardUrlResponse
+  | AvaluoSolicitarTokenResponse;
+
+export const avaluosApi = {
+  /**
+   * List the agency's own avalúos, optionally filtered by lifecycle state.
+   * The identity is resolved server-side from the agency context — the browser
+   * never supplies it. Empty until Phase 2 #3 tags new avalúos with the agency
+   * email.
+   */
+  async list(params?: {
+    state?: string;
+    page?: number;
+  }): Promise<AgencyAvaluoListResponse> {
+    const query = new URLSearchParams();
+    if (params?.state) query.set('state', params.state);
+    if (params?.page) query.set('page', String(params.page));
+    const qs = query.toString();
+    return apiClient.get<AgencyAvaluoListResponse>(
+      `${BASE}/avaluos${qs ? `?${qs}` : ''}`,
+    );
+  },
+
+  /**
+   * Request a new avalúo for the agency. The back resolves the agency identity
+   * server-side (permission `avaluos.create`) and answers with either a ready
+   * `wizardUrl` (shape a) or an `agencyToken` + `wizardPath` (shape b) to compose
+   * against the front's configured wizard origin. On 422 (agency missing
+   * email/name) the back's Spanish message surfaces via the thrown ApiError.
+   * Always returns a normalized `{ wizardUrl }`.
+   */
+  async solicitar(): Promise<{ wizardUrl: string }> {
+    const res = await apiClient.post<AvaluoSolicitarResponse>(
+      `${BASE}/avaluos/solicitar`,
+      {},
+    );
+
+    // Shape (a): a fully composed URL — open it directly.
+    if ('wizardUrl' in res && res.wizardUrl) {
+      return { wizardUrl: res.wizardUrl };
+    }
+
+    // Shape (b): compose `${origin}${wizardPath}?agency=<token>`.
+    if ('agencyToken' in res && res.agencyToken && res.wizardPath) {
+      if (!AVALUO_WIZARD_ORIGIN) {
+        throw new ApiError(
+          0,
+          'No pudimos abrir el asistente de avalúo: falta la configuración del servicio.',
+        );
+      }
+      const path = res.wizardPath.startsWith('/')
+        ? res.wizardPath
+        : `/${res.wizardPath}`;
+      return {
+        wizardUrl: `${AVALUO_WIZARD_ORIGIN}${path}?agency=${encodeURIComponent(res.agencyToken)}`,
+      };
+    }
+
+    throw new ApiError(0, 'No pudimos abrir el asistente de avalúo. Intentá de nuevo.');
   },
 };
 

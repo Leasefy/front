@@ -6655,45 +6655,45 @@
           "avaluos": {
             "eyebrow": "Agente · Avalúos",
             "salaTitulo": "Avalúos",
-            "salaDesc": "Pide avalúos certificados de tus inmuebles sin salir del panel: solicitas y pagas en línea, un avaluador certificado visita el inmueble y recibes el informe con certificado firmado. Aquí sigues cada solicitud de principio a fin.",
+            "salaDesc": "Pide estimaciones de valor referencial de tus inmuebles sin salir del panel: generás un link, se cargan los datos del inmueble y el pago en línea, el motor cruza datos del mercado y un revisor de Leasefy firma el certificado. Es 100% remoto, sin visita física. Aquí seguís cada solicitud de principio a fin.",
             "colaTitle": "Mis solicitudes de avalúo",
-            "colaDesc": "Cada avalúo que pediste, de principio a fin: solicitud → visita del avaluador → informe → certificado firmado. Siempre ves el estado al día; la visita y la firma las gestiona el avaluador aliado de Leasefy.",
+            "colaDesc": "Cada avalúo que pediste, de principio a fin: solicitud → estimación con datos de mercado → revisión → certificado firmado. Siempre ves el estado al día; la revisión y la firma las hace un revisor de Leasefy. No se realiza visita física.",
             "colaKpiLabel": "Activas",
             "colaEmptyTitle": "Aún no tienes solicitudes",
-            "colaEmptyHint": "Pide tu primer avalúo: el agente tramita la solicitud y aquí sigues cada paso hasta el certificado firmado.",
+            "colaEmptyHint": "Pide tu primer avalúo: generás el link, se genera la estimación y aquí sigues cada paso hasta el certificado firmado.",
             "casoColaLabel": "Mis solicitudes",
             "misSolicitudes": "Mis solicitudes",
             "solicitarTitle": "Solicitar un avalúo",
-            "solicitarDetalle": "Abre el asistente, carga los datos del inmueble y paga en línea — la visita queda agendada en minutos.",
+            "solicitarDetalle": "Generás un link para compartir, tu cliente carga los datos del inmueble y paga en línea. El avalúo sale a nombre de tu inmobiliaria.",
             "solicitarCta": "Solicitar avalúo",
             "solicitarUnavailable": "El asistente de solicitudes aún no está habilitado en este entorno. Escríbele a tu contacto Leasefy para activarlo.",
             "solicitarProximamente": "Próximamente",
             "comoFunciona": {
               "title": "¿Cómo funciona?",
               "step1": {
-                "title": "Solicita el avalúo",
-                "desc": "Carga los datos del inmueble en el asistente y paga en línea."
+                "title": "Generás y compartís el link",
+                "desc": "Enviás el link a tu cliente; se cargan los datos del inmueble y el pago en línea."
               },
               "step2": {
-                "title": "Visita del avaluador",
-                "desc": "Un avaluador certificado agenda y visita el inmueble."
+                "title": "Estimación con datos de mercado",
+                "desc": "El motor cruza datos del mercado y genera la estimación de valor referencial, sin visita física."
               },
               "step3": {
-                "title": "Informe con datos de mercado",
-                "desc": "El motor del agente cruza datos del mercado y el avaluador prepara el informe."
+                "title": "Revisión y firma",
+                "desc": "Un revisor de Leasefy revisa la estimación y firma el certificado."
               },
               "step4": {
                 "title": "Certificado firmado",
-                "desc": "Descargas el certificado firmado desde Mis solicitudes."
+                "desc": "Descargás el certificado firmado y llega al correo de la inmobiliaria."
               }
             },
-            "firmaNota": "La visita y la firma del certificado las gestiona el avaluador aliado de Leasefy.",
+            "firmaNota": "La revisión y la firma del certificado las hace un revisor de Leasefy. No se realiza visita física al inmueble.",
             "estado": {
               "detectado": "Solicitado",
               "sugerido": "En preparación",
-              "en_revision": "En revisión del avaluador",
+              "en_revision": "En revisión de Leasefy",
               "aprobado": "Aprobado",
-              "ejecutando": "Visita e informe en curso",
+              "ejecutando": "Estimación en curso",
               "resuelto": "Certificado entregado",
               "rechazado": "Rechazado",
               "fallo": "Con problema"

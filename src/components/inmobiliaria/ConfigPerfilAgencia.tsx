@@ -172,7 +172,7 @@ export function ConfigPerfilAgencia({
   canEdit = true,
   isLoading = false,
 }: ConfigPerfilAgenciaProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -182,6 +182,12 @@ export function ConfigPerfilAgencia({
 
   const reminderDaysBefore = agency.reminderDaysBefore ?? [];
   const reminderDaysAfter = agency.reminderDaysAfter ?? [];
+
+  // NIT is write-once: once the agency has one, it can only be changed by
+  // contacting Leasefy support (the backend rejects a change with 403). Lock the
+  // field in the UI so the user never hits that error — mirrors the tenant rut
+  // lock (isRutLocked) in app/inquilino/perfil.
+  const nitLocked = Boolean(agency.nit?.trim());
 
   const updateField = useCallback(
     (field: keyof PerfilFormState, value: string | number | number[]) => {
@@ -208,11 +214,13 @@ export function ConfigPerfilAgencia({
     updateField(field, next);
   };
 
-  // NIT format validation: XXX.XXX.XXX-X (also accepted without dots)
+  // NIT format validation. Colombian NIT/cédula base numbers are not always 9
+  // digits: companies use 9, but natural-person agencies use their cédula, which
+  // can be 8-11 digits (e.g. 1090525663-1). Normalize separators (dots/spaces)
+  // first, then accept 8-11 base digits + a single verification digit.
   const validateNIT = (nit: string): boolean => {
-    const nitPattern = /^\d{3}\.\d{3}\.\d{3}-\d$/;
-    const nitPatternAlt = /^\d{9}-\d$/;
-    return nitPattern.test(nit) || nitPatternAlt.test(nit);
+    const normalized = nit.replace(/[.\s]/g, '');
+    return /^\d{8,11}-\d$/.test(normalized);
   };
 
   const validate = (): boolean => {
@@ -278,6 +286,9 @@ export function ConfigPerfilAgencia({
       'registroCamara',
     ] as const;
     for (const field of stringFields) {
+      // Never send nit once it's locked — it's immutable server-side and the
+      // input is disabled, so a stray value would only earn a 403.
+      if (field === 'nit' && nitLocked) continue;
       const value = formData[field].trim();
       if (value !== original[field]) {
         payload[field] = value;
@@ -589,7 +600,13 @@ export function ConfigPerfilAgencia({
             <InputWrapper
               label={t('inmobiliaria.config.profile.nit')}
               error={touched.nit ? errors.nit : undefined}
-              hint={t('inmobiliaria.config.profile.nitFormat')}
+              hint={
+                nitLocked
+                  ? locale === 'es'
+                    ? 'Para cambiar el NIT, contacta al soporte de Leasefy.'
+                    : 'To change the NIT, contact Leasefy support.'
+                  : t('inmobiliaria.config.profile.nitFormat')
+              }
             >
               <div className="relative">
                 <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -597,8 +614,13 @@ export function ConfigPerfilAgencia({
                   type="text"
                   value={formData.nit}
                   onChange={(e) => updateField('nit', e.target.value)}
+                  disabled={nitLocked}
                   placeholder="901.234.567-8"
-                  className={cn('w-full pl-10', touched.nit && errors.nit && 'border-danger/30')}
+                  className={cn(
+                    'w-full pl-10',
+                    nitLocked && 'bg-surface-muted cursor-not-allowed',
+                    touched.nit && errors.nit && 'border-danger/30',
+                  )}
                 />
               </div>
             </InputWrapper>

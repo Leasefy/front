@@ -1273,3 +1273,63 @@ export const permissionsApi = {
     return apiClient.put(`${BASE}/agency/members/${memberId}/status`, { active });
   },
 };
+
+// ============================================================================
+// Role Permissions (per-agency role templates)
+// ============================================================================
+
+/** The 5 granular actions a role can hold on a module. */
+export type AgencyAction = 'view' | 'create' | 'edit' | 'delete' | 'export';
+
+/** module key → allowed actions (an absent module means no access). */
+export type PermMap = Record<string, AgencyAction[]>;
+
+/**
+ * The caller agency's full per-role permission matrix. Each role's PermMap is
+ * COMPLETE across all modules (an absent module resolves to []). ADMIN is
+ * full-access and read-only — the backend ignores it on writes.
+ */
+export interface RoleMatrices {
+  roles: {
+    ADMIN: PermMap;
+    AGENTE: PermMap;
+    CONTADOR: PermMap;
+    VIEWER: PermMap;
+  };
+}
+
+/** Body for the PUT — only the editable roles; ADMIN is never sent. */
+export interface UpdateRolePermissionsBody {
+  AGENTE?: PermMap;
+  CONTADOR?: PermMap;
+  VIEWER?: PermMap;
+}
+
+export const rolePermissionsApi = {
+  /**
+   * GET /inmobiliaria/agency/role-permissions
+   * Returns the agency's per-role permission matrices (admin only; 403 otherwise).
+   */
+  async getRolePermissions(): Promise<RoleMatrices> {
+    return apiClient.get<RoleMatrices>(`${BASE}/agency/role-permissions`);
+  },
+
+  /**
+   * PUT /inmobiliaria/agency/role-permissions
+   * Persists the edited role templates (admin only). Side effect: the backend
+   * clears per-member permission overrides for ACTIVE members of the edited
+   * roles so the template applies immediately.
+   */
+  async updateRolePermissions(body: UpdateRolePermissionsBody): Promise<RoleMatrices> {
+    return apiClient.put<RoleMatrices>(`${BASE}/agency/role-permissions`, body);
+  },
+
+  /**
+   * DELETE /inmobiliaria/agency/role-permissions
+   * Resets every role to the system defaults (admin only). Also clears
+   * per-member overrides for AGENTE/CONTADOR/VIEWER.
+   */
+  async resetRolePermissions(): Promise<RoleMatrices> {
+    return apiClient.delete<RoleMatrices>(`${BASE}/agency/role-permissions`);
+  },
+};

@@ -1097,6 +1097,8 @@
         "userDeleted": "User deleted",
         "permissionsSaved": "Permissions updated",
         "permissionsSavedDesc": "Permission changes have been saved",
+        "permissionsReset": "Permissions reset",
+        "permissionsResetDesc": "All role permissions were restored to their default values",
         "integrationEnabled": "Integration enabled",
         "integrationDisabled": "Integration disabled",
         "configureIntegration": "Configure integration",
@@ -1217,7 +1219,12 @@
         "uploading": "Uploading logo...",
         "saveColors": "Save colors",
         "colorsSaved": "Colors updated",
-        "invalidHex": "Invalid color. Use the #RRGGBB format."
+        "invalidHex": "Invalid color. Use the #RRGGBB format.",
+        "socials": "Social media",
+        "socialsDesc": "Links to your networks; shown on your published listings",
+        "saveSocials": "Save social links",
+        "socialsSaved": "Social links updated",
+        "invalidUrl": "Invalid link. Must start with http:// or https://"
       },
       "users": {
         "title": "Team",
@@ -1323,7 +1330,8 @@
         "resetTitle": "Reset permissions",
         "resetDescription": "This will reset permissions for all roles to their default values.",
         "resetWarning": "All custom changes will be lost. This action cannot be undone.",
-        "adminNote": "Admins have all permissions by default and cannot be modified."
+        "adminNote": "Admins have all permissions by default and cannot be modified.",
+        "memberOverrideNote": "Saving or resetting a role's permissions will reset the individual customizations of that role's members."
       },
       "integrations": {
         "title": "Integrations",

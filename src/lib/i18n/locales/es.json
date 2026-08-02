@@ -1098,6 +1098,8 @@
         "userDeleted": "Usuario eliminado",
         "permissionsSaved": "Permisos actualizados",
         "permissionsSavedDesc": "Los cambios en los permisos han sido guardados",
+        "permissionsReset": "Permisos restablecidos",
+        "permissionsResetDesc": "Los permisos de todos los roles volvieron a sus valores por defecto",
         "integrationEnabled": "Integración activada",
         "integrationDisabled": "Integración desactivada",
         "configureIntegration": "Configurar integración",
@@ -1218,7 +1220,12 @@
         "uploading": "Subiendo logo...",
         "saveColors": "Guardar colores",
         "colorsSaved": "Colores actualizados",
-        "invalidHex": "Color inválido. Usa el formato #RRGGBB."
+        "invalidHex": "Color inválido. Usa el formato #RRGGBB.",
+        "socials": "Redes sociales",
+        "socialsDesc": "Enlaces a tus redes; se muestran en tus inmuebles publicados",
+        "saveSocials": "Guardar redes",
+        "socialsSaved": "Redes sociales actualizadas",
+        "invalidUrl": "Enlace inválido. Debe empezar con http:// o https://"
       },
       "users": {
         "title": "Equipo",
@@ -1324,7 +1331,8 @@
         "resetTitle": "Restablecer permisos",
         "resetDescription": "Esto restablecera los permisos de todos los roles a sus valores por defecto.",
         "resetWarning": "Todos los cambios personalizados se perderan. Esta accion no se puede deshacer.",
-        "adminNote": "Los administradores tienen todos los permisos por defecto y no se pueden modificar."
+        "adminNote": "Los administradores tienen todos los permisos por defecto y no se pueden modificar.",
+        "memberOverrideNote": "Guardar o restablecer los permisos de un rol restablece las personalizaciones individuales de los miembros de ese rol."
       },
       "integrations": {
         "title": "Integraciones",

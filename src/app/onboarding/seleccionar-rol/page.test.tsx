@@ -17,6 +17,8 @@ const { replaceMock, authState } = vi.hoisted(() => ({
   authState: {
     user: null as Record<string, unknown> | null,
     hasActiveAgencyMembership: false,
+    agencyMembershipChecked: true,
+    agencyRole: null as string | null,
   },
 }))
 
@@ -25,7 +27,12 @@ vi.mock('next/navigation', () => ({
 }))
 
 vi.mock('@/lib/auth/use-auth', () => ({
-  useAuth: () => ({ user: authState.user, hasActiveAgencyMembership: authState.hasActiveAgencyMembership }),
+  useAuth: () => ({
+    user: authState.user,
+    hasActiveAgencyMembership: authState.hasActiveAgencyMembership,
+    agencyMembershipChecked: authState.agencyMembershipChecked,
+    agencyRole: authState.agencyRole,
+  }),
 }))
 
 import SeleccionarRolPage from './page'
@@ -38,6 +45,8 @@ beforeEach(() => {
   replaceMock.mockClear()
   authState.user = null
   authState.hasActiveAgencyMembership = false
+  authState.agencyMembershipChecked = true
+  authState.agencyRole = null
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -79,6 +88,29 @@ describe('SeleccionarRolPage — invitation guard', () => {
     await render()
 
     expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')
+    expect(container.textContent).not.toContain('Propietario')
+  })
+
+  it('redirects an ACTIVE agency member to their per-sub-role landing route (CONTADOR → cobros)', async () => {
+    authState.hasActiveAgencyMembership = true
+    authState.agencyRole = 'CONTADOR'
+
+    await render()
+
+    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/cobros')
+    expect(container.textContent).not.toContain('Propietario')
+  })
+
+  it('waits (no picker, no redirect) while the agency-membership probe is unsettled for a logged-in user', async () => {
+    // A freshly-authenticated user (e.g. an invited CONTADOR) whose membership
+    // probe has not resolved yet must NOT flash the personal role picker.
+    authState.user = { name: 'Ana', onboardingCompleted: false }
+    authState.agencyMembershipChecked = false
+
+    await render()
+
+    expect(replaceMock).not.toHaveBeenCalled()
+    expect(container.textContent).not.toContain('Inquilino')
     expect(container.textContent).not.toContain('Propietario')
   })
 })

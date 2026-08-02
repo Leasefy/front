@@ -47,13 +47,15 @@ const PRICE_RANGES = [
 interface PropertySearchViewProps {
   /** When true, renders without Navbar and adapts layout for embedding inside dashboard */
   embedded?: boolean;
+  /** Prefix for card detail links. Public '/propiedades', tenant '/inquilino/propiedades'. */
+  basePath?: string;
 }
 
 /**
  * Reusable property search view.
  * Used by /propiedades (public, with Navbar) and /inquilino/explorar (embedded in tenant layout).
  */
-export function PropertySearchView({ embedded = false }: PropertySearchViewProps) {
+export function PropertySearchView({ embedded = false, basePath }: PropertySearchViewProps) {
   const searchParams = useSearchParams();
   const heroQuery = searchParams.get('q');
   const [showMap, setShowMap] = useState(false);
@@ -401,6 +403,7 @@ export function PropertySearchView({ embedded = false }: PropertySearchViewProps
               hoveredPropertyId={hoveredPropertyId}
               onPropertyHover={setHoveredPropertyId}
               propertyRefCallback={propertyRefCallback}
+              basePath={basePath}
             />
           </div>
         </div>

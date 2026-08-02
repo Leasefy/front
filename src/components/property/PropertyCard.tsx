@@ -20,6 +20,8 @@ export interface PropertyCardProps {
   onHoverStart?: () => void;
   onHoverEnd?: () => void;
   className?: string;
+  /** Prefix for the detail link. Public '/propiedades', tenant '/inquilino/propiedades'. */
+  basePath?: string;
 }
 
 export function PropertyCard({
@@ -31,6 +33,7 @@ export function PropertyCard({
   onHoverStart,
   onHoverEnd,
   className,
+  basePath = '/propiedades',
 }: PropertyCardProps) {
   const {
     id,
@@ -45,6 +48,7 @@ export function PropertyCard({
     area,
     status,
     type,
+    agencyName,
   } = property;
 
   const [activeImage, setActiveImage] = useState(0);
@@ -97,7 +101,7 @@ export function PropertyCard({
 
   return (
     <Link
-      href={`/propiedades/${id}`}
+      href={`${basePath}/${id}`}
       className={cn(
         'group block rounded-xl transition-all duration-300 ease-out',
         isHighlighted && 'ring-2 ring-primary ring-offset-2',
@@ -264,6 +268,13 @@ export function PropertyCard({
         <h3 className="text-[16px] font-heading font-semibold text-foreground tracking-[-0.02em] leading-snug truncate group-hover:text-primary transition-colors duration-200">
           {title}
         </h3>
+
+        {/* Offering agency — only when the property belongs to an agency */}
+        {agencyName && (
+          <p className="text-[12px] text-muted-foreground truncate mt-0.5">
+            Ofrecido por {agencyName}
+          </p>
+        )}
 
         {/* Price — prominent */}
         <p className="text-[22px] font-mono tabular-nums font-bold text-foreground tracking-[-0.03em] leading-none mt-3">

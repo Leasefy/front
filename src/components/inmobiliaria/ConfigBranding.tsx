@@ -13,13 +13,14 @@ import {
   User,
   Info,
   Check,
+  ShareNetwork,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Button, Input } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
-import type { AgencyProfile } from '@/lib/types/inmobiliaria';
+import type { AgencyProfile, AgencySocials } from '@/lib/types/inmobiliaria';
 import { getDefaultBranding } from '@/lib/types/inmobiliaria';
 
 interface ConfigBrandingProps {
@@ -40,6 +41,30 @@ const ACCEPTED_FORMATS = ['image/jpeg', 'image/png', 'image/webp'];
 
 // Backend contract: branding colors are hex '#rrggbb' only
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+// Lenient URL check for the optional social links (must start with http/https)
+const HTTP_URL = /^https?:\/\/.+/i;
+
+// The five social networks stored in Agency.branding.socials — order + copy
+const SOCIAL_NETWORKS: {
+  key: keyof AgencySocials;
+  label: string;
+  placeholder: string;
+}[] = [
+  { key: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/tuinmobiliaria' },
+  { key: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/tuinmobiliaria' },
+  { key: 'x', label: 'X (Twitter)', placeholder: 'https://x.com/tuinmobiliaria' },
+  { key: 'tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@tuinmobiliaria' },
+  { key: 'whatsapp', label: 'WhatsApp', placeholder: 'https://wa.me/573001234567' },
+];
+
+const EMPTY_SOCIALS: Record<keyof AgencySocials, string> = {
+  instagram: '',
+  facebook: '',
+  x: '',
+  tiktok: '',
+  whatsapp: '',
+};
 
 /**
  * ConfigBranding — agency logo + brand colors wired to the real backend contract.
@@ -118,6 +143,74 @@ export function ConfigBranding({
       });
     } finally {
       setIsSavingColors(false);
+    }
+  };
+
+  // Social media links — seeded from the saved branding.socials (fallback empty)
+  const savedSocials = agency.branding?.socials ?? null;
+  const [socials, setSocials] = useState<Record<keyof AgencySocials, string>>({
+    ...EMPTY_SOCIALS,
+    ...Object.fromEntries(
+      SOCIAL_NETWORKS.map((n) => [n.key, savedSocials?.[n.key] ?? ''])
+    ),
+  });
+  const [socialErrors, setSocialErrors] = useState<Partial<Record<keyof AgencySocials, string>>>({});
+  const [isSavingSocials, setIsSavingSocials] = useState(false);
+
+  // Re-seed local editors when the parent refetches the agency
+  const savedSocialsKey = JSON.stringify(savedSocials ?? {});
+  useEffect(() => {
+    setSocials({
+      ...EMPTY_SOCIALS,
+      ...Object.fromEntries(
+        SOCIAL_NETWORKS.map((n) => [n.key, savedSocials?.[n.key] ?? ''])
+      ),
+    });
+    setSocialErrors({});
+    // savedSocialsKey is a stable serialization of savedSocials
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedSocialsKey]);
+
+  const handleSaveSocials = async () => {
+    // Trim everything up front — a blank network is an empty string, not omitted
+    const trimmed = Object.fromEntries(
+      SOCIAL_NETWORKS.map((n) => [n.key, socials[n.key].trim()])
+    ) as Record<keyof AgencySocials, string>;
+
+    // Light, lenient validation: non-empty values must look like a URL
+    const errors: Partial<Record<keyof AgencySocials, string>> = {};
+    for (const n of SOCIAL_NETWORKS) {
+      const value = trimmed[n.key];
+      if (value && !HTTP_URL.test(value)) {
+        errors[n.key] = t('inmobiliaria.config.brandingSection.invalidUrl');
+      }
+    }
+    setSocialErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    // ALWAYS send the COMPLETE socials object (all 5 keys) so partial edits
+    // don't drop other networks. Sending only { branding: { socials } } keeps
+    // the colors — the backend deep-merges branding top-level keys.
+    const socialsPayload: AgencySocials = {
+      instagram: trimmed.instagram,
+      facebook: trimmed.facebook,
+      x: trimmed.x,
+      tiktok: trimmed.tiktok,
+      whatsapp: trimmed.whatsapp,
+    };
+
+    setIsSavingSocials(true);
+    try {
+      await agencyApi.updateAgency({ branding: { socials: socialsPayload } });
+      toast.success(t('inmobiliaria.config.brandingSection.socialsSaved'));
+      await onBrandingUpdated?.();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : undefined;
+      toast.error(t('inmobiliaria.config.brandingSection.saveError'), {
+        description: message,
+      });
+    } finally {
+      setIsSavingSocials(false);
     }
   };
 
@@ -362,6 +455,65 @@ export function ConfigBranding({
               <>
                 <Check className="w-4 h-4" />
                 {t('inmobiliaria.config.brandingSection.saveColors')}
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Social Media Section — persisted via PUT /inmobiliaria/agency (branding.socials) */}
+      <div className="space-y-4 p-5 rounded-xl bg-card border border-border">
+        <div className="flex items-center gap-2 text-foreground">
+          <ShareNetwork className="w-5 h-5 text-fg-muted" weight="duotone" />
+          <h3 className="text-base font-semibold">{t('inmobiliaria.config.brandingSection.socials')}</h3>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {t('inmobiliaria.config.brandingSection.socialsDesc')}
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {SOCIAL_NETWORKS.map((network) => (
+            <div key={network.key} className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">{network.label}</label>
+              <Input
+                type="url"
+                inputMode="url"
+                value={socials[network.key]}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSocials((prev) => ({ ...prev, [network.key]: value }));
+                  setSocialErrors((prev) => ({ ...prev, [network.key]: undefined }));
+                }}
+                disabled={!canEdit || isSavingSocials}
+                placeholder={network.placeholder}
+                data-testid={`branding-social-${network.key}`}
+                className={cn('w-full', socialErrors[network.key] && 'border-danger/30')}
+              />
+              {socialErrors[network.key] && (
+                <p className="text-xs text-danger flex items-center gap-1">
+                  <Warning className="w-3 h-3" />
+                  {socialErrors[network.key]}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-end pt-2">
+          <Button
+            type="button"
+            size="sm"
+            hideArrow
+            onClick={handleSaveSocials}
+            disabled={!canEdit || isSavingSocials}
+            isLoading={isSavingSocials}
+          >
+            {isSavingSocials ? (
+              t('inmobiliaria.common.saving')
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                {t('inmobiliaria.config.brandingSection.saveSocials')}
               </>
             )}
           </Button>

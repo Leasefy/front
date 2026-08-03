@@ -16,6 +16,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
 import { StepChooseMethod } from './steps/StepChooseMethod';
 import { StepUploadFile } from './steps/StepUploadFile';
 import { StepColumnMapping } from './steps/StepColumnMapping';
@@ -185,7 +186,8 @@ export function ImportWizard() {
 
             return (
               <div key={step.id} className="flex items-center flex-1">
-                {/* Step Circle */}
+                {/* allowlist: clickable wizard step navigator (icon-per-step, label-below,
+                    done/active/upcoming) — Cadence Stepper is display-only; kept native */}
                 <button
                   onClick={() => status !== 'upcoming' && goToStep(step.id)}
                   disabled={status === 'upcoming'}
@@ -197,10 +199,10 @@ export function ImportWizard() {
                   <div className={cn(
                     'w-12 h-12 rounded-full flex items-center justify-center transition-all',
                     status === 'completed'
-                      ? 'bg-emerald-500 text-white'
+                      ? 'bg-success text-white'
                       : status === 'current'
-                        ? 'bg-indigo-600 text-white ring-4 ring-indigo-500/20'
-                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'
+                        ? 'bg-primary text-primary-fg ring-4 ring-primary/30'
+                        : 'bg-surface-muted dark:bg-ink text-fg-subtle'
                   )}>
                     {status === 'completed' ? (
                       <Check className="w-5 h-5" weight="bold" />
@@ -211,10 +213,10 @@ export function ImportWizard() {
                   <span className={cn(
                     'text-xs font-medium whitespace-nowrap',
                     status === 'current'
-                      ? 'text-indigo-600 dark:text-indigo-400'
+                      ? 'text-primary'
                       : status === 'completed'
-                        ? 'text-neutral-900 dark:text-white'
-                        : 'text-neutral-400'
+                        ? 'text-fg dark:text-white'
+                        : 'text-fg-subtle'
                   )}>
                     {t(step.labelKey)}
                   </span>
@@ -225,8 +227,8 @@ export function ImportWizard() {
                   <div className={cn(
                     'flex-1 h-0.5 mx-2',
                     step.id < currentStep
-                      ? 'bg-emerald-500'
-                      : 'bg-neutral-200 dark:bg-neutral-700'
+                      ? 'bg-success'
+                      : 'bg-surface-muted dark:bg-ink'
                   )} />
                 )}
               </div>
@@ -237,18 +239,18 @@ export function ImportWizard() {
         {/* Mobile Progress */}
         <div className="md:hidden">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-neutral-900 dark:text-white">
+            <span className="text-sm font-medium text-fg dark:text-white">
               {t('inmobiliaria.import.wizard.mobileProgress', {
                 current: currentStep,
                 total: visibleSteps.length,
                 label: t(visibleSteps[currentStep - 1]?.labelKey ?? ''),
               })}
             </span>
-            <span className="text-sm text-neutral-500">{Math.round((currentStep / visibleSteps.length) * 100)}%</span>
+            <span className="text-sm text-fg-muted">{Math.round((currentStep / visibleSteps.length) * 100)}%</span>
           </div>
-          <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-indigo-600"
+              className="h-full bg-primary"
               initial={false}
               animate={{ width: `${(currentStep / visibleSteps.length) * 100}%` }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -258,7 +260,7 @@ export function ImportWizard() {
       </div>
 
       {/* Step Content */}
-      <div className="bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-700">
+      <div className="bg-surface dark:bg-[#14130F] rounded-xl border border-border dark:border-strong">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -275,53 +277,53 @@ export function ImportWizard() {
 
         {/* Footer Navigation — hidden when import is complete */}
         {!(currentStep === 5 && wizardState.importedCount > 0) && (
-          <div className="px-6 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-[#141416] flex items-center justify-between">
+          <div className="px-6 py-4 border-t border-faint dark:border-strong bg-surface-muted dark:bg-[#14130F] flex items-center justify-between">
             {/* Cancel Button */}
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              hideArrow
               onClick={handleCancel}
-              className="px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 font-medium font-mono uppercase tracking-wide text-sm hover:text-neutral-900 dark:hover:text-white transition-colors"
             >
               {t('inmobiliaria.import.wizard.cancel')}
-            </button>
+            </Button>
 
             {/* Navigation Buttons */}
             <div className="flex items-center gap-3">
               {currentStep > 1 && (
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  hideArrow
                   onClick={goToPreviousStep}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium font-mono uppercase tracking-wide text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  className="gap-2"
                 >
                   <CaretLeft className="w-4 h-4" />
                   {t('inmobiliaria.import.wizard.previous')}
-                </button>
+                </Button>
               )}
 
               {/* Portal terminal step: show "Volver al portafolio" instead of "Siguiente" */}
               {wizardState.method === 'portal' && currentStep === 2 ? (
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  hideArrow
                   onClick={confirmCancel}
-                  className="inline-flex items-center gap-2 px-5 py-2 rounded-xl font-medium transition-all font-mono uppercase tracking-wide text-sm border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
                 >
                   {t('inmobiliaria.import.portal.backToPortfolio')}
-                </button>
+                </Button>
               ) : currentStep < visibleSteps.length ? (
-                <button
+                <Button
                   type="button"
+                  hideArrow
                   onClick={goToNextStep}
                   disabled={!isStepValid}
-                  className={cn(
-                    'inline-flex items-center gap-2 px-5 py-2 rounded-xl font-medium transition-all font-mono uppercase tracking-wide text-sm',
-                    isStepValid
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed'
-                  )}
+                  className="gap-2"
                 >
                   {t('inmobiliaria.import.wizard.next')}
                   <CaretRight className="w-4 h-4" />
-                </button>
+                </Button>
               ) : null}
             </div>
           </div>
@@ -343,35 +345,37 @@ export function ImportWizard() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700 shadow-xl"
+              className="w-full max-w-md p-6 rounded-xl bg-surface dark:bg-[#14130F] border border-border dark:border-strong"
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                  <X className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">
+                  <X className="w-5 h-5 text-warning" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-neutral-900 dark:text-white">
+                  <h3 className="font-semibold text-fg dark:text-white">
                     {t('inmobiliaria.import.wizard.cancelDialog.title')}
                   </h3>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
                     {t('inmobiliaria.import.wizard.cancelDialog.description')}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center justify-end gap-3">
-                <button
+                <Button
+                  variant="outline"
+                  hideArrow
                   onClick={() => setShowCancelDialog(false)}
-                  className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 font-medium font-mono uppercase tracking-wide text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
                   {t('inmobiliaria.import.wizard.cancelDialog.continueEditing')}
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="destructive"
+                  hideArrow
                   onClick={confirmCancel}
-                  className="px-4 py-2 rounded-xl bg-red-500 text-white uppercase tracking-wide font-mono font-medium hover:bg-red-600 transition-colors"
                 >
                   {t('inmobiliaria.import.wizard.cancelDialog.yesCancel')}
-                </button>
+                </Button>
               </div>
             </motion.div>
           </motion.div>

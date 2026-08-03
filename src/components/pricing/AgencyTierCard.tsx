@@ -64,7 +64,8 @@ export function AgencyTierCard({
   const buttonEl = (
     <Button
       variant={selected ? 'default' : (popular || isFlex) ? 'default' : 'outline'}
-      className={cn("w-full rounded-xl", isFlex && !selected && "bg-amber-500 hover:bg-amber-600 text-white")}
+      hideArrow
+      className={cn("w-full", isFlex && !selected && "bg-warning hover:bg-warning text-white")}
       onClick={onSelect}
     >
       {label}
@@ -79,19 +80,19 @@ export function AgencyTierCard({
       whileHover={{ y: -4 }}
       transition={{ duration: 0.3 }}
       className={cn(
-        'relative rounded-2xl bg-card p-6 flex flex-col transition-all duration-300',
+        'relative rounded-[20px] bg-card p-6 flex flex-col transition-all duration-300',
         selected
-          ? 'border-2 border-indigo-600 ring-2 ring-indigo-600/20 shadow-xl'
+          ? 'border-2 border-primary/30 ring-2 ring-primary/20'
           : isFlex
-            ? 'border-2 border-amber-400 shadow-lg shadow-amber-500/10'
+            ? 'border-2 border-warning/30 shadow-warning/10'
             : popular
-              ? 'border border-indigo-600/50'
-              : 'border border-border hover:border-indigo-600/30 hover:shadow-lg'
+              ? 'border border-primary/30'
+              : 'border border-border hover:border-primary/30'
       )}
     >
       {isFlex && !selected && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-lg shadow-amber-500/25">
+          <span className="bg-gradient-to-r from-warning to-warning text-white text-[11px] font-semibold px-4 py-1.5 rounded-full shadow-warning/25">
             Todo incluido
           </span>
         </div>
@@ -99,7 +100,7 @@ export function AgencyTierCard({
 
       {popular && !selected && !isFlex && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-indigo-600 text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full">
+          <span className="bg-primary text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full">
             Más popular
           </span>
         </div>
@@ -107,7 +108,7 @@ export function AgencyTierCard({
 
       {selected && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-indigo-600 text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5">
+          <span className="bg-primary text-white uppercase tracking-wide font-mono text-[11px] font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5">
             <Check className="w-3 h-3" />
             Seleccionado
           </span>
@@ -121,10 +122,10 @@ export function AgencyTierCard({
 
       <div className="mb-5">
         {isEnterprise ? (
-          <span className="text-[28px] font-heading font-bold text-foreground">{price}</span>
+          <span className="text-[28px] font-mono font-bold tabular-nums text-foreground">{price}</span>
         ) : (
           <>
-            <span className="text-[32px] font-heading font-bold text-foreground">{noCurrencySymbol ? '' : '$'}{price}</span>
+            <span className="text-[32px] font-mono font-bold tabular-nums text-foreground">{noCurrencySymbol ? '' : '$'}{price}</span>
             {period && <span className="text-muted-foreground text-[13px] ml-1">{period}</span>}
           </>
         )}
@@ -133,14 +134,14 @@ export function AgencyTierCard({
       {/* Limits - only shown when properties/users are provided */}
       {showLimits && (
         <div className="flex gap-4 mb-5 pb-5 border-b border-border">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-lg">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-md">
             <Buildings className="w-4 h-4 text-primary" />
-            <span className="text-[13px] text-foreground font-semibold">{properties}</span>
+            <span className="text-[13px] text-foreground font-semibold font-mono tabular-nums">{properties}</span>
             <span className="text-[11px] text-muted-foreground">propiedades</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-lg">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-md">
             <Users className="w-4 h-4 text-primary" />
-            <span className="text-[13px] text-foreground font-semibold">{users}</span>
+            <span className="text-[13px] text-foreground font-semibold font-mono tabular-nums">{users}</span>
             <span className="text-[11px] text-muted-foreground">usuarios</span>
           </div>
         </div>
@@ -150,7 +151,7 @@ export function AgencyTierCard({
       <ul className="space-y-3 flex-1 mb-4">
         {features.map((feature, i) => (
           <li key={i} className="flex items-start gap-2.5">
-            <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+            <CheckCircle className="w-4 h-4 text-success shrink-0 mt-0.5" />
             <span className="text-[13px] text-muted-foreground">{feature}</span>
           </li>
         ))}
@@ -158,13 +159,14 @@ export function AgencyTierCard({
 
       {/* View details link */}
       {onViewDetails && (
-        <button
-          type="button"
+        <Button
+          variant="link"
+          size="sm"
           onClick={onViewDetails}
-          className="text-[13px] font-medium text-primary hover:text-primary/80 transition-colors text-left mb-4"
+          className="text-[13px] text-left mb-4 px-0 h-auto"
         >
-          Conocer más →
-        </button>
+          Conocer más
+        </Button>
       )}
 
       {/* Add-ons toggle */}
@@ -191,7 +193,7 @@ export function AgencyTierCard({
                   {addons.map((addon, i) => (
                     <div key={i} className="flex items-center justify-between text-[12px]">
                       <span className="text-muted-foreground">{addon.label}</span>
-                      <span className="font-semibold text-foreground">{addon.price}</span>
+                      <span className="font-semibold font-mono tabular-nums text-foreground">{addon.price}</span>
                     </div>
                   ))}
                 </div>
@@ -228,7 +230,7 @@ export function BenefitCard({
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="rounded-2xl border border-border bg-card p-6 hover:shadow-lg transition-shadow"
+      className="rounded-[20px] border border-border bg-card p-6 transition-shadow"
     >
       <h4 className="text-[15px] font-semibold text-foreground">{title}</h4>
       <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed">{description}</p>

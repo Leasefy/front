@@ -16,12 +16,12 @@ export type ArcoStatusBadgeProps = {
 }
 
 const STATUS_COLORS: Record<ArcoStatus, string> = {
-  pending_email_verification: 'text-neutral-600 bg-neutral-100 dark:bg-neutral-800',
-  pending_admin_triage: 'text-amber-700 bg-amber-50 dark:bg-amber-950/20',
-  in_progress: 'text-indigo-700 bg-indigo-50 dark:bg-indigo-950/30',
-  pending_counsel_review: 'text-amber-700 bg-amber-50 dark:bg-amber-950/20',
-  resolved: 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/20',
-  rejected: 'text-rose-700 bg-rose-50 dark:bg-rose-950/20',
+  pending_email_verification: 'text-fg-muted bg-surface-muted',
+  pending_admin_triage: 'text-warning bg-warning-soft',
+  in_progress: 'text-primary bg-primary-soft',
+  pending_counsel_review: 'text-warning bg-warning-soft',
+  resolved: 'text-success bg-success-soft',
+  rejected: 'text-danger bg-danger-soft',
 }
 
 const FALLBACK_STATUS: ArcoStatus = 'pending_admin_triage'

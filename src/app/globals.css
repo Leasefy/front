@@ -18,38 +18,46 @@
      * Use these via Tailwind: text-indigo-500, bg-sand-50, etc.
      * -------------------------------------------------------- */
 
-    /* Primary (Indigo) */
-    --indigo-50:  237 100% 97%;   /* #F2F3FF */
-    --indigo-100: 237 100% 95%;   /* #E5E7FF */
-    --indigo-200: 237 100% 90%;   /* #C9CCFF */
-    --indigo-300: 237 100% 83%;   /* #A6AAFF */
-    --indigo-500: 238 82% 65%;    /* #5B5FEF */
-    --indigo-600: 238 76% 59%;    /* #4A4FE6 */
-    --indigo-700: 238 52% 52%;    /* #3E41C9 */
-    --indigo-800: 239 55% 41%;    /* #2E2FA3 */
-    --indigo-900: 239 50% 28%;    /* #23246E */
-    --indigo-950: 240 45% 12%;    /* #111127 — almost black with indigo tint */
+    /* Primary (Leasefy Blue #1A40FF) — Manus-inspired redesign
+     * NOTE: token name kept as --indigo-* for backward compat; values are now
+     * the Leasefy electric-blue scale. All `text-indigo-*`/`bg-indigo-*` across
+     * mvp repaint automatically. */
+    --indigo-50:  231 100% 97%;   /* #edf1ff */
+    --indigo-100: 228 100% 93%;   /* #d6dfff */
+    --indigo-200: 228 100% 86%;   /* #adbeff */
+    --indigo-300: 229 100% 77%;   /* #7b95ff */
+    --indigo-400: 230 100% 67%;   /* #4a6bff */
+    --indigo-500: 230 100% 55%;   /* #1A40FF — AZUL LEASEFY */
+    --indigo-600: 230 82% 46%;    /* #1533d6 */
+    --indigo-700: 230 82% 37%;    /* #0c1f80 */
+    --indigo-800: 231 81% 29%;    /* #0E2185 */
+    --indigo-900: 231 81% 22%;    /* #0B1A66 */
+    --indigo-950: 231 45% 12%;    /* near-black with blue tint */
 
     /* Secondary (Sand / Tierra suave) — ambient only, NOT CTA */
     --sand-50:  34 47% 96%;       /* #FAF7F2 */
     --sand-100: 34 32% 93%;       /* #F3EEE4 */
     --sand-200: 34 29% 85%;       /* #E7DDCC */
+    --sand-300: 33 26% 78%;       /* #D5C8B8 — interpolated 200↔500 */
+    --sand-400: 31 23% 70%;       /* #C4B3A1 — interpolated 200↔500 */
     --sand-500: 30 20% 63%;       /* #B9A58A */
+    --sand-600: 29 19% 54%;       /* #A08973 — interpolated 500↔700 */
     --sand-700: 28 18% 46%;       /* #8A7761 */
+    --sand-800: 26 18% 36%;       /* #6C5A4B — interpolated 700↔900 */
     --sand-900: 24 17% 26%;       /* #4E4033 */
 
-    /* Neutral (warm) */
+    /* Neutral (Manus-measured grays — text ink #2F2F2F at 900) */
     --neutral-0:   0 0% 100%;     /* #FFFFFF */
-    --neutral-50:  40 20% 98%;    /* #FAFAF9 */
-    --neutral-100: 40 6% 96%;     /* #F5F5F4 */
-    --neutral-200: 30 6% 91%;     /* #E7E5E4 */
-    --neutral-300: 24 6% 83%;     /* #D6D3D1 */
-    --neutral-400: 28 4% 64%;     /* #A8A29E */
-    --neutral-500: 25 6% 45%;     /* #7A756F */
-    --neutral-600: 25 8% 32%;     /* #57534E */
-    --neutral-700: 24 10% 24%;    /* #44403C */
-    --neutral-800: 22 14% 16%;    /* #2E2825 */
-    --neutral-900: 20 17% 9%;     /* #1C1917 */
+    --neutral-50:  40 33% 98%;      /* #fbfaf9 — canvas */
+    --neutral-100: 40 16% 95%;      /* #f4f2ef */
+    --neutral-200: 40 16% 88%;      /* #e5e2dc — hairline border */
+    --neutral-300: 38 13% 81%;      /* #d5d1ca */
+    --neutral-400: 39 9% 67%;      /* #726e68 — subtle */
+    --neutral-500: 40 5% 42%;      /* #6e6a63 — muted text */
+    --neutral-600: 38 5% 33%;      /* #4d4a45 */
+    --neutral-700: 38 6% 27%;      /* #474747 */
+    --neutral-800: 40 7% 16%;      /* #383838 */
+    --neutral-900: 42 14% 7%;      /* #212121 — near-black ink (primary text, strong presence) */
 
     /* Semantic (sobered — don't compete with Primary) */
     --success-50:  120 14% 95%;   /* #F2F7F2 */
@@ -283,7 +291,7 @@
     /* --------------------------------------------------------
      * PLan CRM Namespace (separate system, hex values)
      * -------------------------------------------------------- */
-    --plan-page-bg: #F7F8FA;
+    --plan-page-bg: #FBFAF9;  /* = cadence bg / sidebar (bg-bg) — shell unificado (body = sidebar = header) */
     --plan-card-bg: #FFFFFF;
     --plan-accent: #D4F934;
     --plan-accent-dark: #a8c929;
@@ -299,8 +307,8 @@
     --plan-status-yellow-bg: #FFFBF0;
     --plan-status-red: #C24B3A;
     --plan-status-red-bg: #FFF4F2;
-    --plan-status-purple: #5B5FEF;
-    --plan-status-purple-bg: #F2F3FF;
+    --plan-status-purple: #1A40FF; /* brand info blue — purple is off-brand */
+    --plan-status-purple-bg: #edf1ff;
     --plan-status-blue: #3B82F6;
     --plan-status-blue-bg: #DBEAFE;
 
@@ -334,17 +342,20 @@
     /* --------------------------------------------------------
      * Risk Level Colors
      * -------------------------------------------------------- */
-    --risk-a: var(--success-500);        /* Green — Level A */
-    --risk-b: 217 91% 60%;              /* Blue — Level B */
-    --risk-c: var(--warning-500);        /* Amber — Level C */
-    --risk-d: var(--error-500);          /* Red — Level D */
+    --risk-a: var(--success-500);        /* Brand green — Level A (gain/safe) */
+    --risk-b: var(--neutral-700);        /* Neutral ink — Level B (blue reserved for actionable) */
+    --risk-c: var(--warning-500);        /* Brand ochre — Level C (attention) */
+    --risk-d: var(--error-500);          /* Brand red — Level D (risk) */
 
     /* --------------------------------------------------------
      * Semantic Colors (role tokens)
      * -------------------------------------------------------- */
-    --success: var(--success-500);
-    --warning: var(--warning-500);
-    --info: 217 91% 60%;
+    /* Full colors (not bare HSL triplets): the @leasefy/cadence preset consumes
+     * these as `var(--success)` directly (no hsl() wrapper), so they must be
+     * complete color values. Same brand green/amber/blue as the *-500 scale. */
+    --success: hsl(var(--success-500));
+    --warning: hsl(var(--warning-500));
+    --info: hsl(217 91% 60%);
 
     /* ========================================================
      * Shadow Scale
@@ -385,27 +396,26 @@
     /* ========================================================
      * Typography Scale
      *
-     * 3-font system:
-     *   Manrope      → Headings (.text-display, .text-h1–h6)
-     *   DM Sans      → Body text (default sans)
-     *   DM Mono      → Numeric values (.stat-number, .text-numeric)
+     * 2-font system (marca real Leasefy):
+     *   Satoshi      → Headings (.text-display, .text-h1–h6) + body (default sans)
+     *   Ubuntu Mono  → Numeric values (.stat-number, .text-numeric)
      *                   AND all uppercase labels/tags/overlines
      *                   (any element with `uppercase` gets `font-mono`)
      *
      * Utility classes:
-     *   .text-overline  — DM Mono, 12px, uppercase, widest tracking
-     *   .text-label     — DM Mono, 11px, uppercase, wide tracking
-     *   .text-numeric   — DM Mono, tabular-nums
-     *   .stat-number    — DM Mono, large display numbers
+     *   .text-overline  — Ubuntu Mono, 12px, uppercase, widest tracking
+     *   .text-label     — Ubuntu Mono, 11px, uppercase, wide tracking
+     *   .text-numeric   — Ubuntu Mono, tabular-nums
+     *   .stat-number    — Ubuntu Mono, large display numbers
      *
-     * Tailwind usage:
-     *   font-sans    → DM Sans  (body default)
-     *   font-heading → Manrope  (headings)
-     *   font-mono    → DM Mono  (numbers, uppercase labels)
+     * Tailwind usage (marca real Leasefy):
+     *   font-sans    → Satoshi Regular (body default)
+     *   font-heading → Satoshi Medium  (headings)
+     *   font-mono    → Ubuntu Mono     (eyebrows/labels/tags — firma técnica)
      * ======================================================== */
-    --font-sans: var(--font-sans), system-ui, sans-serif;
-    --font-heading: var(--font-heading), system-ui, sans-serif;
-    --font-mono: var(--font-mono), ui-monospace, monospace;
+    --font-sans: var(--font-schibsted), system-ui, sans-serif;
+    --font-heading: var(--font-schibsted), system-ui, sans-serif;
+    --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 
     /* Font Sizes */
     --text-xs: 0.75rem;       /* 12px */
@@ -526,7 +536,7 @@
     --shadow-xl: 0 20px 40px -8px rgba(0, 0, 0, 0.4), 0 8px 16px -4px rgba(0, 0, 0, 0.25);
 
     /* PLan CRM Namespace */
-    --plan-page-bg: #111112;
+    --plan-page-bg: #141310;  /* dark: = sidebar bg (--bg) — shell unificado (body = sidebar = header) */
     --plan-card-bg: #18181B;
     --plan-border: #2E2E33;
     --plan-text-primary: #F2F2F2;
@@ -537,14 +547,14 @@
     --plan-status-green-bg: #0F2A1A;
     --plan-status-yellow-bg: #2A1F0F;
     --plan-status-red-bg: #2A0F0F;
-    --plan-status-purple-bg: #1A1A2E;
+    --plan-status-purple-bg: #121A36;
     --plan-status-blue-bg: #0F1A2A;
 
     /* Neutral overrides for dark */
-    --neutral-0:   240 6% 10%;
-    --neutral-50:  240 6% 7%;
-    --neutral-100: 240 6% 14%;
-    --neutral-200: 240 6% 20%;
+    --neutral-0:   40 8% 11%;
+    --neutral-50:  42 14% 7%;
+    --neutral-100: 40 8% 14%;
+    --neutral-200: 40 8% 18%;
   }
 
   /* Lenis smooth scroll - Luxterra style */
@@ -576,10 +586,39 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "ss01", "ss02", "cv01";
-    overflow-x: hidden;
+    /* clip (vs hidden) avoids creating a scroll container, keeping
+       position: sticky descendants working while still cutting
+       horizontal overflow */
+    overflow-x: clip;
   }
 
-  /* Headings use Manrope by default */
+  html {
+    /* Prevent pull-to-refresh / rubber-band glitches on mobile */
+    overscroll-behavior-y: none;
+  }
+
+  /* Remove the 300ms tap delay / double-tap zoom on interactive elements */
+  button,
+  [role="button"],
+  a,
+  input,
+  select,
+  textarea,
+  label {
+    touch-action: manipulation;
+  }
+
+  /* iOS zoom guard: Safari auto-zooms when a focused field is < 16px.
+     Scoped to coarse pointers so desktop form densities are untouched. */
+  @media (pointer: coarse) {
+    input,
+    select,
+    textarea {
+      font-size: max(16px, 1em);
+    }
+  }
+
+  /* Headings use Satoshi (var(--font-heading)) by default */
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
   }
@@ -606,7 +645,7 @@
   }
 
   .skip-link:focus {
-    @apply not-sr-only fixed left-4 top-4 z-[100] rounded-md bg-primary px-4 py-2 text-primary-foreground;
+    @apply not-sr-only fixed left-4 top-4 z-[100] rounded-sm bg-primary px-4 py-2 text-primary-foreground;
   }
 }
 
@@ -1464,4 +1503,116 @@ select:-webkit-autofill:active {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * @leasefy/cadence BRIDGE — vars que el design system resuelve y mvp no definía.
+ * Los nombres que COLISIONAN (primary, ring, border, success, warning,
+ * blue-N, font-mono) NO se tocan: mvp ya los define con los mismos valores
+ * de marca y su tailwind.config gana en el merge.
+ * Fuente de verdad: design-system/src/styles/tokens.css
+ * ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --bg: #fbfaf9;
+  --surface: #ffffff;
+  --surface-muted: #f4f2ef;
+  --surface-hover: rgba(0, 0, 0, 0.04);
+  --surface-pressed: rgba(0, 0, 0, 0.07);
+  --surface-selected: rgba(0, 0, 0, 0.06);
+  --border-faint: #eceae6;
+  --border-strong: #d5d1ca;
+  --fg: #14130f;
+  --fg-muted: #6e6a63;
+  --fg-subtle: #726e68;
+  --primary-hover: #1533d6;
+  --primary-fg: #ffffff;
+  --accent-soft: #edf1ff;
+  --success-soft: #e8f4ea;
+  --warning-soft: #fbf1dd;
+  --danger: #c0392b;
+  --danger-soft: #fbe9e6;
+  --info-soft: #e6f0fa;
+  /* ink — Deep Navy brand surface */
+  --ink: #14130f;
+  --ink-2: #2a2824;
+  --ink-fg: #ffffff;
+  --ink-fg-muted: rgba(255, 255, 255, 0.62);
+  --ink-fg-subtle: rgba(255, 255, 255, 0.45);
+  --ink-border: rgba(255, 255, 255, 0.1);
+  /* el DS habla display/body; mvp habla heading/sans — mismo Satoshi */
+  --font-display: var(--font-heading);
+  --font-body: var(--font-sans);
+}
+
+.dark {
+  --bg: #141310;
+  --surface: #1c1a16;
+  --surface-muted: #24221c;
+  --surface-hover: rgba(255, 255, 255, 0.05);
+  --surface-pressed: rgba(255, 255, 255, 0.08);
+  --surface-selected: rgba(255, 255, 255, 0.07);
+  --border-faint: #26241e;
+  --border-strong: #403c33;
+  --fg: #fbfaf9;
+  --fg-muted: #b3aea5;
+  --fg-subtle: #7e7a72;
+  --primary-hover: #3b5bff;
+  /* Dark primary = light periwinkle fill → text must be dark ink (not white).
+     Was missing here, so it inherited :root's #fff → white text on periwinkle. */
+  --primary-fg: #14130f;
+  --accent-soft: rgba(26, 64, 255, 0.16);
+  --success-soft: rgba(62, 174, 112, 0.16);
+  --warning-soft: rgba(210, 153, 47, 0.16);
+  --danger: #e0664d;
+  --danger-soft: rgba(224, 102, 77, 0.16);
+  --info-soft: rgba(42, 111, 176, 0.2);
+}
+
+/* ── Admin panel scope (see src/app/admin/layout.tsx) ─────────────────────────
+   The nest-brandbook admin theme is fixed paper/ink (no light/dark toggle) and
+   must never leak into the customer app. tailwind.config.ts's `bg`/`fg` DEFAULT
+   keys now point at these SAME --bg/--fg vars cadence uses everywhere else, so
+   this override — scoped to .admin-scope — is what gives /admin its own look;
+   outside this class, bg-bg/text-fg fall through to cadence's theme-aware pair. */
+.admin-scope {
+  --bg: #F7F7F5;
+  --fg: #0A1B2E;
+}
+
+/* ── Landing "nueva": seamless section bands ──────────────────────────────────
+   Handle uses #fbfaf9 (≈white). These fade the gray into white at the section
+   edges so adjacent white sections blend with no hard seam. Variants pick which
+   edges fade, so runs of adjacent gray sections stay continuous (no white pinch). */
+.lp-band        { background-image: linear-gradient(180deg, #fff 0%, #f4f2ef 6rem, #f4f2ef calc(100% - 6rem), #fff 100%); }
+.lp-band-top    { background-image: linear-gradient(180deg, #fff 0%, #f4f2ef 6rem, #f4f2ef 100%); }
+.lp-band-bottom { background-image: linear-gradient(180deg, #f4f2ef 0%, #f4f2ef calc(100% - 6rem), #fff 100%); }
+.lp-band-solid  { background-color: #f4f2ef; }
+
+/* ── Landing (NewsCatcher clone) animation keyframes ───────────────────────────
+   lpProgress  → tab/accordion progress hairline (fills 0→100% over the dwell)
+   lpMarquee*  → infinite tag-pill marquee (pause via animation-play-state)
+   lpMove*     → ambient gradient blobs behind hero/CTA (NewsCatcher signature) */
+@keyframes lpProgress { from { width: 0%; } to { width: 100%; } }
+@keyframes lpSheen {
+  0%   { transform: translateX(-120%) skewX(-12deg); opacity: 0; }
+  18%  { opacity: 0.85; }
+  60%, 100% { transform: translateX(320%) skewX(-12deg); opacity: 0; }
+}
+@keyframes lpMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes lpMarqueeReverse { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+@keyframes lpMoveCircle {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  50%  { transform: translate(6%, 4%) rotate(180deg); }
+  100% { transform: translate(0, 0) rotate(360deg); }
+}
+@keyframes lpMoveVertical {
+  0%, 100% { transform: translateY(-8%); }
+  50%      { transform: translateY(8%); }
+}
+@keyframes lpMoveHorizontal {
+  0%, 100% { transform: translateX(-6%) translateY(-4%); }
+  50%      { transform: translateX(6%) translateY(4%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [style*="lpProgress"], [style*="lpMarquee"], [style*="lpMove"], [style*="lpSheen"] { animation: none !important; }
 }

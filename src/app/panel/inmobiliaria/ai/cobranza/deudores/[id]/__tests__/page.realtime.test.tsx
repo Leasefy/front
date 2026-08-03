@@ -32,6 +32,8 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/cartera', () => ({
   stageColorClasses: () => ({ bg: '', text: '', border: '' }),
   relativeTime: () => 'now',
+  humanCaseState: () => 'inmobiliaria.ai.cobranza.estados.esperandoRespuesta',
+  stageDisplayName: () => 'Mora administrativa',
 }))
 
 // Detail hook — return a steady object with refetch we can assert against.
@@ -48,6 +50,16 @@ vi.mock('@/lib/hooks/cobranza/use-debtor-detail', () => ({
     isLoading: false,
     error: null,
     refetch: detailRefetch,
+  }),
+}))
+
+// Compromisos hook (feeds humanCaseState booleans) — steady empty payload.
+vi.mock('@/lib/hooks/cobranza/use-debtor-compromisos', () => ({
+  useDebtorCompromisos: () => ({
+    data: null,
+    isLoading: false,
+    error: null,
+    refetch: async () => undefined,
   }),
 }))
 
@@ -80,9 +92,12 @@ vi.mock('../tabs/MemosTab', () => ({ MemosTab: () => null }))
 vi.mock('../tabs/CompromisosTab', () => ({ CompromisosTab: () => null }))
 vi.mock('../tabs/AccionesTab', () => ({ AccionesTab: () => null }))
 
-// Sidebar
+// Sidebar + right rail (zones izquierda/derecha)
 vi.mock('../DebtorSidebar', () => ({
   DebtorSidebar: () => null,
+}))
+vi.mock('../DebtorActionRail', () => ({
+  DebtorActionRail: () => null,
 }))
 
 // ---------------------------------------------------------------------------

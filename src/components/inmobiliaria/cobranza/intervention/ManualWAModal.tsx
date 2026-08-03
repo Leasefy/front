@@ -15,6 +15,23 @@ import { useEffect, useMemo, useState } from 'react'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 
 void React
 
@@ -96,8 +113,6 @@ export function ManualWAModal({ open, onClose, debtorId, prefill, onSuccess }: M
     setVariables(next)
   }, [selectedTemplate, prefill])
 
-  if (!open) return null
-
   const handleSubmit = async () => {
     setError(null)
     if (envMissing) {
@@ -136,75 +151,67 @@ export function ManualWAModal({ open, onClose, debtorId, prefill, onSuccess }: M
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="wa-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-    >
-      <button
-        type="button"
-        aria-label="close"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/50"
-      />
-      <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-xl shadow-xl p-6">
-        <h2 id="wa-title" className="text-base font-semibold text-neutral-900 dark:text-white">
-          {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.modalTitle')}
-        </h2>
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
-          {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.modalDescription')}
-        </p>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.modalTitle')}
+          </DialogTitle>
+          <DialogDescription>
+            {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.modalDescription')}
+          </DialogDescription>
+        </DialogHeader>
 
         {envMissing ? (
-          <p className="mt-3 text-sm text-amber-700 dark:text-amber-400">
+          <p className="text-sm text-warning">
             {t('inmobiliaria.ai.cobranza.detail.acciones.envMissing')}
           </p>
         ) : templatesLoading ? (
-          <p className="mt-3 text-sm text-neutral-500">
+          <p className="text-sm text-fg-muted">
             {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.loadingTemplates')}
           </p>
         ) : templates.length === 0 ? (
-          <p className="mt-3 text-sm text-neutral-500">
+          <p className="text-sm text-fg-muted">
             {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.noTemplates')}
           </p>
         ) : (
-          <div className="mt-4 space-y-3">
+          <div className="space-y-3">
             <label className="block">
-              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              <span className="text-xs font-medium text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.templateLabel')}
               </span>
-              <select
-                value={selectedId}
-                onChange={(e) => setSelectedId(e.target.value)}
-                className="mt-1 w-full px-3 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950"
-              >
-                {templates.map((tpl) => (
-                  <option key={tpl.id} value={tpl.id}>
-                    {tpl.label}
-                  </option>
-                ))}
-              </select>
+              <Select value={selectedId} onValueChange={setSelectedId}>
+                <SelectTrigger className="mt-1 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.map((tpl) => (
+                    <SelectItem key={tpl.id} value={tpl.id}>
+                      {tpl.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
 
             {selectedTemplate && selectedTemplate.variables.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+                <p className="text-xs font-medium text-fg-subtle mb-1">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.variablesLabel')}
                 </p>
                 <div className="space-y-2">
                   {selectedTemplate.variables.map((v) => (
                     <label key={v} className="block">
-                      <span className="text-[11px] text-neutral-500 dark:text-neutral-400 font-mono">
+                      <span className="text-[11px] text-fg-subtle font-mono">
                         {v}
                       </span>
-                      <input
+                      <Input
                         type="text"
                         value={variables[v] ?? ''}
                         onChange={(e) =>
                           setVariables((prev) => ({ ...prev, [v]: e.target.value }))
                         }
-                        className="mt-0.5 w-full px-2 py-1 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950"
+                        className="mt-0.5 w-full"
                       />
                     </label>
                   ))}
@@ -214,31 +221,29 @@ export function ManualWAModal({ open, onClose, debtorId, prefill, onSuccess }: M
           </div>
         )}
 
-        {error && (
-          <p className="mt-3 text-xs text-red-600 dark:text-red-400">{error}</p>
-        )}
+        {error && <p className="text-xs text-danger">{error}</p>}
 
-        <div className="mt-6 flex items-center justify-end gap-2">
-          <button
-            type="button"
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onClose}
             disabled={submitting}
-            className="px-3 py-1.5 text-sm font-medium rounded-md border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50"
           >
             {t('inmobiliaria.ai.cobranza.detail.pii.modalCancel')}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            size="sm"
+            hideArrow
             onClick={() => void handleSubmit()}
             disabled={submitting || envMissing || templates.length === 0}
-            className="px-3 py-1.5 text-sm font-medium rounded-md bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50"
           >
             {submitting
               ? t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.confirming')
               : t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.confirm')}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

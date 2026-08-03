@@ -4,7 +4,7 @@
  * CarrierErrorRateChart.tsx — Phase 35 plan 35-08 (Task 2)
  *
  * Recharts LineChart at 160px height showing error rate over time.
- * Stroke: rose-500 (#f43f5e). Reference line at 5% threshold (rose-300 dashed).
+ * Stroke: brand-red (#C0392B). Reference line at 5% threshold (light brand-red dashed).
  * Must declare 'use client' — ResponsiveContainer needs DOM access (T-35-12).
  */
 
@@ -30,7 +30,7 @@ export function CarrierErrorRateChart({ data, isLoading = false }: CarrierErrorR
   if (isLoading) {
     return (
       <div className="h-[160px] flex items-center justify-center">
-        <div className="h-4 w-32 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+        <div className="h-4 w-32 rounded bg-surface-muted dark:bg-ink animate-pulse" />
       </div>
     )
   }
@@ -38,7 +38,7 @@ export function CarrierErrorRateChart({ data, isLoading = false }: CarrierErrorR
   if (data.length === 0) {
     return (
       <div className="h-[160px] flex items-center justify-center">
-        <p className="text-xs text-neutral-400 text-center py-8">
+        <p className="text-xs text-fg-subtle text-center py-8">
           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.noErrorRateData')}
         </p>
       </div>
@@ -59,12 +59,12 @@ export function CarrierErrorRateChart({ data, isLoading = false }: CarrierErrorR
             t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.errorRate.tooltipLabel'),
           ]}
         />
-        {/* 5% threshold reference line (rose-300 = #fca5a5) */}
-        <ReferenceLine y={0.05} stroke="#fca5a5" strokeDasharray="3 3" />
+        {/* 5% threshold reference line (light brand-red tint) */}
+        <ReferenceLine y={0.05} stroke="#E0A89E" strokeDasharray="3 3" />
         <Line
           type="monotone"
           dataKey="errorRate"
-          stroke="#f43f5e"
+          stroke="#C0392B"
           dot={false}
           strokeWidth={1.5}
         />

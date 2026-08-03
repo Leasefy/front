@@ -12,7 +12,11 @@ import {
   FileText,
   ChatCircle,
   ChartBar,
+  Scales,
+  ArrowsLeftRight,
+  Bank,
 } from '@phosphor-icons/react';
+import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { AgentType, AgentExecutionStatus } from '@/lib/types/beta-chat';
@@ -30,6 +34,9 @@ const ICON_MAP: Record<string, Icon> = {
   FileText,
   ChatCircle,
   ChartBar,
+  Scales,
+  ArrowsLeftRight,
+  Bank,
 };
 
 // ============================================================================
@@ -37,21 +44,21 @@ const ICON_MAP: Record<string, Icon> = {
 // ============================================================================
 
 const BORDER_LEFT_COLORS: Record<string, string> = {
-  emerald: 'border-l-emerald-400 dark:border-l-emerald-500',
-  blue: 'border-l-blue-400 dark:border-l-blue-500',
-  amber: 'border-l-amber-400 dark:border-l-amber-500',
-  purple: 'border-l-purple-400 dark:border-l-purple-500',
-  pink: 'border-l-pink-400 dark:border-l-pink-500',
-  indigo: 'border-l-indigo-400 dark:border-l-indigo-500',
+  emerald: 'border-l-success',
+  blue: 'border-l-primary',
+  amber: 'border-l-warning',
+  purple: 'border-l-border-strong',
+  pink: 'border-l-border-strong',
+  indigo: 'border-l-primary',
 };
 
 const ICON_COLORS: Record<string, string> = {
-  emerald: 'text-emerald-500 dark:text-emerald-400',
-  blue: 'text-blue-500 dark:text-blue-400',
-  amber: 'text-amber-500 dark:text-amber-400',
-  purple: 'text-purple-500 dark:text-purple-400',
-  pink: 'text-pink-500 dark:text-pink-400',
-  indigo: 'text-indigo-500 dark:text-indigo-400',
+  emerald: 'text-success',
+  blue: 'text-primary',
+  amber: 'text-warning',
+  purple: 'text-neutral-600 dark:text-neutral-300',
+  pink: 'text-neutral-600 dark:text-neutral-300',
+  indigo: 'text-primary',
 };
 
 // ============================================================================
@@ -60,6 +67,12 @@ const ICON_COLORS: Record<string, string> = {
 
 const AGENT_RESULT_SUMMARIES: Record<AgentType, string> = {
   cobranza: '12 cobros activos. 9 pagados, 3 pendientes por $4.1M COP.',
+  cotizador: 'Cotización de seguro lista para revisar.',
+  estudio: 'Estudio del inquilino completado.',
+  matching: 'Propiedades sugeridas según el perfil.',
+  avaluo: 'Avalúo del inmueble listo para revisar.',
+  conciliacion: 'Conciliación de pagos completada.',
+  pagos: 'Pagos a propietarios procesados.',
   pipeline: '5 propiedades en portafolio. 1 vacante con 3 candidatos.',
   mantenimiento: '3 solicitudes activas. 1 urgente (fuga Apt 502).',
   documentos: '5 contratos vigentes. 1 vence en 18 dias.',
@@ -69,9 +82,15 @@ const AGENT_RESULT_SUMMARIES: Record<AgentType, string> = {
 
 const AGENT_ERROR_MESSAGES: Record<AgentType, string> = {
   cobranza: 'No se pudo conectar con el servicio de cobros. Reintente.',
+  cotizador: 'No se pudo cotizar en este momento. Reintente.',
+  estudio: 'No se pudo completar el estudio del inquilino.',
+  matching: 'No se pudo generar el matching de propiedades.',
+  avaluo: 'No se pudo completar el avalúo del inmueble.',
+  conciliacion: 'No se pudo conciliar los pagos en este momento.',
+  pagos: 'No se pudieron procesar los pagos. Reintente.',
   pipeline: 'Error al consultar el pipeline de propiedades.',
   mantenimiento: 'Tiempo de espera agotado al consultar mantenimientos.',
-  documentos: 'Error al acceder al repositorio de documentos.',
+  documentos: 'Error al acceder repositorio de documentos.',
   comunicacion: 'Fallo al preparar notificaciones. Servicio no disponible.',
   reportes: 'Error al generar el reporte. Datos incompletos.',
 };
@@ -114,10 +133,10 @@ export function AgentResultCard({
   const meta = AGENT_METADATA[agentType];
   const AgentIcon = ICON_MAP[meta.icon];
   const borderColor = isFailed
-    ? 'border-l-red-400 dark:border-l-red-500'
+    ? 'border-l-danger'
     : BORDER_LEFT_COLORS[meta.color] ?? BORDER_LEFT_COLORS.blue;
   const iconColor = isFailed
-    ? 'text-red-500 dark:text-red-400'
+    ? 'text-danger'
     : ICON_COLORS[meta.color] ?? ICON_COLORS.blue;
 
   const resultText = isFailed
@@ -130,7 +149,7 @@ export function AgentResultCard({
         'border border-neutral-200/60 dark:border-border/50',
         'border-l-[3px]',
         borderColor,
-        'rounded-lg overflow-hidden',
+        'rounded-md overflow-hidden',
         'bg-white/60 dark:bg-card/60',
         'transition-all duration-200',
         className
@@ -161,9 +180,9 @@ export function AgentResultCard({
 
         {/* Status indicator */}
         {isFailed ? (
-          <WarningCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" weight="fill" />
+          <WarningCircle className="w-3.5 h-3.5 text-danger flex-shrink-0" weight="fill" />
         ) : (
-          <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" weight="fill" />
+          <CheckCircle className="w-3.5 h-3.5 text-success flex-shrink-0" weight="fill" />
         )}
 
         {/* Duration */}
@@ -195,7 +214,7 @@ export function AgentResultCard({
               className={cn(
                 'text-xs leading-relaxed',
                 isFailed
-                  ? 'text-red-600 dark:text-red-400'
+                  ? 'text-danger'
                   : 'text-muted-foreground'
               )}
             >
@@ -204,26 +223,25 @@ export function AgentResultCard({
 
             {/* Retry button for failed agents */}
             {isFailed && onRetry && (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                hideArrow
                 onClick={(e) => {
                   e.stopPropagation();
                   onRetry();
                 }}
                 className={cn(
-                  'mt-2 inline-flex items-center gap-1.5',
-                  'px-2.5 py-1 rounded-md',
+                  'mt-2 gap-1.5 px-2.5 py-1 h-auto rounded-sm',
                   'text-xs font-medium',
-                  'bg-red-50 dark:bg-red-500/10',
-                  'text-red-600 dark:text-red-400',
-                  'border border-red-200 dark:border-red-500/30',
-                  'hover:bg-red-100 dark:hover:bg-red-500/20',
-                  'transition-colors duration-150'
+                  'bg-danger-soft text-danger',
+                  'border border-danger/30',
+                  'hover:bg-danger-soft'
                 )}
               >
                 <ArrowClockwise className="w-3 h-3" weight="bold" />
                 {t('beta.agents.retry')}
-              </button>
+              </Button>
             )}
           </div>
         </div>

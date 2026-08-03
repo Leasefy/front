@@ -103,7 +103,7 @@ export function CategoryBreakdown({
           <AccordionItem
             key={category.name}
             value={category.name}
-            className="border-b border-border/50"
+            className="border-b border-border-faint"
           >
             <AccordionTrigger className="hover:no-underline py-3 px-1">
               <div className="flex items-center justify-between w-full pr-2">
@@ -111,7 +111,7 @@ export function CategoryBreakdown({
                   <span className="text-base" role="img" aria-hidden="true">
                     {icon}
                   </span>
-                  <span className="text-sm font-medium text-foreground">
+                  <span className="text-sm font-medium text-fg">
                     {category.label}
                   </span>
                 </div>
@@ -122,7 +122,7 @@ export function CategoryBreakdown({
                     size="sm"
                     className="w-16 hidden sm:block"
                   />
-                  <span className={cn('text-sm font-semibold tabular-nums', colors.text)}>
+                  <span className={cn('text-sm font-semibold font-mono tabular-nums', colors.text)}>
                     {category.score}
                   </span>
                 </div>
@@ -147,9 +147,9 @@ export function CategoryBreakdown({
                     {category.factors.map((factor, index) => (
                       <li
                         key={index}
-                        className="flex items-start gap-2 text-sm text-muted-foreground"
+                        className="flex items-start gap-2 text-sm text-fg-muted"
                       >
-                        <span className="text-muted-foreground/60 mt-0.5">•</span>
+                        <span className="text-fg-subtle mt-0.5">•</span>
                         <span>{factor}</span>
                       </li>
                     ))}
@@ -157,8 +157,11 @@ export function CategoryBreakdown({
                 )}
 
                 {/* Weight indicator */}
-                <div className="mt-3 text-xs text-muted-foreground/70">
-                  Peso en evaluación: {Math.round(category.weight * 100)}%
+                <div className="mt-3 text-xs text-fg-subtle">
+                  Peso en evaluación:{' '}
+                  <span className="font-mono tabular-nums">
+                    {Math.round(category.weight * 100)}%
+                  </span>
                 </div>
               </div>
             </AccordionContent>

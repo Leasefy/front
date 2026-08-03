@@ -1,10 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CaretLeft, User, Spinner, ArrowsClockwise, Sparkle, ArrowUpRight } from '@phosphor-icons/react';
+import { User, Sparkle, ArrowUpRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
+import { Button, Textarea, EmptyState, Badge, Spinner, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
+import { ErrorState } from '@/components/ui/error-state';
+import { BackButton } from '@leasefy/cadence';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -20,49 +24,67 @@ const STATUS_CONFIG: Record<
   LandlordApplicationStatus,
   { label: string; bg: string; text: string }
 > = {
-  DRAFT:           { label: 'Borrador',          bg: 'bg-neutral-100 dark:bg-neutral-800',    text: 'text-neutral-600 dark:text-neutral-400' },
-  SUBMITTED:       { label: 'Postulado',         bg: 'bg-blue-100 dark:bg-blue-900/30',        text: 'text-blue-700 dark:text-blue-400' },
-  UNDER_REVIEW:    { label: 'En revisión',       bg: 'bg-indigo-100 dark:bg-indigo-900/30',   text: 'text-indigo-700 dark:text-indigo-400' },
-  PREAPPROVED:     { label: 'Pre-aprobado',      bg: 'bg-violet-100 dark:bg-violet-900/30',   text: 'text-violet-700 dark:text-violet-400' },
-  APPROVED:        { label: 'Aprobado',          bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400' },
-  REJECTED:        { label: 'Rechazado',         bg: 'bg-rose-100 dark:bg-rose-900/30',       text: 'text-rose-700 dark:text-rose-400' },
-  NEEDS_INFO:      { label: 'Pide info',         bg: 'bg-amber-100 dark:bg-amber-900/30',     text: 'text-amber-700 dark:text-amber-400' },
-  WITHDRAWN:       { label: 'Retirado',          bg: 'bg-neutral-100 dark:bg-neutral-800',    text: 'text-neutral-500 dark:text-neutral-500' },
-  CONTRACT_FAILED: { label: 'Contrato fallido',  bg: 'bg-rose-100 dark:bg-rose-900/30',       text: 'text-rose-700 dark:text-rose-400' },
+  DRAFT:           { label: 'Borrador',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
+  SUBMITTED:       { label: 'Postulado',         bg: 'bg-primary-soft',   text: 'text-primary' },
+  UNDER_REVIEW:    { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
+  PREAPPROVED:     { label: 'Pre-aprobado',      bg: 'bg-surface-muted',  text: 'text-fg-muted' },
+  APPROVED:        { label: 'Aprobado',          bg: 'bg-success-soft',   text: 'text-success' },
+  REJECTED:        { label: 'Rechazado',         bg: 'bg-danger-soft',    text: 'text-danger' },
+  NEEDS_INFO:      { label: 'Pide info',         bg: 'bg-warning-soft',   text: 'text-warning' },
+  WITHDRAWN:       { label: 'Retirado',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
+  CONTRACT_FAILED: { label: 'Contrato fallido',  bg: 'bg-danger-soft',    text: 'text-danger' },
 };
 
-const FALLBACK_STATUS = { label: 'Desconocido', bg: 'bg-neutral-100 dark:bg-neutral-800', text: 'text-neutral-500' };
+const FALLBACK_STATUS = { label: 'Desconocido', bg: 'bg-surface-muted', text: 'text-fg-muted' };
+
+// Status → Cadence Badge variant (mirrors STATUS_CONFIG tints).
+const STATUS_VARIANT: Record<
+  LandlordApplicationStatus,
+  'default' | 'secondary' | 'success' | 'warning' | 'destructive'
+> = {
+  DRAFT: 'secondary',
+  SUBMITTED: 'default',
+  UNDER_REVIEW: 'default',
+  PREAPPROVED: 'secondary',
+  APPROVED: 'success',
+  REJECTED: 'destructive',
+  NEEDS_INFO: 'warning',
+  WITHDRAWN: 'secondary',
+  CONTRACT_FAILED: 'destructive',
+};
 
 const SCORE_COLORS: Record<string, string> = {
-  A: 'text-emerald-700 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30',
-  B: 'text-blue-700 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30',
-  C: 'text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-900/30',
-  D: 'text-rose-700 bg-rose-100 dark:text-rose-400 dark:bg-rose-900/30',
+  A: 'text-success bg-success-soft',
+  B: 'text-primary bg-primary-soft',
+  C: 'text-warning bg-warning-soft',
+  D: 'text-danger bg-danger-soft',
 };
 
 // ─── Action modal ─────────────────────────────────────────────────────────────
 
 type ActionType = 'preapprove' | 'approve' | 'reject' | 'request-info';
 
+type ConfirmVariant = 'default' | 'destructive';
+
 const ACTION_CONFIG: Record<
   ActionType,
-  { title: string; label: string; placeholder: string; required: boolean; confirmLabel: string; confirmClass: string }
+  { title: string; label: string; placeholder: string; required: boolean; confirmLabel: string; confirmVariant: ConfirmVariant }
 > = {
   preapprove: {
     title: 'Pre-aprobar candidato',
-    label: 'Nota interna (opcional)',
-    placeholder: 'Observaciones internas...',
+    label: 'Mensaje al candidato (opcional)',
+    placeholder: 'Mensaje que verá el candidato...',
     required: false,
     confirmLabel: 'Pre-aprobar',
-    confirmClass: 'bg-indigo-600 hover:bg-indigo-700',
+    confirmVariant: 'default',
   },
   approve: {
     title: 'Aprobar candidato',
-    label: 'Nota interna (opcional)',
-    placeholder: 'Observaciones finales...',
+    label: 'Mensaje al candidato (opcional)',
+    placeholder: 'Mensaje que verá el candidato...',
     required: false,
     confirmLabel: 'Aprobar',
-    confirmClass: 'bg-emerald-600 hover:bg-emerald-700',
+    confirmVariant: 'default',
   },
   reject: {
     title: 'Rechazar postulación',
@@ -70,7 +92,7 @@ const ACTION_CONFIG: Record<
     placeholder: 'Explicá el motivo del rechazo al candidato...',
     required: true,
     confirmLabel: 'Rechazar',
-    confirmClass: 'bg-rose-600 hover:bg-rose-700',
+    confirmVariant: 'destructive',
   },
   'request-info': {
     title: 'Solicitar información',
@@ -78,7 +100,7 @@ const ACTION_CONFIG: Record<
     placeholder: '¿Qué información adicional necesitás?',
     required: true,
     confirmLabel: 'Enviar solicitud',
-    confirmClass: 'bg-amber-600 hover:bg-amber-700',
+    confirmVariant: 'default',
   },
 };
 
@@ -115,44 +137,46 @@ function ActionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-card rounded-2xl border border-border shadow-2xl">
+      <div className="w-full max-w-md bg-card rounded-xl border border-border">
         <div className="px-6 py-4 border-b border-border">
-          <h2 className="font-semibold text-foreground">{cfg.title}</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">{candidateName}</p>
+          <h2 className="text-base font-semibold text-fg">{cfg.title}</h2>
+          <p className="text-sm text-fg-muted mt-0.5">{candidateName}</p>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">{cfg.label}</label>
-            <textarea
+            <label className="text-sm font-medium text-fg">{cfg.label}</label>
+            <Textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={cfg.placeholder}
               rows={3}
               autoFocus
-              className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-all resize-none"
+              className="resize-none"
             />
           </div>
 
-          {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
 
           <div className="flex items-center gap-3">
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              hideArrow
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
+              className="flex-1"
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant={cfg.confirmVariant}
+              hideArrow
+              isLoading={isSubmitting}
               disabled={(cfg.required && !text.trim()) || isSubmitting}
-              className={cn(
-                'flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2',
-                cfg.confirmClass
-              )}
+              className="flex-1"
             >
-              {isSubmitting ? <Spinner className="w-4 h-4 animate-spin" /> : cfg.confirmLabel}
-            </button>
+              {cfg.confirmLabel}
+            </Button>
           </div>
         </form>
       </div>
@@ -161,6 +185,13 @@ function ActionModal({
 }
 
 // ─── Row actions ──────────────────────────────────────────────────────────────
+
+// Touch-only (pointer: coarse) hit-area expansion to >=44px for the
+// approve/reject action chips. The visual chip stays 26px tall; an invisible
+// ::after pseudo-element extends the tap target. Desktop (fine pointer) is
+// untouched.
+const COARSE_HIT_AREA =
+  "relative [@media(pointer:coarse)]:after:absolute [@media(pointer:coarse)]:after:-inset-y-2.5 [@media(pointer:coarse)]:after:-inset-x-0.5 [@media(pointer:coarse)]:after:content-['']";
 
 function CandidateActions({
   candidate,
@@ -176,24 +207,33 @@ function CandidateActions({
   if (status === 'SUBMITTED' || status === 'UNDER_REVIEW') {
     return (
       <div className="flex items-center gap-1 flex-wrap">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={() => onAction('preapprove', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-medium hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors whitespace-nowrap"
+          className={cn(COARSE_HIT_AREA, 'bg-primary-soft text-primary hover:bg-primary-soft/80 whitespace-nowrap')}
         >
           Pre-aprobar
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={() => onAction('request-info', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors whitespace-nowrap"
+          className={cn(COARSE_HIT_AREA, 'bg-warning-soft text-warning hover:bg-warning-soft/80 whitespace-nowrap')}
         >
           Pedir info
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={() => onAction('reject', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-xs font-medium hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors whitespace-nowrap"
+          className={cn(COARSE_HIT_AREA, 'bg-danger-soft text-danger hover:bg-danger-soft/80 whitespace-nowrap')}
         >
           Rechazar
-        </button>
+        </Button>
       </div>
     );
   }
@@ -201,18 +241,24 @@ function CandidateActions({
   if (status === 'PREAPPROVED') {
     return (
       <div className="flex items-center gap-1">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={() => onAction('approve', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors whitespace-nowrap"
+          className={cn(COARSE_HIT_AREA, 'bg-success-soft text-success hover:bg-success-soft/80 whitespace-nowrap')}
         >
           Aprobar
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
           onClick={() => onAction('reject', candidate)}
-          className="px-2.5 py-1 rounded-lg bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-xs font-medium hover:bg-rose-200 dark:hover:bg-rose-900/50 transition-colors whitespace-nowrap"
+          className={cn(COARSE_HIT_AREA, 'bg-danger-soft text-danger hover:bg-danger-soft/80 whitespace-nowrap')}
         >
           Rechazar
-        </button>
+        </Button>
       </div>
     );
   }
@@ -222,29 +268,38 @@ function CandidateActions({
     // Si no, al formulario de creación.
     if (existingContract) {
       return (
-        <Link
-          href={`/panel/inmobiliaria/contratos/${existingContract.id}`}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-white dark:bg-neutral-900 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-xs font-semibold transition-colors whitespace-nowrap"
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          hideArrow
+          className={cn(COARSE_HIT_AREA, 'border-success/30 text-success hover:bg-success-soft whitespace-nowrap')}
         >
-          Ver contrato
-          <ArrowUpRight className="w-3 h-3" />
-        </Link>
+          <Link href={`/panel/inmobiliaria/contratos/${existingContract.id}`}>
+            Ver contrato
+            <ArrowUpRight className="w-3 h-3" />
+          </Link>
+        </Button>
       );
     }
     return (
-      <Link
-        href={`/panel/inmobiliaria/contratos/nuevo?applicationId=${candidate.id}`}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors whitespace-nowrap"
+      <Button
+        asChild
+        size="sm"
+        hideArrow
+        className={cn(COARSE_HIT_AREA, 'bg-success text-white hover:opacity-90 whitespace-nowrap')}
       >
-        Crear contrato
-        <ArrowUpRight className="w-3 h-3" />
-      </Link>
+        <Link href={`/panel/inmobiliaria/contratos/nuevo?applicationId=${candidate.id}`}>
+          Crear contrato
+          <ArrowUpRight className="w-3 h-3" />
+        </Link>
+      </Button>
     );
   }
 
   if (status === 'CONTRACT_FAILED') {
     return (
-      <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 text-xs font-medium whitespace-nowrap">
+      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-danger-soft text-danger text-xs font-medium whitespace-nowrap">
         Proceso cerrado
       </span>
     );
@@ -274,6 +329,10 @@ function CandidatosContent() {
   // Permite mostrar "Ver contrato" en vez de "Crear contrato" en la fila correspondiente.
   const { getByApplicationId: getContractByApplicationId } = useContracts();
 
+  // Once content has loaded, background refresh failures must NOT swap the
+  // page for the full ErrorState (silent auto-refresh contract).
+  const hasLoadedRef = useRef(false);
+
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -284,8 +343,11 @@ function CandidatosContent() {
       ]);
       setProperty(propertyData);
       setCandidates(candidatesData);
+      hasLoadedRef.current = true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar los datos');
+      if (!hasLoadedRef.current) {
+        setError(err instanceof Error ? err.message : 'Error al cargar los datos');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -294,6 +356,8 @@ function CandidatosContent() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useAutoRefresh(fetchData);
 
   const handleAction = useCallback((type: ActionType, candidate: LandlordCandidate) => {
     setActionModal({ type, candidate });
@@ -305,10 +369,10 @@ function CandidatosContent() {
     const id = candidate.id;
     switch (type) {
       case 'preapprove':
-        await landlordApplicationsApi.preapprove(id, text ? { notes: text } : {});
+        await landlordApplicationsApi.preapprove(id, text ? { message: text } : {});
         break;
       case 'approve':
-        await landlordApplicationsApi.approve(id, text ? { notes: text } : {});
+        await landlordApplicationsApi.approve(id, text ? { message: text } : {});
         break;
       case 'reject':
         await landlordApplicationsApi.reject(id, text);
@@ -325,20 +389,19 @@ function CandidatosContent() {
   const preapprovedCount = candidates.filter((c) => c.status === 'PREAPPROVED').length;
   const approvedCount   = candidates.filter((c) => c.status === 'APPROVED').length;
 
-  if (isLoading) {
+  // Solo bloquea la vista en el primer load — los auto-refresh son silenciosos.
+  if (isLoading && !property) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <Spinner size="md" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6">
-        <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 text-rose-700 dark:text-rose-400 text-sm">
-          {error}
-        </div>
+      <div className="p-4 md:p-6">
+        <ErrorState description={error} onRetry={fetchData} />
       </div>
     );
   }
@@ -347,84 +410,53 @@ function CandidatosContent() {
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="space-y-4">
-        <button
+        <BackButton
+          label="Volver a propiedades"
           onClick={() => router.push('/panel/inmobiliaria/propiedades')}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <CaretLeft className="w-4 h-4" />
-          Volver a propiedades
-        </button>
+        />
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Candidatos</h1>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-fg">Candidatos</h1>
             {property && (
-              <p className="text-muted-foreground mt-1 text-sm">
+              <p className="text-sm text-fg-muted max-w-2xl">
                 {property.title} · {property.neighborhood}, {property.city}
               </p>
             )}
           </div>
-          <button
-            onClick={fetchData}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border text-muted-foreground hover:bg-muted transition-colors text-sm w-fit"
-          >
-            <ArrowsClockwise className="w-4 h-4" />
-            Actualizar
-          </button>
         </div>
       </div>
 
       {/* Stats */}
       {candidates.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
-          <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
-            <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{activeCount}</p>
-            <p className="text-xs text-blue-600 dark:text-blue-500 mt-0.5">En revisión</p>
-          </div>
-          <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20">
-            <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{preapprovedCount}</p>
-            <p className="text-xs text-indigo-600 dark:text-indigo-500 mt-0.5">Pre-aprobados</p>
-          </div>
-          <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20">
-            <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{approvedCount}</p>
-            <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-0.5">Aprobados</p>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <CandidateStatTile value={activeCount} label="En revisión" tone="info" />
+          <CandidateStatTile value={preapprovedCount} label="Pre-aprobados" tone="info" />
+          <CandidateStatTile value={approvedCount} label="Aprobados" tone="ok" />
         </div>
       )}
 
       {/* Table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         {candidates.length === 0 ? (
-          <div className="py-16 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-              <User className="w-6 h-6 text-muted-foreground" />
-            </div>
-            <p className="font-medium text-foreground">Sin candidatos</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Aún no hay postulaciones para esta propiedad
-            </p>
-          </div>
+          <EmptyState
+            icon={User}
+            title="Sin candidatos"
+            description="Aún no hay postulaciones para esta propiedad"
+          />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[580px]">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Candidato
-                  </th>
-                  <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Score
-                  </th>
-                  <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Fecha
-                  </th>
-                  <th className="p-4" />
-                </tr>
-              </thead>
-              <tbody>
+          <div className="overflow-x-auto overscroll-contain">
+            <Table className="w-full min-w-[580px] [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-card">
+              <TableHeader>
+                <TableRow className="border-b border-border bg-surface-muted">
+                  <TableHead>Candidato</TableHead>
+                  <TableHead>Score</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead className="p-4" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {candidates.map((candidate) => {
                   const statusCfg = STATUS_CONFIG[candidate.status] ?? FALLBACK_STATUS;
                   const initials = candidate.tenantName
@@ -432,85 +464,85 @@ function CandidatosContent() {
                     : '?';
 
                   return (
-                    <tr
+                    <TableRow
                       key={candidate.id}
                       onClick={() => setSelectedCandidate(candidate)}
                       className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
                     >
                       {/* Tenant */}
-                      <td className="p-4">
+                      <TableCell className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                            <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                          <div className="w-9 h-9 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+                            <span className="text-sm font-medium text-primary">
                               {initials}
                             </span>
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                            <p className="text-sm font-medium text-fg flex items-center gap-1.5">
                               {candidate.tenantName || '—'}
-                              <Sparkle className="w-3 h-3 text-indigo-500" aria-label="Ver análisis IA" />
+                              <Sparkle className="w-3 h-3 text-primary" aria-label="Ver análisis IA" />
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-fg-muted">
                               {candidate.tenantEmail || '—'}
                             </p>
                           </div>
                         </div>
-                      </td>
+                      </TableCell>
 
                       {/* Score */}
-                      <td className="p-4">
+                      <TableCell className="p-4">
                         {candidate.riskScore ? (
                           <div className="flex items-center gap-2">
                             <span
                               className={cn(
-                                'inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold',
-                                SCORE_COLORS[candidate.riskScore.level] ?? 'text-neutral-600 bg-neutral-100'
+                                'inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold',
+                                SCORE_COLORS[candidate.riskScore.level] ?? 'text-fg-muted bg-surface-muted'
                               )}
                             >
                               {candidate.riskScore.level}
                             </span>
-                            <span className="text-sm font-semibold text-foreground tabular-nums">
+                            <span className="text-sm font-semibold text-fg tabular-nums">
                               {candidate.riskScore.totalScore}
                             </span>
                           </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
                             <Sparkle className="w-3 h-3" />
                             Ver resultado
                           </span>
                         )}
-                      </td>
+                      </TableCell>
 
                       {/* Status */}
-                      <td className="p-4">
-                        <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', statusCfg.bg, statusCfg.text)}>
+                      <TableCell className="p-4">
+                        <Badge variant={STATUS_VARIANT[candidate.status] ?? 'secondary'}>
                           {statusCfg.label}
-                        </span>
-                      </td>
+                        </Badge>
+                      </TableCell>
 
                       {/* Date */}
-                      <td className="p-4">
-                        <span className="text-sm text-muted-foreground">
+                      <TableCell className="p-4">
+                        <span className="text-sm text-fg-muted">
                           {new Date(candidate.submittedAt).toLocaleDateString('es-CO', {
                             day: '2-digit',
                             month: 'short',
                           })}
                         </span>
-                      </td>
+                      </TableCell>
 
                       {/* Actions */}
-                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                      <TableCell className="p-4" onClick={(e) => e.stopPropagation()}>
                         <CandidateActions
                           candidate={candidate}
                           existingContract={getContractByApplicationId(candidate.id)}
                           onAction={handleAction}
                         />
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>
@@ -535,6 +567,37 @@ function CandidatosContent() {
         }}
         onReevaluated={fetchData}
       />
+    </div>
+  );
+}
+
+// KPI tile — número, label e ícono parejos; tint semántico por token.
+const CANDIDATE_TILE_TONES = {
+  neutral: 'bg-surface-muted text-fg-muted',
+  ok: 'bg-success-soft text-success',
+  info: 'bg-primary-soft text-primary',
+  warn: 'bg-warning-soft text-warning',
+  bad: 'bg-danger-soft text-danger',
+} as const;
+
+function CandidateStatTile({
+  value,
+  label,
+  tone,
+}: {
+  value: number;
+  label: string;
+  tone: keyof typeof CANDIDATE_TILE_TONES;
+}) {
+  return (
+    <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card">
+      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', CANDIDATE_TILE_TONES[tone])}>
+        <User className="w-5 h-5" weight="duotone" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-2xl font-semibold text-fg tabular-nums leading-none">{value}</p>
+        <p className="text-xs text-fg-muted mt-1 truncate">{label}</p>
+      </div>
     </div>
   );
 }

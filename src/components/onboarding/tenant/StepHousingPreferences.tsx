@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { CurrencyDollar, MapPin, Calendar, PawPrint, WifiHigh, Car, Shield, Barbell, Tree, Warehouse, Waves, Sparkle, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { IconButton } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useI18n } from '@/lib/i18n'
 import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
 
@@ -91,48 +94,38 @@ export function StepHousingPreferences() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
-            Presupuesto mensual <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-fg-muted mb-3">
+            Presupuesto mensual <span className="text-danger">*</span>
           </label>
           <div className="grid grid-cols-2 gap-4">
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                <CurrencyDollar className="h-5 w-5 text-neutral-400" />
+                <CurrencyDollar className="h-5 w-5 text-fg-subtle" />
               </div>
-              <input
+              <Input
                 type="text"
+                inputMode="numeric"
+                id="budgetMin"
+                aria-label="Presupuesto mínimo mensual"
                 value={draft.budgetMin ? formatCurrency(draft.budgetMin).replace('COP', '').trim() : ''}
                 onChange={handleBudgetMinChange}
                 placeholder="Mínimo"
-                className={cn(
-                  'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
-                  'text-neutral-900 dark:text-white placeholder:text-neutral-400',
-                  'transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-indigo-500/20',
-                  draft.budgetMin
-                    ? 'border-indigo-500 focus:border-indigo-500'
-                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-indigo-500'
-                )}
+                className={cn('h-12 pl-12 rounded-xl', draft.budgetMin && 'border-primary/30')}
               />
             </div>
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                <CurrencyDollar className="h-5 w-5 text-neutral-400" />
+                <CurrencyDollar className="h-5 w-5 text-fg-subtle" />
               </div>
-              <input
+              <Input
                 type="text"
+                inputMode="numeric"
+                id="budgetMax"
+                aria-label="Presupuesto máximo mensual"
                 value={draft.budgetMax ? formatCurrency(draft.budgetMax).replace('COP', '').trim() : ''}
                 onChange={handleBudgetMaxChange}
                 placeholder="Máximo"
-                className={cn(
-                  'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
-                  'text-neutral-900 dark:text-white placeholder:text-neutral-400',
-                  'transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-indigo-500/20',
-                  draft.budgetMax
-                    ? 'border-indigo-500 focus:border-indigo-500'
-                    : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-indigo-500'
-                )}
+                className={cn('h-12 pl-12 rounded-xl', draft.budgetMax && 'border-primary/30')}
               />
             </div>
           </div>
@@ -144,7 +137,7 @@ export function StepHousingPreferences() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+          <label className="block text-sm font-medium text-fg-muted mb-3">
             Ciudades de interés
           </label>
           <div className="flex flex-wrap gap-2 mb-3">
@@ -158,8 +151,8 @@ export function StepHousingPreferences() {
                   className={cn(
                     'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
                     isSelected
-                      ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
-                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                      ? 'bg-[#1A40FF] text-white'
+                      : 'bg-surface-muted text-fg-muted hover:bg-surface-hover'
                   )}
                 >
                   {city}
@@ -174,16 +167,17 @@ export function StepHousingPreferences() {
               {draft.preferredZones.filter(z => !CITIES.includes(z)).map((zone) => (
                 <span
                   key={zone}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full text-sm"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] rounded-full text-sm"
                 >
                   {zone}
-                  <button
+                  <IconButton
                     type="button"
+                    variant="ghost"
+                    aria-label="Quitar zona"
                     onClick={() => toggleZone(zone)}
-                    className="hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-full p-0.5"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+                    icon={<X className="h-3 w-3" />}
+                    className="rounded-full p-0.5 min-h-0 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]"
+                  />
                 </span>
               ))}
             </div>
@@ -193,34 +187,27 @@ export function StepHousingPreferences() {
           <div className="flex gap-2">
             <div className="relative flex-1">
               <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                <MapPin className="h-5 w-5 text-neutral-400" />
+                <MapPin className="h-5 w-5 text-fg-subtle" />
               </div>
-              <input
+              <Input
                 type="text"
                 value={customZone}
                 onChange={(e) => setCustomZone(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && addCustomZone()}
                 placeholder="Agregar otro barrio o zona"
-                className={cn(
-                  'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
-                  'text-neutral-900 dark:text-white placeholder:text-neutral-400',
-                  'transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-indigo-500'
-                )}
+                className="h-12 pl-12 rounded-xl"
               />
             </div>
-            <button
+            <Button
               type="button"
+              hideArrow
+              size="lg"
               onClick={addCustomZone}
               disabled={!customZone.trim()}
-              className={cn(
-                'px-4 py-3 rounded-xl font-medium transition-all duration-200',
-                'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700',
-                'disabled:opacity-50 disabled:cursor-not-allowed'
-              )}
+              className="rounded-xl"
             >
               Agregar
-            </button>
+            </Button>
           </div>
         </motion.div>
 
@@ -230,28 +217,20 @@ export function StepHousingPreferences() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <label htmlFor="moveInDate" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+          <label htmlFor="moveInDate" className="block text-sm font-medium text-fg-muted mb-2">
             ¿Cuándo planeas mudarte?
           </label>
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2">
-              <Calendar className="h-5 w-5 text-neutral-400" />
+              <Calendar className="h-5 w-5 text-fg-subtle" />
             </div>
-            <input
+            <Input
               type="date"
               id="moveInDate"
               value={draft.moveInDate || ''}
               onChange={(e) => updateDraft({ moveInDate: e.target.value })}
               min={new Date().toISOString().split('T')[0]}
-              className={cn(
-                'w-full h-12 pl-12 pr-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
-                'text-neutral-900 dark:text-white placeholder:text-neutral-400',
-                'transition-all duration-200',
-                'focus:outline-none focus:ring-2 focus:ring-indigo-500/20',
-                draft.moveInDate
-                  ? 'border-indigo-500 focus:border-indigo-500'
-                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-indigo-500'
-              )}
+              className={cn('h-12 pl-12 rounded-xl', draft.moveInDate && 'border-primary/30')}
             />
           </div>
         </motion.div>
@@ -262,7 +241,7 @@ export function StepHousingPreferences() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+          <label className="block text-sm font-medium text-fg-muted mb-3">
             ¿Tienes mascotas?
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -272,11 +251,11 @@ export function StepHousingPreferences() {
               className={cn(
                 'flex items-center justify-center gap-3 p-4 rounded-xl border transition-all duration-200',
                 !draft.hasPets
-                  ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20 shadow-sm'
-                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1a1a1c]'
+                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
+                  : 'border-border hover:border-border-strong bg-surface'
               )}
             >
-              <span className={cn('text-sm font-semibold', !draft.hasPets ? 'text-indigo-700 dark:text-indigo-400' : 'text-neutral-700 dark:text-neutral-300')}>
+              <span className={cn('text-sm font-semibold', !draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-muted')}>
                 No tengo mascotas
               </span>
             </button>
@@ -286,12 +265,12 @@ export function StepHousingPreferences() {
               className={cn(
                 'flex items-center justify-center gap-3 p-4 rounded-xl border transition-all duration-200',
                 draft.hasPets
-                  ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20 shadow-sm'
-                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1a1a1c]'
+                  ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
+                  : 'border-border hover:border-border-strong bg-surface'
               )}
             >
-              <PawPrint className={cn('h-5 w-5', draft.hasPets ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-500 dark:text-neutral-400')} />
-              <span className={cn('text-sm font-semibold', draft.hasPets ? 'text-indigo-700 dark:text-indigo-400' : 'text-neutral-700 dark:text-neutral-300')}>
+              <PawPrint className={cn('h-5 w-5', draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-subtle')} />
+              <span className={cn('text-sm font-semibold', draft.hasPets ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-muted')}>
                 Sí, tengo mascotas
               </span>
             </button>
@@ -303,17 +282,12 @@ export function StepHousingPreferences() {
               animate={{ opacity: 1, height: 'auto' }}
               className="mt-3"
             >
-              <input
+              <Input
                 type="text"
                 value={draft.petDetails || ''}
                 onChange={(e) => updateDraft({ petDetails: e.target.value })}
                 placeholder="Describe tus mascotas (tipo, tamaño, cantidad)"
-                className={cn(
-                  'w-full h-12 px-4 rounded-xl border bg-white dark:bg-[#1a1a1c]',
-                  'text-neutral-900 dark:text-white placeholder:text-neutral-400',
-                  'transition-all duration-200',
-                  'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 focus:border-indigo-500'
-                )}
+                className="h-12 rounded-xl"
               />
             </motion.div>
           )}
@@ -325,7 +299,7 @@ export function StepHousingPreferences() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">
+          <label className="block text-sm font-medium text-fg-muted mb-3">
             Amenidades importantes para ti
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -341,12 +315,12 @@ export function StepHousingPreferences() {
                   className={cn(
                     'flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-200',
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20'
-                      : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#1a1a1c]'
+                      ? 'border-[#1A40FF]/30 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
+                      : 'border-border hover:border-border-strong bg-surface'
                   )}
                 >
-                  <Icon className={cn('h-5 w-5', isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-500 dark:text-neutral-400')} />
-                  <span className={cn('text-xs font-medium text-center', isSelected ? 'text-indigo-700 dark:text-indigo-400' : 'text-neutral-600 dark:text-neutral-400')}>
+                  <Icon className={cn('h-5 w-5', isSelected ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-subtle')} />
+                  <span className={cn('text-xs font-medium text-center', isSelected ? 'text-[#1A40FF] dark:text-[#5570FF]' : 'text-fg-muted')}>
                     {amenity.label}
                   </span>
                 </button>
@@ -360,7 +334,7 @@ export function StepHousingPreferences() {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-sm text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 rounded-xl"
+          className="text-sm text-warning bg-warning-soft px-4 py-3 rounded-xl"
         >
           Ingresa tu presupuesto mínimo y máximo para continuar
         </motion.p>

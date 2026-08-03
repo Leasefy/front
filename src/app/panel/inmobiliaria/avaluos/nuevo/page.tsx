@@ -1,63 +1,29 @@
 'use client';
 
-import { useContext } from 'react';
-import { AvaluoProvider, useAvaluo } from '@/components/avaluo/AvaluoContext';
-import { AvaluoWizardShell } from '@/components/avaluo/AvaluoWizardShell';
-import { StepInmueble } from '@/components/avaluo/StepInmueble';
-import { StepContacto } from '@/components/avaluo/StepContacto';
-import { StepFotos } from '@/components/avaluo/StepFotos';
-import { StepConfirmacion } from '@/components/avaluo/StepConfirmacion';
-import { AuthContext } from '@/lib/auth/auth-context';
-
-// ---------------------------------------------------------------------------
-// Step switcher — must be inside AvaluoProvider to call useAvaluo()
-// ---------------------------------------------------------------------------
-
-function AvaluoSteps() {
-  const { currentStep } = useAvaluo();
-
-  switch (currentStep) {
-    case 1:
-      return <StepInmueble />;
-    case 2:
-      return <StepContacto />;
-    case 3:
-      return <StepFotos />;
-    case 4:
-      return <StepConfirmacion />;
-    default:
-      return <StepInmueble />;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
+import { useEffect } from 'react';
+import { AVALUO_WIZARD_URL } from '@/lib/avaluo/wizard-url';
 
 /**
- * /panel/inmobiliaria/avaluos/nuevo
+ * /panel/inmobiliaria/avaluos/nuevo — RETIRED in-app wizard.
  *
- * Authenticated avalúo intake wizard — identical components as the public
- * /avaluo/nuevo page, with the user's email pre-filled via AuthContext so
- * StepContacto can render it as read-only.
- *
- * The parent layout provides AuthProvider + agency sidebar — do NOT add
- * ForceLightMode here.
- *
- * On submit, AvaluoContext routes to /avaluo/estado/[id] (public status page
- * works for authenticated users in v1).
+ * The avalúo solicitud flow now runs on the micro's own front
+ * (AVALUO_WIZARD_URL). This route forwards there so old links/bookmarks still
+ * land on the flow. The former authenticated wizard (email pre-fill via
+ * AuthContext + AvaluoWizardShell) is no longer mounted — the micro front owns
+ * the intake now.
  */
-export default function PanelNuevoAvaluoPage() {
-  // Read the authenticated user's email from AuthContext.
-  // Safe null-check: authCtx may be null in edge cases (unauthenticated render).
-  const authCtx = useContext(AuthContext);
-  const email = authCtx?.user?.email ?? '';
+export default function PanelNuevoAvaluoRedirectPage() {
+  useEffect(() => {
+    if (AVALUO_WIZARD_URL) window.location.replace(AVALUO_WIZARD_URL);
+  }, []);
 
   return (
-    <AvaluoProvider initialEmail={email}>
-      <AvaluoWizardShell>
-        <AvaluoSteps />
-      </AvaluoWizardShell>
-    </AvaluoProvider>
+    <main className="flex min-h-[60vh] items-center justify-center p-8 text-center">
+      <p className="text-sm text-muted-foreground">
+        {AVALUO_WIZARD_URL
+          ? 'Redirigiendo a la solicitud de avalúo…'
+          : 'La solicitud de avalúo no está disponible por ahora.'}
+      </p>
+    </main>
   );
 }

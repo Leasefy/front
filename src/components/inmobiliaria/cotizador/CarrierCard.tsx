@@ -2,8 +2,9 @@
 // Phase 30 plan 30-06 | COTI-UI-03 | XR-05
 // Single carrier state card with entrance animation.
 
-import { Warning, CheckCircle, XCircle, Question, Spinner } from '@phosphor-icons/react'
+import { Warning, CheckCircle, XCircle, Question } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
+import { Spinner } from '@/components/ui/spinner'
 import { useI18n } from '@/lib/i18n'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
 
@@ -22,46 +23,46 @@ function verdictColorClasses(status: CarrierState['status']): ColorClasses {
   switch (status) {
     case 'approved':
       return {
-        text:   'text-green-700 dark:text-green-400',
-        bg:     'bg-green-50 dark:bg-green-950/30',
-        border: 'border-green-200 dark:border-green-800',
-        badge:  'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300',
+        text:   'text-success',
+        bg:     'bg-success-soft',
+        border: 'border-success/30',
+        badge:  'bg-success-soft text-success',
       }
     case 'conditional':
       return {
-        text:   'text-amber-700 dark:text-amber-400',
-        bg:     'bg-amber-50 dark:bg-amber-950/30',
-        border: 'border-amber-200 dark:border-amber-800',
-        badge:  'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300',
+        text:   'text-warning',
+        bg:     'bg-warning-soft',
+        border: 'border-warning/30',
+        badge:  'bg-warning-soft text-warning',
       }
     case 'rejected':
       return {
-        text:   'text-red-700 dark:text-red-400',
-        bg:     'bg-red-50 dark:bg-red-950/30',
-        border: 'border-red-200 dark:border-red-800',
-        badge:  'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300',
+        text:   'text-danger',
+        bg:     'bg-danger-soft',
+        border: 'border-danger/30',
+        badge:  'bg-danger-soft text-danger',
       }
     case 'error':
       return {
-        text:   'text-slate-600 dark:text-slate-400',
-        bg:     'bg-slate-50 dark:bg-slate-950/20',
-        border: 'border-slate-200 dark:border-slate-700',
-        badge:  'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
+        text:   'text-fg-muted',
+        bg:     'bg-surface-muted',
+        border: 'border-border',
+        badge:  'bg-surface-muted text-fg-muted',
       }
     case 'stub':
       return {
-        text:   'text-violet-700 dark:text-violet-400',
-        bg:     'bg-violet-50 dark:bg-violet-950/30',
-        border: 'border-violet-200 dark:border-violet-800',
-        badge:  'bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300',
+        text:   'text-fg-muted',
+        bg:     'bg-surface-muted',
+        border: 'border-border',
+        badge:  'bg-surface-muted text-fg-muted',
       }
     case 'pending':
     default:
       return {
-        text:   'text-indigo-600 dark:text-indigo-400',
-        bg:     'bg-indigo-50/60 dark:bg-indigo-950/20',
-        border: 'border-indigo-200 dark:border-indigo-800',
-        badge:  'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400',
+        text:   'text-primary',
+        bg:     'bg-primary-soft/60',
+        border: 'border-primary/30',
+        badge:  'bg-primary-soft text-primary',
       }
   }
 }
@@ -69,15 +70,15 @@ function verdictColorClasses(status: CarrierState['status']): ColorClasses {
 function StatusIcon({ status }: { status: CarrierState['status'] }) {
   switch (status) {
     case 'approved':
-      return <CheckCircle weight="fill" className="w-4 h-4 text-green-500" />
+      return <CheckCircle weight="fill" className="w-4 h-4 text-success" />
     case 'rejected':
-      return <XCircle weight="fill" className="w-4 h-4 text-red-500" />
+      return <XCircle weight="fill" className="w-4 h-4 text-danger" />
     case 'error':
-      return <Warning weight="fill" className="w-4 h-4 text-slate-500" />
+      return <Warning weight="fill" className="w-4 h-4 text-fg-muted" />
     case 'stub':
-      return <Question weight="fill" className="w-4 h-4 text-violet-500" />
+      return <Question weight="fill" className="w-4 h-4 text-fg-muted" />
     case 'pending':
-      return <Spinner weight="bold" className="w-4 h-4 text-indigo-500 animate-spin" />
+      return <Spinner size="sm" />
     default:
       return null
   }
@@ -113,7 +114,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className={[
-        'rounded-2xl border p-4 space-y-3 transition-colors duration-300',
+        'rounded-xl border p-4 space-y-3 transition-colors duration-300',
         colors.bg,
         colors.border,
       ].join(' ')}
@@ -135,7 +136,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
           )}
           <span
             className={[
-              'rounded-full font-mono uppercase tracking-wide text-[10px] font-label px-2 py-0.5',
+              'rounded-full uppercase tracking-wide text-[10px] font-medium px-2 py-0.5',
               colors.badge,
             ].join(' ')}
           >
@@ -147,7 +148,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
       {/* Pending skeleton */}
       {carrier.status === 'pending' && (
         <div className="space-y-2 animate-pulse">
-          <div className="h-6 w-28 rounded-md bg-indigo-100 dark:bg-indigo-900/40" />
+          <div className="h-6 w-28 rounded-sm bg-primary-soft" />
           <div className="h-3 w-40 rounded bg-muted" />
         </div>
       )}
@@ -185,7 +186,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
               <p className="text-caption text-muted-foreground font-medium">
                 {t('inmobiliaria.ai.cotizador.detail.carrier.motivoRechazoTitle')}
               </p>
-              <p className="text-body-sm text-red-600 dark:text-red-400 mt-0.5">
+              <p className="text-body-sm text-danger mt-0.5">
                 {carrier.motivoRechazo}
               </p>
             </div>
@@ -196,7 +197,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
       {/* Error */}
       {carrier.status === 'error' && (
         <div className="flex items-start gap-2">
-          <Warning weight="bold" className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+          <Warning weight="bold" className="w-4 h-4 text-fg-muted shrink-0 mt-0.5" />
           <p className="text-body-sm text-muted-foreground">
             {carrier.motivoRechazo ?? t('inmobiliaria.ai.cotizador.detail.carrier.errorLabel')}
           </p>
@@ -205,7 +206,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
 
       {/* Stub */}
       {carrier.status === 'stub' && (
-        <div className={['rounded-lg px-3 py-2 text-body-sm font-medium', colors.badge].join(' ')}>
+        <div className={['rounded-md px-3 py-2 text-body-sm font-medium', colors.badge].join(' ')}>
           {t('inmobiliaria.ai.cotizador.detail.carrier.stubModeBadge')}
         </div>
       )}

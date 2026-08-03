@@ -3,7 +3,7 @@
  *
  * Tests for three render branches + Intl format correctness:
  *   1. populated=true → hero ratio text + SVG sparkline present
- *   2. populated=false + reason='insufficient-data' → SampleDataWatermark present + stub ratio + svg
+ *   2. populated=false + reason='insufficient-data' → EmptyState (honest empty, no stub ratio/svg)
  *   3. populated=false + reason='agency-gate' → returns null (nothing rendered)
  *   4. Intl format — costPerPeso=5.20 renders USD string + COP string
  *
@@ -34,16 +34,6 @@ vi.mock('recharts', () => ({
 // Mock i18n
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k, locale: 'es' }),
-}))
-
-// Mock SampleDataWatermark
-vi.mock('@/components/data-display/SampleDataWatermark', () => ({
-  SampleDataWatermark: ({ children, show }: { children: React.ReactNode; show: boolean }) =>
-    React.createElement(
-      'div',
-      { role: show ? 'note' : undefined, 'data-testid': 'sample-data-watermark', 'data-show': String(show) },
-      children
-    ),
 }))
 
 import { CostPerPesoKpi } from './CostPerPesoKpi'
@@ -106,17 +96,13 @@ describe('<CostPerPesoKpi>', () => {
     expect(container.querySelector('svg')).not.toBeNull()
   })
 
-  it('renders SampleDataWatermark (role=note) + stub ratio + SVG when populated=false reason=insufficient-data', () => {
+  it('renders EmptyState (no watermark, no stub ratio) when populated=false reason=insufficient-data', () => {
     act(() => {
       root.render(React.createElement(CostPerPesoKpi, { data: INSUFFICIENT_DATA }))
     })
-    // Watermark present
-    const watermark = container.querySelector('[role="note"]')
-    expect(watermark).not.toBeNull()
-    // Stub chart rendered behind watermark
-    expect(container.querySelector('svg')).not.toBeNull()
-    // Some text content (stub ratio)
-    expect(container.textContent).not.toBe('')
+    // Honest empty state — no sample-data watermark
+    expect(container.querySelector('[role="note"]')).toBeNull()
+    expect(container.textContent).toContain('Sin datos suficientes todavía')
   })
 
   it('renders nothing when populated=false reason=agency-gate', () => {

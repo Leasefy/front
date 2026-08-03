@@ -1,6 +1,7 @@
 'use client';
 
 import { Check, WarningCircle } from '@phosphor-icons/react';
+import { Eyebrow, Progress } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { WizardNavigation } from '@/components/wizard/WizardNavigation';
 import { useAvaluo } from './AvaluoContext';
@@ -57,42 +58,35 @@ export function AvaluoWizardShell({ children }: AvaluoWizardShellProps) {
   };
 
   return (
-    <div className="min-h-screen bg-muted">
+    <div className="min-h-screen bg-bg">
       {/* Mobile header */}
-      <header className="lg:hidden sticky top-0 z-20 bg-card border-b border-border px-4 py-3">
+      <header className="lg:hidden sticky top-0 z-20 bg-surface border-b border-border px-4 py-3">
         <div className="flex items-center justify-between mb-2">
           <span
-            className="text-xs font-medium text-foreground"
+            className="text-xs font-mono tabular-nums font-medium text-fg"
             aria-live="polite"
             aria-atomic="true"
           >
             Paso {currentStep} de {totalSteps}
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-fg-muted">
             {currentStepConfig?.label}
           </span>
         </div>
-        <div className="h-1 bg-black/10 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-primary transition-all duration-500"
-            style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-          />
-        </div>
+        <Progress value={currentStep} max={totalSteps} size="xs" label="Progreso del avalúo" />
       </header>
 
       {/* Main layout */}
       <div className="lg:flex lg:min-h-screen">
         {/* Sidebar — desktop only */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-[280px] xl:w-[320px] bg-card border-r border-border lg:sticky lg:top-0 lg:h-screen">
+        <aside className="hidden lg:flex lg:flex-col lg:w-[280px] xl:w-[320px] bg-surface border-r border-border lg:sticky lg:top-0 lg:h-screen">
           {/* Brand / title */}
           <div className="p-6 xl:p-8 border-b border-border">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
-              Leasefy
-            </p>
-            <h1 className="text-lg font-semibold text-foreground leading-tight">
-              Avalúo Comercial
+            <Eyebrow className="mb-1.5">Leasefy</Eyebrow>
+            <h1 className="text-lg font-semibold text-fg leading-tight tracking-tight">
+              Avalúo comercial
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-fg-muted mt-1">
               Completá los pasos para enviar tu solicitud.
             </p>
           </div>
@@ -108,12 +102,13 @@ export function AvaluoWizardShell({ children }: AvaluoWizardShellProps) {
 
                 return (
                   <div key={step.id} className="relative">
-                    {/* Connecting line */}
+                    {/* Connecting line — Cadence #steps: 2px, cobalt done / hairline pending */}
                     {!isLast && (
                       <div
+                        aria-hidden
                         className={cn(
-                          'absolute left-[11px] top-[28px] w-[2px] h-[32px]',
-                          isCompleted ? 'bg-primary' : 'bg-black/10'
+                          'absolute left-[15px] top-[36px] w-[2px] h-[24px] rounded-full',
+                          isCompleted ? 'bg-primary' : 'bg-border'
                         )}
                       />
                     )}
@@ -129,22 +124,29 @@ export function AvaluoWizardShell({ children }: AvaluoWizardShellProps) {
                         isClickable ? 'cursor-pointer' : 'cursor-not-allowed'
                       )}
                     >
-                      {/* Circle indicator */}
+                      {/* Circle indicator — Cadence #steps: 32px; done = cobalt fill + check;
+                          active = white + 2px cobalt ring (halo) + mono numeral; pending = hairline */}
                       <div
+                        style={
+                          isCurrent
+                            ? { boxShadow: '0 0 0 4px rgba(26,64,255,0.14)' }
+                            : undefined
+                        }
                         className={cn(
-                          'relative z-10 w-6 h-6 rounded-full flex items-center justify-center transition-all border-2',
-                          isCompleted
-                            ? 'bg-primary border-primary'
+                          'relative z-10 size-8 rounded-full flex items-center justify-center transition-all',
+                          'font-mono text-[13px] font-semibold tabular-nums',
+                          isCompleted && !isCurrent
+                            ? 'bg-primary border-2 border-primary text-primary-fg'
                             : isCurrent
-                            ? 'bg-primary border-primary'
-                            : 'bg-card border-border'
+                            ? 'bg-surface border-2 border-primary text-primary'
+                            : 'bg-surface border border-border text-fg-subtle'
                         )}
                       >
                         {isCompleted && !isCurrent ? (
-                          <Check className="h-3 w-3 text-white" />
-                        ) : isCurrent ? (
-                          <div className="w-2 h-2 rounded-full bg-white" />
-                        ) : null}
+                          <Check className="h-4 w-4" weight="bold" />
+                        ) : (
+                          <span>{step.id}</span>
+                        )}
                       </div>
 
                       {/* Label */}
@@ -152,10 +154,10 @@ export function AvaluoWizardShell({ children }: AvaluoWizardShellProps) {
                         className={cn(
                           'text-sm font-medium transition-colors',
                           isCurrent
-                            ? 'text-foreground'
+                            ? 'text-fg'
                             : isCompleted
-                            ? 'text-foreground/70'
-                            : 'text-muted-foreground'
+                            ? 'text-fg/70'
+                            : 'text-fg-muted'
                         )}
                       >
                         {step.label}
@@ -171,18 +173,18 @@ export function AvaluoWizardShell({ children }: AvaluoWizardShellProps) {
         {/* Main content */}
         <main className="flex-1 lg:overflow-y-auto">
           <div className="max-w-2xl mx-auto px-4 py-6 lg:px-8 lg:py-12">
-            <div className="bg-card rounded-xl border border-border shadow-sm">
+            <div className="bg-surface rounded-[22px] border border-border">
               {/* Step header — desktop */}
               <div className="hidden lg:block px-6 py-5 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-foreground text-background text-sm font-medium">
+                  <span className="flex items-center justify-center size-8 rounded-full bg-ink text-ink-fg font-mono text-sm font-semibold tabular-nums">
                     {currentStep}
                   </span>
                   <div>
-                    <h2 className="text-base font-medium text-foreground">
+                    <h2 className="text-base font-medium text-fg">
                       {currentStepConfig?.label}
                     </h2>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-fg-muted">
                       Paso {currentStep} de {totalSteps}
                     </p>
                   </div>
@@ -191,7 +193,7 @@ export function AvaluoWizardShell({ children }: AvaluoWizardShellProps) {
 
               {/* Step header — mobile */}
               <div className="lg:hidden px-4 py-4 border-b border-border">
-                <h2 className="text-base font-medium text-foreground">
+                <h2 className="text-base font-medium text-fg">
                   {currentStepConfig?.label}
                 </h2>
               </div>
@@ -199,16 +201,16 @@ export function AvaluoWizardShell({ children }: AvaluoWizardShellProps) {
               {/* Form content */}
               <div className="px-4 py-6 lg:px-6 lg:py-8">{children}</div>
 
-              {/* Submit error */}
+              {/* Submit error — Cadence error alert */}
               {submitError && (
                 <div
                   className="px-4 lg:px-6 mb-4"
                   role="alert"
                   aria-live="assertive"
                 >
-                  <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
-                    <WarningCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-red-800">{submitError}</p>
+                  <div className="flex items-start gap-3 p-4 bg-danger-soft border border-danger/20 rounded-[14px]">
+                    <WarningCircle className="h-5 w-5 text-danger flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-danger">{submitError}</p>
                   </div>
                 </div>
               )}
@@ -227,7 +229,7 @@ export function AvaluoWizardShell({ children }: AvaluoWizardShellProps) {
               </div>
             </div>
 
-            <p className="text-center text-xs text-muted-foreground mt-4">
+            <p className="text-center text-xs text-fg-muted mt-4">
               Tu información está protegida bajo la Ley 1581 de Habeas Data.
             </p>
           </div>

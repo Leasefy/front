@@ -77,7 +77,7 @@ export function useInsuranceClaims(
   }, [agencyId, filters?.status])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     void fetchData()
   }, [fetchData, agencyId])
 

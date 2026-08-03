@@ -1,0 +1,136 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { Clock, CaretDown } from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui';
+import { Spinner } from '@/components/ui/spinner';
+import { AvailabilityScheduleEditor } from '@/components/panel/AvailabilityScheduleEditor';
+import { type AvailabilitySchedule, DEFAULT_AVAILABILITY_SCHEDULE } from '@/lib/types/property';
+import { agendaApi } from '@/lib/api/agenda.service';
+import { scheduleToWindows, windowsToSchedule } from '@/lib/utils/availability-schedule';
+
+/**
+ * Agent working-hours for visits. A single weekly schedule set from the agent's
+ * profile that governs every property they manage (fanned out on save).
+ */
+/**
+ * @param agenteId  admin viewing an agent's profile (`/agentes/[id]`)
+ * @param self      the logged-in agent managing their own hours (`/perfil`)
+ */
+export function AgenteHorarioVisitas({
+  agenteId,
+  self = false,
+}: {
+  agenteId?: string;
+  self?: boolean;
+}) {
+  const { t } = useI18n();
+  const k = (s: string) => `inmobiliaria.agenda.${s}`;
+
+  const [schedule, setSchedule] = useState<AvailabilitySchedule | null>(null);
+  const [slotDuration, setSlotDuration] = useState(30);
+  const [saving, setSaving] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const loader = self
+      ? agendaApi.getMiDisponibilidad()
+      : agendaApi.getAgenteDisponibilidad(agenteId ?? '');
+    loader
+      .then((windows) => {
+        if (!active) return;
+        setSlotDuration(windows[0]?.slotDuration ?? 30);
+        setSchedule(windows.length > 0 ? windowsToSchedule(windows) : DEFAULT_AVAILABILITY_SCHEDULE);
+      })
+      .catch(() => {
+        if (active) setSchedule(DEFAULT_AVAILABILITY_SCHEDULE);
+      });
+    return () => {
+      active = false;
+    };
+  }, [agenteId, self]);
+
+  const handleSave = useCallback(async () => {
+    if (!schedule) return;
+    setSaving(true);
+    try {
+      const windows = scheduleToWindows(schedule, slotDuration);
+      const { applied } = self
+        ? await agendaApi.setMiDisponibilidad(windows)
+        : await agendaApi.setAgenteDisponibilidad(agenteId ?? '', windows);
+      toast.success(t(k('horarioAgenteGuardado'), { count: applied }));
+    } catch (err) {
+      toast.error(t(k('horarioAgenteError')), {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [schedule, slotDuration, agenteId, self, t]);
+
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-surface-muted/40 transition-colors"
+      >
+        <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <Clock className="w-4 h-4 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-semibold text-fg">{t(k('horarioAgenteTitle'))}</h3>
+          <p className="text-xs text-fg-muted mt-0.5">{t(k('horarioAgenteDesc'))}</p>
+        </div>
+        <CaretDown className={cn('w-4 h-4 text-fg-muted flex-shrink-0 transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+      <div className="p-5 border-t border-border">
+        {schedule ? (
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-xs text-fg-muted">{t(k('duracionCita'))}</label>
+              <select
+                value={slotDuration}
+                onChange={(e) => setSlotDuration(Number(e.target.value))}
+                className="w-full sm:w-56 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg"
+              >
+                <option value={15}>15 min</option>
+                <option value={30}>30 min</option>
+                <option value={45}>45 min</option>
+                <option value={60}>60 min</option>
+              </select>
+            </div>
+
+            <AvailabilityScheduleEditor
+              key={self ? 'self' : agenteId}
+              schedule={schedule}
+              onSave={() => {}}
+              onChange={setSchedule}
+              hideFooter
+            />
+
+            <div className="flex justify-end pt-4 border-t border-border">
+              <Button hideArrow className="min-w-[160px]" onClick={handleSave} disabled={saving}>
+                {t('inmobiliaria.common.save')}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="py-12 flex justify-center">
+            <Spinner />
+          </div>
+        )}
+      </div>
+      )}
+    </div>
+  );
+}
+
+export default AgenteHorarioVisitas;

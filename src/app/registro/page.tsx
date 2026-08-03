@@ -7,7 +7,8 @@ import { useForm } from 'react-hook-form';
 import { useAuth } from '@/lib/auth/use-auth';
 import { getSupabase } from '@/lib/supabase/client';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
-import { apiClient } from '@/lib/api/client';
+import { apiClient, ApiError } from '@/lib/api/client';
+import { Input } from '@/components/ui/input';
 import type { InvitationInfo } from '@/lib/types/inmobiliaria';
 
 const PENDING_INVITATION_KEY = 'pending-invitation-token';
@@ -87,6 +88,9 @@ function RegistroContent() {
   const [confirmed, setConfirmed] = useState(false);
   // True while silently auto-completing onboarding after email confirmation click
   const [autoCompleting, setAutoCompleting] = useState(false);
+  // True when the token is conclusively dead (expired / already-accepted / not-found),
+  // as opposed to a transient network failure we shouldn't act on.
+  const [invitationDead, setInvitationDead] = useState(false);
 
   const authForm = useForm<RegisterFormData>();
   const profileForm = useForm<ProfileFormData>();
@@ -102,25 +106,49 @@ function RegistroContent() {
     agencyApi.getInvitation(token)
       .then((data) => {
         setInvitation(data);
-        if (data.invitedEmail || data.email) {
-          authForm.setValue('email', data.invitedEmail ?? data.email ?? '');
+        const rawEmail = data.invitedEmail ?? data.email ?? '';
+        if (rawEmail) {
+          // Defend against a malformed value (e.g. RFC-2822 `name"<email>`):
+          // extract the address inside angle brackets, else use the trimmed value.
+          const angle = rawEmail.match(/<([^>]+)>/);
+          authForm.setValue('email', (angle ? angle[1] : rawEmail).trim());
         }
       })
-      .catch(() => setInvitationError('La invitación no existe o ya expiró.'))
+      .catch((err) => {
+        // Distinguish a dead token (expired / already-accepted / not-found) from a
+        // transient network error, so we don't wipe a still-valid token on a blip.
+        // 409 = "already accepted": conclusively dead, not transient — treating it
+        // as retryable was what left a consumed invite looping instead of clearing.
+        const dead = err instanceof ApiError && [400, 404, 409, 410].includes(err.status);
+        setInvitationDead(dead);
+        setInvitationError(
+          dead
+            ? 'Esta invitación ya no es válida: expiró o ya fue aceptada.'
+            : 'No pudimos validar la invitación. Revisá tu conexión e intentá de nuevo.'
+        );
+      })
       .finally(() => setLoadingInvitation(false));
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A dead invitation token left in localStorage makes ProtectedRoute bounce the user
+  // back here forever (panel → /registro → error → …). Purge it to break the loop.
+  useEffect(() => {
+    if (invitationDead) {
+      try { localStorage.removeItem(PENDING_INVITATION_KEY); } catch { /* ignore */ }
+    }
+  }, [invitationDead]);
 
   // ─── Auto-accept / auto-complete ─────────────────────────────────────────
   // Fires whenever the user is authenticated and has an invitation token loaded.
   // Covers two cases:
-  //   A) codeFromUrl present  → user just confirmed email, may exist as TENANT via trigger
+  //   A) codeFromUrl present  → user just confirmed email (brand-new signup)
   //   B) no codeFromUrl       → user was already logged in, just needs to accept
-  // In both cases we ensure role = AGENT via onboarding before accepting.
   useEffect(() => {
     if (!isAuthenticated || !token || !invitation) return;
-    // needsOnboarding: true  → user has no DB record (no trigger)
-    // needsOnboarding: false + user exists → Supabase trigger created them as TENANT
-    // Both paths need onboarding with AGENT role before accepting.
+    // needsOnboarding: true  → JWT valid but NO backend public.users record yet
+    //                          (genuinely new, un-onboarded user → create as AGENT)
+    // needsOnboarding: false → the user already has a real backend profile
+    //                          (TENANT/LANDLORD/agency) → accept membership only
     if (!needsOnboarding && !user) return; // still loading
 
     setAutoCompleting(true);
@@ -129,23 +157,42 @@ function RegistroContent() {
     const saved = savedRaw ? JSON.parse(savedRaw) as { firstName: string; lastName: string } : null;
 
     const doComplete = async () => {
-      // Only update role if not already AGENT/INMOBILIARIA
-      if (user?.role !== 'agency') {
+      if (needsOnboarding) {
+        // NEW invited user (defense-in-depth; in practice handled by the manual
+        // "Completá tu perfil" form). ONE transactional call: passing
+        // invitationToken makes /users/me/onboarding create the profile AND
+        // accept the invitation atomically (membership ACTIVE on return,
+        // response { user, agencyMemberId, agencyId, onboardingStep:
+        // 'invitation_accepted' }) — no separate acceptInvitation, no orphan.
+        // Errors: 400 (invalid/expired token), 409 (conflict/already-member).
         await apiClient.post('/users/me/onboarding', {
           firstName: saved?.firstName || user?.firstName || '',
           lastName: saved?.lastName || user?.lastName || '',
           userType: 'AGENT',
+          invitationToken: token,
         });
+      } else {
+        // PERSONAL-ROLE SAFETY: an EXISTING account (!needsOnboarding — already
+        // TENANT/LANDLORD/agency) must NEVER have its personal User.role
+        // overwritten. It does NOT onboard; accept the membership only (the
+        // AgencyMember join is role-independent).
+        await agencyApi.acceptInvitation(token);
       }
-      await agencyApi.acceptInvitation(token);
       localStorage.removeItem(PENDING_INVITATION_KEY);
       localStorage.removeItem(PENDING_NAME_KEY);
       window.location.replace('/panel/inmobiliaria');
     };
 
-    doComplete().catch(() => {
+    doComplete().catch((err) => {
       setAutoCompleting(false);
-      setFormError('No se pudo completar el registro. Intentá de nuevo.');
+      // Surface the backend reason (token invalid/expired/single-agency
+      // conflict). Do NOT clear the pending token on failure — the removeItem
+      // above only runs on the success path.
+      setFormError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'No se pudo completar el registro. Intentá de nuevo.',
+      );
     });
   }, [isAuthenticated, needsOnboarding, user, token, invitation]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -186,19 +233,34 @@ function RegistroContent() {
     setIsSubmitting(true);
     setFormError(null);
     try {
+      // ONE transactional call: with invitationToken present, the backend
+      // creates the profile (AGENT) AND accepts the invitation atomically (the
+      // membership is ACTIVE on return) — no separate acceptInvitation, closing
+      // the orphan-membership state. Confirmed success response:
+      //   { user, agencyMemberId, agencyId, onboardingStep: 'invitation_accepted' }
+      // We don't need any field for routing (fixed panel URL), so we don't
+      // read the body — a 2xx is the join. Errors: 400 (invalid/expired token),
+      // 409 (single-agency conflict / already a member).
       await apiClient.post('/users/me/onboarding', {
         firstName: data.firstName.trim(),
         lastName: data.lastName.trim(),
         phone: data.phone?.trim() || undefined,
         userType: 'AGENT',
+        invitationToken: token ?? undefined,
       });
-      await agencyApi.acceptInvitation(token ?? '');
       localStorage.removeItem(PENDING_INVITATION_KEY);
       localStorage.removeItem(PENDING_NAME_KEY);
       // Hard navigation so ProtectedRoute reads the updated role from backend fresh
       window.location.replace('/panel/inmobiliaria');
-    } catch {
-      setFormError('No se pudo completar el registro. Intentá de nuevo.');
+    } catch (err) {
+      // Surface the backend message (400 invalid/expired token, 409
+      // single-agency conflict/already-member). The token is NOT cleared
+      // (removeItem runs only on success), so the user can retry.
+      setFormError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'No se pudo completar el registro. Intentá de nuevo.',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -229,12 +291,33 @@ function RegistroContent() {
   if (invitationError || !invitation) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted px-4">
-        <div className="max-w-sm w-full bg-white dark:bg-card rounded-2xl border border-border p-8 text-center">
+        <div className="max-w-sm w-full bg-white dark:bg-card rounded-xl border border-border p-8 text-center">
           <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
             <WarningCircle className="w-7 h-7 text-destructive" />
           </div>
           <h1 className="text-lg font-semibold text-foreground mb-2">Invitación inválida</h1>
           <p className="text-sm text-muted-foreground">{invitationError}</p>
+          {invitationDead && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Si ya sos miembro, entrá a tu panel. Si no, pedile al administrador que te reenvíe la invitación.
+            </p>
+          )}
+          {isAuthenticated && (
+            <div className="mt-6 flex flex-col gap-2">
+              <button
+                onClick={() => window.location.replace('/panel/inmobiliaria')}
+                className="w-full h-11 flex items-center justify-center rounded-xl bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-opacity"
+              >
+                Ir a mi panel
+              </button>
+              <a
+                href="/"
+                className="w-full h-11 flex items-center justify-center rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                Volver al inicio
+              </a>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -247,10 +330,10 @@ function RegistroContent() {
       <div className="max-w-md w-full">
 
         {/* Invitation card */}
-        <div className="bg-white dark:bg-card rounded-2xl border border-border p-6 mb-6">
+        <div className="bg-white dark:bg-card rounded-xl border border-border p-6 mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-              <Buildings className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-12 h-12 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15 flex items-center justify-center shrink-0">
+              <Buildings className="w-6 h-6 text-[#1A40FF] dark:text-[#5570FF]" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide font-mono">Invitación de</p>
@@ -270,27 +353,41 @@ function RegistroContent() {
                 <p className="text-xs text-muted-foreground">por {invitation.invitedBy}</p>
               )}
             </div>
-            {!isExpired && <CheckCircle className="w-5 h-5 text-emerald-500 ml-auto shrink-0" />}
+            {!isExpired && <CheckCircle className="w-5 h-5 text-success ml-auto shrink-0" />}
           </div>
 
           {isExpired && (
-            <div className="mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 flex items-center gap-2">
-              <WarningCircle className="w-4 h-4 text-amber-600 shrink-0" />
-              <p className="text-xs text-amber-700 dark:text-amber-300">Esta invitación expiró. Pedile al administrador que la reenvíe.</p>
+            <div className="mt-3 p-3 rounded-xl bg-warning-soft border border-warning/30 flex items-center gap-2">
+              <WarningCircle className="w-4 h-4 text-warning shrink-0" />
+              <p className="text-xs text-warning">Esta invitación expiró. Pedile al administrador que la reenvíe.</p>
             </div>
           )}
         </div>
 
         {!isExpired && (
-          <div className="bg-white dark:bg-card rounded-2xl border border-border p-6">
+          <div className="bg-white dark:bg-card rounded-xl border border-border p-6">
 
             {/* ── Step: Complete profile (Supabase session exists, no backend profile) ── */}
             {needsOnboarding ? (
               <>
-                <div className="mb-6">
+                <div className="mb-4">
                   <h2 className="text-[16px] font-semibold text-foreground">Completá tu perfil</h2>
                   <p className="text-[13px] text-muted-foreground mt-1">
-                    Tu cuenta fue creada. Solo necesitamos tus datos para unirte a <strong>{invitation.agencyName}</strong>.
+                    Tu cuenta fue creada. Solo necesitamos tus datos.
+                  </p>
+                </div>
+
+                {/* Read-only confirmation of the role + agency they were invited
+                    to (the agent does NOT choose the role). Reuses ROLE_LABELS. */}
+                <div
+                  data-testid="invite-confirmation"
+                  className="mb-5 flex items-start gap-2 p-3 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/15"
+                >
+                  <CheckCircle className="w-4 h-4 text-[#1A40FF] dark:text-[#5570FF] mt-0.5 shrink-0" weight="fill" />
+                  <p className="text-[13px] text-foreground">
+                    Te uniste al equipo de{' '}
+                    <strong>{invitation.agencyName ?? 'una inmobiliaria'}</strong> como{' '}
+                    <strong>{ROLE_LABELS[invitation.role] ?? invitation.role}</strong>.
                   </p>
                 </div>
 
@@ -298,10 +395,10 @@ function RegistroContent() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Nombre</label>
-                      <input
+                      <Input
                         {...profileForm.register('firstName', { required: 'Requerido' })}
                         placeholder="Tu nombre"
-                        className="w-full h-11 px-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                        className="w-full"
                       />
                       {profileForm.formState.errors.firstName && (
                         <p className="text-xs text-destructive mt-1">{profileForm.formState.errors.firstName.message}</p>
@@ -309,10 +406,10 @@ function RegistroContent() {
                     </div>
                     <div>
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Apellido</label>
-                      <input
+                      <Input
                         {...profileForm.register('lastName', { required: 'Requerido' })}
                         placeholder="Tu apellido"
-                        className="w-full h-11 px-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                        className="w-full"
                       />
                       {profileForm.formState.errors.lastName && (
                         <p className="text-xs text-destructive mt-1">{profileForm.formState.errors.lastName.message}</p>
@@ -326,11 +423,11 @@ function RegistroContent() {
                     </label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <input
+                      <Input
                         {...profileForm.register('phone')}
                         placeholder="3001234567"
                         type="tel"
-                        className="w-full h-11 pl-9 pr-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                        className="w-full pl-9"
                       />
                     </div>
                   </div>
@@ -364,8 +461,8 @@ function RegistroContent() {
                 {confirmed ? (
                   /* Email confirmation pending — user just needs to click the link */
                   <div className="py-4 text-center space-y-4">
-                    <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto">
-                      <Envelope className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-14 h-14 rounded-full bg-success-soft flex items-center justify-center mx-auto">
+                      <Envelope className="w-7 h-7 text-success" />
                     </div>
                     <div>
                       <p className="text-[15px] font-semibold text-foreground">Revisá tu email</p>
@@ -385,10 +482,10 @@ function RegistroContent() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[13px] font-medium text-foreground mb-1.5">Nombre</label>
-                        <input
+                        <Input
                           {...authForm.register('firstName', { required: 'Requerido' })}
                           placeholder="Tu nombre"
-                          className="w-full h-11 px-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                          className="w-full"
                         />
                         {authForm.formState.errors.firstName && (
                           <p className="text-xs text-destructive mt-1">{authForm.formState.errors.firstName.message}</p>
@@ -396,10 +493,10 @@ function RegistroContent() {
                       </div>
                       <div>
                         <label className="block text-[13px] font-medium text-foreground mb-1.5">Apellido</label>
-                        <input
+                        <Input
                           {...authForm.register('lastName', { required: 'Requerido' })}
                           placeholder="Tu apellido"
-                          className="w-full h-11 px-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                          className="w-full"
                         />
                         {authForm.formState.errors.lastName && (
                           <p className="text-xs text-destructive mt-1">{authForm.formState.errors.lastName.message}</p>
@@ -411,13 +508,22 @@ function RegistroContent() {
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Email</label>
                       <div className="relative">
                         <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
+                        <Input
                           {...authForm.register('email', { required: 'Requerido', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Email inválido' } })}
                           type="email"
                           placeholder="tu@email.com"
-                          className="w-full h-11 pl-9 pr-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                          // The invitation is bound to a specific email; the invitee must
+                          // create the account with THAT address (it carries their assigned
+                          // role). readOnly (not disabled) so react-hook-form still submits it.
+                          readOnly={Boolean(invitation?.invitedEmail ?? invitation?.email)}
+                          className={`w-full pl-9${(invitation?.invitedEmail ?? invitation?.email) ? ' bg-muted cursor-not-allowed text-muted-foreground' : ''}`}
                         />
                       </div>
+                      {(invitation?.invitedEmail ?? invitation?.email) && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Este es el correo al que se envió la invitación y no se puede modificar.
+                        </p>
+                      )}
                       {authForm.formState.errors.email && (
                         <p className="text-xs text-destructive mt-1">{authForm.formState.errors.email.message}</p>
                       )}
@@ -427,11 +533,11 @@ function RegistroContent() {
                       <label className="block text-[13px] font-medium text-foreground mb-1.5">Contraseña</label>
                       <div className="relative">
                         <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
+                        <Input
                           {...authForm.register('password', { required: 'Requerido', minLength: { value: 6, message: 'Mínimo 6 caracteres' } })}
                           type="password"
                           placeholder="Mínimo 6 caracteres"
-                          className="w-full h-11 pl-9 pr-3 rounded-xl border border-border bg-background text-[14px] focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                          className="w-full pl-9"
                         />
                       </div>
                       {authForm.formState.errors.password && (

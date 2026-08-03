@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   GitMerge,
 } from '@phosphor-icons/react';
+import { MonoLabel, StatusBadge } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { AIAgentCard } from '@/components/inmobiliaria/ai/AIAgentCard';
@@ -25,6 +26,8 @@ import type { AIAgentDefinition } from '@/lib/types/ai-agents';
 import { useAgentMetrics } from '@/lib/hooks/use-agent-metrics';
 import { useAgentActivity } from '@/lib/hooks/use-agent-activity';
 import { useAiHubLanding } from '@/lib/hooks/use-ai-hub-landing';
+import { useAiHubResumen } from '@/lib/hooks/ai/use-ai-hub-resumen';
+import { EquipoAgentes } from '@/components/inmobiliaria/ai/EquipoAgentes';
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton';
 
 // ── Relative time helper (XR-05 i18n for es-CO) ───────────────────────────
@@ -102,13 +105,9 @@ function AgentDetailView({ agent, agentId }: { agent: AIAgentDefinition; agentId
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">{name}</h1>
-            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 bg-emerald-400" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              </span>
+            <StatusBadge tone="success" pulse>
               {locale === 'es' ? 'Activo' : 'Active'}
-            </span>
+            </StatusBadge>
           </div>
           <p className="text-neutral-500 dark:text-neutral-400 mt-0.5">{description}</p>
         </div>
@@ -174,6 +173,10 @@ export default function AIAgentsPage() {
   const { activities } = useAgentActivity({ refreshIntervalMs: 30_000, limit: 20 });
   const { metrics, isLoading } = useAgentMetrics(60_000);
   const { data: landing, isLoading: hubLoading } = useAiHubLanding();
+  // F10 — hub real: 6 colas por rol + vista agregada (decisión 2026-06-08).
+  // 404 / backend not deployed → graceful panel; the Phase 37 surfaces below
+  // keep working untouched.
+  const resumen = useAiHubResumen();
 
   // If an agent is selected, show detail view
   const selectedAgent = selectedAgentId ? activeAgents.find(a => a.id === selectedAgentId) : null;
@@ -249,15 +252,18 @@ export default function AIAgentsPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
-      {/* Header */}
+      {/* Header — F10 "AGENTES IA · Equipo" tone */}
       <div className="flex flex-col gap-1 animate-stagger-in" style={{ animationDelay: '0s' }}>
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-neutral-100 dark:bg-neutral-800">
             <Robot weight="duotone" className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
           </div>
           <div>
+            <MonoLabel className="text-[11px] text-neutral-500 dark:text-neutral-400">
+              {locale === 'es' ? 'Agentes IA · Equipo' : 'AI Agents · Team'}
+            </MonoLabel>
             <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
-              {locale === 'es' ? 'Agentes AI' : 'AI Agents'}
+              {locale === 'es' ? 'Equipo de agentes' : 'Agent team'}
             </h1>
             <p className="text-neutral-500 dark:text-neutral-400">
               {locale === 'es'
@@ -268,11 +274,22 @@ export default function AIAgentsPage() {
         </div>
       </div>
 
+      {/* F10 — Equipo de agentes: 6 colas por rol + vista agregada. Leads the
+          page; the Phase 37 cards/feed below are PRESERVED. */}
+      <div className="animate-stagger-in" style={{ animationDelay: '0.04s' }}>
+        <EquipoAgentes
+          data={resumen.data}
+          isLoading={resumen.isLoading}
+          error={resumen.error}
+          notAvailable={resumen.notAvailable}
+        />
+      </div>
+
       {/* Summary stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-stagger-in" style={{ animationDelay: '0.08s' }}>
         <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg p-2 bg-neutral-100 dark:bg-neutral-800">
+            <div className="rounded-md p-2 bg-neutral-100 dark:bg-neutral-800">
               <CheckCircle weight="duotone" className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
             </div>
             <div>
@@ -285,7 +302,7 @@ export default function AIAgentsPage() {
         </div>
         <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg p-2 bg-neutral-100 dark:bg-neutral-800">
+            <div className="rounded-md p-2 bg-neutral-100 dark:bg-neutral-800">
               <TrendUp weight="duotone" className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
             </div>
             <div>
@@ -300,7 +317,7 @@ export default function AIAgentsPage() {
         </div>
         <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg p-2 bg-neutral-100 dark:bg-neutral-800">
+            <div className="rounded-md p-2 bg-neutral-100 dark:bg-neutral-800">
               <Clock weight="duotone" className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
             </div>
             <div>
@@ -322,21 +339,30 @@ export default function AIAgentsPage() {
             {locale === 'es' ? 'Agentes Activos' : 'Active Agents'}
           </h2>
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
           </span>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Existing agents: TenantScoring + SmartMatching */}
           {activeAgents
             .filter((a) => a.id === 'tenant-scoring' || a.id === 'smart-matching')
-            .map((agent) => (
-              <AIAgentCard
-                key={agent.id}
-                agent={agent}
-                metrics={agent.id === 'tenant-scoring' ? scoringMetrics : matchingMetrics}
-              />
-            ))}
+            .map((agent) =>
+              agent.id === 'tenant-scoring' ? (
+                // Estudio del inquilino — click-through to the bespoke Tier-B workspace
+                <div
+                  key={agent.id}
+                  className="relative cursor-pointer"
+                  onClick={() => router.push('/panel/inmobiliaria/ai/estudio')}
+                  data-testid="estudio-agent-card"
+                  data-tour-target="estudio-card"
+                >
+                  <AIAgentCard agent={agent} metrics={scoringMetrics} />
+                </div>
+              ) : (
+                <AIAgentCard key={agent.id} agent={agent} metrics={matchingMetrics} />
+              ),
+            )}
 
           {/* Cobranza card — click-through to analytics (D-37-03b per-card layout) */}
           {cobranzaAgent && (
@@ -368,7 +394,7 @@ export default function AIAgentsPage() {
           {cotizadorAgent && (
             <div
               className="relative cursor-pointer"
-              onClick={() => router.push('/panel/inmobiliaria/ai/cotizador')}
+              onClick={() => router.push('/panel/inmobiliaria/ai/asegurabilidad')}
               data-testid="cotizador-agent-card"
               data-tour-target="cotizador-card"
             >

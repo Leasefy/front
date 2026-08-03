@@ -44,21 +44,21 @@ import type { ArcoRequestRow } from '@/lib/hooks/cobranza/use-arco-requests'
 // ─── DOT COLOR MAP ─────────────────────────────────────────────────────────────
 
 const DOT_COLOR: Record<string, string> = {
-  resolved: 'bg-emerald-500',
-  in_progress: 'bg-indigo-500',
-  pending_email_verification: 'bg-amber-500',
-  pending_admin_triage: 'bg-amber-500',
-  pending_counsel_review: 'bg-amber-500',
-  rejected: 'bg-rose-500',
+  resolved: 'bg-success',
+  in_progress: 'bg-primary',
+  pending_email_verification: 'bg-warning',
+  pending_admin_triage: 'bg-warning',
+  pending_counsel_review: 'bg-warning',
+  rejected: 'bg-danger',
 }
 
 // ─── TYPE BADGE COLORS (same as inbox) ─────────────────────────────────────────
 
 const TYPE_COLORS: Record<ArcoRequestRow['type'], string> = {
-  acceso: 'text-indigo-700 bg-indigo-50 dark:bg-indigo-950/30',
-  rectificacion: 'text-teal-700 bg-teal-50 dark:bg-teal-950/20',
-  cancelacion: 'text-amber-700 bg-amber-50 dark:bg-amber-950/20',
-  oposicion: 'text-rose-700 bg-rose-50 dark:bg-rose-950/20',
+  acceso: 'text-primary bg-primary-soft',
+  rectificacion: 'text-fg-muted bg-surface-muted',
+  cancelacion: 'text-warning bg-warning-soft',
+  oposicion: 'text-danger bg-danger-soft',
 }
 
 // ─── STATUS TIMELINE ────────────────────────────────────────────────────────────
@@ -71,13 +71,13 @@ interface StatusTimelineProps {
 
 function StatusTimeline({ transitions, requestId, t }: StatusTimelineProps) {
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5">
-      <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+    <div className="rounded-xl border border-border bg-surface p-5">
+      <h2 className="text-xl font-semibold text-fg">
         {t('inmobiliaria.ai.arco.detail.timeline.title')}
       </h2>
       <ol className="space-y-2 mt-4">
         {transitions.map((step, idx) => {
-          const dotColor = DOT_COLOR[step.status] ?? 'bg-neutral-400'
+          const dotColor = DOT_COLOR[step.status] ?? 'bg-fg-subtle'
           const isLast = idx === transitions.length - 1
           return (
             <li key={`${step.status}-${idx}`} className="flex gap-3 items-start">
@@ -85,21 +85,21 @@ function StatusTimeline({ transitions, requestId, t }: StatusTimelineProps) {
               <div className="flex flex-col items-center">
                 <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${dotColor}`} />
                 {!isLast && (
-                  <div className="w-px flex-1 bg-neutral-200 dark:bg-neutral-700 mt-1" />
+                  <div className="w-px flex-1 bg-surface-muted mt-1" />
                 )}
               </div>
               {/* Entry body */}
               <div className="pb-4 min-w-0 flex-1">
-                <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                <p className="text-sm font-semibold text-fg">
                   {t(`inmobiliaria.ai.arco.status.${step.status}`)}
                 </p>
-                <p className="text-xs text-neutral-500 font-mono tabular-nums">
+                <p className="text-xs text-fg-muted font-mono tabular-nums">
                   {step.timestamp ? new Date(step.timestamp).toLocaleString() : '—'}
                 </p>
                 {/* Audit log chip — link to compliance audit filtered by this request */}
                 <Link
                   href={`/panel/inmobiliaria/ai/cobranza/compliance/audit?arco_request_id=${requestId}`}
-                  className="inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-600 mt-0.5"
+                  className="inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline mt-0.5"
                 >
                   <ArrowSquareOut className="h-3 w-3" weight="regular" />
                   {t('inmobiliaria.ai.arco.detail.viewAudit')}
@@ -142,7 +142,7 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
     return (
       <div className="space-y-4" onChange={handleChange}>
         <div className="space-y-1.5">
-          <label className="text-xs text-neutral-500 font-medium">
+          <label className="text-xs text-fg-muted font-medium">
             {t('inmobiliaria.ai.arco.detail.resolve.fields.acceso.url')}
           </label>
           <Input
@@ -155,7 +155,7 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs text-neutral-500 font-medium">
+          <label className="text-xs text-fg-muted font-medium">
             {t('inmobiliaria.ai.arco.detail.resolve.fields.acceso.expires_at')}
           </label>
           <Input
@@ -173,7 +173,7 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
   if (type === 'rectificacion') {
     return (
       <div className="space-y-1.5" onChange={handleChange}>
-        <label className="text-xs text-neutral-500 font-medium">
+        <label className="text-xs text-fg-muted font-medium">
           {t('inmobiliaria.ai.arco.detail.resolve.fields.rectificacion.affectedRows')}
         </label>
         <Input
@@ -191,7 +191,7 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
   // cancelacion | oposicion
   return (
     <div className="space-y-1.5" onChange={handleChange}>
-      <label className="text-xs text-neutral-500 font-medium">
+      <label className="text-xs text-fg-muted font-medium">
         {t(`inmobiliaria.ai.arco.detail.resolve.fields.${type}.reason`)}
       </label>
       <Textarea
@@ -260,14 +260,14 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
   }
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5 space-y-4">
-      <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+    <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
+      <h2 className="text-xl font-semibold text-fg">
         {t('inmobiliaria.ai.arco.detail.resolve.title')}
       </h2>
 
       {/* Counsel gate inline Alert — D-36-05: NOT a redirect, NOT a toast */}
       {gateBlocked && (
-        <Alert className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200">
+        <Alert className="bg-warning-soft border border-warning/30 text-warning">
           <AlertTitle>{t('inmobiliaria.ai.arco.counselGate.title')}</AlertTitle>
           <AlertDescription>{t('inmobiliaria.ai.arco.counselGate.description')}</AlertDescription>
         </Alert>
@@ -314,7 +314,7 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => void handleReject()}
-              className="bg-rose-600 hover:bg-rose-700 text-white"
+              tone="danger"
             >
               {t('inmobiliaria.ai.arco.rejectDialog.confirm')}
             </AlertDialogAction>
@@ -334,23 +334,23 @@ interface RequesterSidebarProps {
 
 function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5 space-y-4">
-      <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">
+    <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
+      <h2 className="text-xl font-semibold text-fg">
         {t('inmobiliaria.ai.arco.detail.requester.title')}
       </h2>
       <dl className="space-y-3">
         {/* Nombre */}
         <div>
-          <dt className="text-xs text-neutral-500">
+          <dt className="text-xs text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.requester.name')}
           </dt>
-          <dd className="text-sm text-neutral-900 dark:text-white mt-0.5">
+          <dd className="text-sm text-fg mt-0.5">
             {detail.requesterName}
           </dd>
         </div>
         {/* Cédula — masked, list-level (T-36-08-01) */}
         <div>
-          <dt className="text-xs text-neutral-500">
+          <dt className="text-xs text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.requester.cedula')}
           </dt>
           <dd className="text-sm mt-0.5">
@@ -359,16 +359,16 @@ function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
         </div>
         {/* Email — full, per UI-SPEC */}
         <div>
-          <dt className="text-xs text-neutral-500">
+          <dt className="text-xs text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.requester.email')}
           </dt>
-          <dd className="text-sm text-neutral-900 dark:text-white mt-0.5">
+          <dd className="text-sm text-fg mt-0.5">
             {detail.requesterEmail}
           </dd>
         </div>
         {/* Tipo */}
         <div>
-          <dt className="text-xs text-neutral-500">
+          <dt className="text-xs text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.requester.type')}
           </dt>
           <dd className="mt-0.5">
@@ -381,31 +381,31 @@ function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
         </div>
         {/* Descripción */}
         <div>
-          <dt className="text-xs text-neutral-500">
+          <dt className="text-xs text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.requester.description')}
           </dt>
-          <dd className="text-sm text-neutral-600 dark:text-neutral-400 mt-0.5 max-h-40 overflow-y-auto">
+          <dd className="text-sm text-fg-muted mt-0.5 max-h-40 overflow-y-auto">
             {detail.subjectDescription}
           </dd>
         </div>
         {/* Enviada */}
         <div>
-          <dt className="text-xs text-neutral-500">
+          <dt className="text-xs text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.requester.submitted')}
           </dt>
-          <dd className="text-xs font-mono tabular-nums text-neutral-700 dark:text-neutral-300 mt-0.5">
+          <dd className="text-xs font-mono tabular-nums text-fg-muted mt-0.5">
             {new Date(detail.submittedAt).toLocaleString()}
           </dd>
         </div>
         {/* Verificada */}
         <div>
-          <dt className="text-xs text-neutral-500">
+          <dt className="text-xs text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.requester.verified')}
           </dt>
-          <dd className="text-xs font-mono tabular-nums text-neutral-700 dark:text-neutral-300 mt-0.5">
+          <dd className="text-xs font-mono tabular-nums text-fg-muted mt-0.5">
             {detail.emailVerifiedAt
               ? new Date(detail.emailVerifiedAt).toLocaleString()
-              : <span className="text-neutral-400">{t('inmobiliaria.ai.arco.detail.requester.pending')}</span>}
+              : <span className="text-fg-subtle">{t('inmobiliaria.ai.arco.detail.requester.pending')}</span>}
           </dd>
         </div>
       </dl>
@@ -462,12 +462,12 @@ export default function ArcoDetailPage({ params }: ArcoDetailPageProps) {
       <div className="flex items-center gap-3">
         <Link
           href="/panel/inmobiliaria/ai/cobranza/arco"
-          className="text-xs text-indigo-500 hover:text-indigo-600"
+          className="text-xs text-primary underline-offset-4 hover:underline"
         >
           ← {t('inmobiliaria.ai.arco.detail.backToInbox')}
         </Link>
       </div>
-      <h1 className="text-3xl font-semibold text-neutral-900 dark:text-white">
+      <h1 className="text-3xl font-semibold text-fg">
         {t('inmobiliaria.ai.arco.detail.title')}
       </h1>
 

@@ -17,9 +17,12 @@
 
 import { useState } from 'react'
 import { z } from 'zod'
+import { MonoLabel } from '@leasefy/cadence'
 
 import type { ThresholdRow, ThresholdUpdateBody } from '@/lib/hooks/cobranza/use-thresholds'
 import { useI18n } from '@/lib/i18n'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 // Matches 34-05 PUT schema + DB CHECKs (defense in depth)
 const ThresholdSchema = z.object({
@@ -124,23 +127,20 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
     }
   }
 
-  const labelClass = 'text-xs font-mono uppercase tracking-wide text-muted-foreground'
-  const inputClass =
-    'w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono tabular-nums text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30'
-  const errorClass = 'text-xs text-rose-600 dark:text-rose-400 font-mono mt-1'
+  const errorClass = 'text-xs text-danger font-mono mt-1'
 
   return (
     <form
       onSubmit={(e) => void onFormSubmit(e)}
-      className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-4"
+      className="rounded-xl border border-border bg-card p-4 space-y-4"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className={labelClass}>
+          <MonoLabel className="block text-muted-foreground tracking-wide">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.topN')}
-          </label>
-          <input
-            className={inputClass + ' mt-1'}
+          </MonoLabel>
+          <Input
+            className="mt-1 w-full font-mono tabular-nums"
             type="number"
             min={1}
             max={50}
@@ -154,11 +154,11 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
 
         <div>
-          <label className={labelClass}>
+          <MonoLabel className="block text-muted-foreground tracking-wide">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.moraBoundaries')}
-          </label>
-          <input
-            className={inputClass + ' mt-1'}
+          </MonoLabel>
+          <Input
+            className="mt-1 w-full font-mono tabular-nums"
             type="text"
             value={boundaries}
             onChange={(e) => setBoundaries(e.target.value)}
@@ -171,11 +171,11 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
 
         <div>
-          <label className={labelClass}>
+          <MonoLabel className="block text-muted-foreground tracking-wide">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.pkrAlertBelow')}
-          </label>
-          <input
-            className={inputClass + ' mt-1'}
+          </MonoLabel>
+          <Input
+            className="mt-1 w-full font-mono tabular-nums"
             type="number"
             min={0}
             max={100}
@@ -190,11 +190,11 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
 
         <div>
-          <label className={labelClass}>
+          <MonoLabel className="block text-muted-foreground tracking-wide">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.morosidadAlertAbove')}
-          </label>
-          <input
-            className={inputClass + ' mt-1'}
+          </MonoLabel>
+          <Input
+            className="mt-1 w-full font-mono tabular-nums"
             type="number"
             min={0}
             max={100}
@@ -209,11 +209,11 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
 
         <div>
-          <label className={labelClass}>
+          <MonoLabel className="block text-muted-foreground tracking-wide">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.violationsAtLeast')}
-          </label>
-          <input
-            className={inputClass + ' mt-1'}
+          </MonoLabel>
+          <Input
+            className="mt-1 w-full font-mono tabular-nums"
             type="number"
             min={0}
             step="1"
@@ -229,11 +229,11 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
 
         <div>
-          <label className={labelClass}>
+          <MonoLabel className="block text-muted-foreground tracking-wide">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.callsOutsideAtLeast')}
-          </label>
-          <input
-            className={inputClass + ' mt-1'}
+          </MonoLabel>
+          <Input
+            className="mt-1 w-full font-mono tabular-nums"
             type="number"
             min={0}
             step="1"
@@ -250,13 +250,13 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
       </div>
 
       {errors.form && (
-        <div className="rounded-md border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-2 text-xs text-rose-700 dark:text-rose-400 font-mono">
+        <div className="rounded-sm border border-danger/30 bg-danger-soft text-danger font-mono">
           {errors.form}
         </div>
       )}
 
       {successVersion !== null && (
-        <div className="rounded-md border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-2 text-xs text-emerald-700 dark:text-emerald-400 font-mono">
+        <div className="rounded-sm border border-success/30 bg-success-soft text-success font-mono">
           {locale.startsWith('es')
             ? `Versión ${successVersion} creada`
             : `Version ${successVersion} created`}
@@ -264,15 +264,15 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
       )}
 
       <div className="flex justify-end">
-        <button
+        <Button
           type="submit"
+          size="sm"
+          hideArrow
+          isLoading={isSaving}
           disabled={isSaving}
-          className="text-xs font-mono uppercase tracking-wide px-4 py-2 rounded-md border border-border bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition"
         >
-          {isSaving
-            ? locale.startsWith('es') ? 'Guardando...' : 'Saving...'
-            : t('inmobiliaria.ai.cobranza.reporte.thresholds.submit')}
-        </button>
+          {t('inmobiliaria.ai.cobranza.reporte.thresholds.submit')}
+        </Button>
       </div>
     </form>
   )

@@ -4,20 +4,22 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { Lifebuoy, Plus, Info, Wrench, ArrowRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { RESUMEN_PQRS_VACIO } from '@/lib/api/pqrs.types';
 
-/** Resumen por estado del ciclo PQRS — color por estado (estático). */
+/** Resumen por estado del ciclo PQRS — color por estado (token semántico). */
 const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_PQRS_VACIO }[] = [
-  { key: 'recibidas', dot: 'bg-blue-500', field: 'recibidas' },
-  { key: 'asignadas', dot: 'bg-indigo-500', field: 'asignadas' },
-  { key: 'enProceso', dot: 'bg-amber-500', field: 'enProceso' },
-  { key: 'enCotizacion', dot: 'bg-violet-500', field: 'enCotizacion' },
-  { key: 'resueltas', dot: 'bg-emerald-500', field: 'resueltas' },
-  { key: 'cerradas', dot: 'bg-slate-400', field: 'cerradas' },
+  { key: 'recibidas', dot: 'bg-primary', field: 'recibidas' },
+  { key: 'asignadas', dot: 'bg-primary', field: 'asignadas' },
+  { key: 'enProceso', dot: 'bg-warning', field: 'enProceso' },
+  { key: 'enCotizacion', dot: 'bg-muted', field: 'enCotizacion' },
+  { key: 'resueltas', dot: 'bg-success', field: 'resueltas' },
+  { key: 'cerradas', dot: 'bg-fg-muted', field: 'cerradas' },
 ];
 
 const COLUMNS = [
@@ -39,21 +41,18 @@ function PqrsContent() {
           <h1 className="text-h2 text-foreground">{t(k('title'))}</h1>
           <p className="text-body text-muted-foreground max-w-2xl">{t(k('subtitle'))}</p>
         </div>
-        <button
-          onClick={() => toast.info(t(k('newSoon')))}
-          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground font-mono uppercase tracking-wide text-sm transition-transform active:scale-[0.97] flex-shrink-0"
-        >
+        <Button onClick={() => toast.info(t(k('newSoon')))} hideArrow className="shrink-0">
           <Plus className="w-4 h-4" weight="bold" />
           {t(k('new'))}
-        </button>
+        </Button>
       </header>
 
       {/* Honest M1 banner — triage IA (Mastra en agent) */}
-      <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 p-3 flex items-start gap-2.5">
-        <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" weight="fill" />
+      <div className="rounded-xl bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
+        <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
         <div>
-          <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">{t(k('m1BannerTitle'))}</p>
-          <p className="text-xs text-blue-600 dark:text-blue-300/90 mt-0.5">{t(k('m1BannerDesc'))}</p>
+          <p className="text-xs font-semibold text-primary">{t(k('m1BannerTitle'))}</p>
+          <p className="text-xs text-primary/90 mt-0.5">{t(k('m1BannerDesc'))}</p>
         </div>
       </div>
 
@@ -78,8 +77,8 @@ function PqrsContent() {
         href="/panel/inmobiliaria/operaciones"
         className="flex items-center gap-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors p-4"
       >
-        <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center flex-shrink-0">
-          <Wrench className="w-[18px] h-[18px] text-amber-600 dark:text-amber-400" />
+        <div className="w-9 h-9 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
+          <Wrench className="w-[18px] h-[18px] text-fg-muted" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-body-sm font-medium text-foreground">{t(k('repairFlowTitle'))}</p>
@@ -89,40 +88,38 @@ function PqrsContent() {
       </Link>
 
       {/* Solicitudes */}
-      <section className="rounded-2xl border border-border bg-card overflow-hidden">
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex items-center gap-3 p-5 border-b border-border">
-          <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center flex-shrink-0">
-            <Lifebuoy className="w-[18px] h-[18px] text-indigo-600 dark:text-indigo-400" />
+          <div className="w-9 h-9 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
+            <Lifebuoy className="w-[18px] h-[18px] text-fg-muted" />
           </div>
           <div>
             <h2 className="text-h4 text-foreground">{t(k('listTitle'))}</h2>
             <p className="text-caption text-muted-foreground mt-0.5">{t(k('listDesc'))}</p>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                {COLUMNS.map((c) => (
-                  <th key={c} className="text-left px-5 py-2.5 text-label text-muted-foreground font-normal whitespace-nowrap">
-                    {t(k(c))}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colSpan={COLUMNS.length} className="p-0">
-                  <EmptyState
-                    icon={Lifebuoy}
-                    title={t(k('emptyTitle'))}
-                    description={t(k('emptyDesc'))}
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {COLUMNS.map((c) => (
+                <TableHead key={c} className="whitespace-nowrap">
+                  {t(k(c))}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell colSpan={COLUMNS.length} className="p-0">
+                <EmptyState
+                  icon={Lifebuoy}
+                  title={t(k('emptyTitle'))}
+                  description={t(k('emptyDesc'))}
+                />
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </section>
     </div>
   );

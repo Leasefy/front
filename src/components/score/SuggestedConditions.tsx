@@ -76,8 +76,8 @@ export function SuggestedConditions({
     >
       {/* Section Header */}
       <div className="flex items-center gap-2 mb-3">
-        <Lightbulb className="h-4 w-4 text-amber-500" />
-        <h4 className="text-sm font-medium text-foreground">Recomendaciones</h4>
+        <Lightbulb className="h-4 w-4 text-warning" />
+        <h4 className="text-sm font-medium text-fg">Recomendaciones</h4>
       </div>
 
       {/* Conditions List */}
@@ -86,7 +86,7 @@ export function SuggestedConditions({
           <li
             key={condition.id}
             className={cn(
-              'rounded-sm bg-muted/50 p-3 text-sm',
+              'rounded-[14px] bg-surface-muted p-3 text-sm',
               animate && 'animate-fade-in-up'
             )}
             style={
@@ -95,8 +95,8 @@ export function SuggestedConditions({
                 : undefined
             }
           >
-            <p className="text-foreground font-medium">{condition.condition}</p>
-            <p className="text-xs text-muted-foreground mt-1">{condition.reason}</p>
+            <p className="text-fg font-medium">{condition.condition}</p>
+            <p className="text-xs text-fg-subtle mt-1">{condition.reason}</p>
           </li>
         ))}
       </ul>

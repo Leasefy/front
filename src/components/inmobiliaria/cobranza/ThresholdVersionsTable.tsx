@@ -17,9 +17,30 @@
 
 import { useState } from 'react'
 import { ArrowCounterClockwise } from '@phosphor-icons/react'
+import { MonoLabel } from '@leasefy/cadence'
 
 import type { ThresholdRow } from '@/lib/hooks/cobranza/use-thresholds'
 import { useI18n } from '@/lib/i18n'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 export interface ThresholdVersionsTableProps {
   versions: ThresholdRow[]
@@ -64,141 +85,140 @@ export function ThresholdVersionsTable({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center justify-between">
-        <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+        <MonoLabel className="text-xs text-muted-foreground">
           {t('inmobiliaria.ai.cobranza.reporte.thresholds.versionsHeading')}
-        </h2>
+        </MonoLabel>
         {!supported && (
-          <span className="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400">
+          <MonoLabel className="text-[10px] text-warning">
             {locale.startsWith('es') ? 'Sólo versión activa' : 'Active only'}
-          </span>
+          </MonoLabel>
         )}
       </div>
 
       {versions.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-6">—</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead className="bg-muted/10 border-b border-border">
-            <tr>
-              <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+        <div className="overflow-x-auto overscroll-contain">
+        <Table>
+          <TableHeader className="bg-muted/10 border-b border-border">
+            <TableRow>
+              <TableHead className="text-left px-3 py-2">
                 {locale.startsWith('es') ? 'Versión' : 'Version'}
-              </th>
-              <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+              </TableHead>
+              <TableHead className="text-left px-3 py-2">
                 {locale.startsWith('es') ? 'Creada' : 'Created'}
-              </th>
-              <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+              </TableHead>
+              <TableHead className="text-left px-3 py-2">
                 {locale.startsWith('es') ? 'Por' : 'By'}
-              </th>
-              <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+              </TableHead>
+              <TableHead className="text-left px-3 py-2">
                 {locale.startsWith('es') ? 'Tipo' : 'Type'}
-              </th>
-              <th className="text-right px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground" />
-            </tr>
-          </thead>
-          <tbody>
+              </TableHead>
+              <TableHead className="text-right px-3 py-2" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {versions.map((v) => {
               const isCurrent = v.version === currentMax
               return (
-                <tr
+                <TableRow
                   key={`v-${v.version ?? 'null'}-${v.created_at ?? ''}`}
                   className="border-b border-border last:border-0"
                 >
-                  <td className="px-3 py-2 font-mono tabular-nums text-foreground">
+                  <TableCell className="px-3 py-2 font-mono tabular-nums text-foreground">
                     {v.version != null ? `v${v.version}` : '—'}
                     {isCurrent && (
-                      <span className="ml-2 text-[10px] font-mono uppercase text-emerald-600 dark:text-emerald-400">
+                      <MonoLabel className="ml-2 text-[10px] text-success">
                         {locale.startsWith('es') ? 'vigente' : 'active'}
-                      </span>
+                      </MonoLabel>
                     )}
-                  </td>
-                  <td className="px-3 py-2 font-mono tabular-nums text-xs text-muted-foreground">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-muted-foreground">
                     {v.created_at ? new Date(v.created_at).toLocaleString(locale) : '—'}
-                  </td>
-                  <td className="px-3 py-2 text-xs text-foreground">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 text-xs text-foreground">
                     {v.created_by_email ?? v.created_by_user_id ?? '—'}
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     {v.is_rollback_of_version != null ? (
-                      <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                      <Badge variant="warning">
                         {locale.startsWith('es')
                           ? `Rollback de v${v.is_rollback_of_version}`
                           : `Rollback of v${v.is_rollback_of_version}`}
-                      </span>
+                      </Badge>
                     ) : (
-                      <span className="text-[10px] font-mono uppercase text-muted-foreground">
+                      <MonoLabel className="text-[10px] text-muted-foreground">
                         edit
-                      </span>
+                      </MonoLabel>
                     )}
-                  </td>
-                  <td className="px-3 py-2 text-right">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 text-right">
                     {!isCurrent && v.version != null && supported && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        hideArrow
                         onClick={() => setRollbackConfirmVersion(v.version)}
-                        className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2 py-1 rounded-md border border-border hover:bg-muted transition"
                         aria-label={`rollback v${v.version}`}
                       >
                         <ArrowCounterClockwise className="w-3 h-3" aria-hidden="true" />
                         {locale.startsWith('es') ? 'Restaurar' : 'Restore'}
-                      </button>
+                      </Button>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
+        </div>
       )}
 
       {/* Toast */}
       {toast && (
-        <div className="px-4 py-2 border-t border-border bg-emerald-50 dark:bg-emerald-950/30 text-xs font-mono text-emerald-700 dark:text-emerald-400">
+        <div className="px-4 py-2 border-t border-border bg-success-soft text-success">
           {toast}
         </div>
       )}
 
-      {/* Rollback confirmation modal */}
-      {rollbackConfirmVersion !== null && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/40"
-          role="dialog"
-          aria-modal="true"
-          aria-label="rollbackConfirm"
-        >
-          <div className="rounded-xl border border-border bg-card shadow-lg max-w-md w-full p-5 space-y-4">
-            <h3 className="text-base font-heading text-foreground">
+      {/* Rollback confirmation */}
+      <AlertDialog
+        open={rollbackConfirmVersion !== null}
+        onOpenChange={(o) => {
+          if (!o && !isRollingBack) setRollbackConfirmVersion(null)
+        }}
+      >
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
               {locale.startsWith('es') ? '¿Restaurar versión?' : 'Restore version?'}
-            </h3>
-            <p className="text-sm text-muted-foreground">
+            </AlertDialogTitle>
+            <AlertDialogDescription>
               {locale.startsWith('es')
                 ? `¿Restaurar a la versión ${rollbackConfirmVersion}? Esto creará una nueva versión ${currentMax + 1} con los valores de v${rollbackConfirmVersion}.`
                 : `Restore version ${rollbackConfirmVersion}? This will create a new version ${currentMax + 1} with the values from v${rollbackConfirmVersion}.`}
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setRollbackConfirmVersion(null)}
-                disabled={isRollingBack}
-                className="text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border hover:bg-muted disabled:opacity-50 transition"
-              >
-                {locale.startsWith('es') ? 'Cancelar' : 'Cancel'}
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirmRollback()}
-                disabled={isRollingBack}
-                className="text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition"
-              >
-                {isRollingBack
-                  ? locale.startsWith('es') ? 'Restaurando...' : 'Restoring...'
-                  : locale.startsWith('es') ? 'Confirmar' : 'Confirm'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRollingBack}>
+              {locale.startsWith('es') ? 'Cancelar' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isRollingBack}
+              onClick={(e) => {
+                e.preventDefault()
+                void confirmRollback()
+              }}
+            >
+              {isRollingBack
+                ? locale.startsWith('es') ? 'Restaurando...' : 'Restoring...'
+                : locale.startsWith('es') ? 'Confirmar' : 'Confirm'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

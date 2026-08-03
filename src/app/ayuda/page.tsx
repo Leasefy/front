@@ -156,7 +156,7 @@ export default function AyudaPage() {
                   <h2 className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide mb-4">
                     {category.title}
                   </h2>
-                  <div className="border border-border rounded-lg px-5">
+                  <div className="border border-border rounded-[20px] px-5">
                     {category.items.map((item) => (
                       <FAQItem key={item.question} item={item} />
                     ))}
@@ -166,7 +166,7 @@ export default function AyudaPage() {
             </div>
 
             {/* Contact section */}
-            <div className="mt-16 p-8 border border-border rounded-lg bg-muted/30 text-center">
+            <div className="mt-16 p-8 border border-border rounded-[22px] bg-muted/30 text-center">
               <h2 className="text-[18px] font-medium text-foreground mb-2">
                 ¿No encontraste lo que buscabas?
               </h2>
@@ -175,7 +175,7 @@ export default function AyudaPage() {
               </p>
               <a
                 href="mailto:soporte@leasefy.com"
-                className="inline-flex items-center px-5 py-2.5 bg-foreground text-background text-[14px] font-medium rounded-lg hover:bg-foreground/90 transition-colors"
+                className="inline-flex items-center px-5 py-2.5 bg-foreground text-background text-[14px] font-medium rounded-md hover:bg-foreground/90 transition-colors"
               >
                 Contactar soporte
               </a>

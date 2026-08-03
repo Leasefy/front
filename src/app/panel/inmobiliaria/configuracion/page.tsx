@@ -28,6 +28,9 @@ import {
 } from '@phosphor-icons/react';
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext';
 import { cn } from '@/lib/utils';
+import { Button, Switch, Spinner } from '@/components/ui';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n/types';
 import {
@@ -47,19 +50,63 @@ import {
   useAgencyBilling,
   inmobiliariaConfigApi,
 } from '@/lib/hooks/useInmobiliaria';
-import { permissionsApi, agencyApi } from '@/lib/api/inmobiliaria.service';
+import { permissionsApi, agencyApi, rolePermissionsApi } from '@/lib/api/inmobiliaria.service';
+import type { PermMap, RoleMatrices, UpdateRolePermissionsBody } from '@/lib/api/inmobiliaria.service';
 import { DEFAULT_ROLE_PERMISSIONS } from '@/lib/types/inmobiliaria';
 import { useNotificationSettings } from '@/lib/hooks/useSettings';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import type {
-  InmobiliariaConfigExtended,
-  AgencyBranding,
-  AgencyUser,
+  UpdateAgencyPayload,
   AgencyIntegration,
   RolePermissions,
   AgencyRole,
+  PermissionModule,
+  PermissionAction,
   UserInvite,
 } from '@/lib/types/inmobiliaria';
+
+// ============================================================================
+// Role-permission matrix mapping (backend RoleMatrices ↔ UI matrix)
+// ============================================================================
+
+/**
+ * UI role key ('admin'/'agente'/'contador'/'viewer') maps to the backend
+ * RoleMatrices key ('ADMIN'/'AGENTE'/'CONTADOR'/'VIEWER') — the matrix helpers
+ * below encode this pairing directly.
+ */
+
+/** Backend PermMap (module → actions) → UI RolePermissions (drops empty modules). */
+function permMapToRolePermissions(role: AgencyRole, map: PermMap): RolePermissions {
+  return {
+    role,
+    permissions: Object.entries(map)
+      .filter(([, actions]) => actions.length > 0)
+      .map(([module, actions]) => ({
+        module: module as PermissionModule,
+        actions: [...actions] as PermissionAction[],
+      })),
+  };
+}
+
+/** Backend RoleMatrices → the UI matrix ConfigPermisos consumes. */
+function matricesToUiMatrix(matrices: RoleMatrices): Record<AgencyRole, RolePermissions> {
+  return {
+    admin: permMapToRolePermissions('admin', matrices.roles.ADMIN),
+    agente: permMapToRolePermissions('agente', matrices.roles.AGENTE),
+    contador: permMapToRolePermissions('contador', matrices.roles.CONTADOR),
+    viewer: permMapToRolePermissions('viewer', matrices.roles.VIEWER),
+  };
+}
+
+/** UI RolePermissions → backend PermMap (module → actions). */
+function rolePermissionsToPermMap(rp: RolePermissions): PermMap {
+  const map: PermMap = {};
+  for (const p of rp.permissions) {
+    map[p.module] = [...p.actions];
+  }
+  return map;
+}
 
 // ============================================================================
 // Types
@@ -110,11 +157,20 @@ function ConfiguracionContent() {
   const initialTab = (searchParams.get('tab') as ConfigTab) || 'perfil';
 
   // State
-  const [activeTab, setActiveTab] = useState<ConfigTab>(initialTab);
+  const [activeTab, setTab] = useState<ConfigTab>(initialTab);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [permissions, setPermissions] = useState<Record<AgencyRole, RolePermissions>>(
     DEFAULT_ROLE_PERMISSIONS
   );
+  // Bumped after every successful server sync (load/save/reset) — used as the
+  // ConfigPermisos `key` so it remounts with the fresh matrix (and its per-role
+  // counts + unsaved-changes state reset to the loaded values).
+  const [permissionsVersion, setPermissionsVersion] = useState(0);
+  const [isSavingPermissions, setIsSavingPermissions] = useState(false);
+
+  // Current user's effective permissions (refetched after a role-template change
+  // clears per-member overrides, so the caller's own access reflects the update).
+  const { refetch: refetchMyPermissions } = usePermissions();
 
   // Phase 38 plan 38-06 — AI panel tour preference (hybrid localStorage + DB persistence).
   // tourDismissed === null means the context hasn't hydrated yet; show a spinner-state.
@@ -154,65 +210,54 @@ function ConfiguracionContent() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Hydrate permissions matrix from backend per-member data.
+  // Load the agency's per-role permission matrices in ONE request.
   //
-  // Context: the backend stores permissions per MEMBER (not per role). The UI
-  // shows a role-level matrix (admin/agente/contador/viewer) as a template.
-  // We reconstruct each role's current template by looking at the first active
-  // member of that role. If `usingDefaults` is true, we keep the hardcoded
-  // default for that role. If false, we use the member's effective permissions.
+  // The backend resolves the agency from the JWT and returns a COMPLETE matrix
+  // for every role (admin/agente/contador/viewer), each keyed module→actions.
+  // This replaces the old per-member fan-out that reconstructed each role's
+  // template from its first active member. Non-admins get 403 → defaults remain.
   useEffect(() => {
-    if (!users || users.length === 0) return;
-
-    const nonAdminRoles: AgencyRole[] = ['agente', 'contador', 'viewer'];
     let cancelled = false;
-
     (async () => {
       try {
-        const updates: Partial<Record<AgencyRole, RolePermissions>> = {};
-        await Promise.all(
-          nonAdminRoles.map(async (role) => {
-            const member = users.find((u) => u.role === role && u.status === 'active');
-            if (!member) return;
-            try {
-              const res = await permissionsApi.getMemberPermissions(member.id);
-              if (res.usingDefaults || res.effectivePermissions === 'FULL_ACCESS') return;
-              // Convert Record<string, string[]> → RolePermissions
-              const permissionsArray = Object.entries(res.effectivePermissions).map(
-                ([module, actions]) => ({ module, actions }),
-              );
-              updates[role] = { role, permissions: permissionsArray } as RolePermissions;
-            } catch {
-              // Skip role on error — keep default
-            }
-          }),
-        );
-        if (!cancelled && Object.keys(updates).length > 0) {
-          setPermissions((prev) => ({ ...prev, ...updates }));
-        }
+        const matrices = await rolePermissionsApi.getRolePermissions();
+        if (cancelled) return;
+        setPermissions(matricesToUiMatrix(matrices));
+        setPermissionsVersion((v) => v + 1);
       } catch {
-        // Silent fail — defaults remain
+        // 403 (non-admin) or network error — defaults remain.
       }
     })();
-
     return () => {
       cancelled = true;
     };
-  }, [users]);
+  }, []);
+
+  // Only agency ADMINs may write agency settings (backend enforces via 403).
+  const isAgencyAdmin = config?.agency?.memberRole === 'ADMIN';
 
   // -------------------------------------------------------------------------
   // Handlers - Perfil
   // -------------------------------------------------------------------------
 
-  const handleSaveConfig = async (newConfig: InmobiliariaConfigExtended) => {
+  /**
+   * Saves the agency profile via PUT /inmobiliaria/agency (real backend route).
+   * `payload` contains only the changed fields (backend UpdateAgencyDto).
+   * Rethrows on failure so the form stays in edit mode.
+   */
+  const handleSaveAgency = async (payload: UpdateAgencyPayload) => {
     try {
-      await inmobiliariaConfigApi.update(newConfig);
+      await agencyApi.updateAgency(payload);
       await refetchConfig();
       toast.success(t('inmobiliaria.config.toasts.configSaved'), {
         description: t('inmobiliaria.config.toasts.configSavedDesc'),
       });
     } catch (error) {
-      toast.error('Error al guardar configuración');
+      // Surface the backend message (e.g. 403 for non-admin members).
+      toast.error('Error al guardar configuración', {
+        description: error instanceof Error ? error.message : undefined,
+      });
+      throw error;
     }
   };
 
@@ -220,15 +265,29 @@ function ConfiguracionContent() {
   // Handlers - Branding
   // -------------------------------------------------------------------------
 
-  const handleSaveBranding = async (branding: AgencyBranding) => {
-    try {
-      await inmobiliariaConfigApi.updateBranding(branding);
-      await refetchConfig();
-      toast.success(t('inmobiliaria.config.toasts.brandingSaved'), {
-        description: t('inmobiliaria.config.toasts.brandingSavedDesc'),
-      });
-    } catch (error) {
-      toast.error('Error al guardar branding');
+  /**
+   * The logo upload happens inside ConfigBranding — here we refresh the
+   * config so other tabs see the new logoUrl. `refetch` swallows errors into
+   * hook state and resolves null on failure, so we check the result: if the
+   * refetch failed, a tab switch would remount ConfigBranding from the stale
+   * agency.logoUrl — warn instead of silently reverting the preview. The
+   * upload itself already succeeded, so this is a warning, not an error.
+   */
+  const handleLogoUpdated = async () => {
+    const refreshed = await refetchConfig();
+    if (refreshed === null) {
+      toast.warning('El logo se guardó, pero no pudimos actualizar la vista. Recarga la página.');
+    }
+  };
+
+  /**
+   * Brand colors are saved inside ConfigBranding (PUT /inmobiliaria/agency,
+   * branding key) — here we just refresh the config so all tabs see them.
+   */
+  const handleBrandingUpdated = async () => {
+    const refreshed = await refetchConfig();
+    if (refreshed === null) {
+      toast.warning('Los colores se guardaron, pero no pudimos actualizar la vista. Recarga la página.');
     }
   };
 
@@ -238,11 +297,18 @@ function ConfiguracionContent() {
 
   const handleInviteUser = async (invite: UserInvite) => {
     try {
-      await inmobiliariaConfigApi.inviteUser(invite);
+      const result = await inmobiliariaConfigApi.inviteUser(invite);
       await refetchUsers();
-      toast.success(t('inmobiliaria.config.toasts.inviteSent'), {
-        description: t('inmobiliaria.config.toasts.inviteSentDesc'),
-      });
+      if (result.emailDelivered === false) {
+        // Member row was created, but the email failed to send — partial success.
+        toast.warning(t('inmobiliaria.config.toasts.inviteEmailNotDelivered'), {
+          description: t('inmobiliaria.config.toasts.inviteEmailNotDeliveredDesc'),
+        });
+      } else {
+        toast.success(t('inmobiliaria.config.toasts.inviteSent'), {
+          description: t('inmobiliaria.config.toasts.inviteSentDesc'),
+        });
+      }
     } catch (error) {
       toast.error('Error al invitar usuario', {
         description: error instanceof Error ? error.message : undefined,
@@ -252,11 +318,14 @@ function ConfiguracionContent() {
 
   const handleUpdateRole = async (userId: string, role: AgencyRole) => {
     try {
-      await inmobiliariaConfigApi.updateUser(userId, { role });
+      // Backend: PUT /inmobiliaria/agency/members/:id/role with the uppercase enum.
+      await permissionsApi.updateMemberRole(userId, role.toUpperCase());
       await refetchUsers();
       toast.success(t('inmobiliaria.config.toasts.roleUpdated'));
     } catch (error) {
-      toast.error('Error al actualizar rol');
+      toast.error('Error al actualizar rol', {
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   };
 
@@ -264,22 +333,33 @@ function ConfiguracionContent() {
     try {
       const user = users.find((u) => u.id === userId);
       if (!user) return;
-      const newStatus: AgencyUser['status'] = user.status === 'active' ? 'inactive' : 'active';
-      await inmobiliariaConfigApi.updateUser(userId, { status: newStatus });
+      // Backend: PUT /inmobiliaria/agency/members/:id/status { active }. getMembers
+      // returns lowercase statuses, so "currently active" ⟹ deactivate (active:false).
+      const active = user.status !== 'active';
+      await permissionsApi.updateMemberStatus(userId, active);
       await refetchUsers();
       toast.success(t('inmobiliaria.config.toasts.userStatusUpdated'));
     } catch (error) {
-      toast.error('Error al actualizar estado');
+      toast.error('Error al actualizar estado', {
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   };
 
   const handleResendInvite = async (userId: string) => {
     try {
       const user = users.find((u) => u.id === userId);
-      await agencyApi.resendInvitation(userId);
-      toast.success(t('inmobiliaria.config.toasts.inviteResent'), {
-        description: user ? t('inmobiliaria.config.toasts.inviteResentDesc', { email: user.email }) : t('inmobiliaria.config.toasts.inviteSent'),
-      });
+      const result = await agencyApi.resendInvitation(userId);
+      if (result.emailDelivered === false) {
+        // Member still active, but the resend email failed to send.
+        toast.warning(t('inmobiliaria.config.toasts.resendEmailNotDelivered'), {
+          description: t('inmobiliaria.config.toasts.resendEmailNotDeliveredDesc'),
+        });
+      } else {
+        toast.success(t('inmobiliaria.config.toasts.inviteResent'), {
+          description: user ? t('inmobiliaria.config.toasts.inviteResentDesc', { email: user.email }) : t('inmobiliaria.config.toasts.inviteSent'),
+        });
+      }
     } catch (error) {
       toast.error('Error al reenviar invitación', {
         description: error instanceof Error ? error.message : undefined,
@@ -289,11 +369,14 @@ function ConfiguracionContent() {
 
   const handleDeleteUser = async (userId: string) => {
     try {
+      // Backend: DELETE /inmobiliaria/agency/members/:id (uses the member id).
       await inmobiliariaConfigApi.deleteUser(userId);
       await refetchUsers();
       toast.success(t('inmobiliaria.config.toasts.userDeleted'));
     } catch (error) {
-      toast.error('Error al eliminar usuario');
+      toast.error('Error al eliminar usuario', {
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   };
 
@@ -301,31 +384,59 @@ function ConfiguracionContent() {
   // Handlers - Permisos
   // -------------------------------------------------------------------------
 
+  /**
+   * Persist the edited role templates in ONE request via
+   * PUT /inmobiliaria/agency/role-permissions. ADMIN is never sent (it is
+   * full-access and read-only on the backend). The write also clears per-member
+   * permission overrides for ACTIVE members of the edited roles, so we refresh
+   * the caller's own effective permissions afterward.
+   */
   const handleSavePermissions = async (newPermissions: Record<AgencyRole, RolePermissions>) => {
+    setIsSavingPermissions(true);
     try {
-      // Update each non-admin member's custom permissions based on their role
-      const memberList = users ?? [];
-      const updatePromises = memberList
-        .filter((u) => u.role !== 'admin' && u.status === 'active')
-        .map((member) => {
-          const roleKey = member.role.toLowerCase() as AgencyRole;
-          const rolePerms = newPermissions[roleKey];
-          if (!rolePerms) return Promise.resolve();
-          // Convert RolePermissions to the flat Record<string, string[]> the API expects
-          const permMap: Record<string, string[]> = {};
-          for (const mp of rolePerms.permissions) {
-            permMap[mp.module] = mp.actions;
-          }
-          return permissionsApi.updateMemberPermissions(member.id, permMap);
-        });
-
-      await Promise.all(updatePromises);
-      setPermissions(newPermissions);
+      const body: UpdateRolePermissionsBody = {
+        AGENTE: rolePermissionsToPermMap(newPermissions.agente),
+        CONTADOR: rolePermissionsToPermMap(newPermissions.contador),
+        VIEWER: rolePermissionsToPermMap(newPermissions.viewer),
+      };
+      const matrices = await rolePermissionsApi.updateRolePermissions(body);
+      setPermissions(matricesToUiMatrix(matrices));
+      setPermissionsVersion((v) => v + 1);
+      await refetchMyPermissions();
       toast.success(t('inmobiliaria.config.toasts.permissionsSaved'), {
         description: t('inmobiliaria.config.toasts.permissionsSavedDesc'),
       });
-    } catch {
-      toast.error(t('inmobiliaria.config.toasts.error') || 'Error al guardar permisos');
+    } catch (error) {
+      toast.error(t('inmobiliaria.config.toasts.error') || 'Error al guardar permisos', {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setIsSavingPermissions(false);
+    }
+  };
+
+  /**
+   * Reset every role to the system defaults via
+   * DELETE /inmobiliaria/agency/role-permissions. Also clears per-member
+   * overrides for AGENTE/CONTADOR/VIEWER on the backend — destructive, so
+   * ConfigPermisos guards this behind a confirmation dialog.
+   */
+  const handleResetPermissions = async () => {
+    setIsSavingPermissions(true);
+    try {
+      const matrices = await rolePermissionsApi.resetRolePermissions();
+      setPermissions(matricesToUiMatrix(matrices));
+      setPermissionsVersion((v) => v + 1);
+      await refetchMyPermissions();
+      toast.success(t('inmobiliaria.config.toasts.permissionsReset'), {
+        description: t('inmobiliaria.config.toasts.permissionsResetDesc'),
+      });
+    } catch (error) {
+      toast.error(t('inmobiliaria.config.toasts.error') || 'Error al restablecer permisos', {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setIsSavingPermissions(false);
     }
   };
 
@@ -339,7 +450,9 @@ function ConfiguracionContent() {
       await refetchIntegrations();
       toast.success(enabled ? t('inmobiliaria.config.toasts.integrationEnabled') : t('inmobiliaria.config.toasts.integrationDisabled'));
     } catch (error) {
-      toast.error('Error al actualizar integración');
+      toast.error('Error al actualizar integración', {
+        description: error instanceof Error ? error.message : undefined,
+      });
     }
   };
 
@@ -391,43 +504,34 @@ function ConfiguracionContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <Gear className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-fg flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+            <Gear className="w-5 h-5 text-fg-muted" />
           </div>
           {t('inmobiliaria.config.title')}
         </h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-sm text-fg-muted max-w-2xl">
           {t('inmobiliaria.config.subtitle')}
         </p>
       </div>
 
-      {/* Tabs Navigation */}
-      <div className="flex flex-wrap gap-2 border-b border-border pb-4">
+      {/* Tabs Navigation — selected = soft fill, never solid brand block */}
+      <Tabs value={activeTab} onValueChange={(v) => setTab(v as ConfigTab)}>
+      <TabsList variant="underline" className="flex-wrap">
         {tabs.map((tab) => {
           const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
           return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
-                isActive
-                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 shadow-sm'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              )}
-            >
-              <Icon className={cn('w-4 h-4', isActive && 'text-indigo-600 dark:text-indigo-400')} />
-              <span className="hidden sm:inline">{tab.label}</span>
-              <span className="sm:hidden">{tab.label}</span>
-            </button>
+            <TabsTrigger key={tab.id} value={tab.id} className="inline-flex items-center gap-2 whitespace-nowrap">
+              <Icon className="w-4 h-4 shrink-0" />
+              <span>{tab.label}</span>
+            </TabsTrigger>
           );
         })}
-      </div>
+      </TabsList>
 
       {/* Tab Content with Animation */}
+      <TabsContent value={activeTab} className="mt-4">
       <motion.div
         key={activeTab}
         initial={{ opacity: 0, y: 10 }}
@@ -439,10 +543,14 @@ function ConfiguracionContent() {
         {activeTab === 'perfil' && (
           configLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <Spinner size="lg" />
             </div>
-          ) : config ? (
-            <ConfigPerfilAgencia config={config} onSave={handleSaveConfig} />
+          ) : config?.agency ? (
+            <ConfigPerfilAgencia
+              agency={config.agency}
+              onSave={handleSaveAgency}
+              canEdit={isAgencyAdmin}
+            />
           ) : (
             <div className="text-center py-12 text-muted-foreground">No hay configuración disponible</div>
           )
@@ -452,10 +560,15 @@ function ConfiguracionContent() {
         {activeTab === 'branding' && (
           configLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <Spinner size="lg" />
             </div>
-          ) : config?.branding ? (
-            <ConfigBranding branding={config.branding} onSave={handleSaveBranding} />
+          ) : config?.agency ? (
+            <ConfigBranding
+              agency={config.agency}
+              onLogoUpdated={handleLogoUpdated}
+              onBrandingUpdated={handleBrandingUpdated}
+              canEdit={isAgencyAdmin}
+            />
           ) : (
             <div className="text-center py-12 text-muted-foreground">No hay información de branding</div>
           )
@@ -465,7 +578,7 @@ function ConfiguracionContent() {
         {activeTab === 'usuarios' && (
           usersLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <Spinner size="lg" />
             </div>
           ) : (
             <ConfigUsuarios
@@ -481,14 +594,20 @@ function ConfiguracionContent() {
 
         {/* Permisos Tab */}
         {activeTab === 'permisos' && (
-          <ConfigPermisos permissions={permissions} onSave={handleSavePermissions} />
+          <ConfigPermisos
+            key={`permisos-${permissionsVersion}`}
+            permissions={permissions}
+            onSave={handleSavePermissions}
+            onReset={handleResetPermissions}
+            isLoading={isSavingPermissions}
+          />
         )}
 
         {/* Integraciones Tab */}
         {activeTab === 'integraciones' && (
           integrationsLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <Spinner size="lg" />
             </div>
           ) : (
             <ConfigIntegraciones
@@ -503,7 +622,7 @@ function ConfiguracionContent() {
         {activeTab === 'facturacion' && (
           billingLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+              <Spinner size="lg" />
             </div>
           ) : billing ? (
             <ConfigFacturacion
@@ -514,23 +633,22 @@ function ConfiguracionContent() {
           ) : (
             // Empty state — agency has no active billing/subscription yet.
             // Show a clear CTA to view available plans instead of a dead-end message.
-            <div className="rounded-2xl border border-dashed border-neutral-300 dark:border-neutral-700 bg-white dark:bg-[#141416] p-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                <Lightning className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+            <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
+                <Lightning weight="duotone" className="h-6 w-6 text-fg-muted" aria-hidden="true" />
               </div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-                Todavía no tenés un plan activo
-              </h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 max-w-md mx-auto">
-                Elegí el plan que mejor se adapte a tu agencia y desbloqueá todas las funcionalidades de Leasify.
-              </p>
-              <button
-                onClick={() => setIsPricingModalOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors"
-              >
+              <div className="space-y-1.5">
+                <h3 className="text-base font-semibold text-fg">
+                  Todavía no tenés un plan activo
+                </h3>
+                <p className="mx-auto max-w-md text-sm leading-relaxed text-fg-muted">
+                  Elegí el plan que mejor se adapte a tu agencia y desbloqueá todas las funcionalidades de Leasefy.
+                </p>
+              </div>
+              <Button onClick={() => setIsPricingModalOpen(true)} hideArrow className="mt-1">
                 <Lightning className="w-4 h-4" />
                 Ver planes disponibles
-              </button>
+              </Button>
             </div>
           )
         )}
@@ -543,19 +661,19 @@ function ConfiguracionContent() {
 
         {/* Notificaciones Tab */}
         {activeTab === 'notificaciones' && (
-          <div className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden">
-            <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="px-6 py-5 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                  <Bell className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-fg-muted" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.config.notifications.title')}</h2>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.notifications.subtitle')}</p>
+                  <h2 className="text-base font-semibold text-fg">{t('inmobiliaria.config.notifications.title')}</h2>
+                  <p className="text-xs text-fg-muted">{t('inmobiliaria.config.notifications.subtitle')}</p>
                 </div>
               </div>
             </div>
-            <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+            <div className="divide-y divide-border">
               {([
                 { key: 'emailNewLead' as const, icon: Envelope, title: t('inmobiliaria.config.notifications.newLeads'), desc: t('inmobiliaria.config.notifications.newLeadsDesc') },
                 { key: 'emailPaymentReceived' as const, icon: CreditCard, title: t('inmobiliaria.config.notifications.paymentsReceived'), desc: t('inmobiliaria.config.notifications.paymentsReceivedDesc') },
@@ -563,18 +681,20 @@ function ConfiguracionContent() {
                 { key: 'pushNewMessage' as const, icon: Bell, title: t('inmobiliaria.config.notifications.newMessages'), desc: t('inmobiliaria.config.notifications.newMessagesDesc') },
                 { key: 'marketingEmails' as const, icon: Tag, title: t('inmobiliaria.config.notifications.promotionalEmails'), desc: t('inmobiliaria.config.notifications.promotionalEmailsDesc') },
               ]).map((item) => (
-                <div key={item.key} className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+                <div key={item.key} className="flex items-center justify-between px-6 py-4 hover:bg-muted/40 transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                      <item.icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                    <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                      <item.icon className="w-5 h-5 text-fg-muted" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-white">{item.title}</p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{item.desc}</p>
+                      <p className="text-sm font-medium text-fg">{item.title}</p>
+                      <p className="text-xs text-fg-muted">{item.desc}</p>
                     </div>
                   </div>
-                  <button
-                    onClick={async () => {
+                  <Switch
+                    checked={!!notifSettings[notifKeyMap[item.key]]}
+                    aria-label={item.title}
+                    onCheckedChange={async () => {
                       const backendKey = notifKeyMap[item.key];
                       if (!backendKey) return;
                       try {
@@ -584,16 +704,7 @@ function ConfiguracionContent() {
                         toast.error(locale === 'es' ? 'Error al actualizar configuración' : 'Error updating settings');
                       }
                     }}
-                    className={cn(
-                      'relative w-11 h-6 rounded-full transition-colors',
-                      notifSettings[notifKeyMap[item.key]] ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-600'
-                    )}
-                  >
-                    <span className={cn(
-                      'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform',
-                      notifSettings[notifKeyMap[item.key]] && 'translate-x-5'
-                    )} />
-                  </button>
+                  />
                 </div>
               ))}
             </div>
@@ -602,91 +713,83 @@ function ConfiguracionContent() {
 
         {/* Preferencias Tab */}
         {activeTab === 'preferencias' && (
-          <div className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden">
-            <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="px-6 py-5 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                  <Globe className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                  <Globe className="w-5 h-5 text-fg-muted" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.config.preferences.title')}</h2>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.preferences.subtitle')}</p>
+                  <h2 className="text-base font-semibold text-fg">{t('inmobiliaria.config.preferences.title')}</h2>
+                  <p className="text-xs text-fg-muted">{t('inmobiliaria.config.preferences.subtitle')}</p>
                 </div>
               </div>
             </div>
-            <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+            <div className="divide-y divide-border">
               {/* Dark mode toggle */}
-              <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+              <div className="flex items-center justify-between px-6 py-4 hover:bg-muted/40 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <Moon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                    <Moon className="w-5 h-5 text-fg-muted" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.config.preferences.darkMode')}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.preferences.darkModeDesc')}</p>
+                    <p className="text-sm font-medium text-fg">{t('inmobiliaria.config.preferences.darkMode')}</p>
+                    <p className="text-xs text-fg-muted">{t('inmobiliaria.config.preferences.darkModeDesc')}</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => {
+                <Switch
+                  checked={mounted && resolvedTheme === 'dark'}
+                  aria-label={t('inmobiliaria.config.preferences.darkMode')}
+                  onCheckedChange={() => {
                     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
                     toast.success(resolvedTheme === 'dark' ? t('inmobiliaria.config.preferences.lightThemeEnabled') : t('inmobiliaria.config.preferences.darkThemeEnabled'));
                   }}
-                  className={cn(
-                    'relative w-11 h-6 rounded-full transition-colors',
-                    mounted && resolvedTheme === 'dark' ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-600'
-                  )}
-                >
-                  <span className={cn(
-                    'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform',
-                    mounted && resolvedTheme === 'dark' && 'translate-x-5'
-                  )} />
-                </button>
+                />
               </div>
               {/* Language selector */}
-              <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+              <div className="flex items-center justify-between px-6 py-4 hover:bg-muted/40 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <Globe className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-fg-muted" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.config.preferences.language')}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.preferences.languageDesc')}</p>
+                    <p className="text-sm font-medium text-fg">{t('inmobiliaria.config.preferences.language')}</p>
+                    <p className="text-xs text-fg-muted">{t('inmobiliaria.config.preferences.languageDesc')}</p>
                   </div>
                 </div>
-                <div className="relative">
-                  <select
-                    value={locale}
-                    onChange={(e) => {
-                      setLocale(e.target.value as Locale);
-                      toast.success(e.target.value === 'en' ? t('inmobiliaria.config.preferences.langChangedEn') : t('inmobiliaria.config.preferences.langChangedEs'));
-                    }}
-                    className="appearance-none pl-4 pr-10 py-2.5 text-sm border border-neutral-200 dark:border-neutral-600 rounded-xl bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all cursor-pointer"
-                  >
-                    <option value="es">Español</option>
-                    <option value="en">English</option>
-                  </select>
-                  <CaretRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 rotate-90 pointer-events-none" />
-                </div>
+                <Select
+                  value={locale}
+                  onValueChange={(v) => {
+                    setLocale(v as Locale);
+                    toast.success(v === 'en' ? t('inmobiliaria.config.preferences.langChangedEn') : t('inmobiliaria.config.preferences.langChangedEs'));
+                  }}
+                >
+                  <SelectTrigger className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="es">Español</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               {/* AI panel tour toggle — Phase 38 plan 38-06 */}
-              <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+              <div className="flex items-center justify-between px-6 py-4 hover:bg-muted/40 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <Compass className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                    <Compass className="w-5 h-5 text-fg-muted" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.config.preferences.panelTour')}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.preferences.panelTourDesc')}</p>
+                    <p className="text-sm font-medium text-fg">{t('inmobiliaria.config.preferences.panelTour')}</p>
+                    <p className="text-xs text-fg-muted">{t('inmobiliaria.config.preferences.panelTourDesc')}</p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={tourDismissed === false}
-                  aria-busy={isTogglingTour || tourDismissed === null}
+                <Switch
+                  checked={tourDismissed === false}
                   aria-label={t('inmobiliaria.config.preferences.panelTour')}
+                  aria-busy={isTogglingTour || tourDismissed === null}
                   disabled={isTogglingTour || tourDismissed === null}
-                  onClick={async () => {
+                  onCheckedChange={async () => {
                     if (tourDismissed === null) return;
                     setIsTogglingTour(true);
                     try {
@@ -703,40 +806,30 @@ function ConfiguracionContent() {
                       setIsTogglingTour(false);
                     }
                   }}
-                  className={cn(
-                    'relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-                    tourDismissed === false ? 'bg-indigo-600' : 'bg-neutral-300 dark:bg-neutral-600'
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform',
-                      tourDismissed === false && 'translate-x-5'
-                    )}
-                  />
-                </button>
+                />
               </div>
               {/* Relaunch tour button — session-only, does not persist */}
-              <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+              <div className="flex items-center justify-between px-6 py-4 hover:bg-muted/40 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <Compass className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                    <Compass className="w-5 h-5 text-fg-muted" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.config.preferences.relaunchTour')}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.preferences.relaunchTourDesc')}</p>
+                    <p className="text-sm font-medium text-fg">{t('inmobiliaria.config.preferences.relaunchTour')}</p>
+                    <p className="text-xs text-fg-muted">{t('inmobiliaria.config.preferences.relaunchTourDesc')}</p>
                   </div>
                 </div>
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  hideArrow
                   onClick={() => {
                     relaunchTour();
                     toast.success(t('inmobiliaria.config.preferences.relaunchTourStarted'));
                   }}
-                  className="px-4 py-2 text-sm font-medium rounded-xl bg-white dark:bg-[#1f1f21] border border-neutral-200 dark:border-neutral-600 text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                 >
                   {t('inmobiliaria.config.preferences.relaunchTour')}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -744,56 +837,62 @@ function ConfiguracionContent() {
 
         {/* Seguridad Tab */}
         {activeTab === 'seguridad' && (
-          <div className="rounded-xl bg-stone-50 dark:bg-[#141416] overflow-hidden">
-            <div className="px-6 py-5 border-b border-neutral-200/50 dark:border-[#2a2a2c]/50">
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="px-6 py-5 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                  <Shield className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-fg-muted" />
                 </div>
                 <div>
-                  <h2 className="font-semibold text-neutral-900 dark:text-white">{t('inmobiliaria.config.security.title')}</h2>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.security.subtitle')}</p>
+                  <h2 className="text-base font-semibold text-fg">{t('inmobiliaria.config.security.title')}</h2>
+                  <p className="text-xs text-fg-muted">{t('inmobiliaria.config.security.subtitle')}</p>
                 </div>
               </div>
             </div>
-            <div className="divide-y divide-neutral-200/50 dark:divide-neutral-700/50">
+            <div className="divide-y divide-border">
               <MfaSetupSection />
               {/* Change password */}
-              <button
+              <Button
+                variant="ghost"
+                hideArrow
                 onClick={() => toast.info(t('inmobiliaria.config.security.changePassword'), { description: t('inmobiliaria.config.security.changePasswordToast') })}
-                className="flex items-center justify-between w-full px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors text-left"
+                className="flex items-center justify-between w-full px-6 py-4 h-auto rounded-none text-left hover:bg-muted/40"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <Lock className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                    <Lock className="w-5 h-5 text-fg-muted" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.config.security.changePassword')}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.security.changePasswordDesc')}</p>
+                    <p className="text-sm font-medium text-fg">{t('inmobiliaria.config.security.changePassword')}</p>
+                    <p className="text-xs text-fg-muted">{t('inmobiliaria.config.security.changePasswordDesc')}</p>
                   </div>
                 </div>
-                <CaretRight className="w-4 h-4 text-neutral-400" />
-              </button>
+                <CaretRight className="w-4 h-4 text-fg-muted" />
+              </Button>
               {/* Active sessions */}
-              <button
+              <Button
+                variant="ghost"
+                hideArrow
                 onClick={() => toast.info(t('inmobiliaria.config.security.activeSessions'), { description: t('inmobiliaria.config.security.activeSessionsDesc') })}
-                className="flex items-center justify-between w-full px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors text-left"
+                className="flex items-center justify-between w-full px-6 py-4 h-auto rounded-none text-left hover:bg-muted/40"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-                    <Monitor className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                    <Monitor className="w-5 h-5 text-fg-muted" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{t('inmobiliaria.config.security.activeSessions')}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.config.security.activeSessionsDesc')}</p>
+                    <p className="text-sm font-medium text-fg">{t('inmobiliaria.config.security.activeSessions')}</p>
+                    <p className="text-xs text-fg-muted">{t('inmobiliaria.config.security.activeSessionsDesc')}</p>
                   </div>
                 </div>
-                <CaretRight className="w-4 h-4 text-neutral-400" />
-              </button>
+                <CaretRight className="w-4 h-4 text-fg-muted" />
+              </Button>
             </div>
           </div>
         )}
       </motion.div>
+      </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import Image from 'next/image';
 import Lenis from 'lenis';
 import { CaretLeft, ShareNetwork, Heart, X, MagnifyingGlassPlus, CaretRight } from '@phosphor-icons/react';
+import { IconButton } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useLenis } from '@/components/providers/SmoothScroll';
 
@@ -180,24 +182,24 @@ export function PhotoGalleryModal({
       <header className="flex-shrink-0 bg-card border-b border-border">
         <div className="flex items-center justify-between h-16 px-6 md:px-8">
           {/* Back button */}
-          <button
+          <IconButton
+            variant="ghost"
+            icon={<CaretLeft className="w-5 h-5 text-foreground" />}
             onClick={onClose}
-            className="flex items-center justify-center w-8 h-8 -ml-2 rounded-full hover:bg-muted transition-colors"
             aria-label="Cerrar galeria"
-          >
-            <CaretLeft className="w-5 h-5 text-foreground" />
-          </button>
+            className="-ml-2 h-8 w-8 rounded-full"
+          />
 
           {/* Action buttons */}
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-neutral-100 rounded-xl transition-colors">
+            <Button variant="ghost" hideArrow className="gap-2 rounded-xl text-sm text-foreground">
               <ShareNetwork className="w-4 h-4" />
               <span className="hidden sm:inline">Compartir</span>
-            </button>
-            <button className="flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-neutral-100 rounded-xl transition-colors">
+            </Button>
+            <Button variant="ghost" hideArrow className="gap-2 rounded-xl text-sm text-foreground">
               <Heart className="w-4 h-4" />
               <span className="hidden sm:inline">Guardar</span>
-            </button>
+            </Button>
           </div>
         </div>
       </header>
@@ -255,22 +257,24 @@ export function PhotoGalleryModal({
                     <p className="text-lg font-medium text-foreground">
                       Foto {index + 1}
                     </p>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-sm text-muted-foreground mt-1 font-mono tabular-nums">
                       {index + 1} de {images.length}
                     </p>
-                    <button
+                    <Button
+                      variant="ghost"
+                      hideArrow
                       onClick={() => handleZoom(index)}
-                      className="mt-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                      className="mt-3 h-auto gap-1.5 p-0 text-xs font-medium text-muted-foreground hover:bg-transparent hover:text-foreground"
                     >
                       <MagnifyingGlassPlus className="w-3.5 h-3.5" />
                       Ver en grande
-                    </button>
+                    </Button>
                   </div>
 
                   {/* Image - right column (clickable for zoom) */}
                   <button
                     onClick={() => handleZoom(index)}
-                    className="relative w-full rounded-2xl overflow-hidden bg-muted group cursor-zoom-in"
+                    className="relative w-full rounded-xl overflow-hidden bg-muted group cursor-zoom-in"
                   >
                     <Image
                       src={image}
@@ -299,12 +303,14 @@ export function PhotoGalleryModal({
             <p className="text-sm text-muted-foreground">
               Has visto todas las {images.length} fotos
             </p>
-            <button
+            <Button
+              variant="link"
+              hideArrow
               onClick={() => scrollToImage(0)}
-              className="mt-4 text-sm font-medium text-foreground hover:underline"
+              className="mt-4 h-auto p-0 text-sm font-medium text-foreground"
             >
               Volver al inicio
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -316,45 +322,45 @@ export function PhotoGalleryModal({
           onClick={handleCloseZoom}
         >
           {/* Close button */}
-          <button
+          <IconButton
+            variant="ghost"
+            icon={<X className="w-5 h-5 text-white" />}
             onClick={handleCloseZoom}
-            className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
             aria-label="Cerrar zoom"
-          >
-            <X className="w-5 h-5 text-white" />
-          </button>
+            className="absolute top-4 right-4 z-10 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20"
+          />
 
           {/* Image counter */}
           <div className="absolute top-4 left-4 z-10 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-xl">
-            <span className="text-sm font-medium text-white">
+            <span className="text-sm font-medium text-white font-mono tabular-nums">
               {zoomedIndex + 1} / {images.length}
             </span>
           </div>
 
           {/* Compass buttons */}
           {zoomedIndex > 0 && (
-            <button
+            <IconButton
+              variant="ghost"
+              icon={<CaretLeft className="w-6 h-6 text-white" />}
               onClick={(e) => {
                 e.stopPropagation();
                 handlePrevImage();
               }}
-              className="absolute left-4 z-10 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
               aria-label="Imagen anterior"
-            >
-              <CaretLeft className="w-6 h-6 text-white" />
-            </button>
+              className="absolute left-4 z-10 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20"
+            />
           )}
           {zoomedIndex < images.length - 1 && (
-            <button
+            <IconButton
+              variant="ghost"
+              icon={<CaretRight className="w-6 h-6 text-white" />}
               onClick={(e) => {
                 e.stopPropagation();
                 handleNextImage();
               }}
-              className="absolute right-4 z-10 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
               aria-label="Siguiente imagen"
-            >
-              <CaretRight className="w-6 h-6 text-white" />
-            </button>
+              className="absolute right-4 z-10 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20"
+            />
           )}
 
           {/* Zoomed image */}

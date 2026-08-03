@@ -1,14 +1,19 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
-import { Upload, File, X, Check, WarningCircle, SpinnerGap } from '@phosphor-icons/react';
+import { useState, useCallback, useRef, useId } from 'react';
+import { Upload, File, X, Check, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { IconButton } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 
 // ============================================================================
 // TextTs
 // ============================================================================
 
 interface DocumentUploadProps {
+  /** Optional stable id for the file input (enables label association + programmatic focus) */
+  id?: string;
   label: string;
   required?: boolean;
   accept?: string;
@@ -36,6 +41,7 @@ type UploadState = 'idle' | 'dragging' | 'uploading' | 'success' | 'error';
  * DocumentUpload - Luxterra-style drag and drop file upload
  */
 export function DocumentUpload({
+  id,
   label,
   required = false,
   accept = '.pdf,.jpg,.jpeg,.png',
@@ -46,9 +52,17 @@ export function DocumentUpload({
   hint,
   onDelete,
 }: DocumentUploadProps) {
-  const [state, setState] = useState<UploadState>(value?.file || value?.fileName ? 'success' : 'idle');
+  // A slot with only a fileName (no File in memory, no remoteId on the server)
+  // is STALE — the File object was lost serialising to localStorage on reload.
+  // Treat it as re-uploadable ('idle'), NOT "already uploaded", so the user can
+  // re-attach it instead of being stuck with a preview they can't replace.
+  const [state, setState] = useState<UploadState>(
+    value?.file || value?.remoteId ? 'success' : 'idle',
+  );
   const [uploadError, setUploadError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const generatedId = useId();
+  const inputId = id ?? `${generatedId}-file`;
 
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
@@ -186,23 +200,26 @@ export function DocumentUpload({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const hasFile = value?.file || value?.fileName;
+  // A real, uploadable document: freshly attached (file in memory) or already
+  // on the server (remoteId). A bare fileName is stale (see state init above).
+  const hasRealFile = !!(value?.file || value?.remoteId);
+  const isStale = !!(value?.fileName && !value?.file && !value?.remoteId);
   const displayError = uploadError || error;
 
   return (
     <div className="space-y-2">
       {/* Label */}
-      <label className="block text-sm font-medium text-foreground/70">
+      <label htmlFor={inputId} className="block text-sm font-medium text-foreground/70">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="text-danger ml-0.5">*</span>}
       </label>
 
       {/* Upload zone or file preview */}
-      {state === 'success' && hasFile ? (
+      {state === 'success' && hasRealFile ? (
         // Compact file preview - Luxterra style
-        <div className="flex items-center gap-3 p-3 bg-emerald-50/50 border border-emerald-200/50 rounded-sm">
+        <div className="flex items-center gap-3 p-3 bg-success-soft border border-success/30 rounded-sm">
           <div className="flex-shrink-0">
-            <File className="h-5 w-5 text-emerald-600" />
+            <File className="h-5 w-5 text-success" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
@@ -215,70 +232,73 @@ export function DocumentUpload({
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {!isDeleting && <Check className="h-4 w-4 text-emerald-600" />}
-            <button
-              type="button"
+            {!isDeleting && <Check className="h-4 w-4 text-success" />}
+            <IconButton
+              variant="ghost"
+              aria-label="Eliminar"
               onClick={handleRemove}
               disabled={isDeleting}
-              className="h-8 w-8 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-wait"
-            >
-              {isDeleting ? (
-                <SpinnerGap className="h-4 w-4 animate-spin" />
-              ) : (
-                <X className="h-4 w-4" />
-              )}
-              <span className="sr-only">Eliminar</span>
-            </button>
+              icon={isDeleting ? <Spinner size="xs" variant="current" /> : <X className="h-4 w-4" />}
+              className="h-8 w-8 rounded-sm text-muted-foreground hover:text-danger hover:bg-danger-soft disabled:opacity-50 disabled:cursor-wait"
+            />
           </div>
         </div>
       ) : (
         // Drop zone - Luxterra style
         <div
+          role="button"
+          tabIndex={0}
+          aria-label={`Subir ${label}`}
           onClick={handleClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleClick();
+            }
+          }}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           className={cn(
             'relative border-2 border-dashed rounded-sm p-6 text-center cursor-pointer transition-colors',
-            state === 'dragging' && 'border-border bg-black/[0.02]',
-            state === 'uploading' && 'border-border bg-black/[0.02] cursor-wait',
-            state === 'error' && 'border-red-300 bg-red-50/50',
-            state === 'idle' && 'border-border hover:border-border hover:bg-black/[0.02]'
+            state === 'dragging' && 'border-border bg-surface-hover',
+            state === 'uploading' && 'border-border bg-surface-hover cursor-wait',
+            state === 'error' && 'border-danger/30 bg-danger-soft',
+            state === 'idle' && 'border-border hover:border-border hover:bg-surface-hover'
           )}
         >
           <input
             ref={fileInputRef}
+            id={inputId}
             type="file"
             accept={accept}
             onChange={handleInputChange}
             className="sr-only"
+            tabIndex={-1}
           />
 
           {state === 'uploading' ? (
             <div className="flex flex-col items-center gap-2">
-              <SpinnerGap className="h-8 w-8 text-muted-foreground animate-spin" />
+              <Spinner size="lg" variant="muted" />
               <p className="text-sm text-muted-foreground">Subiendo...</p>
             </div>
           ) : state === 'error' ? (
             <div className="flex flex-col items-center gap-2">
-              <WarningCircle className="h-8 w-8 text-red-500" />
-              <p className="text-sm text-red-600">{displayError}</p>
-              <button
-                type="button"
+              <WarningCircle className="h-8 w-8 text-danger" />
+              <p className="text-sm text-danger">{displayError}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
                 onClick={(e) => {
                   e.stopPropagation();
                   setState('idle');
                   setUploadError('');
                 }}
-                className={cn(
-                  'inline-flex items-center px-3 py-1.5 text-xs font-medium',
-                  'rounded-sm border border-border bg-card',
-                  'text-foreground/70 hover:text-foreground hover:border-border',
-                  'transition-colors'
-                )}
+                className="rounded-sm text-xs"
               >
                 Intentar de nuevo
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
@@ -291,7 +311,7 @@ export function DocumentUpload({
               <div>
                 <p className="text-sm text-muted-foreground">
                   <span className="font-medium text-foreground hover:underline">
-                    Haz clic para subir
+                    Toca para subir
                   </span>{' '}
                   o arrastra tu archivo
                 </p>
@@ -313,9 +333,17 @@ export function DocumentUpload({
         <p className="text-xs text-muted-foreground">{hint}</p>
       )}
 
+      {/* Stale slot — the File was lost serialising to localStorage on reload.
+          Prompt a re-attach so the user knows which document to add again. */}
+      {isStale && state === 'idle' && !displayError && (
+        <p className="text-xs text-warning">
+          Volvé a adjuntar “{value?.fileName}”: se desconectó al recargar la página.
+        </p>
+      )}
+
       {/* External error (from form validation) */}
       {displayError && state !== 'error' && (
-        <p className="text-xs text-red-500">{displayError}</p>
+        <p className="text-xs text-danger">{displayError}</p>
       )}
     </div>
   );

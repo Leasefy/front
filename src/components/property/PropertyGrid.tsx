@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { SpinnerGap, MagnifyingGlass } from '@phosphor-icons/react';
+import { MagnifyingGlass } from '@phosphor-icons/react';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { PropertyCardSkeleton } from '@/components/skeleton';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { EmptyState } from '@/components/ui/empty-state';
 import type { Property } from '@/lib/types/property';
 import type { QualificationResult } from '@/lib/scoring/propertyMatching';
@@ -27,6 +28,8 @@ export interface PropertyGridProps {
   onPropertyHover?: (id: string | null) => void;
   /** Ref callback for property elements (for scroll-to-property) */
   propertyRefCallback?: (id: string, el: HTMLDivElement | null) => void;
+  /** Prefix for card detail links. Public '/propiedades', tenant '/inquilino/propiedades'. */
+  basePath?: string;
 }
 
 /**
@@ -43,6 +46,7 @@ export function PropertyGrid({
   hoveredPropertyId,
   onPropertyHover,
   propertyRefCallback,
+  basePath,
 }: PropertyGridProps) {
   const [displayCount, setDisplayCount] = useState(INITIAL_ITEMS);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -121,6 +125,7 @@ export function PropertyGrid({
               isHighlighted={hoveredPropertyId === property.id}
               onHoverStart={() => onPropertyHover?.(property.id)}
               onHoverEnd={() => onPropertyHover?.(null)}
+              basePath={basePath}
             />
           </div>
         ))}
@@ -134,11 +139,11 @@ export function PropertyGrid({
             size="lg"
             onClick={handleLoadMore}
             disabled={isLoadingMore}
-            className="text-sm font-mono uppercase font-normal tracking-tight"
+            className="text-sm"
           >
             {isLoadingMore ? (
               <>
-                <SpinnerGap className="w-4 h-4 mr-2 animate-spin" />
+                <Spinner size="sm" variant="current" className="mr-2" />
                 Cargando...
               </>
             ) : (

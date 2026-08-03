@@ -1,97 +1,98 @@
 "use client"
 
 import * as React from "react"
-import * as SheetPrimitive from "@radix-ui/react-dialog"
-import { cva, type VariantProps } from "class-variance-authority"
-import { X } from '@phosphor-icons/react'
+import {
+  Sheet as DSSheet,
+  SheetTrigger as DSSheetTrigger,
+  SheetClose as DSSheetClose,
+  SheetPortal as DSSheetPortal,
+  SheetOverlay as DSSheetOverlay,
+  SheetContent as DSSheetContent,
+  type SheetContentProps as DSSheetContentProps,
+  SheetTitle as DSSheetTitle,
+  SheetDescription as DSSheetDescription,
+} from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
 
-// Custom Sheet Root that blocks body scroll when open
-const Sheet = ({ children, ...props }: SheetPrimitive.DialogProps) => {
-  React.useEffect(() => {
-    if (props.open) {
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-      };
-    }
-  }, [props.open]);
+/**
+ * ADAPTER fino sobre el Sheet de @leasefy/cadence que preserva la API local del mvp:
+ * - SheetContent: `side` passthrough (el DS ya lo soporta),
+ *   `hideCloseButton` → `hideClose`, overlay `z-[300] bg-black/60`,
+ *   contrato de layout legacy (p-6 default, w-3/4 sm:max-w-sm en left/right,
+ *   alto auto en top/bottom, display block) y animación legacy 500ms in/out
+ *   en lugar del slide-in-only del DS. Todo overridable por className.
+ * - Header/Footer mantienen las clases legacy (padding en el Content).
+ */
 
-  return <SheetPrimitive.Root {...props}>{children}</SheetPrimitive.Root>;
-}
+// Scroll locking is handled by Radix (modal by default via react-remove-scroll).
+// The previous manual body-overflow effect only worked for controlled usage
+// (keyed off props.open) and caused scrollbar layout shift — removed.
+const Sheet = DSSheet
 
-const SheetTrigger = SheetPrimitive.Trigger
+const SheetTrigger = DSSheetTrigger
 
-const SheetClose = SheetPrimitive.Close
+const SheetClose = DSSheetClose
 
-const SheetPortal = SheetPrimitive.Portal
+const SheetPortal = DSSheetPortal
+
+const sheetOverlayClasses =
+  "z-[300] bg-black/60 touch-none overscroll-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:duration-500 data-[state=open]:duration-500"
 
 const SheetOverlay = React.forwardRef<
-  React.ElementRef<typeof SheetPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
+  React.ElementRef<typeof DSSheetOverlay>,
+  React.ComponentPropsWithoutRef<typeof DSSheetOverlay>
 >(({ className, ...props }, ref) => (
-  <SheetPrimitive.Overlay
-    className={cn(
-      "fixed inset-0 z-[300] bg-black/60 touch-none overscroll-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:duration-500 data-[state=open]:duration-500",
-      className
-    )}
-    {...props}
+  <DSSheetOverlay
     ref={ref}
+    className={cn(sheetOverlayClasses, className)}
+    {...props}
   />
 ))
-SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
+SheetOverlay.displayName = "SheetOverlay"
 
-const sheetVariants = cva(
-  "fixed z-[300] bg-background shadow-2xl transition-transform data-[state=closed]:duration-500 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] overscroll-contain",
-  {
-    variants: {
-      side: {
-        top: "inset-x-0 top-0 border-b p-6 data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
-        bottom:
-          "inset-x-0 bottom-0 border-t p-6 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-        left: "inset-y-0 left-0 h-full w-3/4 border-r p-6 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
-        right:
-          "inset-y-0 right-0 h-full w-3/4 border-l p-6 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
-      },
-    },
-    defaultVariants: {
-      side: "right",
-    },
-  }
-)
+type SheetSide = NonNullable<DSSheetContentProps["side"]>
 
-interface SheetContentProps
-  extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
-    VariantProps<typeof sheetVariants> {
+// Geometría + animación legacy por lado. h-auto/max-h-none anulan las alturas
+// fijas del DS en top/bottom (legacy = alto por contenido).
+const legacySideClasses: Record<SheetSide, string> = {
+  top: "h-auto max-h-none data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
+  bottom:
+    "h-auto max-h-none data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+  left: "w-3/4 sm:max-w-sm data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
+  right:
+    "w-3/4 sm:max-w-sm data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
+}
+
+interface SheetContentProps extends Omit<DSSheetContentProps, "hideClose"> {
   hideCloseButton?: boolean;
 }
 
 const SheetContent = React.forwardRef<
-  React.ElementRef<typeof SheetPrimitive.Content>,
+  React.ElementRef<typeof DSSheetContent>,
   SheetContentProps
->(({ side = "right", className, children, hideCloseButton = false, ...props }, ref) => (
-  <SheetPortal>
-    <SheetOverlay />
-    <SheetPrimitive.Content
-      ref={ref}
-      onWheel={(e) => e.stopPropagation()}
-      className={cn(sheetVariants({ side }), className)}
-      {...props}
-    >
-      {!hideCloseButton && (
-        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-          <X className="h-4 w-4" />
-          <span className="sr-only">Cerrar</span>
-        </SheetPrimitive.Close>
-      )}
-      {children}
-    </SheetPrimitive.Content>
-  </SheetPortal>
+>(({ side = "right", className, overlayClassName, children, hideCloseButton = false, ...props }, ref) => (
+  <DSSheetContent
+    ref={ref}
+    side={side}
+    hideClose={hideCloseButton}
+    overlayClassName={cn(sheetOverlayClasses, overlayClassName)}
+    onWheel={(e) => e.stopPropagation()}
+    className={cn(
+      // contrato de layout legacy: padding propio, display block (el DS pone
+      // flex flex-col; los call sites que lo quieren lo pasan explícito)
+      "z-[300] block p-6 overscroll-contain",
+      // animación legacy 500ms in/out; animate-none apaga el slide-in del DS
+      "animate-none transition-transform data-[state=closed]:duration-500 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]",
+      legacySideClasses[side],
+      className
+    )}
+    {...props}
+  >
+    {children}
+  </DSSheetContent>
 ))
-SheetContent.displayName = SheetPrimitive.Content.displayName
+SheetContent.displayName = "SheetContent"
 
 const SheetHeader = ({
   className,
@@ -121,29 +122,9 @@ const SheetFooter = ({
 )
 SheetFooter.displayName = "SheetFooter"
 
-const SheetTitle = React.forwardRef<
-  React.ElementRef<typeof SheetPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <SheetPrimitive.Title
-    ref={ref}
-    className={cn("text-lg font-semibold text-foreground", className)}
-    {...props}
-  />
-))
-SheetTitle.displayName = SheetPrimitive.Title.displayName
+const SheetTitle = DSSheetTitle
 
-const SheetDescription = React.forwardRef<
-  React.ElementRef<typeof SheetPrimitive.Description>,
-  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <SheetPrimitive.Description
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
-SheetDescription.displayName = SheetPrimitive.Description.displayName
+const SheetDescription = DSSheetDescription
 
 export {
   Sheet,

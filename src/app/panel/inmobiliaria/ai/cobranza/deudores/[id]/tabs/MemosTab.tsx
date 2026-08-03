@@ -10,6 +10,7 @@ import * as React from 'react'
 
 import { useI18n } from '@/lib/i18n'
 import { useDebtorMemos } from '@/lib/hooks/cobranza/use-debtor-memos'
+import { Button } from '@/components/ui'
 
 void React
 
@@ -27,7 +28,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
         {Array.from({ length: 3 }, (_, i) => (
           <div
             key={i}
-            className="h-20 bg-neutral-100 dark:bg-neutral-800 rounded-md animate-pulse"
+            className="h-20 bg-neutral-100 dark:bg-neutral-800 rounded-sm animate-pulse"
           />
         ))}
       </div>
@@ -36,17 +37,19 @@ export function MemosTab({ debtorId }: MemosTabProps) {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 flex items-center justify-between">
-        <p className="text-sm text-red-700 dark:text-red-400">
+      <div className="rounded-md border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
+        <p className="text-sm text-danger">
           {t('inmobiliaria.ai.cobranza.detail.memos.error')}: {error}
         </p>
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => void refetch()}
-          className="text-sm font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700"
+          hideArrow
         >
           {t('inmobiliaria.ai.cobranza.detail.memos.errorRetry')}
-        </button>
+        </Button>
       </div>
     )
   }
@@ -54,7 +57,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
   const memos = data?.memos ?? []
   if (memos.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
+      <div className="rounded-md border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
           {t('inmobiliaria.ai.cobranza.detail.memos.empty')}
         </p>
@@ -67,7 +70,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
       {memos.map((m) => (
         <li
           key={m.id}
-          className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3"
+          className="rounded-sm border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3"
         >
           <p className="text-sm text-neutral-900 dark:text-white whitespace-pre-wrap">
             {m.body ?? '—'}
@@ -85,7 +88,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
               </span>
             )}
             {m.open_ptp_amount_cop != null && m.open_ptp_date && (
-              <span className="px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300">
+              <span className="px-1.5 py-0.5 rounded bg-surface-muted text-fg">
                 PTP {m.open_ptp_amount_cop} · {m.open_ptp_date}
               </span>
             )}

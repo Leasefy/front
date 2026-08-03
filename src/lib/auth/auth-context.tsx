@@ -1,10 +1,19 @@
 'use client'
 
-import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { User, AuthContextType, Agency, AgencyMemberRole } from './types'
 import { toFrontendRole } from './types'
+import { fetchAgencyProfile, type AgencyFetchResult } from './agency-fetch'
 import { getSupabase } from '@/lib/supabase/client'
 import { apiClient, ApiError, setAccessToken } from '@/lib/api/client'
+import { TENANT_ONBOARDING_STORAGE_KEY } from '@/lib/onboarding/tenant-onboarding-status'
+import {
+  readActiveContext,
+  writeActiveContext,
+  clearActiveContext,
+  isDualContextUser,
+  type ActiveContext,
+} from './active-context'
 import { requestNotificationPermission, removeFcmToken } from '@/lib/firebase/messaging'
 import type { Session } from '@supabase/supabase-js'
 
@@ -17,12 +26,21 @@ import type { Session } from '@supabase/supabase-js'
  */
 export const AuthContext = createContext<AuthContextType | null>(null)
 
+/**
+ * sessionStorage key used to hand a fatal auth-bootstrap error message
+ * (e.g. 409 duplicate-identity on GET /users/me) to the /auth screen across
+ * the forced sign-out redirect. AuthForm reads and clears it on mount.
+ */
+export const AUTH_BOOTSTRAP_ERROR_KEY = 'leasefy:auth:bootstrap-error'
+
 interface AuthProviderProps {
   children: ReactNode
 }
 
-/** Map a backend user response to our frontend User type */
-function mapBackendUser(data: Record<string, unknown>): User {
+/** Map a backend user response to our frontend User type.
+ *  `emailConfirmedAt` comes from the Supabase session (the backend does not
+ *  track email confirmation) — pass it through when a session is at hand. */
+function mapBackendUser(data: Record<string, unknown>, emailConfirmedAt?: string): User {
   const backendRole = (data.role as string) || 'TENANT'
   const firstName = (data.firstName as string) || ''
   const lastName = (data.lastName as string) || ''
@@ -65,9 +83,15 @@ function mapBackendUser(data: Record<string, unknown>): User {
     birthDate: (data.birthDate as string) || undefined,
     emergencyContactName: (data.emergencyContactName as string) || undefined,
     emergencyContactPhone: (data.emergencyContactPhone as string) || undefined,
+    emailConfirmedAt,
     role: frontendRole,
     backendRole: backendRole as import('./types').BackendRole,
-    onboardingCompleted: !!data.firstName,
+    profileSource: 'backend',
+    // Flag-based (backend contract): onboardingCompletedAt is stamped ONLY
+    // when POST /users/me/onboarding actually completes. Auto-provisioned
+    // OAuth users have a firstName from Google metadata but a null flag —
+    // they must still confirm their data through the wizard.
+    onboardingCompleted: data.onboardingCompletedAt != null,
     onboardingData,
     tenantOnboardingData,
   }
@@ -87,7 +111,9 @@ function mapSupabaseUser(session: Session): User {
     firstName: meta.first_name || fullName.split(' ')[0] || '',
     lastName: meta.last_name || fullName.split(' ').slice(1).join(' ') || '',
     avatar: meta.avatar_url || meta.picture || undefined,
+    emailConfirmedAt: supabaseUser.email_confirmed_at ?? undefined,
     role: 'tenant',
+    profileSource: 'session',
     // When the backend is unreachable we have no way to confirm onboarding status.
     // Default to true so the user isn't incorrectly sent to the onboarding flow —
     // the panel will gracefully degrade on its own since all API calls will fail too.
@@ -106,6 +132,46 @@ function isUserNotFoundError(err: unknown): boolean {
   if (!(err instanceof ApiError) || err.status !== 401) return false
   const msg = err.message?.toLowerCase() ?? ''
   return msg.includes('user not found')
+}
+
+/** Whether this user should have an agency membership fetched at all
+ *  (AGENT/agency role). Tenants and landlords never call `/inmobiliaria/agency`. */
+function isAgencyCapable(u: User | null): boolean {
+  return !!u && (u.role === 'agency' || u.backendRole === 'AGENT')
+}
+
+/** Bounded backoff schedule (ms) for the agency self-heal backstop —
+ *  see `AuthProvider`'s agency self-healing effect below. */
+const AGENCY_SELF_HEAL_DELAYS_MS = [0, 2000, 8000]
+
+/** Hard ceiling for a single membership probe. apiClient has no
+ *  AbortController, so we RACE the fetch against this timeout — a hung
+ *  `/inmobiliaria/agency` resolves as a TRANSIENT failure instead of leaving
+ *  `agencyMembershipChecked` false forever (which would hang the panel gate). */
+const AGENCY_PROBE_TIMEOUT_MS = 8000
+
+/** Race a `fetchAgencyProfile` call against a timeout. On timeout, resolves as
+ *  a transient failure (keep last state, self-heal retries) — never hangs. */
+export function fetchAgencyWithTimeout(
+  fetchFn: (token?: string) => Promise<AgencyFetchResult>,
+  token?: string,
+  timeoutMs: number = AGENCY_PROBE_TIMEOUT_MS,
+): Promise<AgencyFetchResult> {
+  let timer: ReturnType<typeof setTimeout>
+  const timeout = new Promise<AgencyFetchResult>((resolve) => {
+    timer = setTimeout(
+      () =>
+        resolve({
+          agency: null,
+          role: null,
+          memberStatus: null,
+          confirmedNoMembership: false,
+          transientFailure: true,
+        }),
+      timeoutMs,
+    )
+  })
+  return Promise.race([fetchFn(token), timeout]).finally(() => clearTimeout(timer))
 }
 
 /**
@@ -152,6 +218,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // with the canonical backend payload, which overwrites this seed.
   const [agency, setAgencyState] = useState<Agency | null>(() => readAgencyFromStorage())
   const [agencyRole, setAgencyRole] = useState<AgencyMemberRole | null>(null)
+  // Membership status within the agency ('ACTIVE' | 'INVITED' | …). Only
+  // 'ACTIVE' grants agency-panel access (an INVITED member hasn't accepted).
+  const [agencyMemberStatus, setAgencyMemberStatus] = useState<string | null>(null)
+  // True once the membership probe has settled for the current session — gates
+  // the agency panel's "hold vs redirect" decision for personal-role users.
+  const [agencyMembershipChecked, setAgencyMembershipChecked] = useState(false)
+  // True when the last probe was a TRANSIENT failure (5xx/network/timeout) —
+  // arms the self-heal backstop even for personal-role (dual-context) users,
+  // without storming for confirmed-no-membership tenants.
+  const [lastProbeTransient, setLastProbeTransient] = useState(false)
+  // Persisted active-context choice for dual-context users (null = unset).
+  const [persistedContext, setPersistedContext] = useState<ActiveContext | null>(null)
 
   /**
    * Fetch the user profile from the backend.
@@ -180,11 +258,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }),
         )
       }
-      return { user: mapBackendUser(data), needsOnboarding: false }
+      return {
+        user: mapBackendUser(data, session?.user?.email_confirmed_at ?? undefined),
+        needsOnboarding: false,
+      }
     } catch (err) {
       // JWT valid but user doesn't exist in public.users yet → needs onboarding
       if (isUserNotFoundError(err)) {
         return { user: null, needsOnboarding: true }
+      }
+      // 409: this Supabase identity's email already belongs to another account.
+      // Never fall back to the degraded session user (that would loop on every
+      // request) — surface the backend message and drop the Supabase session
+      // so the user can log in with their original account.
+      // The message travels via sessionStorage (this file's decoupling
+      // precedent — see 'leasefy:preferences:loaded' above): a toast fired
+      // here would unmount with the panel during the sign-out redirect, and
+      // the /auth screen (AuthForm) owns the visible error banner.
+      if (err instanceof ApiError && err.status === 409) {
+        const message =
+          err.message ||
+          'Ya existe una cuenta registrada con este correo. Inicia sesión con tu cuenta original.'
+        if (typeof window !== 'undefined') {
+          try {
+            window.sessionStorage.setItem(AUTH_BOOTSTRAP_ERROR_KEY, message)
+          } catch {}
+        }
+        try {
+          getSupabase()?.auth.signOut({ scope: 'local' }).catch(() => {})
+        } catch {}
+        return { user: null, needsOnboarding: false }
       }
       // Any other 401 = real token failure → logout (handled by caller returning null user)
       if (err instanceof ApiError && err.status === 401) {
@@ -206,18 +309,135 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setAgencyRole(role)
   }, [])
 
-  /** Fetch agency membership for agency/agent roles */
-  const fetchAgency = useCallback(async (token?: string): Promise<{ agency: Agency | null; role: AgencyMemberRole | null }> => {
-    try {
-      // Backend returns { ...agencyFields, memberRole, memberStatus }
-      const data = await apiClient.get<Agency & { memberRole: AgencyMemberRole }>('/inmobiliaria/agency', token)
-      const { memberRole, ...agencyFields } = data as Agency & { memberRole: AgencyMemberRole; memberStatus: string }
-      return { agency: agencyFields as Agency, role: memberRole }
-    } catch {
-      // User may not belong to an agency yet (e.g. just registered)
-      return { agency: null, role: null }
+  /** Fetch agency membership for agency/agent roles. Delegates to
+   *  `fetchAgencyProfile` (agency-fetch.ts) which tolerates legacy/partial
+   *  response shapes and logs (console.warn) the reason on any failure —
+   *  instead of silently collapsing every failure mode (no membership yet,
+   *  network blip, malformed body) into an unexplained null. */
+  const fetchAgency = useCallback((token?: string) => fetchAgencyProfile(token), [])
+
+  /** Apply a `fetchAgencyProfile` result to state WITHOUT ever downgrading an
+   *  already-loaded agency. A failed fetch (`agency: null`) leaves whatever
+   *  is currently in state untouched — only a successful fetch overwrites it.
+   *  This is the single write path used by the auth-event handlers, the
+   *  self-heal backstop, and `refreshAgency()` below. */
+  const applyAgencyFetchResult = useCallback((result: AgencyFetchResult) => {
+    if (result.agency) {
+      // Success — adopt the fresh membership.
+      setAgencyState(result.agency)
+      setAgencyRole(result.role)
+      setAgencyMemberStatus(result.memberStatus)
+    } else if (result.confirmedNoMembership) {
+      // Backend CONFIRMED no membership (403/404/410) — DOWNGRADE so a revoked
+      // member loses agency access on the next probe (no stale UI access).
+      setAgencyState(null)
+      setAgencyRole(null)
+      setAgencyMemberStatus(null)
     }
+    // else: transient failure / malformed 200 → KEEP the last known values so a
+    // blip never wipes a healthy 'ACTIVE' membership.
+    setLastProbeTransient(!!result.transientFailure)
   }, [])
+
+  /** THE single membership-probe path used by every auth handler + refreshUser.
+   *  Bounds the fetch with a timeout and ALWAYS flips `agencyMembershipChecked`
+   *  in a `finally` — so a hung/slow/failed probe can never leave the agency
+   *  panel gate holding a spinner forever. */
+  const probeAgencyMembership = useCallback(async (token?: string) => {
+    try {
+      applyAgencyFetchResult(await fetchAgencyWithTimeout(fetchAgency, token))
+    } finally {
+      setAgencyMembershipChecked(true)
+    }
+  }, [applyAgencyFetchResult, fetchAgency])
+
+  // ---------------------------------------------------------------------
+  // Agency self-healing backstop
+  //
+  // fetchAgency() only ever ran inside onAuthStateChange handlers — one shot
+  // per auth event. If that single shot failed (network blip, dev HMR partial
+  // reload losing state), `agency` stayed null for the rest of the session
+  // with nothing ever re-requesting it, silently breaking anything gated on
+  // `agency?.id` (useBetaChat, the postulaciones panel). The effect below
+  // retries with bounded backoff whenever `user` is agency-capable and
+  // `agency` is still null — no new Supabase auth event required.
+  // ---------------------------------------------------------------------
+  const agencySelfHealActiveRef = useRef(false)
+  const agencySelfHealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const agencySelfHealTokenRef = useRef(0)
+
+  /** Starts (or no-ops if already running) a bounded retry chain for the
+   *  agency fetch: attempts at 0s / 2s / 8s, then gives up until either a
+   *  dependency change restarts it or `refreshAgency()` re-arms it. Guarded
+   *  by `agencySelfHealActiveRef` so overlapping effect runs / manual
+   *  refreshes never stack concurrent chains. */
+  const startAgencySelfHeal = useCallback(() => {
+    if (agencySelfHealActiveRef.current) return
+    agencySelfHealActiveRef.current = true
+    const localToken = ++agencySelfHealTokenRef.current
+
+    const attempt = (index: number) => {
+      agencySelfHealTimeoutRef.current = setTimeout(async () => {
+        if (localToken !== agencySelfHealTokenRef.current) return
+        console.warn(
+          `[Auth] agency self-heal retry attempt ${index + 1}/${AGENCY_SELF_HEAL_DELAYS_MS.length} (no agency loaded yet)`,
+        )
+        const result = await fetchAgencyWithTimeout(fetchAgency)
+        if (localToken !== agencySelfHealTokenRef.current) return
+        applyAgencyFetchResult(result)
+        // Stop on a RESOLVED outcome (success OR confirmed no-membership); only
+        // a TRANSIENT failure keeps retrying with backoff.
+        if (result.agency || result.confirmedNoMembership) {
+          agencySelfHealActiveRef.current = false
+          return
+        }
+        const next = index + 1
+        if (next < AGENCY_SELF_HEAL_DELAYS_MS.length) {
+          attempt(next)
+        } else {
+          console.warn('[Auth] agency self-heal retries exhausted — call refreshAgency() to retry manually')
+          agencySelfHealActiveRef.current = false
+        }
+      }, AGENCY_SELF_HEAL_DELAYS_MS[index])
+    }
+    attempt(0)
+  }, [fetchAgency, applyAgencyFetchResult])
+
+  useEffect(() => {
+    // Retry when the agency is missing AND the user is either agency-capable
+    // (pure AGENT) OR the last probe was a TRANSIENT failure (covers dual-context
+    // TENANT/LANDLORD recovering from a blip). A CONFIRMED no-membership sets
+    // lastProbeTransient=false, so membership-less tenants never storm.
+    if (!user || agency || (!isAgencyCapable(user) && !lastProbeTransient)) return
+    startAgencySelfHeal()
+    return () => {
+      // Invalidate any pending/in-flight attempt from this chain and clear
+      // its timer — a fresh chain starts on the next effect run if still needed.
+      agencySelfHealTokenRef.current += 1
+      if (agencySelfHealTimeoutRef.current) {
+        clearTimeout(agencySelfHealTimeoutRef.current)
+        agencySelfHealTimeoutRef.current = null
+      }
+      agencySelfHealActiveRef.current = false
+    }
+  }, [user, agency, lastProbeTransient, startAgencySelfHeal])
+
+  /** Manually retry the agency fetch (e.g. a page's "Intentar de nuevo"
+   *  button). Always performs one direct fetch; if it also fails, re-arms
+   *  the automatic backstop above (even if it had already given up). */
+  const refreshAgency = useCallback(async () => {
+    console.warn('[Auth] agency manual refresh requested')
+    const result = await fetchAgency()
+    applyAgencyFetchResult(result)
+    if (!result.agency) {
+      agencySelfHealActiveRef.current = false
+      if (agencySelfHealTimeoutRef.current) {
+        clearTimeout(agencySelfHealTimeoutRef.current)
+        agencySelfHealTimeoutRef.current = null
+      }
+      startAgencySelfHeal()
+    }
+  }, [fetchAgency, applyAgencyFetchResult, startAgencySelfHeal])
 
   /** Refresh user data from backend (e.g. after onboarding) */
   const refreshUser = useCallback(async () => {
@@ -227,13 +447,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const { user: userData, needsOnboarding: needsOnb } = await fetchUser()
     setUser(userData)
     setNeedsOnboarding(needsOnb)
-    // Also refresh agency data for agency/agent roles (or when just completing inmobiliaria onboarding)
-    if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
-      const { agency: agencyData, role } = await fetchAgency()
-      setAgencyState(agencyData)
-      setAgencyRole(role)
+    // Probe agency membership for EVERY authenticated user (personal-role
+    // coexistence): a TENANT/LANDLORD may hold an agency membership.
+    if (userData) {
+      await probeAgencyMembership()
     }
-  }, [fetchUser, fetchAgency])
+  }, [fetchUser, probeAgencyMembership])
 
   /** Check MFA assurance level and update mfaRequired state */
   const checkMfaLevel = useCallback(async () => {
@@ -255,6 +474,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setMfaRequired(false)
   }, [])
 
+  // Load the persisted active-context choice whenever the authenticated user
+  // changes (userId-scoped read → a foreign entry reads as unset), and keep it
+  // in sync with same-tab writes ('active-context-updated') AND cross-tab writes
+  // ('storage') so a switch in one tab reflects in another.
+  useEffect(() => {
+    const load = () => setPersistedContext(readActiveContext(user?.id))
+    load()
+    window.addEventListener('active-context-updated', load)
+    window.addEventListener('storage', load)
+    return () => {
+      window.removeEventListener('active-context-updated', load)
+      window.removeEventListener('storage', load)
+    }
+  }, [user?.id])
+
+  /** Switch the active context for a dual-context user (persisted per-user). */
+  const setActiveContext = useCallback((context: ActiveContext) => {
+    if (!user?.id) return
+    writeActiveContext(user.id, context)
+    setPersistedContext(context)
+  }, [user?.id])
+
   // Initialize auth on mount.
   // We rely exclusively on onAuthStateChange (which fires INITIAL_SESSION on setup)
   // to avoid calling getSession() in parallel, which triggers an AbortError from
@@ -273,6 +514,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
         return false
       })
+      // NOTE: this 5s net releases isLoading ONLY. It must NOT touch
+      // agencyMembershipChecked — that flag is flipped solely by the probe's
+      // own bounded completion (probeAgencyMembership's finally, capped at
+      // AGENCY_PROBE_TIMEOUT_MS). Flipping it here would redirect a slow-network
+      // dual-context user (probe 5-8s) out of the panel at t=5s before the real
+      // ACTIVE result lands. The 8s-bounded probe is sufficient to guarantee no
+      // infinite spinner.
     }, 5000)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -294,10 +542,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
             if (userData?.onboardingCompleted) {
               requestNotificationPermission().catch(() => {})
             }
-            if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
-              const { agency: agencyData, role } = await fetchAgency(session.access_token)
-              setAgencyState(agencyData)
-              setAgencyRole(role)
+            // Probe agency membership for every authenticated user (coexistence).
+            // Fire-and-forget: the global loader must NOT wait on
+            // /inmobiliaria/agency latency (only the agency-route gate waits, on
+            // agencyMembershipChecked). Matches SIGNED_IN's ordering.
+            if (userData) {
+              void probeAgencyMembership(session.access_token)
             }
           }
           setIsLoading(false)
@@ -312,16 +562,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (userData?.onboardingCompleted) {
             requestNotificationPermission().catch(() => {})
           }
-          if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
-            const { agency: agencyData, role } = await fetchAgency(session.access_token)
-            setAgencyState(agencyData)
-            setAgencyRole(role)
+          // Probe agency membership for every authenticated user (coexistence).
+          // Fire-and-forget (isLoading already released above).
+          if (userData) {
+            void probeAgencyMembership(session.access_token)
           }
         } else if (event === 'SIGNED_OUT') {
           setAccessToken(null)
           setUser(null)
           setAgencyState(null)
           setAgencyRole(null)
+          setAgencyMemberStatus(null)
+          setAgencyMembershipChecked(false)
+          setLastProbeTransient(false)
+          setPersistedContext(null)
+          clearActiveContext()
           setMfaRequired(false)
           setNeedsOnboarding(false)
           setIsLoading(false)
@@ -332,11 +587,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(userData)
           setNeedsOnboarding(needsOnb)
           await checkMfaLevel()
-          // Also refresh agency data for agency/agent roles
-          if (userData?.role === 'agency' || userData?.backendRole === 'AGENT') {
-            const { agency: agencyData, role } = await fetchAgency(session.access_token)
-            setAgencyState(agencyData)
-            setAgencyRole(role)
+          // Probe agency membership for every authenticated user (coexistence).
+          // Fire-and-forget so the global loader isn't blocked by agency latency
+          // (the agency-route gate still waits on agencyMembershipChecked).
+          if (userData) {
+            void probeAgencyMembership(session.access_token)
           }
           // CRITICAL: if the very first event on page load is TOKEN_REFRESHED
           // (Supabase auto-refreshed the expired token before emitting INITIAL_SESSION),
@@ -350,7 +605,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
-  }, [fetchUser, checkMfaLevel, fetchAgency])
+  }, [fetchUser, checkMfaLevel, probeAgencyMembership])
 
   /** Sign in with Google OAuth via Supabase */
   const signInWithGoogle = useCallback(async () => {
@@ -436,9 +691,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [])
 
   /** Update user profile fields and refresh local user state */
-  const updateProfile = useCallback(async (data: { firstName?: string; lastName?: string; phone?: string; rut?: string; address?: string; birthDate?: string; emergencyContactName?: string; emergencyContactPhone?: string }): Promise<void> => {
+  const updateProfile = useCallback(async (data: { firstName?: string | null; lastName?: string | null; phone?: string | null; rut?: string | null; address?: string | null; birthDate?: string | null; emergencyContactName?: string | null; emergencyContactPhone?: string | null }): Promise<void> => {
     const updated = await apiClient.patch<Record<string, unknown>>('/users/me', data)
-    setUser(mapBackendUser(updated))
+    // PATCH /users/me has no session at hand — keep the confirmation stamp we already had
+    setUser((prev) => ({ ...mapBackendUser(updated, prev?.emailConfirmedAt) }))
   }, [])
 
   /** Sign out and clear state. Synchronous cleanup runs first; backend
@@ -470,6 +726,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         Object.keys(window.sessionStorage)
           .filter((k) => k.startsWith('sb-') || k.startsWith('supabase.'))
           .forEach((k) => window.sessionStorage.removeItem(k))
+        // The tenant onboarding wizard cache carries this account's PII
+        // (phone, budget, zones, pets) — never leave it behind for the next
+        // account on a shared browser.
+        window.localStorage.removeItem(TENANT_ONBOARDING_STORAGE_KEY)
       } catch {}
     }
 
@@ -478,6 +738,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setNeedsOnboarding(false)
     setAgencyState(null)
     setAgencyRole(null)
+    setAgencyMemberStatus(null)
+    setAgencyMembershipChecked(false)
+    setLastProbeTransient(false)
+    setPersistedContext(null)
+    clearActiveContext()
     setMfaRequired(false)
 
     // Fire-and-forget — never await, supabase's internal lock can hang here.
@@ -487,6 +752,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch {}
   }, [])
 
+  // ── Derived membership / active-context signals ────────────────────────────
+  // Agency-panel access hinges on this ONE signal (ACTIVE membership only).
+  const hasActiveAgencyMembership = agencyMemberStatus === 'ACTIVE'
+  // Use the SHARED predicate (also used by PlanHeader's switcher) so context
+  // resolution and switcher visibility can never disagree.
+  const isDualContext = isDualContextUser(user, hasActiveAgencyMembership)
+  // Effective context: pure agency → always 'agency'; dual-context → persisted
+  // choice (default personal); everyone else → 'personal'. A stale persisted
+  // 'agency' from a user who lost membership is ignored (not dual → 'personal').
+  const activeContext: ActiveContext =
+    user?.role === 'agency'
+      ? 'agency'
+      : isDualContext
+        ? persistedContext ?? 'personal'
+        : 'personal'
+
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
@@ -495,6 +776,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     needsOnboarding,
     agency,
     agencyRole,
+    agencyMemberStatus,
+    hasActiveAgencyMembership,
+    agencyMembershipChecked,
+    activeContext,
+    refreshAgency,
+    setActiveContext,
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,

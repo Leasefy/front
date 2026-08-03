@@ -6,11 +6,23 @@ import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { CaretLeft, Buildings, X } from '@phosphor-icons/react';
+import { CaretLeft, Buildings, X, CalendarPlus } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button, EmptyState } from '@/components/ui';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useLenis } from '@/components/providers/SmoothScroll';
+import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import {
   useConsignacion,
   usePropietario,
@@ -30,6 +42,7 @@ import {
 import { ActaEntregaView } from '@/components/inmobiliaria/ActaEntregaView';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
 import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
+import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 
 /**
  * Modal Component - Uses Portal to escape transformed parents
@@ -88,7 +101,9 @@ function Modal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-[9999]"
+      // Modal layer = z-[300] (misma capa que <Dialog>/<Sheet>). Antes z-[9999],
+      // que tapaba cualquier AlertDialog disparado desde adentro. Ver DESIGN.md §17.
+      className="fixed inset-0 z-[300]"
       style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
       data-lenis-prevent
     >
@@ -103,22 +118,19 @@ function Modal({
       >
         <div
           className={cn(
-            'relative bg-white dark:bg-[#141416] w-full rounded-3xl shadow-2xl flex flex-col',
+            'relative bg-card border border-border w-full rounded-xl flex flex-col',
             sizeClasses[size]
           )}
           style={{ maxHeight: '85vh' }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+          <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-border">
+            <h3 className="text-base font-semibold text-fg">
               {title}
             </h3>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-[#1f1f21] flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors"
-            >
+            <Button variant="ghost" size="icon" hideArrow onClick={onClose} aria-label="Cerrar">
               <X className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
           <div
             ref={scrollContainerRef}
@@ -157,6 +169,9 @@ function ConsignacionDetailContent() {
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [consignacionData, setConsignacionData] = useState<Consignacion | null>(null);
+  const [showTerminateDialog, setShowTerminateDialog] = useState(false);
+  const [isTerminating, setIsTerminating] = useState(false);
+  const [showCitaModal, setShowCitaModal] = useState(false);
 
   // Fetch data
   const { consignacion: fetchedConsignacion } = useConsignacion(consignacionId);
@@ -175,94 +190,120 @@ function ConsignacionDetailContent() {
   const handleEditSubmit = useCallback(async (data: ConsignacionFormData) => {
     if (!consignacion) return;
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      // PUT /inmobiliaria/consignaciones/:id — the service maps enum casing
+      // and strips agent reassignment (see ConsignacionUpdateInput).
+      const updated = await consignacionesApi.update(consignacion.id, {
+        propertyTitle: data.propertyTitle,
+        propertyAddress: data.propertyAddress,
+        propertyCity: data.propertyCity,
+        propertyZone: data.propertyZone,
+        propertyType: data.propertyType,
+        monthlyRent: data.monthlyRent,
+        adminFee: data.adminFee,
+        commissionPercent: data.commissionPercent,
+        minimumTerm: data.minimumTerm,
+      });
 
-    // Update local state with new data
-    const updatedConsignacion: Consignacion = {
-      ...consignacion,
-      propertyTitle: data.propertyTitle,
-      propertyAddress: data.propertyAddress,
-      propertyCity: data.propertyCity,
-      propertyZone: data.propertyZone,
-      propertyType: data.propertyType,
-      monthlyRent: data.monthlyRent,
-      adminFee: data.adminFee,
-      commissionPercent: data.commissionPercent,
-      agenteId: data.agenteId,
-      minimumTerm: data.minimumTerm,
-      updatedAt: new Date().toISOString(),
-    };
-
-    setConsignacionData(updatedConsignacion);
-    setShowEditModal(false);
-    toast.success(t('inmobiliaria.portafolio.detail.toasts.propertyUpdated'), {
-      description: t('inmobiliaria.portafolio.detail.toasts.changesSaved'),
-    });
-  }, [consignacion]);
+      setConsignacionData(updated);
+      setShowEditModal(false);
+      toast.success(t('inmobiliaria.portafolio.detail.toasts.propertyUpdated'), {
+        description: t('inmobiliaria.portafolio.detail.toasts.changesSaved'),
+      });
+    } catch (err) {
+      // Keep the modal open so the user can retry without losing edits.
+      toast.error(t('inmobiliaria.portafolio.detail.toasts.updateError'), {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    }
+  }, [consignacion, t]);
 
   const handleViewPortal = useCallback(() => {
     toast.info(t('inmobiliaria.portafolio.detail.toasts.viewPortalSoon'), {
       description: t('inmobiliaria.portafolio.detail.toasts.viewPortalDesc'),
     });
-  }, []);
+  }, [t]);
 
-  const handleChangeStatus = useCallback((newStatus: PropertyAvailability) => {
+  const handleChangeStatus = useCallback(async (newStatus: PropertyAvailability) => {
+    if (!consignacion) return;
     const statusLabels: Record<PropertyAvailability, string> = {
       available: t('inmobiliaria.portafolio.status.available'),
       rented: t('inmobiliaria.portafolio.status.rented'),
       in_process: t('inmobiliaria.portafolio.detail.statusLabels.inProcess'),
       maintenance: t('inmobiliaria.portafolio.status.maintenance'),
     };
-    toast.success(t('inmobiliaria.portafolio.detail.toasts.statusChanged', { status: statusLabels[newStatus] }), {
-      description: t('inmobiliaria.portafolio.detail.toasts.autoSave'),
-    });
-    console.log('Change status to:', newStatus);
+    try {
+      // PUT /inmobiliaria/consignaciones/:id { availability } (service uppercases)
+      const updated = await consignacionesApi.update(consignacion.id, {
+        availability: newStatus,
+      });
+      setConsignacionData(updated);
+      toast.success(t('inmobiliaria.portafolio.detail.toasts.statusChanged', { status: statusLabels[newStatus] }), {
+        description: t('inmobiliaria.portafolio.detail.toasts.changesSaved'),
+      });
+    } catch (err) {
+      toast.error(t('inmobiliaria.portafolio.detail.toasts.statusChangeError'), {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    }
+  }, [consignacion, t]);
+
+  // Opens the destructive confirmation; the PUT happens in handleTerminateConfirm.
+  const handleTerminate = useCallback(() => {
+    setShowTerminateDialog(true);
   }, []);
 
-  const handleTerminate = useCallback(() => {
-    toast.error(t('inmobiliaria.portafolio.detail.toasts.terminateConsignment'), {
-      description: t('inmobiliaria.portafolio.detail.toasts.requiresConfirmation'),
-    });
-  }, []);
+  const handleTerminateConfirm = useCallback(async () => {
+    if (!consignacion || isTerminating) return;
+    setIsTerminating(true);
+    try {
+      // PUT /inmobiliaria/consignaciones/:id { status: TERMINATED }
+      const updated = await consignacionesApi.update(consignacion.id, {
+        status: 'terminated',
+      });
+      setConsignacionData(updated);
+      setShowTerminateDialog(false);
+      toast.success(t('inmobiliaria.portafolio.detail.toasts.terminated'));
+    } catch (err) {
+      toast.error(t('inmobiliaria.portafolio.detail.toasts.terminateError'), {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setIsTerminating(false);
+    }
+  }, [consignacion, isTerminating, t]);
 
   const handleRenew = useCallback(() => {
     toast.info(t('inmobiliaria.portafolio.detail.toasts.renewSoon'), {
       description: t('inmobiliaria.portafolio.detail.toasts.renewDesc'),
     });
-  }, []);
+  }, [t]);
 
   const handleReassignAgent = useCallback(() => {
     toast.info(t('inmobiliaria.portafolio.detail.toasts.reassignSoon'), {
       description: t('inmobiliaria.portafolio.detail.toasts.reassignDesc'),
     });
-  }, []);
+  }, [t]);
 
   const handleViewInventory = useCallback(() => {
     inventoryRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  // Load the property's visit availability, then open the schedule editor.
   // 404 if not found
   if (!consignacion) {
     return (
       <div className="p-4 md:p-6">
-        <div className="max-w-lg mx-auto text-center py-16">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <Buildings className="w-8 h-8 text-neutral-400" />
-          </div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
-            {t('inmobiliaria.portafolio.detail.notFound')}
-          </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-            {t('inmobiliaria.portafolio.detail.notFoundDesc')}
-          </p>
-          <Link
-            href="/panel/inmobiliaria/portafolio"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
-          >
-            <CaretLeft className="w-4 h-4" />
-            {t('inmobiliaria.portafolio.detail.backToPortfolio')}
-          </Link>
+        <div className="max-w-lg mx-auto py-16">
+          <EmptyState
+            icon={Buildings}
+            title={t('inmobiliaria.portafolio.detail.notFound')}
+            description={t('inmobiliaria.portafolio.detail.notFoundDesc')}
+            action={{
+              label: t('inmobiliaria.portafolio.detail.backToPortfolio'),
+              href: '/panel/inmobiliaria/portafolio',
+            }}
+          />
         </div>
       </div>
     );
@@ -270,20 +311,26 @@ function ConsignacionDetailContent() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm">
-        <Link
-          href="/panel/inmobiliaria/portafolio"
-          className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-indigo-500 transition-colors"
-        >
-          <CaretLeft className="w-4 h-4" />
-          {t('inmobiliaria.portafolio.title')}
-        </Link>
-        <span className="text-neutral-300 dark:text-neutral-600">/</span>
-        <span className="text-neutral-900 dark:text-white font-medium truncate max-w-[200px]">
-          {consignacion.propertyTitle}
-        </span>
-      </nav>
+      {/* Breadcrumb + agendar cita */}
+      <div className="flex items-center justify-between gap-4">
+        <nav className="flex items-center gap-2 text-sm min-w-0">
+          <Link
+            href="/panel/inmobiliaria/portafolio"
+            className="flex items-center gap-1.5 text-fg-muted hover:text-primary transition-colors"
+          >
+            <CaretLeft className="w-4 h-4" />
+            {t('inmobiliaria.portafolio.title')}
+          </Link>
+          <span className="text-border">/</span>
+          <span className="text-fg font-medium truncate max-w-[200px]">
+            {consignacion.propertyTitle}
+          </span>
+        </nav>
+        <Button hideArrow className="shrink-0" onClick={() => setShowCitaModal(true)}>
+          <CalendarPlus className="w-4 h-4" />
+          {t('inmobiliaria.agenda.pedirCita')}
+        </Button>
+      </div>
 
       {/* Header */}
       <motion.div
@@ -392,6 +439,47 @@ function ConsignacionDetailContent() {
           onCancel={() => setShowEditModal(false)}
         />
       </Modal>
+
+      {/* Terminate confirmation — shadcn AlertDialog, NOT browser confirm() */}
+      <AlertDialog
+        open={showTerminateDialog}
+        onOpenChange={(open) => {
+          if (!open && !isTerminating) setShowTerminateDialog(false);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('inmobiliaria.portafolio.detail.terminateDialog.title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('inmobiliaria.portafolio.detail.terminateDialog.body', {
+                property: consignacion.propertyTitle,
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isTerminating}>
+              {t('common.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              tone="danger"
+              onClick={handleTerminateConfirm}
+              disabled={isTerminating}
+            >
+              {t('inmobiliaria.portafolio.detail.terminateDialog.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <PedirCitaModal
+        isOpen={showCitaModal}
+        onClose={() => setShowCitaModal(false)}
+        onCreated={() => {}}
+        presetPropertyId={consignacion.propertyId}
+        presetPropertyTitle={consignacion.propertyTitle}
+      />
     </div>
   );
 }

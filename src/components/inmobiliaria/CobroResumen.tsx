@@ -15,6 +15,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui';
 import type { CobroSummary } from '@/lib/types/inmobiliaria';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/types/inmobiliaria';
 
@@ -82,23 +83,23 @@ export function CobroResumen({
   const getCollectionRateInfo = (rate: number) => {
     if (rate >= 90) {
       return {
-        fill: 'bg-emerald-500',
-        text: 'text-emerald-600 dark:text-emerald-400',
+        fill: 'bg-success',
+        text: 'text-success',
         label: t('inmobiliaria.cobros.resumen.rateExcellent'),
         trend: 'up' as const,
       };
     }
     if (rate >= 70) {
       return {
-        fill: 'bg-amber-500',
-        text: 'text-amber-600 dark:text-amber-400',
+        fill: 'bg-warning',
+        text: 'text-warning',
         label: t('inmobiliaria.cobros.resumen.rateAcceptable'),
         trend: 'neutral' as const,
       };
     }
     return {
-      fill: 'bg-red-500',
-      text: 'text-red-600 dark:text-red-400',
+      fill: 'bg-danger',
+      text: 'text-danger',
       label: t('inmobiliaria.cobros.resumen.rateLow'),
       trend: 'down' as const,
     };
@@ -106,8 +107,11 @@ export function CobroResumen({
 
   const rateInfo = getCollectionRateInfo(summary.collectionRate);
 
-  // Format month for display
-  const monthDisplay = formatDate(new Date(summary.month + '-01'), {
+  // Format month for display. Build the Date in LOCAL time — parsing 'YYYY-MM-01'
+  // as a string is UTC and shifts to the previous month in negative-offset zones
+  // (Colombia UTC-5 rendered July as "junio").
+  const [summaryYear, summaryMonthNum] = summary.month.split('-').map(Number);
+  const monthDisplay = formatDate(new Date(summaryYear, summaryMonthNum - 1, 1), {
     month: 'long',
     year: 'numeric',
   });
@@ -124,26 +128,29 @@ export function CobroResumen({
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/20">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-            <ChartLineUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="bold" />
+          <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
+            <ChartLineUp className="w-5 h-5 text-primary" weight="duotone" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-foreground capitalize">
+            <h3 className="text-base font-semibold text-fg capitalize">
               {monthDisplay}
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-fg-muted">
               {t('inmobiliaria.cobros.resumen.summaryTitle')}
             </p>
           </div>
         </div>
         {onRefresh && (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onRefresh}
-            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            hideArrow
             title={t('inmobiliaria.cobros.resumen.refreshTooltip')}
+            aria-label={t('inmobiliaria.cobros.resumen.refreshTooltip')}
           >
             <ArrowClockwise className="w-5 h-5" />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -194,10 +201,10 @@ export function CobroResumen({
         {/* Stats Row */}
         <div className="grid grid-cols-3 gap-4 mb-5">
           {/* Cobrado */}
-          <div className="p-3 rounded-lg bg-muted/30">
+          <div className="p-3 rounded-md bg-muted/30">
             <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="w-4 h-4 text-emerald-500" weight="fill" />
-              <span className="text-xs font-medium text-muted-foreground">{t('inmobiliaria.cobros.resumen.collected')}</span>
+              <CheckCircle className="w-4 h-4 text-success" weight="fill" />
+              <span className="text-xs font-medium text-fg-muted">{t('inmobiliaria.cobros.resumen.collected')}</span>
             </div>
             <AnimatedNumber
               value={summary.totalCollected}
@@ -210,10 +217,10 @@ export function CobroResumen({
           </div>
 
           {/* Pendiente */}
-          <div className="p-3 rounded-lg bg-muted/30">
+          <div className="p-3 rounded-md bg-muted/30">
             <div className="flex items-center gap-2 mb-1">
-              <Clock className="w-4 h-4 text-amber-500" weight="fill" />
-              <span className="text-xs font-medium text-muted-foreground">{t('inmobiliaria.cobros.resumen.pendingLabel')}</span>
+              <Clock className="w-4 h-4 text-warning" weight="fill" />
+              <span className="text-xs font-medium text-fg-muted">{t('inmobiliaria.cobros.resumen.pendingLabel')}</span>
             </div>
             <AnimatedNumber
               value={summary.totalPending}
@@ -226,10 +233,10 @@ export function CobroResumen({
           </div>
 
           {/* En mora */}
-          <div className="p-3 rounded-lg bg-muted/30">
+          <div className="p-3 rounded-md bg-muted/30">
             <div className="flex items-center gap-2 mb-1">
-              <Warning className="w-4 h-4 text-red-500" weight="fill" />
-              <span className="text-xs font-medium text-muted-foreground">{t('inmobiliaria.cobros.resumen.lateLabel')}</span>
+              <Warning className="w-4 h-4 text-danger" weight="fill" />
+              <span className="text-xs font-medium text-fg-muted">{t('inmobiliaria.cobros.resumen.lateLabel')}</span>
             </div>
             <AnimatedNumber
               value={summary.totalLate}
@@ -246,28 +253,32 @@ export function CobroResumen({
         {(onViewPending || onViewLate) && (
           <div className="flex gap-3 pt-4 border-t border-border">
             {onViewPending && summary.cobrosPending > 0 && (
-              <button
+              <Button
+                variant="outline"
+                hideArrow
                 onClick={onViewPending}
-                className="flex-1 flex items-center justify-between px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted/50 rounded-lg border border-border transition-colors group"
+                className="flex-1 justify-between group"
               >
                 <span className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-500" weight="fill" />
+                  <Clock className="w-4 h-4 text-warning" weight="fill" />
                   {t('inmobiliaria.cobros.resumen.viewPending')}
                 </span>
-                <CaretRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-              </button>
+                <CaretRight className="w-4 h-4 text-fg-muted group-hover:text-fg transition-colors" />
+              </Button>
             )}
             {onViewLate && summary.cobrosLate > 0 && (
-              <button
+              <Button
+                variant="outline"
+                hideArrow
                 onClick={onViewLate}
-                className="flex-1 flex items-center justify-between px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted/50 rounded-lg border border-border transition-colors group"
+                className="flex-1 justify-between group"
               >
                 <span className="flex items-center gap-2">
-                  <Warning className="w-4 h-4 text-red-500" weight="fill" />
+                  <Warning className="w-4 h-4 text-danger" weight="fill" />
                   {t('inmobiliaria.cobros.resumen.viewLate')}
                 </span>
-                <CaretRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-              </button>
+                <CaretRight className="w-4 h-4 text-fg-muted group-hover:text-fg transition-colors" />
+              </Button>
             )}
           </div>
         )}
@@ -291,21 +302,21 @@ export function CobroResumenCompact({
   const getCollectionRateInfo = (rate: number) => {
     if (rate >= 90) {
       return {
-        fill: 'bg-emerald-500',
-        text: 'text-emerald-600 dark:text-emerald-400',
+        fill: 'bg-success',
+        text: 'text-success',
         trend: 'up' as const,
       };
     }
     if (rate >= 70) {
       return {
-        fill: 'bg-amber-500',
-        text: 'text-amber-600 dark:text-amber-400',
+        fill: 'bg-warning',
+        text: 'text-warning',
         trend: 'neutral' as const,
       };
     }
     return {
-      fill: 'bg-red-500',
-      text: 'text-red-600 dark:text-red-400',
+      fill: 'bg-danger',
+      text: 'text-danger',
       trend: 'down' as const,
     };
   };

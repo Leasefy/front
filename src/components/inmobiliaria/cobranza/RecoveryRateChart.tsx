@@ -9,7 +9,7 @@
  *
  * Three render branches:
  *   A — agency-gate → NoDataYetBadge
- *   B — insufficient-buckets or other populated=false → SampleDataWatermark + stub chart
+ *   B — insufficient-buckets or other populated=false → EmptyState (honest empty, never stub chart)
  *   C — populated=true → real data chart
  *
  * D-37-01: Dual-axis single LineChart layout (pct_n left, pct_cop right) is
@@ -27,9 +27,9 @@ import {
   Legend,
 } from 'recharts';
 import { useI18n } from '@/lib/i18n';
+import { ChartLine } from '@phosphor-icons/react';
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge';
-import { SampleDataWatermark } from '@/components/data-display/SampleDataWatermark';
-import { STUB_RECOVERY_RATE } from '@/lib/fixtures/cobranza-analytics-stub';
+import { EmptyState } from '@/components/data-display/EmptyState';
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -58,12 +58,12 @@ interface RecoveryRateChartProps {
 // ─── Stage Colors ─────────────────────────────────────────────────────────────
 
 const STAGE_COLORS: Record<string, string> = {
-  S0: '#3b82f6', // blue-500
-  S1: '#6366f1', // indigo-500
-  S2: '#8b5cf6', // violet-500
-  S3: '#ec4899', // pink-500
-  S4: '#f97316', // orange-500
-  S5: '#f43f5e', // rose-500
+  S0: '#1A40FF', // electric-blue (primary)
+  S1: '#7B95FF', // primary-300 (blue tint)
+  S2: '#6E6A63', // neutral-600 (Cadence warm)
+  S3: '#B3AEA5', // neutral-400 (Cadence warm)
+  S4: '#C9C4BB', // neutral-300 (Cadence warm)
+  S5: '#C0392B', // semantic red (highest severity stage)
 };
 
 // ─── Pivot Helper ─────────────────────────────────────────────────────────────
@@ -102,12 +102,20 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
     );
   }
 
-  // Branch B / C — stub or real data
-  const sourceRows: RecoveryRateRow[] = data.populated ? data.rows : STUB_RECOVERY_RATE.rows;
-  const showWatermark = !data.populated;
+  // Branch B — no real data yet
+  if (!data.populated) {
+    return (
+      <EmptyState
+        icon={ChartLine}
+        title={t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.title')}
+        description="Sin datos suficientes todavía"
+      />
+    );
+  }
 
-  const stages = Array.from(new Set(sourceRows.map((r) => r.stage))).sort();
-  const pivotedData = pivotRows(sourceRows);
+  // Branch C — real data
+  const stages = Array.from(new Set(data.rows.map((r) => r.stage))).sort();
+  const pivotedData = pivotRows(data.rows);
 
   const chart = (
     <ResponsiveContainer width="100%" height={220}>
@@ -133,7 +141,7 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
               yAxisId="left"
               type="monotone"
               dataKey={`${stage}_pct_n`}
-              stroke={STAGE_COLORS[stage] ?? '#94a3b8'}
+              stroke={STAGE_COLORS[stage] ?? '#B3AEA5'}
               dot={false}
               strokeWidth={1.5}
               name={`${stage} ${t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.legend.transitions')}`}
@@ -143,7 +151,7 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
               yAxisId="right"
               type="monotone"
               dataKey={`${stage}_pct_cop`}
-              stroke={STAGE_COLORS[stage] ?? '#94a3b8'}
+              stroke={STAGE_COLORS[stage] ?? '#B3AEA5'}
               dot={false}
               strokeWidth={1}
               strokeDasharray="4 2"
@@ -157,12 +165,10 @@ export function RecoveryRateChart({ data }: RecoveryRateChartProps) {
 
   return (
     <div>
-      <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+      <p className="text-xs font-medium text-fg-subtle mb-2">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.title')}
       </p>
-      <SampleDataWatermark show={showWatermark}>
-        {chart}
-      </SampleDataWatermark>
+      {chart}
     </div>
   );
 }

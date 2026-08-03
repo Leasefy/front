@@ -97,7 +97,7 @@ Para clientes con más de 100 evaluaciones mensuales:
 | Página | Ruta | Contenido |
 |--------|------|-----------|
 | Pricing principal | `/pricing` | Selector de tipo de usuario + planes B2C |
-| Producto Evaluación | `/productos/evaluacion` | Detalle del servicio + planes B2C |
+| Producto Evaluación | `/productos/inquilino` | Detalle del servicio + planes B2C (antes `/productos/evaluacion`, 301 desde landing-react-port) |
 | Para Inquilinos | `/para/inquilinos` | Bento con visual de Arriendo Pass |
 | Calculadora B2B | `/pricing/empresas` | Herramienta de ventas (oculta) |
 
@@ -108,7 +108,7 @@ Para clientes con más de 100 evaluaciones mensuales:
 ```
 src/app/pricing/page.tsx              # Página principal de precios
 src/app/pricing/empresas/page.tsx     # Calculadora B2B (ventas)
-src/app/productos/evaluacion/page.tsx # Página de producto evaluación
+src/app/(landing)/productos/inquilino/page.tsx # Página de producto evaluación (antes productos/evaluacion)
 src/app/para/inquilinos/page.tsx      # Página para inquilinos (visual)
 ```
 

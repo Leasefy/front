@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   turnSpeakerAgent: {
     fontSize: 9,
     fontWeight: 'bold',
-    color: '#4f46e5',  // indigo-600
+    color: '#1A40FF',  // electric-blue
     marginBottom: 2,
   },
   turnSpeakerDebtor: {

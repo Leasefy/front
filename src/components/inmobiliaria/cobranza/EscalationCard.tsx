@@ -10,7 +10,7 @@
  *   - Admin (assign-perm): "Asignar" always
  *   - Anyone with resolve-perm who is the assignee OR has assign-perm: "Resolver"
  *
- * Styling: follows mvp:docs/DESIGN.md §4 (cards `rounded-xl` + `shadow-sm`,
+ * Styling: follows mvp:docs/DESIGN.md §4 (cards `rounded-xl` + ``,
  * indigo accent for primary, rose for severe). Urgency colors follow
  * mvp:docs/COLOR_SYSTEM.md (rose = error, amber = warning, emerald = ok).
  */
@@ -19,6 +19,7 @@ import { useMemo } from 'react'
 import { Clock, UserPlus, CheckCircle, Hand } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
+import { Button } from '@/components/ui'
 import type { Escalation } from '@/lib/hooks/cobranza/use-escalations'
 import type { UrgencyLevel } from '@/lib/constants/cobranza/escalation-templates'
 
@@ -34,26 +35,26 @@ interface EscalationCardProps {
 }
 
 const URGENCY_TOKEN: Record<UrgencyLevel, { bg: string; text: string; ring: string }> = {
-  // mvp:docs/COLOR_SYSTEM.md — semantic scales (rose=error, amber=warn, emerald=ok)
+  // Semantic status tints vía tokens del DS (danger=error, warning=warn, success=ok)
   live: {
-    bg: 'bg-rose-50 dark:bg-rose-950/30',
-    text: 'text-rose-700 dark:text-rose-400',
-    ring: 'ring-rose-200 dark:ring-rose-900 animate-pulse',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
+    ring: 'ring-danger animate-pulse',
   },
   high: {
-    bg: 'bg-rose-50 dark:bg-rose-950/30',
-    text: 'text-rose-700 dark:text-rose-400',
-    ring: 'ring-rose-200 dark:ring-rose-900',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
+    ring: 'ring-danger',
   },
   medium: {
-    bg: 'bg-amber-50 dark:bg-amber-950/30',
-    text: 'text-amber-700 dark:text-amber-400',
-    ring: 'ring-amber-200 dark:ring-amber-900',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
+    ring: 'ring-warning',
   },
   low: {
-    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-    text: 'text-emerald-700 dark:text-emerald-400',
-    ring: 'ring-emerald-200 dark:ring-emerald-900',
+    bg: 'bg-success-soft',
+    text: 'text-success',
+    ring: 'ring-success',
   },
 }
 
@@ -104,17 +105,17 @@ export function EscalationCard({
 
   return (
     <div
-      className="rounded-xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow p-3 space-y-2"
+      className="rounded-xl border border-border bg-card hover: transition-shadow p-3 space-y-2"
       data-testid={`escalation-card-${escalation.id}`}
     >
       {/* Header: urgency + relative time */}
       <div className="flex items-center justify-between gap-2">
         <span
-          className={`inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 ${urgencyClass.bg} ${urgencyClass.text} ${urgencyClass.ring}`}
+          className={`inline-flex items-center gap-1 text-xs font-medium uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 ${urgencyClass.bg} ${urgencyClass.text} ${urgencyClass.ring}`}
         >
           {urgencyLabel}
         </span>
-        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
           <Clock className="w-3 h-3" aria-hidden="true" />
           {relative(escalation.created_at, locale)}
         </span>
@@ -124,7 +125,7 @@ export function EscalationCard({
       <button
         type="button"
         onClick={() => onOpen(escalation.id)}
-        className="w-full text-left space-y-1 focus:outline-none focus:ring-2 focus:ring-primary rounded-md"
+        className="w-full text-left space-y-1 focus:outline-none focus:ring-2 focus:ring-primary rounded-sm"
         aria-label={`Open escalation ${escalation.id}`}
       >
         <p className="text-sm font-semibold text-foreground tabular-nums">
@@ -145,34 +146,36 @@ export function EscalationCard({
       {(showClaim || showAssign || showResolve) && (
         <div className="flex flex-wrap items-center gap-2 pt-1">
           {showClaim && (
-            <button
-              type="button"
+            <Button
+              size="sm"
+              hideArrow
               onClick={() => onClaim(escalation.id)}
-              className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.97] transition"
             >
               <Hand className="w-3.5 h-3.5" aria-hidden="true" />
               {t('inmobiliaria.ai.cobranza.escalaciones.actions.claim')}
-            </button>
+            </Button>
           )}
           {showAssign && (
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
+              hideArrow
               onClick={() => onAssign(escalation.id)}
-              className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition"
             >
               <UserPlus className="w-3.5 h-3.5" aria-hidden="true" />
               {t('inmobiliaria.ai.cobranza.escalaciones.actions.assign')}
-            </button>
+            </Button>
           )}
           {showResolve && (
-            <button
-              type="button"
+            <Button
+              variant={showAssign ? 'secondary' : 'default'}
+              size="sm"
+              hideArrow
               onClick={() => onResolve(escalation.id)}
-              className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-2.5 py-1 rounded-md bg-emerald-600 dark:bg-emerald-700 text-white hover:opacity-90 active:scale-[0.97] transition"
             >
               <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
               {t('inmobiliaria.ai.cobranza.escalaciones.actions.resolve')}
-            </button>
+            </Button>
           )}
         </div>
       )}

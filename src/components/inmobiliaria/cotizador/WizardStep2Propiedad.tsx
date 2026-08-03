@@ -2,6 +2,7 @@
 // Phase 30 plan 30-05 (COTI-UI-02)
 
 import { Minus, Plus } from '@phosphor-icons/react'
+import { SegmentedControl } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -62,39 +63,31 @@ export function WizardStep2Propiedad({
               // parent controls errors via validateStep2 — blur just ensures field is touched
             }
           }}
-          className={errors.canonCop ? 'border-rose-500 focus-visible:ring-rose-500/20' : ''}
+          className={errors.canonCop ? 'border-danger/40 focus-visible:ring-danger/20' : ''}
         />
         {errors.canonCop && (
-          <p className="text-sm text-rose-600 dark:text-rose-400">{errors.canonCop}</p>
+          <p className="text-sm text-danger">{errors.canonCop}</p>
         )}
       </div>
 
-      {/* Tipo de inmueble — 4 toggle cards */}
+      {/* Tipo de inmueble — selector excluyente (UI-DS-CONTRACT §3) */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground">
           {t('inmobiliaria.ai.cotizador.nueva.step2.tipoLabel')}
         </label>
-        <div className="grid grid-cols-2 gap-2">
-          {TIPO_OPTIONS.map(tipo => {
-            const isActive = value.tipoInmueble === tipo
-            return (
-              <button
-                key={tipo}
-                type="button"
-                onClick={() => onChange('tipoInmueble', tipo)}
-                className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary'
-                    : 'border-border bg-card text-foreground hover:bg-muted'
-                }`}
-              >
-                {t(`inmobiliaria.ai.cotizador.nueva.step2.tipoOptions.${tipo}`)}
-              </button>
-            )
-          })}
-        </div>
+        {/* value vacío → ningún segmento activo (preserva la validación canProceed) */}
+        <SegmentedControl<TipoInmueble>
+          fullWidth
+          aria-label={t('inmobiliaria.ai.cotizador.nueva.step2.tipoLabel')}
+          value={value.tipoInmueble as TipoInmueble}
+          onChange={tipo => onChange('tipoInmueble', tipo)}
+          options={TIPO_OPTIONS.map(tipo => ({
+            value: tipo,
+            label: t(`inmobiliaria.ai.cotizador.nueva.step2.tipoOptions.${tipo}`),
+          }))}
+        />
         {errors.tipoInmueble && (
-          <p className="text-sm text-rose-600 dark:text-rose-400">{errors.tipoInmueble}</p>
+          <p className="text-sm text-danger">{errors.tipoInmueble}</p>
         )}
       </div>
 
@@ -104,28 +97,30 @@ export function WizardStep2Propiedad({
           {t('inmobiliaria.ai.cotizador.nueva.step2.codeudoresLabel')}
         </label>
         <div className="flex items-center gap-3">
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="icon"
+            hideArrow
             disabled={value.codeudoresCount <= 0}
             onClick={() => onChange('codeudoresCount', value.codeudoresCount - 1)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Disminuir codeudores"
           >
             <Minus size={16} />
-          </button>
-          <span className="min-w-[2rem] text-center text-base font-semibold text-foreground">
+          </Button>
+          <span className="min-w-[2rem] text-center text-base font-semibold text-foreground tabular-nums">
             {value.codeudoresCount}
           </span>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="icon"
+            hideArrow
             disabled={value.codeudoresCount >= 3}
             onClick={() => onChange('codeudoresCount', value.codeudoresCount + 1)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Aumentar codeudores"
           >
             <Plus size={16} />
-          </button>
-          <span className="text-xs text-muted-foreground">
+          </Button>
+          <span className="text-xs text-fg-muted">
             {t('inmobiliaria.ai.cotizador.nueva.step2.codeudoresHint')}
           </span>
         </div>
@@ -144,7 +139,7 @@ export function WizardStep2Propiedad({
         <Button
           disabled={!canProceed}
           onClick={onNext}
-          className="flex-1 uppercase tracking-wide"
+          className="flex-1"
           size="lg"
         >
           {t('inmobiliaria.ai.cotizador.nueva.actions.siguiente')}

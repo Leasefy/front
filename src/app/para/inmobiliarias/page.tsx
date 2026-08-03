@@ -109,7 +109,7 @@ export default function InmobiliariasPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto h-12 px-6">
                       Empezar prueba gratis
                     </Button>
                   </Link>
@@ -117,7 +117,7 @@ export default function InmobiliariasPage() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-mono uppercase font-normal h-12 px-6 rounded-xl"
+                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 h-12 px-6"
                     >
                       Ver planes
                     </Button>
@@ -137,7 +137,7 @@ export default function InmobiliariasPage() {
                     { value: '10x', label: 'Más rápido' },
                   ].map((stat) => (
                     <div key={stat.label}>
-                      <p className="text-2xl md:text-3xl font-bold text-white">{stat.value}</p>
+                      <p className="text-2xl md:text-3xl font-bold text-white font-mono tabular-nums">{stat.value}</p>
                       <p className="text-[11px] text-white/50 mt-0.5">{stat.label}</p>
                     </div>
                   ))}
@@ -156,7 +156,7 @@ export default function InmobiliariasPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4, duration: 0.5 }}
-                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 shadow-2xl w-[300px]"
+                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 w-[300px]"
                   >
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
@@ -176,7 +176,7 @@ export default function InmobiliariasPage() {
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.8, type: "spring", stiffness: 400 }}
                       >
-                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                        <CheckCircle className="w-5 h-5 text-[#2C7A53]" />
                       </motion.div>
                     </motion.div>
 
@@ -189,7 +189,7 @@ export default function InmobiliariasPage() {
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-white/60 text-xs">Candidatos este mes</span>
-                          <span className="text-emerald-400 text-xs font-medium">+28%</span>
+                          <span className="text-[#2C7A53] text-xs font-medium">+28%</span>
                         </div>
                         <p className="text-2xl font-bold text-white">347</p>
                       </motion.div>
@@ -231,11 +231,11 @@ export default function InmobiliariasPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-4 -left-4 bg-card rounded-xl shadow-xl p-3 border border-border"
+                    className="absolute -bottom-4 -left-4 bg-white rounded-xl p-3 border border-border"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
-                        <Lightning className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                      <div className="w-9 h-9 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                        <Lightning className="w-4 h-4 text-neutral-600 dark:text-neutral-300" />
                       </div>
                       <div>
                         <p className="text-xs font-medium text-foreground">Scoring completado</p>
@@ -250,7 +250,7 @@ export default function InmobiliariasPage() {
         </section>
 
         {/* Problems Bento Section */}
-        <section className="bg-background py-24 lg:py-32 overflow-hidden">
+        <section className="bg-white py-24 lg:py-32 overflow-hidden">
           <div className="container-platform">
             {/* Section Title - 3 column grid */}
             <div className="grid md:grid-cols-12 gap-8 mb-14 lg:mb-20">
@@ -358,11 +358,11 @@ export default function InmobiliariasPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.3 }}
-                className="md:col-span-6 bg-muted rounded-xl p-8 h-[280px] flex flex-col justify-between"
+                className="md:col-span-6 bg-surface rounded-xl p-8 h-[280px] flex flex-col justify-between"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center mb-4">
-                    <XCircle className="w-6 h-6 text-red-500 dark:text-red-400" />
+                  <div className="w-12 h-12 rounded-xl bg-[#F8EAE7] flex items-center justify-center mb-4">
+                    <XCircle className="w-6 h-6 text-[#C4503B]" />
                   </div>
                   <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Sin integración</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
@@ -371,7 +371,7 @@ export default function InmobiliariasPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex -space-x-2">
-                    {['bg-red-400', 'bg-orange-400', 'bg-amber-400'].map((color, i) => (
+                    {['bg-[#C4503B]', 'bg-[#B7791F]', 'bg-[#B7791F]'].map((color, i) => (
                       <div key={i} className={`w-6 h-6 rounded-full ${color} border-2 border-white flex items-center justify-center`}>
                         <span className="text-[8px] text-white font-bold">!</span>
                       </div>
@@ -387,11 +387,11 @@ export default function InmobiliariasPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="md:col-span-6 bg-muted rounded-xl p-8 h-[280px] flex flex-col justify-between"
+                className="md:col-span-6 bg-surface rounded-xl p-8 h-[280px] flex flex-col justify-between"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center mb-4">
-                    <TrendUp className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                  <div className="w-12 h-12 rounded-xl bg-[#F8F0E0] flex items-center justify-center mb-4">
+                    <TrendUp className="w-6 h-6 text-[#B7791F]" />
                   </div>
                   <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Escalabilidad limitada</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">
@@ -405,7 +405,7 @@ export default function InmobiliariasPage() {
                   </div>
                   <ArrowRight className="w-5 h-5 text-muted-foreground" />
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-emerald-600">200+</span>
+                    <span className="text-2xl font-bold text-[#2C7A53]">200+</span>
                     <span className="text-xs text-muted-foreground">con<br/>automatización</span>
                   </div>
                 </div>
@@ -461,17 +461,17 @@ export default function InmobiliariasPage() {
                   </div>
                   {/* Right: Visual - Mini CRM Dashboard */}
                   <div className="hidden sm:block w-[200px] flex-shrink-0">
-                    <div className="bg-white/10 rounded-lg p-3 space-y-2">
+                    <div className="bg-white/10 rounded-md p-3 space-y-2">
                       <div className="flex items-center justify-between text-[10px]">
                         <span className="text-white/50">Candidatos</span>
-                        <span className="text-emerald-400">+12%</span>
+                        <span className="text-[#2C7A53]">+12%</span>
                       </div>
                       <div className="text-xl font-bold text-white">247</div>
                       <div className="space-y-1.5 pt-2 border-t border-white/10">
                         {[
-                          { name: 'María L.', status: 'Aprobado', color: 'bg-emerald-400' },
-                          { name: 'Nicolás R.', status: 'En revisión', color: 'bg-amber-400' },
-                          { name: 'Ana M.', status: 'Nuevo', color: 'bg-blue-400' },
+                          { name: 'María L.', status: 'Aprobado', color: 'bg-[#2C7A53]' },
+                          { name: 'Nicolás R.', status: 'En revisión', color: 'bg-[#B7791F]' },
+                          { name: 'Ana M.', status: 'Nuevo', color: 'bg-[#1A40FF]' },
                         ].map((item) => (
                           <div key={item.name} className="flex items-center gap-2 text-[9px]">
                             <div className={`w-1.5 h-1.5 rounded-full ${item.color}`} />
@@ -491,13 +491,13 @@ export default function InmobiliariasPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="md:col-span-5 bg-card rounded-xl p-6 border border-border"
+                className="md:col-span-5 bg-white rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
                   {/* Left: Content */}
                   <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center mb-4">
-                      <Cpu className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                    <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
+                      <Cpu className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
                     </div>
                     <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Scoring con IA</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed mb-4">
@@ -512,9 +512,8 @@ export default function InmobiliariasPage() {
                         <path d="M 10 55 A 40 40 0 0 1 90 55" fill="none" stroke="url(#gaugeGradient)" strokeWidth="8" strokeLinecap="round" strokeDasharray="126" strokeDashoffset="16" />
                         <defs>
                           <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#f43f5e" />
-                            <stop offset="50%" stopColor="#f59e0b" />
-                            <stop offset="100%" stopColor="#10b981" />
+                            <stop offset="0%" stopColor="#1A40FF" />
+                            <stop offset="100%" stopColor="#8A9CFF" />
                           </linearGradient>
                         </defs>
                       </svg>
@@ -522,7 +521,7 @@ export default function InmobiliariasPage() {
                         <span className="text-xl font-bold text-foreground">87</span>
                       </div>
                     </div>
-                    <span className="text-[10px] text-emerald-600 font-medium mt-1">Bajo riesgo</span>
+                    <span className="text-[10px] text-[#2C7A53] font-medium mt-1">Bajo riesgo</span>
                   </div>
                 </div>
               </motion.div>
@@ -533,13 +532,13 @@ export default function InmobiliariasPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="md:col-span-5 bg-card rounded-xl p-6 border border-border"
+                className="md:col-span-5 bg-white rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
                   {/* Left: Content */}
                   <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mb-4">
-                      <Buildings className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-10 h-10 rounded-xl bg-[#E8F3EC] flex items-center justify-center mb-4">
+                      <Buildings className="w-5 h-5 text-[#2C7A53]" />
                     </div>
                     <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">Multi-Propiedad</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed mb-4">
@@ -552,7 +551,7 @@ export default function InmobiliariasPage() {
                       {[92, 88, 96, 75, 90, 85, 78, 94, 82].map((occ, i) => (
                         <div key={i} className="aspect-square rounded bg-muted p-1 flex flex-col justify-end">
                           <div
-                            className={`w-full rounded-sm ${occ > 85 ? 'bg-emerald-400' : occ > 70 ? 'bg-amber-400' : 'bg-red-400'}`}
+                            className={`w-full rounded-sm ${occ > 85 ? 'bg-[#2C7A53]' : occ > 70 ? 'bg-[#B7791F]' : 'bg-[#C4503B]'}`}
                             style={{ height: `${occ * 0.6}%` }}
                           />
                         </div>
@@ -572,7 +571,7 @@ export default function InmobiliariasPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.3 }}
-                className="md:col-span-7 bg-slate-900 rounded-xl p-6 relative overflow-hidden"
+                className="md:col-span-7 bg-[#6B6B6B] rounded-xl p-6 relative overflow-hidden"
               >
                 <div className="flex gap-6">
                   {/* Left: Content */}
@@ -594,20 +593,20 @@ export default function InmobiliariasPage() {
                   </div>
                   {/* Right: Visual - Code Terminal */}
                   <div className="hidden sm:block w-[180px] flex-shrink-0">
-                    <div className="bg-slate-800 rounded-lg overflow-hidden border border-slate-700">
-                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-slate-700">
-                        <div className="w-2 h-2 rounded-full bg-red-400/80" />
-                        <div className="w-2 h-2 rounded-full bg-amber-400/80" />
-                        <div className="w-2 h-2 rounded-full bg-emerald-400/80" />
-                        <span className="text-[8px] text-slate-500 ml-1.5 font-mono">terminal</span>
+                    <div className="bg-[#6B6B6B] rounded-md overflow-hidden border border-[#6B6B6B]">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-[#6B6B6B]">
+                        <div className="w-2 h-2 rounded-full bg-[#C4503B]/80" />
+                        <div className="w-2 h-2 rounded-full bg-[#B7791F]/80" />
+                        <div className="w-2 h-2 rounded-full bg-[#2C7A53]/80" />
+                        <span className="text-[8px] text-[#6B6B6B] ml-1.5 font-mono">terminal</span>
                       </div>
                       <div className="p-2.5 font-mono text-[9px] leading-relaxed">
-                        <div><span className="text-emerald-400">GET</span> <span className="text-slate-400">/candidates</span></div>
-                        <div className="text-slate-500 mt-1">{"{"}</div>
-                        <div className="text-slate-400 pl-2">&quot;id&quot;: <span className="text-cyan-400">1247</span>,</div>
-                        <div className="text-slate-400 pl-2">&quot;score&quot;: <span className="text-emerald-400">87</span>,</div>
-                        <div className="text-slate-400 pl-2">&quot;risk&quot;: <span className="text-green-400">&quot;low&quot;</span></div>
-                        <div className="text-slate-500">{"}"}</div>
+                        <div><span className="text-[#2C7A53]">GET</span> <span className="text-[#6B6B6B]">/candidates</span></div>
+                        <div className="text-[#6B6B6B] mt-1">{"{"}</div>
+                        <div className="text-[#6B6B6B] pl-2">&quot;id&quot;: <span className="text-[#1A40FF]">1247</span>,</div>
+                        <div className="text-[#6B6B6B] pl-2">&quot;score&quot;: <span className="text-[#2C7A53]">87</span>,</div>
+                        <div className="text-[#6B6B6B] pl-2">&quot;risk&quot;: <span className="text-[#2C7A53]">&quot;low&quot;</span></div>
+                        <div className="text-[#6B6B6B]">{"}"}</div>
                       </div>
                     </div>
                   </div>
@@ -620,12 +619,12 @@ export default function InmobiliariasPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="md:col-span-6 bg-card rounded-xl p-6 border border-border"
+                className="md:col-span-6 bg-white rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mb-4">
-                      <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <div className="w-10 h-10 rounded-xl bg-[#EEF1FF] flex items-center justify-center mb-4">
+                      <FileText className="w-5 h-5 text-[#1A40FF]" />
                     </div>
                     <h3 className="text-foreground text-lg font-mono uppercase font-normal mb-2">Contratos Digitales</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">
@@ -642,7 +641,7 @@ export default function InmobiliariasPage() {
                         <div className="h-1 bg-border rounded w-1/2" />
                       </div>
                       <div className="absolute bottom-2 right-2">
-                        <CheckCircle className="w-4 h-4 text-blue-500" />
+                        <CheckCircle className="w-4 h-4 text-[#1A40FF]" />
                       </div>
                     </div>
                     <span className="text-[9px] text-muted-foreground mt-1.5">Firmado</span>
@@ -655,12 +654,12 @@ export default function InmobiliariasPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.5 }}
-                className="md:col-span-6 bg-card rounded-xl p-6 border border-border"
+                className="md:col-span-6 bg-white rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center mb-4">
-                      <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                    <div className="w-10 h-10 rounded-xl bg-[#F8F0E0] flex items-center justify-center mb-4">
+                      <Shield className="w-5 h-5 text-[#B7791F]" />
                     </div>
                     <h3 className="text-foreground text-lg font-mono uppercase font-normal mb-2">Seguro de Arriendo</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">
@@ -670,8 +669,8 @@ export default function InmobiliariasPage() {
                   {/* Visual - Shield with checkmark */}
                   <div className="hidden sm:flex flex-col items-center justify-center w-[80px]">
                     <div className="relative">
-                      <Shield className="w-12 h-12 text-amber-200 fill-amber-100" />
-                      <CheckCircle className="w-5 h-5 text-amber-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                      <Shield className="w-12 h-12 text-[#B7791F] fill-[#B7791F]" />
+                      <CheckCircle className="w-5 h-5 text-[#B7791F] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                     </div>
                     <span className="text-[9px] text-muted-foreground mt-1.5">100% cubierto</span>
                   </div>
@@ -682,7 +681,7 @@ export default function InmobiliariasPage() {
         </section>
 
         {/* Testimonials Section */}
-        <section className="bg-background overflow-hidden">
+        <section className="bg-white overflow-hidden">
           <div className="container-platform py-[80px] pb-[100px]">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
               <motion.div

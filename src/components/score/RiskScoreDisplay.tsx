@@ -117,9 +117,9 @@ export function RiskScoreDisplay({
             className={showAnimation ? 'animate-scale-in' : ''}
           />
           <div className="flex flex-col">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-fg-muted">
               Score:{' '}
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-fg font-mono tabular-nums">
                 {riskScore.numericScore}/100
               </span>
             </span>
@@ -157,13 +157,13 @@ export function RiskScoreDisplay({
           />
           <div className="flex flex-col">
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-foreground">
+              <span className="text-2xl font-bold text-fg font-mono tabular-nums">
                 {riskScore.numericScore}
               </span>
-              <span className="text-lg text-muted-foreground">/100</span>
+              <span className="text-lg text-fg-muted font-mono tabular-nums">/100</span>
             </div>
             <span className={cn('text-sm font-medium', colors.text)}>{label}</span>
-            <span className="text-xs text-muted-foreground mt-1">{candidate.fullName}</span>
+            <span className="text-xs text-fg-subtle mt-1">{candidate.fullName}</span>
           </div>
         </div>
       )}
@@ -194,8 +194,8 @@ export function RiskScoreDisplay({
             onClick={() => setShowBreakdown(!showBreakdown)}
             aria-expanded={showBreakdown}
             className={cn(
-              'flex items-center gap-2 text-sm text-muted-foreground',
-              'hover:text-foreground transition-colors w-full'
+              'flex items-center gap-2 text-sm text-fg-muted',
+              'hover:text-fg transition-colors w-full'
             )}
           >
             <CaretDown

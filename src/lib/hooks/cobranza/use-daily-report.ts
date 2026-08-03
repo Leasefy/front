@@ -99,7 +99,7 @@ export function useDailyReport(): UseDailyReportResult {
   }, [agencyId])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     void fetchOnce()
   }, [fetchOnce, agencyId])
 
@@ -174,7 +174,7 @@ export function useDailyReportHistory(days = 30): UseDailyReportHistoryResult {
   )
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     setIsLoading(true)
     void fetchPage(null, false)
   }, [agencyId, fetchPage])

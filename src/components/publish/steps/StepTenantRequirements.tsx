@@ -45,27 +45,27 @@ function RequirementSection({
   children,
 }: RequirementSectionProps) {
   return (
-    <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#2a2a2c]">
+    <div className="p-4 rounded-[20px] border border-border bg-surface">
       <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
         <div className="min-w-0">
-          <h4 className="text-sm font-medium text-neutral-900 dark:text-white">
+          <h4 className="text-sm font-medium text-fg">
             {title}
           </h4>
           {description && (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+            <p className="text-xs text-fg-muted mt-0.5">
               {description}
             </p>
           )}
         </div>
-        <div className="flex items-center shrink-0 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 p-0.5">
+        <div className="flex items-center shrink-0 rounded-full border border-border bg-surface-muted p-0.5">
           <button
             type="button"
             onClick={() => { if (isNonNegotiable) onToggleNonNegotiable(); }}
             className={cn(
-              'flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200',
+              'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200',
               !isNonNegotiable
-                ? 'bg-white dark:bg-[#2a2a2c] text-neutral-900 dark:text-white shadow-sm'
-                : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300'
+                ? 'bg-surface text-fg'
+                : 'text-fg-subtle hover:text-fg-muted'
             )}
           >
             <LockOpen className="w-3 h-3" />
@@ -75,10 +75,10 @@ function RequirementSection({
             type="button"
             onClick={() => { if (!isNonNegotiable) onToggleNonNegotiable(); }}
             className={cn(
-              'flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200',
+              'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200',
               isNonNegotiable
-                ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
-                : 'text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300'
+                ? 'bg-primary text-primary-fg'
+                : 'text-fg-subtle hover:text-fg-muted'
             )}
           >
             <Lock className="w-3 h-3" />
@@ -124,10 +124,10 @@ export function StepTenantRequirements() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-medium text-neutral-900 dark:text-white mb-1">
+        <h3 className="text-sm font-medium text-fg mb-1">
           Define el perfil de tu inquilino ideal
         </h3>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="text-sm text-fg-muted">
           Especifica tus requisitos y preferencias. Marca como &quot;Innegociable&quot; los requisitos obligatorios.
         </p>
       </div>
@@ -151,28 +151,28 @@ export function StepTenantRequirements() {
                   type="button"
                   onClick={() => toggleEmployment(option.value)}
                   className={cn(
-                    'flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-left transition-all duration-200',
+                    'flex items-center gap-2.5 px-3 py-2.5 rounded-[12px] border text-left transition-all duration-200',
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                      : 'border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500'
+                      ? 'border-2 border-primary bg-primary-soft'
+                      : 'border-border hover:border-border-strong'
                   )}
                 >
                   <div
                     className={cn(
-                      'w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
+                      'w-4 h-4 rounded-[5px] flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
                       isSelected
-                        ? 'bg-indigo-600 border-indigo-600'
-                        : 'border-neutral-300 dark:border-neutral-500'
+                        ? 'bg-primary border-primary'
+                        : 'border-border-strong'
                     )}
                   >
-                    {isSelected && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                    {isSelected && <Check className="w-2.5 h-2.5 text-primary-fg" weight="bold" />}
                   </div>
                   <span
                     className={cn(
                       'text-sm',
                       isSelected
-                        ? 'text-neutral-900 dark:text-white font-medium'
-                        : 'text-neutral-600 dark:text-neutral-300'
+                        ? 'text-fg font-medium'
+                        : 'text-fg-muted'
                     )}
                   >
                     {option.label}
@@ -198,7 +198,7 @@ export function StepTenantRequirements() {
               updateRequirements({ minIncomeRatio: parseInt(value) as IncomeRatio })
             }
           >
-            <SelectTrigger className="w-full rounded-lg">
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Seleccionar ingreso mínimo" />
             </SelectTrigger>
             <SelectContent>
@@ -228,34 +228,34 @@ export function StepTenantRequirements() {
                   type="button"
                   onClick={() => updateRequirements({ petsPolicy: option.value as PetsPolicy })}
                   className={cn(
-                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-lg border text-left transition-all duration-200',
+                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-[12px] border text-left transition-all duration-200',
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                      : 'border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500'
+                      ? 'border-2 border-primary bg-primary-soft'
+                      : 'border-border hover:border-border-strong'
                   )}
                 >
                   <div
                     className={cn(
                       'w-4 h-4 mt-0.5 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
                       isSelected
-                        ? 'border-indigo-600'
-                        : 'border-neutral-300 dark:border-neutral-500'
+                        ? 'border-primary'
+                        : 'border-border-strong'
                     )}
                   >
-                    {isSelected && <div className="w-2 h-2 rounded-full bg-indigo-600" />}
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-primary" />}
                   </div>
                   <div>
                     <span
                       className={cn(
                         'text-sm block',
                         isSelected
-                          ? 'text-neutral-900 dark:text-white font-medium'
-                          : 'text-neutral-600 dark:text-neutral-300'
+                          ? 'text-fg font-medium'
+                          : 'text-fg-muted'
                       )}
                     >
                       {option.label}
                     </span>
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    <span className="text-xs text-fg-subtle">
                       {option.description}
                     </span>
                   </div>
@@ -282,34 +282,34 @@ export function StepTenantRequirements() {
                   type="button"
                   onClick={() => updateRequirements({ smokingPolicy: option.value as SmokingPolicy })}
                   className={cn(
-                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-lg border text-left transition-all duration-200',
+                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-[12px] border text-left transition-all duration-200',
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                      : 'border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500'
+                      ? 'border-2 border-primary bg-primary-soft'
+                      : 'border-border hover:border-border-strong'
                   )}
                 >
                   <div
                     className={cn(
                       'w-4 h-4 mt-0.5 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
                       isSelected
-                        ? 'border-indigo-600'
-                        : 'border-neutral-300 dark:border-neutral-500'
+                        ? 'border-primary'
+                        : 'border-border-strong'
                     )}
                   >
-                    {isSelected && <div className="w-2 h-2 rounded-full bg-indigo-600" />}
+                    {isSelected && <div className="w-2 h-2 rounded-full bg-primary" />}
                   </div>
                   <div>
                     <span
                       className={cn(
                         'text-sm block',
                         isSelected
-                          ? 'text-neutral-900 dark:text-white font-medium'
-                          : 'text-neutral-600 dark:text-neutral-300'
+                          ? 'text-fg font-medium'
+                          : 'text-fg-muted'
                       )}
                     >
                       {option.label}
                     </span>
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    <span className="text-xs text-fg-subtle">
                       {option.description}
                     </span>
                   </div>
@@ -339,17 +339,17 @@ export function StepTenantRequirements() {
                   updateRequirements({ maxOccupants: parseInt(e.target.value) || 0 })
                 }
                 placeholder="Sin límite"
-                className="w-full rounded-lg"
+                className="w-full font-mono tabular-nums"
               />
-              <span className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
+              <span className="text-xs text-fg-subtle whitespace-nowrap">
                 {requirements.maxOccupants === 0 ? 'Sin límite' : 'personas'}
               </span>
             </div>
           </RequirementSection>
 
           {/* Children Policy - No non-negotiable toggle for this one */}
-          <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#2a2a2c]">
-            <h4 className="text-sm font-medium text-neutral-900 dark:text-white mb-3">
+          <div className="p-4 rounded-[20px] border border-border bg-surface">
+            <h4 className="text-sm font-medium text-fg mb-3">
               Niños
             </h4>
             <Select
@@ -358,7 +358,7 @@ export function StepTenantRequirements() {
                 updateRequirements({ childrenPolicy: value as ChildrenPolicy })
               }
             >
-              <SelectTrigger className="w-full rounded-lg">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Seleccionar" />
               </SelectTrigger>
               <SelectContent>
@@ -386,7 +386,7 @@ export function StepTenantRequirements() {
               updateRequirements({ minLeaseDuration: parseInt(value) as LeaseDuration })
             }
           >
-            <SelectTrigger className="w-full rounded-lg">
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Seleccionar duración" />
             </SelectTrigger>
             <SelectContent>
@@ -419,34 +419,34 @@ export function StepTenantRequirements() {
                   type="button"
                   onClick={() => toggleVerification(option.key)}
                   className={cn(
-                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-lg border text-left transition-all duration-200',
+                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-[12px] border text-left transition-all duration-200',
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                      : 'border-neutral-200 dark:border-neutral-600 hover:border-neutral-300 dark:hover:border-neutral-500'
+                      ? 'border-2 border-primary bg-primary-soft'
+                      : 'border-border hover:border-border-strong'
                   )}
                 >
                   <div
                     className={cn(
-                      'w-4 h-4 mt-0.5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
+                      'w-4 h-4 mt-0.5 rounded-[5px] flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
                       isSelected
-                        ? 'bg-indigo-600 border-indigo-600'
-                        : 'border-neutral-300 dark:border-neutral-500'
+                        ? 'bg-primary border-primary'
+                        : 'border-border-strong'
                     )}
                   >
-                    {isSelected && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                    {isSelected && <Check className="w-2.5 h-2.5 text-primary-fg" weight="bold" />}
                   </div>
                   <div>
                     <span
                       className={cn(
                         'text-sm block',
                         isSelected
-                          ? 'text-neutral-900 dark:text-white font-medium'
-                          : 'text-neutral-600 dark:text-neutral-300'
+                          ? 'text-fg font-medium'
+                          : 'text-fg-muted'
                       )}
                     >
                       {option.label}
                     </span>
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    <span className="text-xs text-fg-subtle">
                       {option.description}
                     </span>
                   </div>
@@ -472,10 +472,10 @@ export function StepTenantRequirements() {
 
         if (nonNegotiableCount > 0) {
           return (
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-md text-xs font-medium">
+            <p className="text-sm text-fg-muted">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-soft text-primary rounded-full text-xs font-medium">
                 <Lock className="w-3 h-3" />
-                {nonNegotiableCount}
+                <span className="font-mono tabular-nums">{nonNegotiableCount}</span>
               </span>{' '}
               requisito{nonNegotiableCount !== 1 ? 's' : ''} innegociable{nonNegotiableCount !== 1 ? 's' : ''}
             </p>

@@ -9,8 +9,10 @@ import type { PlanId, AgencyPlan } from '@/lib/types/subscription';
 import { AGENCY_PLANS } from '@/lib/constants/subscription-plans';
 
 /**
- * Hook to get the current user's subscription
- * Returns the subscription (defaults to free plan on error)
+ * Hook to get the current user's subscription.
+ * On error, sets `error` and leaves `subscription` as null — does NOT default
+ * to any plan. Callers must distinguish three states: `isLoading`, `error`,
+ * and a real `subscription`. Use `refetch` to retry after a transient failure.
  */
 export function useMySubscription() {
   const [subscription, setSubscription] = useState<DisplaySubscription | null>(null);
@@ -24,18 +26,13 @@ export function useMySubscription() {
       const data = await subscriptionsApi.getMySubscription();
       setSubscription(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar suscripcion');
-      // Default to base tier on error
-      setSubscription({
-        id: '',
-        userId: '',
-        planId: 'starter',
-        status: 'active',
-        billingCycle: 'monthly',
-        currentPeriodStart: new Date().toISOString(),
-        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        cancelAtPeriodEnd: false,
-      });
+      // Surface the real error — do NOT silently fallback to starter plan.
+      // A 5xx or network error means we could not load the subscription;
+      // silently degrading to starter could hide paid features from paying users.
+      // The caller should check `error` and show "no pudimos cargar tu plan".
+      setError(err instanceof Error ? err.message : 'No pudimos cargar tu plan. Intentá de nuevo.');
+      // Leave `subscription` as null so UIs that render based on plan cannot
+      // accidentally use stale/incorrect plan data.
     } finally {
       setIsLoading(false);
     }

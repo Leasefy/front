@@ -57,36 +57,36 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
         className="max-w-md w-full text-center"
       >
         {/* Icon */}
-        <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-indigo-100 to-indigo-50 dark:from-indigo-950/50 dark:to-indigo-900/30 border border-indigo-100 dark:border-indigo-800/50 flex items-center justify-center">
-          <ClipboardText className="w-10 h-10 text-indigo-600 dark:text-indigo-400" />
+        <div className="w-20 h-20 mx-auto mb-6 rounded-xl bg-[#EEF1FF] dark:bg-[#1A40FF]/12 border border-[#1A40FF]/30 dark:border-[#1A40FF]/40 flex items-center justify-center">
+          <ClipboardText className="w-10 h-10 text-[#1A40FF] dark:text-[#5570FF]" />
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-3">
+        <h2 className="text-2xl font-semibold text-fg dark:text-white mb-3">
           {locale === 'es' ? 'Completa tu perfil' : 'Complete your profile'}
         </h2>
 
         {/* Context-specific message */}
-        <p className="text-neutral-500 dark:text-neutral-400 mb-6 leading-relaxed">
+        <p className="text-fg-muted dark:text-fg-subtle mb-6 leading-relaxed">
           {locale === 'es' ? contextMessage.es : contextMessage.en}
         </p>
 
         {/* Progress indicator */}
         <div className="mb-8 px-4">
-          <div className="flex items-center justify-between text-sm text-neutral-500 dark:text-neutral-400 mb-2">
+          <div className="flex items-center justify-between text-sm text-fg-muted dark:text-fg-subtle mb-2">
             <span>
               {locale === 'es' ? 'Progreso del perfil' : 'Profile progress'}
             </span>
-            <span className="font-medium text-neutral-700 dark:text-neutral-300">
+            <span className="font-medium text-fg dark:text-fg-subtle">
               {completedSteps.length}/{totalSteps}
             </span>
           </div>
-          <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progressPercentage}%` }}
               transition={{ duration: 0.8, ease: 'easeOut' }}
-              className="h-full bg-indigo-600 dark:bg-indigo-600 rounded-full"
+              className="h-full bg-[#1A40FF] dark:bg-[#5570FF] rounded-full"
             />
           </div>
         </div>
@@ -102,8 +102,8 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
                 className={cn(
                   'w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors',
                   isCompleted
-                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500'
+                    ? 'bg-[#E8F3EC] dark:bg-[#2C7A53]/15 text-[#2C7A53] dark:text-[#3EAE70]'
+                    : 'bg-surface-muted dark:bg-ink text-fg-subtle dark:text-fg-muted'
                 )}
               >
                 {isCompleted ? (
@@ -119,7 +119,7 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
         {/* CTA Button */}
         <Link
           href="/onboarding/inquilino"
-          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium rounded-full transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#1A40FF] hover:opacity-90 dark:bg-[#1A40FF] dark:hover:opacity-90 text-white font-medium rounded-full transition-colors"
         >
           {completedSteps.length > 0
             ? (locale === 'es' ? 'Continuar perfil' : 'Continue profile')
@@ -128,11 +128,11 @@ export function CompleteProfileFirst({ context = 'rental' }: CompleteProfileFirs
         </Link>
 
         {/* Secondary link */}
-        <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="mt-4 text-sm text-fg-muted dark:text-fg-subtle">
           {locale === 'es' ? '¿Prefieres explorar primero?' : 'Prefer to explore first?'}{' '}
           <Link
             href="/inquilino/explorar"
-            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
+            className="text-[#1A40FF] dark:text-[#5570FF] hover:text-[#1A40FF] dark:hover:text-[#1A40FF] font-medium"
           >
             {locale === 'es' ? 'Ver propiedades' : 'Browse properties'}
           </Link>

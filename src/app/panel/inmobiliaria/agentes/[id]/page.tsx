@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui';
 import {
   CaretLeft,
   Users,
@@ -23,6 +24,7 @@ import { AgenteProfile } from '@/components/inmobiliaria/AgenteProfile';
 import { AgenteMetrics } from '@/components/inmobiliaria/AgenteMetrics';
 import { AgentePropertyList } from '@/components/inmobiliaria/AgentePropertyList';
 import { AgentePipeline } from '@/components/inmobiliaria/AgentePipeline';
+import { AgenteHorarioVisitas } from '@/components/inmobiliaria/AgenteHorarioVisitas';
 
 /**
  * Agente Detail Page
@@ -55,23 +57,24 @@ function AgenteDetailContent() {
   if (!agente) {
     return (
       <div className="p-4 md:p-6">
-        <div className="max-w-lg mx-auto text-center py-16">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <Users className="w-8 h-8 text-neutral-400" />
+        <div className="max-w-lg mx-auto flex flex-col items-center text-center py-16 gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-surface-muted flex items-center justify-center">
+            <Users weight="duotone" className="w-6 h-6 text-fg-muted" />
           </div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
-            {t('inmobiliaria.agentes.notFound')}
-          </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-            {t('inmobiliaria.agentes.notFoundDesc')}
-          </p>
-          <Link
-            href="/panel/inmobiliaria/agentes"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors"
-          >
-            <CaretLeft className="w-4 h-4" />
-            {t('inmobiliaria.agentes.backToList')}
-          </Link>
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-semibold tracking-tight text-fg">
+              {t('inmobiliaria.agentes.notFound')}
+            </h1>
+            <p className="text-sm text-fg-muted">
+              {t('inmobiliaria.agentes.notFoundDesc')}
+            </p>
+          </div>
+          <Button asChild hideArrow className="mt-1">
+            <Link href="/panel/inmobiliaria/agentes">
+              <CaretLeft className="w-4 h-4" />
+              {t('inmobiliaria.agentes.backToList')}
+            </Link>
+          </Button>
         </div>
       </div>
     );
@@ -83,20 +86,20 @@ function AgenteDetailContent() {
       <nav className="flex items-center gap-2 text-sm">
         <Link
           href="/panel/inmobiliaria"
-          className="text-neutral-500 dark:text-neutral-400 hover:text-indigo-500 transition-colors"
+          className="text-fg-muted hover:text-primary transition-colors"
         >
           {t('inmobiliaria.common.title')}
         </Link>
-        <span className="text-neutral-300 dark:text-neutral-600">/</span>
+        <span className="text-border">/</span>
         <Link
           href="/panel/inmobiliaria/agentes"
-          className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 hover:text-indigo-500 transition-colors"
+          className="flex items-center gap-1.5 text-fg-muted hover:text-primary transition-colors"
         >
           <CaretLeft className="w-4 h-4" />
           {t('inmobiliaria.agentes.title')}
         </Link>
-        <span className="text-neutral-300 dark:text-neutral-600">/</span>
-        <span className="text-neutral-900 dark:text-white font-medium truncate max-w-[200px]">
+        <span className="text-border">/</span>
+        <span className="text-fg font-medium truncate max-w-[200px]">
           {agente.name}
         </span>
       </nav>
@@ -118,7 +121,7 @@ function AgenteDetailContent() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5"
+            className="rounded-xl border border-border bg-card p-5"
           >
             <AgenteMetrics metrics={agente.metrics} />
           </motion.div>
@@ -133,6 +136,15 @@ function AgenteDetailContent() {
               consignaciones={consignaciones}
               onAssignProperty={handleAssignProperty}
             />
+          </motion.div>
+
+          {/* Visit working-hours — one schedule for all the agent's properties */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+          >
+            <AgenteHorarioVisitas agenteId={agenteId} />
           </motion.div>
         </div>
 
@@ -152,26 +164,28 @@ function AgenteDetailContent() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] overflow-hidden"
+            className="rounded-xl border border-border bg-card overflow-hidden"
           >
-            <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-              <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
+              <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center">
+                <Clock className="w-4 h-4 text-fg-muted" />
               </div>
-              <h3 className="font-semibold text-neutral-900 dark:text-white">
+              <h3 className="text-base font-semibold text-fg">
                 {t('inmobiliaria.agentes.detail.commissions')}
               </h3>
             </div>
-            <div className="p-8 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-                <Clock className="w-6 h-6 text-neutral-400" />
+            <div className="flex flex-col items-center p-8 text-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-surface-muted flex items-center justify-center">
+                <Clock weight="duotone" className="w-6 h-6 text-fg-muted" />
               </div>
-              <p className="text-neutral-600 dark:text-neutral-400 font-medium mb-1">
-                {t('inmobiliaria.agentes.detail.comingSoon')}
-              </p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-500">
-                {t('inmobiliaria.agentes.detail.commissionsDesc')}
-              </p>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-fg">
+                  {t('inmobiliaria.agentes.detail.comingSoon')}
+                </p>
+                <p className="text-xs text-fg-muted">
+                  {t('inmobiliaria.agentes.detail.commissionsDesc')}
+                </p>
+              </div>
             </div>
           </motion.div>
         </div>

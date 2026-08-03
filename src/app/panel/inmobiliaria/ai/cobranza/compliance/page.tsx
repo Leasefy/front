@@ -12,7 +12,7 @@
  * clarity and to defend against future server changes.
  *
  * Refs mvp:docs/DESIGN.md §1 (sobrio + warm), §4 (cards rounded-xl border
- * bg-card shadow-sm), §11 (loading state spinner), mvp:docs/COLOR_SYSTEM.md
+ * bg-card), §11 (loading state spinner), mvp:docs/COLOR_SYSTEM.md
  * (rose for warning/error, emerald for ok).
  */
 
@@ -28,10 +28,14 @@ import { HabeasDataSlaCard } from '@/components/inmobiliaria/cobranza/HabeasData
 import { ComplianceSparkline } from '@/components/inmobiliaria/cobranza/ComplianceSparkline'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { MonoLabel } from '@leasefy/cadence'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 
 function ComplianceOverviewContent() {
   const { t, locale } = useI18n()
   const { data, isLoading, error, refetch } = useComplianceOverview()
+
+  useAutoRefresh(refetch)
 
   // D-34-RES-A1 banner trigger — any open request meets the 15-day cutoff
   // by definition, but the explicit predicate stays for defense-in-depth.
@@ -102,14 +106,6 @@ function ComplianceOverviewContent() {
             </p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => void refetch()}
-          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition"
-          aria-label="refresh"
-        >
-          {locale.startsWith('es') ? 'Actualizar' : 'Refresh'}
-        </button>
       </div>
 
       {/* Page-level red banner — D-34-RES-A1 trigger remaining_days <= 15 */}
@@ -117,15 +113,15 @@ function ComplianceOverviewContent() {
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-start gap-3"
+          className="rounded-xl border border-danger/30 bg-danger-soft p-4 flex items-start gap-3"
           role="alert"
         >
           <Warning
-            className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5"
+            className="w-5 h-5 text-danger flex-shrink-0 mt-0.5"
             weight="fill"
             aria-hidden="true"
           />
-          <p className="text-sm text-rose-700 dark:text-rose-300">
+          <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.compliance.habeasData.banner')}
           </p>
         </motion.div>
@@ -135,7 +131,7 @@ function ComplianceOverviewContent() {
       {error && !data && (
         <div
           role="alert"
-          className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400 flex items-center gap-2"
+          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
@@ -145,17 +141,17 @@ function ComplianceOverviewContent() {
       {data && (
         <>
           {/* Section 1: Ley 2300 weekly counter */}
-          <section className="rounded-xl border border-border bg-card shadow-sm p-4">
-            <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+          <section className="rounded-xl border border-border bg-card p-4">
+            <MonoLabel>
               {t('inmobiliaria.ai.cobranza.compliance.overview.ley2300Heading')}
-            </h2>
+            </MonoLabel>
             <div className="mt-3 flex items-baseline gap-3">
               <span
                 className={[
                   'text-4xl font-mono tabular-nums',
                   data.ley_2300.weekly_outside_hours_count === 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-rose-600 dark:text-rose-400 font-bold',
+                    ? 'text-success'
+                    : 'text-danger font-bold',
                 ].join(' ')}
               >
                 {data.ley_2300.weekly_outside_hours_count}
@@ -169,12 +165,12 @@ function ComplianceOverviewContent() {
           {/* Section 2: Habeas Data SLA list */}
           <section className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+              <MonoLabel>
                 {t('inmobiliaria.ai.cobranza.compliance.overview.habeasDataHeading')}
-              </h2>
+              </MonoLabel>
               <Link
                 href="/panel/inmobiliaria/ai/cobranza/compliance/opt-out"
-                className="text-xs font-mono text-primary hover:underline"
+                className="text-xs text-primary hover:underline font-medium"
               >
                 {locale.startsWith('es') ? 'Ver todos' : 'View all'}
               </Link>
@@ -195,18 +191,18 @@ function ComplianceOverviewContent() {
           </section>
 
           {/* Section 3: Retention gauge */}
-          <section className="rounded-xl border border-border bg-card shadow-sm p-4">
-            <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+          <section className="rounded-xl border border-border bg-card p-4">
+            <MonoLabel>
               {t('inmobiliaria.ai.cobranza.compliance.overview.retentionHeading')}
-            </h2>
+            </MonoLabel>
             <div className="mt-3 space-y-2">
               <div className="flex items-baseline gap-2">
                 <span
                   className={[
                     'text-3xl font-mono tabular-nums',
                     data.retention.compliance_pct >= data.retention.target
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-amber-600 dark:text-amber-400',
+                      ? 'text-success'
+                      : 'text-warning',
                   ].join(' ')}
                 >
                   {data.retention.compliance_pct}%
@@ -226,8 +222,8 @@ function ComplianceOverviewContent() {
                   className={[
                     'h-full transition-all',
                     data.retention.compliance_pct >= data.retention.target
-                      ? 'bg-emerald-500'
-                      : 'bg-amber-500',
+                      ? 'bg-success'
+                      : 'bg-warning',
                   ].join(' ')}
                   style={{
                     width: `${Math.min(100, Math.max(0, data.retention.compliance_pct))}%`,
@@ -238,10 +234,10 @@ function ComplianceOverviewContent() {
           </section>
 
           {/* Section 4: 30-day sparkline */}
-          <section className="rounded-xl border border-border bg-card shadow-sm p-4">
-            <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground mb-3">
+          <section className="rounded-xl border border-border bg-card p-4">
+            <MonoLabel className="mb-3">
               {t('inmobiliaria.ai.cobranza.compliance.overview.sparklineHeading')}
-            </h2>
+            </MonoLabel>
             <ComplianceSparkline buckets={data.sparkline.daily_buckets_30d} />
           </section>
 
@@ -251,7 +247,7 @@ function ComplianceOverviewContent() {
               <Link
                 key={href}
                 href={href}
-                className="rounded-xl border border-border bg-card shadow-sm p-4 hover:border-primary hover:bg-accent/30 transition flex items-center gap-3"
+                className="rounded-xl border border-border bg-card p-4 hover:border-primary hover:bg-accent/30 transition flex items-center gap-3"
               >
                 <Icon className="w-5 h-5 text-primary" aria-hidden="true" />
                 <span className="text-sm font-medium text-foreground">{title}</span>

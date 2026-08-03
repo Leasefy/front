@@ -10,6 +10,8 @@ import {
   ChartBar,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
+import { SegmentedControl, MonoLabel } from '@leasefy/cadence';
+import { Switch } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -47,12 +49,12 @@ const AGENT_TYPES: AgentType[] = [
 // ============================================================================
 
 const DOT_COLORS: Record<string, string> = {
-  emerald: 'bg-emerald-500',
-  blue: 'bg-blue-500',
-  amber: 'bg-amber-500',
-  purple: 'bg-purple-500',
-  pink: 'bg-pink-500',
-  indigo: 'bg-indigo-600',
+  emerald: 'bg-success',
+  blue: 'bg-primary',
+  amber: 'bg-warning',
+  purple: 'bg-surface-muted',
+  pink: 'bg-surface-muted',
+  indigo: 'bg-primary',
 };
 
 // ============================================================================
@@ -128,15 +130,15 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
       {/* Category toggles */}
       <div
         className={cn(
-          'rounded-xl border border-neutral-200 dark:border-border',
-          'bg-white dark:bg-card',
-          'divide-y divide-neutral-100 dark:divide-border'
+          'rounded-xl border border-border',
+          'bg-surface',
+          'divide-y divide-border-faint'
         )}
       >
         {AGENT_TYPES.map((agentType) => {
           const meta = AGENT_METADATA[agentType];
           const AgentIcon = AGENT_ICON_MAP[meta.icon];
-          const dotColor = DOT_COLORS[meta.color] ?? 'bg-neutral-400';
+          const dotColor = DOT_COLORS[meta.color] ?? 'bg-fg-subtle';
           const isEnabled = preferences.notifications.categories[agentType];
 
           return (
@@ -159,66 +161,33 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                 </span>
               </div>
 
-              {/* Toggle switch */}
-              <button
-                onClick={() => handleToggle(agentType)}
-                className={cn(
-                  'relative w-9 h-5 rounded-full transition-colors duration-200',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
-                  isEnabled
-                    ? 'bg-indigo-600'
-                    : 'bg-neutral-300 dark:bg-neutral-600'
-                )}
-                role="switch"
-                aria-checked={isEnabled}
+              {/* Toggle switch — Cadence Switch */}
+              <Switch
+                checked={isEnabled}
+                onCheckedChange={() => handleToggle(agentType)}
                 aria-label={t('beta.preferences.notifications.toggleLabel', { agent: meta.label })}
-              >
-                <span
-                  className={cn(
-                    'absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm',
-                    'transition-transform duration-200',
-                    isEnabled ? 'translate-x-4' : 'translate-x-0'
-                  )}
-                />
-              </button>
+              />
             </div>
           );
         })}
       </div>
 
-      {/* Channel selector */}
+      {/* Channel selector — Cadence SegmentedControl */}
       <div className="space-y-2">
-        <p className="text-[12px] font-medium text-muted-foreground uppercase tracking-wide px-1">
+        <MonoLabel className="block px-1 tracking-wide text-muted-foreground">
           {t('beta.preferences.notifications.channel')}
-        </p>
-        <div
-          className={cn(
-            'flex rounded-lg',
-            'bg-neutral-100 dark:bg-neutral-800/50',
-            'p-0.5'
-          )}
-        >
-          {CHANNEL_OPTIONS.map((option) => {
-            const isActive = preferences.notifications.channel === option.id;
-
-            return (
-              <button
-                key={option.id}
-                onClick={() => handleChannelChange(option.id)}
-                className={cn(
-                  'flex-1 px-3 py-1.5 rounded-md',
-                  'text-[12px] font-medium',
-                  'transition-all duration-150',
-                  isActive
-                    ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {t(option.labelKey)}
-              </button>
-            );
-          })}
-        </div>
+        </MonoLabel>
+        <SegmentedControl<NotificationPreferences['channel']>
+          fullWidth
+          size="sm"
+          aria-label={t('beta.preferences.notifications.channel')}
+          value={preferences.notifications.channel}
+          onChange={handleChannelChange}
+          options={CHANNEL_OPTIONS.map((option) => ({
+            value: option.id,
+            label: t(option.labelKey),
+          }))}
+        />
       </div>
     </section>
   );

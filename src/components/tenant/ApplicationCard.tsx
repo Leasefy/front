@@ -70,7 +70,7 @@ export function ApplicationCard({
       onClick={onClick}
       className={cn(
         'w-full text-left overflow-hidden',
-        'bg-card text-card-foreground border border-border rounded-sm shadow-subtle transition-all duration-200 hover:shadow-elevated hover:border-border/80 cursor-pointer',
+        'bg-surface text-card-foreground border border-border rounded-sm shadow-subtle transition-all duration-200 hover:shadow-elevated hover:border-border/80 cursor-pointer',
         'group',
         className
       )}
@@ -96,7 +96,7 @@ export function ApplicationCard({
           <div className="flex items-start justify-between gap-2 mb-1.5">
             <h3 className={cn(
               'text-sm sm:text-base font-medium truncate',
-              'text-foreground group-hover:text-primary',
+              'text-fg group-hover:text-primary',
               'transition-colors duration-200 ease-out'
             )}>
               {title}
@@ -107,16 +107,16 @@ export function ApplicationCard({
           {/* Location */}
           <div className={cn(
             'flex items-center gap-1 text-xs sm:text-sm mb-1',
-            'text-muted-foreground'
+            'text-fg-muted'
           )}>
             <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
             <span className="truncate">{neighborhood}, {city}</span>
           </div>
 
           {/* Price */}
-          <p className={cn('text-sm font-medium', 'text-foreground')}>
+          <p className={cn('text-sm font-medium', 'text-fg')}>
             {formatCurrency(monthlyRent)}
-            <span className={cn('text-xs font-normal', 'text-muted-foreground')}>/mes</span>
+            <span className={cn('text-xs font-normal', 'text-fg-muted')}>/mes</span>
           </p>
         </div>
       </div>
@@ -124,11 +124,11 @@ export function ApplicationCard({
       {/* Footer row - dates and tracking code */}
       <div className={cn(
         'px-3 sm:px-4 py-2.5 border-t flex items-center justify-between gap-2',
-        'border-border bg-muted/30'
+        'border-border bg-surface-muted/30'
       )}>
         <div className={cn(
           'flex items-center gap-3 sm:gap-4 text-xs min-w-0',
-          'text-muted-foreground'
+          'text-fg-muted'
         )}>
           {/* Submitted date */}
           <div className="flex items-center gap-1.5 min-w-0">
@@ -154,7 +154,7 @@ export function ApplicationCard({
               variant="ghost"
               size="sm"
               onClick={handleWithdraw}
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+              className="h-7 w-7 p-0 text-fg-muted hover:text-danger hover:bg-danger-soft"
               title="Retirar solicitud"
             >
               <X className="w-4 h-4" />

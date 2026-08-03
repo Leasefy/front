@@ -185,16 +185,15 @@ export function DocumentoTemplates({
         value={selectedCategory}
         onValueChange={(v) => setSelectedCategory(v as DocumentCategory | 'all')}
       >
-        <TabsList className="flex-wrap h-auto gap-1 bg-transparent p-0">
+        <TabsList variant="segmented" className="flex-wrap">
           {CATEGORY_TAB_KEYS.map((tab) => (
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-full px-4 py-1.5 text-sm"
             >
               {t(tab.labelKey)}
               {categoryCounts[tab.value] !== undefined && (
-                <span className="ml-1.5 text-xs opacity-70">
+                <span className="ml-1.5 font-mono text-[11px] tabular-nums opacity-70">
                   ({categoryCounts[tab.value]})
                 </span>
               )}
@@ -242,11 +241,11 @@ export function DocumentoTemplates({
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <Card className="p-4 h-full flex flex-col hover:shadow-md transition-shadow">
+                      <Card className="p-4 h-full flex flex-col hover: transition-shadow">
                         {/* Header */}
                         <div className="flex items-start gap-3 mb-3">
-                          <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                            <Icon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="duotone" />
+                          <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center shrink-0">
+                            <Icon className="w-5 h-5 text-primary" weight="duotone" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
@@ -255,7 +254,7 @@ export function DocumentoTemplates({
                               </h3>
                               {template.isDefault && (
                                 <Star
-                                  className="w-4 h-4 text-amber-500 shrink-0"
+                                  className="w-4 h-4 text-warning shrink-0"
                                   weight="fill"
                                 />
                               )}
@@ -298,7 +297,7 @@ export function DocumentoTemplates({
                           <div className="mb-4">
                             <Badge
                               variant="outline"
-                              className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+                              className="bg-warning-soft text-warning border-warning/30"
                             >
                               {t('inmobiliaria.documento.defaultTemplate')}
                             </Badge>
@@ -348,8 +347,8 @@ export function DocumentoTemplates({
                   {(() => {
                     const Icon = ICON_MAP[previewTemplate.icon] || FileText;
                     return (
-                      <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                        <Icon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="duotone" />
+                      <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center shrink-0">
+                        <Icon className="w-5 h-5 text-primary" weight="duotone" />
                       </div>
                     );
                   })()}
@@ -357,7 +356,7 @@ export function DocumentoTemplates({
                     <div className="flex items-center gap-2">
                       {previewTemplate.name}
                       {previewTemplate.isDefault && (
-                        <Star className="w-4 h-4 text-amber-500" weight="fill" />
+                        <Star className="w-4 h-4 text-warning" weight="fill" />
                       )}
                     </div>
                     <div className="text-sm font-normal text-muted-foreground">
@@ -404,10 +403,10 @@ export function DocumentoTemplates({
                   <Code className="w-4 h-4" />
                   {t('inmobiliaria.documento.variables')} ({previewTemplate.variables.length})
                 </h4>
-                <div className="bg-muted rounded-lg p-4 space-y-3">
+                <div className="bg-muted rounded-md p-4 space-y-3">
                   {previewTemplate.variables.map((variable) => (
                     <div key={variable} className="flex items-start gap-3">
-                      <code className="px-2 py-1 bg-background rounded text-sm font-mono text-indigo-600 dark:text-indigo-400 shrink-0">
+                      <code className="px-2 py-1 bg-background rounded text-sm font-mono text-primary shrink-0">
                         {variable}
                       </code>
                       <span className="text-sm text-muted-foreground">
@@ -423,7 +422,7 @@ export function DocumentoTemplates({
                 <h4 className="text-sm font-medium text-foreground mb-3">
                   {t('inmobiliaria.documento.documentPreview')}
                 </h4>
-                <div className="border rounded-lg p-8 bg-background">
+                <div className="border rounded-md p-8 bg-background">
                   <div className="max-w-md mx-auto space-y-4">
                     {/* Fake document preview */}
                     <div className="text-center mb-6">

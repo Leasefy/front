@@ -84,7 +84,7 @@ export function useCarrierSla(carrier: string): UseCarrierSlaResult {
   }, [agencyId, carrier])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     void fetchOnce()
     const id = setInterval(() => {
       void fetchOnce()

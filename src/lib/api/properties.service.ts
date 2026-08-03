@@ -3,7 +3,7 @@
  * Wraps apiClient with property-specific mapper logic
  */
 
-import { apiClient, getAccessToken } from './client';
+import { apiClient, getAccessToken, ApiError } from './client';
 import { mapBackendProperty, mapBackendAgencyProperty, TYPE_TO_BACKEND } from './properties.mapper';
 import type { BackendProperty, PaginatedResponse, PropertyFiltersParams } from './properties.types';
 import type { Property, AgencyProperty } from '@/lib/types/property';
@@ -126,6 +126,17 @@ export const propertiesApi = {
     await apiClient.delete(`/properties/${id}`);
   },
 
+  /**
+   * Get a property's images WITH their ids (GET /properties/:id).
+   * mapBackendProperty flattens images to URLs; deletion needs the ids.
+   */
+  async getImages(propertyId: string): Promise<{ id: string; url: string; order: number }[]> {
+    const bp = await apiClient.get<BackendProperty>(`/properties/${propertyId}`);
+    return [...(bp.images ?? [])]
+      .sort((a, b) => a.order - b.order)
+      .map(({ id, url, order }) => ({ id, url, order }));
+  },
+
   /** Upload an image (multipart - uses fetch directly for FormData) */
   async uploadImage(propertyId: string, file: File): Promise<{ id: string; url: string; order: number }> {
     const token = getAccessToken();
@@ -136,15 +147,21 @@ export const propertiesApi = {
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(`${BACKEND_URL}/properties/${propertyId}/images`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${BACKEND_URL}/properties/${propertyId}/images`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
+      throw new ApiError(0, `No pudimos conectarnos al servidor. ${raw}`);
+    }
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `Upload failed: ${res.status}`);
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, (body as { message?: string }).message || `Upload failed: ${res.status}`);
     }
 
     return res.json();
@@ -160,3 +177,44 @@ export const propertiesApi = {
     await apiClient.patch(`/properties/${propertyId}/images/order`, { imageIds });
   },
 };
+
+/**
+ * The backend plan-enforcement gate rejects publish-on-create with a 403
+ * ForbiddenException whose Spanish message mentions the plan limit
+ * (properties.service.ts: "Has alcanzado el limite de N propiedad(es)
+ * publicadas en tu plan actual…"). Match by status AND message content so
+ * real authorization failures are never swallowed.
+ */
+function isPlanLimitError(err: unknown): boolean {
+  return (
+    err instanceof ApiError &&
+    err.status === 403 &&
+    /l[ií]mite/i.test(err.message) &&
+    /plan/i.test(err.message)
+  );
+}
+
+export interface CreateWithFallbackResult {
+  property: Property;
+  /** true when the plan limit blocked publishing and the property landed as DRAFT */
+  publishBlocked: boolean;
+}
+
+/**
+ * Create a property published (status AVAILABLE, marketplace contract).
+ * If the backend plan limit rejects the publish (403 + plan-limit message),
+ * retry ONCE without status so the property is saved as DRAFT instead of
+ * losing the whole form. Any other error is rethrown untouched.
+ */
+export async function createPublishedWithDraftFallback(
+  data: Omit<Parameters<typeof propertiesApi.create>[0], 'status'>,
+): Promise<CreateWithFallbackResult> {
+  try {
+    const property = await propertiesApi.create({ ...data, status: 'AVAILABLE' });
+    return { property, publishBlocked: false };
+  } catch (err) {
+    if (!isPlanLimitError(err)) throw err;
+    const property = await propertiesApi.create(data);
+    return { property, publishBlocked: true };
+  }
+}

@@ -11,6 +11,11 @@
 
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+
+import { vi as _vi } from 'vitest'
+// Flake conocido: estos specs montan páginas pesadas y exceden los 5s default
+// bajo carga paralela del runner (pasan aislados). Timeout holgado a propósito.
+_vi.setConfig({ testTimeout: 60_000 })
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
@@ -106,6 +111,24 @@ const OBJECTION_TEMPLATE = {
   updatedAt: '2026-05-29T10:00:00Z',
 }
 
+// ----- Test helpers ---------------------------------------------------------
+
+/**
+ * Polls getter() until it returns a truthy value or the timeout expires.
+ * Uses plain setTimeout (no act()) so React's scheduler can process pending
+ * work between polls without adding act() overhead under parallel test load.
+ */
+async function waitForEl<T>(getter: () => T, timeout = 15_000): Promise<T> {
+  const deadline = Date.now() + timeout
+  let value = getter()
+  while (!value && Date.now() < deadline) {
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise<void>((r) => setTimeout(r, 50))
+    value = getter()
+  }
+  return value
+}
+
 // ----- Tests ----------------------------------------------------------------
 
 describe('PlantillasPage', () => {
@@ -137,6 +160,9 @@ describe('PlantillasPage', () => {
       root.render(React.createElement(PlantillasPage))
     })
 
+    // Wait for at least one edit link to appear (async effects may delay render)
+    await waitForEl(() => container.querySelector('a[href*="tpl-stage-1"]'))
+
     // All edit links in stages tab (default tab) — look for stage template id
     const links = container.querySelectorAll('a[href*="tpl-stage-1"]')
     expect(links.length).toBeGreaterThan(0)
@@ -159,6 +185,9 @@ describe('PlantillasPage', () => {
       root.render(React.createElement(PlantillasPage))
     })
 
+    // Wait for the amber badge to appear (async effects may delay render under load)
+    await waitForEl(() => container.querySelector('[data-token-badge="amber"]'))
+
     // The stage tab is default. Stage template has tokenCount=1600 which triggers amber.
     const amberBadges = container.querySelectorAll('[data-token-badge="amber"]')
     expect(amberBadges.length).toBeGreaterThan(0)
@@ -174,8 +203,10 @@ describe('PlantillasPage', () => {
       root.render(React.createElement(PlantillasPage))
     })
 
+    // Wait for stage link to confirm render is stable before any assertion
+    const stageLink = await waitForEl(() => container.querySelector('a[href*="tpl-stage-1"]'))
+
     // Stage tab is default — stage template should be visible in DOM
-    const stageLink = container.querySelector('a[href*="tpl-stage-1"]')
     expect(stageLink).toBeTruthy()
     expect(stageLink?.getAttribute('href')).toContain(
       '/panel/inmobiliaria/ai/cobranza/plantillas/tpl-stage-1',

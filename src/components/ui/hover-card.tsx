@@ -3,6 +3,8 @@
 import * as React from 'react';
 import * as HoverCardPrimitive from '@radix-ui/react-hover-card';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // ============================================================================
 // Hover Card Root
@@ -34,7 +36,9 @@ const HoverCardContent = React.forwardRef<
     align={align}
     sideOffset={sideOffset}
     className={cn(
-      'z-50 w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none',
+      // z-[400]: Dialog/Sheet viven en z-[300]; z-50 dejaría la hover-card DETRÁS
+      // del overlay del modal que la contiene. Igual que select.tsx.
+      'z-[400] w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none',
       'data-[state=open]:animate-in data-[state=closed]:animate-out',
       'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
@@ -81,13 +85,13 @@ function UserHoverCard({
   openDelay = 200,
   closeDelay = 300,
 }: UserHoverCardProps) {
-  return (
-    <HoverCard openDelay={openDelay} closeDelay={closeDelay}>
-      <HoverCardTrigger asChild>
-        {trigger}
-      </HoverCardTrigger>
-      <HoverCardContent className={cn('w-80', className)}>
-        <div className="flex gap-4">
+  // Hover is unreachable on touch devices — fall back to a tap-to-open
+  // Popover on mobile viewports. Desktop keeps the HoverCard behavior.
+  const isMobile = useIsMobile();
+
+  const body = (
+    <>
+      <div className="flex gap-4">
           {avatar && (
             <div className="shrink-0">
               <img
@@ -122,6 +126,29 @@ function UserHoverCard({
             {actions}
           </div>
         )}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          {trigger}
+        </PopoverTrigger>
+        <PopoverContent className={cn('w-80', className)}>
+          {body}
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  return (
+    <HoverCard openDelay={openDelay} closeDelay={closeDelay}>
+      <HoverCardTrigger asChild>
+        {trigger}
+      </HoverCardTrigger>
+      <HoverCardContent className={cn('w-80', className)}>
+        {body}
       </HoverCardContent>
     </HoverCard>
   );
@@ -150,28 +177,51 @@ function InfoHoverCard({
   side = 'top',
   align = 'center',
 }: InfoHoverCardProps) {
+  // Hover is unreachable on touch devices — fall back to a tap-to-open
+  // Popover on mobile viewports. Desktop keeps the HoverCard behavior.
+  const isMobile = useIsMobile();
+
+  const body = (
+    <>
+      {title && (
+        <h4 className="mb-2 text-sm font-semibold">{title}</h4>
+      )}
+      <div className="text-sm text-muted-foreground">
+        {description}
+      </div>
+      {learnMoreHref && (
+        <a
+          href={learnMoreHref}
+          className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Learn more →
+        </a>
+      )}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          {trigger}
+        </PopoverTrigger>
+        <PopoverContent side={side} align={align} className={cn('w-72', className)}>
+          {body}
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
   return (
     <HoverCard openDelay={300} closeDelay={200}>
       <HoverCardTrigger asChild>
         {trigger}
       </HoverCardTrigger>
       <HoverCardContent side={side} align={align} className={cn('w-72', className)}>
-        {title && (
-          <h4 className="mb-2 text-sm font-semibold">{title}</h4>
-        )}
-        <div className="text-sm text-muted-foreground">
-          {description}
-        </div>
-        {learnMoreHref && (
-          <a
-            href={learnMoreHref}
-            className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn more →
-          </a>
-        )}
+        {body}
       </HoverCardContent>
     </HoverCard>
   );
@@ -198,30 +248,53 @@ function PreviewHoverCard({
   url,
   className,
 }: PreviewHoverCardProps) {
+  // Hover is unreachable on touch devices — fall back to a tap-to-open
+  // Popover on mobile viewports. Desktop keeps the HoverCard behavior.
+  const isMobile = useIsMobile();
+
+  const body = (
+    <>
+      {image && (
+        <div className="aspect-video w-full bg-muted">
+          <img
+            src={image}
+            alt={title}
+            className="h-full w-full object-cover"
+          />
+        </div>
+      )}
+      <div className="p-4">
+        <h4 className="text-sm font-semibold line-clamp-1">{title}</h4>
+        {description && (
+          <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{description}</p>
+        )}
+        {url && (
+          <p className="mt-2 text-xs text-muted-foreground/60 truncate">{url}</p>
+        )}
+      </div>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          {trigger}
+        </PopoverTrigger>
+        <PopoverContent className={cn('w-80 p-0 overflow-hidden', className)}>
+          {body}
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
   return (
     <HoverCard openDelay={400} closeDelay={200}>
       <HoverCardTrigger asChild>
         {trigger}
       </HoverCardTrigger>
       <HoverCardContent className={cn('w-80 p-0 overflow-hidden', className)}>
-        {image && (
-          <div className="aspect-video w-full bg-muted">
-            <img
-              src={image}
-              alt={title}
-              className="h-full w-full object-cover"
-            />
-          </div>
-        )}
-        <div className="p-4">
-          <h4 className="text-sm font-semibold line-clamp-1">{title}</h4>
-          {description && (
-            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{description}</p>
-          )}
-          {url && (
-            <p className="mt-2 text-xs text-muted-foreground/60 truncate">{url}</p>
-          )}
-        </div>
+        {body}
       </HoverCardContent>
     </HoverCard>
   );

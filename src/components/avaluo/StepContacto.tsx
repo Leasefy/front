@@ -36,8 +36,8 @@ export function StepContacto() {
     <div className="space-y-6">
       {/* Email */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-foreground">
-          Email de contacto <span className="text-red-500">*</span>
+        <label className="text-sm font-medium text-fg">
+          Email de contacto <span className="text-danger">*</span>
         </label>
         <Input
           type="email"
@@ -50,11 +50,11 @@ export function StepContacto() {
           aria-describedby="email-hint"
         />
         {authenticatedEmail ? (
-          <p id="email-hint" className="text-xs text-muted-foreground">
+          <p id="email-hint" className="text-xs text-fg-muted">
             Usando el email de tu cuenta.
           </p>
         ) : (
-          <p id="email-hint" className="text-xs text-muted-foreground">
+          <p id="email-hint" className="text-xs text-fg-muted">
             Te enviaremos el enlace de seguimiento a este correo.
           </p>
         )}
@@ -62,7 +62,7 @@ export function StepContacto() {
 
       {/* Consents — Ley 1581 (Habeas Data) */}
       <div className="space-y-4">
-        <p className="text-sm font-medium text-foreground">
+        <p className="text-sm font-medium text-fg">
           Consentimientos de datos personales
         </p>
 
@@ -80,7 +80,7 @@ export function StepContacto() {
             />
             <label
               htmlFor="consent-avaluo"
-              className="text-sm text-foreground leading-snug cursor-pointer"
+              className="text-sm text-fg leading-snug cursor-pointer"
             >
               Autorizo a Leasefy a procesar mis datos personales para generar
               el avalúo comercial solicitado.
@@ -88,12 +88,12 @@ export function StepContacto() {
           </div>
           <p
             id="consent-avaluo-desc"
-            className="text-xs text-muted-foreground pl-7"
+            className="text-xs text-fg-muted pl-7"
           >
             Necesario para continuar.
           </p>
           {!formData.purposeAvaluo && (
-            <p className="text-xs text-amber-600 pl-7">
+            <p className="text-xs text-warning pl-7">
               Debés aceptar este consentimiento para enviar la solicitud.
             </p>
           )}
@@ -110,7 +110,7 @@ export function StepContacto() {
           />
           <label
             htmlFor="consent-dataset"
-            className="text-sm text-foreground leading-snug cursor-pointer"
+            className="text-sm text-fg leading-snug cursor-pointer"
           >
             Autorizo el uso anónimo de los datos de este inmueble en datasets
             de investigación de mercado inmobiliario. (Opcional)
@@ -128,7 +128,7 @@ export function StepContacto() {
           />
           <label
             htmlFor="consent-contacto"
-            className="text-sm text-foreground leading-snug cursor-pointer"
+            className="text-sm text-fg leading-snug cursor-pointer"
           >
             Autorizo a Leasefy a contactarme con ofertas, noticias y novedades
             del servicio por email o WhatsApp. (Opcional)
@@ -137,7 +137,7 @@ export function StepContacto() {
       </div>
 
       {/* Policy notice */}
-      <p className="text-xs text-muted-foreground leading-relaxed">
+      <p className="text-xs text-fg-muted leading-relaxed">
         Tus datos son tratados conforme a la Ley 1581 de 2012 (Habeas Data) y
         la política de privacidad de Leasefy.
       </p>

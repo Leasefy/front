@@ -34,6 +34,7 @@ import { useTemplates, type TemplateRow } from '@/lib/hooks/cobranza/use-templat
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Button, Badge } from '@/components/ui'
 import {
   Tabs,
   TabsList,
@@ -54,12 +55,12 @@ const TOKEN_AMBER_THRESHOLD = 0.8 * TOKEN_BUDGET // 1600
 
 function tokenBadgeClass(count: number): string {
   if (count >= TOKEN_BUDGET) {
-    return 'bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400'
+    return 'bg-danger-soft text-danger'
   }
   if (count >= TOKEN_AMBER_THRESHOLD) {
-    return 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300'
+    return 'bg-warning-soft text-warning'
   }
-  return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300'
+  return 'bg-muted text-muted-foreground'
 }
 
 function tokenBadgeLevel(count: number): 'normal' | 'amber' | 'rose' {
@@ -75,15 +76,15 @@ function tokenBadgeLevel(count: number): 'normal' | 'amber' | 'rose' {
 function StatusPill({ status, t }: { status: 'draft' | 'published'; t: (k: string) => string }) {
   if (status === 'published') {
     return (
-      <span className="inline-flex items-center text-xs rounded-full bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5">
+      <Badge variant="success">
         {t('inmobiliaria.ai.templates.status.published')}
-      </span>
+      </Badge>
     )
   }
   return (
-    <span className="inline-flex items-center text-xs rounded-full border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 px-2 py-0.5">
+    <Badge variant="outline">
       {t('inmobiliaria.ai.templates.status.draft')}
-    </span>
+    </Badge>
   )
 }
 
@@ -100,26 +101,26 @@ function WaPill({
 }) {
   if (status === 'approved') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5">
+      <Badge variant="success">
         <CheckCircle className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.approved')}
-      </span>
+      </Badge>
     )
   }
   if (status === 'rejected') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 px-2 py-0.5">
+      <Badge variant="destructive">
         <WarningCircle className="h-3 w-3" weight="fill" />
         {t('inmobiliaria.ai.templates.waStatus.rejected')}
-      </span>
+      </Badge>
     )
   }
   // pending
   return (
-    <span className="inline-flex items-center gap-1 text-xs rounded-full bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 px-2 py-0.5">
+    <Badge variant="warning">
       <Clock className="h-3 w-3" weight="fill" />
       {t('inmobiliaria.ai.templates.waStatus.pending')}
-    </span>
+    </Badge>
   )
 }
 
@@ -138,7 +139,7 @@ function TemplateCard({
   const level = tokenBadgeLevel(tpl.tokenCount)
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-4 flex flex-col gap-3">
+    <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3">
       {/* Top row: name + pills */}
       <div className="flex items-center flex-wrap gap-2">
         <span className="font-medium text-sm text-neutral-900 dark:text-white flex-1 min-w-0 truncate">
@@ -151,7 +152,7 @@ function TemplateCard({
       </div>
 
       {/* Body preview */}
-      <p className="text-xs font-mono text-neutral-500 dark:text-neutral-400 line-clamp-3 bg-neutral-50 dark:bg-neutral-800/50 rounded p-2">
+      <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-3 bg-neutral-50 dark:bg-neutral-800/50 rounded p-2">
         {preview || '—'}
       </p>
 
@@ -160,23 +161,27 @@ function TemplateCard({
         <div className="flex items-center gap-2">
           <span
             data-token-badge={level}
-            className={`inline-flex items-center text-xs rounded-full px-2 py-0.5 font-mono ${tokenBadgeClass(tpl.tokenCount)}`}
+            className={`inline-flex items-center text-xs rounded-full px-2 py-0.5 tabular-nums ${tokenBadgeClass(tpl.tokenCount)}`}
           >
             {tpl.tokenCount} tokens
           </span>
-          <span className="text-xs text-neutral-400 dark:text-neutral-500 font-mono tabular-nums">
+          <span className="text-xs text-neutral-400 dark:text-neutral-500 tabular-nums">
             {t('inmobiliaria.ai.templates.card.lastEdited')}:{' '}
             {new Date(tpl.updatedAt).toLocaleDateString()}
           </span>
         </div>
-        <Link
-          href={`/panel/inmobiliaria/ai/cobranza/plantillas/${tpl.id}`}
+        <Button
+          asChild
+          variant="secondary"
+          size="sm"
+          hideArrow
           aria-label={`${t('inmobiliaria.ai.templates.card.ariaEdit').replace('{name}', tpl.name)}`}
-          className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-lg text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
         >
-          <PencilSimple className="h-3.5 w-3.5" weight="bold" />
-          {t('inmobiliaria.ai.templates.card.edit')}
-        </Link>
+          <Link href={`/panel/inmobiliaria/ai/cobranza/plantillas/${tpl.id}`}>
+            <PencilSimple className="h-3.5 w-3.5" weight="bold" />
+            {t('inmobiliaria.ai.templates.card.edit')}
+          </Link>
+        </Button>
       </div>
     </div>
   )
@@ -259,7 +264,7 @@ export default function PlantillasPage() {
     return (
       <main className="p-6 lg:p-8 space-y-6">
         <header>
-          <h1 className="text-3xl font-semibold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
+          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
             {t('inmobiliaria.ai.templates.title')}
           </h1>
         </header>
@@ -281,28 +286,34 @@ export default function PlantillasPage() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
+          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
             {t('inmobiliaria.ai.templates.title')}
           </h1>
         </div>
-        <button
+        <Button
+          variant="outline"
+          size="sm"
+          hideArrow
           onClick={() => void refetch()}
-          className="inline-flex items-center gap-1 min-h-[44px] text-xs font-mono uppercase tracking-wide px-3 py-2 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition"
+          className="shrink-0"
         >
           {t('inmobiliaria.ai.templates.error.retry')}
-        </button>
+        </Button>
       </header>
 
       {/* Error banner */}
       {error && !data && (
-        <div className="rounded-lg bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 px-4 py-3 text-sm flex items-center justify-between gap-4">
+        <div className="rounded-lg bg-danger-soft border border-danger/30 text-danger px-4 py-3 text-sm flex items-center justify-between gap-4">
           <span>{t('inmobiliaria.ai.templates.error.load')}</span>
-          <button
+          <Button
+            variant="link"
+            size="sm"
+            hideArrow
             onClick={handleRetry}
-            className="underline text-sm font-medium hover:no-underline min-h-[44px] px-2"
+            className="px-0 h-auto text-danger"
           >
             {t('inmobiliaria.ai.templates.error.retry')}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -335,7 +346,7 @@ export default function PlantillasPage() {
 
       {/* Error toast — refetch failures */}
       {errorToast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 px-4 py-3 text-sm shadow-lg">
+        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-lg border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-sm">
           {errorToast}
         </div>
       )}

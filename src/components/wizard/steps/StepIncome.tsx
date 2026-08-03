@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { CurrencyDollar, Wallet, CreditCard, PiggyBank } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/format';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import {
@@ -110,10 +111,10 @@ export function StepIncome() {
   }, [availableForRent, recommendedRent]);
 
   const capacityStyles = {
-    insufficient: 'bg-red-50/50 border-red-200/50 text-red-900',
-    limited: 'bg-amber-50/50 border-amber-200/50 text-amber-900',
-    moderate: 'bg-blue-50/50 border-blue-200/50 text-blue-900',
-    good: 'bg-emerald-50/50 border-emerald-200/50 text-emerald-900',
+    insufficient: 'bg-danger-soft border-danger/30 text-danger',
+    limited: 'bg-warning-soft border-warning/30 text-warning',
+    moderate: 'bg-primary-soft border-[#1A40FF]/30 text-[#1A40FF]',
+    good: 'bg-success-soft border-success/30 text-success',
   };
 
   return (
@@ -305,7 +306,7 @@ function CurrencyInput({
       )}>
         $
       </span>
-      <input
+      <Input
         id={id}
         type="text"
         inputMode="numeric"
@@ -314,14 +315,9 @@ function CurrencyInput({
         onChange={onChange}
         onBlur={onBlur}
         className={cn(
-          'w-full h-12 rounded-sm',
-          'bg-black/5 text-foreground placeholder:text-muted-foreground',
-          'border border-border',
-          'focus:outline-none focus:ring-2 focus:ring-ring focus:border-border',
-          'transition-colors',
+          'h-12 pr-4',
           icon ? 'pl-16' : 'pl-9',
-          'pr-4',
-          hasError && 'border-red-500 focus:ring-red-500/20 focus:border-red-500'
+          hasError && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40'
         )}
       />
     </div>

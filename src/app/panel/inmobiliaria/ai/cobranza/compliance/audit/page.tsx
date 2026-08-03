@@ -22,8 +22,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
-import { CaretLeft, ClipboardText } from '@phosphor-icons/react'
+import { ClipboardText } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -32,6 +31,25 @@ import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Badge, MonoLabel } from '@leasefy/cadence'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Spinner } from '@/components/ui/spinner'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import {
   useAuditLog,
   type AuditLogFilters,
@@ -164,13 +182,6 @@ function AuditContent() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link
-            href="/panel/inmobiliaria/ai/cobranza/compliance"
-            className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
-          >
-            <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
-            {t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
-          </Link>
           <h1 className="text-h2 font-heading text-foreground mt-2">
             {t('inmobiliaria.ai.cobranza.compliance.subPages.auditTitle')}
           </h1>
@@ -183,132 +194,140 @@ function AuditContent() {
         {/* Phase 38-07 (D-38-10): export CSV button. Visible only when data
             exists per D-38-04 ("export CTA appears when data exists"). */}
         {items.length > 0 && agencyId && (
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => { void exportCsv() }}
             disabled={isExportingCsv}
-            className="inline-flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted disabled:opacity-50 text-xs font-mono uppercase tracking-wide text-foreground transition"
+            hideArrow
             aria-label={t('inmobiliaria.ai.cobranza.compliance.audit.exportCsv')}
           >
             {isExportingCsv
               ? (locale.startsWith('es') ? 'Generando...' : 'Generating...')
               : t('inmobiliaria.ai.cobranza.compliance.audit.exportCsv')}
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Filters grid */}
-      <div className="rounded-xl border border-border bg-card shadow-sm p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="rounded-xl border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {/* Actor */}
         <div>
-          <label
-            htmlFor="audit-actor"
-            className="block text-xs font-mono uppercase tracking-wide text-muted-foreground mb-1"
-          >
-            {t('inmobiliaria.ai.cobranza.compliance.filters.actor')}
+          <label htmlFor="audit-actor" className="block mb-1">
+            <MonoLabel className="text-xs text-muted-foreground">
+              {t('inmobiliaria.ai.cobranza.compliance.filters.actor')}
+            </MonoLabel>
           </label>
-          <select
-            id="audit-actor"
-            value={actor ?? ''}
-            onChange={(e) => setActor(e.target.value || undefined)}
-            className="w-full px-2 py-1.5 rounded-md border border-border bg-background text-sm"
+          <Select
+            value={actor ?? '__all__'}
+            onValueChange={(v) => setActor(v === '__all__' ? undefined : v)}
           >
-            <option value="">{locale.startsWith('es') ? 'Todos' : 'All'}</option>
-            {members.map((m) => (
-              <option key={m.id} value={m.email}>
-                {m.name} ({m.email})
-              </option>
-            ))}
-          </select>
+            <SelectTrigger id="audit-actor">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">{locale.startsWith('es') ? 'Todos' : 'All'}</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.email}>
+                  {m.name} ({m.email})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {actor && (
-            <button
-              type="button"
+            <Button
+              variant="link"
+              size="sm"
               onClick={onResetActor}
-              className="mt-1 text-xs text-primary hover:underline"
+              hideArrow
+              className="mt-1 h-auto p-0 text-xs"
             >
               {locale.startsWith('es') ? 'limpiar' : 'clear'}
-            </button>
+            </Button>
           )}
         </div>
 
         {/* Action */}
         <div>
-          <label
-            htmlFor="audit-action"
-            className="block text-xs font-mono uppercase tracking-wide text-muted-foreground mb-1"
-          >
-            {t('inmobiliaria.ai.cobranza.compliance.filters.action')}
+          <label htmlFor="audit-action" className="block mb-1">
+            <MonoLabel className="text-xs text-muted-foreground">
+              {t('inmobiliaria.ai.cobranza.compliance.filters.action')}
+            </MonoLabel>
           </label>
           {actionMode === 'enum' ? (
-            <select
-              id="audit-action"
-              value={action ?? ''}
-              onChange={(e) => {
-                const v = e.target.value
+            <Select
+              value={action ?? '__all__'}
+              onValueChange={(v) => {
                 if (v === '__custom__') {
                   setActionMode('custom')
                   setAction(undefined)
                 } else {
-                  setAction(v || undefined)
+                  setAction(v === '__all__' ? undefined : v)
                 }
               }}
-              className="w-full px-2 py-1.5 rounded-md border border-border bg-background text-sm"
             >
-              <option value="">{locale.startsWith('es') ? 'Todas' : 'All'}</option>
-              {ACTION_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-              <option value="__custom__">
-                {locale.startsWith('es') ? 'Otro...' : 'Other...'}
-              </option>
-            </select>
+              <SelectTrigger id="audit-action">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">{locale.startsWith('es') ? 'Todas' : 'All'}</SelectItem>
+                {ACTION_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={opt}>
+                    {opt}
+                  </SelectItem>
+                ))}
+                <SelectItem value="__custom__">
+                  {locale.startsWith('es') ? 'Otro...' : 'Other...'}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           ) : (
             <div className="flex gap-1">
-              <input
+              <Input
                 id="audit-action"
                 type="text"
                 value={action ?? ''}
                 onChange={(e) => setAction(e.target.value || undefined)}
                 placeholder="custom_action"
-                className="flex-1 px-2 py-1.5 rounded-md border border-border bg-background text-sm font-mono"
+                className="flex-1 font-mono"
               />
-              <button
-                type="button"
+              <Button
+                variant="link"
+                size="sm"
                 onClick={() => {
                   setActionMode('enum')
                   setAction(undefined)
                 }}
-                className="text-xs text-primary hover:underline px-2"
+                hideArrow
+                className="h-auto p-0 px-2 text-xs"
               >
                 {locale.startsWith('es') ? 'lista' : 'list'}
-              </button>
+              </Button>
             </div>
           )}
         </div>
 
         {/* Date range */}
         <div className="sm:col-span-2 md:col-span-1">
-          <label className="block text-xs font-mono uppercase tracking-wide text-muted-foreground mb-1">
+          <MonoLabel className="block text-xs text-muted-foreground mb-1">
             {t('inmobiliaria.ai.cobranza.compliance.filters.dateRange')}
-          </label>
+          </MonoLabel>
           <div className="flex gap-1">
-            <input
+            <Input
               type="date"
               value={from}
               max={to}
               onChange={(e) => setFrom(e.target.value)}
-              className="flex-1 px-2 py-1.5 rounded-md border border-border bg-background text-sm font-mono"
+              className="flex-1 font-mono"
               aria-label="from"
             />
-            <input
+            <Input
               type="date"
               value={to}
               min={from}
               max={todayYmd()}
               onChange={(e) => setTo(e.target.value)}
-              className="flex-1 px-2 py-1.5 rounded-md border border-border bg-background text-sm font-mono"
+              className="flex-1 font-mono"
               aria-label="to"
             />
           </div>
@@ -316,22 +335,21 @@ function AuditContent() {
 
         {/* Search q */}
         <div>
-          <label
-            htmlFor="audit-q"
-            className="block text-xs font-mono uppercase tracking-wide text-muted-foreground mb-1"
-          >
-            {t('inmobiliaria.ai.cobranza.compliance.filters.search')}
+          <label htmlFor="audit-q" className="block mb-1">
+            <MonoLabel className="text-xs text-muted-foreground">
+              {t('inmobiliaria.ai.cobranza.compliance.filters.search')}
+            </MonoLabel>
           </label>
-          <input
+          <Input
             id="audit-q"
             type="text"
             value={qInput}
             onChange={(e) => setQInput(e.target.value)}
             placeholder={locale.startsWith('es') ? 'mín. 8 chars' : 'min 8 chars'}
-            className="w-full px-2 py-1.5 rounded-md border border-border bg-background text-sm font-mono"
+            className="w-full font-mono"
           />
           {qInput.length > 0 && qInput.length < 8 && (
-            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+            <p className="mt-1 text-xs text-warning">
               {locale.startsWith('es')
                 ? 'Ingrese al menos 8 caracteres'
                 : 'Enter at least 8 characters'}
@@ -343,13 +361,13 @@ function AuditContent() {
       {/* Loading state (only for filter-triggered refetch — first load handled by early return) */}
       {isLoading && items.length === 0 && hasCustomFilters && (
         <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <Spinner size="md" variant="default" />
         </div>
       )}
 
       {/* Error state */}
       {error && (
-        <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400">
+        <div className="rounded-xl bg-danger-soft text-danger">
           Error: {error}
         </div>
       )}
@@ -365,28 +383,18 @@ function AuditContent() {
 
       {/* Table */}
       {items.length > 0 && (
-        <div className="rounded-xl border border-border bg-card shadow-sm overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30 border-b border-border">
-              <tr>
-                <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
-                  {locale.startsWith('es') ? 'Fecha' : 'Timestamp'}
-                </th>
-                <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
-                  {locale.startsWith('es') ? 'Actor' : 'Actor'}
-                </th>
-                <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
-                  {locale.startsWith('es') ? 'Acción' : 'Action'}
-                </th>
-                <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
-                  {locale.startsWith('es') ? 'Entidad' : 'Entity'}
-                </th>
-                <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
-                  {locale.startsWith('es') ? 'Detalles' : 'Details'}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="rounded-xl border border-border bg-card overflow-x-auto">
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-muted/30">
+              <TableRow>
+                <TableHead>{locale.startsWith('es') ? 'Fecha' : 'Timestamp'}</TableHead>
+                <TableHead>{locale.startsWith('es') ? 'Actor' : 'Actor'}</TableHead>
+                <TableHead>{locale.startsWith('es') ? 'Acción' : 'Action'}</TableHead>
+                <TableHead>{locale.startsWith('es') ? 'Entidad' : 'Entity'}</TableHead>
+                <TableHead>{locale.startsWith('es') ? 'Detalles' : 'Details'}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {items.map((row) => {
                 // Detect cedula-shaped field in details (server already
                 // redacts to "XXXXXXXX50" shape). Render via Mask so the
@@ -400,28 +408,23 @@ function AuditContent() {
                       ? ((details as Record<string, unknown>)['cedula_masked'] as string)
                       : null
                 return (
-                  <tr
-                    key={row.id}
-                    className="border-b border-border last:border-0 align-top"
-                  >
-                    <td className="px-3 py-2 font-mono tabular-nums text-xs text-foreground whitespace-nowrap">
+                  <TableRow key={row.id} className="align-top">
+                    <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-foreground whitespace-nowrap">
                       {new Date(row.occurred_at).toLocaleString(locale)}
-                    </td>
-                    <td className="px-3 py-2 font-mono text-xs text-foreground whitespace-nowrap">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 font-mono text-xs text-foreground whitespace-nowrap">
                       {row.actor_id}
-                    </td>
-                    <td className="px-3 py-2">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono uppercase bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400">
-                        {row.action}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                    </TableCell>
+                    <TableCell className="px-3 py-2">
+                      <Badge variant="primary">{row.action}</Badge>
+                    </TableCell>
+                    <TableCell className="px-3 py-2 font-mono text-xs text-muted-foreground whitespace-nowrap">
                       <div>{row.entity_type}</div>
                       <div className="text-[11px] opacity-70">
                         {row.entity_id.slice(0, 8)}…
                       </div>
-                    </td>
-                    <td className="px-3 py-2 max-w-md">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 max-w-md">
                       {cedulaMasked && (
                         <div className="mb-1">
                           <Mask
@@ -436,24 +439,25 @@ function AuditContent() {
                       <pre className="text-[11px] font-mono text-muted-foreground whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
                         {JSON.stringify(details, null, 2)}
                       </pre>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
           {hasMore && (
             <div className="p-3 border-t border-border bg-muted/20 text-center">
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => void loadMore()}
                 disabled={isLoadingMore}
-                className="text-xs font-mono uppercase tracking-wide px-4 py-2 rounded-md border border-border hover:bg-muted disabled:opacity-50 transition"
+                hideArrow
               >
                 {isLoadingMore
                   ? locale.startsWith('es') ? 'Cargando...' : 'Loading...'
                   : locale.startsWith('es') ? 'Cargar más' : 'Load more'}
-              </button>
+              </Button>
             </div>
           )}
         </div>

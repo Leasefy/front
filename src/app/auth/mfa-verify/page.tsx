@@ -2,10 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, SpinnerGap, SignOut } from '@phosphor-icons/react';
+import { ShieldCheck, SignOut } from '@phosphor-icons/react';
 import { getSupabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ForceLightMode } from '@/components/providers/ForceLightMode';
 
 export default function MfaVerifyPage() {
   const router = useRouter();
@@ -101,66 +104,66 @@ export default function MfaVerifyPage() {
   }, [code, isLoading, handleVerify]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-8">
-        {/* Icon */}
-        <div className="flex justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
-            <ShieldCheck className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+    <ForceLightMode>
+      <div className="min-h-screen flex items-center justify-center bg-bg px-4">
+        <div className="w-full max-w-sm space-y-8">
+          {/* Icon */}
+          <div className="flex justify-center">
+            <div className="w-16 h-16 rounded-[16px] bg-accent-soft flex items-center justify-center">
+              <ShieldCheck className="w-8 h-8 text-primary" weight="fill" />
+            </div>
+          </div>
+
+          {/* Title */}
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-semibold text-fg tracking-tight">
+              Verificacion de seguridad
+            </h1>
+            <p className="text-sm text-fg-muted">
+              Ingresa el codigo de 6 digitos de tu app de autenticacion
+            </p>
+          </div>
+
+          {/* Code input */}
+          <div className="space-y-4">
+            <Input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]*"
+              aria-label="Código de verificación de 6 dígitos"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onKeyDown={handleKeyDown}
+              autoFocus
+              className="h-14 text-lg text-center tracking-[0.5em] font-mono tabular-nums"
+              placeholder="000000"
+            />
+
+            <Button
+              onClick={handleVerify}
+              disabled={isLoading || code.length !== 6 || !factorId}
+              isLoading={isLoading}
+              hideArrow
+              className="w-full"
+            >
+              {isLoading ? 'Verificando...' : 'Verificar'}
+            </Button>
+          </div>
+
+          {/* Sign out link */}
+          <div className="text-center">
+            <button
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg transition-colors"
+            >
+              <SignOut className="w-4 h-4" />
+              Cerrar sesion
+            </button>
           </div>
         </div>
-
-        {/* Title */}
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">
-            Verificacion de seguridad
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Ingresa el codigo de 6 digitos de tu app de autenticacion
-          </p>
-        </div>
-
-        {/* Code input */}
-        <div className="space-y-4">
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={6}
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            onKeyDown={handleKeyDown}
-            autoFocus
-            className="w-full h-14 px-4 border border-input rounded-xl text-lg text-center tracking-[0.5em] font-mono bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
-            placeholder="000000"
-          />
-
-          <button
-            onClick={handleVerify}
-            disabled={isLoading || code.length !== 6 || !factorId}
-            className="w-full py-3.5 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-semibold rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
-          >
-            {isLoading ? (
-              <>
-                <SpinnerGap className="w-4 h-4 animate-spin" />
-                Verificando...
-              </>
-            ) : (
-              'Verificar'
-            )}
-          </button>
-        </div>
-
-        {/* Sign out link */}
-        <div className="text-center">
-          <button
-            onClick={handleSignOut}
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <SignOut className="w-4 h-4" />
-            Cerrar sesion
-          </button>
-        </div>
       </div>
-    </div>
+    </ForceLightMode>
   );
 }

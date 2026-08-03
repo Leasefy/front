@@ -2,8 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { AgentExecutionTrace, ExecutionStep, ScoringAwaitingReason } from '@/lib/types/ai-agents';
-import { agentAuthHeaders } from '@/lib/api/agent-auth';
-import { apiClient } from '@/lib/api/client';
+import { apiClient, ApiError } from '@/lib/api/client';
 // CreditCheck types live in applications.types (canonical location) to avoid
 // circular deps (CandidateDrawer → applications.service → applications.types).
 // Re-exported here so AIAgentCard.tsx can keep importing from use-agent.
@@ -69,25 +68,6 @@ export interface ScoringResult {
   creditCheck?: CreditCheck;
 }
 
-interface MatchingResult {
-  success: boolean;
-  applicationId: string;
-  candidateName: string;
-  suggestionsCount: number;
-  suggestions: {
-    propertyId: string;
-    title: string;
-    zone: string;
-    price: number;
-    compatibility: number;
-    mainReason: string;
-  }[];
-  candidateNotified: boolean;
-  agentNotified: boolean;
-  trigger: string;
-}
-
-type AgentResult = ScoringResult | MatchingResult;
 
 /** Raw EvaluationResponseDto returned by GET /evaluations/:applicationId/result. */
 interface EvaluationResponse {
@@ -165,7 +145,7 @@ function toScoringResult(body: EvaluationResponse): ScoringResult {
 export function useAgentExecution() {
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<AgentResult | null>(null);
+  const [result, setResult] = useState<ScoringResult | null>(null);
   const [trace, setTrace] = useState<AgentExecutionTrace | null>(null);
   const [awaiting, setAwaiting] = useState<ScoringAwaitingState | null>(null);
 
@@ -220,8 +200,17 @@ export function useAgentExecution() {
               }
               // else: still in progress — keep polling
             }
-          } catch {
-            // Network error on background poll — swallow and retry next tick.
+          } catch (err) {
+            if (err instanceof ApiError && err.status === 503) {
+              // Agent micro is unreachable — backend returned 503.
+              // Per contract: no credit is deducted and the evaluation state is NOT
+              // marked FAILED. Stop polling and surface the error so the user can
+              // retry manually via recheckScoring. Do NOT mark as FAILED.
+              clearBgPoll();
+              setError('Servicio temporalmente no disponible. Reintentá en unos minutos.');
+              return;
+            }
+            // Other transient network errors — swallow and retry next tick.
           }
         })();
       }, BACKGROUND_POLL_INTERVAL_MS);
@@ -354,90 +343,6 @@ export function useAgentExecution() {
     [clearBgPoll, startBackgroundPoll],
   );
 
-  // NOTE: runMatching is intentionally NOT wired into the agent card UI.
-  // Per the agent contract, manual smart-matching is not triggered from the card
-  // (it runs server-side on application events / crons). It stays exported so that
-  // existing mocks/tests keep compiling, but it is out-of-scope for the card.
-  const runMatching = useCallback(
-    async (
-      applicationId: string,
-      agencyId: string,
-      trigger: string = 'new_application',
-    ) => {
-      setIsRunning(true);
-      setError(null);
-      setResult(null);
-
-      const traceId = `trace-${Date.now()}`;
-      const steps = buildMatchingSteps();
-      setTrace({
-        id: traceId,
-        agentId: 'smart-matching',
-        title: `Matching ${applicationId}`,
-        status: 'running',
-        steps,
-        createdAt: new Date(),
-      });
-
-      try {
-        updateStepStatus(steps, 0, 'running');
-        setTrace((t) => (t ? { ...t, steps: [...steps] } : null));
-
-        const startTime = Date.now();
-
-        const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL ?? '';
-        const res = await fetch(`${agentUrl}/smart-matching`, {
-          method: 'POST',
-          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({ applicationId, agencyId, trigger }),
-        });
-
-        const data = await res.json() as MatchingResult & { error?: string; details?: string };
-        const durationMs = Date.now() - startTime;
-
-        if (!res.ok) {
-          throw new Error(data.error ?? data.details ?? 'Matching failed');
-        }
-
-        steps.forEach((_, i) => updateStepStatus(steps, i, 'completed'));
-
-        if (data.suggestions) {
-          steps[2].output = `${data.suggestionsCount} propiedades compatibles`;
-          steps[3].output = data.suggestions
-            .map(
-              (s: { title: string; compatibility: number }) =>
-                `${s.title} (${s.compatibility}%)`,
-            )
-            .join(', ');
-        }
-
-        setResult(data as MatchingResult);
-        setTrace({
-          id: traceId,
-          agentId: 'smart-matching',
-          title: `Matching ${applicationId}`,
-          status: 'completed',
-          steps,
-          totalDurationMs: durationMs,
-          conclusion: `${data.suggestionsCount} sugerencias enviadas a ${data.candidateName}`,
-          result: `${data.suggestionsCount} matches`,
-          createdAt: new Date(),
-        });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        setError(msg);
-
-        const runningIdx = steps.findIndex((s) => s.status === 'running');
-        if (runningIdx >= 0) updateStepStatus(steps, runningIdx, 'failed');
-
-        setTrace((t) => (t ? { ...t, status: 'failed', steps: [...steps] } : null));
-      } finally {
-        setIsRunning(false);
-      }
-    },
-    [],
-  );
-
   return {
     isRunning,
     error,
@@ -446,7 +351,6 @@ export function useAgentExecution() {
     awaiting,
     recheckScoring,
     runScoring,
-    runMatching,
     clearResult: () => {
       clearBgPoll();
       awaitingAppIdRef.current = null;
@@ -540,13 +444,3 @@ function buildScoringSteps(): ExecutionStep[] {
   ];
 }
 
-function buildMatchingSteps(): ExecutionStep[] {
-  return [
-    { id: 'm1', label: 'Cargar perfil del candidato', stepType: 'api', status: 'pending' },
-    { id: 'm2', label: 'Buscar en portafolio', stepType: 'search', status: 'pending' },
-    { id: 'm3', label: 'Calcular compatibilidad', stepType: 'analysis', status: 'pending' },
-    { id: 'm4', label: 'Seleccionar top 3', stepType: 'decision', status: 'pending' },
-    { id: 'm5', label: 'Enviar sugerencias', stepType: 'notification', status: 'pending' },
-    { id: 'm6', label: 'Notificar agente de zona', stepType: 'notification', status: 'pending' },
-  ];
-}

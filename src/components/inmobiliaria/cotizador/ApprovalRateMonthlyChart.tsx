@@ -17,11 +17,11 @@ import type { ApprovalRateMonthlyRow } from '@/lib/hooks/cotizador/use-insights'
 // 5-color carrier palette (D-35-05 / UI-SPEC)
 // ---------------------------------------------------------------------------
 const CARRIER_COLORS = [
-  '#6366f1', // indigo-500
-  '#14b8a6', // teal-500
-  '#f59e0b', // amber-500
-  '#8b5cf6', // violet-500
-  '#f43f5e', // rose-500
+  '#1A40FF', // cobalt (primary)
+  '#4A6BFF', // cobalt ramp 2
+  '#7B95FF', // cobalt ramp 3
+  '#ADBEFF', // cobalt ramp 4
+  '#D6DFFF', // cobalt ramp 5
 ]
 
 // ---------------------------------------------------------------------------
@@ -69,8 +69,8 @@ export function ApprovalRateMonthlyChart({
   if (isLoading && data === null) {
     return (
       <div className="h-[280px] space-y-3 animate-pulse">
-        <div className="h-4 w-32 bg-neutral-200 dark:bg-neutral-700 rounded" />
-        <div className="h-[240px] bg-neutral-100 dark:bg-neutral-800 rounded-xl" />
+        <div className="h-4 w-32 bg-surface-muted rounded" />
+        <div className="h-[240px] bg-surface-muted rounded-xl" />
       </div>
     )
   }

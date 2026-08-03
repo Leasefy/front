@@ -12,11 +12,20 @@ import {
   Percent,
   Buildings,
   UserCircle,
-  SpinnerGap,
   PaperPlaneTilt,
-  Briefcase,
 } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
+import { Button, Input, Textarea } from '@/components/ui';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { IconButton, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type { AgenteRole, AgencyRole, UserInvite } from '@/lib/types/inmobiliaria';
 
@@ -37,9 +46,34 @@ interface AgenteFormModalProps {
   isLoading?: boolean;
 }
 
-const ZONE_OPTIONS = [
-  'Norte', 'Sur', 'Este', 'Oeste', 'Centro',
-  'Chapinero', 'Usaquen', 'Suba', 'Kennedy', 'Fontibon',
+// Colombian departments grouped by natural region.
+const ZONE_GROUPS: { label: string; zones: string[] }[] = [
+  {
+    label: 'Andina',
+    zones: [
+      'Bogotá D.C.', 'Antioquia', 'Boyacá', 'Caldas', 'Cundinamarca', 'Huila',
+      'Norte de Santander', 'Quindío', 'Risaralda', 'Santander', 'Tolima',
+    ],
+  },
+  {
+    label: 'Caribe',
+    zones: [
+      'Atlántico', 'Bolívar', 'Cesar', 'Córdoba', 'La Guajira', 'Magdalena',
+      'Sucre', 'San Andrés y Providencia',
+    ],
+  },
+  {
+    label: 'Pacífica',
+    zones: ['Cauca', 'Chocó', 'Nariño', 'Valle del Cauca'],
+  },
+  {
+    label: 'Orinoquía',
+    zones: ['Arauca', 'Casanare', 'Meta', 'Vichada'],
+  },
+  {
+    label: 'Amazonía',
+    zones: ['Amazonas', 'Caquetá', 'Guainía', 'Guaviare', 'Putumayo', 'Vaupés'],
+  },
 ];
 
 export function AgenteFormModal({
@@ -63,19 +97,20 @@ export function AgenteFormModal({
   // Agent-specific fields
   const [agentRole, setAgentRole] = useState<AgenteRole>('agent');
   const [zone, setZone] = useState('');
-  const [specialization, setSpecialization] = useState<'residential' | 'commercial' | 'both'>('residential');
+  const [specialization, setSpecialization] = useState<'apartment' | 'house' | 'studio' | 'room' | 'all'>('all');
   const [commissionSplit, setCommissionSplit] = useState(50);
 
   // Member-only fields
-  const [position, setPosition] = useState('');
   const [message, setMessage] = useState('');
 
   const showAgentFields = variant === 'agent' || systemRole === 'agente';
 
-  const AGENT_ROLE_OPTIONS: { value: AgenteRole; label: string; description: string }[] = [
+  // Director is not selectable yet — only Agente and Coordinador are enabled for
+  // now. The option stays visible (disabled) so the hierarchy is discoverable.
+  const AGENT_ROLE_OPTIONS: { value: AgenteRole; label: string; description: string; disabled?: boolean }[] = [
     { value: 'agent', label: t('inmobiliaria.agente.roleAgent'), description: t('inmobiliaria.agente.roleAgentDesc') },
     { value: 'coordinator', label: t('inmobiliaria.agente.roleCoordinator'), description: t('inmobiliaria.agente.roleCoordinatorDesc') },
-    { value: 'director', label: t('inmobiliaria.agente.roleDirector'), description: t('inmobiliaria.agente.roleDirectorDesc') },
+    { value: 'director', label: t('inmobiliaria.agente.roleDirector'), description: t('inmobiliaria.agente.roleDirectorDesc'), disabled: true },
   ];
 
   const SYSTEM_ROLE_OPTIONS: { value: AgencyRole; label: string }[] = [
@@ -85,10 +120,13 @@ export function AgenteFormModal({
     { value: 'viewer', label: 'Viewer' },
   ];
 
+  // Specialization by property type (matches the PropertyType enum) + "Todos".
   const SPECIALIZATION_OPTIONS = [
-    { value: 'residential', label: t('inmobiliaria.agente.specResidential') },
-    { value: 'commercial', label: t('inmobiliaria.agente.specCommercial') },
-    { value: 'both', label: t('inmobiliaria.agente.specBoth') },
+    { value: 'apartment', label: 'Apartamento' },
+    { value: 'house', label: 'Casa' },
+    { value: 'studio', label: 'Estudio' },
+    { value: 'room', label: 'Habitación' },
+    { value: 'all', label: 'Todos' },
   ];
 
   useEffect(() => { setMounted(true); }, []);
@@ -107,8 +145,8 @@ export function AgenteFormModal({
   const resetForm = useCallback(() => {
     setName(''); setEmail(''); setPhone('');
     setSystemRole(variant === 'agent' ? 'agente' : 'agente');
-    setAgentRole('agent'); setZone(''); setSpecialization('residential');
-    setCommissionSplit(50); setPosition(''); setMessage('');
+    setAgentRole('agent'); setZone(''); setSpecialization('all');
+    setCommissionSplit(50); setMessage('');
     setErrors({});
   }, [variant]);
 
@@ -136,7 +174,6 @@ export function AgenteFormModal({
       };
 
       if (variant === 'member') {
-        invite.position = position.trim() || undefined;
         invite.message = message || undefined;
       }
 
@@ -162,11 +199,8 @@ export function AgenteFormModal({
 
   const isFormLoading = isSubmitting || isLoading;
 
-  // --- Shared input classes ---
-  const inputCls = (hasError: boolean) => cn(
-    'w-full px-4 py-2.5 rounded-xl border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all',
-    hasError ? 'border-rose-500' : 'border-border'
-  );
+  // --- Error border for Cadence Input (skin comes from the adapter) ---
+  const errorCls = (hasError: boolean) => (hasError ? 'border-danger focus-visible:ring-danger/30' : undefined);
 
   if (!mounted) return null;
 
@@ -191,16 +225,16 @@ export function AgenteFormModal({
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="pointer-events-auto w-full max-w-lg bg-card rounded-2xl shadow-2xl flex flex-col max-h-[85vh]"
+              className="pointer-events-auto w-full max-w-lg bg-card rounded-xl flex flex-col max-h-[85vh]"
             >
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                    <UserCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
+                    <UserCircle className="w-5 h-5 text-fg-muted" weight="duotone" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-foreground">
+                    <h2 className="text-base font-semibold text-foreground">
                       {variant === 'agent' ? t('inmobiliaria.agente.newAgent') : 'Invitar usuario'}
                     </h2>
                     <p className="text-sm text-muted-foreground">
@@ -210,9 +244,14 @@ export function AgenteFormModal({
                     </p>
                   </div>
                 </div>
-                <button onClick={handleClose} disabled={isFormLoading} className="p-2 rounded-lg hover:bg-muted transition-colors disabled:opacity-50">
-                  <X className="w-5 h-5 text-muted-foreground" />
-                </button>
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  icon={<X className="w-5 h-5" />}
+                  onClick={handleClose}
+                  disabled={isFormLoading}
+                  aria-label={t('inmobiliaria.agente.cancel')}
+                />
               </div>
 
             {/* Form */}
@@ -223,8 +262,8 @@ export function AgenteFormModal({
                     <User className="w-4 h-4 text-muted-foreground" />
                     {t('inmobiliaria.agente.fullName')} *
                   </label>
-                  <input type="text" value={name} onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((p) => { const n = { ...p }; delete n.name; return n; }); }} placeholder="Juan Perez" className={inputCls(!!errors.name)} />
-                  {errors.name && <p className="text-xs text-rose-500">{errors.name}</p>}
+                  <Input type="text" value={name} onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((p) => { const n = { ...p }; delete n.name; return n; }); }} placeholder="Juan Perez" className={errorCls(!!errors.name)} />
+                  {errors.name && <p className="text-xs text-danger">{errors.name}</p>}
                 </div>
 
                 {/* Email */}
@@ -233,8 +272,8 @@ export function AgenteFormModal({
                     <Envelope className="w-4 h-4 text-muted-foreground" />
                     Email *
                   </label>
-                  <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; }); }} placeholder="juan@inmobiliaria.com" className={inputCls(!!errors.email)} />
-                  {errors.email && <p className="text-xs text-rose-500">{errors.email}</p>}
+                  <Input type="email" value={email} onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; }); }} placeholder="juan@inmobiliaria.com" className={errorCls(!!errors.email)} />
+                  {errors.email && <p className="text-xs text-danger">{errors.email}</p>}
                 </div>
 
                 {/* Phone — always for agent, shown for member when agente */}
@@ -244,19 +283,8 @@ export function AgenteFormModal({
                       <Phone className="w-4 h-4 text-muted-foreground" />
                       {t('inmobiliaria.agente.phone')} {showAgentFields ? '*' : ''}
                     </label>
-                    <input type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); if (errors.phone) setErrors((p) => { const n = { ...p }; delete n.phone; return n; }); }} placeholder="+57 300 123 4567" className={inputCls(!!errors.phone)} />
-                    {errors.phone && <p className="text-xs text-rose-500">{errors.phone}</p>}
-                  </div>
-                )}
-
-                {/* Position / Cargo — member variant only */}
-                {variant === 'member' && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                      <Briefcase className="w-4 h-4 text-muted-foreground" />
-                      Cargo
-                    </label>
-                    <input type="text" value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Ej: Agente Senior, Administrador General" maxLength={100} className={inputCls(false)} />
+                    <Input type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); if (errors.phone) setErrors((p) => { const n = { ...p }; delete n.phone; return n; }); }} placeholder="+57 300 123 4567" className={errorCls(!!errors.phone)} />
+                    {errors.phone && <p className="text-xs text-danger">{errors.phone}</p>}
                   </div>
                 )}
 
@@ -272,48 +300,58 @@ export function AgenteFormModal({
                     {/* Agent Business Role */}
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground">{t('inmobiliaria.agente.role')}</label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <RadioCardGroup
+                        className="grid grid-cols-3 gap-2"
+                        value={agentRole}
+                        onValueChange={(v) => setAgentRole(v as AgenteRole)}
+                      >
                         {AGENT_ROLE_OPTIONS.map((opt) => (
-                          <button
+                          <RadioCard
                             key={opt.value}
-                            type="button"
-                            onClick={() => setAgentRole(opt.value)}
-                            className={cn(
-                              'p-3 rounded-xl border text-center transition-all',
-                              agentRole === opt.value
-                                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                                : 'border-border hover:bg-muted'
-                            )}
-                          >
-                            <p className={cn('text-sm font-medium', agentRole === opt.value ? 'text-indigo-600 dark:text-indigo-400' : 'text-foreground')}>
-                              {opt.label}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{opt.description}</p>
-                          </button>
+                            value={opt.value}
+                            label={opt.label}
+                            description={opt.description}
+                            disabled={opt.disabled}
+                          />
                         ))}
-                      </div>
+                      </RadioCardGroup>
                     </div>
 
-                    {/* Zone + Specialization — disabled until backend supports them */}
-                    <div className="grid grid-cols-2 gap-4 opacity-50 pointer-events-none select-none">
+                    {/* Zone + Specialization — persisted on the AgencyMember (backend
+                        InviteMemberDto supports zone + specialization). */}
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <label className="text-sm font-medium text-foreground flex items-center gap-2">
                           <MapPin className="w-4 h-4 text-muted-foreground" />
                           {t('inmobiliaria.agente.zone')}
                         </label>
-                        <select disabled value={zone} onChange={(e) => setZone(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted text-muted-foreground transition-all cursor-not-allowed">
-                          <option value="">{t('inmobiliaria.agente.selectZone')}</option>
-                          {ZONE_OPTIONS.map((z) => <option key={z} value={z}>{z}</option>)}
-                        </select>
+                        <Select value={zone || undefined} onValueChange={setZone}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder={t('inmobiliaria.agente.selectZone')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ZONE_GROUPS.map((g) => (
+                              <SelectGroup key={g.label}>
+                                <SelectLabel>{g.label}</SelectLabel>
+                                {g.zones.map((z) => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                              </SelectGroup>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <label className="text-sm font-medium text-foreground flex items-center gap-2">
                           <Buildings className="w-4 h-4 text-muted-foreground" />
                           {t('inmobiliaria.agente.specialization')}
                         </label>
-                        <select disabled value={specialization} onChange={(e) => setSpecialization(e.target.value as typeof specialization)} className="w-full px-4 py-2.5 rounded-xl border border-border bg-muted text-muted-foreground transition-all cursor-not-allowed">
-                          {SPECIALIZATION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                        </select>
+                        <Select value={specialization} onValueChange={(v) => setSpecialization(v as typeof specialization)}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {SPECIALIZATION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
@@ -325,14 +363,22 @@ export function AgenteFormModal({
                           {t('inmobiliaria.agente.commissionPercentage')}
                         </label>
                         <div className="flex items-center gap-4">
-                          <input type="range" min={0} max={100} value={commissionSplit} onChange={(e) => setCommissionSplit(parseInt(e.target.value))} className="flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer accent-indigo-500" />
+                          <Slider
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={[commissionSplit]}
+                            onValueChange={([v]) => setCommissionSplit(v)}
+                            className="flex-1"
+                            aria-label={t('inmobiliaria.agente.commissionPercentage')}
+                          />
                           <div className="relative w-20">
-                            <input type="number" min={0} max={100} value={commissionSplit} onChange={(e) => setCommissionSplit(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))} className="w-full px-3 py-2 pr-7 rounded-xl border border-border bg-background text-sm font-medium text-foreground text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                            <Input type="number" min={0} max={100} value={commissionSplit} onChange={(e) => setCommissionSplit(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))} className="pr-7 text-center font-mono tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">%</span>
                           </div>
                         </div>
                         <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.commissionPercentageDesc')}</p>
-                        {errors.commissionSplit && <p className="text-xs text-rose-500">{errors.commissionSplit}</p>}
+                        {errors.commissionSplit && <p className="text-xs text-danger">{errors.commissionSplit}</p>}
                       </div>
                     )}
                   </>
@@ -342,22 +388,19 @@ export function AgenteFormModal({
                 {variant === 'member' && (
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Mensaje personalizado (opcional)</label>
-                    <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Agrega un mensaje para el invitado..." rows={3} className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none" />
+                    <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Agrega un mensaje para el invitado..." rows={3} className="resize-none" />
                   </div>
                 )}
               </form>
 
               {/* Footer */}
-              <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
-                <button type="button" onClick={handleClose} disabled={isFormLoading} className="px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50">
+              <div className="flex items-center justify-end gap-2 p-6 border-t border-border">
+                <Button type="button" variant="secondary" hideArrow onClick={handleClose} disabled={isFormLoading}>
                   {t('inmobiliaria.agente.cancel')}
-                </button>
-                <button type="submit" onClick={handleSubmit} disabled={isFormLoading} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors shadow-lg shadow-indigo-600/20 disabled:opacity-50">
+                </Button>
+                <Button type="submit" hideArrow onClick={handleSubmit} disabled={isFormLoading} isLoading={isFormLoading}>
                   {isFormLoading ? (
-                    <>
-                      <SpinnerGap className="w-4 h-4 animate-spin" />
-                      {variant === 'agent' ? t('inmobiliaria.agente.creating') : 'Enviando...'}
-                    </>
+                    variant === 'agent' ? t('inmobiliaria.agente.creating') : 'Enviando...'
                   ) : variant === 'agent' ? (
                     t('inmobiliaria.agente.createAgent')
                   ) : (
@@ -366,7 +409,7 @@ export function AgenteFormModal({
                       Enviar invitación
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </motion.div>
           </div>

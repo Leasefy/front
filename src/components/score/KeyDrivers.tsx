@@ -76,7 +76,7 @@ export function KeyDrivers({
       {/* Section Header */}
       <div className="flex items-center gap-2 mb-3">
         <Check className={cn('h-4 w-4', colors.text)} />
-        <h4 className="text-sm font-medium text-foreground">Puntos a favor</h4>
+        <h4 className="text-sm font-medium text-fg">Puntos a favor</h4>
       </div>
 
       {/* Drivers List */}
@@ -85,7 +85,7 @@ export function KeyDrivers({
           <li
             key={index}
             className={cn(
-              'flex items-start gap-2 text-sm text-muted-foreground',
+              'flex items-start gap-2 text-sm text-fg-muted',
               animate && 'animate-fade-in-up'
             )}
             style={

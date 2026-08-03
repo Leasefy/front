@@ -18,10 +18,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowClockwise, CheckCircle, Warning } from '@phosphor-icons/react'
+import { CheckCircle, Warning } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import {
@@ -35,6 +36,7 @@ import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service'
 import type { AgencyUser } from '@/lib/types/inmobiliaria'
 import { CobranzaEscalacionesSkeleton } from '@/components/skeleton/panel/CobranzaEscalacionesSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Spinner } from '@/components/ui'
 
 function EscalacionesContent() {
   const { t, locale } = useI18n()
@@ -43,6 +45,8 @@ function EscalacionesContent() {
   const { canAccess } = usePermissionsContext()
 
   const { data, isLoading, error, mutate, claim, assign, resolve } = useEscalations()
+
+  useAutoRefresh(mutate)
 
   const hasResolvePerm = canAccess('cobranza', 'resolve-escalation')
   const hasAssignPerm = canAccess('cobranza', 'assign-escalation')
@@ -194,31 +198,22 @@ function EscalacionesContent() {
 
       {/* Header — DESIGN.md §3 typography */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-h2 font-heading text-foreground">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
           </h1>
           {lastUpdated && (
-            <p className="mt-1 text-xs text-muted-foreground tabular-nums font-mono">
+            <p className="text-xs text-muted-foreground tabular-nums">
               {lastUpdated}
             </p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => void mutate()}
-          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition"
-          aria-label="refresh"
-        >
-          <ArrowClockwise className="w-3.5 h-3.5" aria-hidden="true" />
-          {locale.startsWith('es') ? 'Actualizar' : 'Refresh'}
-        </button>
       </div>
 
       {/* Loading state — DESIGN.md §11 */}
       {isLoading && !data && (
         <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <Spinner size="md" />
         </div>
       )}
 
@@ -226,7 +221,7 @@ function EscalacionesContent() {
       {error && !data && (
         <div
           role="alert"
-          className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400 flex items-center gap-2"
+          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
@@ -248,11 +243,11 @@ function EscalacionesContent() {
               <div className="px-3 py-2 border-b border-border bg-muted/30 flex items-center justify-between">
                 <h2
                   id={`column-${col.key}-heading`}
-                  className="text-xs font-mono uppercase tracking-wide text-muted-foreground"
+                  className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
                 >
                   {col.label}
                 </h2>
-                <span className="text-xs text-muted-foreground tabular-nums font-mono">
+                <span className="text-xs text-muted-foreground tabular-nums">
                   {col.items.length}
                 </span>
               </div>

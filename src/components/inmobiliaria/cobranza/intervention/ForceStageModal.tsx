@@ -17,6 +17,23 @@ import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { CARTERA_STAGES, type CarteraStage } from '@/lib/cartera'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 
 void React
 
@@ -56,8 +73,6 @@ export function ForceStageModal({
       setError(null)
     }
   }, [open, initialTarget])
-
-  if (!open) return null
 
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   const envMissing = !agentUrl || !agencyId
@@ -100,102 +115,91 @@ export function ForceStageModal({
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="force-stage-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-    >
-      <button
-        type="button"
-        aria-label="close"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/50"
-      />
-      <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-xl shadow-xl p-6">
-        <h2
-          id="force-stage-title"
-          className="text-base font-semibold text-neutral-900 dark:text-white"
-        >
-          {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.modalTitle')}
-        </h2>
-
-        {!allowed ? (
-          <p className="mt-3 text-sm text-red-700 dark:text-red-400">
-            {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.accessDenied')}
-          </p>
-        ) : (
-          <>
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.modalTitle')}
+          </DialogTitle>
+          {allowed ? (
+            <DialogDescription>
               {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.modalDescription')}
+            </DialogDescription>
+          ) : (
+            <DialogDescription className="text-danger">
+              {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.accessDenied')}
+            </DialogDescription>
+          )}
+        </DialogHeader>
+
+        {allowed &&
+          (envMissing ? (
+            <p className="text-sm text-warning">
+              {t('inmobiliaria.ai.cobranza.detail.acciones.envMissing')}
             </p>
-            {envMissing ? (
-              <p className="mt-3 text-sm text-amber-700 dark:text-amber-400">
-                {t('inmobiliaria.ai.cobranza.detail.acciones.envMissing')}
-              </p>
-            ) : (
-              <div className="mt-4 space-y-3">
-                <label className="block">
-                  <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-                    {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.targetLabel')}
-                  </span>
-                  <select
-                    value={target}
-                    onChange={(e) => setTarget(e.target.value as CarteraStage)}
-                    className="mt-1 w-full px-3 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950"
-                  >
+          ) : (
+            <div className="space-y-3">
+              <label className="block">
+                <span className="text-xs font-medium text-fg-subtle">
+                  {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.targetLabel')}
+                </span>
+                <Select
+                  value={target}
+                  onValueChange={(v) => setTarget(v as CarteraStage)}
+                >
+                  <SelectTrigger className="mt-1 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
                     {CARTERA_STAGES.filter((s) => s !== currentStage).map((s) => (
-                      <option key={s} value={s}>
+                      <SelectItem key={s} value={s}>
                         {s}
-                      </option>
+                      </SelectItem>
                     ))}
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-                    {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonLabel')}
-                  </span>
-                  <textarea
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    rows={4}
-                    minLength={10}
-                    placeholder={t(
-                      'inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonPlaceholder',
-                    )}
-                    className="mt-1 w-full px-3 py-2 text-sm rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950"
-                  />
-                </label>
-              </div>
-            )}
-          </>
-        )}
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-fg-subtle">
+                  {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonLabel')}
+                </span>
+                <Textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  rows={4}
+                  minLength={10}
+                  placeholder={t(
+                    'inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonPlaceholder',
+                  )}
+                  className="mt-1 w-full"
+                />
+              </label>
+            </div>
+          ))}
 
-        {error && (
-          <p className="mt-3 text-xs text-red-600 dark:text-red-400">{error}</p>
-        )}
+        {error && <p className="text-xs text-danger">{error}</p>}
 
-        <div className="mt-6 flex items-center justify-end gap-2">
-          <button
-            type="button"
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onClose}
             disabled={submitting}
-            className="px-3 py-1.5 text-sm font-medium rounded-md border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50"
           >
             {t('inmobiliaria.ai.cobranza.detail.pii.modalCancel')}
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            size="sm"
+            hideArrow
             onClick={() => void handleSubmit()}
             disabled={submitting || envMissing || !allowed}
-            className="px-3 py-1.5 text-sm font-medium rounded-md bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
           >
             {submitting
               ? t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.confirming')
               : t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.confirm')}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

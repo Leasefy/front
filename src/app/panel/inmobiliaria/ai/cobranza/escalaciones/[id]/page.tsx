@@ -7,7 +7,7 @@
  * Bottom-anchored "Resolver" button opens EscalationResolveModal locked
  * to this escalation. Breadcrumb back to the kanban list.
  *
- * Refs mvp:docs/DESIGN.md §3 (typography), §4 (cards rounded-xl + shadow-sm).
+ * Refs mvp:docs/DESIGN.md §3 (typography), §4 (cards rounded-xl +).
  * Refs mvp:docs/COLOR_SYSTEM.md (rose for warning, emerald for resolve).
  */
 
@@ -24,6 +24,8 @@ import { useEscalationDetail } from '@/lib/hooks/cobranza/use-escalation-detail'
 import { useEscalations } from '@/lib/hooks/cobranza/use-escalations'
 import { EscalationResolveModal } from '@/components/inmobiliaria/cobranza/EscalationResolveModal'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { Button, Badge } from '@/components/ui'
+import { MonoLabel } from '@leasefy/cadence'
 
 function EscalationDetailContent() {
   const params = useParams()
@@ -63,15 +65,17 @@ function EscalationDetailContent() {
   if (error || !data) {
     return (
       <div className="p-4 md:p-6">
-        <button
-          type="button"
+        <Button
+          variant="link"
+          size="sm"
+          hideArrow
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
+          className="h-auto p-0 gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.kanbanColumns.open')}
-        </button>
-        <div className="mt-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400">
+        </Button>
+        <div className="mt-4 rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger">
           {error ?? t('inmobiliaria.ai.cobranza.escalaciones.errors.notFound')}
         </div>
       </div>
@@ -89,7 +93,7 @@ function EscalationDetailContent() {
       {/* Breadcrumb */}
       <Link
         href="/panel/inmobiliaria/ai/cobranza/escalaciones"
-        className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
+        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition font-medium"
       >
         <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
         {t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
@@ -102,22 +106,22 @@ function EscalationDetailContent() {
             {data.debtor_id_masked ?? data.debtor_id}
           </h1>
           <div className="mt-2 flex items-center gap-2">
-            <span className="text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+            <Badge variant="secondary">
               {t(`inmobiliaria.ai.cobranza.escalaciones.urgency.${data.urgency}`)}
-            </span>
-            <span className="text-[11px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+            </Badge>
+            <Badge variant="secondary">
               {data.status}
-            </span>
+            </Badge>
           </div>
         </div>
       </div>
 
       {/* Card 1 — Linked call */}
-      <section className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-2">
-        <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+      <section className="rounded-xl border border-border bg-card p-4 space-y-2">
+        <MonoLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
           <Phone className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.detail.linkedCall')}
-        </h2>
+        </MonoLabel>
         {data.linked_call ? (
           <Link
             href={`/panel/inmobiliaria/ai/cobranza/llamadas/${data.linked_call.id}`}
@@ -137,23 +141,25 @@ function EscalationDetailContent() {
       </section>
 
       {/* Card 2 — Reason */}
-      <section className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-2">
-        <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+      <section className="rounded-xl border border-border bg-card p-4 space-y-2">
+        <MonoLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
           <FileText className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.detail.reason')}
-        </h2>
+        </MonoLabel>
         <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
           {data.reason}
         </p>
       </section>
 
       {/* Card 3 — Agent state trace (collapsible) */}
-      <section className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-2">
+      <section className="rounded-xl border border-border bg-card p-4 space-y-2">
         <details>
-          <summary className="text-xs font-mono uppercase tracking-wide text-muted-foreground cursor-pointer hover:text-foreground transition">
-            {t('inmobiliaria.ai.cobranza.escalaciones.detail.stateTrace')}
+          <summary className="cursor-pointer list-none">
+            <MonoLabel className="text-xs text-muted-foreground hover:text-foreground transition">
+              {t('inmobiliaria.ai.cobranza.escalaciones.detail.stateTrace')}
+            </MonoLabel>
           </summary>
-          <pre className="mt-3 text-[11px] bg-muted/50 rounded-md p-3 overflow-x-auto font-mono text-foreground">
+          <pre className="mt-3 text-[11px] bg-muted/50 rounded-sm p-3 overflow-x-auto font-mono text-foreground">
             {data.state_trace_json
               ? JSON.stringify(data.state_trace_json, null, 2)
               : '—'}
@@ -162,11 +168,11 @@ function EscalationDetailContent() {
       </section>
 
       {/* Card 4 — Assignee + timing */}
-      <section className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-2">
-        <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+      <section className="rounded-xl border border-border bg-card p-4 space-y-2">
+        <MonoLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
           <User className="w-3.5 h-3.5" aria-hidden="true" />
           {t('inmobiliaria.ai.cobranza.escalaciones.detail.assignee')}
-        </h2>
+        </MonoLabel>
         <dl className="grid grid-cols-2 gap-3 text-sm">
           <div>
             <dt className="text-xs text-muted-foreground">
@@ -212,13 +218,13 @@ function EscalationDetailContent() {
       {/* Bottom action bar */}
       {canResolveThis && (
         <div className="sticky bottom-4 md:static flex justify-end">
-          <button
+          <Button
             type="button"
             onClick={() => setResolveOpen(true)}
-            className="inline-flex items-center gap-1 px-4 py-2 text-sm font-mono uppercase tracking-wide rounded-md bg-emerald-600 dark:bg-emerald-700 text-white hover:opacity-90 active:scale-[0.97] transition shadow-md"
+            hideArrow
           >
             {t('inmobiliaria.ai.cobranza.escalaciones.actions.resolve')}
-          </button>
+          </Button>
         </div>
       )}
 

@@ -1,9 +1,9 @@
 'use client'
 // Phase 30 plan 30-05 (COTI-UI-02)
 
-import { SpinnerGap } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { formatCurrency } from '@/lib/format'
 
 interface Step3Candidato {
@@ -26,6 +26,11 @@ interface WizardStep3ReviewProps {
   isLoading: boolean
   arcoError: boolean
   canCreate: boolean
+  /**
+   * Optional submit-CTA override. Asegurabilidad Tier-B (visión #5) renames the
+   * final CTA to "Consultar asegurabilidad". Falls back to the legacy enviar key.
+   */
+  ctaLabel?: string
 }
 
 function maskCedula(raw: string): string {
@@ -42,8 +47,10 @@ export function WizardStep3Review({
   isLoading,
   arcoError,
   canCreate,
+  ctaLabel,
 }: WizardStep3ReviewProps) {
   const { t } = useI18n()
+  const submitLabel = ctaLabel ?? t('inmobiliaria.ai.cotizador.nueva.actions.enviar')
 
   const rows: { label: string; value: string }[] = [
     { label: t('inmobiliaria.ai.cotizador.nueva.step3.cedulaRow'), value: maskCedula(candidato.cedula) },
@@ -67,7 +74,7 @@ export function WizardStep3Review({
       </h2>
 
       {/* Review card */}
-      <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+      <div className="rounded-xl border border-border bg-card p-5 space-y-3">
         {rows.map(row => (
           <div key={row.label} className="flex justify-between gap-4">
             <span className="text-sm text-muted-foreground">{row.label}</span>
@@ -80,7 +87,7 @@ export function WizardStep3Review({
       {arcoError && (
         <div
           role="alert"
-          className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 text-sm text-rose-700 dark:text-rose-300"
+          className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
         >
           {t('inmobiliaria.ai.cotizador.nueva.errors.arcoBloqueado')}
         </div>
@@ -90,6 +97,7 @@ export function WizardStep3Review({
       <div className="flex gap-3">
         <Button
           variant="secondary"
+          hideArrow
           onClick={onBack}
           disabled={isLoading}
           className="flex-1"
@@ -100,15 +108,16 @@ export function WizardStep3Review({
 
         {canCreate ? (
           <Button
+            hideArrow
             onClick={onSubmit}
             disabled={isLoading}
-            className="flex-1 uppercase tracking-wide"
+            className="flex-1"
             size="lg"
           >
             {isLoading ? (
-              <SpinnerGap size={18} weight="fill" className="animate-spin" />
+              <Spinner size="sm" variant="current" />
             ) : (
-              t('inmobiliaria.ai.cotizador.nueva.actions.enviar')
+              submitLabel
             )}
           </Button>
         ) : (
@@ -118,10 +127,11 @@ export function WizardStep3Review({
           >
             <Button
               disabled
-              className="w-full uppercase tracking-wide"
+              hideArrow
+              className="w-full"
               size="lg"
             >
-              {t('inmobiliaria.ai.cotizador.nueva.actions.enviar')}
+              {submitLabel}
             </Button>
           </span>
         )}

@@ -14,8 +14,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
-import { CaretLeft, Check, BellSlash } from '@phosphor-icons/react'
+import { Check, BellSlash } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -25,6 +24,15 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import {
+  Button,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui'
 
 interface OptOutEntry {
   event_id: string
@@ -144,102 +152,99 @@ function OptOutContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div>
-        <Link
-          href="/panel/inmobiliaria/ai/cobranza/compliance"
-          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
-        >
-          <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
-          {t('inmobiliaria.ai.cobranza.compliance.pageTitle')}
-        </Link>
         <h1 className="text-h2 font-heading text-foreground mt-2">
           {t('inmobiliaria.ai.cobranza.compliance.subPages.optOutTitle')}
         </h1>
       </div>
 
       {error && (
-        <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400">
+        <div className="rounded-xl bg-danger-soft text-danger">
           Error: {error}
         </div>
       )}
 
       {items.length > 0 && (
-        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30 border-b border-border">
-              <tr>
-                <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="overflow-x-auto overscroll-contain">
+          <Table>
+            <TableHeader className="bg-muted/30 border-b border-border">
+              <TableRow>
+                <TableHead>
                   {locale.startsWith('es') ? 'Solicitado' : 'Requested'}
-                </th>
-                <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                </TableHead>
+                <TableHead>
                   {locale.startsWith('es') ? 'Deudor' : 'Debtor'}
-                </th>
-                <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                </TableHead>
+                <TableHead>
                   {locale.startsWith('es') ? 'Fuente' : 'Source'}
-                </th>
-                <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                </TableHead>
+                <TableHead>
                   {locale.startsWith('es') ? 'Acuse' : 'Acknowledged'}
-                </th>
-                <th className="text-right px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground" />
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+                <TableHead className="text-right" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {items.map((row) => {
                 const isAcked = row.acknowledged_at !== null
                 const isAcking = acking.has(row.event_id)
                 return (
-                  <tr key={row.event_id} className="border-b border-border last:border-0">
-                    <td className="px-3 py-2 font-mono tabular-nums text-xs text-foreground">
+                  <TableRow key={row.event_id} className="border-b border-border last:border-0">
+                    <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-foreground">
                       {new Date(row.requested_at).toLocaleString(locale)}
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell className="px-3 py-2">
                       <Mask field="cedula" value={row.debtor_id_masked} onReveal={undefined} />
-                    </td>
-                    <td className="px-3 py-2 text-foreground">{row.source}</td>
-                    <td className="px-3 py-2 font-mono tabular-nums text-xs">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-foreground">{row.source}</TableCell>
+                    <TableCell className="px-3 py-2 font-mono tabular-nums text-xs">
                       {isAcked ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
+                        <span className="inline-flex items-center gap-1 text-success">
                           <Check className="w-3.5 h-3.5" aria-hidden="true" />
                           {new Date(row.acknowledged_at as string).toLocaleDateString(locale)}
                         </span>
                       ) : (
-                        <span className="text-amber-700 dark:text-amber-400">
+                        <span className="text-warning">
                           {locale.startsWith('es') ? 'Pendiente' : 'Pending'}
                         </span>
                       )}
-                    </td>
-                    <td className="px-3 py-2 text-right">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-right">
                       {!isAcked && hasConfigPerm && (
-                        <button
-                          type="button"
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          hideArrow
                           onClick={() => void acknowledge(row.event_id)}
                           disabled={isAcking}
-                          className="text-xs font-mono uppercase tracking-wide px-3 py-1 rounded-md border border-border hover:bg-muted disabled:opacity-50 transition"
                         >
                           {isAcking
                             ? locale.startsWith('es') ? '...' : '...'
                             : locale.startsWith('es')
                               ? 'Marcar acuse'
                               : t('inmobiliaria.ai.cobranza.compliance.actions.acknowledge')}
-                        </button>
+                        </Button>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
+          </div>
           {nextCursor && (
             <div className="p-3 border-t border-border bg-muted/20 text-center">
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
                 onClick={() => void loadMore()}
                 disabled={isLoadingMore}
-                className="text-xs font-mono uppercase tracking-wide px-4 py-2 rounded-md border border-border hover:bg-muted disabled:opacity-50 transition"
               >
                 {isLoadingMore
                   ? locale.startsWith('es') ? 'Cargando...' : 'Loading...'
                   : locale.startsWith('es') ? 'Cargar más' : 'Load more'}
-              </button>
+              </Button>
             </div>
           )}
         </div>

@@ -34,7 +34,7 @@ export function MobileNavBar({ navItems }: MobileNavBarProps) {
   return (
     <>
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-card border-t border-border"
+        className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-surface border-t border-border"
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0px)' }}
         aria-label="Mobile navigation"
       >
@@ -54,8 +54,8 @@ export function MobileNavBar({ navItems }: MobileNavBarProps) {
                 className={cn(
                   'min-h-[56px] min-w-[56px] flex flex-col items-center justify-center px-2 py-2 rounded-xl',
                   active
-                    ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600'
-                    : 'text-muted-foreground'
+                    ? 'bg-primary-soft text-primary'
+                    : 'text-fg-muted'
                 )}
               >
                 <IconComponent
@@ -74,7 +74,7 @@ export function MobileNavBar({ navItems }: MobileNavBarProps) {
               onClick={() => setMoreOpen(true)}
               aria-label={t('inmobiliaria.mobileNav.moreAriaLabel')}
               aria-haspopup="dialog"
-              className="min-h-[56px] min-w-[56px] flex flex-col items-center justify-center px-2 py-2 text-muted-foreground"
+              className="min-h-[56px] min-w-[56px] flex flex-col items-center justify-center px-2 py-2 text-fg-muted"
             >
               <DotsThree className="w-5 h-5" weight="bold" />
               <span className="text-[9px] font-mono uppercase tracking-wider mt-1">

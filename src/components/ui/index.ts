@@ -20,10 +20,12 @@ export * from './button';
 export * from './card';
 export * from './checkbox';
 export * from './dialog';
+export * from './drawer';
 export * from './dropdown-menu';
 export * from './input';
 export * from './label';
 export * from './popover';
+export * from './responsive-dialog';
 export * from './select';
 export * from './separator';
 export * from './sheet';
@@ -63,12 +65,6 @@ export * from './divider';
 export * from './aspect-ratio';
 export * from './scroll-area';
 export * from './collapsible';
-
-// ============================================================================
-// Overlays
-// ============================================================================
-
-export * from './hover-card';
 
 // ============================================================================
 // Form Components

@@ -33,6 +33,7 @@ export interface EventoAgenda {
   titulo: string;
   descripcion?: string;
   fecha: string;               // ISO — fecha/hora del evento
+  estadoRaw?: string;          // estado subyacente (ej. visita PENDING/ACCEPTED) para acciones
   vinculoTipo?: EventoVinculoTipo;  // tarea ligada a contrato/propiedad/tercero (AGEN-02)
   vinculoId?: string;
   vinculoLabel?: string;

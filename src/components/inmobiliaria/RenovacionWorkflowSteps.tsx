@@ -66,9 +66,9 @@ export function WorkflowStepper({
   return (
     <div className="relative">
       {/* Progress line */}
-      <div className="absolute top-5 left-0 right-0 h-0.5 bg-slate-200 dark:bg-slate-700" />
+      <div className="absolute top-5 left-0 right-0 h-0.5 bg-border" />
       <div
-        className="absolute top-5 left-0 h-0.5 bg-emerald-500 transition-all duration-300"
+        className="absolute top-5 left-0 h-0.5 bg-success transition-all duration-300"
         style={{ width: `${(currentIndex / (steps.length - 1)) * 100}%` }}
       />
 
@@ -80,6 +80,9 @@ export function WorkflowStepper({
           const isClickable = index <= currentIndex;
 
           return (
+            // allowlist: clickable wizard step-navigator (icon-per-step circle + label-below,
+            // done/active/upcoming state). Cadence Stepper is display-only (non-clickable nav,
+            // numbered, side labels) — can't model this. Native kept, tokens cleaned (emerald→success).
             <button
               key={step.status}
               onClick={() => isClickable && onStepClick(step.status)}
@@ -91,10 +94,10 @@ export function WorkflowStepper({
               <div
                 className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                   isCompleted
-                    ? 'bg-emerald-500 text-white'
+                    ? 'bg-success text-white'
                     : isCurrent
-                    ? 'bg-emerald-500 text-white ring-4 ring-emerald-100 dark:ring-emerald-900/50'
-                    : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                    ? 'bg-success text-white ring-4 ring-success/30'
+                    : 'bg-surface-muted text-fg-muted'
                 }`}
               >
                 {isCompleted ? <Check className="h-5 w-5" weight="bold" /> : step.icon}
@@ -103,7 +106,7 @@ export function WorkflowStepper({
                 <p
                   className={`text-xs font-medium ${
                     isCurrent
-                      ? 'text-emerald-600 dark:text-emerald-400'
+                      ? 'text-success'
                       : 'text-muted-foreground'
                   }`}
                 >
@@ -124,15 +127,25 @@ export function WorkflowStepper({
 
 export function StepRevision({
   renovacion,
+  newRent,
+  newAdminFee,
+  onNewRentChange,
+  onNewAdminFeeChange,
   onContinue,
 }: {
   renovacion: Renovacion;
+  newRent: number;
+  newAdminFee: number;
+  onNewRentChange: (value: number) => void;
+  onNewAdminFeeChange: (value: number) => void;
   onContinue: () => void;
 }) {
   const { t, locale } = useI18n();
   const ipc = getCurrentIPC();
-  const proposedRent = calculateNewRent(renovacion.currentRent, ipc.rate);
-  const increase = proposedRent - renovacion.currentRent;
+  const suggestedRent = calculateNewRent(renovacion.currentRent, ipc.rate);
+  const parseMoney = (v: string) => parseInt(v.replace(/[^\d]/g, '')) || 0;
+  const fmtInput = (n: number) =>
+    n > 0 ? n.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : '';
 
   return (
     <div className="space-y-4">
@@ -181,7 +194,7 @@ export function StepRevision({
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.revision.expiryDate')}</span>
-              <span className="font-medium text-amber-600">
+              <span className="font-medium text-warning">
                 {new Date(renovacion.leaseEndDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US')}
               </span>
             </div>
@@ -192,29 +205,55 @@ export function StepRevision({
           </CardContent>
         </Card>
 
-        {/* IPC Preview */}
-        <Card className="border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/10">
+        {/* New price — set by the AGENCY. IPC is only a suggestion. */}
+        <Card className="border-primary/30">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+            <CardTitle className="text-sm flex items-center gap-2">
               <TrendUp className="h-4 w-4" />
-              {t('inmobiliaria.operaciones.renovacion.revision.ipcProjection', { rate: String(ipc.rate) })}
+              Propuesta de renovación (la define la inmobiliaria)
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.revision.proposedRent')}</p>
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(proposedRent)}</p>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="revNewRent">Nuevo canon</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input
+                  id="revNewRent"
+                  value={fmtInput(newRent)}
+                  onChange={(e) => onNewRentChange(parseMoney(e.target.value))}
+                  placeholder={formatCurrency(suggestedRent)}
+                  className="pl-8 text-lg font-semibold"
+                />
               </div>
-              <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                +{formatCurrency(increase)}
-              </Badge>
+              <p className="text-xs text-muted-foreground">
+                Actual: {formatCurrency(renovacion.currentRent)} · Sugerido (IPC {ipc.rate}%): {formatCurrency(suggestedRent)}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="revNewAdmin">Administración del conjunto</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input
+                  id="revNewAdmin"
+                  value={fmtInput(newAdminFee)}
+                  onChange={(e) => onNewAdminFeeChange(parseMoney(e.target.value))}
+                  placeholder="Sin administración"
+                  className="pl-8"
+                />
+              </div>
+              {(renovacion.currentAdminFee ?? 0) > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Actual: {formatCurrency(renovacion.currentAdminFee ?? 0)}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Button onClick={onContinue} className="w-full" size="lg">
+      <Button onClick={onContinue} className="w-full" size="lg" disabled={newRent <= 0}>
         {t('inmobiliaria.operaciones.renovacion.revision.continue')}
         <ArrowRight className="h-4 w-4 ml-2" />
       </Button>
@@ -224,30 +263,79 @@ export function StepRevision({
 
 export function StepNotification({
   renovacion,
+  newRent,
+  newAdminFee,
+  onNewRentChange,
+  onNewAdminFeeChange,
   onNotify,
-  onMarkNotified,
 }: {
   renovacion: Renovacion;
-  onNotify: (channel: 'email' | 'whatsapp') => void;
-  onMarkNotified: () => void;
+  newRent: number;
+  newAdminFee: number;
+  onNewRentChange: (value: number) => void;
+  onNewAdminFeeChange: (value: number) => void;
+  onNotify: (channel: 'email' | 'whatsapp', message: string) => void;
 }) {
   const { t, locale } = useI18n();
   const ipc = getCurrentIPC();
-  const proposedRent = calculateNewRent(renovacion.currentRent, ipc.rate);
+  const suggestedRent = calculateNewRent(renovacion.currentRent, ipc.rate);
+  const parseMoney = (v: string) => parseInt(v.replace(/[^\d]/g, '')) || 0;
+  const fmtInput = (n: number) =>
+    n > 0 ? n.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : '';
 
-  const messagePreview = `Estimado/a ${renovacion.tenantName},
+  const defaultMessage = `Estimado/a ${renovacion.tenantName},
 
 Le informamos que su contrato de arrendamiento del inmueble ubicado en ${renovacion.propertyAddress} vence el ${new Date(renovacion.leaseEndDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US')}.
 
-Conforme a la Ley 820 de 2003, el nuevo canon propuesto sera de ${formatCurrency(proposedRent)} (incremento IPC ${ipc.rate}%).
+El nuevo canon propuesto para la renovación es de ${formatCurrency(newRent)}.
 
 Por favor confirme si desea renovar el contrato.
 
 Atentamente,
 Arriendos Premium`;
 
+  const [message, setMessage] = useState(defaultMessage);
+
   return (
     <div className="space-y-4">
+      {/* Proposed price — set by the agency */}
+      <Card className="border-primary/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Propuesta (la define la inmobiliaria)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="propNewRent">Nuevo canon</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <Input
+                id="propNewRent"
+                value={fmtInput(newRent)}
+                onChange={(e) => onNewRentChange(parseMoney(e.target.value))}
+                placeholder={formatCurrency(suggestedRent)}
+                className="pl-8 text-lg font-semibold"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Actual: {formatCurrency(renovacion.currentRent)} · Sugerido (IPC {ipc.rate}%): {formatCurrency(suggestedRent)}
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="propNewAdmin">Administración del conjunto</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <Input
+                id="propNewAdmin"
+                value={fmtInput(newAdminFee)}
+                onChange={(e) => onNewAdminFeeChange(parseMoney(e.target.value))}
+                placeholder="Sin administración"
+                className="pl-8"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Recipient */}
       <Card>
         <CardHeader className="pb-2">
@@ -255,8 +343,8 @@ Arriendos Premium`;
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-              <User className="h-5 w-5 text-slate-500" />
+            <div className="h-10 w-10 rounded-full bg-surface-muted flex items-center justify-center">
+              <User className="h-5 w-5 text-fg-muted" />
             </div>
             <div>
               <p className="font-medium">{renovacion.tenantName}</p>
@@ -266,15 +354,25 @@ Arriendos Premium`;
         </CardContent>
       </Card>
 
-      {/* Message Preview */}
+      {/* Editable Message */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">{t('inmobiliaria.operaciones.renovacion.notification.messagePreview')}</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 text-sm whitespace-pre-line">
-            {messagePreview}
-          </div>
+        <CardContent className="space-y-2">
+          <Textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            rows={10}
+            className="text-sm"
+          />
+          <button
+            type="button"
+            onClick={() => setMessage(defaultMessage)}
+            className="text-xs text-muted-foreground hover:text-fg underline-offset-2 hover:underline"
+          >
+            Restaurar mensaje sugerido
+          </button>
         </CardContent>
       </Card>
 
@@ -282,7 +380,8 @@ Arriendos Premium`;
       <div className="grid grid-cols-2 gap-3">
         <Button
           variant="outline"
-          onClick={() => onNotify('email')}
+          onClick={() => onNotify('email', message)}
+          disabled={!message.trim()}
           className="flex items-center gap-2"
         >
           <Envelope className="h-4 w-4" />
@@ -290,26 +389,66 @@ Arriendos Premium`;
         </Button>
         <Button
           variant="outline"
-          onClick={() => onNotify('whatsapp')}
-          className="flex items-center gap-2 border-green-200 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400"
+          onClick={() => onNotify('whatsapp', message)}
+          disabled={!message.trim()}
+          className="flex items-center gap-2 border-success/30 text-success hover:bg-success-soft"
         >
           <WhatsappLogo className="h-4 w-4" />
           WhatsApp
         </Button>
       </div>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.notification.or')}</span>
-        </div>
-      </div>
+      <p className="text-xs text-muted-foreground text-center">
+        Se enviará por email y a la página del inquilino. WhatsApp abre el chat con el mensaje listo.
+      </p>
+    </div>
+  );
+}
 
-      <Button onClick={onMarkNotified} variant="secondary" className="w-full">
-        <CheckCircle className="h-4 w-4 mr-2" />
-        {t('inmobiliaria.operaciones.renovacion.notification.markNotified')}
+export function StepAceptacion({
+  renovacion,
+  onContinue,
+}: {
+  renovacion: Renovacion;
+  onContinue: () => void;
+}) {
+  const accepted = !!renovacion.tenantAcceptedAt;
+  const finalRent = renovacion.negotiatedRent || renovacion.proposedRent || renovacion.currentRent;
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Propuesta enviada al inquilino</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-1 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Inquilino</span>
+            <span className="font-medium">{renovacion.tenantName}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Nuevo canon</span>
+            <span className="font-semibold text-success">{formatCurrency(finalRent)}</span>
+          </div>
+        </CardContent>
+      </Card>
+      <Card className={accepted ? 'border-success/30 bg-success-soft' : ''}>
+        <CardContent className="pt-4">
+          {accepted ? (
+            <div className="flex items-center gap-2 text-success">
+              <CheckCircle className="h-5 w-5" weight="fill" />
+              <span className="font-medium">El inquilino aceptó la renovación</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-fg-muted">
+              <Clock className="h-5 w-5" />
+              <span>Esperando que el inquilino acepte desde su panel…</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      <Button className="w-full" size="lg" disabled={!accepted} onClick={onContinue}>
+        <ArrowRight className="h-4 w-4 mr-2" />
+        Continuar a la firma del contrato
       </Button>
     </div>
   );
@@ -317,57 +456,65 @@ Arriendos Premium`;
 
 export function StepNegotiation({
   renovacion,
+  newRent,
+  newAdminFee,
+  onNewRentChange,
+  onNewAdminFeeChange,
   onAccept,
   onContinueNegotiation,
 }: {
   renovacion: Renovacion;
-  onAccept: (finalRent: number) => void;
+  newRent: number;
+  newAdminFee: number;
+  onNewRentChange: (value: number) => void;
+  onNewAdminFeeChange: (value: number) => void;
+  onAccept: () => void;
   onContinueNegotiation: (note: string) => void;
 }) {
   const { t, locale } = useI18n();
-  const [counterOffer, setCounterOffer] = useState<string>('');
   const [note, setNote] = useState<string>('');
   const ipc = getCurrentIPC();
-  const proposedRent = renovacion.proposedRent || calculateNewRent(renovacion.currentRent, ipc.rate);
-
-  const handleCounterOfferChange = (value: string) => {
-    const numericValue = value.replace(/[^\d]/g, '');
-    const formatted = numericValue ? parseInt(numericValue).toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : '';
-    setCounterOffer(formatted);
-  };
-
-  const counterOfferValue = parseInt(counterOffer.replace(/\./g, '')) || 0;
+  const suggestedRent = calculateNewRent(renovacion.currentRent, ipc.rate);
+  const currentAdminFee = renovacion.currentAdminFee ?? 0;
+  const parseMoney = (v: string) => parseInt(v.replace(/[^\d]/g, '')) || 0;
+  const fmtInput = (n: number) =>
+    n > 0 ? n.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : '';
 
   return (
     <div className="space-y-4">
-      {/* Proposed Rent */}
-      <Card className="border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-900/10">
-        <CardContent className="pt-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">{t('inmobiliaria.operaciones.renovacion.negotiation.proposedRent', { rate: String(ipc.rate) })}</p>
-            <p className="text-3xl font-bold text-emerald-600">{formatCurrency(proposedRent)}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Counter Offer */}
+      {/* New rent — controlled by the workflow (set in Revisión, adjustable here) */}
       <div className="space-y-2">
-        <Label htmlFor="counterOffer">{t('inmobiliaria.operaciones.renovacion.negotiation.counterOfferLabel')}</Label>
+        <Label htmlFor="negNewRent">Nuevo canon (lo define la inmobiliaria)</Label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
           <Input
-            id="counterOffer"
-            value={counterOffer}
-            onChange={(e) => handleCounterOfferChange(e.target.value)}
-            placeholder={t('inmobiliaria.operaciones.renovacion.negotiation.counterOfferPlaceholder')}
+            id="negNewRent"
+            value={fmtInput(newRent)}
+            onChange={(e) => onNewRentChange(parseMoney(e.target.value))}
+            placeholder={formatCurrency(suggestedRent)}
+            className="pl-8 text-lg font-semibold"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Actual: {formatCurrency(renovacion.currentRent)} · Sugerido (IPC {ipc.rate}%): {formatCurrency(suggestedRent)}
+        </p>
+      </div>
+
+      {/* Building administration fee (administración del conjunto) */}
+      <div className="space-y-2">
+        <Label htmlFor="negNewAdmin">Administración del conjunto</Label>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+          <Input
+            id="negNewAdmin"
+            value={fmtInput(newAdminFee)}
+            onChange={(e) => onNewAdminFeeChange(parseMoney(e.target.value))}
+            placeholder="Sin administración"
             className="pl-8"
           />
         </div>
-        {counterOfferValue > 0 && counterOfferValue < proposedRent && (
-          <p className="text-xs text-amber-600 flex items-center gap-1">
-            <Warning className="h-3 w-3" />
-            {t('inmobiliaria.operaciones.renovacion.negotiation.counterOfferWarning', { amount: formatCurrency(proposedRent - counterOfferValue) })}
-          </p>
+        {currentAdminFee > 0 && (
+          <p className="text-xs text-muted-foreground">Actual: {formatCurrency(currentAdminFee)}</p>
         )}
       </div>
 
@@ -393,7 +540,7 @@ export function StepNegotiation({
           <ChatCircle className="h-4 w-4 mr-2" />
           {t('inmobiliaria.operaciones.renovacion.negotiation.continueNegotiating')}
         </Button>
-        <Button onClick={() => onAccept(counterOfferValue || proposedRent)}>
+        <Button onClick={onAccept} disabled={newRent <= 0}>
           <CheckCircle className="h-4 w-4 mr-2" />
           {t('inmobiliaria.operaciones.renovacion.negotiation.acceptProposal')}
         </Button>
@@ -413,7 +560,9 @@ export function StepApproval({
 }) {
   const { t } = useI18n();
   const [ownerApproved, setOwnerApproved] = useState(false);
-  const [tenantApproved, setTenantApproved] = useState(false);
+  // The tenant acceptance is READ-ONLY here — it comes from the tenant's own
+  // panel. The agency cannot accept on the tenant's behalf.
+  const tenantApproved = !!renovacion.tenantAcceptedAt;
   const finalRent = renovacion.negotiatedRent || renovacion.proposedRent || renovacion.currentRent;
 
   return (
@@ -426,7 +575,7 @@ export function StepApproval({
         <CardContent className="space-y-2">
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.approval.newRent')}</span>
-            <span className="font-bold text-emerald-600">{formatCurrency(finalRent)}</span>
+            <span className="font-bold text-success">{formatCurrency(finalRent)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.approval.increase')}</span>
@@ -441,14 +590,14 @@ export function StepApproval({
 
       {/* Approval Status */}
       <div className="space-y-3">
-        <Card className={`transition-colors ${ownerApproved ? 'border-emerald-300 bg-emerald-50/50 dark:border-emerald-700 dark:bg-emerald-900/10' : ''}`}>
+        <Card className={`transition-colors ${ownerApproved ? 'border-success/30 bg-success-soft' : ''}`}>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                  ownerApproved ? 'bg-emerald-100 dark:bg-emerald-900/50' : 'bg-slate-100 dark:bg-slate-800'
+                  ownerApproved ? 'bg-success-soft' : 'bg-surface-muted'
                 }`}>
-                  <User className={`h-5 w-5 ${ownerApproved ? 'text-emerald-600' : 'text-slate-500'}`} />
+                  <User className={`h-5 w-5 ${ownerApproved ? 'text-success' : 'text-fg-muted'}`} />
                 </div>
                 <div>
                   <p className="font-medium">{renovacion.propietarioName}</p>
@@ -456,7 +605,7 @@ export function StepApproval({
                 </div>
               </div>
               {ownerApproved ? (
-                <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                <Badge className="bg-success-soft text-success">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   {t('inmobiliaria.operaciones.renovacion.approval.approved')}
                 </Badge>
@@ -475,14 +624,14 @@ export function StepApproval({
           </CardContent>
         </Card>
 
-        <Card className={`transition-colors ${tenantApproved ? 'border-emerald-300 bg-emerald-50/50 dark:border-emerald-700 dark:bg-emerald-900/10' : ''}`}>
+        <Card className={`transition-colors ${tenantApproved ? 'border-success/30 bg-success-soft' : ''}`}>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                  tenantApproved ? 'bg-emerald-100 dark:bg-emerald-900/50' : 'bg-slate-100 dark:bg-slate-800'
+                  tenantApproved ? 'bg-success-soft' : 'bg-surface-muted'
                 }`}>
-                  <User className={`h-5 w-5 ${tenantApproved ? 'text-emerald-600' : 'text-slate-500'}`} />
+                  <User className={`h-5 w-5 ${tenantApproved ? 'text-success' : 'text-fg-muted'}`} />
                 </div>
                 <div>
                   <p className="font-medium">{renovacion.tenantName}</p>
@@ -490,35 +639,32 @@ export function StepApproval({
                 </div>
               </div>
               {tenantApproved ? (
-                <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                <Badge className="bg-success-soft text-success">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   {t('inmobiliaria.operaciones.renovacion.approval.approved')}
                 </Badge>
               ) : (
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setTenantApproved(true);
-                    onTenantApproved();
-                  }}
-                >
-                  {t('inmobiliaria.operaciones.renovacion.approval.approve')}
-                </Button>
+                <Badge className="bg-surface-muted text-fg-muted">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Esperando al inquilino
+                </Badge>
               )}
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {!tenantApproved && (
+        <p className="text-xs text-fg-muted text-center">
+          El inquilino debe aceptar la propuesta desde su panel para poder continuar.
+        </p>
+      )}
+
       {ownerApproved && tenantApproved && (
-        <Card className="border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/20">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-              <CheckCircle className="h-5 w-5" weight="fill" />
-              <span className="font-medium">{t('inmobiliaria.operaciones.renovacion.approval.bothApproved')}</span>
-            </div>
-          </CardContent>
-        </Card>
+        <Button className="w-full" size="lg" onClick={onTenantApproved}>
+          <CheckCircle className="h-4 w-4 mr-2" />
+          Continuar a la firma
+        </Button>
       )}
     </div>
   );
@@ -529,13 +675,24 @@ export function StepSignature({
   onSignatureComplete,
 }: {
   renovacion: Renovacion;
-  onSignatureComplete: () => void;
+  onSignatureComplete: (file: File) => void | Promise<void>;
 }) {
   const { t } = useI18n();
   const [signedFile, setSignedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [signatureDate, setSignatureDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
+
+  const handleComplete = async () => {
+    if (!signedFile) return;
+    setIsUploading(true);
+    try {
+      await onSignatureComplete(signedFile);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -548,7 +705,7 @@ export function StepSignature({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="aspect-[8.5/11] bg-slate-100 dark:bg-slate-900/50 rounded-lg flex items-center justify-center">
+          <div className="aspect-[8.5/11] bg-surface-muted/50 rounded-md flex items-center justify-center">
             <div className="text-center text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p className="text-sm">{t('inmobiliaria.operaciones.renovacion.signature.preview')}</p>
@@ -564,14 +721,14 @@ export function StepSignature({
       <div className="space-y-2">
         <Label>{t('inmobiliaria.operaciones.renovacion.signature.upload')}</Label>
         <div
-          className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+          className={`border-2 border-dashed rounded-md p-6 text-center transition-colors ${
             signedFile
-              ? 'border-emerald-300 bg-emerald-50/50 dark:border-emerald-700 dark:bg-emerald-900/10'
-              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+              ? 'border-success/30 bg-success-soft'
+              : 'border-border hover:border-fg-muted/40'
           }`}
         >
           {signedFile ? (
-            <div className="flex items-center justify-center gap-2 text-emerald-600">
+            <div className="flex items-center justify-center gap-2 text-success">
               <CheckCircle className="h-5 w-5" weight="fill" />
               <span className="font-medium">{signedFile.name}</span>
             </div>
@@ -581,6 +738,7 @@ export function StepSignature({
               <p className="text-sm text-muted-foreground">
                 {t('inmobiliaria.operaciones.renovacion.signature.dragOrClick')}
               </p>
+              {/* allowlist: hidden type=file behind a custom drag/click dropzone (playbook file-input allowlist) */}
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
@@ -605,13 +763,15 @@ export function StepSignature({
 
       {/* Complete Button */}
       <Button
-        onClick={onSignatureComplete}
+        onClick={handleComplete}
         className="w-full"
         size="lg"
-        disabled={!signedFile}
+        disabled={!signedFile || isUploading}
       >
         <PenNib className="h-4 w-4 mr-2" />
-        {t('inmobiliaria.operaciones.renovacion.signature.register')}
+        {isUploading
+          ? 'Subiendo documento…'
+          : t('inmobiliaria.operaciones.renovacion.signature.register')}
       </Button>
     </div>
   );
@@ -624,8 +784,8 @@ export function StepCompleted({ renovacion }: { renovacion: Renovacion }) {
   return (
     <div className="space-y-4 text-center">
       <div className="py-8">
-        <div className="mx-auto w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
-          <FlagCheckered className="h-10 w-10 text-emerald-600" weight="fill" />
+        <div className="mx-auto w-20 h-20 rounded-full bg-success-soft flex items-center justify-center mb-4">
+          <FlagCheckered className="h-10 w-10 text-success" weight="fill" />
         </div>
         <h3 className="text-xl font-bold mb-2">{t('inmobiliaria.operaciones.renovacion.completed.title')}</h3>
         <p className="text-muted-foreground">
@@ -646,7 +806,7 @@ export function StepCompleted({ renovacion }: { renovacion: Renovacion }) {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.completed.newRent')}</span>
-              <span className="font-bold text-emerald-600">{formatCurrency(finalRent)}</span>
+              <span className="font-bold text-success">{formatCurrency(finalRent)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t('inmobiliaria.operaciones.renovacion.completed.term')}</span>
@@ -666,11 +826,9 @@ export function StepCompleted({ renovacion }: { renovacion: Renovacion }) {
 export function WorkflowSidebar({
   renovacion,
   onAddNote,
-  onTerminate,
 }: {
   renovacion: Renovacion;
   onAddNote: (note: string) => void;
-  onTerminate: () => void;
 }) {
   const { t, locale } = useI18n();
   const [note, setNote] = useState('');
@@ -691,13 +849,13 @@ export function WorkflowSidebar({
       </Card>
 
       {/* Countdown */}
-      <Card className={daysUntilExpiry <= 30 ? 'border-red-200 dark:border-red-800' : ''}>
+      <Card className={daysUntilExpiry <= 30 ? 'border-danger/30' : ''}>
         <CardContent className="pt-4 text-center">
           <Clock className={`h-8 w-8 mx-auto mb-2 ${
-            daysUntilExpiry <= 30 ? 'text-red-500' : 'text-amber-500'
+            daysUntilExpiry <= 30 ? 'text-danger' : 'text-warning'
           }`} />
           <p className={`text-3xl font-bold ${
-            daysUntilExpiry <= 30 ? 'text-red-600' : 'text-amber-600'
+            daysUntilExpiry <= 30 ? 'text-danger' : 'text-warning'
           }`}>
             {daysUntilExpiry}
           </p>
@@ -715,9 +873,9 @@ export function WorkflowSidebar({
             {renovacion.history.map((item, index) => (
               <div key={index} className="flex gap-3">
                 <div className="flex flex-col items-center">
-                  <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+                  <div className="w-2 h-2 rounded-full bg-surface-muted" />
                   {index < renovacion.history.length - 1 && (
-                    <div className="w-px h-full bg-slate-200 dark:bg-slate-700" />
+                    <div className="w-px h-full bg-surface-muted" />
                   )}
                 </div>
                 <div className="pb-3">
@@ -767,16 +925,6 @@ export function WorkflowSidebar({
           </div>
         </CardContent>
       </Card>
-
-      {/* Quick Actions */}
-      <Button
-        variant="outline"
-        className="w-full text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
-        onClick={onTerminate}
-      >
-        <X className="h-4 w-4 mr-2" />
-        {t('inmobiliaria.operaciones.renovacion.sidebar.terminate')}
-      </Button>
     </div>
   );
 }

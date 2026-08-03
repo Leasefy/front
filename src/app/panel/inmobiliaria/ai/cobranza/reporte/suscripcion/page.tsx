@@ -18,8 +18,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { CaretLeft } from '@phosphor-icons/react'
+import { MonoLabel } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -85,13 +84,6 @@ function SuscripcionContent() {
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-2xl">
       <div>
-        <Link
-          href="/panel/inmobiliaria/ai/cobranza/reporte"
-          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
-        >
-          <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
-          {t('inmobiliaria.ai.cobranza.reporte.pageTitle')}
-        </Link>
         <h1 className="text-h2 font-heading text-foreground mt-2">
           {t('inmobiliaria.ai.cobranza.reporte.subscription.pageTitle')}
         </h1>
@@ -121,10 +113,10 @@ function SuscripcionContent() {
 
           {/* Admin aggregate — read only */}
           {isAdmin && (
-            <div className="rounded-xl border border-border bg-card shadow-sm p-4 space-y-1">
-              <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+            <div className="rounded-xl border border-border bg-card p-4 space-y-1">
+              <MonoLabel>
                 {locale.startsWith('es') ? 'Vista agregada (admin)' : 'Aggregate view (admin)'}
-              </h2>
+              </MonoLabel>
               {!statsSupported ? (
                 <p className="text-xs font-mono text-muted-foreground">
                   {locale.startsWith('es')

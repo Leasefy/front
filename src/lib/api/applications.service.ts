@@ -10,6 +10,7 @@ import type {
   CreateApplicationDto,
   PaginatedApplications,
   LandlordCandidate,
+  AllCandidatesResponse,
   LandlordApplicationDetail,
   EvaluationResult,
   EvaluationTriggerResponse,
@@ -311,6 +312,11 @@ export const applicationsApi = {
 // ============================================================================
 
 export const landlordApplicationsApi = {
+  /** GET /landlord/candidates — all candidates across all properties, with stats */
+  async getAllCandidates(): Promise<AllCandidatesResponse> {
+    return apiClient.get<AllCandidatesResponse>('/landlord/candidates');
+  },
+
   /** GET /landlord/properties/:propertyId/candidates */
   async getCandidates(propertyId: string): Promise<LandlordCandidate[]> {
     return apiClient.get<LandlordCandidate[]>(

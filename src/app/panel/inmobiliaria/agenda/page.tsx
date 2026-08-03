@@ -1,22 +1,29 @@
 'use client';
 
+import { useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { CalendarBlank, Plus, Info } from '@phosphor-icons/react';
+import { CalendarBlank, CalendarPlus, Plus, Info } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button } from '@/components/ui/button';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Spinner } from '@/components/ui/spinner';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
+import type { AgendaListResponse, EventoAgenda, EventoTipo, EventoEstado } from '@/lib/api/agenda.types';
+import { agendaApi } from '@/lib/api/agenda.service';
+import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 
 /** Resumen por tipo de evento — color por tipo (estático). */
 const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_AGENDA_VACIO }[] = [
-  { key: 'visitas', dot: 'bg-indigo-500', field: 'visitas' },
-  { key: 'firmas', dot: 'bg-amber-500', field: 'firmasPendientes' },
-  { key: 'vencimientos', dot: 'bg-rose-500', field: 'vencimientos' },
-  { key: 'seguimientos', dot: 'bg-blue-500', field: 'seguimientos' },
-  { key: 'inspecciones', dot: 'bg-teal-500', field: 'inspecciones' },
-  { key: 'tareas', dot: 'bg-violet-500', field: 'tareas' },
+  { key: 'visitas', dot: 'bg-primary', field: 'visitas' },
+  { key: 'firmas', dot: 'bg-warning-500', field: 'firmasPendientes' },
+  { key: 'vencimientos', dot: 'bg-error-500', field: 'vencimientos' },
+  { key: 'seguimientos', dot: 'bg-primary', field: 'seguimientos' },
+  { key: 'inspecciones', dot: 'bg-neutral-300 dark:bg-neutral-600', field: 'inspecciones' },
+  { key: 'tareas', dot: 'bg-neutral-300 dark:bg-neutral-600', field: 'tareas' },
 ];
 
 const COLUMNS = [
@@ -24,10 +31,80 @@ const COLUMNS = [
   'colVinculo', 'colResponsable', 'colEstado',
 ];
 
+/** Dot color per event type (matches the summary tiles). */
+const TIPO_DOT: Record<EventoTipo, string> = {
+  visita: 'bg-primary',
+  firma_pendiente: 'bg-warning-500',
+  vencimiento_contrato: 'bg-error-500',
+  seguimiento: 'bg-primary',
+  inspeccion: 'bg-neutral-300 dark:bg-neutral-600',
+  tarea: 'bg-neutral-300 dark:bg-neutral-600',
+};
+
+/** Badge classes per event status. */
+const ESTADO_BADGE: Record<EventoEstado, string> = {
+  pendiente: 'bg-primary/10 text-primary',
+  completado: 'bg-success-500/10 text-success-600 dark:text-success-400',
+  vencido: 'bg-error-500/10 text-error-600 dark:text-error-400',
+  cancelado: 'bg-neutral-400/10 text-muted-foreground',
+};
+
+/** Recover the raw PropertyVisit id from an agenda event id (`visit-<uuid>`). */
+const visitIdOf = (eventId: string) => eventId.replace(/^visit-/, '');
+
 function AgendaContent() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const k = (s: string) => `inmobiliaria.agenda.${s}`;
-  const resumen = RESUMEN_AGENDA_VACIO;
+
+  const [data, setData] = useState<AgendaListResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [citaOpen, setCitaOpen] = useState(false);
+  const [actingId, setActingId] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    setIsLoading(true);
+    setError(false);
+    agendaApi
+      .getAgenda()
+      .then(setData)
+      .catch(() => setError(true))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  // Confirm / reject / cancel a visit straight from the feed, then refresh.
+  const runCitaAction = useCallback(
+    async (visitId: string, action: () => Promise<void>) => {
+      setActingId(visitId);
+      try {
+        await action();
+        toast.success(t(k('citaAccionOk')));
+        load();
+      } catch {
+        toast.error(t(k('citaAccionError')));
+      } finally {
+        setActingId(null);
+      }
+    },
+    [load, t],
+  );
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const resumen = data?.resumen ?? RESUMEN_AGENDA_VACIO;
+  const eventos = data?.eventos ?? [];
+
+  const formatFecha = (iso: string) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(d);
+  };
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -38,22 +115,22 @@ function AgendaContent() {
           <h1 className="text-h2 text-foreground">{t(k('title'))}</h1>
           <p className="text-body text-muted-foreground max-w-2xl">{t(k('subtitle'))}</p>
         </div>
-        <button
-          onClick={() => toast.info(t(k('newSoon')))}
-          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground font-mono uppercase tracking-wide text-sm transition-transform active:scale-[0.97] flex-shrink-0"
-        >
-          <Plus className="w-4 h-4" weight="bold" />
-          {t(k('new'))}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="outline" onClick={() => setCitaOpen(true)} hideArrow>
+            <CalendarPlus className="w-4 h-4" weight="bold" />
+            {t(k('pedirCita'))}
+          </Button>
+          <Button onClick={() => toast.info(t(k('newSoon')))} hideArrow>
+            <Plus className="w-4 h-4" weight="bold" />
+            {t(k('new'))}
+          </Button>
+        </div>
       </header>
 
-      {/* Honest M1 banner */}
-      <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 p-3 flex items-start gap-2.5">
-        <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" weight="fill" />
-        <div>
-          <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">{t(k('m1BannerTitle'))}</p>
-          <p className="text-xs text-blue-600 dark:text-blue-300/90 mt-0.5">{t(k('m1BannerDesc'))}</p>
-        </div>
+      {/* Engine note — system events are live; tasks/follow-ups are next */}
+      <div className="rounded-xl bg-primary/10 border border-primary/30 p-3 flex items-start gap-2.5">
+        <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
+        <p className="text-xs text-primary/90">{t(k('engineNote'))}</p>
       </div>
 
       {/* Resumen por tipo */}
@@ -66,48 +143,135 @@ function AgendaContent() {
                 <span className={cn('w-2 h-2 rounded-full flex-shrink-0', item.dot)} />
                 <span className="text-caption text-muted-foreground truncate">{t(k(`tipo_${item.key}`))}</span>
               </div>
-              <p className="mt-1.5 text-2xl font-mono tabular-nums text-foreground">{resumen[item.field]}</p>
+              <p className="mt-1.5 text-2xl font-semibold tabular-nums text-foreground">{resumen[item.field]}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Eventos y tareas */}
-      <section className="rounded-2xl border border-border bg-card overflow-hidden">
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex items-center gap-3 p-5 border-b border-border">
-          <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center flex-shrink-0">
-            <CalendarBlank className="w-[18px] h-[18px] text-indigo-600 dark:text-indigo-400" />
+          <div className="w-9 h-9 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <CalendarBlank className="w-[18px] h-[18px] text-primary" />
           </div>
           <div>
             <h2 className="text-h4 text-foreground">{t(k('listTitle'))}</h2>
             <p className="text-caption text-muted-foreground mt-0.5">{t(k('listDesc'))}</p>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Spinner />
+          </div>
+        ) : error ? (
+          <div className="py-14 text-center space-y-3">
+            <p className="text-sm text-muted-foreground">{t(k('loadError'))}</p>
+            <Button variant="outline" onClick={load} hideArrow className="mx-auto">
+              {t(k('retry'))}
+            </Button>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
                 {COLUMNS.map((c) => (
-                  <th key={c} className="text-left px-5 py-2.5 text-label text-muted-foreground font-normal whitespace-nowrap">
+                  <TableHead key={c} className="whitespace-nowrap">
                     {t(k(c))}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colSpan={COLUMNS.length} className="p-0">
-                  <EmptyState
-                    icon={CalendarBlank}
-                    title={t(k('emptyTitle'))}
-                    description={t(k('emptyDesc'))}
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {eventos.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={COLUMNS.length} className="p-0">
+                    <EmptyState
+                      icon={CalendarBlank}
+                      title={t(k('emptyTitle'))}
+                      description={t(k('emptyDesc'))}
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                eventos.map((e: EventoAgenda) => (
+                  <TableRow key={e.id}>
+                    <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
+                      {formatFecha(e.fecha)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="min-w-0">
+                        <p className="text-foreground font-medium truncate">{e.titulo}</p>
+                        {e.descripcion && (
+                          <p className="text-caption text-muted-foreground truncate">{e.descripcion}</p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className={cn('w-2 h-2 rounded-full flex-shrink-0', TIPO_DOT[e.tipo])} />
+                        <span className="text-muted-foreground">{t(k(`rowTipo_${e.tipo}`))}</span>
+                      </span>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {t(k(`origen_${e.origen}`))}
+                    </TableCell>
+                    <TableCell className="max-w-[220px]">
+                      <span className="text-muted-foreground truncate block">
+                        {e.vinculoLabel ?? t(k('sinVinculo'))}
+                      </span>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {e.responsableNombre ?? t(k('sinVinculo'))}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-caption font-medium', ESTADO_BADGE[e.estado])}>
+                          {t(k(`estado_${e.estado}`))}
+                        </span>
+                        {e.tipo === 'visita' && e.estadoRaw === 'PENDING' && (
+                          <span className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              disabled={actingId === visitIdOf(e.id)}
+                              onClick={() => runCitaAction(visitIdOf(e.id), () => agendaApi.aceptarCita(visitIdOf(e.id)))}
+                              className="text-caption font-medium text-success-600 dark:text-success-400 hover:underline disabled:opacity-50"
+                            >
+                              {t(k('citaConfirmar'))}
+                            </button>
+                            <span className="text-border">·</span>
+                            <button
+                              type="button"
+                              disabled={actingId === visitIdOf(e.id)}
+                              onClick={() => runCitaAction(visitIdOf(e.id), () => agendaApi.rechazarCita(visitIdOf(e.id)))}
+                              className="text-caption font-medium text-error-600 dark:text-error-400 hover:underline disabled:opacity-50"
+                            >
+                              {t(k('citaRechazar'))}
+                            </button>
+                          </span>
+                        )}
+                        {e.tipo === 'visita' && e.estadoRaw === 'ACCEPTED' && (
+                          <button
+                            type="button"
+                            disabled={actingId === visitIdOf(e.id)}
+                            onClick={() => runCitaAction(visitIdOf(e.id), () => agendaApi.cancelarCita(visitIdOf(e.id)))}
+                            className="text-caption font-medium text-muted-foreground hover:underline disabled:opacity-50"
+                          >
+                            {t(k('citaCancelar'))}
+                          </button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        )}
       </section>
+
+      <PedirCitaModal isOpen={citaOpen} onClose={() => setCitaOpen(false)} onCreated={load} />
     </div>
   );
 }

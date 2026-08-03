@@ -5,6 +5,7 @@
 // Browser handles Range/206 negotiation automatically; DO NOT add MediaSource.
 
 import { useEffect, useState, type KeyboardEvent } from 'react'
+import { IconButton, SegmentedControl } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import {
@@ -128,7 +129,7 @@ export default function CallAudioPlayer({
       aria-describedby="audio-seek-help"
       onKeyDown={onContainerKey}
       tabIndex={0}
-      className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+      className="rounded-xl border border-border bg-surface p-3 focus:outline-none focus:ring-2 focus:ring-primary"
     >
       {/* Visually-hidden keyboard help for screen-reader users (XR-06) */}
       <span id="audio-seek-help" className="sr-only">
@@ -137,15 +138,16 @@ export default function CallAudioPlayer({
       <audio ref={audioRef} src={objectUrl} preload="metadata" />
 
       {audioError && (
-        <p className="mb-2 text-xs text-red-600 dark:text-red-400" role="status">
+        <p className="mb-2 text-xs text-danger" role="status">
           {t('inmobiliaria.ai.cobranza.call.player.audioError')}
         </p>
       )}
 
       <div className="flex items-center gap-3">
         {/* Play / Pause */}
-        <button
+        <IconButton
           type="button"
+          variant="ghost"
           onClick={togglePlay}
           aria-label={
             isPlaying
@@ -153,35 +155,36 @@ export default function CallAudioPlayer({
               : t('inmobiliaria.ai.cobranza.call.player.play')
           }
           aria-pressed={isPlaying}
-          className="inline-flex items-center justify-center min-h-11 min-w-11 rounded-full bg-violet-600 hover:bg-violet-700 text-white"
-        >
-          {isPlaying ? (
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <rect x="6" y="5" width="4" height="14" rx="1" />
-              <rect x="14" y="5" width="4" height="14" rx="1" />
-            </svg>
-          ) : (
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          )}
-        </button>
+          className="min-h-11 min-w-11 rounded-full bg-ink hover:bg-ink/90 text-primary-fg"
+          icon={
+            isPlaying ? (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <rect x="6" y="5" width="4" height="14" rx="1" />
+                <rect x="14" y="5" width="4" height="14" rx="1" />
+              </svg>
+            ) : (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            )
+          }
+        />
 
         {/* Time + progress */}
         <div className="flex-1 flex items-center gap-3">
-          <span className="text-xs tabular-nums text-neutral-600 dark:text-neutral-400 min-w-[4ch]">
+          <span className="text-xs tabular-nums text-fg-muted min-w-[4ch]">
             {formatSec(currentTime)}
           </span>
           <input
@@ -198,10 +201,10 @@ export default function CallAudioPlayer({
             aria-valuemax={Number.isFinite(duration) && duration > 0 ? duration : 0}
             aria-valuenow={Math.floor(currentTime)}
             aria-valuetext={formatSec(currentTime)}
-            className="flex-1 h-11 accent-violet-600 cursor-pointer"
+            className="flex-1 h-11 accent-[#14130F] cursor-pointer"
             // h-11 gives a 44px tap row; the visual thumb sits centered inside.
           />
-          <span className="text-xs tabular-nums text-neutral-600 dark:text-neutral-400 min-w-[4ch]">
+          <span className="text-xs tabular-nums text-fg-muted min-w-[4ch]">
             {formatSec(duration)}
           </span>
         </div>
@@ -213,31 +216,18 @@ export default function CallAudioPlayer({
         role="group"
         aria-label={t('inmobiliaria.ai.cobranza.call.player.speed')}
       >
-        <span className="text-xs text-neutral-500 dark:text-neutral-400">
+        <span className="text-xs text-fg-subtle">
           {t('inmobiliaria.ai.cobranza.call.player.speed')}
         </span>
-        {ALLOWED_SPEEDS.map((s: PlaybackSpeed) => {
-          const active = s === speed
-          return (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setSpeed(s)}
-              aria-pressed={active}
-              aria-label={t('inmobiliaria.ai.cobranza.call.player.speedLabel', {
-                speed: String(s),
-              })}
-              className={
-                'min-h-11 min-w-11 rounded-lg px-2 text-xs font-semibold transition-colors ' +
-                (active
-                  ? 'bg-violet-600 text-white'
-                  : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700')
-              }
-            >
-              {s}x
-            </button>
-          )
-        })}
+        <SegmentedControl
+          value={String(speed)}
+          onChange={(v) => setSpeed(Number(v) as PlaybackSpeed)}
+          aria-label={t('inmobiliaria.ai.cobranza.call.player.speed')}
+          options={ALLOWED_SPEEDS.map((s: PlaybackSpeed) => ({
+            value: String(s),
+            label: `${s}x`,
+          }))}
+        />
       </div>
     </div>
   )

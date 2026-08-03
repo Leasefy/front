@@ -102,6 +102,11 @@ interface ApplicationContextValue {
   completedSteps: number[];
   isStepCompleted: (step: number) => boolean;
 
+  // Prefill disclosure: true when data was prefilled from a previous
+  // application and the user has not dismissed the notice yet
+  showPrefillNotice: boolean;
+  dismissPrefillNotice: () => void;
+
   // Step validation
   validateCurrentStep: () => ValidationResult;
   currentStepValidation: ValidationResult;
@@ -123,7 +128,9 @@ const ApplicationContext = createContext<ApplicationContextValue | null>(null);
 
 interface ApplicationProviderProps {
   propertyId: string;
-  children: ReactNode;
+  // Optional so the classic JSX runtime (children passed positionally, not in
+  // the props object) typechecks when the provider is rendered with children.
+  children?: ReactNode;
   initialName?: string;
   initialEmail?: string;
   // Agent attribution (from shareable links)
@@ -151,9 +158,16 @@ export function ApplicationProvider({
   initialApplication,
 }: ApplicationProviderProps) {
   const [application, setApplication] = useState<Application>(() => {
-    // Update mode: start from the existing application data
+    // Update mode: start from the existing application data. Its steps were
+    // genuinely completed by the user on first submission, so seed them as
+    // confirmed from data presence (the application already passed validation).
     if (mode === 'update' && initialApplication) {
-      return { ...initialApplication, currentStep: 1 };
+      return {
+        ...initialApplication,
+        currentStep: 1,
+        confirmedSteps:
+          initialApplication.confirmedSteps ?? getDataCompleteSteps(initialApplication),
+      };
     }
     const emptyApp = createEmptyApplication(propertyId);
     // Pre-fill name and email if provided from lead capture
@@ -318,6 +332,9 @@ export function ApplicationProvider({
             references: data.references ?? prev.references,
             hasCoSigner: data.hasCoSigner ?? prev.hasCoSigner,
             coSigner: (data.coSigner as unknown as Application['coSigner']) ?? prev.coSigner,
+            // Prefilled data is a convenience, not a confirmation: steps stay
+            // unconfirmed and the wizard shows a notice asking to review them.
+            prefilledAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };
         });
@@ -695,6 +712,21 @@ export function ApplicationProvider({
   );
 
   // ========================================================================
+  // Prefill disclosure notice
+  // ========================================================================
+
+  const showPrefillNotice =
+    mode === 'create' && !!application.prefilledAt && !application.prefillNoticeDismissed;
+
+  const dismissPrefillNotice = useCallback(() => {
+    setApplication((prev) => ({
+      ...prev,
+      prefillNoticeDismissed: true,
+      updatedAt: new Date().toISOString(),
+    }));
+  }, []);
+
+  // ========================================================================
   // Step validation
   // ========================================================================
 
@@ -722,13 +754,25 @@ export function ApplicationProvider({
     const validation = validateCurrentStep();
     if (validation.isValid) {
       setAttemptedAdvance(false);
-      nextStep();
+      // Advancing is the user's explicit confirmation of the current step —
+      // record it together with the navigation so both persist atomically.
+      setApplication((prev) => {
+        const confirmed = prev.confirmedSteps ?? [];
+        return {
+          ...prev,
+          confirmedSteps: confirmed.includes(prev.currentStep)
+            ? confirmed
+            : [...confirmed, prev.currentStep],
+          currentStep: Math.min(prev.currentStep + 1, totalSteps),
+          updatedAt: new Date().toISOString(),
+        };
+      });
       return true;
     } else {
       setAttemptedAdvance(true);
       return false;
     }
-  }, [validateCurrentStep, nextStep]);
+  }, [validateCurrentStep, totalSteps]);
 
   // Reset attemptedAdvance when changing steps
   useEffect(() => {
@@ -792,6 +836,9 @@ export function ApplicationProvider({
 
     completedSteps,
     isStepCompleted,
+
+    showPrefillNotice,
+    dismissPrefillNotice,
 
     validateCurrentStep,
     currentStepValidation,
@@ -879,10 +926,30 @@ function sanitizeDocumentsForStorage(
 }
 
 /**
- * Determine which steps have been started/completed
- * For MVP, we consider a step completed if it has some data
+ * Steps the wizard shows as completed: the user must have explicitly advanced
+ * through the step (confirmedSteps) AND its data must still be present. Data
+ * presence alone is NOT enough — prefilled data requires user review, so a
+ * freshly prefilled wizard starts with zero completed steps.
  */
 function getCompletedSteps(application: Application): number[] {
+  const confirmed = application.confirmedSteps ?? [];
+  const dataComplete = getDataCompleteSteps(application);
+  const completed = dataComplete.filter((step) => step < 6 && confirmed.includes(step));
+
+  // Step 6: Review - all previous steps confirmed with their data intact
+  if (completed.length === 5) {
+    completed.push(6);
+  }
+
+  return completed;
+}
+
+/**
+ * Steps whose data is present (the pre-confirmation notion of "complete").
+ * Used to seed confirmedSteps in update mode, where the data was genuinely
+ * entered and validated by the user on first submission.
+ */
+function getDataCompleteSteps(application: Application): number[] {
   const completed: number[] = [];
 
   // Step 1: Personal - has at least name and document

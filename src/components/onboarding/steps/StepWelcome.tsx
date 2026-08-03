@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { User, Phone, Envelope, ChatCircle, UserCircle } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
 import { useOnboarding } from '@/lib/context/OnboardingContext'
 import type { PreferredContact } from '@/lib/auth/types'
 
@@ -38,13 +39,13 @@ export function StepWelcome() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center pb-2"
       >
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-100 mb-4">
-          <UserCircle className="w-8 h-8 text-indigo-600" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-primary-soft mb-4">
+          <UserCircle className="w-8 h-8 text-[#1A40FF]" />
         </div>
-        <h3 className="text-2xl font-bold text-neutral-900">
+        <h3 className="text-2xl font-bold text-fg">
           ¡Hola! Cuéntanos sobre ti
         </h3>
-        <p className="text-neutral-500 mt-2 max-w-md mx-auto">
+        <p className="text-fg-subtle mt-2 max-w-md mx-auto">
           Esta información nos ayuda a personalizar tu experiencia y comunicarnos contigo efectivamente.
         </p>
       </motion.div>
@@ -55,25 +56,19 @@ export function StepWelcome() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <label className="block text-sm font-semibold text-neutral-700 mb-2">
+        <label className="block text-sm font-semibold text-fg-muted mb-2">
           ¿Cómo te llamamos? *
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <User className="h-5 w-5 text-neutral-400" />
+            <User className="h-5 w-5 text-fg-subtle" />
           </div>
-          <input
+          <Input
             type="text"
             value={draft.displayName || ''}
             onChange={(e) => updateDraft({ displayName: e.target.value })}
             placeholder="Tu nombre"
-            className={cn(
-              'w-full pl-12 pr-4 py-4 text-base rounded-xl border bg-white',
-              'transition-all duration-200',
-              'placeholder:text-neutral-400',
-              'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500',
-              draft.displayName ? 'border-indigo-200 bg-indigo-50/30' : 'border-neutral-200'
-            )}
+            className={cn('h-12 pl-12 rounded-xl', draft.displayName && 'border-primary/30 bg-primary-soft/30')}
           />
         </div>
       </motion.div>
@@ -84,29 +79,23 @@ export function StepWelcome() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <label className="block text-sm font-semibold text-neutral-700 mb-2">
+        <label className="block text-sm font-semibold text-fg-muted mb-2">
           Teléfono de contacto
-          <span className="font-normal text-neutral-400 ml-1">(opcional)</span>
+          <span className="font-normal text-fg-subtle ml-1">(opcional)</span>
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Phone className="h-5 w-5 text-neutral-400" />
+            <Phone className="h-5 w-5 text-fg-subtle" />
           </div>
-          <input
+          <Input
             type="tel"
             value={draft.phone || ''}
             onChange={(e) => updateDraft({ phone: e.target.value })}
             placeholder="300 123 4567"
-            className={cn(
-              'w-full pl-12 pr-4 py-4 text-base rounded-xl border bg-white',
-              'transition-all duration-200',
-              'placeholder:text-neutral-400',
-              'focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500',
-              draft.phone ? 'border-indigo-200 bg-indigo-50/30' : 'border-neutral-200'
-            )}
+            className={cn('h-12 pl-12 rounded-xl', draft.phone && 'border-primary/30 bg-primary-soft/30')}
           />
         </div>
-        <p className="text-xs text-neutral-400 mt-2">
+        <p className="text-xs text-fg-subtle mt-2">
           Lo usaremos solo para notificaciones importantes sobre tus propiedades.
         </p>
       </motion.div>
@@ -117,7 +106,7 @@ export function StepWelcome() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <label className="block text-sm font-semibold text-neutral-700 mb-3">
+        <label className="block text-sm font-semibold text-fg-muted mb-3">
           ¿Cómo prefieres que te contactemos?
         </label>
         <div className="grid grid-cols-3 gap-3">
@@ -136,14 +125,14 @@ export function StepWelcome() {
                 className={cn(
                   'relative flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200',
                   isSelected
-                    ? 'border-indigo-500 bg-indigo-50 shadow-md'
-                    : 'border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-sm'
+                    ? 'border-[#1A40FF]/30 bg-primary-soft'
+                    : 'border-border bg-surface hover:border-border-strong'
                 )}
               >
                 <div
                   className={cn(
-                    'w-10 h-10 rounded-lg flex items-center justify-center transition-colors',
-                    isSelected ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono' : 'bg-neutral-100 text-neutral-500'
+                    'w-10 h-10 rounded-md flex items-center justify-center transition-colors',
+                    isSelected ? 'bg-[#1A40FF] text-white' : 'bg-surface-muted text-fg-subtle'
                   )}
                 >
                   <Icon className="w-5 h-5" />
@@ -152,19 +141,19 @@ export function StepWelcome() {
                   <p
                     className={cn(
                       'text-sm font-semibold',
-                      isSelected ? 'text-indigo-600' : 'text-neutral-700'
+                      isSelected ? 'text-[#1A40FF]' : 'text-fg-muted'
                     )}
                   >
                     {option.label}
                   </p>
-                  <p className="text-[10px] text-neutral-400 mt-0.5">{option.description}</p>
+                  <p className="text-[10px] text-fg-subtle mt-0.5">{option.description}</p>
                 </div>
 
                 {/* Selection indicator */}
                 {isSelected && (
                   <motion.div
                     layoutId="contact-selection"
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center"
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-[#1A40FF] rounded-full flex items-center justify-center"
                   >
                     <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />

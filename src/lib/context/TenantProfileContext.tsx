@@ -25,10 +25,10 @@ export const RISK_LEVEL_LABELS: Record<RiskLevel, string> = {
 };
 
 export const RISK_LEVEL_COLORS: Record<RiskLevel, { bg: string; text: string; border: string }> = {
-  A: { bg: 'bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-500/20' },
-  B: { bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/20' },
-  C: { bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/20' },
-  D: { bg: 'bg-red-500/10', text: 'text-red-600', border: 'border-red-500/20' },
+  A: { bg: 'bg-success-soft', text: 'text-success', border: 'border-success/30' },
+  B: { bg: 'bg-[#1A40FF]/10', text: 'text-[#1A40FF]', border: 'border-[#1A40FF]/30' },
+  C: { bg: 'bg-warning-soft', text: 'text-warning', border: 'border-warning/30' },
+  D: { bg: 'bg-danger-soft', text: 'text-danger', border: 'border-danger/30' },
 };
 
 // ============================================================================
@@ -93,7 +93,7 @@ export interface TenantProfile {
 // Context Value Interface
 // ============================================================================
 
-interface TenantProfileContextValue {
+export interface TenantProfileContextValue {
   profile: TenantProfile | null;
   hasVerifiedProfile: boolean;
   hasArriendoPass: boolean;
@@ -106,48 +106,6 @@ interface TenantProfileContextValue {
 // ============================================================================
 
 const TenantProfileContext = createContext<TenantProfileContextValue | null>(null);
-
-// ============================================================================
-// Mock Profile Data (for development)
-// ============================================================================
-
-const MOCK_TENANT_PROFILE: TenantProfile = {
-  fullName: 'Maria Garcia Lopez',
-  email: 'maria@ejemplo.com',
-  phone: '+57 300 123 4567',
-
-  monthlySalary: 4500000,
-  additionalIncome: 500000,
-  totalIncome: 5000000,
-  monthlyObligations: 800000,
-  availableForRent: 4200000,
-
-  employmentStatus: 'employed',
-  companyName: 'Tech Solutions SAS',
-  timeAtJob: 24,
-  contractType: 'indefinite',
-
-  riskLevel: 'B',
-  numericScore: 78,
-
-  // Mock: Tenant has Arriendo Pass (60 days from purchase)
-  subscription: {
-    type: 'arriendo_pass',
-    expiresAt: '2026-03-15T10:00:00Z', // ~60 days from lastUpdated
-  },
-
-  hasIdDocument: true,
-  hasIncomeProof: true,
-  hasEmploymentLetter: true,
-  hasBankStatements: true,
-
-  preferredCities: ['Bogotá', 'Medellín'],
-  preferredBedrooms: 2,
-  preferredPropertyTypes: ['apartment'],
-
-  profileSource: 'application',
-  lastUpdated: '2026-01-15T10:00:00Z',
-};
 
 // ============================================================================
 // Storage Key
@@ -182,9 +140,8 @@ export function TenantProfileProvider({ children }: TenantProfileProviderProps) 
       }
 
       if (applicationKeys.length === 0) {
-        // No applications found - use mock profile for demo
-        // In production, this would return null
-        setProfile(MOCK_TENANT_PROFILE);
+        // No applications yet — no profile. Consumers render their empty state.
+        setProfile(null);
         setIsLoading(false);
         return;
       }
@@ -250,13 +207,11 @@ export function TenantProfileProvider({ children }: TenantProfileProviderProps) 
 
         setProfile(extractedProfile);
       } else {
-        // Use mock profile for demo
-        setProfile(MOCK_TENANT_PROFILE);
+        setProfile(null);
       }
     } catch (error) {
       console.error('Failed to extract tenant profile:', error);
-      // Fallback to mock profile
-      setProfile(MOCK_TENANT_PROFILE);
+      setProfile(null);
     }
 
     setIsLoading(false);

@@ -12,6 +12,16 @@ import { useRouter } from 'next/navigation'
 
 import { useI18n } from '@/lib/i18n'
 import { useDebtorCalls } from '@/lib/hooks/cobranza/use-debtor-calls'
+import {
+  Button,
+  Badge,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui'
 
 void React
 
@@ -44,7 +54,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
         {Array.from({ length: 4 }, (_, i) => (
           <div
             key={i}
-            className="h-12 bg-neutral-100 dark:bg-neutral-800 rounded-md animate-pulse"
+            className="h-12 bg-neutral-100 dark:bg-neutral-800 rounded-sm animate-pulse"
           />
         ))}
       </div>
@@ -53,17 +63,19 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 flex items-center justify-between">
-        <p className="text-sm text-red-700 dark:text-red-400">
+      <div className="rounded-md border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
+        <p className="text-sm text-danger">
           {t('inmobiliaria.ai.cobranza.detail.llamadas.error')}: {error}
         </p>
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => void refetch()}
-          className="text-sm font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700"
+          hideArrow
         >
           {t('inmobiliaria.ai.cobranza.detail.llamadas.errorRetry')}
-        </button>
+        </Button>
       </div>
     )
   }
@@ -71,7 +83,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
   const calls = data?.calls ?? []
   if (calls.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
+      <div className="rounded-md border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
           {t('inmobiliaria.ai.cobranza.detail.llamadas.empty')}
         </p>
@@ -86,30 +98,30 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
   return (
     <>
       {/* md+ table */}
-      <div className="hidden md:block overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-          <thead className="bg-neutral-50 dark:bg-neutral-950/50">
-            <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+      <div className="hidden md:block overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+        <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
+          <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+            <TableRow>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.startedAt')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.duration')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.outcome')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.qa')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.compliance')}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
             {calls.map((c) => (
-              <tr
+              <TableRow
                 key={c.id}
                 role="link"
                 tabIndex={0}
@@ -117,38 +129,31 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') navigate(c.id)
                 }}
-                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                <td className="px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200">
+                <TableCell className="px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200">
                   {new Date(c.started_at).toLocaleString(locale)}
-                </td>
-                <td className="px-3 py-2 font-mono text-xs">
+                </TableCell>
+                <TableCell className="px-3 py-2 font-mono text-xs">
                   {formatDuration(c.duration_seconds)}
-                </td>
-                <td className="px-3 py-2">
+                </TableCell>
+                <TableCell className="px-3 py-2">
                   <span className="text-xs">{c.status ?? '—'}</span>
-                </td>
-                <td className="px-3 py-2">
+                </TableCell>
+                <TableCell className="px-3 py-2">
                   <span className="text-xs font-mono">
                     {c.qa_score != null ? c.qa_score.toFixed(1) : '—'}
                   </span>
-                </td>
-                <td className="px-3 py-2">
-                  <span
-                    className={
-                      'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ' +
-                      (c.compliance_flags_count > 0
-                        ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400'
-                        : 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400')
-                    }
-                  >
+                </TableCell>
+                <TableCell className="px-3 py-2">
+                  <Badge variant={c.compliance_flags_count > 0 ? 'warning' : 'success'}>
                     {c.compliance_flags_count}
-                  </span>
-                </td>
-              </tr>
+                  </Badge>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* sm cards */}
@@ -158,7 +163,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
             <button
               type="button"
               onClick={() => navigate(c.id)}
-              className="w-full text-left rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2"
+              className="w-full text-left rounded-sm border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2"
             >
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {new Date(c.started_at).toLocaleString(locale)}

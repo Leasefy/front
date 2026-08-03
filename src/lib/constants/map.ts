@@ -34,6 +34,38 @@ export function getCityCoordinates(city: string): { lat: number; lng: number } |
   return key ? CITY_COORDINATES[key] : null;
 }
 
+export interface CoordinateResolution {
+  lat: number | undefined;
+  lng: number | undefined;
+  source: 'geocoded' | 'city' | 'none';
+}
+
+/**
+ * Resolves the coordinates a property should be published with.
+ *
+ * Priority: real geocoded coordinates (set by AddressAutocomplete on the
+ * publish wizard) always win over the city-center fallback. The city-center
+ * fallback (`getCityCoordinates`) is the safety net for properties published
+ * before geocoding existed, or when the user typed a free-text address
+ * without picking a suggestion \u2014 do NOT remove it when wiring geocoding in.
+ */
+export function resolvePropertyCoordinates(draft: {
+  latitude?: number;
+  longitude?: number;
+  city: string;
+}): CoordinateResolution {
+  if (typeof draft.latitude === 'number' && typeof draft.longitude === 'number') {
+    return { lat: draft.latitude, lng: draft.longitude, source: 'geocoded' };
+  }
+
+  const cityCoords = getCityCoordinates(draft.city);
+  if (cityCoords) {
+    return { lat: cityCoords.lat, lng: cityCoords.lng, source: 'city' };
+  }
+
+  return { lat: undefined, lng: undefined, source: 'none' };
+}
+
 // Default zoom levels
 export const ZOOM_LEVELS = {
   country: 5,

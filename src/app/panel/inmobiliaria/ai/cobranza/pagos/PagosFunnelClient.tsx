@@ -25,6 +25,24 @@ import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import {
+  Button,
+  Badge,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Chip, SegmentedControl } from '@leasefy/cadence'
+import {
   usePaymentsFunnel,
   type UsePaymentsFunnelFilters,
   type PaymentsFunnelItem,
@@ -53,29 +71,25 @@ function formatCop(value: number | null | undefined): string {
   return copFormat.format(value)
 }
 
-function chipClasses(active: boolean): string {
-  return active
-    ? 'bg-violet-600 text-white border-violet-600'
-    : 'bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700 hover:border-violet-400'
-}
-
-function statusBadgeClasses(status: Status): string {
+// Semantic status tints vía tokens del DS (contrato §8). Antes: bg/text del mismo
+// hex → texto invisible; ahora soft-bg + texto sólido para contraste real.
+function statusBadgeVariant(
+  status: Status,
+): 'default' | 'secondary' | 'success' | 'warning' | 'destructive' {
   switch (status) {
     case 'approved':
-      return 'bg-green-50 text-green-700 ring-1 ring-green-200 dark:bg-green-950/30 dark:text-green-400 dark:ring-green-800'
+      return 'success'
     case 'pending':
-      return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-800'
+      return 'warning'
     case 'declined':
-      return 'bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-950/30 dark:text-red-400 dark:ring-red-800'
+      return 'destructive'
     case 'disbursed':
-      return 'bg-violet-50 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-800'
+      return 'secondary'
   }
 }
 
-function providerBadgeClasses(provider: Provider): string {
-  return provider === 'wompi'
-    ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:ring-blue-800'
-    : 'bg-purple-50 text-purple-700 ring-1 ring-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:ring-purple-800'
+function providerBadgeVariant(provider: Provider): 'default' | 'secondary' {
+  return provider === 'wompi' ? 'default' : 'secondary'
 }
 
 function KpiCard({
@@ -92,7 +106,7 @@ function KpiCard({
   return (
     <div
       data-testid={testId}
-      className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3"
+      className="rounded-lg border border-border bg-card px-4 py-3"
     >
       <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
         {label}
@@ -267,23 +281,17 @@ export default function PagosFunnelClient() {
       {/* KPI strip */}
       {renderKpis(kpis)}
 
-      {/* Date-window selector */}
+      {/* Date-window selector — excluyente → SegmentedControl (contrato §3) */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        {DATE_WINDOWS.map((w) => (
-          <button
-            key={w}
-            type="button"
-            onClick={() => setDateWindow(w)}
-            aria-pressed={dateWindow === w}
-            data-testid={`pagos-date-window-${w}`}
-            className={
-              'px-3 py-1 text-xs font-medium rounded-full border transition-colors ' +
-              chipClasses(dateWindow === w)
-            }
-          >
-            {t(`inmobiliaria.ai.cobranza.pagos.dateWindow.${w}`)}
-          </button>
-        ))}
+        <SegmentedControl<DateWindow>
+          value={dateWindow}
+          onChange={setDateWindow}
+          aria-label={t('inmobiliaria.ai.cobranza.pagos.title')}
+          options={DATE_WINDOWS.map((w) => ({
+            value: w,
+            label: t(`inmobiliaria.ai.cobranza.pagos.dateWindow.${w}`),
+          }))}
+        />
       </div>
 
       {/* Filters row */}
@@ -294,19 +302,15 @@ export default function PagosFunnelClient() {
           </legend>
           <span className="inline-flex flex-wrap gap-2 align-middle">
             {PROVIDERS.map((p) => (
-              <button
+              <Chip
                 key={p}
-                type="button"
+                size="sm"
+                selected={providers.includes(p)}
                 onClick={() => toggleProvider(p)}
-                aria-pressed={providers.includes(p)}
                 data-testid={`pagos-provider-chip-${p}`}
-                className={
-                  'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
-                  chipClasses(providers.includes(p))
-                }
               >
                 {t(`inmobiliaria.ai.cobranza.pagos.filter.${p}`)}
-              </button>
+              </Chip>
             ))}
           </span>
         </fieldset>
@@ -317,30 +321,28 @@ export default function PagosFunnelClient() {
           </legend>
           <span className="inline-flex flex-wrap gap-2 align-middle">
             {STATUSES.map((s) => (
-              <button
+              <Chip
                 key={s}
-                type="button"
+                size="sm"
+                selected={statuses.includes(s)}
                 onClick={() => toggleStatus(s)}
-                aria-pressed={statuses.includes(s)}
                 data-testid={`pagos-status-chip-${s}`}
-                className={
-                  'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ' +
-                  chipClasses(statuses.includes(s))
-                }
               >
                 {t(`inmobiliaria.ai.cobranza.pagos.status.${s}`)}
-              </button>
+              </Chip>
             ))}
           </span>
         </fieldset>
 
-        <button
-          type="button"
+        <Button
+          variant="link"
+          size="sm"
+          hideArrow
           onClick={clearFilters}
-          className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:underline"
+          className="px-0 h-auto self-center"
         >
           {t('inmobiliaria.ai.cobranza.pagos.filter.clear')}
-        </button>
+        </Button>
       </div>
 
       {/* Sort selector */}
@@ -351,97 +353,102 @@ export default function PagosFunnelClient() {
         >
           Sort:
         </label>
-        <select
-          id="pagos-sort"
-          value={sort}
-          onChange={(e) => setSort(e.target.value as PaymentsFunnelSort)}
-          data-testid="pagos-sort-select"
-          className="text-xs px-2 py-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200"
-        >
-          <option value="created_at">{t('inmobiliaria.ai.cobranza.pagos.sort.createdAt')}</option>
-          <option value="amount">{t('inmobiliaria.ai.cobranza.pagos.sort.amountDesc')}</option>
-          <option value="disbursement_pending_days">
-            {t('inmobiliaria.ai.cobranza.pagos.sort.disbursementPendingDays')}
-          </option>
-        </select>
+        <Select value={sort} onValueChange={(v) => setSort(v as PaymentsFunnelSort)}>
+          <SelectTrigger
+            id="pagos-sort"
+            data-testid="pagos-sort-select"
+            className="h-8 w-auto gap-1 text-xs"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="created_at">{t('inmobiliaria.ai.cobranza.pagos.sort.createdAt')}</SelectItem>
+            <SelectItem value="amount">{t('inmobiliaria.ai.cobranza.pagos.sort.amountDesc')}</SelectItem>
+            <SelectItem value="disbursement_pending_days">
+              {t('inmobiliaria.ai.cobranza.pagos.sort.disbursementPendingDays')}
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Error banner */}
       {error && (
-        <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 mb-4 flex items-center justify-between">
-          <p className="text-sm text-red-700 dark:text-red-400">
+        <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-3">
+          <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.pagos.error')}: {error}
           </p>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
             onClick={() => void refetch()}
-            className="text-sm font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700"
+            className="shrink-0"
           >
             {t('inmobiliaria.ai.cobranza.pagos.errorRetry')}
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-          <thead className="bg-neutral-50 dark:bg-neutral-950/50">
-            <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+      <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+        <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
+          <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+            <TableRow>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.pagos.columns.nombre')}
-              </th>
-              <th
-                className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer hover:text-violet-600"
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:text-foreground"
                 onClick={() => setSort('amount')}
                 data-testid="pagos-th-monto"
               >
                 {t('inmobiliaria.ai.cobranza.pagos.columns.monto')}
                 {sort === 'amount' && <span className="ml-1">↓</span>}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.pagos.columns.fee')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.pagos.columns.provider')}
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+              </TableHead>
+              <TableHead>
                 {t('inmobiliaria.ai.cobranza.pagos.columns.status')}
-              </th>
-              <th
-                className="px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer hover:text-violet-600"
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:text-foreground"
                 onClick={() => setSort('created_at')}
                 data-testid="pagos-th-fecha"
               >
                 {t('inmobiliaria.ai.cobranza.pagos.columns.fecha')}
                 {sort === 'created_at' && <span className="ml-1">↓</span>}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
             {isLoading && rows.length === 0 && (
               Array.from({ length: 5 }, (_, i) => (
-                <tr key={`pagos-skel-${i}`} className="animate-pulse">
+                <TableRow key={`pagos-skel-${i}`} className="animate-pulse">
                   {Array.from({ length: 6 }, (_, j) => (
-                    <td key={j} className="px-3 py-3">
+                    <TableCell key={j} className="px-3 py-3">
                       <div className="h-3 w-full bg-neutral-200 dark:bg-neutral-800 rounded" />
-                    </td>
+                    </TableCell>
                   ))}
-                </tr>
+                </TableRow>
               ))
             )}
             {!isLoading && rows.length === 0 && !error && (
-              <tr>
-                <td colSpan={6} className="px-3 py-12 text-center">
+              <TableRow>
+                <TableCell colSpan={6} className="px-3 py-12 text-center">
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
                     {t('inmobiliaria.ai.cobranza.pagos.emptyFiltered')}
                   </p>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
             {rows.map((row) => {
               const isPending = row.disbursementPendingDays >= 3
               return (
-                <tr
+                <TableRow
                   key={row.id}
                   data-testid={`pagos-row-${row.id}`}
                   onClick={() => handleRowClick(row)}
@@ -450,60 +457,51 @@ export default function PagosFunnelClient() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleRowClick(row)
                   }}
-                  className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <td className="px-3 py-2 whitespace-nowrap text-neutral-900 dark:text-white">
+                  <TableCell className="px-3 py-2 whitespace-nowrap text-neutral-900 dark:text-white">
                     <Mask field="cedula" value={row.debtor.fullName} />
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs text-neutral-900 dark:text-white">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 tabular-nums text-xs text-neutral-900 dark:text-white">
                     {formatCop(row.amount)}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs text-neutral-500 dark:text-neutral-400">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 tabular-nums text-xs text-neutral-500 dark:text-neutral-400">
                     {formatCop(row.feeCop)}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span
-                      className={
-                        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
-                        providerBadgeClasses(row.provider)
-                      }
-                    >
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
+                    <Badge variant={providerBadgeVariant(row.provider)}>
                       {t(`inmobiliaria.ai.cobranza.pagos.filter.${row.provider}`)}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <span
-                        className={
-                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
-                          statusBadgeClasses(row.status)
-                        }
-                      >
+                      <Badge variant={statusBadgeVariant(row.status)}>
                         {t(`inmobiliaria.ai.cobranza.pagos.status.${row.status}`)}
-                      </span>
+                      </Badge>
                       {isPending && (
-                        <span
+                        <Badge
+                          variant="warning"
                           data-testid={`pagos-pending-pill-${row.id}`}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 ring-1 ring-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:ring-amber-700"
+                          className="gap-1"
                         >
                           <span aria-hidden="true">⚠</span>
                           {t('inmobiliaria.ai.cobranza.pagos.pill.disbursementPending')}
-                        </span>
+                        </Badge>
                       )}
                     </div>
-                  </td>
-                  <td className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
                     {new Date(row.createdAt).toLocaleDateString('es-CO', {
                       day: '2-digit',
                       month: 'short',
                       year: 'numeric',
                     })}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Sentinel + loadingMore spinner */}

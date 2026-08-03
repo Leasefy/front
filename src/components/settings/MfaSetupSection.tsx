@@ -1,9 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ShieldCheck, Shield, SpinnerGap, Check, Copy, Warning } from '@phosphor-icons/react';
+import { ShieldCheck, Shield, Check, Copy, Warning } from '@phosphor-icons/react';
 import { getSupabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { IconButton } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
 import { SettingsModal } from './SettingsModal';
 
 type MfaState = 'idle' | 'enrolling' | 'enrolled';
@@ -223,15 +228,15 @@ export function MfaSetupSection() {
     return (
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-            <ShieldCheck className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+          <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
+            <ShieldCheck className="w-5 h-5 text-fg-muted" />
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-900 dark:text-white">Autenticacion de dos factores</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Cargando...</p>
+            <p className="text-sm font-medium text-fg">Autenticacion de dos factores</p>
+            <p className="text-xs text-fg-subtle">Cargando...</p>
           </div>
         </div>
-        <SpinnerGap className="w-5 h-5 text-neutral-400 animate-spin" />
+        <Spinner size="sm" variant="muted" />
       </div>
     );
   }
@@ -242,25 +247,28 @@ export function MfaSetupSection() {
       <>
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center shadow-sm">
-              <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5 text-success" />
             </div>
             <div>
-              <p className="text-sm font-medium text-neutral-900 dark:text-white">Autenticacion de dos factores</p>
+              <p className="text-sm font-medium text-fg">Autenticacion de dos factores</p>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full">
+                <Badge variant="success">
                   <Check className="w-3 h-3" />
                   Activada
-                </span>
+                </Badge>
               </div>
             </div>
           </div>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
             onClick={() => setShowDisableModal(true)}
-            className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            className="rounded-md text-xs text-danger border-danger/30 hover:bg-danger-soft"
           >
             Desactivar
-          </button>
+          </Button>
         </div>
 
         <SettingsModal
@@ -269,29 +277,33 @@ export function MfaSetupSection() {
           title="Desactivar 2FA"
         >
           <div className="space-y-4">
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex gap-3">
-              <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
-                <Warning className="w-5 h-5 text-red-600 dark:text-red-400" />
+            <div className="p-4 bg-danger-soft border border-danger/30 rounded-xl flex gap-3">
+              <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
+                <Warning className="w-5 h-5 text-danger" />
               </div>
-              <p className="text-sm text-red-800 dark:text-red-200">
+              <p className="text-sm text-danger">
                 Al desactivar 2FA tu cuenta sera menos segura. Solo necesitaras tu contrasena para iniciar sesion.
               </p>
             </div>
             <div className="flex gap-3 pt-2">
-              <button
+              <Button
+                variant="outline"
+                hideArrow
                 onClick={() => setShowDisableModal(false)}
-                className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+                className="flex-1 rounded-xl"
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="destructive"
+                hideArrow
+                isLoading={isLoading}
                 onClick={handleUnenroll}
                 disabled={isLoading}
-                className="flex-1 py-3 bg-red-600 text-white uppercase tracking-wide font-mono text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+                className="flex-1 rounded-xl"
               >
-                {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : null}
                 {isLoading ? 'Desactivando...' : 'Desactivar 2FA'}
-              </button>
+              </Button>
             </div>
           </div>
         </SettingsModal>
@@ -304,18 +316,18 @@ export function MfaSetupSection() {
     return (
       <div className="px-6 py-4 space-y-4">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-            <Shield className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
+            <Shield className="w-5 h-5 text-[#1A40FF] dark:text-[#5570FF]" />
           </div>
           <div>
-            <p className="text-sm font-medium text-neutral-900 dark:text-white">Configurar 2FA</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Escanea el codigo QR con tu app de autenticacion</p>
+            <p className="text-sm font-medium text-fg">Configurar 2FA</p>
+            <p className="text-xs text-fg-subtle">Escanea el codigo QR con tu app de autenticacion</p>
           </div>
         </div>
 
         {/* QR Code */}
         <div className="flex justify-center py-2">
-          <div className="p-4 bg-white rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-700">
+          <div className="p-4 bg-white rounded-xl border border-border">
             <img
               src={enrollData.qrCode}
               alt="Codigo QR para autenticacion"
@@ -325,28 +337,29 @@ export function MfaSetupSection() {
         </div>
 
         {/* Secret key for manual entry */}
-        <div className="p-3 bg-stone-50 dark:bg-[#1f1f21] rounded-xl">
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">O ingresa este codigo manualmente:</p>
+        <div className="p-3 bg-surface-muted rounded-xl">
+          <p className="text-xs text-fg-subtle mb-1">O ingresa este codigo manualmente:</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-xs font-mono text-neutral-900 dark:text-white break-all select-all">
+            <code className="flex-1 text-xs font-mono text-fg break-all select-all">
               {enrollData.secret}
             </code>
-            <button
-              onClick={handleCopySecret}
-              className="p-1.5 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors flex-shrink-0"
+            <IconButton
+              variant="ghost"
+              aria-label="Copiar código"
               title="Copiar codigo"
-            >
-              <Copy className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-            </button>
+              onClick={handleCopySecret}
+              icon={<Copy className="w-4 h-4 text-fg-subtle" />}
+              className="p-1.5 rounded-md flex-shrink-0"
+            />
           </div>
         </div>
 
         {/* Code input */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+          <label className="block text-sm font-medium text-fg-muted mb-2">
             Ingresa el codigo de 6 digitos
           </label>
-          <input
+          <Input
             type="text"
             inputMode="numeric"
             maxLength={6}
@@ -358,30 +371,34 @@ export function MfaSetupSection() {
               }
             }}
             autoFocus
-            className="w-full h-12 px-4 border border-neutral-200 dark:border-neutral-600 rounded-xl text-sm text-center tracking-[0.5em] font-mono bg-white dark:bg-[#1f1f21] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 dark:focus:border-indigo-500 transition-all"
+            className="h-12 rounded-xl text-center tracking-[0.5em] font-mono"
             placeholder="000000"
           />
         </div>
 
         {/* Action buttons */}
         <div className="flex gap-3">
-          <button
+          <Button
+            variant="outline"
+            hideArrow
             onClick={handleCancelEnroll}
-            className="flex-1 py-3 border border-neutral-200 dark:border-neutral-600 text-sm font-medium text-neutral-600 dark:text-neutral-300 rounded-xl hover:bg-neutral-50 dark:hover:bg-[#1f1f21] transition-colors"
+            className="flex-1 rounded-xl"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="secondary"
+            hideArrow
             onClick={() => {
               console.log('[MFA] Button clicked! code:', code, 'enrollData:', !!enrollData);
               handleVerifyCode();
             }}
             disabled={isLoading || code.length !== 6}
-            className="flex-1 py-3 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+            className="flex-1 rounded-xl bg-success text-white hover:bg-success"
           >
-            {isLoading ? <SpinnerGap className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+            {isLoading ? <Spinner size="xs" variant="current" /> : <ShieldCheck className="w-4 h-4" />}
             {isLoading ? 'Verificando...' : 'Verificar'}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -389,24 +406,27 @@ export function MfaSetupSection() {
 
   // Idle state - not enrolled
   return (
-    <div className="flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-[#1f1f21]/50 transition-colors">
+    <div className="flex items-center justify-between px-6 py-4 hover:bg-surface-hover transition-colors">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1f1f21] flex items-center justify-center shadow-sm">
-          <ShieldCheck className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+        <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
+          <ShieldCheck className="w-5 h-5 text-fg-muted" />
         </div>
         <div>
-          <p className="text-sm font-medium text-neutral-900 dark:text-white">Autenticacion de dos factores</p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">Capa extra de seguridad para tu cuenta</p>
+          <p className="text-sm font-medium text-fg">Autenticacion de dos factores</p>
+          <p className="text-xs text-fg-subtle">Capa extra de seguridad para tu cuenta</p>
         </div>
       </div>
-      <button
+      <Button
+        variant="secondary"
+        size="sm"
+        hideArrow
         onClick={handleStartEnroll}
         disabled={isLoading}
-        className="px-4 py-2 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+        className="rounded-md text-xs bg-success text-white hover:bg-success"
       >
-        {isLoading ? <SpinnerGap className="w-3.5 h-3.5 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
+        {isLoading ? <Spinner size="xs" variant="current" /> : <Shield className="w-3.5 h-3.5" />}
         {isLoading ? 'Cargando...' : 'Activar'}
-      </button>
+      </Button>
     </div>
   );
 }

@@ -3,15 +3,18 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock, SpinnerGap } from '@phosphor-icons/react';
+import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock } from '@phosphor-icons/react';
 
+import { toast } from 'sonner';
 import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
+import { leasesApi } from '@/lib/api/leases.service';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { Spinner } from '@/components/ui/spinner';
 
 /**
  * Tenant Leases Page - Landing Style (matching main dashboard)
@@ -66,8 +69,8 @@ export default function ArriendoPage() {
   // Loading state
   if (isOnboardingLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <SpinnerGap className="w-8 h-8 text-indigo-600 animate-spin" />
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -75,7 +78,7 @@ export default function ArriendoPage() {
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="rental" />
         </div>
@@ -86,7 +89,7 @@ export default function ArriendoPage() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <ErrorState description={error} onRetry={refetch} />
         </div>
@@ -95,7 +98,7 @@ export default function ArriendoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
@@ -104,10 +107,10 @@ export default function ArriendoPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-3xl font-medium text-fg tracking-tight">
             {t('rental.title')}
           </h1>
-          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-fg-muted">
             {locale === 'es' ? 'Gestiona tus contratos de arriendo activos' : 'Manage your active rental contracts'}
           </p>
         </motion.header>
@@ -120,43 +123,43 @@ export default function ArriendoPage() {
           className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
         >
           {/* Active Leases */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <House className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <House className="w-5 h-5 text-fg-subtle" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Arriendos activos' : 'Active rentals'}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Arriendos activos' : 'Active rentals'}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {activeLeases.length}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+            <p className="text-sm text-fg-muted mt-2">
               {locale === 'es' ? 'Contratos vigentes' : 'Current contracts'}
             </p>
           </div>
 
           {/* Total Monthly */}
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 dark:from-indigo-950/60 dark:to-indigo-900/40 border border-indigo-100 dark:border-indigo-800/60 p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <CreditCard className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <CreditCard className="w-5 h-5 text-primary" />
             </div>
-            <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">{locale === 'es' ? 'Total mensual' : 'Monthly total'}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-primary mb-1">{locale === 'es' ? 'Total mensual' : 'Monthly total'}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {formatCurrency(totalMonthlyRent)}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+            <p className="text-sm text-fg-muted mt-2">
               {locale === 'es' ? 'Arriendo + administración' : 'Rent + admin fee'}
             </p>
           </div>
 
           {/* Status */}
-          <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-6">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm mb-4">
-              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="rounded-xl bg-surface-muted p-6">
+            <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
+              <CheckCircle className="w-5 h-5 text-success" />
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">{locale === 'es' ? 'Estado general' : 'Overall status'}</p>
-            <p className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+            <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Estado general' : 'Overall status'}</p>
+            <p className="text-3xl font-bold text-fg tracking-tight">
               {locale === 'es' ? 'Al día' : 'Up to date'}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+            <p className="text-sm text-fg-muted mt-2">
               {locale === 'es' ? 'Todos los pagos al día' : 'All payments up to date'}
             </p>
           </div>
@@ -169,8 +172,8 @@ export default function ArriendoPage() {
           transition={{ delay: 0.2 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">{locale === 'es' ? 'Contratos activos' : 'Active contracts'}</h2>
-            <span className="text-sm text-neutral-500 dark:text-neutral-400">
+            <h2 className="text-xl font-semibold text-fg">{locale === 'es' ? 'Contratos activos' : 'Active contracts'}</h2>
+            <span className="text-sm text-fg-muted">
               {activeLeases.length} {locale === 'es' ? (activeLeases.length !== 1 ? 'contratos' : 'contrato') : (activeLeases.length !== 1 ? 'contracts' : 'contract')}
             </span>
           </div>
@@ -190,7 +193,7 @@ export default function ArriendoPage() {
                     transition={{ delay: 0.3 + index * 0.1 }}
                   >
                     <Link href={`/inquilino/arriendo/${lease.id}`}>
-                      <div className="group rounded-3xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600 hover:shadow-lg transition-all duration-300 overflow-hidden">
+                      <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300 overflow-hidden">
                         <div className="flex flex-col lg:flex-row">
                           {/* Image */}
                           <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
@@ -208,8 +211,8 @@ export default function ArriendoPage() {
                               <span className={cn(
                                 'px-3 py-1.5 text-xs font-medium rounded-full',
                                 lease.status === 'ending_soon'
-                                  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                                  : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                                  ? 'bg-warning-soft text-warning'
+                                  : 'bg-success-soft text-success'
                               )}>
                                 {lease.status === 'ending_soon' ? (locale === 'es' ? 'Termina pronto' : 'Ending soon') : t('common.active')}
                               </span>
@@ -218,47 +221,86 @@ export default function ArriendoPage() {
 
                           {/* Content */}
                           <div className="flex-1 p-6">
+                            {lease.renovacion && (
+                              <div className="mb-4 rounded-lg border border-primary/30 bg-primary-soft/40 p-3">
+                                <p className="text-sm font-medium text-primary flex items-center gap-1.5">
+                                  <ArrowUpRight className="w-4 h-4" />
+                                  {locale === 'es' ? 'Tu contrato está en proceso de renovación' : 'Your contract is up for renewal'}
+                                </p>
+                                <p className="text-xs text-fg-muted mt-1">
+                                  {locale === 'es' ? 'Nuevo canon propuesto: ' : 'Proposed new rent: '}
+                                  <span className="font-semibold text-fg">
+                                    {formatCurrency(lease.renovacion.proposedRent + (lease.renovacion.proposedAdminFee ?? 0))}
+                                  </span>
+                                </p>
+                                {lease.renovacion.tenantAcceptedAt ? (
+                                  <p className="mt-2 text-xs font-medium text-success flex items-center gap-1.5">
+                                    <CheckCircle className="w-4 h-4" weight="fill" />
+                                    {locale === 'es' ? 'Aceptaste la renovación' : 'You accepted the renewal'}
+                                  </p>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={async (e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      try {
+                                        await leasesApi.acceptRenovacion(lease.id);
+                                        toast.success(locale === 'es' ? 'Renovación aceptada' : 'Renewal accepted');
+                                        refetch();
+                                      } catch {
+                                        toast.error(locale === 'es' ? 'No se pudo aceptar' : 'Could not accept');
+                                      }
+                                    }}
+                                    className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90 transition-colors"
+                                  >
+                                    <CheckCircle className="w-4 h-4" />
+                                    {locale === 'es' ? 'Aceptar renovación' : 'Accept renewal'}
+                                  </button>
+                                )}
+                              </div>
+                            )}
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                               <div>
-                                <h3 className="text-lg font-semibold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                <h3 className="text-lg font-semibold text-fg group-hover:text-primary transition-colors">
                                   {lease.propertyTitle}
                                 </h3>
-                                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 flex items-center gap-1.5">
+                                <p className="text-sm text-fg-muted mt-1 flex items-center gap-1.5">
                                   <MapPin className="w-3.5 h-3.5" />
                                   {lease.propertyAddress}
                                 </p>
                               </div>
                               <div className="sm:text-right">
-                                <p className="text-2xl font-bold text-neutral-900 dark:text-white">
+                                <p className="text-2xl font-bold text-fg">
                                   {formatCurrency(lease.monthlyRent + (lease.adminFee ?? 0))}
                                 </p>
-                                <p className="text-xs text-neutral-500 dark:text-neutral-400">/mes</p>
+                                <p className="text-xs text-fg-muted">/mes</p>
                               </div>
                             </div>
 
                             {/* Contract Info Grid */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-neutral-100 dark:border-neutral-700">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-border-faint">
                               <div>
-                                <p className="text-xs text-neutral-400 mb-1">{locale === 'es' ? 'Arriendo' : 'Rent'}</p>
-                                <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Arriendo' : 'Rent'}</p>
+                                <p className="text-sm font-medium text-fg">
                                   {formatCurrency(lease.monthlyRent)}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-xs text-neutral-400 mb-1">{locale === 'es' ? 'Administración' : 'Admin fee'}</p>
-                                <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Administración' : 'Admin fee'}</p>
+                                <p className="text-sm font-medium text-fg">
                                   {formatCurrency(lease.adminFee ?? 0)}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-xs text-neutral-400 mb-1">{locale === 'es' ? 'Día de pago' : 'Payment day'}</p>
-                                <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Día de pago' : 'Payment day'}</p>
+                                <p className="text-sm font-medium text-fg">
                                   {locale === 'es' ? `Día ${lease.paymentDay}` : `Day ${lease.paymentDay}`}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-xs text-neutral-400 mb-1">{locale === 'es' ? 'Vencimiento' : 'Expiration'}</p>
-                                <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                                <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Vencimiento' : 'Expiration'}</p>
+                                <p className="text-sm font-medium text-fg">
                                   {formatShortDate(lease.endDate)}
                                 </p>
                               </div>
@@ -266,42 +308,42 @@ export default function ArriendoPage() {
 
                             {/* Contract Progress */}
                             <div className="mt-4">
-                              <div className="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+                              <div className="flex items-center justify-between text-xs text-fg-muted mb-2">
                                 <span className="flex items-center gap-1">
                                   <Calendar className="w-3 h-3" />
                                   {formatDate(lease.startDate)}
                                 </span>
                                 <span>{formatDate(lease.endDate)}</span>
                               </div>
-                              <div className="h-2 bg-neutral-100 dark:bg-neutral-700 rounded-full overflow-hidden">
+                              <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
                                 <div
                                   className={cn(
                                     "h-full rounded-full transition-all duration-500",
-                                    daysRemaining < 30 ? "bg-amber-500" : "bg-emerald-500"
+                                    daysRemaining < 30 ? "bg-warning" : "bg-success"
                                   )}
                                   style={{ width: `${leaseProgress}%` }}
                                 />
                               </div>
-                              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1.5 text-right">
+                              <p className="text-xs text-fg-muted mt-1.5 text-right">
                                 {t('dashboard.daysRemaining', { days: daysRemaining })}
                               </p>
                             </div>
 
                             {/* Next Payment */}
                             {nextPayment && (
-                              <div className="flex items-center justify-between mt-4 p-4 bg-neutral-50 dark:bg-[#222224] rounded-2xl">
+                              <div className="flex items-center justify-between mt-4 p-4 bg-surface-muted rounded-xl">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#2a2a2c] flex items-center justify-center shadow-sm">
-                                    <Clock className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                                  <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
+                                    <Clock className="w-5 h-5 text-fg-muted" />
                                   </div>
                                   <div>
-                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('dashboard.nextPayment')}</p>
-                                    <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                                    <p className="text-xs text-fg-muted">{t('dashboard.nextPayment')}</p>
+                                    <p className="text-sm font-semibold text-fg">
                                       {formatCurrency(nextPayment.amount)} · {formatShortDate(nextPayment.dueDate)}
                                     </p>
                                   </div>
                                 </div>
-                                <span className="flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">
+                                <span className="flex items-center gap-1 text-sm font-medium text-primary group-hover:text-primary transition-colors">
                                   {locale === 'es' ? 'Ver detalle' : 'View details'}
                                   <ArrowUpRight className="w-4 h-4" />
                                 </span>

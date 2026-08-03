@@ -8,7 +8,7 @@
  *
  * Three render branches (D-37-05):
  *   A — populated=false + reason='agency-gate' → return null (page handles full-page gate)
- *   B — populated=false + reason='insufficient-channel-mix' → SampleDataWatermark + stub chart
+ *   B — populated=false + reason='insufficient-channel-mix' → EmptyState (honest empty, never stub chart)
  *   C — populated=true → real data chart
  *
  * NOTE: outcome-level i18n keys are present in the 37-07 scaffold under
@@ -24,9 +24,9 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
+import { ChartBar } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
-import { SampleDataWatermark } from '@/components/data-display/SampleDataWatermark';
-import { STUB_CADENCE } from '@/lib/fixtures/cobranza-analytics-stub';
+import { EmptyState } from '@/components/data-display/EmptyState';
 
 // ─── Type Definitions ─────────────────────────────────────────────────────────
 
@@ -48,11 +48,11 @@ interface CadenceChannelMixChartProps {
 // ─── Color Map ────────────────────────────────────────────────────────────────
 
 const OUTCOME_COLORS: Record<string, string> = {
-  paid:            '#10b981', // emerald-500
-  broken_promise:  '#fbbf24', // amber-400
-  escalated:       '#f43f5e', // rose-500
-  no_answer:       '#a3a3a3', // neutral-400
-  completed:       '#818cf8', // indigo-400
+  paid:            '#3F8A53', // Cadence green (genuine positive)
+  broken_promise:  '#B3AEA5', // neutral-400 (warm)
+  escalated:       '#C0392B', // Cadence red (negative)
+  no_answer:       '#C9C4BB', // neutral-300 (warm)
+  completed:       '#1A40FF', // electric-blue (primary)
 };
 
 const OUTCOME_ORDER = ['paid', 'broken_promise', 'escalated', 'no_answer', 'completed'] as const;
@@ -90,54 +90,53 @@ export function CadenceChannelMixChart({ data }: CadenceChannelMixChartProps) {
     return null;
   }
 
-  // Branch B / C — stub or real data
-  const sourceRows: ChannelMixRow[] =
-    data.populated
-      ? data.rows
-      : (STUB_CADENCE.channelMix?.rows ?? []) as ChannelMixRow[];
+  // Branch B — no real data yet
+  if (!data.populated) {
+    return (
+      <EmptyState
+        icon={ChartBar}
+        title={t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.channelMix.title')}
+        description="Sin datos suficientes todavía"
+      />
+    );
+  }
 
-  const showWatermark = !data.populated;
-  const pivotedData = pivotRows(sourceRows);
-
-  const chart = (
-    <ResponsiveContainer width="100%" height={280}>
-      <BarChart data={pivotedData}>
-        <XAxis
-          dataKey="channel"
-          tickFormatter={(v: string) => CHANNEL_LABELS[v] ?? v}
-          tick={{ fontSize: 11 }}
-        />
-        <YAxis
-          tickFormatter={(v: number) => v.toFixed(0)}
-          tick={{ fontSize: 11 }}
-        />
-        <Tooltip />
-        <Legend wrapperStyle={{ fontSize: '11px' }} />
-        {OUTCOME_ORDER.map((outcome) => (
-          <Bar
-            key={outcome}
-            stackId="a"
-            dataKey={outcome}
-            fill={OUTCOME_COLORS[outcome]}
-            name={t(`inmobiliaria.ai.cobranza.analitica.widgets.cadence.channelMix.outcome.${
-              outcome === 'broken_promise' ? 'brokenPromise' :
-              outcome === 'no_answer'      ? 'noAnswer'      :
-              outcome
-            }`)}
-          />
-        ))}
-      </BarChart>
-    </ResponsiveContainer>
-  );
+  // Branch C — real data
+  const pivotedData = pivotRows(data.rows);
 
   return (
     <div>
-      <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+      <p className="text-xs font-medium text-fg-subtle mb-2">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.channelMix.title')}
       </p>
-      <SampleDataWatermark show={showWatermark}>
-        {chart}
-      </SampleDataWatermark>
+      <ResponsiveContainer width="100%" height={280}>
+        <BarChart data={pivotedData}>
+          <XAxis
+            dataKey="channel"
+            tickFormatter={(v: string) => CHANNEL_LABELS[v] ?? v}
+            tick={{ fontSize: 11 }}
+          />
+          <YAxis
+            tickFormatter={(v: number) => v.toFixed(0)}
+            tick={{ fontSize: 11 }}
+          />
+          <Tooltip />
+          <Legend wrapperStyle={{ fontSize: '11px' }} />
+          {OUTCOME_ORDER.map((outcome) => (
+            <Bar
+              key={outcome}
+              stackId="a"
+              dataKey={outcome}
+              fill={OUTCOME_COLORS[outcome]}
+              name={t(`inmobiliaria.ai.cobranza.analitica.widgets.cadence.channelMix.outcome.${
+                outcome === 'broken_promise' ? 'brokenPromise' :
+                outcome === 'no_answer'      ? 'noAnswer'      :
+                outcome
+              }`)}
+            />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }

@@ -16,24 +16,31 @@ import {
 interface AvailabilityScheduleEditorProps {
   schedule: AvailabilitySchedule;
   onSave: (schedule: AvailabilitySchedule) => void;
+  /** Fired on every schedule change so a parent can track it live. */
+  onChange?: (schedule: AvailabilitySchedule) => void;
+  /** Hide the built-in Reset/Save footer (when the parent owns saving). */
+  hideFooter?: boolean;
   isLoading?: boolean;
 }
 
 export function AvailabilityScheduleEditor({
   schedule: initialSchedule,
   onSave,
+  onChange,
+  hideFooter = false,
   isLoading = false,
 }: AvailabilityScheduleEditorProps) {
   const [schedule, setSchedule] = useState<AvailabilitySchedule>(initialSchedule);
   const [hasChanges, setHasChanges] = useState(false);
 
   const handleDayChange = useCallback((day: DayOfWeek, availability: DayAvailability) => {
-    setSchedule((prev) => ({
-      ...prev,
-      [day]: availability,
-    }));
+    setSchedule((prev) => {
+      const next = { ...prev, [day]: availability };
+      onChange?.(next);
+      return next;
+    });
     setHasChanges(true);
-  }, []);
+  }, [onChange]);
 
   const handleSave = useCallback(() => {
     onSave(schedule);
@@ -45,11 +52,12 @@ export function AvailabilityScheduleEditor({
 
   const handleReset = useCallback(() => {
     setSchedule(DEFAULT_AVAILABILITY_SCHEDULE);
+    onChange?.(DEFAULT_AVAILABILITY_SCHEDULE);
     setHasChanges(true);
     toast.info('Horarios restablecidos', {
       description: 'Se han aplicado los horarios por defecto.',
     });
-  }, []);
+  }, [onChange]);
 
   // Count enabled days
   const enabledDays = DAYS_OF_WEEK.filter(day => schedule[day.key].enabled).length;
@@ -86,28 +94,30 @@ export function AvailabilityScheduleEditor({
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-border">
-        <button
-          type="button"
-          onClick={handleReset}
-          disabled={isLoading}
-          className="flex items-center justify-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowCounterClockwise className="w-4 h-4" />
-          Restablecer por defecto
-        </button>
+      {!hideFooter && (
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-border">
+          <button
+            type="button"
+            onClick={handleReset}
+            disabled={isLoading}
+            className="flex items-center justify-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowCounterClockwise className="w-4 h-4" />
+            Restablecer por defecto
+          </button>
 
-        <Button
-          onClick={handleSave}
-          disabled={!hasChanges || isLoading}
-          isLoading={isLoading}
-          hideArrow
-          className="min-w-[160px]"
-        >
-          <FloppyDisk className="w-4 h-4" />
-          Guardar cambios
-        </Button>
-      </div>
+          <Button
+            onClick={handleSave}
+            disabled={!hasChanges || isLoading}
+            isLoading={isLoading}
+            hideArrow
+            className="min-w-[160px]"
+          >
+            <FloppyDisk className="w-4 h-4" />
+            Guardar cambios
+          </Button>
+        </div>
+      )}
 
       {/* Help text */}
       <div className="bg-muted/50 rounded-sm p-4 space-y-2">

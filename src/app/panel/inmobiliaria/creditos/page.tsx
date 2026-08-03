@@ -8,7 +8,6 @@ import {
   ShoppingCart,
   CheckCircle,
   WarningCircle,
-  Spinner,
   X,
   Info,
   Calendar,
@@ -18,6 +17,15 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { BackButton } from '@/components/ui/back-button';
+import { Button, Badge, Input, Spinner } from '@/components/ui';
+import { ErrorState } from '@/components/ui/error-state';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { agentCreditsApi } from '@/lib/api/agent-credits.service';
 import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import type {
@@ -79,12 +87,12 @@ function CreditosContent() {
           <BackButton label="Volver" />
         </div>
 
-        <header className="mb-8">
-          <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
-            <Coin className="w-6 h-6 text-indigo-600" />
+        <header className="mb-8 space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg flex items-center gap-2">
+            <Coin className="w-6 h-6 text-primary" weight="duotone" />
             Créditos del agente
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-fg-muted max-w-2xl">
             Cada evaluación del agente de IA consume 1 crédito. Los créditos del plan se
             regeneran cada mes; los comprados no expiran.
           </p>
@@ -92,54 +100,54 @@ function CreditosContent() {
 
         {/* Balance */}
         {isLoading ? (
-          <div className="rounded-2xl border border-border bg-card p-8 flex items-center justify-center">
-            <Spinner className="w-6 h-6 animate-spin text-muted-foreground" />
+          <div className="rounded-xl border border-border bg-card p-8 flex items-center justify-center">
+            <Spinner size="md" variant="muted" />
           </div>
         ) : error ? (
-          <div className="rounded-2xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-5">
-            <div className="flex items-start gap-2 text-sm text-rose-700 dark:text-rose-400">
-              <WarningCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          </div>
+          <ErrorState
+            title="No pudimos cargar tus créditos"
+            description={error}
+            onRetry={() => loadData()}
+            className="mb-8"
+          />
         ) : balance ? (
-          <section className="rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-6 text-white mb-8">
+          <section className="rounded-xl bg-primary p-6 text-primary-fg mb-8">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-wider text-indigo-100 font-medium mb-2">
+                <p className="text-xs uppercase tracking-wider text-white/70 font-medium mb-2">
                   Saldo total
                 </p>
                 <p className="text-5xl font-bold tabular-nums">
                   {balance.total}
-                  <span className="text-2xl font-normal text-indigo-200 ml-2">créditos</span>
+                  <span className="text-2xl font-normal text-white/80 ml-2">créditos</span>
                 </p>
               </div>
-              <Sparkle className="w-10 h-10 text-indigo-200" />
+              <Sparkle className="w-10 h-10 text-white/80" weight="duotone" />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6 pt-6 border-t border-white/20">
               <div>
-                <p className="text-xs text-indigo-100 mb-1">Del plan</p>
+                <p className="text-xs text-white/70 mb-1">Del plan</p>
                 <p className="text-2xl font-semibold tabular-nums">{balance.planBalance}</p>
                 {expiresAt && (
-                  <p className="text-xs text-indigo-100 mt-1 flex items-center gap-1">
+                  <p className="text-xs text-white/70 mt-1 flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     Expiran el {expiresAt}
                   </p>
                 )}
               </div>
               <div>
-                <p className="text-xs text-indigo-100 mb-1">Comprados</p>
+                <p className="text-xs text-white/70 mb-1">Comprados</p>
                 <p className="text-2xl font-semibold tabular-nums">{balance.purchasedBalance}</p>
-                <p className="text-xs text-indigo-100 mt-1">Sin vencimiento</p>
+                <p className="text-xs text-white/70 mt-1">Sin vencimiento</p>
               </div>
             </div>
           </section>
         ) : null}
 
         {/* How consumption works */}
-        <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-4 mb-8">
-          <p className="text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
+        <div className="rounded-xl bg-primary-soft border border-primary/30 p-4 mb-8">
+          <p className="text-xs text-primary flex items-start gap-2">
             <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span>
               <strong>FIFO:</strong> los créditos del plan se consumen primero para que no
@@ -152,7 +160,7 @@ function CreditosContent() {
         {/* Packs */}
         {!isLoading && packs.length > 0 && (
           <>
-            <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+            <h2 className="text-base font-semibold text-fg mb-4 flex items-center gap-2">
               <ShoppingCart className="w-5 h-5" />
               Comprar créditos extra
             </h2>
@@ -170,7 +178,7 @@ function CreditosContent() {
         )}
 
         {!isLoading && packs.length === 0 && !error && (
-          <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+          <div className="rounded-xl border border-dashed border-border p-8 text-center">
             <p className="text-sm text-muted-foreground">
               No hay packs de créditos disponibles por el momento.
             </p>
@@ -213,57 +221,52 @@ function PackCard({
   return (
     <div
       className={cn(
-        'relative rounded-2xl border bg-card p-5 flex flex-col',
-        pack.highlighted
-          ? 'border-indigo-500 shadow-lg shadow-indigo-500/10'
-          : 'border-border'
+        'relative rounded-xl border bg-card p-5 flex flex-col',
+        pack.highlighted ? 'border-primary/40 ring-1 ring-primary/20' : 'border-border'
       )}
     >
       {pack.highlighted && (
-        <span className="absolute -top-2.5 left-4 px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-semibold uppercase tracking-wider">
-          Más popular
+        <span className="absolute -top-2.5 left-4">
+          <Badge variant="default">Más popular</Badge>
         </span>
       )}
 
       <div className="flex items-baseline gap-2 mb-1">
-        <p className="text-3xl font-bold text-foreground tabular-nums">{pack.packSize}</p>
-        <p className="text-sm text-muted-foreground">créditos</p>
+        <p className="text-3xl font-bold text-fg tabular-nums">{pack.packSize}</p>
+        <p className="text-sm text-fg-muted">créditos</p>
       </div>
 
       {pack.name && (
-        <p className="text-sm font-medium text-foreground mb-2">{pack.name}</p>
+        <p className="text-sm font-medium text-fg mb-2">{pack.name}</p>
       )}
 
       {pack.description && (
-        <p className="text-xs text-muted-foreground mb-4">{pack.description}</p>
+        <p className="text-xs text-fg-muted mb-4">{pack.description}</p>
       )}
 
-      <div className="mt-auto space-y-2">
+      <div className="mt-auto space-y-3">
         <div>
-          <p className="text-2xl font-bold text-foreground tabular-nums">
+          <p className="text-2xl font-bold text-fg tabular-nums">
             {formatCurrency(pack.price)}
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-fg-muted">
             ~ {formatCurrency(pricePerCredit)} / crédito
             {pack.discount && pack.discount > 0 && (
-              <span className="ml-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+              <span className="ml-1.5 text-success font-medium">
                 (-{pack.discount}%)
               </span>
             )}
           </p>
         </div>
 
-        <button
+        <Button
           onClick={onSelect}
-          className={cn(
-            'w-full py-2.5 rounded-xl text-sm font-semibold transition-colors',
-            pack.highlighted
-              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-              : 'bg-muted hover:bg-muted/70 text-foreground border border-border'
-          )}
+          hideArrow
+          variant={pack.highlighted ? 'default' : 'secondary'}
+          className="w-full"
         >
           Comprar pack
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -355,27 +358,30 @@ function PurchaseModal({
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={isSubmitting ? undefined : onClose}
       />
-      <div className="relative bg-background rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-background rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-background border-b border-border px-6 py-4 flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-foreground">Comprar créditos</h3>
-            <p className="text-xs text-muted-foreground">
+            <h3 className="text-base font-semibold text-fg">Comprar créditos</h3>
+            <p className="text-xs text-fg-muted">
               {pack.packSize} créditos · {formatCurrency(pack.price)}
             </p>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
             disabled={isSubmitting}
-            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50"
+            hideArrow
+            aria-label="Cerrar"
           >
             <X className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {successMessage ? (
-            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-4 text-sm text-emerald-700 dark:text-emerald-300 flex items-start gap-2">
+            <div className="rounded-xl bg-success-soft border border-success/30 p-4 text-sm text-success flex items-start gap-2">
               <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
               <span>{successMessage}</span>
             </div>
@@ -385,26 +391,30 @@ function PurchaseModal({
                 <label className="block text-xs font-medium text-foreground mb-1">
                   Tipo de documento
                 </label>
-                <select
+                <Select
                   value={form.documentType}
-                  onChange={(e) =>
-                    setForm({ ...form, documentType: e.target.value as PSEDocumentType })
+                  onValueChange={(v) =>
+                    setForm({ ...form, documentType: v as PSEDocumentType })
                   }
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 >
-                  {DOCUMENT_TYPES.map((d) => (
-                    <option key={d.value} value={d.value}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOCUMENT_TYPES.map((d) => (
+                      <SelectItem key={d.value} value={d.value}>
+                        {d.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-foreground mb-1">
                   Número de documento
                 </label>
-                <input
+                <Input
                   type="text"
                   value={form.documentNumber}
                   onChange={(e) =>
@@ -412,7 +422,6 @@ function PurchaseModal({
                   }
                   placeholder="1234567890"
                   required
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
               </div>
 
@@ -420,13 +429,12 @@ function PurchaseModal({
                 <label className="block text-xs font-medium text-foreground mb-1">
                   Nombre del titular
                 </label>
-                <input
+                <Input
                   type="text"
                   value={form.holderName}
                   onChange={(e) => setForm({ ...form, holderName: e.target.value })}
                   placeholder="Nombre completo"
                   required
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
               </div>
 
@@ -434,67 +442,68 @@ function PurchaseModal({
                 <label className="block text-xs font-medium text-foreground mb-1">
                   Banco
                 </label>
-                <select
-                  value={form.bankCode}
-                  onChange={(e) => setForm({ ...form, bankCode: e.target.value })}
-                  required
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                <Select
+                  value={form.bankCode || undefined}
+                  onValueChange={(v) => setForm({ ...form, bankCode: v })}
                 >
-                  <option value="">Seleccioná un banco</option>
-                  {banks.map((b) => (
-                    <option key={b.code} value={b.code}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccioná un banco" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {banks.map((b) => (
+                      <SelectItem key={b.code} value={b.code}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-foreground mb-1">
                   Teléfono (opcional)
                 </label>
-                <input
+                <Input
                   type="tel"
                   value={form.phoneNumber ?? ''}
                   onChange={(e) =>
                     setForm({ ...form, phoneNumber: e.target.value })
                   }
                   placeholder="3001234567"
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 />
               </div>
 
               {submitError && (
-                <div className="rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 px-3 py-2 text-xs text-rose-700 dark:text-rose-400">
+                <div className="rounded-md bg-danger-soft border border-danger/30 px-3 py-2 text-xs text-danger">
                   {submitError}
                 </div>
               )}
 
-              <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 pt-2">
+              <p className="text-[11px] text-fg-muted flex items-center gap-1.5 pt-2">
                 <Lock className="w-3 h-3" />
                 Pago seguro vía PSE. Serás redirigido al sitio de tu banco.
               </p>
 
               <div className="flex gap-2 pt-2">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  hideArrow
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                  className="flex-1"
                 >
                   Cancelar
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
+                  hideArrow
+                  isLoading={isSubmitting}
                   disabled={!canSubmit}
-                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1"
                 >
-                  {isSubmitting ? (
-                    <Spinner className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>Pagar {formatCurrency(pack.price)}</>
-                  )}
-                </button>
+                  Pagar {formatCurrency(pack.price)}
+                </Button>
               </div>
             </>
           )}

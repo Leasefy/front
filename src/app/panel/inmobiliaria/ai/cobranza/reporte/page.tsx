@@ -17,7 +17,7 @@
  *
  * Refs:
  *   mvp:docs/DESIGN.md §1 (sobrio + warm, no raw Tailwind colors that bypass
- *     the scales), §4 (cards rounded-xl border bg-card shadow-sm), §11
+ *     the scales), §4 (cards rounded-xl border bg-card), §11
  *     (loading spinner), §16 (numeric tabular-nums + font-mono)
  *   mvp:docs/COLOR_SYSTEM.md (rose=error, amber=warn, emerald=ok)
  *   34-CONTEXT.md D-34-04 (1h cache TTL), D-34-06 (per-user opt-in)
@@ -31,11 +31,16 @@ import { Warning, Download, GearSix, BellRinging, CalendarBlank } from '@phospho
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
+import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { useDailyReport, useDailyReportHistory, downloadHistoryCsv } from '@/lib/hooks/cobranza/use-daily-report'
 import { useThresholds } from '@/lib/hooks/cobranza/use-thresholds'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { CobranzaReporteSkeleton } from '@/components/skeleton/panel/CobranzaReporteSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { MonoLabel } from '@leasefy/cadence'
 
 const COP_FORMATTER = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -63,6 +68,9 @@ function ReporteViewerContent() {
   }, [])
 
   const { data, isLoading, error, refetch } = useDailyReport()
+
+  useAutoRefresh(refetch)
+
   const { active: thresholds } = useThresholds()
   const {
     items: history,
@@ -148,34 +156,24 @@ function ReporteViewerContent() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href="/panel/inmobiliaria/ai/cobranza/reporte/suscripcion"
-            className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted transition"
-          >
-            <BellRinging className="w-3.5 h-3.5" aria-hidden="true" />
-            {locale.startsWith('es') ? 'Suscripción' : 'Subscription'}
-          </Link>
-          <Link
-            href="/panel/inmobiliaria/ai/cobranza/reporte/thresholds"
-            className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted transition"
-          >
-            <GearSix className="w-3.5 h-3.5" aria-hidden="true" />
-            {locale.startsWith('es') ? 'Umbrales' : 'Thresholds'}
-          </Link>
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-3 py-1.5 rounded-md border border-border text-foreground hover:bg-muted active:scale-[0.97] transition"
-            aria-label="refresh"
-          >
-            {locale.startsWith('es') ? 'Actualizar' : 'Refresh'}
-          </button>
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href="/panel/inmobiliaria/ai/cobranza/reporte/suscripcion">
+              <BellRinging className="w-3.5 h-3.5" aria-hidden="true" />
+              {locale.startsWith('es') ? 'Suscripción' : 'Subscription'}
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm" hideArrow>
+            <Link href="/panel/inmobiliaria/ai/cobranza/reporte/thresholds">
+              <GearSix className="w-3.5 h-3.5" aria-hidden="true" />
+              {locale.startsWith('es') ? 'Umbrales' : 'Thresholds'}
+            </Link>
+          </Button>
         </div>
       </div>
 
       {/* Error */}
       {error && !data && (
-        <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400">
+        <div className="rounded-xl bg-danger-soft text-danger">
           Error: {error}
         </div>
       )}
@@ -212,8 +210,8 @@ function ReporteViewerContent() {
                   className={[
                     'rounded-xl border p-3 flex items-start gap-3',
                     alert.severity === 'critical'
-                      ? 'border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30'
-                      : 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30',
+                      ? 'border-danger/30 bg-danger-soft'
+                      : 'border-warning/30 bg-warning-soft',
                   ].join(' ')}
                   role="alert"
                 >
@@ -221,8 +219,8 @@ function ReporteViewerContent() {
                     className={[
                       'w-4 h-4 flex-shrink-0 mt-0.5',
                       alert.severity === 'critical'
-                        ? 'text-rose-600 dark:text-rose-400'
-                        : 'text-amber-600 dark:text-amber-400',
+                        ? 'text-danger'
+                        : 'text-warning',
                     ].join(' ')}
                     weight="fill"
                     aria-hidden="true"
@@ -231,8 +229,8 @@ function ReporteViewerContent() {
                     className={[
                       'text-xs font-mono tabular-nums',
                       alert.severity === 'critical'
-                        ? 'text-rose-700 dark:text-rose-300'
-                        : 'text-amber-700 dark:text-amber-300',
+                        ? 'text-danger'
+                        : 'text-warning',
                     ].join(' ')}
                   >
                     {alert.kpi}: {String(alert.actual)} (
@@ -245,139 +243,141 @@ function ReporteViewerContent() {
           )}
 
           {/* 3. Top-N debtors */}
-          <section className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+          <section className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border bg-muted/20">
-              <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+              <MonoLabel>
                 {t('inmobiliaria.ai.cobranza.reporte.topDebtors.heading')} · Top {topN}
-              </h2>
+              </MonoLabel>
             </div>
             {data.top_debtors.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">
                 {t('inmobiliaria.ai.cobranza.reporte.topDebtors.empty')}
               </p>
             ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-muted/10 border-b border-border">
-                  <tr>
-                    <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+              <Table>
+                <TableHeader className="bg-muted/10 border-b border-border">
+                  <TableRow>
+                    <TableHead>
                       {locale.startsWith('es') ? 'Deudor' : 'Debtor'}
-                    </th>
-                    <th className="text-right px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                    </TableHead>
+                    <TableHead className="text-right">
                       DPD
-                    </th>
-                    <th className="text-right px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                    </TableHead>
+                    <TableHead className="text-right">
                       {locale.startsWith('es') ? 'Saldo' : 'Balance'}
-                    </th>
-                    <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                    </TableHead>
+                    <TableHead>
                       {locale.startsWith('es') ? 'Último contacto' : 'Last contact'}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {data.top_debtors.slice(0, topN).map((d) => (
-                    <tr key={d.debtor_id} className="border-b border-border last:border-0">
-                      <td className="px-3 py-2">
+                    <TableRow key={d.debtor_id} className="border-b border-border last:border-0">
+                      <TableCell className="px-3 py-2">
                         <Mask
                           field="cedula"
                           value={d.debtor_id_masked ?? d.debtor_id}
                           onReveal={undefined}
                         />
-                      </td>
-                      <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                         {d.dpd}
-                      </td>
-                      <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                         {COP_FORMATTER.format(d.balance_cop)}
-                      </td>
-                      <td className="px-3 py-2 font-mono tabular-nums text-xs text-muted-foreground">
+                      </TableCell>
+                      <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-muted-foreground">
                         {d.last_contact_at
                           ? new Date(d.last_contact_at).toLocaleDateString(locale)
                           : '—'}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </section>
 
           {/* 4. 30-day history + CSV export */}
-          <section className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+          <section className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center justify-between gap-3">
-              <h2 className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+              <MonoLabel>
                 {t('inmobiliaria.ai.cobranza.reporte.history.heading')}
-              </h2>
-              <button
-                type="button"
+              </MonoLabel>
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
                 onClick={() => void onExportCsv()}
                 disabled={!agencyId}
-                className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide px-3 py-1 rounded-md border border-border text-foreground hover:bg-muted disabled:opacity-50 transition"
               >
                 <Download className="w-3.5 h-3.5" aria-hidden="true" />
                 {t('inmobiliaria.ai.cobranza.reporte.history.exportCsv')}
-              </button>
+              </Button>
             </div>
             {historyLoading && history.length === 0 ? (
               <div className="flex items-center justify-center py-8">
-                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <Spinner />
               </div>
             ) : history.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">—</p>
             ) : (
               <>
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/10 border-b border-border">
-                    <tr>
-                      <th className="text-left px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                <Table>
+                  <TableHeader className="bg-muted/10 border-b border-border">
+                    <TableRow>
+                      <TableHead>
                         {locale.startsWith('es') ? 'Fecha' : 'Date'}
-                      </th>
-                      <th className="text-right px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                      </TableHead>
+                      <TableHead className="text-right">
                         PKR
-                      </th>
-                      <th className="text-right px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                      </TableHead>
+                      <TableHead className="text-right">
                         {locale.startsWith('es') ? 'Morosidad' : 'Delinquency'}
-                      </th>
-                      <th className="text-right px-3 py-2 text-xs font-mono uppercase tracking-wide text-muted-foreground">
+                      </TableHead>
+                      <TableHead className="text-right">
                         {locale.startsWith('es') ? 'Fuera horario' : 'Outside hours'}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {history.map((entry) => {
                       const pkr = entry.summary.pkr_pct ?? entry.summary.pkr_7d_pct
                       return (
-                        <tr key={entry.report_date} className="border-b border-border last:border-0">
-                          <td className="px-3 py-2 font-mono tabular-nums text-foreground">
+                        <TableRow key={entry.report_date} className="border-b border-border last:border-0">
+                          <TableCell className="px-3 py-2 font-mono tabular-nums text-foreground">
                             {entry.report_date}
-                          </td>
-                          <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                          </TableCell>
+                          <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                             {pkr != null ? `${pkr.toFixed(1)}%` : '—'}
-                          </td>
-                          <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                          </TableCell>
+                          <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                             {entry.summary.indice_morosidad_pct != null
                               ? `${entry.summary.indice_morosidad_pct.toFixed(1)}%`
                               : '—'}
-                          </td>
-                          <td className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
+                          </TableCell>
+                          <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                             {entry.summary.calls_outside_window_count ?? '—'}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       )
                     })}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
                 {historyHasMore && (
                   <div className="p-3 border-t border-border bg-muted/20 text-center">
-                    <button
-                      type="button"
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      hideArrow
                       onClick={() => void historyLoadMore()}
                       disabled={historyLoadingMore}
-                      className="text-xs font-mono uppercase tracking-wide px-4 py-2 rounded-md border border-border hover:bg-muted disabled:opacity-50 transition"
                     >
                       {historyLoadingMore
                         ? locale.startsWith('es') ? 'Cargando...' : 'Loading...'
                         : locale.startsWith('es') ? 'Cargar más' : 'Load more'}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </>
@@ -401,21 +401,21 @@ function KpiTile({
   return (
     <div
       className={[
-        'rounded-xl border bg-card shadow-sm p-4',
+        'rounded-xl border bg-card p-4',
         alert
-          ? 'border-rose-300 dark:border-rose-800'
+          ? 'border-danger/30'
           : 'border-border',
       ].join(' ')}
     >
-      <p className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+      <MonoLabel>
         {label}
-      </p>
+      </MonoLabel>
       <p
         className={[
           'mt-2 text-3xl font-mono tabular-nums',
           alert
-            ? 'text-rose-600 dark:text-rose-400 font-bold'
-            : 'text-emerald-600 dark:text-emerald-400',
+            ? 'text-danger font-bold'
+            : 'text-success',
         ].join(' ')}
       >
         {value}

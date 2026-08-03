@@ -79,6 +79,18 @@ export interface Property {
 
   // Metadata
   landlordId: string;
+  agencyName?: string | null;
+  /**
+   * Offering agency's social links — only populated on the detail response
+   * (GET /properties/:id); null on list cards.
+   */
+  agencySocials?: {
+    instagram?: string;
+    facebook?: string;
+    x?: string;
+    tiktok?: string;
+    whatsapp?: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
 

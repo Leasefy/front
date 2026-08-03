@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Manrope, DM_Sans, Space_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { AuthProvider } from "@/lib/auth/auth-context";
@@ -9,20 +9,20 @@ import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 import { PushNotificationHandler } from "@/components/notifications/PushNotificationHandler";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 
-const manrope = Manrope({
-  variable: "--font-heading",
+// Cadence: Schibsted Grotesk — Regular (cuerpo) + Semibold (títulos).
+// Una sola familia para sans + heading; se mapea en globals.css.
+const schibsted = Schibsted_Grotesk({
+  variable: "--font-schibsted",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
-const dmSans = DM_Sans({
-  variable: "--font-sans",
+// JetBrains Mono — numerals / labels / tags / overlines (UPPERCASE)
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin"],
-});
-
-const spaceMono = Space_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "500", "600"],
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co';
@@ -96,21 +96,27 @@ export const metadata: Metadata = {
   category: "real estate",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#1A40FF",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="lenis" suppressHydrationWarning>
+    <html lang="es" className={`lenis ${schibsted.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#5B5FEF" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <OrganizationJsonLd />
         <WebsiteJsonLd />
       </head>
-      <body className={`${manrope.variable} ${dmSans.variable} ${spaceMono.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         {/* Skip link for keyboard/screen reader users */}
         <a href="#main-content" className="skip-link">
           Saltar al contenido principal

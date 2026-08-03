@@ -85,6 +85,13 @@ export interface BackendApplication {
   };
 }
 
+/**
+ * Review lifecycle status for a tenant-uploaded document.
+ * Backend enum (uppercase). Spanish labels live in
+ * `src/lib/documents/review-status.ts`.
+ */
+export type DocumentReviewStatus = 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED';
+
 export interface BackendDocument {
   id: string;
   applicationId: string;
@@ -101,6 +108,15 @@ export interface BackendDocument {
   mimeType: string;
   size: number;
   createdAt: string;
+  /**
+   * Review lifecycle fields (added when the back shipped document review).
+   * Absent on pre-migration payloads → normalize to 'PENDING'.
+   */
+  reviewStatus?: DocumentReviewStatus;
+  /** ISO timestamp of the last review transition. Null while still PENDING. */
+  reviewedAt?: string | null;
+  /** Reason surfaced to the tenant when reviewStatus is REJECTED. */
+  rejectionReason?: string | null;
 }
 
 export interface CreateApplicationDto {
@@ -185,6 +201,24 @@ export interface LandlordCandidate {
   submittedAt: string;
   riskScore?: LandlordRiskScore;
   privateNote?: string | null;
+}
+
+/** Item of GET /landlord/candidates — candidate plus its property context */
+export interface AllCandidatesItem extends LandlordCandidate {
+  propertyId: string;
+  propertyTitle: string;
+}
+
+/** Shape returned by GET /landlord/candidates */
+export interface AllCandidatesResponse {
+  candidates: AllCandidatesItem[];
+  total: number;
+  stats: {
+    total: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+  };
 }
 
 export interface LandlordApplicationDocument {

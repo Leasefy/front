@@ -87,7 +87,7 @@ function VideoCameraModal({ open, onClose, onComplete }: { open: boolean; onClos
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="relative w-full max-w-3xl bg-white dark:bg-[#1a1a1c] rounded-3xl overflow-hidden shadow-2xl"
+        className="relative w-full max-w-3xl bg-surface rounded-xl overflow-hidden"
       >
         <button
           onClick={onClose}
@@ -109,10 +109,10 @@ function VideoCameraModal({ open, onClose, onComplete }: { open: boolean; onClos
         </div>
 
         <div className="p-6">
-          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
+          <h3 className="text-lg font-semibold text-fg mb-2">
             {locale === 'es' ? 'Cómo funciona Leasefy' : 'How Leasefy works'}
           </h3>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+          <p className="text-sm text-fg-muted mb-4">
             {locale === 'es'
               ? 'Descubre cómo publicar tu propiedad, recibir aplicaciones verificadas y cobrar tu arriendo de forma segura.'
               : 'Learn how to list your property, receive verified applications, and collect rent securely.'}
@@ -122,7 +122,7 @@ function VideoCameraModal({ open, onClose, onComplete }: { open: boolean; onClos
               onComplete();
               onClose();
             }}
-            className="w-full py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-semibold rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
+            className="w-full py-3 bg-fg text-bg font-semibold rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
           >
             {locale === 'es' ? 'Entendido, continuar' : 'Got it, continue'}
           </button>
@@ -209,7 +209,7 @@ export function LandlordDashboardEmpty() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Welcome Header */}
         <motion.header
@@ -217,10 +217,10 @@ export function LandlordDashboardEmpty() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+          <p className="text-sm font-medium text-fg-muted mb-1">
             {greeting}
           </p>
-          <h1 className="text-3xl sm:text-4xl font-medium text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-medium text-fg tracking-tight">
             {locale === 'es' ? `Bienvenido, ${firstName}` : `Welcome, ${firstName}`} 👋
           </h1>
         </motion.header>
@@ -234,20 +234,20 @@ export function LandlordDashboardEmpty() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] overflow-hidden"
+              className="rounded-xl bg-surface overflow-hidden"
             >
               {/* Header */}
               <button
                 onClick={toggleCollapsed}
-                className="w-full p-6 flex items-center justify-between hover:bg-stone-100 dark:hover:bg-[#222224] transition-colors"
+                className="w-full p-6 flex items-center justify-between hover:bg-surface-muted transition-colors"
               >
                 <div className="flex items-center gap-4">
                   <div className="text-2xl">🚀</div>
                   <div className="text-left">
-                    <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                    <h2 className="text-lg font-semibold text-fg">
                       {locale === 'es' ? 'Primeros pasos' : 'Getting started'}
                     </h2>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    <p className="text-sm text-fg-muted">
                       {completedCount === totalSteps
                         ? (locale === 'es' ? '¡Completado!' : 'Completed!')
                         : `${totalSteps - completedCount} ${locale === 'es' ? 'pasos restantes' : 'steps left'}`}
@@ -257,19 +257,19 @@ export function LandlordDashboardEmpty() {
                 <div className="flex items-center gap-4">
                   {/* Progress */}
                   <div className="hidden sm:flex items-center gap-3">
-                    <div className="w-32 h-2 bg-stone-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                    <div className="w-32 h-2 bg-surface-muted rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${progressPercentage}%` }}
-                        className="h-full bg-neutral-900 dark:bg-white rounded-full"
+                        className="h-full bg-fg rounded-full"
                       />
                     </div>
-                    <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                    <span className="text-sm font-medium text-fg-muted">
                       {progressPercentage}%
                     </span>
                   </div>
                   <CaretRight className={cn(
-                    'w-5 h-5 text-neutral-400 transition-transform',
+                    'w-5 h-5 text-fg-subtle transition-transform',
                     !isCollapsed && 'rotate-90'
                   )} />
                 </div>
@@ -285,12 +285,12 @@ export function LandlordDashboardEmpty() {
                     const content = (
                       <div
                         className={cn(
-                          'flex items-center gap-4 p-4 rounded-2xl transition-all',
+                          'flex items-center gap-4 p-4 rounded-xl transition-all',
                           step.completed
-                            ? 'bg-emerald-50 dark:bg-emerald-950/30'
+                            ? 'bg-success-soft dark:bg-[#2C7A53]/15'
                             : isNext
-                            ? 'bg-white dark:bg-[#222224] border border-neutral-200 dark:border-neutral-700 shadow-sm cursor-pointer hover:border-neutral-300 dark:hover:border-neutral-600'
-                            : 'bg-white dark:bg-[#1f1f21] opacity-50'
+                            ? 'bg-surface border border-border cursor-pointer hover:border-border-strong'
+                            : 'bg-surface opacity-50'
                         )}
                         onClick={() => !step.href && handleStepClick(step)}
                       >
@@ -298,17 +298,17 @@ export function LandlordDashboardEmpty() {
                         <div className={cn(
                           'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
                           step.completed
-                            ? 'bg-emerald-100 dark:bg-emerald-900/50'
+                            ? 'bg-success-soft dark:bg-[#2C7A53]/15'
                             : isNext
-                            ? 'bg-neutral-900 dark:bg-white'
-                            : 'bg-stone-100 dark:bg-neutral-800'
+                            ? 'bg-fg'
+                            : 'bg-surface-muted'
                         )}>
                           {step.completed ? (
-                            <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
+                            <Check className="w-5 h-5 text-success dark:text-[#3EAE70]" strokeWidth={2.5} />
                           ) : (
                             <Icon className={cn(
                               'w-5 h-5',
-                              isNext ? 'text-white dark:text-neutral-900' : 'text-neutral-400'
+                              isNext ? 'text-bg' : 'text-fg-subtle'
                             )} />
                           )}
                         </div>
@@ -318,12 +318,12 @@ export function LandlordDashboardEmpty() {
                           <p className={cn(
                             'font-medium',
                             step.completed
-                              ? 'text-emerald-700 dark:text-emerald-400'
-                              : 'text-neutral-900 dark:text-white'
+                              ? 'text-success dark:text-[#3EAE70]'
+                              : 'text-fg'
                           )}>
                             {locale === 'es' ? step.labelEs : step.labelEn}
                           </p>
-                          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                          <p className="text-sm text-fg-muted mt-0.5">
                             {locale === 'es' ? step.descriptionEs : step.descriptionEn}
                           </p>
                         </div>
@@ -332,11 +332,11 @@ export function LandlordDashboardEmpty() {
                         {!step.completed && isNext && (
                           <div className="flex items-center gap-2">
                             {step.action === 'video' && (
-                              <span className="text-sm font-medium text-neutral-900 dark:text-white">
+                              <span className="text-sm font-medium text-fg">
                                 {locale === 'es' ? 'Ver video' : 'Watch'}
                               </span>
                             )}
-                            <CaretRight className="w-5 h-5 text-neutral-400" />
+                            <CaretRight className="w-5 h-5 text-fg-subtle" />
                           </div>
                         )}
                       </div>
@@ -370,9 +370,6 @@ export function LandlordDashboardEmpty() {
                   titleEn: 'We protect your investment',
                   descEs: 'Seguro contra impago hasta 24 meses',
                   descEn: 'Non-payment insurance up to 24 months',
-                  gradient: 'from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/20',
-                  iconBg: 'bg-emerald-100 dark:bg-emerald-900/50',
-                  iconColor: 'text-emerald-600 dark:text-emerald-400',
                 },
                 {
                   icon: Users,
@@ -380,9 +377,6 @@ export function LandlordDashboardEmpty() {
                   titleEn: 'Verified tenants',
                   descEs: 'Evaluación crediticia completa',
                   descEn: 'Complete credit evaluation',
-                  gradient: 'from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/20',
-                  iconBg: 'bg-blue-100 dark:bg-blue-900/50',
-                  iconColor: 'text-blue-600 dark:text-blue-400',
                 },
                 {
                   icon: Lightning,
@@ -390,53 +384,54 @@ export function LandlordDashboardEmpty() {
                   titleEn: 'Automatic collection',
                   descEs: 'Recibe el arriendo puntual cada mes',
                   descEn: 'Receive rent on time every month',
-                  gradient: 'from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20',
-                  iconBg: 'bg-amber-100 dark:bg-amber-900/50',
-                  iconColor: 'text-amber-600 dark:text-amber-400',
                 },
-              ].map((card, index) => (
+              ].map((card) => (
                 <div
                   key={card.titleEs}
-                  className={cn('rounded-2xl p-5 bg-gradient-to-br', card.gradient)}
+                  className="rounded-xl bg-surface p-5"
                 >
-                  <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center mb-4', card.iconBg)}>
-                    <card.icon className={cn('w-5 h-5', card.iconColor)} />
+                  <div className="w-11 h-11 rounded-xl bg-surface-muted flex items-center justify-center mb-4">
+                    <card.icon weight="duotone" className="w-5 h-5 text-fg-subtle" />
                   </div>
-                  <h3 className="font-semibold text-neutral-900 dark:text-white mb-1">
+                  <h3 className="font-semibold text-fg mb-1">
                     {locale === 'es' ? card.titleEs : card.titleEn}
                   </h3>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  <p className="text-sm text-fg-muted">
                     {locale === 'es' ? card.descEs : card.descEn}
                   </p>
                 </div>
               ))}
             </motion.div>
 
-            {/* Empty state for properties */}
+            {/* Empty state for properties — estilo limpio canónico */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-8 text-center"
+              className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
             >
-              <div className="w-16 h-16 rounded-2xl bg-white dark:bg-[#222224] flex items-center justify-center mx-auto mb-4 shadow-sm">
-                <Buildings className="w-8 h-8 text-neutral-400" />
+              <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-muted">
+                <Buildings weight="duotone" className="h-6 w-6 text-fg-subtle" aria-hidden="true" />
               </div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
-                {locale === 'es' ? 'No tienes propiedades publicadas' : 'No published properties'}
-              </h3>
-              <p className="text-neutral-500 dark:text-neutral-400 mb-6 max-w-md mx-auto">
-                {locale === 'es'
-                  ? 'Publica tu primera propiedad y comienza a recibir aplicaciones de inquilinos verificados.'
-                  : 'List your first property and start receiving applications from verified tenants.'}
-              </p>
-              <Link
-                href="/publicar?from=panel"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-semibold rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                {locale === 'es' ? 'Publicar propiedad' : 'List property'}
-              </Link>
+              <div className="space-y-1.5">
+                <p className="text-[15px] font-semibold text-fg">
+                  {locale === 'es' ? 'No tienes propiedades publicadas' : 'No published properties'}
+                </p>
+                <p className="text-sm text-fg-muted max-w-sm leading-relaxed mx-auto">
+                  {locale === 'es'
+                    ? 'Publica tu primera propiedad y comienza a recibir aplicaciones de inquilinos verificados.'
+                    : 'List your first property and start receiving applications from verified tenants.'}
+                </p>
+              </div>
+              <div className="mt-1">
+                <Link
+                  href="/publicar?from=panel"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface text-fg border border-border hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-all duration-150"
+                >
+                  <Plus className="w-4 h-4" />
+                  {locale === 'es' ? 'Publicar propiedad' : 'List property'}
+                </Link>
+              </div>
             </motion.div>
           </div>
 
@@ -448,65 +443,65 @@ export function LandlordDashboardEmpty() {
             className="space-y-6"
           >
             {/* Quick Stats (placeholder) */}
-            <div className="rounded-3xl bg-stone-100 dark:bg-[#1a1a1c] border border-stone-200 dark:border-neutral-700 p-6">
+            <div className="rounded-xl bg-surface p-6">
               <div className="flex items-center gap-3 mb-4">
-                <TrendUp className="w-5 h-5 text-amber-500" />
-                <span className="text-sm font-medium text-neutral-600 dark:text-white/80">
+                <TrendUp weight="duotone" className="w-5 h-5 text-fg-subtle" />
+                <span className="text-sm font-medium text-fg-muted">
                   {locale === 'es' ? 'Tu potencial mensual' : 'Your monthly potential'}
                 </span>
               </div>
-              <p className="text-3xl font-bold text-neutral-900 dark:text-white mb-1">$0</p>
-              <p className="text-sm text-neutral-500 dark:text-white/60">
+              <p className="text-3xl font-bold text-fg mb-1">$0</p>
+              <p className="text-sm text-fg-muted">
                 {locale === 'es' ? 'Publica una propiedad para comenzar' : 'List a property to get started'}
               </p>
             </div>
 
             {/* Resources */}
-            <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
-              <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
+            <div className="rounded-xl bg-surface p-5">
+              <h3 className="font-semibold text-fg mb-4">
                 {locale === 'es' ? 'Recursos útiles' : 'Helpful resources'}
               </h3>
               <div className="space-y-2">
                 {[
                   { icon: FileText, labelEs: 'Guía para propietarios', labelEn: 'Landlord guide', href: '/ayuda/propietarios' },
                   { icon: ChartBar, labelEs: 'Precios del mercado', labelEn: 'Market prices', href: '/propiedades' },
-                  { icon: Shield, labelEs: 'Cómo funciona el seguro', labelEn: 'How insurance works', href: '/productos/seguro' },
+                  { icon: Shield, labelEs: 'Cómo funciona el seguro', labelEn: 'How insurance works', href: '/productos/asegurabilidad' },
                 ].map((resource) => (
                   <Link
                     key={resource.labelEs}
                     href={resource.href}
-                    className="flex items-center gap-3 p-3 rounded-2xl hover:bg-white dark:hover:bg-[#222224] transition-colors group"
+                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface transition-colors group"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#222224] flex items-center justify-center group-hover:bg-stone-100 dark:group-hover:bg-[#2a2a2c] transition-colors">
-                      <resource.icon className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
+                    <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center group-hover:bg-surface-muted transition-colors">
+                      <resource.icon className="w-5 h-5 text-fg-muted" />
                     </div>
-                    <span className="flex-1 text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    <span className="flex-1 text-sm font-medium text-fg-muted">
                       {locale === 'es' ? resource.labelEs : resource.labelEn}
                     </span>
-                    <CaretRight className="w-4 h-4 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
+                    <CaretRight className="w-4 h-4 text-fg-subtle group-hover:translate-x-0.5 transition-transform" />
                   </Link>
                 ))}
               </div>
             </div>
 
             {/* Need help */}
-            <div className="rounded-3xl bg-stone-50 dark:bg-[#1a1a1c] p-5">
+            <div className="rounded-xl bg-surface p-5">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
-                  <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
+                  <Clock weight="duotone" className="w-5 h-5 text-fg-subtle" />
                 </div>
                 <div>
-                  <h4 className="font-medium text-neutral-900 dark:text-white mb-1">
+                  <h4 className="font-medium text-fg mb-1">
                     {locale === 'es' ? '¿Necesitas ayuda?' : 'Need help?'}
                   </h4>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
+                  <p className="text-sm text-fg-muted mb-3">
                     {locale === 'es'
                       ? 'Nuestro equipo responde en menos de 2 horas.'
                       : 'Our team responds in under 2 hours.'}
                   </p>
                   <Link
                     href="/ayuda"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-fg-muted hover:text-fg transition-colors"
                   >
                     {locale === 'es' ? 'Contactar soporte' : 'Contact support'}
                     <ArrowRight className="w-4 h-4" />

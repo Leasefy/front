@@ -63,12 +63,12 @@ describe('EmptyState', () => {
           icon: FakeIcon,
           title: 'No hay cotizaciones',
           description: 'Generá la primera.',
-          primaryCta: { label: 'Nueva cotización', href: '/panel/inmobiliaria/ai/cotizador/nueva' },
+          primaryCta: { label: 'Nueva cotización', href: '/panel/inmobiliaria/ai/asegurabilidad/nueva' },
         }),
       )
     })
 
-    const anchor = container.querySelector('a[href="/panel/inmobiliaria/ai/cotizador/nueva"]')
+    const anchor = container.querySelector('a[href="/panel/inmobiliaria/ai/asegurabilidad/nueva"]')
     expect(anchor).not.toBeNull()
     expect(anchor?.textContent).toBe('Nueva cotización')
   })

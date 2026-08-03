@@ -26,6 +26,7 @@ import {
   type PipelineFiltersState,
 } from '@/components/inmobiliaria';
 import { Spinner } from '@/components/ui/spinner';
+import { KpiCard } from '@leasefy/cadence';
 
 /**
  * Pipeline Page - Kanban board for managing the rental pipeline
@@ -191,11 +192,11 @@ function PipelineContent() {
   if (isLoading) {
     return (
       <div className="p-4 md:p-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {t('inmobiliaria.pipeline.title')}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-1">
+          <p className="text-sm text-muted-foreground max-w-2xl">
             {t('inmobiliaria.pipeline.subtitle')}
           </p>
         </div>
@@ -209,105 +210,43 @@ function PipelineContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           {t('inmobiliaria.pipeline.title')}
         </h1>
-        <p className="text-neutral-500 dark:text-neutral-400 mt-1">
+        <p className="text-sm text-muted-foreground max-w-2xl">
           {t('inmobiliaria.pipeline.subtitle')}
         </p>
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {/* Total Leads */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-              <Users className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-                {stats.total}
-              </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t('inmobiliaria.pipeline.stats.totalLeads')}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* In Process */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <Funnel className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">
-                {stats.inProcess}
-              </p>
-              <p className="text-xs text-indigo-600 dark:text-indigo-500">
-                {t('inmobiliaria.pipeline.stats.inProcess')}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Closed This Month */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
-                {stats.completedThisMonth}
-              </p>
-              <p className="text-xs text-emerald-600 dark:text-emerald-500">
-                {t('inmobiliaria.pipeline.stats.closedThisMonth')}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Conversion Rate */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-              <ChartLineUp className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">
-                {stats.conversionRate}%
-              </p>
-              <p className="text-xs text-amber-600 dark:text-amber-500">
-                {t('inmobiliaria.pipeline.stats.conversionRate')}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+      >
+        <KpiCard
+          label={t('inmobiliaria.pipeline.stats.totalLeads')}
+          value={String(stats.total)}
+          icon={<Users />}
+        />
+        <KpiCard
+          label={t('inmobiliaria.pipeline.stats.inProcess')}
+          value={String(stats.inProcess)}
+          icon={<Funnel />}
+        />
+        <KpiCard
+          label={t('inmobiliaria.pipeline.stats.closedThisMonth')}
+          value={String(stats.completedThisMonth)}
+          icon={<CheckCircle />}
+        />
+        <KpiCard
+          label={t('inmobiliaria.pipeline.stats.conversionRate')}
+          value={`${stats.conversionRate}%`}
+          icon={<ChartLineUp />}
+        />
+      </motion.div>
 
       {/* Unified Data Card - Filters + Content */}
       <motion.div

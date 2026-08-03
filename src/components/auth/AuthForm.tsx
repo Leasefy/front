@@ -6,14 +6,17 @@ import { useForm } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { AuthInput } from './AuthInput';
+import { Eyebrow } from '@/components/brand';
 import { useAuth } from '@/lib/auth/use-auth';
+import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
+import { getRoleHomeRoute } from '@/lib/auth/role-routes';
+import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
 import {
   Key,
   Briefcase,
   SpinnerGap,
   ArrowLeft,
-  Envelope,
   CheckCircle,
   Check,
   MagnifyingGlass,
@@ -86,10 +89,59 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
+/** Hairline divider with a mono technical label — DS signature. */
+function MonoDivider({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 my-6">
+      <div className="h-px flex-1 bg-border" />
+      <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
+        {children}
+      </span>
+      <div className="h-px flex-1 bg-border" />
+    </div>
+  );
+}
+
+/** Quiet Google auth button — hairline, 8px radius. */
+function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () => void; disabled: boolean; isLoading: boolean; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="w-full h-11 flex items-center justify-center gap-2.5 rounded-full border border-border bg-surface hover:border-border-strong hover:bg-surface-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {isLoading ? (
+        <SpinnerGap className="w-4 h-4 animate-spin text-fg-subtle" />
+      ) : (
+        <GoogleIcon className="w-4 h-4" />
+      )}
+      <span className="text-[13.5px] font-medium text-fg">{children}</span>
+    </button>
+  );
+}
+
+/** Brand-critical error banner. */
+function ErrorBanner({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="px-3.5 py-2.5 rounded-xl bg-danger-soft border border-danger/30"
+    >
+      <p className="text-[12.5px] text-danger">{children}</p>
+    </motion.div>
+  );
+}
+
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, mfaRequired } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership } = useAuth();
+  // Admin can switch signup profiles off (see /admin/registration-profiles).
+  // Fails open: while loading or if the config backend is down, all are shown.
+  const { isEnabled: isProfileEnabled } = useEnabledProfiles();
+  const visibleRoleCards = roleCards.filter((card) => isProfileEnabled(card.id));
 
   const [mode, setMode] = React.useState<AuthMode>('login');
   const [registerStep, setRegisterStep] = React.useState<RegisterStep>('role');
@@ -102,12 +154,53 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // preventing users from logging in as a different account.
   const didAuthenticateInForm = React.useRef(false);
 
+  // Bounded fallback for the agency-membership-probe wait in the auto-redirect
+  // effect below. An agency user's `agencyRole` is populated ASYNC by the probe,
+  // so we hold the per-sub-role redirect until `agencyMembershipChecked` is true.
+  // If the probe never settles, stop waiting after a few seconds and proceed
+  // with whatever `agencyRole` is (defaulting to '/panel/inmobiliaria'). Mirrors
+  // the pattern in src/app/onboarding/seleccionar-rol/page.tsx.
+  const [probeWaitElapsed, setProbeWaitElapsed] = React.useState(false);
+  React.useEffect(() => {
+    const id = setTimeout(() => setProbeWaitElapsed(true), 4000);
+    return () => clearTimeout(id);
+  }, []);
+
   const returnUrl = sanitizeReturnUrl(returnUrlProp || searchParams.get('returnUrl'), '/');
+
+  // A fatal auth-bootstrap error (e.g. 409: this email already belongs to
+  // another account) is handed over by auth-context via sessionStorage across
+  // the forced sign-out redirect — surface it in the existing error banner.
+  React.useEffect(() => {
+    try {
+      const message = sessionStorage.getItem(AUTH_BOOTSTRAP_ERROR_KEY);
+      if (message) {
+        sessionStorage.removeItem(AUTH_BOOTSTRAP_ERROR_KEY);
+        setError(message);
+      }
+    } catch {
+      // sessionStorage unavailable — nothing to surface
+    }
+  }, []);
 
   // Redirigir automáticamente SOLO cuando el usuario inició sesión en este formulario
   React.useEffect(() => {
     if (!didAuthenticateInForm.current) return;
     if (authLoading) return;
+    // MFA gate first (security): never bypass a pending second factor, regardless
+    // of onboarding/returnUrl state (mirrors ProtectedRoute.tsx:127-130).
+    if (mfaRequired) {
+      window.location.href = '/auth/mfa-verify';
+      return;
+    }
+    // Invitation flow: the /invitacion/[token] page handles needsOnboarding on its
+    // own (it offers "complete registration" → /registro?invitationToken). Honor a
+    // returnUrl pointing there BEFORE the generic onboarding redirect — otherwise an
+    // invited user is sent to the "create agency" onboarding and the token is lost.
+    if (returnUrl.startsWith('/invitacion/')) {
+      window.location.href = returnUrl;
+      return;
+    }
     // JWT valid but backend has no user record yet → onboarding
     if (needsOnboarding) {
       window.location.href = '/onboarding/seleccionar-rol';
@@ -119,21 +212,19 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       window.location.href = '/onboarding/seleccionar-rol';
       return;
     }
-    // MFA gate: if a second factor is still required, send to the verify page
-    // instead of the panel (mirrors ProtectedRoute.tsx:127-130).
-    if (mfaRequired) {
-      window.location.href = '/auth/mfa-verify';
-      return;
-    }
     if (returnUrl && returnUrl !== '/') {
       window.location.href = returnUrl;
       return;
     }
-    // No returnUrl — redirect to the correct panel based on role
-    if (user.role === 'agency') window.location.href = '/panel/inmobiliaria';
-    else if (user.role === 'landlord') window.location.href = '/panel';
-    else window.location.href = '/inquilino';
-  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, mfaRequired]);
+    // No returnUrl — redirect to the correct panel based on role. For an agency
+    // user, hold until the membership probe settles so `agencyRole` is resolved
+    // and the per-sub-role landing route is used (otherwise it'd fall to the
+    // default). The bounded `probeWaitElapsed` guarantees we never hang.
+    // Non-agency users (tenant/landlord) redirect immediately as before.
+    const isAgencyUser = user.role === 'agency' || hasActiveAgencyMembership;
+    if (isAgencyUser && !agencyMembershipChecked && !probeWaitElapsed) return;
+    window.location.href = getRoleHomeRoute(user.role, agencyRole);
+  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed]);
   const preselectedRole = defaultRole || searchParams.get('role') as 'tenant' | 'landlord' | 'agency' | null;
   const initialMode = defaultMode || searchParams.get('mode') as AuthMode | null;
 
@@ -200,10 +291,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       router.push(returnUrl);
       return;
     }
-    if (role === 'landlord') router.push('/panel');
-    else if (role === 'agency') router.push('/panel/inmobiliaria');
-    else router.push('/inquilino'); // default: tenant
-  }, [returnUrl, router]);
+    router.push(getRoleHomeRoute(role, agencyRole));
+  }, [returnUrl, router, agencyRole]);
 
   // ── Login ────────────────────────────────────────────────────────────────
   const handleGoogleLogin = async () => {
@@ -227,6 +316,21 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     try {
       didAuthenticateInForm.current = true;
       const userData = await signInWithEmail(data.email, data.password);
+      if (!userData) {
+        // Supabase accepted the credentials but the profile bootstrap failed
+        // WITHOUT throwing (e.g. 409 duplicate identity: fetchUser stored the
+        // backend message in sessionStorage and signed the session out).
+        // Surface it inline here — the mount-only reader above already ran
+        // before this attempt, so it cannot cover this path.
+        didAuthenticateInForm.current = false;
+        let message: string | null = null;
+        try {
+          message = sessionStorage.getItem(AUTH_BOOTSTRAP_ERROR_KEY);
+          if (message) sessionStorage.removeItem(AUTH_BOOTSTRAP_ERROR_KEY);
+        } catch {}
+        setError(message || 'Error al iniciar sesión. Intenta de nuevo.');
+        return;
+      }
       onSuccess?.();
       // El useEffect de arriba se encargará de la redirección al detectar el cambio de auth
     } catch (err: unknown) {
@@ -239,6 +343,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       } else {
         setError('Error al iniciar sesión. Intenta de nuevo.');
       }
+    } finally {
       setIsLoading(false);
     }
   };
@@ -269,7 +374,13 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     setIsLoading(true);
     setError(null);
     try {
-      const { requiresConfirmation } = await signUpWithEmail(data.email, data.password);
+      // Preserve context on the email-confirmation link so it returns through
+      // /auth/callback (which exchanges the code server-side and honors returnUrl)
+      // instead of Supabase's default Site URL (the root "/"), which would drop the
+      // invitation/onboarding context and land the user as a bare TENANT.
+      const dest = returnUrl && returnUrl !== '/' ? returnUrl : getOnboardingHref(selectedRole);
+      const emailRedirectTo = `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(dest)}`;
+      const { requiresConfirmation } = await signUpWithEmail(data.email, data.password, emailRedirectTo);
       if (requiresConfirmation) {
         setResetEmail(data.email);
         setRegisterStep('confirm-email');
@@ -311,107 +422,65 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     }
   };
 
+  // ── Header copy per mode — eyebrow (mono) + Satoshi heading, left-aligned ──
+  const eyebrow =
+    mode === 'login' ? 'Acceso'
+    : mode === 'forgot-password' ? 'Recuperación'
+    : mode === 'reset-sent' ? 'Correo enviado'
+    : registerStep === 'confirm-email' ? 'Correo enviado'
+    : 'Crear cuenta';
+
   return (
     <div className={cn('w-full', className)}>
-      {/* Header */}
-      <div className="text-center mb-8">
+      {/* Header — left-aligned, quiet hierarchy */}
+      <div className="mb-8">
         {(mode === 'forgot-password' || mode === 'reset-sent') && (
           <button
             type="button"
             onClick={() => handleModeSwitch('login')}
-            className="inline-flex items-center gap-2 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
+            className="inline-flex items-center gap-2 text-[13px] text-fg-subtle hover:text-fg transition-colors mb-5"
           >
             <ArrowLeft className="w-4 h-4" />
             Volver al inicio de sesión
           </button>
         )}
 
-        {mode === 'reset-sent' && (
+        {(mode === 'reset-sent' || (mode === 'register' && registerStep === 'confirm-email')) && (
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-            className="w-16 h-16 mx-auto mb-6 rounded-full bg-emerald-100 flex items-center justify-center"
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            className="w-10 h-10 mb-5 rounded-xl bg-success-soft flex items-center justify-center"
           >
-            <CheckCircle className="w-8 h-8 text-emerald-600" />
+            <CheckCircle className="w-5 h-5 text-success" weight="fill" />
           </motion.div>
         )}
 
-        {mode === 'forgot-password' && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-            className="w-16 h-16 mx-auto mb-6 rounded-full bg-indigo-50 flex items-center justify-center"
-          >
-            <Envelope className="w-8 h-8 text-indigo-600" />
-          </motion.div>
-        )}
+        <Eyebrow>{eyebrow}</Eyebrow>
 
-        <h1 className="text-2xl font-heading font-semibold text-foreground tracking-tight">
+        <h1 className="mt-3 font-heading text-[24px] font-medium text-fg tracking-[-0.01em] leading-tight">
           {mode === 'login' && 'Bienvenido de vuelta'}
           {mode === 'register' && registerStep === 'role' && '¿Cómo usarás Leasefy?'}
-          {mode === 'register' && registerStep === 'credentials' && `Crear cuenta como ${selectedRole ? roleLabels[selectedRole] : ''}`}
-          {mode === 'register' && registerStep === 'confirm-email' && '¡Revisa tu correo!'}
+          {mode === 'register' && registerStep === 'credentials' && 'Crea tu cuenta'}
+          {mode === 'register' && registerStep === 'confirm-email' && 'Revisa tu correo'}
           {mode === 'forgot-password' && 'Recupera tu contraseña'}
-          {mode === 'reset-sent' && '¡Revisa tu correo!'}
+          {mode === 'reset-sent' && 'Revisa tu correo'}
         </h1>
-        <p className="text-[14px] text-muted-foreground mt-2">
-          {mode === 'login' && 'Ingresa a tu cuenta para continuar'}
-          {mode === 'register' && registerStep === 'role' && 'Selecciona tu perfil para personalizar tu experiencia'}
-          {mode === 'register' && registerStep === 'credentials' && 'Ingresa tus datos para crear tu cuenta'}
-          {mode === 'register' && registerStep === 'confirm-email' && (
-            <>
-              Enviamos un enlace de confirmación a<br />
-              <span className="font-medium text-foreground">{resetEmail}</span>
-            </>
+        <p className="mt-1.5 text-[13.5px] text-fg-subtle leading-relaxed">
+          {mode === 'login' && 'Ingresa a tu cuenta para continuar.'}
+          {mode === 'register' && registerStep === 'role' && 'Selecciona tu perfil para personalizar tu experiencia.'}
+          {mode === 'register' && registerStep === 'credentials' && (
+            <>Como <span className="font-medium text-fg-muted">{selectedRole ? roleLabels[selectedRole] : ''}</span>. Ingresa tus datos para continuar.</>
           )}
-          {mode === 'forgot-password' && 'Te enviaremos un enlace para restablecer tu contraseña'}
+          {mode === 'register' && registerStep === 'confirm-email' && (
+            <>Enviamos un enlace de confirmación a <span className="font-medium text-fg-muted">{resetEmail}</span>.</>
+          )}
+          {mode === 'forgot-password' && 'Te enviaremos un enlace para restablecer tu contraseña.'}
           {mode === 'reset-sent' && (
-            <>
-              Enviamos un enlace de recuperación a<br />
-              <span className="font-medium text-foreground">{resetEmail}</span>
-            </>
+            <>Enviamos un enlace de recuperación a <span className="font-medium text-fg-muted">{resetEmail}</span>.</>
           )}
         </p>
       </div>
-
-      {/* Tab switcher — only show on main login/register screens */}
-      {(mode === 'login' || (mode === 'register' && registerStep === 'role')) && (
-        <div className="relative p-1 bg-muted rounded-xl mb-8">
-          <div className="relative flex">
-            <motion.div
-              className="absolute inset-y-1 rounded-lg bg-background shadow-sm"
-              initial={false}
-              animate={{
-                x: mode === 'login' ? 4 : 'calc(100% + 4px)',
-                width: 'calc(50% - 8px)',
-              }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            />
-            <button
-              type="button"
-              onClick={() => handleModeSwitch('login')}
-              className={cn(
-                'relative z-10 flex-1 py-2.5 text-[13px] font-medium transition-colors rounded-lg',
-                mode === 'login' ? 'text-foreground' : 'text-muted-foreground'
-              )}
-            >
-              Iniciar sesión
-            </button>
-            <button
-              type="button"
-              onClick={() => handleModeSwitch('register')}
-              className={cn(
-                'relative z-10 flex-1 py-2.5 text-[13px] font-medium transition-colors rounded-lg',
-                mode === 'register' ? 'text-foreground' : 'text-muted-foreground'
-              )}
-            >
-              Crear cuenta
-            </button>
-          </div>
-        </div>
-      )}
 
       <AnimatePresence mode="wait">
         {/* ── Login ─────────────────────────────────────────────────────── */}
@@ -423,36 +492,16 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={isLoading}
-              className="w-full h-12 flex items-center justify-center gap-3 rounded-xl border border-border bg-background hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-6"
-            >
-              {isLoading ? (
-                <SpinnerGap className="w-5 h-5 animate-spin text-muted-foreground" />
-              ) : (
-                <GoogleIcon className="w-5 h-5" />
-              )}
-              <span className="text-[14px] font-medium text-foreground">
-                {isLoading ? 'Conectando...' : 'Continuar con Google'}
-              </span>
-            </button>
+            <GoogleButton onClick={handleGoogleLogin} disabled={isLoading} isLoading={isLoading}>
+              {isLoading ? 'Conectando...' : 'Continuar con Google'}
+            </GoogleButton>
 
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-background px-4 text-muted-foreground">o continúa con email</span>
-              </div>
-            </div>
+            <MonoDivider>o con email</MonoDivider>
 
             <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
               <AuthInput
                 label="Email"
                 type="email"
-                icon="email"
                 placeholder="tu@email.com"
                 {...loginForm.register('email', {
                   required: 'El email es requerido',
@@ -460,35 +509,43 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 })}
                 error={loginForm.formState.errors.email?.message}
               />
-              <AuthInput
-                label="Contraseña"
-                type="password"
-                icon="password"
-                placeholder="Tu contraseña"
-                {...loginForm.register('password', {
-                  required: 'La contraseña es requerida',
-                  minLength: { value: 6, message: 'Mínimo 6 caracteres' },
-                })}
-                error={loginForm.formState.errors.password?.message}
-              />
-              <div className="text-right">
-                <button
-                  type="button"
-                  onClick={() => handleModeSwitch('forgot-password')}
-                  className="text-[12px] text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  ¿Olvidaste tu contraseña?
-                </button>
+              <div className="space-y-1.5">
+                <AuthInput
+                  label="Contraseña"
+                  type="password"
+                  placeholder="Tu contraseña"
+                  {...loginForm.register('password', {
+                    required: 'La contraseña es requerida',
+                    minLength: { value: 6, message: 'Mínimo 6 caracteres' },
+                  })}
+                  error={loginForm.formState.errors.password?.message}
+                />
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => handleModeSwitch('forgot-password')}
+                    className="text-[12.5px] text-fg-subtle hover:text-fg transition-colors"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
               </div>
-              {error && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-xl bg-destructive/10 border border-destructive/20">
-                  <p className="text-[13px] text-destructive">{error}</p>
-                </motion.div>
-              )}
-              <Button type="submit" size="lg" disabled={isLoading} className="w-full h-12 text-[14px] rounded-xl">
+              {error && <ErrorBanner>{error}</ErrorBanner>}
+              <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
                 {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Ingresando...</>) : 'Iniciar sesión'}
               </Button>
             </form>
+
+            <p className="mt-7 text-[13px] text-fg-subtle">
+              ¿No tienes cuenta?{' '}
+              <button
+                type="button"
+                onClick={() => handleModeSwitch('register')}
+                className="font-medium text-[#1A40FF] hover:underline underline-offset-2"
+              >
+                Crear cuenta
+              </button>
+            </p>
           </motion.div>
         )}
 
@@ -500,16 +557,16 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="space-y-3"
+            className="space-y-2.5"
           >
             {defaultRole ? (
               <div className="flex flex-col items-center gap-3 py-8">
-                <SpinnerGap className="w-6 h-6 animate-spin text-neutral-400" />
-                <p className="text-sm text-muted-foreground">Configurando tu cuenta...</p>
+                <SpinnerGap className="w-6 h-6 animate-spin text-fg-subtle" />
+                <p className="text-sm text-fg-subtle">Configurando tu cuenta...</p>
               </div>
             ) : (
               <>
-                {roleCards.map((card, index) => {
+                {visibleRoleCards.map((card, index) => {
                   const Icon = card.icon;
                   const isSelected = selectedRole === card.id;
 
@@ -518,32 +575,34 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                       key={card.id}
                       type="button"
                       onClick={() => handleRoleSelect(card.id)}
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
                       className={cn(
-                        'relative w-full text-left transition-all duration-200 rounded-2xl p-4 group',
-                        'border-2',
+                        'relative w-full text-left transition-colors duration-150 rounded-xl p-4 group border',
                         isSelected
-                          ? 'border-neutral-900 bg-neutral-900'
-                          : 'border-border bg-background hover:border-neutral-300 hover:bg-muted/50'
+                          ? 'border-ink bg-ink'
+                          : 'border-border bg-surface hover:border-border-strong hover:bg-surface-hover'
                       )}
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3.5">
                         <div className={cn(
-                          'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200',
-                          isSelected ? 'bg-white/10' : 'bg-muted group-hover:bg-neutral-200'
+                          'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-150',
+                          isSelected ? 'bg-white/10' : 'bg-surface-muted'
                         )}>
-                          <Icon className={cn('w-6 h-6 transition-colors duration-200', isSelected ? 'text-white' : 'text-neutral-600')} weight={isSelected ? 'fill' : 'regular'} />
+                          <Icon className={cn('w-5 h-5 transition-colors duration-150', isSelected ? 'text-ink-fg' : 'text-fg-muted')} weight={isSelected ? 'fill' : 'regular'} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className={cn('text-[15px] font-semibold transition-colors duration-200', isSelected ? 'text-white' : 'text-foreground')}>{card.title}</h3>
-                          <p className={cn('text-[13px] mt-0.5 transition-colors duration-200 leading-snug', isSelected ? 'text-white/70' : 'text-muted-foreground')}>{card.description}</p>
+                          <h3 className={cn('text-[14px] font-medium transition-colors duration-150', isSelected ? 'text-ink-fg' : 'text-fg')}>{card.title}</h3>
+                          <p className={cn('text-[12.5px] mt-0.5 transition-colors duration-150 leading-snug', isSelected ? 'text-ink-fg-muted' : 'text-fg-subtle')}>{card.description}</p>
                         </div>
-                        <div className={cn('w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all duration-200', isSelected ? 'bg-white' : 'border-2 border-neutral-200 group-hover:border-neutral-300')}>
+                        <div className={cn(
+                          'w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors duration-150',
+                          isSelected ? 'bg-ink-fg' : 'border border-border-strong group-hover:border-fg-subtle'
+                        )}>
                           {isSelected && (
                             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }}>
-                              <Check className="w-4 h-4 text-neutral-900" weight="bold" />
+                              <Check className="w-3 h-3 text-ink" weight="bold" />
                             </motion.div>
                           )}
                         </div>
@@ -552,17 +611,27 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                   );
                 })}
 
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="pt-2">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="pt-3">
                   <Button
                     type="button"
-                    size="lg"
                     disabled={!selectedRole}
                     onClick={handleRoleContinue}
-                    className="w-full h-12 text-[14px] font-semibold rounded-xl"
+                    className="w-full h-11 rounded-full text-[14px]"
                   >
                     {selectedRole ? 'Continuar' : 'Selecciona una opción'}
                   </Button>
                 </motion.div>
+
+                <p className="pt-4 text-[13px] text-fg-subtle">
+                  ¿Ya tienes cuenta?{' '}
+                  <button
+                    type="button"
+                    onClick={() => handleModeSwitch('login')}
+                    className="font-medium text-[#1A40FF] hover:underline underline-offset-2"
+                  >
+                    Inicia sesión
+                  </button>
+                </p>
               </>
             )}
           </motion.div>
@@ -572,9 +641,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
         {mode === 'register' && registerStep === 'credentials' && (
           <motion.div
             key="register-credentials"
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            exit={{ opacity: 0, x: -16 }}
             transition={{ duration: 0.2 }}
           >
             {/* Back button */}
@@ -582,44 +651,23 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               <button
                 type="button"
                 onClick={() => { setRegisterStep('role'); setError(null); registerForm.reset(); }}
-                className="inline-flex items-center gap-2 text-[13px] text-muted-foreground hover:text-foreground transition-colors mb-6"
+                className="inline-flex items-center gap-2 text-[13px] text-fg-subtle hover:text-fg transition-colors mb-6"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Cambiar perfil
               </button>
             )}
 
-            {/* Google option */}
-            <button
-              type="button"
-              onClick={handleGoogleRegister}
-              disabled={isLoading}
-              className="w-full h-12 flex items-center justify-center gap-3 rounded-xl border border-border bg-background hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-6"
-            >
-              {isLoading ? (
-                <SpinnerGap className="w-5 h-5 animate-spin text-muted-foreground" />
-              ) : (
-                <GoogleIcon className="w-5 h-5" />
-              )}
-              <span className="text-[14px] font-medium text-foreground">
-                Registrarse con Google
-              </span>
-            </button>
+            <GoogleButton onClick={handleGoogleRegister} disabled={isLoading} isLoading={isLoading}>
+              Registrarse con Google
+            </GoogleButton>
 
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-background px-4 text-muted-foreground">o con tu email</span>
-              </div>
-            </div>
+            <MonoDivider>o con tu email</MonoDivider>
 
             <form onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} className="space-y-4">
               <AuthInput
                 label="Email"
                 type="email"
-                icon="email"
                 placeholder="tu@email.com"
                 {...registerForm.register('email', {
                   required: 'El email es requerido',
@@ -630,7 +678,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               <AuthInput
                 label="Contraseña"
                 type="password"
-                icon="password"
+                isNewPassword
                 placeholder="Mínimo 6 caracteres"
                 {...registerForm.register('password', {
                   required: 'La contraseña es requerida',
@@ -641,7 +689,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               <AuthInput
                 label="Confirmar contraseña"
                 type="password"
-                icon="password"
+                isNewPassword
                 placeholder="Repite tu contraseña"
                 {...registerForm.register('confirmPassword', {
                   required: 'Confirma tu contraseña',
@@ -649,12 +697,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 })}
                 error={registerForm.formState.errors.confirmPassword?.message}
               />
-              {error && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-xl bg-destructive/10 border border-destructive/20">
-                  <p className="text-[13px] text-destructive">{error}</p>
-                </motion.div>
-              )}
-              <Button type="submit" size="lg" disabled={isLoading} className="w-full h-12 text-[14px] rounded-xl">
+              {error && <ErrorBanner>{error}</ErrorBanner>}
+              <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
                 {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
               </Button>
             </form>
@@ -669,25 +713,19 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="space-y-6"
+            className="space-y-5"
           >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-              className="w-16 h-16 mx-auto rounded-full bg-indigo-50 flex items-center justify-center"
-            >
-              <Envelope className="w-8 h-8 text-indigo-600" />
-            </motion.div>
-            <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-3">
-              <h3 className="text-[13px] font-medium text-foreground">Próximos pasos:</h3>
-              <ol className="text-[12px] text-muted-foreground space-y-2 list-decimal list-inside">
+            <div className="rounded-xl border border-border bg-surface p-4 space-y-2.5">
+              <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
+                Próximos pasos
+              </span>
+              <ol className="text-[12.5px] text-fg-muted space-y-1.5 list-decimal list-inside">
                 <li>Revisa tu bandeja de entrada (y spam)</li>
                 <li>Haz clic en el enlace de confirmación</li>
                 <li>Vuelve aquí e inicia sesión</li>
               </ol>
             </div>
-            <Button type="button" size="lg" onClick={() => handleModeSwitch('login')} className="w-full h-12 text-[14px] rounded-xl">
+            <Button type="button" onClick={() => handleModeSwitch('login')} className="w-full h-11 rounded-full text-[14px]">
               Ir a iniciar sesión
             </Button>
           </motion.div>
@@ -707,7 +745,6 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             <AuthInput
               label="Email"
               type="email"
-              icon="email"
               placeholder="tu@email.com"
               {...forgotPasswordForm.register('email', {
                 required: 'El email es requerido',
@@ -715,15 +752,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               })}
               error={forgotPasswordForm.formState.errors.email?.message}
             />
-            {error && (
-              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-xl bg-destructive/10 border border-destructive/20">
-                <p className="text-[13px] text-destructive">{error}</p>
-              </motion.div>
-            )}
-            <Button type="submit" size="lg" disabled={isLoading} className="w-full h-12 text-[14px] rounded-xl">
+            {error && <ErrorBanner>{error}</ErrorBanner>}
+            <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
               {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando...</>) : 'Enviar enlace de recuperación'}
             </Button>
-            <p className="text-[12px] text-muted-foreground text-center">
+            <p className="text-[12px] text-fg-subtle leading-relaxed">
               Ingresa el email asociado a tu cuenta y te enviaremos un enlace para restablecer tu contraseña.
             </p>
           </motion.form>
@@ -737,25 +770,31 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="space-y-6"
+            className="space-y-5"
           >
-            <div className="p-4 rounded-xl bg-muted/50 border border-border space-y-3">
-              <h3 className="text-[13px] font-medium text-foreground">Próximos pasos:</h3>
-              <ol className="text-[12px] text-muted-foreground space-y-2 list-decimal list-inside">
+            <div className="rounded-xl border border-border bg-surface p-4 space-y-2.5">
+              <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
+                Próximos pasos
+              </span>
+              <ol className="text-[12.5px] text-fg-muted space-y-1.5 list-decimal list-inside">
                 <li>Revisa tu bandeja de entrada (y spam)</li>
                 <li>Haz clic en el enlace del correo</li>
                 <li>Crea tu nueva contraseña</li>
               </ol>
             </div>
-            <div className="text-center space-y-3">
-              <p className="text-[12px] text-muted-foreground">¿No recibiste el correo?</p>
-              <Button type="button" variant="outline" size="lg" onClick={() => handleModeSwitch('forgot-password')} className="w-full h-12 text-[14px] rounded-xl">
-                Reenviar enlace
-              </Button>
-            </div>
-            <Button type="button" size="lg" onClick={() => handleModeSwitch('login')} className="w-full h-12 text-[14px] rounded-xl">
+            <Button type="button" onClick={() => handleModeSwitch('login')} className="w-full h-11 rounded-full text-[14px]">
               Volver al inicio de sesión
             </Button>
+            <p className="text-[13px] text-fg-subtle">
+              ¿No recibiste el correo?{' '}
+              <button
+                type="button"
+                onClick={() => handleModeSwitch('forgot-password')}
+                className="font-medium text-[#1A40FF] hover:underline underline-offset-2"
+              >
+                Reenviar enlace
+              </button>
+            </p>
           </motion.div>
         )}
       </AnimatePresence>

@@ -117,7 +117,7 @@ export function PlanDetailSheet({
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 z-50 bg-black/60"
+        className="fixed inset-0 z-50 bg-[#14130F]/40"
         onClick={() => onOpenChange(false)}
         aria-hidden="true"
       />
@@ -125,7 +125,7 @@ export function PlanDetailSheet({
       {/* Panel */}
       <div
         className={cn(
-          'fixed inset-y-0 right-0 z-50 w-full bg-white dark:bg-card shadow-xl',
+          'fixed inset-y-0 right-0 z-50 w-full bg-surface shadow-xl',
           'flex flex-col',
           'animate-in slide-in-from-right duration-300',
           widthClasses[width],
@@ -253,9 +253,9 @@ export function PlanDetailSheet({
                     className={cn(
                       'flex items-center justify-center gap-2 px-3 py-2 rounded-sm text-sm font-medium transition-colors',
                       action.variant === 'primary'
-                        ? 'bg-primary text-white uppercase tracking-wide font-mono hover:bg-primary/90'
+                        ? 'bg-primary text-primary-fg hover:bg-primary/90'
                         : action.variant === 'danger'
-                          ? 'bg-plan-status-red-bg text-red-800 hover:bg-red-200'
+                          ? 'bg-danger-soft text-danger hover:bg-danger-soft/80'
                           : 'bg-muted text-plan-primary hover:bg-muted'
                     )}
                   >
@@ -327,7 +327,7 @@ export function PlanDetailSheet({
       {secondaryPanel?.open && (
         <div
           className={cn(
-            'fixed inset-y-0 z-50 w-full bg-white dark:bg-card shadow-xl',
+            'fixed inset-y-0 z-50 w-full bg-surface shadow-xl',
             'flex flex-col',
             'animate-in slide-in-from-right duration-300',
             widthClasses[width],

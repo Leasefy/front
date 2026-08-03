@@ -63,7 +63,7 @@ function RangeBar(props: RangeBarProps) {
         y={rectTop}
         width={barWidth}
         height={rectHeight}
-        fill="#818cf8"
+        fill="#7B95FF"
         fillOpacity={0.6}
         rx={2}
       />
@@ -137,11 +137,11 @@ function buildChartData(rows: PrimaDistributionRow[]): {
 // 5-color carrier palette
 // ---------------------------------------------------------------------------
 const CARRIER_COLORS = [
-  '#6366f1',
-  '#14b8a6',
-  '#f59e0b',
-  '#8b5cf6',
-  '#f43f5e',
+  '#1A40FF', // electric-blue (primary)
+  '#7B95FF', // blue-tint
+  '#6B6B6B', // neutral-mid
+  '#9B9B9B', // neutral-light
+  '#C9CDD3', // neutral-pale
 ]
 
 // ---------------------------------------------------------------------------
@@ -181,7 +181,7 @@ function makeRangeBar(carrier: string, yMax: number, chartHeight: number) {
           y={rectTop}
           width={barWidth}
           height={rectHeight}
-          fill="#818cf8"
+          fill="#7B95FF"
           fillOpacity={0.6}
           rx={2}
         />
@@ -229,8 +229,8 @@ export function PrimaDistributionChart({
   if (isLoading && data === null) {
     return (
       <div className="h-[260px] space-y-3 animate-pulse">
-        <div className="h-4 w-48 bg-neutral-200 dark:bg-neutral-700 rounded" />
-        <div className="h-[220px] bg-neutral-100 dark:bg-neutral-800 rounded-xl" />
+        <div className="h-4 w-48 bg-surface-muted dark:bg-ink rounded" />
+        <div className="h-[220px] bg-surface-muted dark:bg-ink rounded-xl" />
       </div>
     )
   }

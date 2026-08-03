@@ -7,6 +7,7 @@ import {
   consignacionesApi,
   pipelineApi,
   cobrosApi,
+  avaluosApi,
   dispersionesApi,
   mantenimientoApi,
   renovacionesApi,
@@ -33,7 +34,6 @@ import type {
   SolicitudMantenimiento,
   Renovacion,
   InmobiliariaDashboardKPIs,
-  InmobiliariaConfigExtended,
   DocumentTemplate,
   PropertyDocument,
   ActaEntrega,
@@ -56,21 +56,44 @@ import type {
 // Generic fetch hook helper
 // ============================================================================
 
-function useApiData<T>(fetcher: () => Promise<T>, deps: unknown[] = [], skip = false) {
+function useApiData<T>(
+  fetcher: () => Promise<T>,
+  deps: unknown[] = [],
+  skip = false,
+  pollMs = 0,
+) {
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<string | null>(null);
 
-  const refetch = useCallback(async () => {
+  // Returns the fetched data on success and null on failure (the error is
+  // captured in hook state, NOT rethrown) — callers that must react to a
+  // failed refetch (e.g. warn the user the view is stale) check for null.
+  const refetch = useCallback(async (): Promise<T | null> => {
     try {
       setIsLoading(true);
       setError(null);
       const result = await fetcher();
       setData(result);
+      return result;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar datos');
+      return null;
     } finally {
       setIsLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+
+  // Background refresh that updates data/error WITHOUT flipping the loading
+  // flag — used for live polling so the view never flashes its skeleton.
+  const silentRefetch = useCallback(async (): Promise<void> => {
+    try {
+      const result = await fetcher();
+      setData(result);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al cargar datos');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
@@ -82,6 +105,12 @@ function useApiData<T>(fetcher: () => Promise<T>, deps: unknown[] = [], skip = f
     }
     refetch();
   }, [refetch, skip]);
+
+  useEffect(() => {
+    if (skip || !pollMs) return;
+    const id = setInterval(silentRefetch, pollMs);
+    return () => clearInterval(id);
+  }, [silentRefetch, skip, pollMs]);
 
   return { data, isLoading, error, refetch, setData };
 }
@@ -190,6 +219,34 @@ export function useCobroSummary(month: string) {
 }
 
 // ============================================================================
+// Avalúos (agency records-by-state)
+// ============================================================================
+
+/**
+ * The agency's own avalúos, optionally filtered by lifecycle state and paginated.
+ * Mirrors useCobros: `data` (the paginated envelope) plus convenience `avaluos`
+ * (its items), `total`, and `pageSize`. Empty until Phase 2 #3 wires the request
+ * flow that tags new avalúos with the agency email.
+ */
+export function useAgencyAvaluos(
+  params?: { state?: string; page?: number },
+  options?: { skip?: boolean },
+) {
+  const { data, ...rest } = useApiData(
+    () => avaluosApi.list(params),
+    [params?.state, params?.page],
+    options?.skip,
+  );
+  return {
+    data,
+    avaluos: data?.items ?? [],
+    total: data?.total ?? 0,
+    pageSize: data?.pageSize ?? 100,
+    ...rest,
+  };
+}
+
+// ============================================================================
 // Dispersiones
 // ============================================================================
 
@@ -227,11 +284,12 @@ export function useRenovaciones() {
 // Dashboard KPIs
 // ============================================================================
 
-export function useInmobiliariaDashboard(options?: { skip?: boolean }) {
+export function useInmobiliariaDashboard(options?: { skip?: boolean; pollMs?: number }) {
   const { data, ...rest } = useApiData(
     () => inmobiliariaDashboardApi.getKPIs(),
     [],
-    options?.skip
+    options?.skip,
+    options?.pollMs
   );
   return { kpis: data, ...rest };
 }
@@ -362,18 +420,25 @@ export function useActasEntrega() {
 // Configuracion
 // ============================================================================
 
+/**
+ * Config overview from GET /inmobiliaria/config.
+ * `config.agency` carries the real agency profile (name, nit, phone, logoUrl,
+ * financial defaults, memberRole...). There are no top-level `name`/`branding`
+ * fields — that shape never existed in the backend.
+ */
 export function useInmobiliariaConfig() {
   const { data, ...rest } = useApiData(
-    () => inmobiliariaConfigApi.getExtended(),
+    () => inmobiliariaConfigApi.getConfigOverview(),
     []
   );
   return { config: data, ...rest };
 }
 
-export function useAgencyUsers() {
+export function useAgencyUsers(enabled = true) {
   const { data, ...rest } = useApiData(
     () => inmobiliariaConfigApi.getUsers(),
-    []
+    [enabled],
+    !enabled,
   );
   return { users: data ?? [], ...rest };
 }
@@ -423,6 +488,7 @@ export {
   consignacionesApi,
   pipelineApi,
   cobrosApi,
+  avaluosApi,
   dispersionesApi,
   mantenimientoApi,
   renovacionesApi,

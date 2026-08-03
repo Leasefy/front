@@ -1,0 +1,122 @@
+/**
+ * LandingHeader.test.tsx — real navigation via Next <Link>, no hash
+ * fragments, no pushState workaround (spec: Real Navigation). Structural
+ * coverage: logo href, nav item hrefs, and pathname-derived active state.
+ */
+import * as React from 'react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { createRoot, type Root } from 'react-dom/client'
+import { act } from 'react'
+
+void React // jsx-preserve
+
+const usePathnameMock = vi.fn(() => '/')
+vi.mock('next/navigation', () => ({
+  usePathname: () => usePathnameMock(),
+}))
+
+import { LandingHeader } from './LandingHeader'
+import { AuthContext } from '@/lib/auth/auth-context'
+import type { AuthContextType } from '@/lib/auth/types'
+
+let container: HTMLDivElement
+let root: Root
+
+beforeEach(() => {
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  root = createRoot(container)
+  usePathnameMock.mockReturnValue('/')
+})
+
+afterEach(() => {
+  act(() => {
+    root.unmount()
+  })
+  container.remove()
+  vi.restoreAllMocks()
+})
+
+describe('<LandingHeader>', () => {
+  it('renders the logo linking to home for anonymous visitors (no AuthProvider needed)', () => {
+    act(() => {
+      root.render(<LandingHeader />)
+    })
+    const logo = container.querySelector('[data-testid="landing-header-logo"]')
+    expect(logo?.getAttribute('href')).toBe('/')
+  })
+
+  it('links the logo to the dashboard for an authenticated user (owner rule: logged in → dashboard)', () => {
+    const auth = { user: { id: 'u1', role: 'tenant' } } as unknown as AuthContextType
+    act(() => {
+      root.render(
+        <AuthContext.Provider value={auth}>
+          <LandingHeader />
+        </AuthContext.Provider>,
+      )
+    })
+    const logo = container.querySelector('[data-testid="landing-header-logo"]')
+    expect(logo?.getAttribute('href')).toBe('/inquilino')
+  })
+
+  it('renders every nav link to a real route with no # fragment', () => {
+    act(() => {
+      root.render(<LandingHeader />)
+    })
+    const links = Array.from(container.querySelectorAll('nav a')) as HTMLAnchorElement[]
+    expect(links.length).toBeGreaterThan(0)
+    for (const link of links) {
+      const href = link.getAttribute('href') ?? ''
+      expect(href.startsWith('#')).toBe(false)
+      expect(href.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('marks the nav link matching the current pathname as active', () => {
+    usePathnameMock.mockReturnValue('/blog')
+    act(() => {
+      root.render(<LandingHeader />)
+    })
+    const activeLink = container.querySelector('nav a[href="/blog"]')
+    expect(activeLink?.getAttribute('aria-current')).toBe('page')
+
+    const inactiveLink = container.querySelector('nav a[href="/contacto"]')
+    expect(inactiveLink?.getAttribute('aria-current')).toBeNull()
+  })
+
+  it('renders overlay-dark state by default and solid when forceSolid is set', () => {
+    act(() => {
+      root.render(<LandingHeader />)
+    })
+    expect(container.querySelector('header')?.getAttribute('data-state')).toBe('overlay-dark')
+
+    act(() => {
+      root.render(<LandingHeader forceSolid />)
+    })
+    expect(container.querySelector('header')?.getAttribute('data-state')).toBe('solid')
+  })
+
+  it('renders overlay-dark by default on the home route ("/")', () => {
+    usePathnameMock.mockReturnValue('/')
+    act(() => {
+      root.render(<LandingHeader />)
+    })
+    expect(container.querySelector('header')?.getAttribute('data-state')).toBe('overlay-dark')
+  })
+
+  it('renders solid by default (no forceSolid prop needed) on internal routes with no dark hero', () => {
+    usePathnameMock.mockReturnValue('/blog')
+    act(() => {
+      root.render(<LandingHeader />)
+    })
+    expect(container.querySelector('header')?.getAttribute('data-state')).toBe('solid')
+  })
+
+  it('lets an explicit forceSolid prop override the pathname-derived default', () => {
+    usePathnameMock.mockReturnValue('/')
+    act(() => {
+      root.render(<LandingHeader forceSolid />)
+    })
+    expect(container.querySelector('header')?.getAttribute('data-state')).toBe('solid')
+  })
+})

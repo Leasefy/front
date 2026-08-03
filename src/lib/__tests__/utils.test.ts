@@ -56,7 +56,7 @@ describe('cn', () => {
     });
 
     it('resolves conflicting rounded classes', () => {
-      expect(cn('rounded-sm', 'rounded-lg')).toBe('rounded-lg');
+      expect(cn('rounded-sm', 'rounded-md')).toBe('rounded-md');
     });
   });
 
@@ -64,10 +64,10 @@ describe('cn', () => {
     it('merges base styles with conditional variant', () => {
       const isActive = true;
       const result = cn(
-        'px-4 py-2 rounded-md text-sm',
+        'px-4 py-2 rounded-sm text-sm',
         isActive ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'
       );
-      expect(result).toBe('px-4 py-2 rounded-md text-sm bg-blue-500 text-white');
+      expect(result).toBe('px-4 py-2 rounded-sm text-sm bg-blue-500 text-white');
     });
 
     it('overrides base styles with variant overrides', () => {

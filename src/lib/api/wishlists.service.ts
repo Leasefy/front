@@ -1,47 +1,42 @@
 /**
  * Wishlists API service
  * Replaces localStorage-based wishlist with backend persistence
+ *
+ * Backend contract (back/src/wishlists/wishlists.controller.ts, TENANT-only):
+ *   GET    /wishlists                      → bare array of items, newest first
+ *   POST   /wishlists/items { propertyId } → idempotent add (404 if property missing/DRAFT)
+ *   DELETE /wishlists/items/:propertyId    → 204, idempotent remove
  */
 
 import { apiClient } from '@/lib/api/client';
 
 export interface WishlistItem {
+  userId: string;
   propertyId: string;
   createdAt: string;
-}
-
-export interface WishlistResponse {
-  items: WishlistItem[];
+  property?: Record<string, unknown>;
 }
 
 export const wishlistsApi = {
   /**
-   * Get all wishlisted property IDs for the current user
+   * Get all wishlisted property IDs for the current user (newest first)
    */
   async getMine(): Promise<string[]> {
-    const res = await apiClient.get<WishlistResponse>('/wishlists');
-    return res.items.map((item) => item.propertyId);
+    const items = await apiClient.get<WishlistItem[]>('/wishlists');
+    return items.map((item) => item.propertyId);
   },
 
   /**
-   * Add a property to the wishlist
+   * Add a property to the wishlist (idempotent)
    */
   async add(propertyId: string): Promise<void> {
-    await apiClient.post('/wishlists', { propertyId });
+    await apiClient.post('/wishlists/items', { propertyId });
   },
 
   /**
-   * Remove a property from the wishlist
+   * Remove a property from the wishlist (idempotent, 204)
    */
   async remove(propertyId: string): Promise<void> {
-    await apiClient.delete(`/wishlists/${propertyId}`);
-  },
-
-  /**
-   * Check if a property is in the wishlist
-   */
-  async check(propertyId: string): Promise<boolean> {
-    const res = await apiClient.get<{ wishlisted: boolean }>(`/wishlists/check/${propertyId}`);
-    return res.wishlisted;
+    await apiClient.delete(`/wishlists/items/${propertyId}`);
   },
 };

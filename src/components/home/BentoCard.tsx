@@ -29,10 +29,10 @@ export function BentoCard({
   const isInView = useInView(ref, { once: true, margin: "-50px" });
 
   const bg = dark
-    ? "bg-indigo-950 hover:shadow-[0_8px_40px_rgba(91,95,239,0.15)]"
+    ? "bg-primary hover:shadow-[0_8px_40px_rgba(91,95,239,0.15)]"
     : outline
-      ? "bg-white hover:shadow-md"
-      : "bg-neutral-50 hover:shadow-lg";
+      ? "bg-white hover:"
+      : "bg-surface hover:";
 
   const borderStyle = dark
     ? "1px solid rgba(255,255,255,0.06)"
@@ -58,7 +58,7 @@ export function BentoCard({
           <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
             {benefits.map((benefit) => (
               <div key={benefit} className="flex items-center gap-1.5">
-                <Check className={`w-3 h-3 ${dark ? "text-emerald-400" : "text-foreground/40"}`} />
+                <Check className={`w-3 h-3 ${dark ? "text-success" : "text-foreground/40"}`} />
                 <span className={`text-[11px] ${dark ? "text-white/50" : "text-foreground/60"}`}>{benefit}</span>
               </div>
             ))}

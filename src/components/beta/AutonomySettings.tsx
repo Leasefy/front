@@ -12,6 +12,8 @@ import {
   ArrowCounterClockwise,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
+import { SegmentedControl } from '@leasefy/cadence';
+import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -43,38 +45,38 @@ const LEVEL_ICON_MAP: Record<string, Icon> = {
 // ============================================================================
 
 const BORDER_COLORS: Record<string, string> = {
-  emerald: 'border-l-emerald-500',
-  blue: 'border-l-blue-500',
-  amber: 'border-l-amber-500',
-  purple: 'border-l-purple-500',
-  pink: 'border-l-pink-500',
-  indigo: 'border-l-indigo-500',
+  emerald: 'border-l-success',
+  blue: 'border-l-primary',
+  amber: 'border-l-warning',
+  purple: 'border-l-border-strong',
+  pink: 'border-l-border-strong',
+  indigo: 'border-l-primary',
 };
 
 const BADGE_COLORS: Record<string, { bg: string; text: string }> = {
   emerald: {
-    bg: 'bg-emerald-50 dark:bg-emerald-500/10',
-    text: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-success-soft',
+    text: 'text-success',
   },
   blue: {
-    bg: 'bg-blue-50 dark:bg-blue-500/10',
-    text: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
   },
   amber: {
-    bg: 'bg-amber-50 dark:bg-amber-500/10',
-    text: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
   },
   purple: {
-    bg: 'bg-purple-50 dark:bg-purple-500/10',
-    text: 'text-purple-600 dark:text-purple-400',
+    bg: 'bg-neutral-100 dark:bg-neutral-800',
+    text: 'text-neutral-600 dark:text-neutral-300',
   },
   pink: {
-    bg: 'bg-pink-50 dark:bg-pink-500/10',
-    text: 'text-pink-600 dark:text-pink-400',
+    bg: 'bg-neutral-100 dark:bg-neutral-800',
+    text: 'text-neutral-600 dark:text-neutral-300',
   },
   indigo: {
-    bg: 'bg-indigo-50 dark:bg-indigo-600/10',
-    text: 'text-indigo-600 dark:text-indigo-400',
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
   },
 };
 
@@ -155,7 +157,7 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
               <div className="flex items-center gap-2.5 mb-3">
                 <div
                   className={cn(
-                    'flex items-center justify-center w-7 h-7 rounded-lg',
+                    'flex items-center justify-center w-7 h-7 rounded-md',
                     badge.bg
                   )}
                 >
@@ -171,43 +173,33 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
                 </span>
               </div>
 
-              {/* Segmented control */}
-              <div
-                className={cn(
-                  'flex rounded-lg',
-                  'bg-neutral-100 dark:bg-neutral-800/50',
-                  'p-0.5'
-                )}
-              >
-                {AUTONOMY_LEVELS.map((level) => {
+              {/* Segmented control — Cadence SegmentedControl */}
+              <SegmentedControl<AutonomyLevel>
+                fullWidth
+                size="sm"
+                aria-label={t('beta.preferences.autonomy.title')}
+                value={currentLevel}
+                onChange={(level) => handleLevelChange(agentType, level)}
+                options={AUTONOMY_LEVELS.map((level) => {
                   const LevelIcon = LEVEL_ICON_MAP[level.icon];
                   const isActive = currentLevel === level.id;
-
-                  return (
-                    <button
-                      key={level.id}
-                      onClick={() => handleLevelChange(agentType, level.id)}
-                      className={cn(
-                        'flex-1 flex items-center justify-center gap-1.5',
-                        'px-2.5 py-1.5 rounded-md',
-                        'text-[12px] font-medium',
-                        'transition-all duration-150',
-                        isActive
-                          ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono'
-                          : 'text-muted-foreground hover:text-foreground'
-                      )}
-                    >
-                      {LevelIcon && (
-                        <LevelIcon
-                          className="w-3.5 h-3.5 flex-shrink-0"
-                          weight={isActive ? 'fill' : 'regular'}
-                        />
-                      )}
-                      <span className="whitespace-nowrap">{level.label}</span>
-                    </button>
-                  );
+                  return {
+                    value: level.id,
+                    ariaLabel: level.label,
+                    label: (
+                      <span className="flex items-center justify-center gap-1.5">
+                        {LevelIcon && (
+                          <LevelIcon
+                            className="w-3.5 h-3.5 flex-shrink-0"
+                            weight={isActive ? 'fill' : 'regular'}
+                          />
+                        )}
+                        <span className="whitespace-nowrap">{level.label}</span>
+                      </span>
+                    ),
+                  };
                 })}
-              </div>
+              />
 
               {/* Active level description */}
               {currentLevelMeta && (
@@ -221,18 +213,19 @@ export function AutonomySettings({ className }: AutonomySettingsProps) {
       </div>
 
       {/* Reset link */}
-      <button
+      <Button
+        variant="ghost"
+        hideArrow
         onClick={resetPreferences}
         className={cn(
-          'flex items-center gap-1.5',
+          'gap-1.5 h-auto px-1 py-0',
           'text-[12px] text-muted-foreground',
-          'hover:text-foreground transition-colors',
-          'px-1'
+          'hover:text-foreground hover:bg-transparent'
         )}
       >
         <ArrowCounterClockwise className="w-3.5 h-3.5" />
         <span>{t('beta.preferences.autonomy.resetDefault')}</span>
-      </button>
+      </Button>
     </section>
   );
 }

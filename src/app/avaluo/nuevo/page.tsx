@@ -1,49 +1,28 @@
 'use client';
 
-import { AvaluoProvider, useAvaluo } from '@/components/avaluo/AvaluoContext';
-import { AvaluoWizardShell } from '@/components/avaluo/AvaluoWizardShell';
-import { StepInmueble } from '@/components/avaluo/StepInmueble';
-import { StepContacto } from '@/components/avaluo/StepContacto';
-import { StepFotos } from '@/components/avaluo/StepFotos';
-import { StepConfirmacion } from '@/components/avaluo/StepConfirmacion';
-
-// ---------------------------------------------------------------------------
-// Step switcher — must be inside AvaluoProvider to use useAvaluo()
-// ---------------------------------------------------------------------------
-
-function AvaluoSteps() {
-  const { currentStep } = useAvaluo();
-
-  switch (currentStep) {
-    case 1:
-      return <StepInmueble />;
-    case 2:
-      return <StepContacto />;
-    case 3:
-      return <StepFotos />;
-    case 4:
-      return <StepConfirmacion />;
-    default:
-      return <StepInmueble />;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Page — anonymous (no initialEmail)
-// ---------------------------------------------------------------------------
+import { useEffect } from 'react';
+import { AVALUO_WIZARD_URL } from '@/lib/avaluo/wizard-url';
 
 /**
- * /avaluo/nuevo — Public multi-step avalúo intake form.
+ * /avaluo/nuevo — RETIRED in-app wizard.
  *
- * Wraps AvaluoProvider (anonymous) around AvaluoWizardShell.
- * Inner AvaluoSteps reads currentStep from context and renders the active step.
+ * The avalúo solicitud flow now runs on the micro's own front
+ * (AVALUO_WIZARD_URL). This route only forwards there so old links/bookmarks
+ * still land on the flow. The former in-app wizard (AvaluoWizardShell + Step*)
+ * is no longer mounted.
  */
-export default function NuevoAvaluoPage() {
+export default function NuevoAvaluoRedirectPage() {
+  useEffect(() => {
+    if (AVALUO_WIZARD_URL) window.location.replace(AVALUO_WIZARD_URL);
+  }, []);
+
   return (
-    <AvaluoProvider>
-      <AvaluoWizardShell>
-        <AvaluoSteps />
-      </AvaluoWizardShell>
-    </AvaluoProvider>
+    <main className="flex min-h-screen items-center justify-center p-8 text-center">
+      <p className="text-sm text-fg-muted">
+        {AVALUO_WIZARD_URL
+          ? 'Redirigiendo a la solicitud de avalúo…'
+          : 'La solicitud de avalúo no está disponible por ahora.'}
+      </p>
+    </main>
   );
 }

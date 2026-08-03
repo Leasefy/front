@@ -14,9 +14,9 @@ import {
   CaretRight,
   Check,
   X,
-  SpinnerGap,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -171,6 +171,8 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         city:         formData.propertyCity ?? '',
         neighborhood: formData.propertyZone ?? '',
         address:      formData.propertyAddress ?? '',
+        latitude:     formData.propertyLatitude,
+        longitude:    formData.propertyLongitude,
         monthlyRent:  formData.monthlyRent ?? 0,
         bedrooms:     0, // wizard doesn't collect this — update after creation
         bathrooms:    0,
@@ -190,8 +192,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         }
       }
 
-      toast.success({
-        title: t('inmobiliaria.consignaciones.wizard.toasts.successTitle'),
+      toast.success(t('inmobiliaria.consignaciones.wizard.toasts.successTitle'), {
         description: t('inmobiliaria.consignaciones.wizard.toasts.successDesc', {
           title: formData.propertyTitle || '',
         }),
@@ -200,8 +201,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
       router.push('/panel/inmobiliaria/propiedades');
     } catch (error) {
       console.error('Error creating property:', error);
-      toast.error({
-        title: t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'),
+      toast.error(t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'), {
         description: t('inmobiliaria.consignaciones.wizard.toasts.errorDesc'),
       });
     } finally {
@@ -270,7 +270,8 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
 
             return (
               <div key={step.id} className="flex items-center">
-                {/* Step Circle */}
+                {/* allowlist: clickable wizard step-navigator (icon-per-step circle + label-below,
+                    completed/current/upcoming). Cadence Stepper is display-only — can't model this. Native. */}
                 <button
                   onClick={() => status !== 'upcoming' && goToStep(step.id)}
                   disabled={status === 'upcoming'}
@@ -282,10 +283,10 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                   <div className={cn(
                     'w-12 h-12 rounded-full flex items-center justify-center transition-all',
                     status === 'completed'
-                      ? 'bg-emerald-500 text-white'
+                      ? 'bg-success text-white'
                       : status === 'current'
-                        ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono ring-4 ring-indigo-500/20'
-                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'
+                        ? 'bg-primary text-primary-fg uppercase tracking-wide font-mono ring-4 ring-primary/30'
+                        : 'bg-surface-muted dark:bg-ink text-fg-subtle'
                   )}>
                     {status === 'completed' ? (
                       <Check className="w-5 h-5" weight="bold" />
@@ -296,10 +297,10 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                   <span className={cn(
                     'text-xs font-medium',
                     status === 'current'
-                      ? 'text-indigo-600 dark:text-indigo-400'
+                      ? 'text-primary'
                       : status === 'completed'
-                        ? 'text-neutral-900 dark:text-white'
-                        : 'text-neutral-400'
+                        ? 'text-fg dark:text-white'
+                        : 'text-fg-subtle'
                   )}>
                     {t(step.labelKey)}
                   </span>
@@ -310,8 +311,8 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                   <div className={cn(
                     'flex-1 h-0.5 mx-2',
                     step.id < currentStep
-                      ? 'bg-emerald-500'
-                      : 'bg-neutral-200 dark:bg-neutral-700'
+                      ? 'bg-success'
+                      : 'bg-surface-muted dark:bg-ink'
                   )} />
                 )}
               </div>
@@ -322,20 +323,20 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         {/* Mobile Progress */}
         <div className="md:hidden">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-neutral-900 dark:text-white">
+            <span className="text-sm font-medium text-fg dark:text-white">
               {t('inmobiliaria.consignaciones.wizard.mobileProgress', {
                 current: currentVisibleIndex + 1,
                 total: totalVisible,
                 label: t(visibleSteps[currentVisibleIndex]?.labelKey ?? ''),
               })}
             </span>
-            <span className="text-sm text-neutral-500">
+            <span className="text-sm text-fg-muted">
               {Math.round(((currentVisibleIndex + 1) / totalVisible) * 100)}%
             </span>
           </div>
-          <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-indigo-600"
+              className="h-full bg-primary"
               initial={false}
               animate={{ width: `${((currentVisibleIndex + 1) / totalVisible) * 100}%` }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -345,7 +346,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
       </div>
 
       {/* Step Content */}
-      <div className="bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+      <div className="bg-surface dark:bg-[#14130F] rounded-xl border border-border dark:border-strong overflow-hidden">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -361,68 +362,60 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         </div>
 
         {/* Footer Navigation */}
-        <div className="px-6 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-[#141416] flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-faint dark:border-strong bg-surface-muted dark:bg-[#14130F] flex items-center justify-between">
           {/* Cancel Button */}
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            hideArrow
+            size="sm"
             onClick={handleCancel}
-            className="px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 font-medium font-mono uppercase tracking-wide text-sm hover:text-neutral-900 dark:hover:text-white transition-colors"
+            className="text-fg-muted dark:text-fg-subtle"
           >
             {t('inmobiliaria.consignaciones.wizard.cancel')}
-          </button>
+          </Button>
 
           {/* Navigation Buttons */}
           <div className="flex items-center gap-3">
             {currentStep > 1 && (
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                hideArrow
                 onClick={goToPreviousStep}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium font-mono uppercase tracking-wide text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
               >
                 <CaretLeft className="w-4 h-4" />
                 {t('inmobiliaria.consignaciones.wizard.previous')}
-              </button>
+              </Button>
             )}
 
             {currentStep < 6 ? (
-              <button
+              <Button
                 type="button"
+                hideArrow
                 onClick={goToNextStep}
                 disabled={!isStepValid}
-                className={cn(
-                  'inline-flex items-center gap-2 px-5 py-2 rounded-xl font-medium transition-all',
-                  isStepValid
-                    ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
-                    : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed uppercase tracking-wide font-mono'
-                )}
               >
                 {t('inmobiliaria.consignaciones.wizard.next')}
                 <CaretRight className="w-4 h-4" />
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 type="button"
+                hideArrow
                 onClick={handleSubmit}
                 disabled={!isStepValid || isSubmitting}
-                className={cn(
-                  'inline-flex items-center gap-2 px-6 py-2 rounded-xl font-medium transition-all',
-                  isStepValid && !isSubmitting
-                    ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono hover:bg-indigo-700'
-                    : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 cursor-not-allowed uppercase tracking-wide font-mono'
-                )}
+                isLoading={isSubmitting}
               >
                 {isSubmitting ? (
-                  <>
-                    <SpinnerGap className="w-4 h-4 animate-spin" />
-                    {t('inmobiliaria.consignaciones.wizard.creating')}
-                  </>
+                  t('inmobiliaria.consignaciones.wizard.creating')
                 ) : (
                   <>
                     <Check className="w-4 h-4" weight="bold" />
                     {t('inmobiliaria.consignaciones.wizard.confirmConsignment')}
                   </>
                 )}
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -443,35 +436,41 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-2xl bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-700 shadow-xl"
+              className="w-full max-w-md p-6 rounded-xl bg-surface dark:bg-[#14130F] border border-border dark:border-strong"
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                  <X className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">
+                  <X className="w-5 h-5 text-warning" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-neutral-900 dark:text-white">
+                  <h3 className="font-semibold text-fg dark:text-white">
                     {t('inmobiliaria.consignaciones.wizard.cancelDialog.title')}
                   </h3>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
                     {t('inmobiliaria.consignaciones.wizard.cancelDialog.description')}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center justify-end gap-3">
-                <button
+                <Button
+                  type="button"
+                  variant="outline"
+                  hideArrow
+                  size="sm"
                   onClick={() => setShowCancelDialog(false)}
-                  className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 font-medium font-mono uppercase tracking-wide text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
                   {t('inmobiliaria.consignaciones.wizard.cancelDialog.continueEditing')}
-                </button>
-                <button
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  hideArrow
+                  size="sm"
                   onClick={confirmCancel}
-                  className="px-4 py-2 rounded-xl bg-red-500 text-white uppercase tracking-wide font-mono font-medium hover:bg-red-600 transition-colors"
                 >
                   {t('inmobiliaria.consignaciones.wizard.cancelDialog.yesCancel')}
-                </button>
+                </Button>
               </div>
             </motion.div>
           </motion.div>

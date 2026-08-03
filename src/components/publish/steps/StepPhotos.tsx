@@ -138,7 +138,7 @@ export function StepPhotos() {
           isFull
             ? 'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 cursor-not-allowed'
             : isDragOver
-              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+              ? 'border-[#1A40FF]/30 bg-[#EEF1FF] dark:bg-[#1A40FF]/15'
               : 'border-neutral-300 dark:border-neutral-600 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
         )}
       >
@@ -156,7 +156,7 @@ export function StepPhotos() {
       </button>
 
       {error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-sm text-[#C4503B] dark:text-[#E0664D]">{error}</p>
       )}
 
       {/* Photo grid */}
@@ -172,7 +172,7 @@ export function StepPhotos() {
               className={cn(
                 'relative aspect-[4/3] rounded-xl overflow-hidden group cursor-move',
                 'border-2 border-transparent',
-                draggedIndex === index && 'border-indigo-500 opacity-50'
+                draggedIndex === index && 'border-primary/30 opacity-50'
               )}
             >
               <img
@@ -186,14 +186,14 @@ export function StepPhotos() {
 
               {/* Primary badge */}
               {index === 0 && (
-                <span className="absolute top-2 left-2 px-2 py-1 bg-indigo-600 text-white uppercase tracking-wide font-mono text-xs font-medium rounded-lg">
+                <span className="absolute top-2 left-2 px-2 py-1 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-xs font-medium rounded-md">
                   Principal
                 </span>
               )}
 
               {/* Drag handle */}
               <div className="absolute top-2 right-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                <DotsSixVertical className="w-5 h-5 text-white drop-shadow-lg" />
+                <DotsSixVertical className="w-5 h-5 text-white drop-" />
               </div>
 
               {/* Remove button */}

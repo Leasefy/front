@@ -79,6 +79,7 @@ function mapBackendLease(bl: BackendLease): Lease {
     contractUrl: bl.contractUrl,
     insuranceUrl: bl.insuranceUrl,
     inventoryUrl: bl.inventoryUrl,
+    renovacion: bl.renovacion ?? null,
     createdAt: bl.createdAt,
     updatedAt: bl.updatedAt,
     // Legacy: el backend NO devuelve estos campos. Los pasamos solo si vinieran (compat).
@@ -128,6 +129,16 @@ export const leasesApi = {
   async getById(id: string): Promise<Lease> {
     const raw = await apiClient.get<BackendLease>(`/leases/${id}`);
     return mapBackendLease(raw);
+  },
+
+  /** POST /leases/:leaseId/renovacion/accept — tenant accepts the renewal */
+  async acceptRenovacion(leaseId: string): Promise<void> {
+    await apiClient.post(`/leases/${leaseId}/renovacion/accept`, {});
+  },
+
+  /** POST /leases/:leaseId/renovacion/request — tenant asks the agency to renew */
+  async requestRenovacion(leaseId: string): Promise<void> {
+    await apiClient.post(`/leases/${leaseId}/renovacion/request`, {});
   },
 
   /** GET /tenant-payments/lease/:leaseId — payments for a specific lease */

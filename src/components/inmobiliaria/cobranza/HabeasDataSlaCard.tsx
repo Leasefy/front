@@ -9,22 +9,24 @@
  *    overdue variant when remaining_days ≤ 0)
  *  - Progress bar: width % = ((15 - remaining_days) / 15) * 100, clamped 0..100
  *  - Traffic-light coloring driven by the backend `color` enum (D-34-07):
- *      green     → bg-emerald-500
- *      yellow    → bg-amber-500
- *      red       → bg-rose-500
- *      red-pulse → bg-rose-500 animate-pulse  AND card border-rose-500 animate-pulse
+ *      green     → bg-success
+ *      yellow    → bg-warning
+ *      red       → bg-danger
+ *      red-pulse → bg-danger animate-pulse  AND card border-danger/30 animate-pulse
  *
  * Uses semantic Tailwind tokens (rose/amber/emerald) per mvp:docs/DESIGN.md
- * §1 anti-pattern: "No raw Tailwind colors that bypass our scales (bg-red-500
- * instead of bg-error-500 / bg-rose-500)". The backend's abstract color enum
+ * §1 anti-pattern: "No raw Tailwind colors that bypass our scales (bg-danger
+ * instead of bg-error-500 / bg-danger)". The backend's abstract color enum
  * (green/yellow/red/red-pulse) maps to the design system below.
  *
- * Refs mvp:docs/DESIGN.md §4 (cards: rounded-xl border bg-card shadow-sm),
+ * Refs mvp:docs/DESIGN.md §4 (cards: rounded-xl border bg-card),
  * §16 (numeric tabular-nums), mvp:docs/COLOR_SYSTEM.md (rose=error, amber=warn,
  * emerald=ok).
  */
 
 import * as React from 'react'
+
+import { MonoLabel } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
@@ -37,19 +39,19 @@ interface HabeasDataSlaCardProps {
 }
 
 const BAR_BG_BY_COLOR: Record<HabeasDataColor, string> = {
-  green: 'bg-emerald-500',
-  yellow: 'bg-amber-500',
-  red: 'bg-rose-500',
+  green: 'bg-success',
+  yellow: 'bg-warning',
+  red: 'bg-danger',
   // animate-pulse on bar + parent card border (see CARD_BORDER_BY_COLOR)
-  'red-pulse': 'bg-rose-500 animate-pulse',
+  'red-pulse': 'bg-danger animate-pulse',
 }
 
 const CARD_BORDER_BY_COLOR: Record<HabeasDataColor, string> = {
   green: 'border-border',
-  yellow: 'border-amber-300 dark:border-amber-800',
-  red: 'border-rose-300 dark:border-rose-800',
+  yellow: 'border-warning/30',
+  red: 'border-danger/30',
   // animate-pulse echoes the bar pulse on the card border
-  'red-pulse': 'border-rose-500 animate-pulse',
+  'red-pulse': 'border-danger/30 animate-pulse',
 }
 
 /** D-34-07 progress fill = elapsed/15-day window. Negative remaining ⇒ 100%. */
@@ -101,7 +103,7 @@ export function HabeasDataSlaCard({ request }: HabeasDataSlaCardProps) {
       data-color={color}
       data-event-id={request.id}
       className={[
-        'rounded-xl border bg-card shadow-sm p-4 space-y-3',
+        'rounded-xl border bg-card p-4 space-y-3',
         CARD_BORDER_BY_COLOR[color],
       ].join(' ')}
       role="group"
@@ -118,20 +120,20 @@ export function HabeasDataSlaCard({ request }: HabeasDataSlaCardProps) {
             {relativeFromIso(timestamp, locale)}
           </p>
         </div>
-        <span
+        <MonoLabel
           className={[
-            'text-xs font-mono uppercase tracking-wide tabular-nums whitespace-nowrap',
+            'text-xs tabular-nums whitespace-nowrap',
             remaining_days <= 0
-              ? 'text-rose-700 dark:text-rose-400 font-semibold'
+              ? 'text-danger font-semibold'
               : color === 'red' || color === 'red-pulse'
-                ? 'text-rose-700 dark:text-rose-400 font-semibold'
+                ? 'text-danger font-semibold'
                 : color === 'yellow'
-                  ? 'text-amber-700 dark:text-amber-400'
-                  : 'text-emerald-700 dark:text-emerald-400',
+                  ? 'text-warning'
+                  : 'text-success',
           ].join(' ')}
         >
           {countdown}
-        </span>
+        </MonoLabel>
       </div>
 
       {/* Progress bar */}

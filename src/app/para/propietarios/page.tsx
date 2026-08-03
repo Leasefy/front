@@ -51,7 +51,7 @@ function EvaluationVisual() {
     <div className="relative w-full h-full flex items-center overflow-hidden px-8 py-4">
       {/* Animated glow effects */}
       <motion.div
-        className="absolute top-[20%] left-[18%] w-[180px] h-[180px] bg-emerald-500/[0.07] rounded-full blur-[80px] pointer-events-none"
+        className="absolute top-[20%] left-[18%] w-[180px] h-[180px] bg-[#2C7A53]/[0.07] rounded-full blur-[80px] pointer-events-none"
         animate={{
           scale: [1, 1.3, 1],
           opacity: [0.07, 0.12, 0.07],
@@ -59,7 +59,7 @@ function EvaluationVisual() {
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
-        className="absolute bottom-[10%] right-[20%] w-[120px] h-[120px] bg-blue-500/[0.05] rounded-full blur-[60px] pointer-events-none"
+        className="absolute bottom-[10%] right-[20%] w-[120px] h-[120px] bg-[#1A40FF]/[0.05] rounded-full blur-[60px] pointer-events-none"
         animate={{
           scale: [1, 1.4, 1],
           opacity: [0.05, 0.1, 0.05],
@@ -93,10 +93,8 @@ function EvaluationVisual() {
               />
               <defs>
                 <linearGradient id="gaugeProp" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#f43f5e" />
-                  <stop offset="25%" stopColor="#f59e0b" />
-                  <stop offset="55%" stopColor="#10b981" />
-                  <stop offset="100%" stopColor="#34d399" />
+                  <stop offset="0%" stopColor="#1A40FF" />
+                  <stop offset="100%" stopColor="#8A9CFF" />
                 </linearGradient>
               </defs>
             </svg>
@@ -152,7 +150,7 @@ function EvaluationVisual() {
                   initial={{ scale: 0, rotate: -20 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ delay: 1.4, type: "spring", stiffness: 400, damping: 12 }}
-                  className="flex items-center gap-0.5 bg-emerald-500/15 text-emerald-400 text-[8px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20"
+                  className="flex items-center gap-0.5 bg-[#2C7A53]/15 text-[#2C7A53] text-[8px] font-bold px-2 py-0.5 rounded-full border border-[#2C7A53]/30"
                 >
                   <motion.div
                     animate={{ scale: [1, 1.2, 1] }}
@@ -176,9 +174,9 @@ function EvaluationVisual() {
 
           <div className="space-y-2.5">
             {[
-              { label: "Capacidad de pago", score: 92, colorClass: "bg-emerald-400", glowClass: "bg-emerald-400/30" },
-              { label: "Historial crediticio", score: 85, colorClass: "bg-blue-400", glowClass: "bg-blue-400/30" },
-              { label: "Referencias", score: 88, colorClass: "bg-violet-400", glowClass: "bg-violet-400/30" },
+              { label: "Capacidad de pago", score: 92, colorClass: "bg-[#2C7A53]", glowClass: "bg-[#2C7A53]/30" },
+              { label: "Historial crediticio", score: 85, colorClass: "bg-[#1A40FF]", glowClass: "bg-[#1A40FF]/30" },
+              { label: "Referencias", score: 88, colorClass: "bg-[#6B6B6B]", glowClass: "bg-[#6B6B6B]/30" },
             ].map((c, i) => (
               <motion.div
                 key={c.label}
@@ -270,10 +268,10 @@ function PaymentVisual() {
           initial={{ width: 0 }}
           animate={{ width: "100%" }}
           transition={{ delay: 0.6, duration: 0.8 }}
-          className="h-[3px] bg-emerald-400/30 mt-2 rounded-full overflow-hidden"
+          className="h-[3px] bg-[#2C7A53]/30 mt-2 rounded-full overflow-hidden"
         >
           <motion.div
-            className="h-full bg-emerald-400 rounded-full relative"
+            className="h-full bg-[#2C7A53] rounded-full relative"
             initial={{ width: 0 }}
             animate={{ width: "78%" }}
             transition={{ delay: 0.8, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
@@ -339,13 +337,13 @@ function PaymentVisual() {
               className="text-right"
             >
               <motion.span
-                className={`text-[11px] font-bold ${tx.status === 'Recibido' ? 'text-emerald-600' : 'text-amber-600'}`}
+                className={`text-[11px] font-bold ${tx.status === 'Recibido' ? 'text-[#2C7A53]' : 'text-[#B7791F]'}`}
                 animate={tx.status === 'Recibido' ? { scale: [1, 1.05, 1] } : {}}
                 transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
               >
                 {tx.amount}
               </motion.span>
-              <span className={`block text-[7px] ${tx.status === 'Recibido' ? 'text-emerald-600/60' : 'text-amber-600/60'}`}>
+              <span className={`block text-[7px] ${tx.status === 'Recibido' ? 'text-[#2C7A53]/60' : 'text-[#B7791F]/60'}`}>
                 {tx.status}
               </span>
             </motion.div>
@@ -390,7 +388,7 @@ function ContractVisual() {
     <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden px-5">
       {/* Animated glow effects */}
       <motion.div
-        className="absolute top-[30%] left-[20%] w-[100px] h-[100px] bg-violet-500/[0.06] rounded-full blur-[50px] pointer-events-none"
+        className="absolute top-[30%] left-[20%] w-[100px] h-[100px] bg-neutral-500/[0.06] rounded-full blur-[50px] pointer-events-none"
         animate={{
           scale: [1, 1.3, 1],
           opacity: [0.06, 0.1, 0.06],
@@ -398,7 +396,7 @@ function ContractVisual() {
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
-        className="absolute bottom-[20%] right-[15%] w-[80px] h-[80px] bg-emerald-500/[0.05] rounded-full blur-[40px] pointer-events-none"
+        className="absolute bottom-[20%] right-[15%] w-[80px] h-[80px] bg-[#2C7A53]/[0.05] rounded-full blur-[40px] pointer-events-none"
         animate={{
           scale: [1, 1.4, 1],
           opacity: [0.05, 0.09, 0.05],
@@ -443,7 +441,7 @@ function ContractVisual() {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
-            className={`text-[7px] font-semibold px-2 py-0.5 ${signed ? "border border-emerald-500/25 text-emerald-600" : "border border-amber-500/25 text-amber-600"}`}
+            className={`text-[7px] font-semibold px-2 py-0.5 ${signed ? "border border-[#2C7A53]/30 text-[#2C7A53]" : "border border-[#B7791F]/30 text-[#B7791F]"}`}
           >
             {signed ? "✓ Firmado" : "Pendiente"}
           </motion.div>
@@ -496,7 +494,7 @@ function ContractVisual() {
                   animate={{ x: [0, 3, 0], y: [0, -2, 0] }}
                   transition={{ duration: 1, repeat: Infinity }}
                 >
-                  <PenNib className="w-2.5 h-2.5 text-amber-500" strokeWidth={1.5} />
+                  <PenNib className="w-2.5 h-2.5 text-[#B7791F]" strokeWidth={1.5} />
                 </motion.div>
                 <span className="text-[7px] text-muted-foreground">Esperando firma...</span>
               </motion.div>
@@ -504,7 +502,7 @@ function ContractVisual() {
               <motion.svg width="90" height="18" viewBox="0 0 110 24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <motion.path
                   d="M8 18 Q18 4 28 14 Q38 24 48 10 Q58 2 68 12 Q78 20 88 8 L100 6"
-                  fill="none" stroke="hsl(var(--foreground))" strokeWidth="1.5" strokeLinecap="round" opacity={0.4}
+                  fill="none" stroke="hsl(var(--neutral-900))" strokeWidth="1.5" strokeLinecap="round" opacity={0.4}
                   initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
                   transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 />
@@ -520,20 +518,20 @@ function ContractVisual() {
               className="absolute -top-3 right-6"
             >
               <motion.div
-                className="w-14 h-14 rounded-full border-2 border-emerald-500/40 flex items-center justify-center bg-emerald-50/50 backdrop-blur-sm"
+                className="w-14 h-14 rounded-full border-2 border-[#2C7A53]/30 flex items-center justify-center bg-[#E8F3EC]/50 backdrop-blur-sm"
                 animate={{
                   boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 20px 5px rgba(16,185,129,0.2)", "0 0 0 0 rgba(16,185,129,0)"]
                 }}
                 transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
               >
-                <div className="w-10 h-10 rounded-full border border-dashed border-emerald-500/30 flex flex-col items-center justify-center">
+                <div className="w-10 h-10 rounded-full border border-dashed border-[#2C7A53]/30 flex flex-col items-center justify-center">
                   <motion.div
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   >
-                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    <CheckCircle className="w-3 h-3 text-[#2C7A53]" />
                   </motion.div>
-                  <span className="text-[5px] text-emerald-600 font-mono font-normal uppercase tracking-wider mt-0.5">Legal</span>
+                  <span className="text-[5px] text-[#2C7A53] font-mono font-normal uppercase tracking-wider mt-0.5">Legal</span>
                 </div>
               </motion.div>
             </motion.div>
@@ -586,12 +584,12 @@ function PublishVisual() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
         whileHover={{ y: -3, boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}
-        className="bg-card p-3 mb-4 cursor-pointer"
+        className="bg-white p-3 mb-4 cursor-pointer"
         style={{ border: "1px solid rgba(0,0,0,0.06)" }}
       >
         <div className="flex gap-3">
           <motion.div
-            className="w-16 h-12 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-950/40 dark:to-orange-950/30 flex-shrink-0 flex items-center justify-center overflow-hidden relative"
+            className="w-16 h-12 bg-gradient-to-br from-[#B7791F] to-[#B7791F] flex-shrink-0 flex items-center justify-center overflow-hidden relative"
             whileHover={{ scale: 1.05 }}
           >
             {/* Shimmer effect */}
@@ -604,7 +602,7 @@ function PublishVisual() {
               animate={{ y: [0, -2, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              <Buildings className="w-5 h-5 text-amber-600/40" />
+              <Buildings className="w-5 h-5 text-[#B7791F]/40" />
             </motion.div>
           </motion.div>
           <div className="flex-1 min-w-0">
@@ -631,7 +629,7 @@ function PublishVisual() {
               className="flex items-center gap-1 mt-1"
             >
               <motion.span
-                className="text-[7px] bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 font-medium"
+                className="text-[7px] bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] px-1.5 py-0.5 font-medium"
                 animate={{
                   boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 8px 2px rgba(16,185,129,0.3)", "0 0 0 0 rgba(16,185,129,0)"]
                 }}
@@ -662,7 +660,7 @@ function PublishVisual() {
             className="flex items-center gap-2 p-2 bg-muted/50 cursor-pointer transition-colors"
           >
             <motion.div
-              className="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[8px] font-bold"
+              className="w-6 h-6 rounded-md flex items-center justify-center text-white text-[8px] font-bold"
               style={{ backgroundColor: portal.color }}
               whileHover={{ scale: 1.15, rotate: 5 }}
               animate={{
@@ -680,7 +678,7 @@ function PublishVisual() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: portal.delay + 0.2 }}
-                className="text-[7px] text-emerald-600 flex items-center gap-0.5"
+                className="text-[7px] text-[#2C7A53] flex items-center gap-0.5"
               >
                 <motion.span
                   animate={{ scale: [1, 1.3, 1] }}
@@ -800,7 +798,7 @@ export default function PropietariosPage() {
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
-                    <Button size="lg" variant="white" className="w-full sm:w-auto font-mono uppercase font-normal h-12 px-6 rounded-xl">
+                    <Button size="lg" variant="white" className="w-full sm:w-auto h-12 px-6">
                       Comenzar gratis
                     </Button>
                   </Link>
@@ -808,7 +806,7 @@ export default function PropietariosPage() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-medium h-12 px-6 rounded-xl"
+                      className="w-full sm:w-auto bg-transparent border-white/20 text-white hover:bg-white/10 font-medium h-12 px-6"
                     >
                       Ver precios
                     </Button>
@@ -828,7 +826,7 @@ export default function PropietariosPage() {
                     { value: '4.9', label: 'Satisfacción' },
                   ].map((stat) => (
                     <div key={stat.label}>
-                      <p className="text-2xl md:text-3xl font-bold text-white">{stat.value}</p>
+                      <p className="text-2xl md:text-3xl font-bold text-white font-mono tabular-nums">{stat.value}</p>
                       <p className="text-[11px] text-white/50 mt-0.5">{stat.label}</p>
                     </div>
                   ))}
@@ -847,7 +845,7 @@ export default function PropietariosPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4, duration: 0.5 }}
-                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 shadow-2xl w-[300px]"
+                    className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 w-[300px]"
                   >
                     {/* Header with profile */}
                     <motion.div
@@ -866,7 +864,7 @@ export default function PropietariosPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-white font-medium text-[14px]">Juan Nicolás M.</p>
                         <div className="flex items-center gap-1.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#2C7A53]" />
                           <p className="text-white/50 text-[11px]">Propietario verificado</p>
                         </div>
                       </div>
@@ -877,11 +875,11 @@ export default function PropietariosPage() {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.6, duration: 0.4 }}
-                      className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/10 mb-3"
+                      className="bg-white/10 backdrop-blur-sm rounded-md p-4 border border-white/10 mb-3"
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-white/50 text-[11px]">Ingresos este mes</span>
-                        <span className="inline-flex items-center gap-1 text-emerald-400 text-[11px] font-medium bg-emerald-400/10 px-2 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 text-[#2C7A53] text-[11px] font-medium bg-[#2C7A53]/10 px-2 py-0.5 rounded-full">
                           <TrendUp className="w-3 h-3" />
                           +12%
                         </span>
@@ -895,7 +893,7 @@ export default function PropietariosPage() {
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.7, duration: 0.4 }}
-                        className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/10"
+                        className="bg-white/10 backdrop-blur-sm rounded-md p-3 border border-white/10"
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <Buildings className="w-3.5 h-3.5 text-white/40" />
@@ -907,7 +905,7 @@ export default function PropietariosPage() {
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.8, duration: 0.4 }}
-                        className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/10"
+                        className="bg-white/10 backdrop-blur-sm rounded-md p-3 border border-white/10"
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <Users className="w-3.5 h-3.5 text-white/40" />
@@ -923,11 +921,11 @@ export default function PropietariosPage() {
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute -bottom-5 -left-4 bg-card rounded-xl shadow-xl p-3.5 border border-border"
+                    className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-border-faint"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center">
-                        <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <div className="w-9 h-9 rounded-md bg-[#E8F3EC] flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4 text-[#2C7A53]" />
                       </div>
                       <div>
                         <p className="text-[13px] font-medium text-foreground">Pago recibido</p>
@@ -942,7 +940,7 @@ export default function PropietariosPage() {
         </section>
 
         {/* Bento Section - Problems */}
-        <section className="bg-background py-24 lg:py-32 overflow-hidden">
+        <section className="bg-white py-24 lg:py-32 overflow-hidden">
           <div className="container-platform">
             <div className="mb-14 lg:mb-20">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -1067,14 +1065,14 @@ export default function PropietariosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4 }}
-                className="bg-muted rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-card rounded-xl shadow-lg p-4 w-[200px] border border-border">
-                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border">
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                        <Users className="w-5 h-5 text-muted-foreground" />
+                  <div className="bg-white rounded-xl p-4 w-[200px] border border-border-faint">
+                    <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border-faint">
+                      <div className="w-10 h-10 rounded-full bg-surface-muted flex items-center justify-center">
+                        <Users className="w-5 h-5 text-fg-subtle" />
                       </div>
                       <div>
                         <p className="text-[12px] font-medium text-foreground">Candidato #1</p>
@@ -1084,19 +1082,19 @@ export default function PropietariosPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">Ingresos</span>
-                        <span className="text-[10px] text-muted-foreground/40">— — —</span>
+                        <span className="text-[10px] text-fg-subtle">— — —</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">Historial</span>
-                        <span className="text-[10px] text-muted-foreground/40">— — —</span>
+                        <span className="text-[10px] text-fg-subtle">— — —</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">Score</span>
-                        <span className="text-[10px] text-muted-foreground/40">— — —</span>
+                        <span className="text-[10px] text-fg-subtle">— — —</span>
                       </div>
                     </div>
                   </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#B7791F] rounded-full flex items-center justify-center text-white font-bold text-sm">
                     ?
                   </div>
                 </div>
@@ -1118,13 +1116,13 @@ export default function PropietariosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5 }}
-                className="bg-muted rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
+                className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 {/* Widget Illustration */}
                 <div className="flex-shrink-0 relative">
-                  <div className="bg-card rounded-xl shadow-lg p-4 w-[220px] border border-border">
+                  <div className="bg-white rounded-xl p-4 w-[220px] border border-border-faint">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-[11px] font-medium text-foreground bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded">Cuenta de arriendo</span>
+                      <span className="text-[11px] font-medium text-foreground bg-[#F8F0E0] px-2 py-0.5 rounded">Cuenta de arriendo</span>
                       <span className="text-[10px] text-muted-foreground">2024</span>
                     </div>
                     <div className="space-y-2">
@@ -1136,24 +1134,24 @@ export default function PropietariosPage() {
                       ].map((item, i) => (
                         <div key={i} className="flex items-center justify-between text-[11px]">
                           <div className="flex items-center gap-2">
-                            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${item.paid ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-red-100 dark:bg-red-900/40'}`}>
-                              <span className={`text-[8px] ${item.paid ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${item.paid ? 'bg-[#E8F3EC]' : 'bg-[#F8EAE7]'}`}>
+                              <span className={`text-[8px] ${item.paid ? 'text-[#2C7A53]' : 'text-[#C4503B]'}`}>
                                 {item.paid ? '✓' : '✕'}
                               </span>
                             </div>
                             <span className="text-muted-foreground">{item.month}</span>
                           </div>
-                          <span className={item.paid ? 'text-foreground' : 'text-red-500 font-medium'}>{item.amount}</span>
+                          <span className={item.paid ? 'text-foreground' : 'text-[#C4503B] font-medium'}>{item.amount}</span>
                         </div>
                       ))}
                     </div>
-                    <div className="h-px bg-border my-3" />
+                    <div className="h-px bg-surface-muted my-3" />
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">Deuda acumulada:</span>
-                      <span className="text-[12px] text-red-600 font-bold">$5.0M</span>
+                      <span className="text-[12px] text-[#C4503B] font-bold">$5.0M</span>
                     </div>
                   </div>
-                  <div className="absolute -top-2 -right-2 bg-red-500 text-white uppercase tracking-wide font-mono text-[9px] font-medium px-2 py-1 rounded-full flex items-center gap-1">
+                  <div className="absolute -top-2 -right-2 bg-[#C4503B] text-white uppercase tracking-wide font-mono text-[9px] font-medium px-2 py-1 rounded-full flex items-center gap-1">
                     <Bell className="w-3 h-3" />
                     4 meses
                   </div>
@@ -1225,11 +1223,11 @@ export default function PropietariosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
+                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center mb-6">
-                    <Wallet className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                  <div className="w-12 h-12 rounded-xl bg-[#E8F3EC] flex items-center justify-center mb-6">
+                    <Wallet className="w-6 h-6 text-[#2C7A53]" />
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-mono uppercase font-normal text-foreground leading-tight mb-3">
                     Cobro Automático
@@ -1240,7 +1238,7 @@ export default function PropietariosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['PSE y tarjeta', 'Recordatorios', 'Reporte mensual'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-surface-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}
@@ -1253,7 +1251,7 @@ export default function PropietariosPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 }}
-                className="md:col-span-5 bg-card rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border"
+                className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
@@ -1268,7 +1266,7 @@ export default function PropietariosPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
                   {['Firma electrónica', 'Plantillas legales', 'Descarga PDF'].map((item, i) => (
-                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+                    <span key={i} className="text-[12px] font-mono uppercase font-normal text-muted-foreground bg-surface-muted px-3 py-1.5 rounded-full">
                       {item}
                     </span>
                   ))}

@@ -13,6 +13,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { PlanProgressBar } from '@/components/ui/plan/PlanProgressBar';
 import { useDocumentAnalysis } from '@/lib/hooks/useDocumentAnalysis';
 import { toast } from 'sonner';
@@ -32,16 +33,16 @@ interface DocumentAnalysisSectionProps {
 // ============================================================================
 
 const STATUS_CONFIG = {
-  PENDING: { icon: Clock, color: 'text-neutral-400', bg: 'bg-neutral-50 dark:bg-neutral-800', label: 'Pendiente' },
-  PROCESSING: { icon: SpinnerGap, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20', label: 'Procesando...' },
-  COMPLETED: { icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', label: 'Completado' },
-  FAILED: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20', label: 'Error' },
+  PENDING: { icon: Clock, color: 'text-fg-subtle', bg: 'bg-surface-muted', label: 'Pendiente' },
+  PROCESSING: { icon: SpinnerGap, color: 'text-primary', bg: 'bg-primary-soft dark:bg-[#1A40FF]/15', label: 'Procesando...' },
+  COMPLETED: { icon: CheckCircle, color: 'text-success', bg: 'bg-success-soft dark:bg-[#2C7A53]/15', label: 'Completado' },
+  FAILED: { icon: XCircle, color: 'text-danger', bg: 'bg-danger-soft dark:bg-[#C4503B]/15', label: 'Error' },
 } as const;
 
 const RISK_COLORS: Record<string, string> = {
-  BAJO: 'text-emerald-600 dark:text-emerald-400',
-  MEDIO: 'text-amber-600 dark:text-amber-400',
-  ALTO: 'text-red-600 dark:text-red-400',
+  BAJO: 'text-success dark:text-[#3EAE70]',
+  MEDIO: 'text-warning dark:text-[#D2992F]',
+  ALTO: 'text-danger dark:text-[#E0664D]',
 };
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -68,7 +69,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
   const StatusIcon = config.icon;
 
   return (
-    <div className={cn('rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden', config.bg)}>
+    <div className={cn('rounded-xl border border-border overflow-hidden', config.bg)}>
       {/* Header */}
       <button
         type="button"
@@ -82,10 +83,10 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
           className={cn('w-5 h-5 flex-shrink-0', config.color, result.status === 'PROCESSING' && 'animate-spin')}
         />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+          <p className="text-sm font-medium text-fg truncate">
             {getDocTypeLabel(result.documentType)}
           </p>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs text-fg-muted">
             {config.label}
             {result.status === 'COMPLETED' && result.scoreFinal !== null && (
               <> &middot; Score: <span className="font-medium">{result.scoreFinal}/100</span></>
@@ -103,24 +104,24 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
                 variant={result.scoreFinal >= 70 ? 'success' : result.scoreFinal >= 50 ? 'warning' : 'danger'}
               />
             </div>
-            <CaretDown className={cn('w-4 h-4 text-neutral-400 transition-transform', expanded && 'rotate-180')} />
+            <CaretDown className={cn('w-4 h-4 text-fg-subtle transition-transform', expanded && 'rotate-180')} />
           </div>
         )}
 
         {result.status === 'FAILED' && result.errorMessage && (
-          <span className="text-xs text-red-500 truncate max-w-[150px]">{result.errorMessage}</span>
+          <span className="text-xs text-danger truncate max-w-[150px]">{result.errorMessage}</span>
         )}
       </button>
 
       {/* Expanded details */}
       {expanded && result.status === 'COMPLETED' && (
-        <div className="border-t border-neutral-200 dark:border-neutral-700 px-4 py-3 space-y-3 bg-white dark:bg-[#222224]">
+        <div className="border-t border-border px-4 py-3 space-y-3 bg-surface">
           {/* Risk level */}
           {result.nivelRiesgo && (
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-neutral-400" />
-              <span className="text-sm text-neutral-500">Nivel de riesgo:</span>
-              <span className={cn('text-sm font-medium', RISK_COLORS[result.nivelRiesgo] || 'text-neutral-900 dark:text-white')}>
+              <Shield className="w-4 h-4 text-fg-subtle" />
+              <span className="text-sm text-fg-muted">Nivel de riesgo:</span>
+              <span className={cn('text-sm font-medium', RISK_COLORS[result.nivelRiesgo] || 'text-fg')}>
                 {result.nivelRiesgo}
               </span>
             </div>
@@ -129,28 +130,28 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
           {/* Justification */}
           {result.justificacion && (
             <div>
-              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">Justificacion</p>
-              <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">{result.justificacion}</p>
+              <p className="text-xs font-medium text-fg-muted mb-1">Justificacion</p>
+              <p className="text-sm text-fg-muted leading-relaxed">{result.justificacion}</p>
             </div>
           )}
 
           {/* Recommendation */}
           {result.recomendacion && (
             <div>
-              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">Recomendacion</p>
-              <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">{result.recomendacion}</p>
+              <p className="text-xs font-medium text-fg-muted mb-1">Recomendacion</p>
+              <p className="text-sm text-fg-muted leading-relaxed">{result.recomendacion}</p>
             </div>
           )}
 
           {/* Flags */}
           {result.flags && Array.isArray(result.flags) && result.flags.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">Alertas</p>
+              <p className="text-xs font-medium text-fg-muted mb-1">Alertas</p>
               <div className="flex flex-wrap gap-1.5">
                 {result.flags.map((flag, i) => (
                   <span
                     key={i}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs rounded-md"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-warning-soft dark:bg-[#B7791F]/15 text-warning dark:text-[#D2992F] text-xs rounded-sm"
                   >
                     <Warning className="w-3 h-3" />
                     {String(flag)}
@@ -162,7 +163,7 @@ function DocumentResultCard({ result }: { result: DocumentAnalysisResult }) {
 
           {/* Processing time */}
           {result.processingTimeMs && (
-            <p className="text-[11px] text-neutral-400">
+            <p className="text-[11px] text-fg-subtle">
               Procesado en {(result.processingTimeMs / 1000).toFixed(1)}s
               {result.confidence !== null && <> &middot; Confianza OCR: {result.confidence}%</>}
             </p>
@@ -201,8 +202,8 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
     return (
       <div className={cn('space-y-3', className)}>
         <div className="flex items-center gap-2">
-          <SpinnerGap className="w-4 h-4 text-neutral-400 animate-spin" />
-          <span className="text-sm text-neutral-500">Cargando resultados...</span>
+          <Spinner size="sm" variant="muted" />
+          <span className="text-sm text-fg-muted">Cargando resultados...</span>
         </div>
       </div>
     );
@@ -213,8 +214,8 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
       {/* Header with trigger button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Brain className="w-5 h-5 text-indigo-500" />
-          <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">
+          <Brain className="w-5 h-5 text-primary" />
+          <h4 className="text-sm font-semibold text-fg">
             Analisis IA de documentos
           </h4>
         </div>
@@ -229,7 +230,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
           >
             {triggering || isAnalyzing ? (
               <>
-                <SpinnerGap className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                <Spinner size="xs" variant="current" className="mr-1.5" />
                 Analizando...
               </>
             ) : hasResults ? (
@@ -246,15 +247,15 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
 
       {/* Error */}
       {error && (
-        <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-3 py-2">
-          <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+        <div className="rounded-md bg-danger-soft dark:bg-[#C4503B]/15 border border-danger/30 dark:border-[#C4503B]/40 px-3 py-2">
+          <p className="text-sm text-danger dark:text-[#E0664D]">{error}</p>
         </div>
       )}
 
       {/* Progress summary */}
       {isAnalyzing && summary && summary.total > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-neutral-500">
+          <div className="flex items-center justify-between text-xs text-fg-muted">
             <span>Progreso: {summary.completed + summary.failed}/{summary.total} documentos</span>
             <span>{Math.round(((summary.completed + summary.failed) / summary.total) * 100)}%</span>
           </div>
@@ -269,10 +270,10 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
 
       {/* Average score (when done) */}
       {allDone && summary.averageScore !== null && (
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-muted border border-border">
           <div className="text-center">
-            <p className="text-2xl font-bold text-neutral-900 dark:text-white">{summary.averageScore}</p>
-            <p className="text-[11px] text-neutral-500">/100</p>
+            <p className="text-2xl font-bold text-fg">{summary.averageScore}</p>
+            <p className="text-[11px] text-fg-muted">/100</p>
           </div>
           <div className="flex-1">
             <PlanProgressBar
@@ -280,7 +281,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
               size="md"
               variant={summary.averageScore >= 70 ? 'success' : summary.averageScore >= 50 ? 'warning' : 'danger'}
             />
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-fg-muted mt-1">
               Score promedio &middot; {summary.completed} completado{summary.completed !== 1 && 's'}
               {summary.failed > 0 && <>, {summary.failed} fallido{summary.failed !== 1 && 's'}</>}
             </p>
@@ -293,8 +294,8 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
         <div className={cn(
           'p-3 rounded-xl border',
           results.crossValidation.consistencyScore >= 80
-            ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50'
-            : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/50'
+            ? 'bg-success-soft dark:bg-[#2C7A53]/15 border-success/30 dark:border-[#2C7A53]/40'
+            : 'bg-warning-soft dark:bg-[#B7791F]/15 border-warning/30 dark:border-[#B7791F]/40'
         )}>
           <div className="flex items-center gap-2 mb-1">
             <Shield className="w-4 h-4" />
@@ -326,7 +327,7 @@ export function DocumentAnalysisSection({ applicationId, className }: DocumentAn
 
       {/* Empty state */}
       {!hasResults && !isAnalyzing && !error && (
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="text-sm text-fg-muted">
           Inicia el analisis para verificar los documentos del candidato con inteligencia artificial.
         </p>
       )}

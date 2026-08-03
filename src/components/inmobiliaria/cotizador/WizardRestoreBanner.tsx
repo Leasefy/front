@@ -14,22 +14,22 @@ export function WizardRestoreBanner({ onContinue, onStartFresh }: WizardRestoreB
   const { t } = useI18n()
 
   return (
-    <div className="mb-6 rounded-2xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4">
+    <div className="mb-6 rounded-xl border border-warning/30 bg-warning-soft p-4">
       <div className="flex items-start gap-3">
         <ClockClockwise
           size={18}
           weight="regular"
-          className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300"
+          className="mt-0.5 shrink-0 text-warning"
         />
-        <p className="text-sm text-amber-800 dark:text-amber-200">
+        <p className="text-sm text-warning">
           {t('inmobiliaria.ai.cotizador.nueva.restoreBanner.message')}
         </p>
       </div>
-      <div className="mt-3 flex gap-3">
-        <Button size="sm" onClick={onContinue}>
+      <div className="mt-3 flex gap-2">
+        <Button size="sm" hideArrow onClick={onContinue}>
           {t('inmobiliaria.ai.cotizador.nueva.actions.continuar')}
         </Button>
-        <Button size="sm" variant="outline" onClick={onStartFresh}>
+        <Button size="sm" variant="secondary" hideArrow onClick={onStartFresh}>
           {t('inmobiliaria.ai.cotizador.nueva.actions.empezarDeNuevo')}
         </Button>
       </div>

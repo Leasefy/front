@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { blogPosts } from '@/lib/data/blog-posts';
+import { PRODUCT_SLUGS } from '@/lib/landing/products';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leasefy.co';
@@ -36,42 +37,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 0.8,
     },
-    // Product pages
+    // Product pages: the old /productos/{evaluacion,pagos,contratos,
+    // aplicaciones,seguro,api} taxonomy was retired in SLICE 8 (301
+    // redirects, see src/lib/landing/legacy-redirects.ts) — listing those
+    // dead URLs here would just point crawlers at redirects.
     {
-      url: `${baseUrl}/productos/evaluacion`,
+      url: `${baseUrl}/contacto`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/productos/pagos`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/productos/contratos`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/productos/api`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/productos/aplicaciones`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/productos/seguro`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.7,
+      priority: 0.6,
     },
     // Audience pages
     {
@@ -109,6 +83,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
+  // The 8-product taxonomy under (landing)/productos/* was noindex-gated
+  // (LANDING_STAGE=true) until F1 (landing-react-port final integration)
+  // flipped it to false — now indexable and listed here.
+  const productPages: MetadataRoute.Sitemap = PRODUCT_SLUGS.map((slug) => ({
+    url: `${baseUrl}/productos/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
+
   // TODO: Add dynamic property pages when database is connected
   // const propertyPages = await getProperties().then(properties =>
   //   properties.map(p => ({
@@ -119,5 +103,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
   //   }))
   // );
 
-  return [...staticPages, ...blogPages];
+  return [...staticPages, ...blogPages, ...productPages];
 }

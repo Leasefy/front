@@ -85,9 +85,9 @@ export function StepDocuments() {
 
   // Shown above a document slot when the file was lost on page reload (create mode only).
   const StaleDocWarning = () => (
-    <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 rounded-sm">
-      <Warning className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-      <p className="text-xs text-amber-600 dark:text-amber-400">
+    <div className="flex items-start gap-2 p-3 bg-warning-soft border border-warning/30 rounded-sm">
+      <Warning className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-warning">
         Volvé a adjuntar este archivo — se desconectó al recargar la página
       </p>
     </div>
@@ -96,13 +96,13 @@ export function StepDocuments() {
   return (
     <div className="space-y-6">
       {/* Warning about file persistence */}
-      <div className="flex items-start gap-3 p-4 bg-amber-50/50 border border-amber-200/50 rounded-sm">
-        <Warning className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 p-4 bg-warning-soft border border-warning/30 rounded-sm">
+        <Warning className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm text-amber-800 font-medium">
+          <p className="text-sm text-warning font-medium">
             Importante sobre tus documentos
           </p>
-          <p className="text-xs text-amber-700/80 mt-1">
+          <p className="text-xs text-warning/80 mt-1">
             Los archivos se guardan temporalmente. Si cierras esta página, tendrás que
             volver a subirlos.
           </p>
@@ -116,7 +116,7 @@ export function StepDocuments() {
           <h3 className="text-sm font-medium text-foreground">
             Documentos obligatorios
           </h3>
-          <span className="text-xs text-red-500">*</span>
+          <span className="text-xs text-danger">*</span>
         </div>
 
         <div className="space-y-6">
@@ -163,14 +163,14 @@ export function StepDocuments() {
           <h3 className="text-sm font-medium text-foreground">
             Uno de los dos obligatorio
           </h3>
-          <span className="text-xs text-red-500">*</span>
+          <span className="text-xs text-danger">*</span>
         </div>
         <p className="text-xs text-muted-foreground mb-4 ml-7">
           Subí el contrato laboral o el certificado de ingresos — basta con uno.
         </p>
 
         {oneOfError && (
-          <p className="text-xs text-red-500 mb-3">{oneOfError}</p>
+          <p className="text-xs text-danger mb-3">{oneOfError}</p>
         )}
 
         <div className="space-y-6">

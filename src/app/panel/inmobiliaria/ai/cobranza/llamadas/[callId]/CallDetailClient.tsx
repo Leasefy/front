@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useCallDetail } from '@/lib/hooks/cobranza/use-call-detail'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { Button } from '@/components/ui'
 import CallAudioPlayer from '@/components/inmobiliaria/cobranza/call/CallAudioPlayer'
 import CallTranscript from '@/components/inmobiliaria/cobranza/call/CallTranscript'
 import CallQAPanel from '@/components/inmobiliaria/cobranza/call/CallQAPanel'
@@ -43,22 +44,22 @@ function qaTone(score: number | null | undefined): {
   }
   if (score >= 0.8) {
     return {
-      bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-      text: 'text-emerald-700 dark:text-emerald-300',
-      ring: 'ring-emerald-200 dark:ring-emerald-800',
+      bg: 'bg-success-soft',
+      text: 'text-success',
+      ring: 'ring-success/30',
     }
   }
   if (score >= 0.6) {
     return {
-      bg: 'bg-amber-100 dark:bg-amber-900/30',
-      text: 'text-amber-700 dark:text-amber-300',
-      ring: 'ring-amber-200 dark:ring-amber-800',
+      bg: 'bg-warning-soft',
+      text: 'text-warning',
+      ring: 'ring-warning/30',
     }
   }
   return {
-    bg: 'bg-red-100 dark:bg-red-900/30',
-    text: 'text-red-700 dark:text-red-300',
-    ring: 'ring-red-200 dark:ring-red-800',
+    bg: 'bg-danger-soft',
+    text: 'text-danger',
+    ring: 'ring-danger/30',
   }
 }
 
@@ -153,20 +154,23 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
   if (error && !data) {
     return (
       <main className="p-6 lg:p-8">
-        <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-6 max-w-xl">
-          <p className="text-sm text-red-700 dark:text-red-300 font-medium">
+        <div className="rounded-xl border border-danger/30 bg-danger-soft p-6 max-w-xl">
+          <p className="text-sm text-danger font-medium">
             {t('inmobiliaria.ai.cobranza.call.error')}
           </p>
-          <p className="text-xs text-red-600/80 dark:text-red-400/80 mt-1">{error}</p>
-          <button
+          <p className="text-xs text-danger/80 mt-1">{error}</p>
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => {
               void refetch()
             }}
-            className="mt-3 inline-flex items-center min-h-11 min-w-11 px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium"
+            hideArrow
+            className="mt-3"
           >
             {t('inmobiliaria.ai.cobranza.call.errorRetry')}
-          </button>
+          </Button>
         </div>
       </main>
     )
@@ -193,7 +197,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
       <header className="space-y-3">
         <Link
           href={`/panel/inmobiliaria/ai/cobranza/deudores/${data.debtorId}`}
-          className="inline-flex items-center gap-1 text-sm text-violet-600 dark:text-violet-400 hover:underline min-h-11"
+          className="inline-flex items-center gap-1 text-sm text-fg-muted hover:text-fg hover:underline min-h-11"
         >
           ← {t('inmobiliaria.ai.cobranza.call.back')}
         </Link>
@@ -240,17 +244,20 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
             {/* Phase 38-07 (D-38-11): export transcript PDF button. Backend
                 returns PII-redacted JSON; @react-pdf/renderer builds the PDF
                 client-side and triggers browser download. */}
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => { void exportTranscript() }}
               disabled={isExportingTranscript}
-              className="inline-flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted disabled:opacity-50 text-xs font-mono uppercase tracking-wide text-foreground transition"
+              isLoading={isExportingTranscript}
+              hideArrow
               aria-label={t('inmobiliaria.ai.cobranza.call.exportTranscriptPdf')}
             >
               {isExportingTranscript
                 ? (locale.startsWith('es') ? 'Generando...' : 'Generating...')
                 : t('inmobiliaria.ai.cobranza.call.exportTranscriptPdf')}
-            </button>
+            </Button>
           </div>
         </div>
       </header>

@@ -43,14 +43,14 @@ export function PermissionGate({ module, action, children, fallback }: Permissio
 
   // Default "no access" message
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl px-6 py-14 text-center bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800">
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
-        <Lock weight="duotone" className="h-5 w-5 text-neutral-400" />
+    <div className="flex flex-col items-center justify-center rounded-xl px-6 py-14 text-center bg-surface-muted border border-border">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-surface-hover">
+        <Lock weight="duotone" className="h-5 w-5 text-fg-subtle" />
       </div>
-      <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+      <h3 className="text-sm font-semibold text-fg">
         Acceso restringido
       </h3>
-      <p className="mt-1.5 max-w-sm text-xs text-neutral-500 dark:text-neutral-400">
+      <p className="mt-1.5 max-w-sm text-xs text-fg-subtle">
         No tienes permiso para acceder a esta seccion. Contacta al administrador de tu agencia.
       </p>
     </div>

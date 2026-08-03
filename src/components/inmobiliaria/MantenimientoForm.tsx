@@ -15,7 +15,6 @@ import {
   X,
   Upload,
   Check,
-  SpinnerGap,
   Info,
   User,
   MapPin,
@@ -24,6 +23,8 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { Button, Input, Textarea } from '@/components/ui';
+import { IconButton, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import type {
   Consignacion,
   MantenimientoType,
@@ -74,25 +75,25 @@ const PRIORITY_OPTIONS: { value: MantenimientoPriority; labelKey: string; descKe
     value: 'low',
     labelKey: 'inmobiliaria.mantenimiento.priorityLow',
     descKey: 'inmobiliaria.mantenimiento.priorityLowDesc',
-    color: 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/30',
+    color: 'border-fg-muted bg-fg-muted dark:bg-fg-muted/30',
   },
   {
     value: 'medium',
     labelKey: 'inmobiliaria.mantenimiento.priorityMedium',
     descKey: 'inmobiliaria.mantenimiento.priorityMediumDesc',
-    color: 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30',
+    color: 'border-primary/30 bg-primary-soft',
   },
   {
     value: 'high',
     labelKey: 'inmobiliaria.mantenimiento.priorityHigh',
     descKey: 'inmobiliaria.mantenimiento.priorityHighDesc',
-    color: 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30',
+    color: 'border-warning/30 bg-warning-soft',
   },
   {
     value: 'emergency',
     labelKey: 'inmobiliaria.mantenimiento.priorityEmergency',
     descKey: 'inmobiliaria.mantenimiento.priorityEmergencyDesc',
-    color: 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30',
+    color: 'border-danger/30 bg-danger-soft',
   },
 ];
 
@@ -133,63 +134,66 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-        {t('inmobiliaria.mantenimiento.property')} <span className="text-red-500">*</span>
+      <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+        {t('inmobiliaria.mantenimiento.property')} <span className="text-danger">*</span>
       </label>
 
       {selectedConsignacion ? (
-        <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20">
+        <div className="p-4 rounded-xl border border-primary/30 bg-primary-soft">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
               {selectedConsignacion.propertyThumbnail ? (
                 <img
                   src={selectedConsignacion.propertyThumbnail}
                   alt={selectedConsignacion.propertyTitle}
-                  className="w-16 h-12 rounded-lg object-cover"
+                  className="w-16 h-12 rounded-md object-cover"
                 />
               ) : (
-                <div className="w-16 h-12 rounded-lg bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
-                  <HouseLine className="w-6 h-6 text-neutral-400" />
+                <div className="w-16 h-12 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
+                  <HouseLine className="w-6 h-6 text-fg-subtle" />
                 </div>
               )}
               <div>
-                <p className="font-medium text-neutral-900 dark:text-white">
+                <p className="font-medium text-fg dark:text-white">
                   {selectedConsignacion.propertyTitle}
                 </p>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                <p className="text-sm text-fg-muted dark:text-fg-subtle">
                   {selectedConsignacion.propertyAddress}
                 </p>
                 {selectedConsignacion.currentTenantName && (
-                  <div className="flex items-center gap-1 mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                  <div className="flex items-center gap-1 mt-1 text-sm text-fg-muted dark:text-fg-subtle">
                     <User className="w-3 h-3" />
                     <span>{selectedConsignacion.currentTenantName}</span>
                   </div>
                 )}
               </div>
             </div>
-            <button
+            <Button
               type="button"
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={() => {
                 onSelect('');
                 setIsOpen(true);
               }}
-              className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="h-auto p-0 text-sm"
             >
               {t('inmobiliaria.mantenimiento.change')}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
         <div className="relative">
           <div className="relative">
-            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-            <input
+            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
+            <Input
               type="text"
               placeholder={t('inmobiliaria.mantenimiento.searchProperty')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsOpen(true)}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              className="w-full pl-10"
             />
           </div>
 
@@ -199,10 +203,12 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] shadow-xl"
+                className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]"
               >
                 {filteredConsignaciones.length > 0 ? (
                   filteredConsignaciones.map((consignacion) => (
+                    // allowlist: search-result list-row (property thumbnail + 2-line text as ONE
+                    // click target) — rich list-row; Button can't host the fill-image row (list-row precedent).
                     <button
                       key={consignacion.id}
                       type="button"
@@ -211,31 +217,31 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                         setSearchQuery('');
                         setIsOpen(false);
                       }}
-                      className="w-full p-3 flex items-start gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors border-b border-neutral-100 dark:border-neutral-800 last:border-b-0 text-left"
+                      className="w-full p-3 flex items-start gap-3 hover:bg-surface-muted dark:hover:bg-ink transition-colors border-b border-faint dark:border-strong last:border-b-0 text-left"
                     >
                       {consignacion.propertyThumbnail ? (
                         <img
                           src={consignacion.propertyThumbnail}
                           alt={consignacion.propertyTitle}
-                          className="w-12 h-9 rounded-lg object-cover shrink-0"
+                          className="w-12 h-9 rounded-md object-cover shrink-0"
                         />
                       ) : (
-                        <div className="w-12 h-9 rounded-lg bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center shrink-0">
-                          <HouseLine className="w-5 h-5 text-neutral-400" />
+                        <div className="w-12 h-9 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center shrink-0">
+                          <HouseLine className="w-5 h-5 text-fg-subtle" />
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-neutral-900 dark:text-white truncate">
+                        <p className="font-medium text-fg dark:text-white truncate">
                           {consignacion.propertyTitle}
                         </p>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400 truncate">
+                        <p className="text-sm text-fg-muted dark:text-fg-subtle truncate">
                           {consignacion.propertyAddress}
                         </p>
                       </div>
                     </button>
                   ))
                 ) : (
-                  <div className="p-4 text-center text-neutral-500 dark:text-neutral-400">
+                  <div className="p-4 text-center text-fg-muted dark:text-fg-subtle">
                     {t('inmobiliaria.mantenimiento.noPropertiesFound')}
                   </div>
                 )}
@@ -263,50 +269,27 @@ interface TypeSelectorProps {
 function TypeSelector({ selected, onSelect, t }: TypeSelectorProps) {
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-        {t('inmobiliaria.mantenimiento.maintenanceType')} <span className="text-red-500">*</span>
+      <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+        {t('inmobiliaria.mantenimiento.maintenanceType')} <span className="text-danger">*</span>
       </label>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {MANTENIMIENTO_TYPES.map((type) => {
-          const Icon = TYPE_ICONS[type.type];
-          const isSelected = selected === type.type;
-
-          return (
-            <button
-              key={type.type}
-              type="button"
-              onClick={() => onSelect(type.type)}
-              className={cn(
-                'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all',
-                isSelected
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                  : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600'
-              )}
-            >
-              <div
-                className={cn(
-                  'w-12 h-12 rounded-xl flex items-center justify-center text-2xl',
-                  isSelected
-                    ? 'bg-indigo-100 dark:bg-indigo-900/40'
-                    : 'bg-neutral-100 dark:bg-neutral-800'
-                )}
-              >
-                {type.icon}
-              </div>
-              <span
-                className={cn(
-                  'text-sm font-medium text-center',
-                  isSelected
-                    ? 'text-indigo-600 dark:text-indigo-400'
-                    : 'text-neutral-700 dark:text-neutral-300'
-                )}
-              >
+      <RadioCardGroup
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+        value={selected || undefined}
+        onValueChange={(v) => onSelect(v as MantenimientoType)}
+      >
+        {MANTENIMIENTO_TYPES.map((type) => (
+          <RadioCard
+            key={type.type}
+            value={type.type}
+            label={
+              <span className="flex items-center gap-2 font-medium">
+                <span className="text-xl leading-none">{type.icon}</span>
                 {type.labelEs}
               </span>
-            </button>
-          );
-        })}
-      </div>
+            }
+          />
+        ))}
+      </RadioCardGroup>
     </div>
   );
 }
@@ -324,47 +307,37 @@ interface PrioritySelectorProps {
 function PrioritySelector({ selected, onSelect, t }: PrioritySelectorProps) {
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-        {t('inmobiliaria.mantenimiento.priorityLabel')} <span className="text-red-500">*</span>
+      <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+        {t('inmobiliaria.mantenimiento.priorityLabel')} <span className="text-danger">*</span>
       </label>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {PRIORITY_OPTIONS.map((priority) => {
-          const isSelected = selected === priority.value;
-
-          return (
-            <button
-              key={priority.value}
-              type="button"
-              onClick={() => onSelect(priority.value)}
-              className={cn(
-                'p-4 rounded-xl border-2 text-left transition-all',
-                isSelected
-                  ? 'border-indigo-500 ring-2 ring-indigo-500/20'
-                  : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600',
-                priority.color
-              )}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span
-                  className={cn(
-                    'font-semibold',
-                    priority.value === 'emergency' && 'text-red-600 dark:text-red-400',
-                    priority.value === 'high' && 'text-amber-600 dark:text-amber-400',
-                    priority.value === 'medium' && 'text-blue-600 dark:text-blue-400',
-                    priority.value === 'low' && 'text-slate-600 dark:text-slate-400'
-                  )}
-                >
-                  {t(priority.labelKey)}
-                </span>
-                {priority.value === 'emergency' && (
-                  <Warning className="w-5 h-5 text-red-500" weight="fill" />
+      <RadioCardGroup
+        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+        value={selected || undefined}
+        onValueChange={(v) => onSelect(v as MantenimientoPriority)}
+      >
+        {PRIORITY_OPTIONS.map((priority) => (
+          <RadioCard
+            key={priority.value}
+            value={priority.value}
+            className={priority.color}
+            label={
+              <span
+                className={cn(
+                  'font-semibold',
+                  priority.value === 'emergency' && 'text-danger',
+                  priority.value === 'high' && 'text-warning',
+                  priority.value === 'medium' && 'text-primary',
+                  priority.value === 'low' && 'text-fg-muted dark:text-fg-muted'
                 )}
-              </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t(priority.descKey)}</p>
-            </button>
-          );
-        })}
-      </div>
+              >
+                {t(priority.labelKey)}
+              </span>
+            }
+            description={t(priority.descKey)}
+            badge={priority.value === 'emergency' ? <Warning className="w-5 h-5 text-danger" weight="fill" /> : undefined}
+          />
+        ))}
+      </RadioCardGroup>
     </div>
   );
 }
@@ -394,10 +367,10 @@ function PhotoUpload({ photos, onAdd, onRemove, t }: PhotoUploadProps) {
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+      <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
         {t('inmobiliaria.mantenimiento.photosOptional')}
       </label>
-      <p className="text-xs text-neutral-500 dark:text-neutral-400">
+      <p className="text-xs text-fg-muted dark:text-fg-subtle">
         {t('inmobiliaria.mantenimiento.photosHint')}
       </p>
 
@@ -406,21 +379,24 @@ function PhotoUpload({ photos, onAdd, onRemove, t }: PhotoUploadProps) {
         {photos.map((photo, index) => (
           <div key={index} className="relative w-24 h-24 rounded-xl overflow-hidden group">
             <img src={photo} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
-            <button
+            <IconButton
               type="button"
+              variant="ghost"
+              size="sm"
+              icon={<X className="w-4 h-4" />}
               onClick={() => onRemove(index)}
-              className="absolute top-1 right-1 p-1 rounded-full bg-red-500 text-white uppercase tracking-wide font-mono opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <X className="w-4 h-4" />
-            </button>
+              aria-label={t('inmobiliaria.mantenimiento.change')}
+              className="absolute top-1 right-1 bg-danger text-white hover:bg-danger/90 opacity-0 group-hover:opacity-100 transition-opacity"
+            />
           </div>
         ))}
 
         {/* Add photo button */}
         {photos.length < 5 && (
-          <label className="w-24 h-24 rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all">
-            <Camera className="w-6 h-6 text-neutral-400" />
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">{t('inmobiliaria.mantenimiento.addPhoto')}</span>
+          <label className="w-24 h-24 rounded-xl border-2 border-dashed border-border dark:border-strong flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/30 dark:hover:border-primary/30 hover:bg-primary-soft transition-all">
+            <Camera className="w-6 h-6 text-fg-subtle" />
+            <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.mantenimiento.addPhoto')}</span>
+            {/* allowlist: hidden type=file behind a custom camera dropzone tile (playbook hidden/file-input allowlist) */}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
@@ -447,58 +423,38 @@ interface PaidBySelectorProps {
 function PaidBySelector({ selected, onSelect, t }: PaidBySelectorProps) {
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-        {t('inmobiliaria.mantenimiento.paymentResponsible')} <span className="text-red-500">*</span>
+      <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+        {t('inmobiliaria.mantenimiento.paymentResponsible')} <span className="text-danger">*</span>
       </label>
 
-      <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 mb-4">
+      <div className="p-4 rounded-xl bg-primary-soft border border-primary/30 mb-4">
         <div className="flex gap-3">
-          <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-          <p className="text-sm text-blue-700 dark:text-blue-300">
+          <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <p className="text-sm text-primary">
             {t('inmobiliaria.mantenimiento.paymentInfo')}
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {PAID_BY_OPTIONS.map((option) => {
-          const isSelected = selected === option.value;
-
-          return (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => onSelect(option.value)}
-              className={cn(
-                'p-4 rounded-xl border-2 text-left transition-all',
-                isSelected
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                  : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] hover:border-neutral-300 dark:hover:border-neutral-600'
-              )}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <Wallet
-                  className={cn(
-                    'w-4 h-4',
-                    isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-400'
-                  )}
-                />
-                <span
-                  className={cn(
-                    'font-medium',
-                    isSelected
-                      ? 'text-indigo-600 dark:text-indigo-400'
-                      : 'text-neutral-700 dark:text-neutral-300'
-                  )}
-                >
-                  {t(option.labelKey)}
-                </span>
-              </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t(option.descKey)}</p>
-            </button>
-          );
-        })}
-      </div>
+      <RadioCardGroup
+        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+        value={selected}
+        onValueChange={(v) => onSelect(v as MantenimientoPaidBy)}
+      >
+        {PAID_BY_OPTIONS.map((option) => (
+          <RadioCard
+            key={option.value}
+            value={option.value}
+            label={
+              <span className="flex items-center gap-2 font-medium">
+                <Wallet className="w-4 h-4" />
+                {t(option.labelKey)}
+              </span>
+            }
+            description={t(option.descKey)}
+          />
+        ))}
+      </RadioCardGroup>
     </div>
   );
 }
@@ -608,8 +564,8 @@ export function MantenimientoForm({
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Section 1: Property Selection */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-          <HouseLine className="w-5 h-5 text-indigo-500" />
+        <h3 className="text-lg font-semibold text-fg dark:text-white flex items-center gap-2">
+          <HouseLine className="w-5 h-5 text-primary" />
           {t('inmobiliaria.mantenimiento.property')}
         </h3>
         <PropertySelector
@@ -619,7 +575,7 @@ export function MantenimientoForm({
           t={t}
         />
         {touched.consignacionId && errors.consignacionId && (
-          <p className="text-sm text-red-500 flex items-center gap-1">
+          <p className="text-sm text-danger flex items-center gap-1">
             <Warning className="w-4 h-4" />
             {errors.consignacionId}
           </p>
@@ -627,9 +583,9 @@ export function MantenimientoForm({
       </div>
 
       {/* Section 2: Request Details */}
-      <div className="space-y-6 pt-6 border-t border-neutral-100 dark:border-neutral-800">
-        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-          <Wrench className="w-5 h-5 text-indigo-500" />
+      <div className="space-y-6 pt-6 border-t border-faint dark:border-strong">
+        <h3 className="text-lg font-semibold text-fg dark:text-white flex items-center gap-2">
+          <Wrench className="w-5 h-5 text-primary" />
           {t('inmobiliaria.mantenimiento.requestDetail')}
         </h3>
 
@@ -640,7 +596,7 @@ export function MantenimientoForm({
           t={t}
         />
         {touched.type && errors.type && (
-          <p className="text-sm text-red-500 flex items-center gap-1">
+          <p className="text-sm text-danger flex items-center gap-1">
             <Warning className="w-4 h-4" />
             {errors.type}
           </p>
@@ -653,7 +609,7 @@ export function MantenimientoForm({
           t={t}
         />
         {touched.priority && errors.priority && (
-          <p className="text-sm text-red-500 flex items-center gap-1">
+          <p className="text-sm text-danger flex items-center gap-1">
             <Warning className="w-4 h-4" />
             {errors.priority}
           </p>
@@ -665,11 +621,11 @@ export function MantenimientoForm({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800"
+            className="p-4 rounded-xl bg-warning-soft border border-warning/30"
           >
             <div className="flex gap-3">
-              <Warning className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-sm text-amber-700 dark:text-amber-300">
+              <Warning className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+              <p className="text-sm text-warning">
                 {formData.priority === 'emergency'
                   ? t('inmobiliaria.mantenimiento.emergencyWarning')
                   : t('inmobiliaria.mantenimiento.highPriorityWarning')}
@@ -680,24 +636,19 @@ export function MantenimientoForm({
 
         {/* Title */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            {t('inmobiliaria.mantenimiento.requestTitle')} <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            {t('inmobiliaria.mantenimiento.requestTitle')} <span className="text-danger">*</span>
           </label>
-          <input
+          <Input
             type="text"
             value={formData.title}
             onChange={(e) => updateField('title', e.target.value)}
             onBlur={() => setTouched((prev) => ({ ...prev, title: true }))}
             placeholder={t('inmobiliaria.mantenimiento.titlePlaceholder')}
-            className={cn(
-              'w-full px-4 py-3 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all',
-              touched.title && errors.title
-                ? 'border-red-500'
-                : 'border-neutral-200 dark:border-neutral-700'
-            )}
+            className={cn('w-full', touched.title && errors.title && 'border-danger/30')}
           />
           {touched.title && errors.title && (
-            <p className="text-sm text-red-500 flex items-center gap-1">
+            <p className="text-sm text-danger flex items-center gap-1">
               <Warning className="w-4 h-4" />
               {errors.title}
             </p>
@@ -706,24 +657,19 @@ export function MantenimientoForm({
 
         {/* Description */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-            {t('inmobiliaria.mantenimiento.problemDescription')} <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            {t('inmobiliaria.mantenimiento.problemDescription')} <span className="text-danger">*</span>
           </label>
-          <textarea
+          <Textarea
             value={formData.description}
             onChange={(e) => updateField('description', e.target.value)}
             onBlur={() => setTouched((prev) => ({ ...prev, description: true }))}
             rows={4}
             placeholder={t('inmobiliaria.mantenimiento.descriptionPlaceholder')}
-            className={cn(
-              'w-full px-4 py-3 rounded-xl border bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none',
-              touched.description && errors.description
-                ? 'border-red-500'
-                : 'border-neutral-200 dark:border-neutral-700'
-            )}
+            className={cn('w-full resize-none', touched.description && errors.description && 'border-danger/30')}
           />
           {touched.description && errors.description && (
-            <p className="text-sm text-red-500 flex items-center gap-1">
+            <p className="text-sm text-danger flex items-center gap-1">
               <Warning className="w-4 h-4" />
               {errors.description}
             </p>
@@ -745,9 +691,9 @@ export function MantenimientoForm({
       </div>
 
       {/* Section 3: Responsibility */}
-      <div className="space-y-6 pt-6 border-t border-neutral-100 dark:border-neutral-800">
-        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-          <Wallet className="w-5 h-5 text-indigo-500" />
+      <div className="space-y-6 pt-6 border-t border-faint dark:border-strong">
+        <h3 className="text-lg font-semibold text-fg dark:text-white flex items-center gap-2">
+          <Wallet className="w-5 h-5 text-primary" />
           {t('inmobiliaria.mantenimiento.responsibility')}
         </h3>
 
@@ -759,53 +705,52 @@ export function MantenimientoForm({
       </div>
 
       {/* Section 4: Additional Info */}
-      <div className="space-y-6 pt-6 border-t border-neutral-100 dark:border-neutral-800">
-        <h3 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-          <Info className="w-5 h-5 text-indigo-500" />
+      <div className="space-y-6 pt-6 border-t border-faint dark:border-strong">
+        <h3 className="text-lg font-semibold text-fg dark:text-white flex items-center gap-2">
+          <Info className="w-5 h-5 text-primary" />
           {t('inmobiliaria.mantenimiento.additionalInfo')}
         </h3>
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.mantenimiento.accessInstructions')}
           </label>
-          <textarea
+          <Textarea
             value={formData.accessNotes}
             onChange={(e) => updateField('accessNotes', e.target.value)}
             rows={3}
             placeholder={t('inmobiliaria.mantenimiento.accessPlaceholder')}
-            className="w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+            className="w-full resize-none"
           />
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-end gap-3 pt-6 border-t border-neutral-100 dark:border-neutral-800">
-        <button
+      <div className="flex items-center justify-end gap-3 pt-6 border-t border-faint dark:border-strong">
+        <Button
           type="button"
+          variant="secondary"
+          hideArrow
           onClick={onCancel}
           disabled={isSubmitting}
-          className="px-6 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
         >
           {t('inmobiliaria.mantenimiento.cancel')}
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
+          hideArrow
           disabled={isSubmitting}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono font-medium transition-colors disabled:opacity-50"
+          isLoading={isSubmitting}
         >
           {isSubmitting ? (
-            <>
-              <SpinnerGap className="w-5 h-5 animate-spin" />
-              {t('inmobiliaria.mantenimiento.creating')}
-            </>
+            t('inmobiliaria.mantenimiento.creating')
           ) : (
             <>
               <Check className="w-5 h-5" />
               {t('inmobiliaria.mantenimiento.createRequest')}
             </>
           )}
-        </button>
+        </Button>
       </div>
     </form>
   );

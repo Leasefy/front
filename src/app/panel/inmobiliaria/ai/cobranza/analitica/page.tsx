@@ -6,6 +6,7 @@
 import { PhoneCall } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
+import { Button } from '@/components/ui'
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
 import { EmptyState } from '@/components/data-display/EmptyState'
 // SampleDataWatermark is used inside widget components (37-08, 37-09, 37-10).
@@ -58,17 +59,19 @@ export default function CobranzaAnaliticaPage() {
             {t('inmobiliaria.ai.cobranza.analitica.title')}
           </h1>
         </header>
-        <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-rose-600 dark:text-rose-400">
+        <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
+          <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.analitica.errors.loading')}: {error}
           </p>
-          <button
+          <Button
             type="button"
+            variant="link"
+            size="sm"
             onClick={() => void refetch()}
-            className="shrink-0 text-xs font-medium text-rose-600 dark:text-rose-400 underline hover:no-underline"
+            className="shrink-0 text-danger"
           >
             {t('inmobiliaria.ai.cobranza.analitica.errors.retry')}
-          </button>
+          </Button>
         </div>
       </main>
     )

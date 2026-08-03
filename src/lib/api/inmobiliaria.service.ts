@@ -3,8 +3,11 @@
  * Connects to backend /api/v1/inmobiliaria endpoints
  */
 
-import { apiClient } from '@/lib/api/client';
+import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
+import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
 import type {
+  AgencyProfile,
+  UpdateAgencyPayload,
   Propietario,
   PropietarioFormData,
   Agente,
@@ -20,8 +23,6 @@ import type {
   SolicitudMantenimiento,
   Renovacion,
   InmobiliariaDashboardKPIs,
-  InmobiliariaConfig,
-  InmobiliariaConfigExtended,
   DocumentTemplate,
   PropertyDocument,
   ActaEntrega,
@@ -46,10 +47,12 @@ import type {
   ReportDefinition,
   InvitationInfo,
   AgencyMember,
+  AgencyInviteResult,
   AgencyOnboardingStatus,
 } from '@/lib/types/inmobiliaria';
 
 const BASE = '/inmobiliaria';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
 // Permission response types
 export interface UserPermissionsResponse {
@@ -176,6 +179,65 @@ export const agentesApi = {
 // Consignaciones (Portafolio)
 // ============================================================================
 
+/**
+ * Backend consignacion row: Prisma returns UPPER_SNAKE enums
+ * (status ACTIVE/TERMINATED/…, availability AVAILABLE/RENTED/…,
+ * propertyType APARTMENT/…) and the agent link as `agenteUserId`.
+ * The frontend `Consignacion` type declares lowercase enums and `agenteId`,
+ * so every read/write goes through this boundary mapping.
+ */
+type RawConsignacion = Omit<
+  Consignacion,
+  'status' | 'availability' | 'propertyType' | 'agenteId'
+> & {
+  status?: string | null;
+  availability?: string | null;
+  propertyType?: string | null;
+  agenteUserId?: string | null;
+  agenteId?: string | null;
+};
+
+export function normalizeConsignacion(raw: RawConsignacion): Consignacion {
+  const lower = (v?: string | null) => (v ?? '').toLowerCase();
+  return {
+    ...(raw as unknown as Consignacion),
+    status: (lower(raw.status) || 'active') as Consignacion['status'],
+    availability: (lower(raw.availability) || 'available') as Consignacion['availability'],
+    propertyType: (lower(raw.propertyType) || 'apartment') as Consignacion['propertyType'],
+    agenteId: raw.agenteId ?? raw.agenteUserId ?? '',
+  };
+}
+
+/**
+ * Fields accepted by PUT /inmobiliaria/consignaciones/:id
+ * (UpdateConsignacionDto = Partial<CreateConsignacionDto> + status/availability/…).
+ * NOTE: `agenteId` is accepted here only to be STRIPPED: the backend key is
+ * `agenteUserId` (a User id), while the front's agente ids are AgencyMember
+ * ids — sending either would corrupt the assignment or 400
+ * (forbidNonWhitelisted). Agent reassignment needs the dedicated
+ * assign-agent endpoint plus a userId the frontend does not have yet.
+ */
+export type ConsignacionUpdateInput = Partial<ConsignacionFormData> & {
+  status?: Consignacion['status'];
+  availability?: Consignacion['availability'];
+  contractDate?: string;
+  contractEndDate?: string;
+  currentTenantName?: string;
+  leaseEndDate?: string;
+  consignmentContractUrl?: string;
+};
+
+function toConsignacionPayload(data: ConsignacionUpdateInput): Record<string, unknown> {
+  // Strip front-only keys the backend whitelist would reject (see note above).
+  const { agenteId: _agenteId, propertyType, status, availability, ...rest } = data;
+  void _agenteId;
+  const payload: Record<string, unknown> = { ...rest };
+  if (propertyType !== undefined) payload.propertyType = propertyType.toUpperCase();
+  if (status !== undefined) payload.status = status.toUpperCase();
+  if (availability !== undefined) payload.availability = availability.toUpperCase();
+  return payload;
+}
+
 export const consignacionesApi = {
   async getAll(params?: {
     status?: string;
@@ -193,20 +255,34 @@ export const consignacionesApi = {
     if (params?.minRent) query.set('minRent', String(params.minRent));
     if (params?.maxRent) query.set('maxRent', String(params.maxRent));
     const qs = query.toString();
-    const res = await apiClient.get<{ data: Consignacion[] }>(`${BASE}/consignaciones${qs ? `?${qs}` : ''}`);
-    return res.data;
+    const res = await apiClient.get<{ data: RawConsignacion[] } | RawConsignacion[]>(
+      `${BASE}/consignaciones${qs ? `?${qs}` : ''}`,
+    );
+    // Backend returns a plain array; tolerate a { data } envelope too.
+    const rows = Array.isArray(res) ? res : res.data;
+    return rows.map(normalizeConsignacion);
   },
 
   async getById(id: string): Promise<Consignacion> {
-    return apiClient.get<Consignacion>(`${BASE}/consignaciones/${id}`);
+    const raw = await apiClient.get<RawConsignacion>(`${BASE}/consignaciones/${id}`);
+    return normalizeConsignacion(raw);
   },
 
-  async create(data: ConsignacionFormData): Promise<Consignacion> {
-    return apiClient.post<Consignacion>(`${BASE}/consignaciones`, data);
+  async create(data: ConsignacionFormData & { contractDate: string }): Promise<Consignacion> {
+    const raw = await apiClient.post<RawConsignacion>(
+      `${BASE}/consignaciones`,
+      toConsignacionPayload(data),
+    );
+    return normalizeConsignacion(raw);
   },
 
-  async update(id: string, data: Partial<ConsignacionFormData>): Promise<Consignacion> {
-    return apiClient.patch<Consignacion>(`${BASE}/consignaciones/${id}`, data);
+  /** PUT (not PATCH — the backend route is @Put) with backend-cased enums. */
+  async update(id: string, data: ConsignacionUpdateInput): Promise<Consignacion> {
+    const raw = await apiClient.put<RawConsignacion>(
+      `${BASE}/consignaciones/${id}`,
+      toConsignacionPayload(data),
+    );
+    return normalizeConsignacion(raw);
   },
 
   async delete(id: string): Promise<void> {
@@ -218,40 +294,140 @@ export const consignacionesApi = {
 // Pipeline
 // ============================================================================
 
+/** Raw pipeline item as the backend returns it (UPPER_SNAKE stage, nested consignacion). */
+interface BackendPipelineItem {
+  id: string;
+  consignacionId: string;
+  agenteUserId?: string | null;
+  candidateName: string;
+  candidateEmail?: string | null;
+  candidatePhone?: string | null;
+  candidateAvatar?: string | null;
+  riskScore?: number | null;
+  riskLevel?: string | null;
+  stage: string;
+  enteredStageAt: string;
+  daysInStage: number;
+  nextAction?: string | null;
+  nextActionDate?: string | null;
+  lastContactDate?: string | null;
+  notes?: string | null;
+  lostReason?: string | null;
+  completedLeaseId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  consignacion?: {
+    propertyId?: string | null;
+    propertyTitle?: string | null;
+    propertyAddress?: string | null;
+    monthlyRent?: number | null;
+  } | null;
+}
+
+/** Stats shape of GET /inmobiliaria/pipeline/stats (stageCounts keys in UPPER_SNAKE). */
+export interface PipelineStats {
+  stageCounts: Record<string, number>;
+  totalAll: number;
+  totalActive: number;
+  totalCompleted: number;
+  totalLost: number;
+  closedThisMonth: number;
+  conversionRate: number;
+}
+
+/** Boundary mapper: backend item (UPPER stage + nested consignacion) → flat front shape. */
+function normalizePipelineItem(raw: BackendPipelineItem): PipelineItem {
+  return {
+    id: raw.id,
+    consignacionId: raw.consignacionId,
+    propertyId: raw.consignacion?.propertyId ?? '',
+    candidateId: '',
+    agenteId: raw.agenteUserId ?? '',
+    propertyTitle: raw.consignacion?.propertyTitle ?? '',
+    propertyAddress: raw.consignacion?.propertyAddress ?? '',
+    monthlyRent: raw.consignacion?.monthlyRent ?? 0,
+    candidateName: raw.candidateName,
+    candidateEmail: raw.candidateEmail ?? '',
+    candidatePhone: raw.candidatePhone ?? '',
+    candidateAvatar: raw.candidateAvatar ?? undefined,
+    riskScore: raw.riskScore ?? undefined,
+    riskLevel: (raw.riskLevel as PipelineItem['riskLevel']) ?? undefined,
+    stage: raw.stage.toLowerCase() as PipelineStage,
+    enteredStageAt: raw.enteredStageAt,
+    daysInStage: raw.daysInStage,
+    nextAction: raw.nextAction ?? undefined,
+    nextActionDate: raw.nextActionDate ?? undefined,
+    lastContactDate: raw.lastContactDate ?? undefined,
+    notes: raw.notes ?? undefined,
+    lostReason: raw.lostReason ?? undefined,
+    completedLeaseId: raw.completedLeaseId ?? undefined,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  };
+}
+
 export const pipelineApi = {
   async getAll(): Promise<PipelineItem[]> {
-    const res = await apiClient.get<{ data: PipelineItem[] }>(`${BASE}/pipeline`);
-    return res.data;
+    const res = await apiClient.get<BackendPipelineItem[]>(`${BASE}/pipeline`);
+    return (Array.isArray(res) ? res : []).map(normalizePipelineItem);
   },
 
   async getById(id: string): Promise<PipelineItem> {
-    return apiClient.get<PipelineItem>(`${BASE}/pipeline/${id}`);
+    const res = await apiClient.get<BackendPipelineItem>(`${BASE}/pipeline/${id}`);
+    return normalizePipelineItem(res);
+  },
+
+  async getStats(): Promise<PipelineStats> {
+    return apiClient.get<PipelineStats>(`${BASE}/pipeline/stats`);
   },
 
   async create(data: Partial<PipelineItem>): Promise<PipelineItem> {
-    return apiClient.post<PipelineItem>(`${BASE}/pipeline`, data);
+    const { stage, ...rest } = data;
+    const res = await apiClient.post<BackendPipelineItem>(`${BASE}/pipeline`, {
+      ...rest,
+      ...(stage ? { stage: stage.toUpperCase() } : {}),
+    });
+    return normalizePipelineItem(res);
   },
 
   async update(id: string, data: Partial<PipelineItem>): Promise<PipelineItem> {
-    return apiClient.patch<PipelineItem>(`${BASE}/pipeline/${id}`, data);
+    const { stage, ...rest } = data;
+    const res = await apiClient.put<BackendPipelineItem>(`${BASE}/pipeline/${id}`, {
+      ...rest,
+      ...(stage ? { stage: stage.toUpperCase() } : {}),
+    });
+    return normalizePipelineItem(res);
   },
 
-  async moveStage(id: string, newStage: PipelineStage, notes?: string): Promise<PipelineItem> {
-    return apiClient.patch<PipelineItem>(`${BASE}/pipeline/${id}/stage`, { newStage, notes });
+  async moveStage(id: string, newStage: PipelineStage, lostReason?: string): Promise<PipelineItem> {
+    const res = await apiClient.put<BackendPipelineItem>(`${BASE}/pipeline/${id}/stage`, {
+      stage: newStage.toUpperCase(),
+      ...(lostReason ? { lostReason } : {}),
+    });
+    return normalizePipelineItem(res);
   },
 
   async delete(id: string): Promise<void> {
     await apiClient.delete(`${BASE}/pipeline/${id}`);
-  },
-
-  async convertToLease(id: string): Promise<void> {
-    await apiClient.post(`${BASE}/pipeline/${id}/convert`, {});
   },
 };
 
 // ============================================================================
 // Cobros
 // ============================================================================
+
+/**
+ * Backend returns Cobro rows with UPPER enums (status PAID/PARTIAL/COBRO_PENDING/…)
+ * and, depending on the endpoint, either a bare array or `{ data: [...] }`. The
+ * front `Cobro` type uses lowercase status, so normalize both here.
+ */
+function normalizeCobro(raw: Cobro): Cobro {
+  const s = String((raw as { status?: string }).status ?? '').toLowerCase();
+  return {
+    ...raw,
+    status: (s === 'cobro_pending' ? 'pending' : s) as Cobro['status'],
+  };
+}
 
 export const cobrosApi = {
   async getAll(params?: { month?: string; status?: string; propietarioId?: string }): Promise<Cobro[]> {
@@ -260,8 +436,11 @@ export const cobrosApi = {
     if (params?.status) query.set('status', params.status);
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
     const qs = query.toString();
-    const res = await apiClient.get<{ data: Cobro[] }>(`${BASE}/cobros${qs ? `?${qs}` : ''}`);
-    return res.data;
+    const res = await apiClient.get<Cobro[] | { data: Cobro[] }>(
+      `${BASE}/cobros${qs ? `?${qs}` : ''}`,
+    );
+    const rows = Array.isArray(res) ? res : res?.data ?? [];
+    return rows.map(normalizeCobro);
   },
 
   async getById(id: string): Promise<Cobro> {
@@ -278,8 +457,37 @@ export const cobrosApi = {
   },
 
   async getSummary(month: string): Promise<CobroSummary> {
-    const res = await apiClient.get<{ data: CobroSummary }>(`${BASE}/cobros/summary?month=${month}`);
-    return res.data;
+    // Backend returns { month, totalCobros, totalExpected, totalCollected,
+    // totalPending, totalLate, countByStatus } (bare or wrapped in { data }).
+    // The front CobroSummary needs collectionRate + per-status counts, so derive
+    // them here and default every field (avoids undefined.toFixed crashes).
+    const res = await apiClient.get<Record<string, unknown> | { data: Record<string, unknown> }>(
+      `${BASE}/cobros/summary?month=${month}`,
+    );
+    const raw = ((res as { data?: Record<string, unknown> })?.data ?? res ?? {}) as {
+      month?: string;
+      totalExpected?: number;
+      totalCollected?: number;
+      totalPending?: number;
+      totalLate?: number;
+      collectionRate?: number;
+      countByStatus?: Record<string, number>;
+    };
+    const totalExpected = raw.totalExpected ?? 0;
+    const totalCollected = raw.totalCollected ?? 0;
+    const counts = raw.countByStatus ?? {};
+    return {
+      month: raw.month ?? month,
+      totalExpected,
+      totalCollected,
+      totalPending: raw.totalPending ?? 0,
+      totalLate: raw.totalLate ?? 0,
+      collectionRate:
+        raw.collectionRate ?? (totalExpected > 0 ? (totalCollected / totalExpected) * 100 : 0),
+      cobrosPaid: counts['PAID'] ?? 0,
+      cobrosPending: (counts['COBRO_PENDING'] ?? 0) + (counts['PARTIAL'] ?? 0),
+      cobrosLate: counts['LATE'] ?? 0,
+    };
   },
 
   async generate(month: string): Promise<void> {
@@ -288,6 +496,112 @@ export const cobrosApi = {
 
   async sendReminder(id: string): Promise<void> {
     await apiClient.post(`${BASE}/cobros/${id}/reminder`, {});
+  },
+};
+
+// ============================================================================
+// Avalúos (agency records-by-state)
+// ============================================================================
+
+/**
+ * One agency avalúo certificate row — the micro's `by-identity` item shape,
+ * proxied verbatim by the back (`GET /inmobiliaria/avaluos`). `valueCop` is null
+ * for a refused valuation; `method` degrades to '—' when the snapshot is missing.
+ */
+export interface AgencyAvaluoItem {
+  id: string;
+  slug: string;
+  state: string;
+  valueCop: number | null;
+  method: string;
+  city: string | null;
+  identity: string;
+  submissionId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  signedAt: string | null;
+}
+
+/** The paginated envelope the back returns (pageSize fixed at 100). */
+export interface AgencyAvaluoListResponse {
+  items: AgencyAvaluoItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/**
+ * POST /inmobiliaria/avaluos/solicitar returns EITHER a fully composed wizard
+ * URL, OR an agency token + wizard path the front composes against its own
+ * configured wizard origin. Both shapes are normalized to `{ wizardUrl }`.
+ */
+export interface AvaluoSolicitarWizardUrlResponse {
+  wizardUrl: string;
+}
+export interface AvaluoSolicitarTokenResponse {
+  agencyToken: string;
+  wizardPath: string;
+}
+export type AvaluoSolicitarResponse =
+  | AvaluoSolicitarWizardUrlResponse
+  | AvaluoSolicitarTokenResponse;
+
+export const avaluosApi = {
+  /**
+   * List the agency's own avalúos, optionally filtered by lifecycle state.
+   * The identity is resolved server-side from the agency context — the browser
+   * never supplies it. Empty until Phase 2 #3 tags new avalúos with the agency
+   * email.
+   */
+  async list(params?: {
+    state?: string;
+    page?: number;
+  }): Promise<AgencyAvaluoListResponse> {
+    const query = new URLSearchParams();
+    if (params?.state) query.set('state', params.state);
+    if (params?.page) query.set('page', String(params.page));
+    const qs = query.toString();
+    return apiClient.get<AgencyAvaluoListResponse>(
+      `${BASE}/avaluos${qs ? `?${qs}` : ''}`,
+    );
+  },
+
+  /**
+   * Request a new avalúo for the agency. The back resolves the agency identity
+   * server-side (permission `avaluos.create`) and answers with either a ready
+   * `wizardUrl` (shape a) or an `agencyToken` + `wizardPath` (shape b) to compose
+   * against the front's configured wizard origin. On 422 (agency missing
+   * email/name) the back's Spanish message surfaces via the thrown ApiError.
+   * Always returns a normalized `{ wizardUrl }`.
+   */
+  async solicitar(): Promise<{ wizardUrl: string }> {
+    const res = await apiClient.post<AvaluoSolicitarResponse>(
+      `${BASE}/avaluos/solicitar`,
+      {},
+    );
+
+    // Shape (a): a fully composed URL — open it directly.
+    if ('wizardUrl' in res && res.wizardUrl) {
+      return { wizardUrl: res.wizardUrl };
+    }
+
+    // Shape (b): compose `${origin}${wizardPath}?agency=<token>`.
+    if ('agencyToken' in res && res.agencyToken && res.wizardPath) {
+      if (!AVALUO_WIZARD_ORIGIN) {
+        throw new ApiError(
+          0,
+          'No pudimos abrir el asistente de avalúo: falta la configuración del servicio.',
+        );
+      }
+      const path = res.wizardPath.startsWith('/')
+        ? res.wizardPath
+        : `/${res.wizardPath}`;
+      return {
+        wizardUrl: `${AVALUO_WIZARD_ORIGIN}${path}?agency=${encodeURIComponent(res.agencyToken)}`,
+      };
+    }
+
+    throw new ApiError(0, 'No pudimos abrir el asistente de avalúo. Intentá de nuevo.');
   },
 };
 
@@ -381,39 +695,126 @@ export const mantenimientoApi = {
 // Renovaciones
 // ============================================================================
 
+/** Front lowercase RenovacionStatus → backend RenovacionStatus enum value. */
+const RENOVACION_STATUS_TO_BACKEND: Record<string, string> = {
+  pending: 'RENOV_PENDING',
+  notified: 'NOTIFIED',
+  negotiating: 'NEGOTIATING',
+  approved: 'RENOV_APPROVED',
+  signed: 'RENOV_SIGNED',
+  completed: 'RENOV_COMPLETED',
+  terminated: 'RENOV_TERMINATED',
+};
+
+/** Backend RenovacionStatus enum value → front lowercase status. */
+const RENOVACION_STATUS_TO_FRONT: Record<string, string> = {
+  RENOV_PENDING: 'pending',
+  NOTIFIED: 'notified',
+  NEGOTIATING: 'negotiating',
+  RENOV_APPROVED: 'approved',
+  RENOV_SIGNED: 'signed',
+  RENOV_COMPLETED: 'completed',
+  RENOV_TERMINATED: 'terminated',
+};
+
+/** Derive the front urgency bucket from days until lease expiry. */
+function urgencyFromDays(days: number): Renovacion['urgencyBucket'] {
+  if (days <= 30) return '0-30';
+  if (days <= 60) return '31-60';
+  if (days <= 90) return '61-90';
+  return '90+';
+}
+
+/**
+ * Boundary mapper: the backend returns the RenovacionStatus enum in UPPER_SNAKE
+ * (the front uses lowercase) and does NOT send urgencyBucket (only
+ * daysUntilExpiry). Without this the stepper/filters never match the status and
+ * the urgency badges/stats render blank.
+ */
+function mapRenovacion(raw: Renovacion): Renovacion {
+  return {
+    ...raw,
+    status: (RENOVACION_STATUS_TO_FRONT[raw.status] ?? raw.status) as Renovacion['status'],
+    urgencyBucket: raw.urgencyBucket ?? urgencyFromDays(raw.daysUntilExpiry),
+    // The list endpoint does not include history; guarantee an array so the
+    // workflow's history timeline never maps over undefined.
+    history: raw.history ?? [],
+  };
+}
+
 export const renovacionesApi = {
   async getAll(): Promise<Renovacion[]> {
-    const res = await apiClient.get<{ data: Renovacion[] }>(`${BASE}/renovaciones`);
-    return res.data;
+    // The backend returns a bare array here (findMany), not a { data } wrapper.
+    const rows = await apiClient.get<Renovacion[]>(`${BASE}/renovaciones`);
+    return (Array.isArray(rows) ? rows : []).map(mapRenovacion);
   },
 
   async getById(id: string): Promise<Renovacion> {
-    return apiClient.get<Renovacion>(`${BASE}/renovaciones/${id}`);
+    return mapRenovacion(await apiClient.get<Renovacion>(`${BASE}/renovaciones/${id}`));
   },
 
   async create(data: Partial<Renovacion>): Promise<Renovacion> {
-    return apiClient.post<Renovacion>(`${BASE}/renovaciones`, data);
-  },
-
-  async notify(id: string): Promise<void> {
-    await apiClient.patch(`${BASE}/renovaciones/${id}/notify`, {});
-  },
-
-  async accept(id: string): Promise<void> {
-    await apiClient.patch(`${BASE}/renovaciones/${id}/accept`, {});
-  },
-
-  async reject(id: string): Promise<void> {
-    await apiClient.patch(`${BASE}/renovaciones/${id}/reject`, {});
+    return mapRenovacion(await apiClient.post<Renovacion>(`${BASE}/renovaciones`, data));
   },
 
   async getUpcoming(): Promise<Renovacion[]> {
-    const res = await apiClient.get<{ data: Renovacion[] }>(`${BASE}/renovaciones/upcoming`);
-    return res.data;
+    const rows = await apiClient.get<Renovacion[]>(`${BASE}/renovaciones/upcoming`);
+    return (Array.isArray(rows) ? rows : []).map(mapRenovacion);
   },
 
-  async updateStatus(id: string, status: string): Promise<void> {
-    await apiClient.patch(`${BASE}/renovaciones/${id}/status`, { status });
+  /**
+   * Advance a renovación to a new stage via the real backend endpoint
+   * (PUT /renovaciones/:id/stage). Maps the front lowercase status to the
+   * backend RenovacionStatus enum and forwards the admin-editable negotiated
+   * canon and admin fee so the completed renewal bills at the new values.
+   */
+  async updateStage(
+    id: string,
+    payload: {
+      status: string;
+      negotiatedRent?: number;
+      negotiatedAdminFee?: number;
+      proposedRent?: number;
+      ipcRate?: number;
+      historyNote?: string;
+      notificationMessage?: string;
+    },
+  ): Promise<void> {
+    const { status, ...rest } = payload;
+    await apiClient.put(`${BASE}/renovaciones/${id}/stage`, {
+      status: RENOVACION_STATUS_TO_BACKEND[status] ?? status,
+      ...rest,
+    });
+  },
+
+  /** Upload the renewal document (multipart). Returns the stored name/path. */
+  async uploadDocument(
+    id: string,
+    file: File,
+  ): Promise<{ documentName: string; documentPath: string }> {
+    const token = getAccessToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'}${BASE}/renovaciones/${id}/document`,
+      {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      },
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Error al subir el documento');
+    }
+    return res.json();
+  },
+
+  /** Get a short-lived signed URL to download the renewal document. */
+  async getDocumentUrl(id: string): Promise<{ url: string; name: string }> {
+    return apiClient.get<{ url: string; name: string }>(
+      `${BASE}/renovaciones/${id}/document/url`,
+    );
   },
 
   async addNote(id: string, note: string): Promise<void> {
@@ -613,25 +1014,11 @@ export const actasApi = {
 // ============================================================================
 
 export const inmobiliariaConfigApi = {
-  async get(): Promise<InmobiliariaConfig> {
-    return apiClient.get<InmobiliariaConfig>(`${BASE}/config`);
-  },
-
-  async getExtended(): Promise<InmobiliariaConfigExtended> {
-    return apiClient.get<InmobiliariaConfigExtended>(`${BASE}/config`);
-  },
-
-  async update(data: Partial<InmobiliariaConfigExtended>): Promise<InmobiliariaConfigExtended> {
-    return apiClient.patch<InmobiliariaConfigExtended>(`${BASE}/config`, data);
-  },
-
-  async updateBranding(data: Partial<InmobiliariaConfigExtended['branding']>): Promise<void> {
-    await apiClient.patch(`${BASE}/config/branding`, data);
-  },
-
-  async updateDefaults(data: Partial<InmobiliariaConfigExtended['defaults']>): Promise<void> {
-    await apiClient.patch(`${BASE}/config/defaults`, data);
-  },
+  // NOTE: the old `get`/`getExtended`/`update`/`updateBranding`/`updateDefaults`
+  // methods were removed — PATCH /inmobiliaria/config and
+  // PATCH /inmobiliaria/config/branding|defaults NEVER existed in the backend.
+  // Agency profile/branding is read from GET /inmobiliaria/config (`agency` key)
+  // and written through agencyApi.updateAgency / agencyApi.uploadAgencyLogo.
 
   // Users — canonical route is /inmobiliaria/agency/members
   async getUsers(): Promise<AgencyUser[]> {
@@ -641,7 +1028,7 @@ export const inmobiliariaConfigApi = {
     return Array.isArray(res) ? res : res.data;
   },
 
-  async inviteUser(invite: UserInvite): Promise<AgencyUser> {
+  async inviteUser(invite: UserInvite): Promise<AgencyInviteResult> {
     // Backend enum: ADMIN | AGENTE | CONTADOR | VIEWER — just uppercase the frontend value
     // Backend DTO rejects: message (UI-only), phone (not in DTO)
     const { message: _msg, phone: _phone, ...rest } = invite;
@@ -649,7 +1036,8 @@ export const inmobiliariaConfigApi = {
       ...rest,
       role: invite.role.toUpperCase(),
     };
-    return apiClient.post<AgencyUser>(`${BASE}/agency/members`, payload);
+    // Response merges `emailDelivered` onto the created member.
+    return apiClient.post<AgencyInviteResult>(`${BASE}/agency/members`, payload);
   },
 
   async updateUser(id: string, data: Partial<AgencyUser>): Promise<AgencyUser> {
@@ -701,7 +1089,8 @@ export const inmobiliariaConfigApi = {
   },
 
   async toggleIntegration(id: string, enabled: boolean): Promise<AgencyIntegration> {
-    return apiClient.patch<AgencyIntegration>(`${BASE}/agency/integrations/${id}`, { isEnabled: enabled });
+    // Backend route is @Put (agency.controller.ts PUT integrations/:id) — must match verb.
+    return apiClient.put<AgencyIntegration>(`${BASE}/agency/integrations/${id}`, { isEnabled: enabled });
   },
 };
 
@@ -749,8 +1138,9 @@ export const agencyApi = {
    * POST /inmobiliaria/agency/members/:memberId/resend-invitation
    * Resends the invitation email for a pending member.
    */
-  async resendInvitation(memberId: string): Promise<AgencyMember> {
-    return apiClient.post<AgencyMember>(`${BASE}/agency/members/${memberId}/resend-invitation`);
+  async resendInvitation(memberId: string): Promise<AgencyInviteResult> {
+    // Response merges `emailDelivered` onto the member.
+    return apiClient.post<AgencyInviteResult>(`${BASE}/agency/members/${memberId}/resend-invitation`);
   },
 
   /**
@@ -770,11 +1160,61 @@ export const agencyApi = {
   },
 
   /**
-   * PUT /inmobiliaria/agency
-   * Updates agency settings (including reminder config).
+   * GET /inmobiliaria/agency
+   * Returns the caller's agency (full row + memberRole/memberStatus).
+   * 404 if the user has no agency membership.
    */
-  async updateAgency(data: { reminderDaysBefore?: number[]; reminderDaysAfter?: number[] }): Promise<unknown> {
-    return apiClient.put(`${BASE}/agency`, data);
+  async getMyAgency(): Promise<AgencyProfile> {
+    return apiClient.get<AgencyProfile>(`${BASE}/agency`);
+  },
+
+  /**
+   * PUT /inmobiliaria/agency
+   * Updates agency settings (profile, legal, financial defaults, logoUrl).
+   * Requires agency ADMIN role — the backend answers 403 otherwise.
+   * Send ONLY changed fields: the backend rejects unknown keys
+   * (ValidationPipe forbidNonWhitelisted).
+   */
+  async updateAgency(data: UpdateAgencyPayload): Promise<AgencyProfile> {
+    return apiClient.put<AgencyProfile>(`${BASE}/agency`, data);
+  },
+
+  /**
+   * POST /inmobiliaria/agency/logo
+   * Uploads the agency logo (multipart, field `file`; jpeg/png/webp, max 5MB).
+   * Uses fetch directly for FormData — same pattern as propertiesApi.uploadImage.
+   * Returns the public URL of the stored logo.
+   */
+  async uploadAgencyLogo(file: File): Promise<{ logoUrl: string }> {
+    const token = getAccessToken();
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    let res: Response;
+    try {
+      res = await fetch(`${BACKEND_URL}${BASE}/agency/logo`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
+      throw new ApiError(0, `No pudimos conectarnos al servidor. ${raw}`);
+    }
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(
+        res.status,
+        (body as { message?: string }).message || `Error al subir el logo (${res.status})`,
+      );
+    }
+
+    return res.json();
   },
 
   /**
@@ -812,7 +1252,8 @@ export const permissionsApi = {
    * Updates a member's custom permissions (admin only). Pass null to reset to role defaults.
    */
   async updateMemberPermissions(memberId: string, permissions: Record<string, string[]> | null): Promise<MemberPermissionsResponse> {
-    return apiClient.patch<MemberPermissionsResponse>(`${BASE}/agency/members/${memberId}/permissions`, { permissions });
+    // Backend route is @Put (agency.controller.ts PUT members/:id/permissions) — must match verb.
+    return apiClient.put<MemberPermissionsResponse>(`${BASE}/agency/members/${memberId}/permissions`, { permissions });
   },
 
   /**
@@ -820,6 +1261,75 @@ export const permissionsApi = {
    * Updates a member's role (admin only).
    */
   async updateMemberRole(memberId: string, role: string): Promise<unknown> {
-    return apiClient.patch(`${BASE}/agency/members/${memberId}/role`, { role });
+    // Backend route is @Put (agency.controller.ts PUT members/:id/role) — must match verb.
+    return apiClient.put(`${BASE}/agency/members/${memberId}/role`, { role });
+  },
+
+  /**
+   * PUT /inmobiliaria/agency/members/:memberId/status
+   * Activates / deactivates a member (admin only). Body: { active: boolean }.
+   */
+  async updateMemberStatus(memberId: string, active: boolean): Promise<unknown> {
+    return apiClient.put(`${BASE}/agency/members/${memberId}/status`, { active });
+  },
+};
+
+// ============================================================================
+// Role Permissions (per-agency role templates)
+// ============================================================================
+
+/** The 5 granular actions a role can hold on a module. */
+export type AgencyAction = 'view' | 'create' | 'edit' | 'delete' | 'export';
+
+/** module key → allowed actions (an absent module means no access). */
+export type PermMap = Record<string, AgencyAction[]>;
+
+/**
+ * The caller agency's full per-role permission matrix. Each role's PermMap is
+ * COMPLETE across all modules (an absent module resolves to []). ADMIN is
+ * full-access and read-only — the backend ignores it on writes.
+ */
+export interface RoleMatrices {
+  roles: {
+    ADMIN: PermMap;
+    AGENTE: PermMap;
+    CONTADOR: PermMap;
+    VIEWER: PermMap;
+  };
+}
+
+/** Body for the PUT — only the editable roles; ADMIN is never sent. */
+export interface UpdateRolePermissionsBody {
+  AGENTE?: PermMap;
+  CONTADOR?: PermMap;
+  VIEWER?: PermMap;
+}
+
+export const rolePermissionsApi = {
+  /**
+   * GET /inmobiliaria/agency/role-permissions
+   * Returns the agency's per-role permission matrices (admin only; 403 otherwise).
+   */
+  async getRolePermissions(): Promise<RoleMatrices> {
+    return apiClient.get<RoleMatrices>(`${BASE}/agency/role-permissions`);
+  },
+
+  /**
+   * PUT /inmobiliaria/agency/role-permissions
+   * Persists the edited role templates (admin only). Side effect: the backend
+   * clears per-member permission overrides for ACTIVE members of the edited
+   * roles so the template applies immediately.
+   */
+  async updateRolePermissions(body: UpdateRolePermissionsBody): Promise<RoleMatrices> {
+    return apiClient.put<RoleMatrices>(`${BASE}/agency/role-permissions`, body);
+  },
+
+  /**
+   * DELETE /inmobiliaria/agency/role-permissions
+   * Resets every role to the system defaults (admin only). Also clears
+   * per-member overrides for AGENTE/CONTADOR/VIEWER.
+   */
+  async resetRolePermissions(): Promise<RoleMatrices> {
+    return apiClient.delete<RoleMatrices>(`${BASE}/agency/role-permissions`);
   },
 };

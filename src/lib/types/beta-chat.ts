@@ -13,9 +13,19 @@ export type MessageRole = 'user' | 'assistant' | 'system';
 
 export type MessageStatus = 'sending' | 'sent' | 'streaming' | 'complete' | 'error';
 
-/** Agent types matching AI-AGENT-ARCHITECTURE.md */
+/**
+ * Agent types. The first four are the REAL dispatchable agent roster (the
+ * backend `dispatches[].agent`); the rest are legacy categories kept for
+ * existing mock/widget consumers. (AI CHAT HOME F4 — aligned with the roster.)
+ */
 export type AgentType =
   | 'cobranza'
+  | 'cotizador'
+  | 'estudio'
+  | 'matching'
+  | 'avaluo'
+  | 'conciliacion'
+  | 'pagos'
   | 'pipeline'
   | 'mantenimiento'
   | 'documentos'
@@ -119,6 +129,71 @@ export interface WorkspaceStep {
   agentType?: AgentType;
 }
 
+// ============================================================================
+// Action Proposal Types (F5 — human-in-the-loop confirmations)
+// ============================================================================
+
+/** Cola types that can emit action proposals */
+export type ActionProposalColaType = 'conciliacion' | 'pagos' | 'cobranza';
+
+/** Actions per cola — closed catalog (D-42-03) */
+export type ConciliacionAction = 'confirm' | 'reject';
+export type PagosAction = 'approve' | 'reject';
+export type CobranzaAction = 'claim' | 'resolve';
+export type ActionProposalAction = ConciliacionAction | PagosAction | CobranzaAction;
+
+/**
+ * Whether an action is a "negative" one that should prompt the operator
+ * for an optional reason (reject/resolve).
+ */
+export function isNegativeAction(action: ActionProposalAction): boolean {
+  return action === 'reject' || action === 'resolve';
+}
+
+/** Status of a single action proposal card */
+export type ActionProposalStatus =
+  | 'pending'       // awaiting human decision
+  | 'confirming'    // POST in-flight
+  | 'executed'      // POST succeeded
+  | 'error'         // POST failed (shows retry)
+  | 'discarded';    // user dismissed without calling backend
+
+export interface ActionProposal {
+  /** Work item ID in the backend cola */
+  workItemId: string;
+  /** Which cola this item belongs to */
+  colaType: ActionProposalColaType;
+  /** The proposed action */
+  action: ActionProposalAction;
+  /** Human-readable summary of the work item + proposed action */
+  resumen: string;
+  /** Backend always sends requiresConfirmation: true — kept for forward compat */
+  requiresConfirmation: true;
+  // --- Front-only mutable state ---
+  /** Current UI state for this proposal */
+  status: ActionProposalStatus;
+  /** Optional reason entered by the operator (for negative actions) */
+  reason?: string;
+  /** True once the backend execute call succeeded (payload not stored) */
+  result?: boolean;
+  /** Error message if status === 'error' */
+  error?: string;
+}
+
+/**
+ * "Estado de hoy" numeric snapshot the cobranza backend emits at the start of a
+ * turn (SSE `snapshot` event / one-shot `snapshot` field). Rendered as a
+ * `ChatDataCard` glance under the assistant reply. Mirrors the backend's numeric
+ * KPIs (drops `generatedAt`, which is display-irrelevant here).
+ */
+export interface ChatSnapshot {
+  deudoresActivos: number;
+  pagadoHoyCop: number;
+  llamadasHoy: number;
+  escalacionesPendientes: number;
+  enPrejuridico: number;
+}
+
 export interface ChatMessage {
   /** Unique identifier (crypto.randomUUID or fallback) */
   id: string;
@@ -136,6 +211,10 @@ export interface ChatMessage {
   decision?: PendingDecision;
   /** Structured response metadata for rich card display */
   responseMeta?: ResponseMeta;
+  /** Action proposals (F5) — one or more work items awaiting human confirmation */
+  actionProposals?: ActionProposal[];
+  /** "Estado de hoy" KPI snapshot from the backend (rendered as a data card). */
+  snapshot?: ChatSnapshot;
 }
 
 export interface Conversation {
@@ -185,6 +264,12 @@ export interface SerializedConversation {
 /** Display metadata for each agent type: label, Phosphor icon name, Tailwind color */
 export const AGENT_METADATA: Record<AgentType, { label: string; icon: string; color: string }> = {
   cobranza:      { label: 'Cobranza',      icon: 'CurrencyDollar', color: 'emerald' },
+  cotizador:     { label: 'Cotizador',     icon: 'FileText',       color: 'blue' },
+  estudio:       { label: 'Estudio',       icon: 'ChartBar',       color: 'purple' },
+  matching:      { label: 'Matching',      icon: 'FunnelSimple',   color: 'amber' },
+  avaluo:        { label: 'Avalúos',       icon: 'Scales',         color: 'indigo' },
+  conciliacion:  { label: 'Conciliación',  icon: 'ArrowsLeftRight', color: 'blue' },
+  pagos:         { label: 'Pagos',         icon: 'Bank',           color: 'emerald' },
   pipeline:      { label: 'Pipeline',      icon: 'FunnelSimple',   color: 'blue' },
   mantenimiento: { label: 'Mantenimiento', icon: 'Wrench',         color: 'amber' },
   documentos:    { label: 'Documentos',    icon: 'FileText',       color: 'purple' },

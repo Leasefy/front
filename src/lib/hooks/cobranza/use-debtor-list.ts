@@ -160,7 +160,7 @@ export function useDebtorList(filters: UseDebtorListFilters = {}): UseDebtorList
 
   // ── Filter change / mount: reset and refetch ──────────────────────────────
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     setIsLoading(true)
     hasLoadedFirstPage.current = false
     setPages([])

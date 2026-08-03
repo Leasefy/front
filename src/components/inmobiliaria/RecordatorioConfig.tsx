@@ -19,6 +19,8 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { Chip } from '@leasefy/cadence';
 import {
   Sheet,
   SheetContent,
@@ -109,22 +111,16 @@ function DaySelector({
         {options.map((day) => {
           const isSelected = selected.includes(day);
           return (
-            <button
+            <Chip
               key={day}
-              type="button"
+              selected={isSelected}
               onClick={() => toggleDay(day)}
-              className={cn(
-                'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
-                isSelected
-                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 ring-1 ring-indigo-300 dark:ring-indigo-700'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              )}
             >
               {day === 1
                 ? t('inmobiliaria.cobros.recordatorioConfig.day', { count: day })
                 : t('inmobiliaria.cobros.recordatorioConfig.days', { count: day })}
               {isSelected && <Check className="inline-block w-3.5 h-3.5 ml-1" />}
-            </button>
+            </Chip>
           );
         })}
       </div>
@@ -157,16 +153,16 @@ function ChannelToggle({
       className={cn(
         'flex items-center justify-between p-4 rounded-xl border transition-colors',
         enabled
-          ? 'border-indigo-200 bg-indigo-50/50 dark:border-indigo-800 dark:bg-indigo-900/20'
+          ? 'border-primary/30 bg-primary-soft/50 dark:border-primary/30 dark:bg-primary/20'
           : 'border-border bg-card'
       )}
     >
       <div className="flex items-center gap-3">
         <div
           className={cn(
-            'w-10 h-10 rounded-lg flex items-center justify-center',
+            'w-10 h-10 rounded-md flex items-center justify-center',
             enabled
-              ? 'bg-indigo-100 dark:bg-indigo-900/30'
+              ? 'bg-primary-soft'
               : 'bg-muted'
           )}
         >
@@ -174,7 +170,7 @@ function ChannelToggle({
             className={cn(
               'w-5 h-5',
               enabled
-                ? 'text-indigo-600 dark:text-indigo-400'
+                ? 'text-primary'
                 : 'text-muted-foreground'
             )}
           />
@@ -206,7 +202,7 @@ function MessagePreview({
   // Highlight variables in template
   const highlightedTemplate = template.replace(
     /\{([^}]+)\}/g,
-    '<span class="px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-medium">{$1}</span>'
+    '<span class="px-1.5 py-0.5 rounded bg-primary-soft text-primary text-xs font-medium">{$1}</span>'
   );
 
   return (
@@ -293,7 +289,7 @@ export function RecordatorioConfig({
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader className="mb-6">
           <SheetTitle className="flex items-center gap-2">
-            <Gear className="w-5 h-5 text-indigo-600" />
+            <Gear className="w-5 h-5 text-primary" />
             {t('inmobiliaria.cobros.recordatorioConfig.title')}
           </SheetTitle>
           <SheetDescription>
@@ -310,7 +306,7 @@ export function RecordatorioConfig({
             className="space-y-4"
           >
             <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Calendar className="w-4 h-4 text-indigo-600" />
+              <Calendar className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">
                 {t('inmobiliaria.cobros.recordatorioConfig.preExpiry')}
               </h3>
@@ -331,7 +327,7 @@ export function RecordatorioConfig({
             className="space-y-4"
           >
             <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Warning className="w-4 h-4 text-amber-600" />
+              <Warning className="w-4 h-4 text-warning" />
               <h3 className="text-sm font-semibold text-foreground">
                 {t('inmobiliaria.cobros.recordatorioConfig.postExpiry')}
               </h3>
@@ -352,7 +348,7 @@ export function RecordatorioConfig({
             className="space-y-4"
           >
             <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Bell className="w-4 h-4 text-indigo-600" />
+              <Bell className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">
                 {t('inmobiliaria.cobros.recordatorioConfig.notificationChannels')}
               </h3>
@@ -383,7 +379,7 @@ export function RecordatorioConfig({
             className="space-y-4"
           >
             <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Envelope className="w-4 h-4 text-indigo-600" />
+              <Envelope className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">
                 {t('inmobiliaria.cobros.recordatorioConfig.messageTemplates')}
               </h3>
@@ -419,28 +415,13 @@ export function RecordatorioConfig({
             </Button>
             <Button
               type="button"
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono"
+              className="flex-1 bg-primary hover:opacity-90 text-primary-fg"
               onClick={handleSave}
               disabled={!isValid || isSaving}
             >
               {isSaving ? (
                 <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
+                  <Spinner size="sm" variant="current" />
                   {t('inmobiliaria.cobros.recordatorioConfig.saving')}
                 </span>
               ) : (

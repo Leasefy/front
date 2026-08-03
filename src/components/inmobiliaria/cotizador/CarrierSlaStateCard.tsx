@@ -23,15 +23,15 @@ type SlaState = 'healthy' | 'degraded' | 'breached' | null
 // =============================================================================
 
 const SLA_COLORS: Record<string, string> = {
-  healthy: 'text-emerald-600 dark:text-emerald-400',
-  degraded: 'text-amber-600 dark:text-amber-400',
-  breached: 'text-rose-600 dark:text-rose-400',
+  healthy: 'text-success',
+  degraded: 'text-warning',
+  breached: 'text-danger',
 }
 
 const SLA_BG: Record<string, string> = {
-  healthy: 'bg-emerald-50 dark:bg-emerald-950/20',
-  degraded: 'bg-amber-50 dark:bg-amber-950/20',
-  breached: 'bg-rose-50 dark:bg-rose-950/20',
+  healthy: 'bg-success-soft',
+  degraded: 'bg-warning-soft',
+  breached: 'bg-danger-soft',
 }
 
 // =============================================================================
@@ -83,11 +83,11 @@ export function CarrierSlaStateCard({
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5">
+      <div className="rounded-xl border border-border bg-card p-5">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
-          <div className="h-5 w-24 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
-          <div className="h-4 w-32 rounded bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+          <div className="h-8 w-8 rounded-full bg-surface-muted animate-pulse" />
+          <div className="h-5 w-24 rounded bg-surface-muted animate-pulse" />
+          <div className="h-4 w-32 rounded bg-surface-muted animate-pulse" />
         </div>
       </div>
     )
@@ -102,35 +102,35 @@ export function CarrierSlaStateCard({
   const iconWeight = resolvedState === 'breached' ? 'fill' : 'duotone'
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5 space-y-5">
+    <div className="rounded-xl border border-border bg-card p-5 space-y-5">
       {/* State pill */}
-      <div className={`flex flex-col items-center gap-2 rounded-lg p-4 ${bgClass}`}>
+      <div className={`flex flex-col items-center gap-2 rounded-md p-4 ${bgClass}`}>
         <Icon weight={iconWeight} className={`h-8 w-8 ${colorClass}`} />
         <p className={`text-lg font-semibold ${colorClass}`}>{stateLabel}</p>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+        <p className="text-xs text-fg-muted">
           {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.sla.since')}{' '}
           {formatElapsed(since, t)}
         </p>
         {reason && (
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1 text-center">{reason}</p>
+          <p className="text-sm text-fg-muted mt-1 text-center">{reason}</p>
         )}
       </div>
 
       {/* 30d sparklines */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <p className="text-xs font-mono uppercase tracking-wide text-neutral-500 mb-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-2">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.latency.title')}
           </p>
           <CarrierLatencySparkline data={p95Sparkline} />
         </div>
         <div>
-          <p className="text-xs font-mono uppercase tracking-wide text-neutral-500 mb-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-fg-muted mb-2">
             {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.errorRate.title')}
           </p>
           {errorRateSparkline.length === 0 ? (
             <div className="h-[160px] flex items-center justify-center">
-              <p className="text-xs text-neutral-400 text-center">
+              <p className="text-xs text-fg-muted text-center">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.carrier.noErrorRateData')}
               </p>
             </div>
@@ -145,8 +145,8 @@ export function CarrierSlaStateCard({
                     t('inmobiliaria.ai.cotizador.aseguradoras.carrier.charts.errorRate.tooltipLabel'),
                   ]}
                 />
-                <ReferenceLine y={0.05} stroke="#fca5a5" strokeDasharray="3 3" />
-                <Line type="monotone" dataKey="errorRate" stroke="#f43f5e" dot={false} strokeWidth={1.5} />
+                <ReferenceLine y={0.05} stroke="#E0A89E" strokeDasharray="3 3" />
+                <Line type="monotone" dataKey="errorRate" stroke="#C0392B" dot={false} strokeWidth={1.5} />
               </LineChart>
             </ResponsiveContainer>
           )}

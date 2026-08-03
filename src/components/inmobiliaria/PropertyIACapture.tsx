@@ -10,15 +10,25 @@ import {
   WarningCircle,
   ImageSquare,
   X,
-  Spinner as SpinnerIcon,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/spinner';
+import { Button, Input, Textarea } from '@/components/ui';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAuth } from '@/lib/auth/use-auth';
-import { propertiesApi } from '@/lib/api/properties.service';
+import { propertiesApi, createPublishedWithDraftFallback } from '@/lib/api/properties.service';
+import { uploadPropertyPhotos } from '@/lib/api/property-photos';
+import { PropertyLocationField, type PropertyLocationValue } from '@/components/publicar/PropertyLocationField';
 import { COLOMBIAN_CITIES } from '@/lib/types/property';
 import type { PropertyType } from '@/lib/types/property';
 import {
@@ -36,9 +46,6 @@ const PROPERTY_TYPES: { value: PropertyType; labelKey: string }[] = [
   { value: 'room', labelKey: 'typeRoom' },
 ];
 
-const inputClass =
-  'w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm transition-all';
-
 const MAX_PHOTOS = 4;
 // ~4 min cap so a forgotten recorder can't produce an oversized upload, and a
 // raw-size guard before sending (server caps the body at 28MB; webm voice is far
@@ -54,6 +61,10 @@ interface ReviewForm {
   city: string;
   neighborhood: string;
   address: string;
+  latitude?: number;
+  longitude?: number;
+  geocodePlaceId?: string;
+  coordsSource?: 'geocoded' | 'city';
   monthlyRent: string;
   bedrooms: string;
   bathrooms: string;
@@ -253,6 +264,22 @@ export function PropertyIACapture() {
     setForm((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
+  const updateLocation = (partial: PropertyLocationValue) => {
+    formEditedRef.current = true;
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            ...(partial.address !== undefined ? { address: partial.address } : {}),
+            latitude: partial.latitude,
+            longitude: partial.longitude,
+            geocodePlaceId: partial.geocodePlaceId,
+            coordsSource: partial.coordsSource,
+          }
+        : prev,
+    );
+  };
+
   const isValid =
     !!form &&
     !!form.title &&
@@ -271,7 +298,7 @@ export function PropertyIACapture() {
     setIsCreating(true);
     setErrorMsg(null);
     try {
-      const payload: Parameters<typeof propertiesApi.create>[0] = {
+      const payload: Parameters<typeof createPublishedWithDraftFallback>[0] = {
         title: form.title,
         description: form.description,
         type: form.type,
@@ -285,8 +312,32 @@ export function PropertyIACapture() {
       };
       if (Number(form.adminFee) > 0) payload.adminFee = Number(form.adminFee);
       if (Number(form.stratum) > 0) payload.stratum = Number(form.stratum);
+      if (typeof form.latitude === 'number' && typeof form.longitude === 'number') {
+        payload.latitude = form.latitude;
+        payload.longitude = form.longitude;
+      }
 
-      const property = await propertiesApi.create(payload);
+      // Publish on create (marketplace contract); on the plan-limit 403 the
+      // helper retries once as DRAFT so the reviewed ficha is never lost.
+      const { property, publishBlocked } = await createPublishedWithDraftFallback(payload);
+
+      if (publishBlocked) {
+        toast.warning(t(k('planLimitDraft')));
+      }
+
+      // The property exists from here on: photo/assign failures must never be
+      // surfaced as a creation error (a retry would duplicate the property).
+      if (photos.length > 0) {
+        const { failed } = await uploadPropertyPhotos(property.id, photos);
+        if (failed.length > 0) {
+          toast.warning(
+            t(k('photosUploadPartial'), {
+              failed: String(failed.length),
+              total: String(photos.length),
+            }),
+          );
+        }
+      }
 
       if (isAdmin && form.title /* admin self-skip handled by manual page */) {
         // mirror /nueva: agents auto-assign themselves; admins assign later from the list
@@ -318,11 +369,11 @@ export function PropertyIACapture() {
   if (step === 'review' && form) {
     return (
       <form onSubmit={handleCreate} className="space-y-5">
-        <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-3 flex items-start gap-2.5">
-          <Sparkle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" weight="fill" />
+        <div className="rounded-xl bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
+          <Sparkle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" />
           <div>
-            <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">{t(k('reviewBannerTitle'))}</p>
-            <p className="text-xs text-amber-600 dark:text-amber-300/90 mt-0.5">
+            <p className="text-xs font-semibold text-warning">{t(k('reviewBannerTitle'))}</p>
+            <p className="text-xs text-warning/90 mt-0.5">
               {t(k('reviewBannerDesc'), { confidence: String(confidencePct) })}
             </p>
           </div>
@@ -330,108 +381,103 @@ export function PropertyIACapture() {
 
         <section className="bg-card rounded-xl border border-border p-5 space-y-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">{t(k('fTitle'))} *</label>
-            <input type="text" value={form.title} onChange={(e) => updateForm('title', e.target.value)} className={inputClass} />
+            <label className="text-sm font-medium text-fg">{t(k('fTitle'))} *</label>
+            <Input type="text" value={form.title} onChange={(e) => updateForm('title', e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">{t(k('fDescription'))} *</label>
-            <textarea value={form.description} onChange={(e) => updateForm('description', e.target.value)} rows={4} className={cn(inputClass, 'resize-none')} />
+            <label className="text-sm font-medium text-fg">{t(k('fDescription'))} *</label>
+            <Textarea value={form.description} onChange={(e) => updateForm('description', e.target.value)} rows={4} className="resize-none" />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">{t(k('fType'))} *</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {PROPERTY_TYPES.map((pt) => (
-                <button
-                  key={pt.value}
-                  type="button"
-                  onClick={() => updateForm('type', pt.value)}
-                  className={cn(
-                    'px-3 py-2.5 rounded-xl border text-sm font-medium transition-all text-center',
-                    form.type === pt.value
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400'
-                      : 'border-border text-muted-foreground hover:border-indigo-300 hover:text-foreground',
-                  )}
-                >
-                  {t(k(pt.labelKey))}
-                </button>
-              ))}
-            </div>
+            <label className="text-sm font-medium text-fg">{t(k('fType'))} *</label>
+            <SegmentedControl<PropertyType>
+              aria-label={t(k('fType'))}
+              fullWidth
+              value={form.type}
+              onChange={(v) => updateForm('type', v)}
+              options={PROPERTY_TYPES.map((pt) => ({ value: pt.value, label: t(k(pt.labelKey)) }))}
+            />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">{t(k('fCity'))} *</label>
-              <select value={form.city} onChange={(e) => updateForm('city', e.target.value)} className={inputClass}>
-                <option value="">{t(k('selectCity'))}</option>
-                {COLOMBIAN_CITIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <label className="text-sm font-medium text-fg">{t(k('fCity'))} *</label>
+              <Select value={form.city || undefined} onValueChange={(v) => updateForm('city', v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t(k('selectCity'))} />
+                </SelectTrigger>
+                <SelectContent>
+                  {COLOMBIAN_CITIES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">{t(k('fNeighborhood'))} *</label>
-              <input type="text" value={form.neighborhood} onChange={(e) => updateForm('neighborhood', e.target.value)} className={inputClass} />
+              <label className="text-sm font-medium text-fg">{t(k('fNeighborhood'))} *</label>
+              <Input type="text" value={form.neighborhood} onChange={(e) => updateForm('neighborhood', e.target.value)} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">{t(k('fAddress'))} *</label>
-            <input type="text" value={form.address} onChange={(e) => updateForm('address', e.target.value)} className={inputClass} />
+            <label className="text-sm font-medium text-fg">{t(k('fAddress'))} *</label>
+            <PropertyLocationField
+              address={form.address}
+              city={form.city}
+              latitude={form.latitude}
+              longitude={form.longitude}
+              onChange={updateLocation}
+            />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">{t(k('fBedrooms'))} *</label>
-              <input type="number" min="0" value={form.bedrooms} onChange={(e) => updateForm('bedrooms', e.target.value)} className={inputClass} />
+              <label className="text-sm font-medium text-fg">{t(k('fBedrooms'))} *</label>
+              <Input type="number" min="0" value={form.bedrooms} onChange={(e) => updateForm('bedrooms', e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">{t(k('fBathrooms'))} *</label>
-              <input type="number" min="0" step="0.5" value={form.bathrooms} onChange={(e) => updateForm('bathrooms', e.target.value)} className={inputClass} />
+              <label className="text-sm font-medium text-fg">{t(k('fBathrooms'))} *</label>
+              <Input type="number" min="0" step="0.5" value={form.bathrooms} onChange={(e) => updateForm('bathrooms', e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">{t(k('fArea'))} *</label>
-              <input type="number" min="1" value={form.area} onChange={(e) => updateForm('area', e.target.value)} className={inputClass} />
+              <label className="text-sm font-medium text-fg">{t(k('fArea'))} *</label>
+              <Input type="number" min="1" value={form.area} onChange={(e) => updateForm('area', e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">{t(k('fRent'))} *</label>
-              <input type="number" min="1" value={form.monthlyRent} onChange={(e) => updateForm('monthlyRent', e.target.value)} className={inputClass} />
+              <label className="text-sm font-medium text-fg">{t(k('fRent'))} *</label>
+              <Input type="number" min="1" value={form.monthlyRent} onChange={(e) => updateForm('monthlyRent', e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">{t(k('fAdminFee'))}</label>
-              <input type="number" min="0" value={form.adminFee} onChange={(e) => updateForm('adminFee', e.target.value)} className={inputClass} />
+              <label className="text-sm font-medium text-fg">{t(k('fAdminFee'))}</label>
+              <Input type="number" min="0" value={form.adminFee} onChange={(e) => updateForm('adminFee', e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">{t(k('fStratum'))}</label>
-              <input type="number" min="1" max="6" value={form.stratum} onChange={(e) => updateForm('stratum', e.target.value)} className={inputClass} />
+              <label className="text-sm font-medium text-fg">{t(k('fStratum'))}</label>
+              <Input type="number" min="1" max="6" value={form.stratum} onChange={(e) => updateForm('stratum', e.target.value)} />
             </div>
           </div>
         </section>
 
         {errorMsg && (
-          <div className="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 text-rose-700 dark:text-rose-400 text-sm">
+          <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-danger text-sm">
             {errorMsg}
           </div>
         )}
 
         <div className="flex items-center gap-3 pb-6">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            hideArrow
             onClick={() => setStep('capture')}
-            className="px-5 py-2.5 rounded-xl border border-border text-foreground text-sm font-medium hover:bg-muted transition-colors"
           >
             {t(k('back'))}
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            hideArrow
+            isLoading={isCreating}
             disabled={!isValid || isCreating}
-            className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {isCreating ? (
-              <>
-                <SpinnerIcon className="w-4 h-4 animate-spin" />
-                {t(k('creating'))}
-              </>
-            ) : (
-              t(k('create'))
-            )}
-          </button>
+            {isCreating ? t(k('creating')) : t(k('create'))}
+          </Button>
         </div>
       </form>
     );
@@ -442,7 +488,7 @@ export function PropertyIACapture() {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
         <Spinner size="md" variant="muted" />
-        <p className="text-sm text-muted-foreground">{t(k('processing'))}</p>
+        <p className="text-sm text-fg-muted">{t(k('processing'))}</p>
       </div>
     );
   }
@@ -451,27 +497,21 @@ export function PropertyIACapture() {
   if (step === 'error') {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12 px-6 text-center">
-        <div className="w-14 h-14 rounded-full bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center">
-          <WarningCircle className="w-7 h-7 text-rose-600 dark:text-rose-400" />
+        <div className="w-14 h-14 rounded-full bg-danger-soft flex items-center justify-center">
+          <WarningCircle className="w-7 h-7 text-danger" weight="duotone" />
         </div>
         <div className="space-y-1">
-          <h3 className="text-h4 font-semibold text-foreground">{t(k('errorTitle'))}</h3>
-          <p className="text-body-sm text-muted-foreground max-w-sm">{errorMsg}</p>
+          <h3 className="text-base font-semibold text-fg">{t(k('errorTitle'))}</h3>
+          <p className="text-sm text-fg-muted max-w-sm">{errorMsg}</p>
         </div>
         <div className="flex items-center gap-2 mt-1">
-          <button
-            onClick={() => setStep('capture')}
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-mono uppercase tracking-wide text-xs transition-colors"
-          >
+          <Button variant="outline" hideArrow onClick={() => setStep('capture')}>
             <ArrowClockwise className="w-4 h-4" />
             {t(k('retry'))}
-          </button>
-          <button
-            onClick={() => router.push('/publicar')}
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground font-mono uppercase tracking-wide text-xs transition-transform active:scale-[0.97]"
-          >
+          </Button>
+          <Button hideArrow onClick={() => router.push('/panel/inmobiliaria/propiedades/nueva')}>
             {t(k('manualFlow'))}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -481,71 +521,77 @@ export function PropertyIACapture() {
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center flex-shrink-0">
-          <Sparkle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="fill" />
+        <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+          <Sparkle className="w-5 h-5 text-primary" weight="duotone" />
         </div>
-        <p className="text-body-sm text-muted-foreground">{t(k('intro'))}</p>
+        <p className="text-sm text-fg-muted">{t(k('intro'))}</p>
       </div>
 
       {/* Audio recorder */}
-      <section className="bg-card rounded-2xl border border-border p-5 space-y-4">
+      <section className="bg-card rounded-xl border border-border p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-foreground">{t(k('recordTitle'))}</h2>
+          <h2 className="text-base font-semibold text-fg">{t(k('recordTitle'))}</h2>
           {(isRecording || audioBlob) && (
-            <span className={cn('text-sm font-mono tabular-nums', isRecording ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground')}>
+            <span className={cn('text-sm font-mono tabular-nums', isRecording ? 'text-danger' : 'text-fg-muted')}>
               {mmss}
             </span>
           )}
         </div>
 
         {!audioBlob ? (
+          // allowlist: custom audio-recorder control (full-width dashed zone with a
+          // mic/stop icon-tile + animate-pulse recording state) — no Cadence recorder
+          // primitive; Button can't host the recorder layout. Kept native.
           <button
             type="button"
             onClick={isRecording ? stopRecording : startRecording}
             className={cn(
-              'w-full rounded-2xl border-2 border-dashed transition-colors p-8 flex flex-col items-center justify-center gap-3 text-center',
+              'w-full rounded-xl border-2 border-dashed transition-colors p-8 flex flex-col items-center justify-center gap-3 text-center',
               isRecording
-                ? 'border-rose-400 bg-rose-50/60 dark:bg-rose-950/20'
-                : 'border-border bg-muted/30 hover:bg-muted/50 hover:border-foreground/20',
+                ? 'border-danger/30 bg-danger-soft/60'
+                : 'border-border bg-surface-muted/40 hover:bg-surface-muted/70 hover:border-fg/20',
             )}
           >
             <div
               className={cn(
-                'w-14 h-14 rounded-2xl flex items-center justify-center',
-                isRecording ? 'bg-rose-100 dark:bg-rose-900/40 animate-pulse' : 'bg-indigo-50 dark:bg-indigo-950/40',
+                'w-14 h-14 rounded-xl flex items-center justify-center',
+                isRecording ? 'bg-danger-soft animate-pulse' : 'bg-primary-soft',
               )}
             >
               {isRecording ? (
-                <Stop className="w-7 h-7 text-rose-600 dark:text-rose-400" weight="fill" />
+                <Stop className="w-7 h-7 text-danger" weight="fill" />
               ) : (
-                <Microphone className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+                <Microphone className="w-7 h-7 text-primary" weight="duotone" />
               )}
             </div>
-            <p className="text-body-sm font-medium text-foreground">
+            <p className="text-sm font-medium text-fg">
               {isRecording ? t(k('stopRecording')) : t(k('startRecording'))}
             </p>
-            <p className="text-caption text-muted-foreground">{t(k('recordHint'))}</p>
+            <p className="text-xs text-fg-muted">{t(k('recordHint'))}</p>
           </button>
         ) : (
           <div className="space-y-3">
             {audioUrl && <audio controls src={audioUrl} className="w-full" aria-label={t(k('recordTitle'))} />}
-            <button
+            <Button
               type="button"
+              variant="link"
+              size="sm"
+              hideArrow
               onClick={reRecord}
-              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="gap-2 text-fg-muted"
             >
               <ArrowClockwise className="w-4 h-4" />
               {t(k('reRecord'))}
-            </button>
+            </Button>
           </div>
         )}
       </section>
 
       {/* Photos (optional) */}
-      <section className="bg-card rounded-2xl border border-border p-5 space-y-4">
+      <section className="bg-card rounded-xl border border-border p-5 space-y-4">
         <div>
-          <h2 className="font-semibold text-foreground">{t(k('photosTitle'))}</h2>
-          <p className="text-caption text-muted-foreground mt-0.5">{t(k('photosHint'))}</p>
+          <h2 className="text-base font-semibold text-fg">{t(k('photosTitle'))}</h2>
+          <p className="text-xs text-fg-muted mt-0.5">{t(k('photosHint'))}</p>
         </div>
         <input
           ref={photoInputRef}
@@ -558,21 +604,24 @@ export function PropertyIACapture() {
         <div className="flex flex-wrap gap-3">
           {photoUrls.map((url, i) => (
             <div key={url} className="relative w-20 h-20 rounded-xl border border-border bg-center bg-cover" style={{ backgroundImage: `url(${url})` }}>
-              <button
+              <IconButton
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => removePhoto(i)}
                 aria-label={t(k('removePhoto'))}
-                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-card border border-border flex items-center justify-center shadow-sm hover:bg-muted"
-              >
-                <X className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
+                className="absolute -top-2 -right-2 h-6 w-6 min-h-0 min-w-0 rounded-full bg-card text-fg-muted"
+                icon={<X className="w-3.5 h-3.5" />}
+              />
             </div>
           ))}
           {photos.length < MAX_PHOTOS && (
+            // allowlist: custom photo-add tile (square dashed dropzone opening the hidden
+            // file input) — image-tile/dropzone precedent; Button can't host the tile. Native.
             <button
               type="button"
               onClick={() => photoInputRef.current?.click()}
-              className="w-20 h-20 rounded-xl border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 flex flex-col items-center justify-center gap-1 text-muted-foreground transition-colors"
+              className="w-20 h-20 rounded-xl border-2 border-dashed border-border bg-surface-muted/40 hover:bg-surface-muted/70 flex flex-col items-center justify-center gap-1 text-fg-muted transition-colors"
             >
               <ImageSquare className="w-5 h-5" />
               <span className="text-[10px] font-medium">{t(k('addPhotos'))}</span>
@@ -582,20 +631,23 @@ export function PropertyIACapture() {
       </section>
 
       <div className="flex items-center justify-end gap-2 pb-6">
-        <button
+        <Button
+          type="button"
+          variant="secondary"
+          hideArrow
           onClick={() => router.push('/panel/inmobiliaria/propiedades')}
-          className="h-11 px-4 rounded-xl border border-border bg-card hover:bg-muted text-foreground font-mono uppercase tracking-wide text-sm transition-colors"
         >
           {t(k('cancel'))}
-        </button>
-        <button
+        </Button>
+        <Button
+          type="button"
+          hideArrow
           onClick={handleExtract}
           disabled={!audioBlob || isRecording}
-          className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-primary text-primary-foreground font-mono uppercase tracking-wide text-sm transition-transform active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Sparkle className="w-4 h-4" weight="fill" />
           {t(k('process'))}
-        </button>
+        </Button>
       </div>
     </div>
   );

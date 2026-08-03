@@ -30,10 +30,10 @@ const KIND_PRESENTATION: Record<
 
 /** Acento por severidad (icon circle + dot). */
 const SEVERITY_STYLE: Record<InsightSeverity, { wrap: string; color: string; dot: string }> = {
-  critical: { wrap: 'bg-rose-50 dark:bg-rose-950/40', color: 'text-rose-600 dark:text-rose-400', dot: 'bg-rose-500' },
-  warning: { wrap: 'bg-amber-50 dark:bg-amber-950/40', color: 'text-amber-600 dark:text-amber-400', dot: 'bg-amber-500' },
-  info: { wrap: 'bg-indigo-50 dark:bg-indigo-950/40', color: 'text-indigo-600 dark:text-indigo-400', dot: 'bg-indigo-500' },
-  success: { wrap: 'bg-emerald-50 dark:bg-emerald-950/40', color: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
+  critical: { wrap: 'bg-danger-soft', color: 'text-danger', dot: 'bg-danger' },
+  warning: { wrap: 'bg-warning-soft', color: 'text-warning', dot: 'bg-warning' },
+  info: { wrap: 'bg-primary-soft', color: 'text-primary', dot: 'bg-primary' },
+  success: { wrap: 'bg-success-soft', color: 'text-success', dot: 'bg-success' },
 };
 
 interface InsightsPanelProps {
@@ -55,19 +55,19 @@ export function InsightsPanel({ insights, preview, className }: InsightsPanelPro
   }
 
   return (
-    <section className={cn('rounded-2xl border border-border bg-card p-6 space-y-5', className)}>
+    <section className={cn('rounded-xl border border-border bg-card p-6 space-y-5', className)}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center flex-shrink-0">
-            <Sparkle className="w-5 h-5 text-indigo-600 dark:text-indigo-400" weight="fill" />
+          <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+            <Sparkle className="w-5 h-5 text-primary" weight="fill" />
           </div>
           <div>
-            <h2 className="text-h4 text-foreground">{t(k('label'))}</h2>
-            <p className="text-body-sm text-muted-foreground mt-0.5">{t(k('subtitle'))}</p>
+            <h2 className="text-base font-semibold text-fg">{t(k('label'))}</h2>
+            <p className="text-sm text-fg-muted mt-0.5">{t(k('subtitle'))}</p>
           </div>
         </div>
         {preview && (
-          <span className="flex-shrink-0 text-[10px] font-mono uppercase tracking-wide px-2 py-1 rounded-full bg-muted text-muted-foreground">
+          <span className="flex-shrink-0 text-[10px] font-medium uppercase tracking-wide px-2 py-1 rounded-full bg-muted text-muted-foreground">
             {t(k('previewBadge'))}
           </span>
         )}
@@ -75,11 +75,11 @@ export function InsightsPanel({ insights, preview, className }: InsightsPanelPro
 
       {insights.length === 0 ? (
         <div className="rounded-xl bg-muted/30 py-10 px-6 text-center">
-          <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center mx-auto mb-3">
-            <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-12 h-12 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-3">
+            <CheckCircle className="w-6 h-6 text-success" />
           </div>
-          <p className="text-body-sm font-medium text-foreground">{t(k('emptyTitle'))}</p>
-          <p className="text-caption text-muted-foreground mt-0.5">{t(k('emptyDesc'))}</p>
+          <p className="text-sm font-medium text-fg">{t(k('emptyTitle'))}</p>
+          <p className="text-xs text-fg-muted mt-0.5">{t(k('emptyDesc'))}</p>
         </div>
       ) : (
         <div className="space-y-2.5">
@@ -93,11 +93,11 @@ export function InsightsPanel({ insights, preview, className }: InsightsPanelPro
                 href={pres.href}
                 className="group flex items-center gap-3 rounded-xl border border-border bg-background hover:bg-muted/50 hover:border-foreground/15 transition-colors p-3.5"
               >
-                <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0', sev.wrap)}>
+                <div className={cn('w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0', sev.wrap)}>
                   <Icon className={cn('w-[18px] h-[18px]', sev.color)} />
                 </div>
-                <p className="flex-1 text-body-sm text-foreground">{t(k(pres.titleKey), displayParams(ins))}</p>
-                <span className="flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                <p className="flex-1 text-sm text-fg">{t(k(pres.titleKey), displayParams(ins))}</p>
+                <span className="flex items-center gap-1 text-xs font-medium text-primary flex-shrink-0">
                   <span className="hidden sm:inline">{t(k(pres.actionKey))}</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </span>

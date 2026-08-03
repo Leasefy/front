@@ -1,5 +1,7 @@
 'use client'
 
+import { MonoLabel } from '@leasefy/cadence'
+
 import { useI18n } from '@/lib/i18n'
 import { type CarteraStage, stageColorClasses, STAGE_LABELS_ES, STAGE_LABELS_EN } from '@/lib/cartera'
 
@@ -15,16 +17,16 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5">
-        <div className="h-10 w-full rounded-xl bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
+      <div className="rounded-xl border border-border bg-surface p-5">
+        <div className="h-10 w-full rounded-xl bg-surface-muted animate-pulse" />
       </div>
     )
   }
 
   if (total === 0) {
     return (
-      <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5">
-        <div className="flex items-center justify-center h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-sm text-neutral-400">
+      <div className="rounded-xl border border-border bg-surface p-5">
+        <div className="flex items-center justify-center h-10 rounded-xl bg-surface-muted text-sm text-fg-subtle">
           {t('inmobiliaria.ai.cobranza.overview.funnel.empty')}
         </div>
       </div>
@@ -39,7 +41,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
   }))
 
   return (
-    <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-5">
+    <div className="rounded-xl border border-border bg-surface p-5">
       {/* Horizontal bar — md+ */}
       <div
         className="hidden md:flex rounded-xl overflow-hidden h-10"
@@ -77,15 +79,18 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
       {/* Legend */}
       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
         {stagesWithPct.map(({ stage, pct, colors, label }) => (
-          <div key={stage} className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+          <div key={stage} className="flex items-center gap-1.5 text-xs text-fg-subtle">
             <span className={`inline-block w-2.5 h-2.5 rounded-sm ${colors.bg} border ${colors.border}`} />
-            <span className="font-mono uppercase tracking-wide">{stage}</span>
-            <span className="opacity-70">{pct.toFixed(1)}%</span>
+            <MonoLabel className="text-fg-subtle">{stage}</MonoLabel>
+            <span className="opacity-70 font-mono tabular-nums">{pct.toFixed(1)}%</span>
           </div>
         ))}
       </div>
 
-      {/* Accessible fallback table (sr-only) */}
+      {/* ALLOWLIST: sr-only accessibility-fallback table for the chart's
+          aria-describedby. Cadence `Table` injects a visible scroll-wrapper
+          <div> and drops <caption> (no DS equivalent), degrading the
+          screen-reader fallback semantics with no visual benefit. Kept native. */}
       <table className="sr-only" id="funnel-summary-table">
         <caption>{t('inmobiliaria.ai.cobranza.overview.funnel.tableCaption')}</caption>
         <thead>

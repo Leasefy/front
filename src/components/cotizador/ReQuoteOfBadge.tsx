@@ -26,7 +26,7 @@ export function ReQuoteOfBadge({ parentId }: ReQuoteOfBadgeProps): React.JSX.Ele
 
   return (
     <Link
-      href={`/panel/inmobiliaria/ai/cotizador/${parentId}`}
+      href={`/panel/inmobiliaria/ai/asegurabilidad/${parentId}`}
       data-testid="re-quote-of-badge"
       className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
     >

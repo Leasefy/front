@@ -94,15 +94,15 @@ export function AIExplanation({
     <Card className={cn('p-6', className)}>
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
-        <div className="p-2 rounded-sm bg-primary/10">
+        <div className="p-2 rounded-[14px] bg-primary-soft">
           <Robot className="h-5 w-5 text-primary" />
         </div>
-        <h3 className="font-semibold text-foreground">Analisis del Asesor</h3>
+        <h3 className="font-semibold text-fg">Analisis del Asesor</h3>
       </div>
 
       {/* Main Explanation Text */}
       <div className="mb-6">
-        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+        <p className="text-sm text-fg-muted leading-relaxed whitespace-pre-wrap">
           &ldquo;{displayText}&rdquo;
           {animate && !isComplete && (
             <span className="inline-block w-0.5 h-4 ml-0.5 bg-primary animate-pulse" />

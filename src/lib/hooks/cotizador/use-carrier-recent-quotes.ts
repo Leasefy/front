@@ -80,7 +80,7 @@ export function useCarrierRecentQuotes(carrier: string): UseCarrierRecentQuotesR
   }, [agencyId, carrier])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     void fetchOnce()
     const id = setInterval(() => {
       void fetchOnce()

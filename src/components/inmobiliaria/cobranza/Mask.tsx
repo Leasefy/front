@@ -48,7 +48,7 @@ const LockGlyph = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className="inline-block text-neutral-400 dark:text-neutral-500"
+    className="inline-block text-fg-subtle"
   >
     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -71,7 +71,7 @@ export function Mask({ field, value, onReveal, rawValue, countdownSeconds, class
         data-pii-revealed="true"
         className={
           'inline-flex items-center gap-1 font-mono text-sm tracking-tight ' +
-          'text-violet-700 dark:text-violet-300 ' +
+          'text-fg-muted ' +
           (className ?? '')
         }
       >
@@ -79,7 +79,7 @@ export function Mask({ field, value, onReveal, rawValue, countdownSeconds, class
         {countdownSeconds != null && countdownSeconds > 0 && (
           <span
             aria-label={`tiempo restante ${formatCountdown(countdownSeconds)}`}
-            className="px-1 py-0.5 rounded text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+            className="px-1 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-fg-muted"
           >
             {formatCountdown(countdownSeconds)}
           </span>
@@ -95,7 +95,7 @@ export function Mask({ field, value, onReveal, rawValue, countdownSeconds, class
       <span
         aria-label="sin dato"
         className={
-          'text-neutral-400 dark:text-neutral-500 ' + (className ?? '')
+          'text-fg-subtle ' + (className ?? '')
         }
       >
         —
@@ -115,7 +115,7 @@ export function Mask({ field, value, onReveal, rawValue, countdownSeconds, class
         data-pii-field={field}
         className={
           'inline-flex items-center gap-1 font-mono text-sm tracking-tight ' +
-          'text-neutral-700 dark:text-neutral-200 ' +
+          'text-fg-muted ' +
           (className ?? '')
         }
       >
@@ -148,9 +148,9 @@ export function Mask({ field, value, onReveal, rawValue, countdownSeconds, class
       onKeyDown={handleKey}
       className={
         'inline-flex items-center gap-1 font-mono text-sm tracking-tight ' +
-        'text-neutral-700 dark:text-neutral-200 cursor-pointer ' +
-        'hover:text-violet-600 dark:hover:text-violet-400 focus:outline-none ' +
-        'focus-visible:ring-2 focus-visible:ring-violet-500 rounded-sm ' +
+        'text-fg-muted cursor-pointer ' +
+        'hover:text-fg-muted focus:outline-none ' +
+        'focus-visible:ring-2 focus-visible:ring-fg-muted rounded-sm ' +
         (className ?? '')
       }
     >

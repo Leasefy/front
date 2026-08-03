@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   SortAscending,
   SortDescending,
@@ -16,12 +16,38 @@ import {
   WhatsappLogo,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { IconButton } from '@leasefy/cadence';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
+import {
+  DropdownList,
+  DropdownListTrigger,
+  DropdownListContent,
+  DropdownListItem,
+} from '@/components/ui/dropdown-menu';
 import { useI18n } from '@/lib/i18n';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
-import { formatCurrency as formatCurrencyUtil, getCobroStatusColor } from '@/lib/types/inmobiliaria';
+import { formatCurrency as formatCurrencyUtil } from '@/lib/types/inmobiliaria';
 
 type SortField = 'propertyTitle' | 'tenantName' | 'month' | 'totalAmount' | 'paidAmount' | 'pendingAmount' | 'status' | 'daysLate' | 'dueDate';
 type SortDirection = 'asc' | 'desc';
+
+// Mapeo status → variant del Badge de Cadence (reemplaza getCobroStatusColor).
+const STATUS_BADGE_VARIANT = {
+  pending: 'warning',
+  paid: 'success',
+  partial: 'default',
+  late: 'destructive',
+  defaulted: 'destructive',
+} as const;
 
 interface CobroTableProps {
   cobros: Cobro[];
@@ -43,7 +69,6 @@ export function CobroTable({
   const { t, formatDate, formatCurrency } = useI18n();
   const [sortField, setSortField] = useState<SortField>('dueDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Status labels from i18n
   const STATUS_LABELS: Record<CobroStatus, string> = {
@@ -149,22 +174,23 @@ export function CobroTable({
   const SortIcon = sortDirection === 'asc' ? SortAscending : SortDescending;
 
   const SortableHeader = ({ field, children, className }: { field: SortField; children: React.ReactNode; className?: string }) => (
-    <th className={cn('text-left p-4', className)}>
+    <TableHead className={cn('text-left p-4', className)}>
+      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+        className="flex items-center gap-2 hover:text-foreground"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
       </button>
-    </th>
+    </TableHead>
   );
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[1000px]">
-        <thead>
-          <tr className="border-b border-border">
+      <Table className="min-w-[1000px]">
+        <TableHeader>
+          <TableRow className="border-b border-border">
             <SortableHeader field="propertyTitle">{t('inmobiliaria.cobros.table.property')}</SortableHeader>
             <SortableHeader field="tenantName">{t('inmobiliaria.cobros.table.tenant')}</SortableHeader>
             <SortableHeader field="month">{t('inmobiliaria.cobros.table.month')}</SortableHeader>
@@ -173,12 +199,11 @@ export function CobroTable({
             <SortableHeader field="pendingAmount">{t('inmobiliaria.cobros.table.pending')}</SortableHeader>
             <SortableHeader field="status">{t('inmobiliaria.cobros.table.status')}</SortableHeader>
             <SortableHeader field="daysLate">{t('inmobiliaria.cobros.table.lateLabel')}</SortableHeader>
-            <th className="w-12 p-4"></th>
-          </tr>
-        </thead>
-        <tbody>
+            <TableHead className="w-12 p-4" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {sortedCobros.map((cobro, index) => {
-            const statusColor = getCobroStatusColor(cobro.status);
             const statusLabel = STATUS_LABELS[cobro.status];
 
             return (
@@ -191,10 +216,10 @@ export function CobroTable({
                 className="hover:bg-muted/50 cursor-pointer transition-colors"
               >
                 {/* Property */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                      <HouseLine className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    <div className="w-10 h-10 rounded-md bg-surface-brand flex items-center justify-center shrink-0">
+                      <HouseLine className="w-5 h-5 text-primary" />
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate max-w-[180px]">
@@ -205,191 +230,171 @@ export function CobroTable({
                       </p>
                     </div>
                   </div>
-                </td>
+                </TableCell>
 
                 {/* Tenant */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                      <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <div className="w-8 h-8 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center shrink-0">
+                      <User className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate max-w-[140px]">
                         {cobro.tenantName}
                       </p>
                       <div className="flex items-center gap-2">
-                        <a
-                          href={`mailto:${cobro.tenantEmail}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-1 rounded hover:bg-muted transition-colors"
-                          title={t('inmobiliaria.cobros.table.sendEmail')}
-                        >
-                          <Envelope className="w-3.5 h-3.5 text-muted-foreground" />
-                        </a>
-                        <a
-                          href={`https://wa.me/${cobro.tenantPhone.replace(/\D/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
-                          title="WhatsApp"
-                        >
-                          <WhatsappLogo className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" weight="fill" />
-                        </a>
+                        {cobro.tenantEmail && (
+                          <a
+                            href={`mailto:${cobro.tenantEmail}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1 rounded hover:bg-muted transition-colors"
+                            title={t('inmobiliaria.cobros.table.sendEmail')}
+                          >
+                            <Envelope className="w-3.5 h-3.5 text-muted-foreground" />
+                          </a>
+                        )}
+                        {cobro.tenantPhone && (
+                          <a
+                            href={`https://wa.me/${cobro.tenantPhone.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1 rounded hover:bg-success-soft dark:hover:bg-success/30 transition-colors"
+                            title="WhatsApp"
+                          >
+                            <WhatsappLogo className="w-3.5 h-3.5 text-success" weight="fill" />
+                          </a>
+                        )}
                       </div>
                     </div>
                   </div>
-                </td>
+                </TableCell>
 
                 {/* Month */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   <span className="text-foreground capitalize">
                     {formatMonth(cobro.month)}
                   </span>
-                </td>
+                </TableCell>
 
                 {/* Total */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   <span className="font-semibold text-foreground">
                     {formatCurrency(cobro.totalAmount)}
                   </span>
-                </td>
+                </TableCell>
 
                 {/* Paid */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   <span className={cn(
                     'font-medium',
                     cobro.paidAmount >= cobro.totalAmount
-                      ? 'text-emerald-600 dark:text-emerald-400'
+                      ? 'text-success'
                       : cobro.paidAmount > 0
-                      ? 'text-blue-600 dark:text-blue-400'
+                      ? 'text-primary'
                       : 'text-muted-foreground'
                   )}>
                     {formatCurrency(cobro.paidAmount)}
                   </span>
-                </td>
+                </TableCell>
 
                 {/* Pending */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   <span className={cn(
                     'font-medium',
                     cobro.pendingAmount > 0 && cobro.daysLate > 0
-                      ? 'text-red-600 dark:text-red-400'
+                      ? 'text-danger'
                       : cobro.pendingAmount > 0
-                      ? 'text-amber-600 dark:text-amber-400'
+                      ? 'text-warning'
                       : 'text-muted-foreground'
                   )}>
                     {formatCurrency(cobro.pendingAmount)}
                   </span>
-                </td>
+                </TableCell>
 
                 {/* Status */}
-                <td className="p-4">
-                  <span className={cn('inline-flex px-2.5 py-1 rounded-full text-xs font-medium', statusColor)}>
+                <TableCell className="p-4">
+                  <Badge variant={STATUS_BADGE_VARIANT[cobro.status]}>
                     {statusLabel}
-                  </span>
-                </td>
+                  </Badge>
+                </TableCell>
 
                 {/* Days Late */}
-                <td className="p-4">
+                <TableCell className="p-4">
                   {cobro.daysLate > 0 ? (
-                    <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400">
+                    <div className="flex items-center gap-1.5 text-warning">
                       <Warning className="w-4 h-4" weight="fill" />
                       <span className="text-sm font-medium">{cobro.daysLate}d</span>
                     </div>
                   ) : cobro.status === 'paid' ? (
-                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                    <div className="flex items-center gap-1.5 text-success">
                       <CheckCircle className="w-4 h-4" weight="fill" />
                     </div>
                   ) : (
                     <span className="text-muted-foreground">&mdash;</span>
                   )}
-                </td>
+                </TableCell>
 
                 {/* Actions */}
-                <td className="p-4">
-                  <div className="relative">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenMenuId(openMenuId === cobro.id ? null : cobro.id);
-                      }}
-                      className="p-2 rounded-lg hover:bg-muted transition-colors"
-                    >
-                      <DotsThree className="w-5 h-5 text-muted-foreground" weight="bold" />
-                    </button>
-
-                    <AnimatePresence>
-                      {openMenuId === cobro.id && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          className="absolute right-0 top-full mt-1 w-44 p-2 rounded-xl border border-border bg-card shadow-xl z-10"
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onCobroClick?.(cobro);
-                              setOpenMenuId(null);
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-foreground hover:bg-muted transition-colors"
-                          >
-                            <Eye className="w-4 h-4" />
-                            <span className="text-sm">{t('inmobiliaria.cobros.table.viewDetail')}</span>
-                          </button>
-                          {cobro.status !== 'paid' && onRegisterPayment && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onRegisterPayment(cobro);
-                                setOpenMenuId(null);
-                              }}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
-                            >
-                              <CurrencyCircleDollar className="w-4 h-4" />
-                              <span className="text-sm">{t('inmobiliaria.cobros.table.registerPayment')}</span>
-                            </button>
-                          )}
-                        </motion.div>
+                <TableCell className="p-4">
+                  <DropdownList>
+                    <DropdownListTrigger asChild>
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        icon={<DotsThree className="w-5 h-5" weight="bold" />}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label="Acciones"
+                      />
+                    </DropdownListTrigger>
+                    <DropdownListContent align="end" className="w-44">
+                      <DropdownListItem onSelect={() => onCobroClick?.(cobro)}>
+                        <Eye className="w-4 h-4" />
+                        <span className="text-sm">{t('inmobiliaria.cobros.table.viewDetail')}</span>
+                      </DropdownListItem>
+                      {cobro.status !== 'paid' && onRegisterPayment && (
+                        <DropdownListItem onSelect={() => onRegisterPayment(cobro)} className="text-primary">
+                          <CurrencyCircleDollar className="w-4 h-4" />
+                          <span className="text-sm">{t('inmobiliaria.cobros.table.registerPayment')}</span>
+                        </DropdownListItem>
                       )}
-                    </AnimatePresence>
-                  </div>
-                </td>
+                    </DropdownListContent>
+                  </DropdownList>
+                </TableCell>
               </motion.tr>
             );
           })}
-        </tbody>
+        </TableBody>
 
         {/* Summary Row */}
         {showSummary && cobros.length > 0 && (
-          <tfoot>
-            <tr className="bg-muted/30 border-t border-border">
-              <td colSpan={3} className="p-4">
+          <TableFooter>
+            <TableRow className="bg-muted/30 border-t border-border">
+              <TableCell colSpan={3} className="p-4">
                 <span className="font-semibold text-foreground">
                   {t('inmobiliaria.cobros.table.totalSummary', { count: cobros.length })}
                 </span>
-              </td>
-              <td className="p-4">
+              </TableCell>
+              <TableCell className="p-4">
                 <span className="font-bold text-foreground">
                   {formatCurrency(summary.totalExpected)}
                 </span>
-              </td>
-              <td className="p-4">
-                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+              </TableCell>
+              <TableCell className="p-4">
+                <span className="font-bold text-success">
                   {formatCurrency(summary.totalCollected)}
                 </span>
-              </td>
-              <td className="p-4">
-                <span className="font-bold text-amber-600 dark:text-amber-400">
+              </TableCell>
+              <TableCell className="p-4">
+                <span className="font-bold text-warning">
                   {formatCurrency(summary.totalPending)}
                 </span>
-              </td>
-              <td colSpan={3}></td>
-            </tr>
-          </tfoot>
+              </TableCell>
+              <TableCell colSpan={3} />
+            </TableRow>
+          </TableFooter>
         )}
-      </table>
+      </Table>
 
       {/* Empty State */}
       {sortedCobros.length === 0 && (
@@ -404,14 +409,6 @@ export function CobroTable({
             {t('inmobiliaria.cobros.table.noCollectionsDesc')}
           </p>
         </div>
-      )}
-
-      {/* Close dropdown on click outside */}
-      {openMenuId && (
-        <div
-          className="fixed inset-0 z-[5]"
-          onClick={() => setOpenMenuId(null)}
-        />
       )}
     </div>
   );

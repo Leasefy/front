@@ -11,11 +11,12 @@ import {
   CaretLeft,
   CaretRight,
   Check,
-  SpinnerGap,
   FloppyDisk,
   House,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import type {
@@ -174,10 +175,9 @@ export function ActaEntregaForm({
     };
 
     onSaveDraft?.(draftActa);
-    toast.success({
-      title: t('inmobiliaria.acta.draftSaved'),
-      description: t('inmobiliaria.acta.draftSavedDesc'),
-    });
+    toast.success(t('inmobiliaria.acta.draftSaved'), {
+        description: t('inmobiliaria.acta.draftSavedDesc'),
+      });
   }, [formData, selectedConsignacion, onSaveDraft]);
 
   // Submit handler
@@ -214,14 +214,12 @@ export function ActaEntregaForm({
       // on failure, so we await it to keep isSubmitting active and to catch errors.
       await onSave?.(acta);
 
-      toast.success({
-        title: t('inmobiliaria.acta.actaCreated'),
+      toast.success(t('inmobiliaria.acta.actaCreated'), {
         description: t('inmobiliaria.acta.actaCreatedDesc'),
       });
     } catch (error) {
       console.error('Error creating acta:', error);
-      toast.error({
-        title: t('inmobiliaria.acta.actaError'),
+      toast.error(t('inmobiliaria.acta.actaError'), {
         description: t('inmobiliaria.acta.actaErrorDesc'),
       });
     } finally {
@@ -289,10 +287,10 @@ export function ActaEntregaForm({
                     className={cn(
                       'w-12 h-12 rounded-full flex items-center justify-center transition-all',
                       status === 'completed'
-                        ? 'bg-emerald-500 text-white'
+                        ? 'bg-success-fg text-white'
                         : status === 'current'
-                        ? 'bg-indigo-600 text-white uppercase tracking-wide font-mono ring-4 ring-indigo-500/20'
-                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-surface-muted text-fg-muted'
                     )}
                   >
                     {status === 'completed' ? (
@@ -305,10 +303,10 @@ export function ActaEntregaForm({
                     className={cn(
                       'text-xs font-medium',
                       status === 'current'
-                        ? 'text-indigo-600 dark:text-indigo-400'
+                        ? 'text-primary'
                         : status === 'completed'
-                        ? 'text-neutral-900 dark:text-white'
-                        : 'text-neutral-400'
+                        ? 'text-foreground'
+                        : 'text-fg-muted'
                     )}
                   >
                     {t(step.labelKey)}
@@ -321,8 +319,8 @@ export function ActaEntregaForm({
                     className={cn(
                       'flex-1 h-0.5 mx-2',
                       step.id < currentStep
-                        ? 'bg-emerald-500'
-                        : 'bg-neutral-200 dark:bg-neutral-700'
+                        ? 'bg-success-fg'
+                        : 'bg-border'
                     )}
                   />
                 )}
@@ -334,16 +332,16 @@ export function ActaEntregaForm({
         {/* Mobile Progress */}
         <div className="md:hidden">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-neutral-900 dark:text-white">
+            <span className="text-sm font-medium text-foreground">
               {t('inmobiliaria.acta.stepProgress', { current: currentStep, total: 6 })}: {t(STEP_KEYS[currentStep - 1]?.labelKey)}
             </span>
-            <span className="text-sm text-neutral-500">
+            <span className="text-sm text-fg-muted">
               {Math.round((currentStep / 6) * 100)}%
             </span>
           </div>
-          <div className="h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-indigo-600"
+              className="h-full bg-primary"
               initial={false}
               animate={{ width: `${(currentStep / 6) * 100}%` }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -353,7 +351,7 @@ export function ActaEntregaForm({
       </div>
 
       {/* Step Content */}
-      <div className="bg-white dark:bg-[#1a1a1c] rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -369,63 +367,70 @@ export function ActaEntregaForm({
         </div>
 
         {/* Footer Navigation */}
-        <div className="px-6 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-[#141416]">
+        <div className="px-6 py-4 border-t border-border bg-surface-muted/40">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {currentStep > 1 && (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  hideArrow
                   onClick={goToPreviousStep}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  className="gap-1.5"
                 >
                   <CaretLeft className="w-4 h-4" />
                   {t('inmobiliaria.acta.previous')}
-                </button>
+                </Button>
               )}
               {onCancel && (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  hideArrow
                   onClick={onCancel}
-                  className="px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                 >
                   {t('inmobiliaria.acta.cancel')}
-                </button>
+                </Button>
               )}
             </div>
 
             <div className="flex items-center gap-2">
               {/* Save Draft */}
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                hideArrow
                 onClick={handleSaveDraft}
                 disabled={!formData.consignacionId}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="gap-1.5"
               >
                 <FloppyDisk className="w-4 h-4" />
                 {t('inmobiliaria.acta.saveDraft')}
-              </button>
+              </Button>
 
               {/* Next / Submit */}
               {currentStep < 6 ? (
-                <button
+                <Button
                   type="button"
+                  hideArrow
                   onClick={goToNextStep}
                   disabled={!isStepValid}
-                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-indigo-600 text-white uppercase tracking-wide font-mono font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="gap-1.5"
                 >
                   {t('inmobiliaria.acta.next')}
                   <CaretRight className="w-4 h-4" />
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   type="button"
+                  hideArrow
                   onClick={handleSubmit}
                   disabled={isSubmitting || isLoading}
-                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="gap-1.5"
                 >
                   {isSubmitting ? (
                     <>
-                      <SpinnerGap className="w-4 h-4 animate-spin" />
+                      <Spinner size="sm" variant="current" />
                       {t('inmobiliaria.acta.creating')}
                     </>
                   ) : (
@@ -434,7 +439,7 @@ export function ActaEntregaForm({
                       {t('inmobiliaria.acta.createActa')}
                     </>
                   )}
-                </button>
+                </Button>
               )}
             </div>
           </div>

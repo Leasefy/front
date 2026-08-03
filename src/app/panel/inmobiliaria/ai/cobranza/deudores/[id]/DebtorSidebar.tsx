@@ -1,13 +1,17 @@
 'use client'
 
 /**
- * DebtorSidebar — Phase 31 plan 31-09.
+ * DebtorSidebar — vista de caso (visión #14), zona IZQUIERDA "Contexto".
  *
- * Renders the next-action card + contact-attempts countdown + isPaused badge.
- * Includes a 1s relative-time ticker (no realtime channel needed per CONTEXT).
+ * Renders the human case state (humanCaseState key computed by the parent),
+ * the case KPIs the API already sends (kpis.totalOwed / paymentsCount /
+ * callsCount — previously dropped on the floor), the contact-attempts
+ * counter, the paused notice, and the 4 masked PII rows.
  *
- * Also renders the 4 masked PII rows (cedula, phone, email, fiador_cedula).
- * Each row's <Mask> is wired with rawValue + countdownSeconds from the
+ * The next-action card moved to DebtorActionRail (right zone). The 1s ticker
+ * stays — it drives the PII reveal countdown.
+ *
+ * Each PII row's <Mask> is wired with rawValue + countdownSeconds from the
  * PIIRevealContext via the parent's lifted state (Task 6 wiring).
  */
 
@@ -15,49 +19,32 @@ import * as React from 'react'
 import { useEffect, useState } from 'react'
 
 import { useI18n } from '@/lib/i18n'
+import { MonoLabel } from '@leasefy/cadence'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import type { DebtorDetailResponse } from '@/lib/hooks/cobranza/use-debtor-detail'
 import { usePIIRevealContext, type PIIFieldKey } from '@/lib/context/PIIRevealContext'
 
 void React
 
+const NS = 'inmobiliaria.ai.cobranza'
+
 interface DebtorSidebarProps {
   data: DebtorDetailResponse | null
   isLoading: boolean
   onRevealRequest: (field: PIIFieldKey) => void
+  /** Full i18n key from humanCaseState() — computed by the parent. */
+  caseStateKey?: string | null
 }
 
-function formatRelative(iso: string, now: number, locale: string): string {
-  const diffMs = new Date(iso).getTime() - now
-  const futureLabel = locale === 'es' ? 'en' : 'in'
-  const pastLabelEs = 'hace'
-  const isFuture = diffMs >= 0
-  const absMs = Math.abs(diffMs)
-  const mins = Math.floor(absMs / 60_000)
-  if (mins < 1) return locale === 'es' ? 'ahora mismo' : 'just now'
-  if (mins < 60) {
-    return isFuture
-      ? `${futureLabel} ${mins}min`
-      : `${locale === 'es' ? pastLabelEs : 'ago'} ${mins}min`
-  }
-  const hrs = Math.floor(mins / 60)
-  const remMins = mins % 60
-  if (hrs < 24) {
-    return isFuture
-      ? `${futureLabel} ${hrs}h ${remMins}m`
-      : `${locale === 'es' ? pastLabelEs : 'ago'} ${hrs}h`
-  }
-  const days = Math.floor(hrs / 24)
-  return isFuture
-    ? `${futureLabel} ${days}d`
-    : `${locale === 'es' ? pastLabelEs : 'ago'} ${days}d`
-}
-
-export function DebtorSidebar({ data, isLoading, onRevealRequest }: DebtorSidebarProps) {
-  const { t, locale } = useI18n()
+export function DebtorSidebar({
+  data,
+  isLoading,
+  onRevealRequest,
+  caseStateKey = null,
+}: DebtorSidebarProps) {
+  const { t, locale, formatCurrency } = useI18n()
   const ctx = usePIIRevealContext()
-  // 1s ticker for relative time strings; PIIRevealContext already exposes
-  // a tick but this keeps the sidebar autonomous if used elsewhere.
+  // 1s ticker — drives the PII reveal countdown seconds.
   const [now, setNow] = useState<number>(() => Date.now())
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000)
@@ -66,7 +53,7 @@ export function DebtorSidebar({ data, isLoading, onRevealRequest }: DebtorSideba
 
   if (isLoading && !data) {
     return (
-      <aside className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 animate-pulse">
+      <aside className="rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 animate-pulse">
         <div className="h-4 w-1/2 bg-neutral-200 dark:bg-neutral-800 rounded mb-3" />
         <div className="h-3 w-3/4 bg-neutral-200 dark:bg-neutral-800 rounded mb-2" />
         <div className="h-3 w-2/3 bg-neutral-200 dark:bg-neutral-800 rounded" />
@@ -76,16 +63,16 @@ export function DebtorSidebar({ data, isLoading, onRevealRequest }: DebtorSideba
 
   if (!data) {
     return (
-      <aside className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4">
+      <aside className="rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4">
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          {t('inmobiliaria.ai.cobranza.detail.empty')}
+          {t(`${NS}.detail.empty`)}
         </p>
       </aside>
     )
   }
 
-  const nextAction = data.sidebar?.nextAction ?? null
   const contactAttempts = data.sidebar?.contactAttemptsCount ?? 0
+  const kpis = data.kpis ?? null
 
   const renderMask = (
     field: PIIFieldKey,
@@ -107,49 +94,74 @@ export function DebtorSidebar({ data, isLoading, onRevealRequest }: DebtorSideba
   }
 
   return (
-    <aside className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-4">
-      <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
-        {t('inmobiliaria.ai.cobranza.detail.sidebar.title')}
+    <aside className="rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-4">
+      {/* Zone eyebrow — brand mono + dot (FeatureAnnouncementCard pattern) */}
+      <h2 className="flex items-center gap-2.5">
+        <span
+          aria-hidden="true"
+          className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
+        />
+        <MonoLabel className="text-neutral-400 dark:text-neutral-500">
+          {t(`${NS}.detalle.contexto`)}
+        </MonoLabel>
       </h2>
 
-      {/* Paused badge */}
+      {/* Human case state — the headline of the context */}
+      {caseStateKey && (
+        <span
+          data-testid="case-state-badge"
+          className="inline-flex items-center px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-700 dark:text-neutral-200"
+        >
+          {t(caseStateKey)}
+        </span>
+      )}
+
+      {/* Paused notice */}
       {data.isPaused && data.carterapausedUntil && (
-        <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-          {t('inmobiliaria.ai.cobranza.detail.sidebar.paused').replace(
+        <div className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2 text-xs text-warning">
+          {t(`${NS}.detail.sidebar.paused`).replace(
             '{{date}}',
             new Date(data.carterapausedUntil).toLocaleDateString(locale),
           )}
         </div>
       )}
 
-      {/* Next action card */}
-      <div>
-        <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-          {t('inmobiliaria.ai.cobranza.detail.sidebar.nextAction')}
-        </p>
-        {nextAction ? (
-          <p className="mt-1 text-sm text-neutral-900 dark:text-white">
-            {nextAction.channel} ·{' '}
-            <span className="text-violet-700 dark:text-violet-300 font-mono text-xs">
-              {formatRelative(nextAction.plannedFor, now, locale)}
-            </span>
-            {nextAction.templateName && (
-              <span className="block text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                {nextAction.templateName}
-              </span>
-            )}
-          </p>
-        ) : (
-          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-            {t('inmobiliaria.ai.cobranza.detail.sidebar.noNextAction')}
-          </p>
-        )}
-      </div>
+      {/* Case KPIs — the API already sends these (kpis.*) */}
+      {kpis && (
+        <div className="space-y-3" data-testid="sidebar-kpis">
+          <div>
+            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              {t(`${NS}.detalle.saldoPendiente`)}
+            </p>
+            <p className="mt-0.5 text-xl font-semibold tracking-[-0.02em] text-fg dark:text-white tabular-nums">
+              {formatCurrency(kpis.totalOwed)}
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                {t(`${NS}.detalle.pagosRecibidos`)}
+              </p>
+              <p className="mt-0.5 text-sm font-semibold text-neutral-900 dark:text-white tabular-nums">
+                {kpis.paymentsCount}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                {t(`${NS}.detalle.llamadasRealizadas`)}
+              </p>
+              <p className="mt-0.5 text-sm font-semibold text-neutral-900 dark:text-white tabular-nums">
+                {kpis.callsCount}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contact attempts */}
       <div>
         <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-          {t('inmobiliaria.ai.cobranza.detail.sidebar.contactAttempts')}
+          {t(`${NS}.detail.sidebar.contactAttempts`)}
         </p>
         <p className="mt-1 text-sm text-neutral-900 dark:text-white font-mono">
           {contactAttempts}
@@ -157,22 +169,22 @@ export function DebtorSidebar({ data, isLoading, onRevealRequest }: DebtorSideba
       </div>
 
       {/* PII masks */}
-      <div className="space-y-2 pt-2 border-t border-neutral-200 dark:border-neutral-800">
+      <div className="space-y-2 pt-2 border-t border-neutral-200/80 dark:border-neutral-800">
         <div>
           <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-            {t('inmobiliaria.ai.cobranza.deudores.columns.cedula')}
+            {t(`${NS}.deudores.columns.cedula`)}
           </p>
           <div className="mt-1">{renderMask('cedula', data.cedulaMasked)}</div>
         </div>
         <div>
           <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-            {t('inmobiliaria.ai.cobranza.deudores.columns.phone')}
+            {t(`${NS}.deudores.columns.phone`)}
           </p>
           <div className="mt-1">{renderMask('phone', data.phoneMasked)}</div>
         </div>
         <div>
           <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-            {t('inmobiliaria.ai.cobranza.deudores.columns.email')}
+            {t(`${NS}.deudores.columns.email`)}
           </p>
           <div className="mt-1">{renderMask('email', data.emailMasked)}</div>
         </div>

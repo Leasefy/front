@@ -20,30 +20,30 @@ export default function PanelAvaluoDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
 
-  const { statusData, isLoading } = useAvaluoStatus(id ?? null);
+  const { statusData, isLoading, isError } = useAvaluoStatus(id ?? null);
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* ── Back nav ──────────────────────────────────────────────── */}
       <Link
         href="/panel/inmobiliaria/avaluos"
-        className="inline-flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
         Todos los avalúos
       </Link>
 
       {/* ── Header ────────────────────────────────────────────────── */}
-      <div className="space-y-0.5">
-        <p className="text-xs text-muted-foreground font-mono uppercase tracking-widest">
+      <div className="space-y-1">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Avalúo comercial
         </p>
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Detalle del avalúo
         </h1>
         {id && (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 font-mono">
-            Referencia: {id}
+          <p className="text-sm text-muted-foreground">
+            Referencia: <span className="font-mono">{id}</span>
           </p>
         )}
       </div>
@@ -54,6 +54,7 @@ export default function PanelAvaluoDetailPage() {
           submissionId={id ?? ''}
           statusData={statusData}
           isLoading={isLoading}
+          isError={isError}
         />
       </div>
     </div>

@@ -1,0 +1,2089 @@
+/*
+ * Landing port scoped stylesheet — SLICE 3c (incident remediation, see
+ * engram sdd/landing-react-port/incident-styling-gap). Ported from
+ * `landing-standalone/index.html`'s <style> block (source line references
+ * noted per section below) for the sections shipped in S1-S3b: header,
+ * footer, hero, eclipse, case rail, finance equation, closing banner.
+ * Product-page CSS (`.pp-*`) is S4+ scope — NOT ported here.
+ *
+ * CRITICAL SCOPING RULE: Next.js bundles plain CSS globally even when the
+ * file is only imported from a nested route-group layout — so EVERY rule
+ * below is nested under `.landing-scope` (the wrapper className rendered by
+ * `src/app/(landing)/layout.tsx`). This is what prevents these rules from
+ * leaking into the rest of the app. Do not add a bare, unscoped selector.
+ *
+ * Font vars (--fd/--fb/--fm) and --night are already bridged as inline
+ * styles on the `.landing-scope` wrapper (layout.tsx, design §5 / §S3a).
+ * Every other standalone token is declared below with a `--landing-`
+ * prefix, scoped to `.landing-scope`, to avoid colliding with Cadence's
+ * same-named tokens that use a different value/format inside this scope
+ * (HANDOFF "reglas de oro": audit new short names against existing
+ * globals before reusing them) — see the deviation note below.
+ *
+ * DEVIATION FROM DESIGN (#261 §0/§10 ADR-2): the design claims the
+ * standalone's `--blue` (#1a40ff) "already matches" Cadence's `--primary`.
+ * Verified against `src/app/globals.css`: `--primary` resolves to
+ * `--indigo-500` (#5B5FEF), a different hue entirely. Using
+ * `hsl(var(--primary))` here would visibly reskin the accent color away
+ * from the ported design's intent. Scoping `--landing-blue: #1a40ff`
+ * (the same pattern already used for `--night`, which also doesn't match
+ * Cadence's `--ink`) preserves fidelity without introducing a
+ * general-purpose parallel token system — only landing-specific,
+ * scope-local overrides for values that don't have a Cadence equivalent.
+ */
+
+.landing-scope {
+  --landing-blue: #1a40ff;
+  --landing-cream: #f4f1ea;
+  --landing-paper: #f8f7f5;
+  --landing-ink: #111111;
+  --landing-night2: #0d0d0d;
+  --landing-muted: #6f6a61;
+  --landing-line: rgba(17, 17, 17, 0.12);
+  --landing-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: relative;
+  font-family: var(--fb);
+  color: var(--landing-ink);
+  background: var(--landing-paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+.landing-scope *,
+.landing-scope *::before,
+.landing-scope *::after {
+  box-sizing: border-box;
+}
+
+.landing-scope a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.landing-scope ul {
+  list-style: none;
+}
+
+/* ---------------------------------------------------------------------
+ * Buttons (standalone lines 144-152). `.btn`/`.primary`/`.outline`/
+ * `.inverse`/`.lg` are non-namespaced classNames kept verbatim on the React
+ * components (HANDOFF §7 collision rule): defined ONLY inside
+ * `.landing-scope`, components themselves are untouched.
+ * ------------------------------------------------------------------- */
+.landing-scope .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+  border-radius: 999px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  height: 44px;
+  padding: 0 24px;
+  font-size: 14px;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+.landing-scope .btn.lg {
+  height: 48px;
+  padding: 0 28px;
+  font-size: 15px;
+}
+.landing-scope .btn.primary {
+  background: var(--landing-blue);
+  color: #fff;
+}
+.landing-scope .btn.primary:hover {
+  background: #1233d6;
+}
+.landing-scope .btn.outline {
+  border: 1px solid rgba(17, 17, 17, 0.2);
+  color: var(--landing-ink);
+}
+.landing-scope .btn.outline:hover {
+  border-color: rgba(17, 17, 17, 0.6);
+}
+.landing-scope .btn.inverse {
+  background: #fff;
+  color: var(--landing-ink);
+}
+.landing-scope .btn.inverse:hover {
+  background: var(--landing-paper);
+}
+
+/* ---------------------------------------------------------------------
+ * Quote / who (standalone lines 292-296, 1457-1461) — used verbatim by
+ * CaseRail's Portofino quote block.
+ * ------------------------------------------------------------------- */
+.landing-scope .quote {
+  border: 0;
+  margin: 30px 0 0;
+  padding: 0;
+  position: relative;
+}
+.landing-scope .quote p {
+  max-width: 560px;
+  font-family: var(--fd);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  font-size: clamp(1.375rem, 2.5vw, 2.125rem);
+}
+.landing-scope .quote .who {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--fm);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .quote .who::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--landing-blue);
+  flex: 0 0 6px;
+}
+
+/* ---------------------------------------------------------------------
+ * Header (standalone lines 176-222)
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  height: 76px;
+  padding: 0 clamp(20px, 4vw, 48px);
+  border-bottom: 1px solid transparent;
+  transition: background-color 0.5s, border-color 0.5s, backdrop-filter 0.5s, color 0.4s;
+}
+.landing-scope .landing-header[data-state='solid'] {
+  background: rgba(248, 247, 245, 0.85);
+  backdrop-filter: blur(12px);
+  border-color: var(--landing-line);
+  color: var(--landing-ink);
+}
+.landing-scope .landing-header[data-state='overlay-dark'] {
+  color: #fff;
+}
+.landing-scope .landing-header__logo {
+  font-family: var(--fd);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: inherit;
+}
+.landing-scope .landing-header__nav {
+  display: none;
+  align-items: center;
+  gap: 32px;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-header__nav {
+    display: flex;
+  }
+}
+.landing-scope .landing-header__nav a {
+  position: relative;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: inherit;
+  opacity: 0.75;
+  transition: opacity 0.3s;
+}
+.landing-scope .landing-header__nav a:hover,
+.landing-scope .landing-header__nav a[aria-current='page'] {
+  opacity: 1;
+}
+.landing-scope .landing-header__nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  height: 1px;
+  width: 100%;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s;
+}
+.landing-scope .landing-header__nav a:hover::after,
+.landing-scope .landing-header__nav a[aria-current='page']::after {
+  transform: scaleX(1);
+}
+.landing-scope .landing-header__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  height: 40px;
+  padding: 0 20px;
+  font-size: 13.5px;
+  font-weight: 500;
+  background: var(--landing-blue);
+  color: #fff;
+  transition: background-color 0.3s;
+}
+.landing-scope .landing-header[data-state='overlay-dark'] .landing-header__cta {
+  background: rgba(255, 255, 255, 0.14);
+}
+.landing-scope .landing-header__cta:hover {
+  background: #1233d6;
+}
+
+/* ---------------------------------------------------------------------
+ * Closing banner (standalone lines 823-843 `.banner*`, keyframe adapted
+ * from `.hero`'s `kb`/aurora `aurorapan` Ken Burns pans). Stacking order
+ * (back to front): backdrop -> veil -> animated centerpiece -> content.
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-closing {
+  position: relative;
+  overflow: hidden;
+  min-height: min(80vh, 720px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  color: #fff;
+  background: var(--night);
+}
+.landing-scope .landing-closing__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+.landing-scope .landing-closing__backdrop img {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  animation: landing-closing-kenburns 18s ease-in-out infinite alternate;
+}
+@keyframes landing-closing-kenburns {
+  from {
+    transform: scale(1.05);
+  }
+  to {
+    transform: scale(1.14) translate(1.5%, -1.5%);
+  }
+}
+.landing-scope .landing-closing__veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(0deg, rgba(6, 10, 20, 0.72), rgba(6, 10, 20, 0.1) 52%),
+    linear-gradient(90deg, rgba(6, 10, 20, 0.5), transparent 60%);
+}
+.landing-scope .landing-closing__animated {
+  position: relative;
+  z-index: 2;
+  width: min(90%, 640px);
+  margin: 0 auto;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 44px 96px -50px rgba(0, 0, 0, 0.6);
+}
+.landing-scope .landing-closing__content {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 26px;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 36px 32px 44px;
+  text-align: left;
+}
+.landing-scope .landing-closing__content h2 {
+  margin: 0;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(32px, 4.2vw, 56px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(4, 8, 22, 0.4);
+}
+.landing-scope .landing-closing__cta .btn {
+  margin-top: 8px;
+  text-transform: none;
+  box-shadow: 0 14px 32px -14px rgba(4, 8, 22, 0.5);
+}
+
+/* ---------------------------------------------------------------------
+ * Footer (standalone lines 1308-1316 `.fcol`/`footer`, 860-869 `.ftop`).
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-footer {
+  position: relative;
+  background: var(--landing-night2);
+  color: var(--landing-cream);
+  padding: 80px 20px 40px;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-footer {
+    display: grid;
+    grid-template-columns: 5fr 2fr 3fr;
+    gap: 48px;
+    align-items: start;
+    padding: 96px 48px 48px;
+  }
+}
+.landing-scope .landing-footer__brand {
+  max-width: 420px;
+}
+.landing-scope .landing-footer__brand p {
+  margin-top: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(248, 247, 245, 0.65);
+}
+.landing-scope .landing-footer__logo {
+  font-family: var(--fd);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--landing-cream);
+}
+.landing-scope .landing-footer__cta {
+  margin-top: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+}
+.landing-scope .landing-footer__cta a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: rgba(248, 247, 245, 0.85);
+  transition: color 0.3s;
+}
+.landing-scope .landing-footer__cta a:hover {
+  color: #fff;
+}
+.landing-scope .landing-footer__col {
+  margin-top: 40px;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-footer__col {
+    margin-top: 0;
+  }
+}
+.landing-scope .landing-footer__col > p {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  /* WCAG AA fix (R1): 0.4 alpha against --landing-night2 (#0d0d0d) only
+     reached ~3.6:1 contrast, below the 4.5:1 floor for small text. 0.55
+     lands at ~6:1. */
+  color: rgba(248, 247, 245, 0.55);
+}
+.landing-scope .landing-footer__col ul {
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
+}
+.landing-scope .landing-footer__col a {
+  position: relative;
+  display: inline-block;
+  font-size: 14px;
+  color: rgba(248, 247, 245, 0.65);
+  transition: color 0.3s, padding-left 0.3s;
+}
+.landing-scope .landing-footer__col a:hover {
+  padding-left: 14px;
+  color: #fff;
+}
+.landing-scope .landing-footer__bottom {
+  margin-top: 56px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+  color: rgba(248, 247, 245, 0.5);
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-footer__bottom {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * Vignette/scard shell (standalone lines 617-621 `.pchat`/`.pb(a|b)`/
+ * `.pmeta`, 646-649 `.stamp`, 721-739 `.scard`/`.schead`/`.adot`/`.scbody`,
+ * 1656-1677 `#productPage` overrides, 1679-1707 `.vg-steps`/`.vg-stat`/
+ * `.vg-ledger`/`.vg-doc`) — SLICE 4a scope. Class names use the project's
+ * `landing-*` BEM convention (not the standalone's bare `.scard`/`.schead`/
+ * `.pchat` names) so the generic `landing-css-coverage.test.ts` guard
+ * enforces this CSS automatically, same rationale as the S3c `--landing-*`
+ * custom-property deviation. `.pp-*` template CSS (app-window chrome,
+ * hero, stories grid, snapshot, steps, night panel) is SLICE 4b scope —
+ * NOT ported here.
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-vg-card {
+  width: 100%;
+  max-width: 360px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 30px 70px -35px rgba(17, 17, 17, 0.4), 0 0 0 1px var(--landing-line);
+}
+.landing-scope .landing-vg-card__head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+}
+.landing-scope .landing-vg-card__head--chat {
+  border-bottom: 1px solid var(--landing-line);
+  background: #fff;
+  color: var(--landing-ink);
+}
+.landing-scope .landing-vg-card__head--ag {
+  background: var(--landing-blue);
+  color: #fff;
+}
+.landing-scope .landing-vg-card__head--sys {
+  background: #121212;
+  color: var(--landing-cream);
+}
+.landing-scope .landing-vg-card__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--fm);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.landing-scope .landing-vg-card__meta {
+  flex: 0 0 auto;
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  opacity: 0.8;
+}
+.landing-scope .landing-vg-card__dot {
+  position: relative;
+  display: inline-flex;
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+}
+.landing-scope .landing-vg-card__dot-ping {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  animation: landing-vg-card-ping 1.4s ease-out infinite;
+}
+.landing-scope .landing-vg-card__head--chat .landing-vg-card__dot-ping {
+  background: rgba(52, 211, 153, 0.6);
+}
+.landing-scope .landing-vg-card__dot-core {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #fff;
+}
+.landing-scope .landing-vg-card__head--chat .landing-vg-card__dot-core {
+  background: #34d399;
+}
+@keyframes landing-vg-card-ping {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  80%,
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+.landing-scope .landing-vg-card__body {
+  background: rgba(248, 247, 245, 0.6);
+  padding: 16px;
+}
+.landing-scope .landing-vg-card__stamp {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  z-index: 2;
+  border: 2px solid var(--landing-blue);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(1px);
+  padding: 2px 8px;
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--landing-blue);
+}
+
+/* -- rows -- */
+.landing-scope .landing-vg-rows {
+  display: flex;
+  flex-direction: column;
+}
+.landing-scope .landing-vg-rows__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--landing-line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px 16px;
+  font-size: 12.5px;
+  color: rgba(17, 17, 17, 0.85);
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.05);
+}
+.landing-scope .landing-vg-rows__row + .landing-vg-rows__row {
+  margin-top: 8px;
+}
+.landing-scope .landing-vg-rows__value {
+  margin-left: auto;
+  text-align: right;
+  font-weight: 600;
+}
+.landing-scope .landing-vg-rows__value--ok {
+  color: #0a7d44;
+}
+.landing-scope .landing-vg-rows__value--mb {
+  color: var(--landing-blue);
+}
+
+/* -- chat -- */
+.landing-scope .landing-vg-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.landing-scope .landing-vg-chat__bubble {
+  width: fit-content;
+  max-width: 85%;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.landing-scope .landing-vg-chat__bubble--in {
+  border-top-left-radius: 4px;
+  background: #fff;
+  color: var(--landing-ink);
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.08);
+}
+.landing-scope .landing-vg-chat__bubble--out {
+  margin-left: auto;
+  border-top-right-radius: 4px;
+  background: var(--landing-blue);
+  color: #fff;
+}
+.landing-scope .landing-vg-chat__meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: -4px;
+  font-size: 9px;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-vg-chat__meta--out {
+  justify-content: flex-end;
+}
+.landing-scope .landing-vg-chat__meta--in {
+  justify-content: flex-start;
+}
+
+/* -- steps -- */
+.landing-scope .landing-vg-steps {
+  padding: 6px 2px;
+}
+.landing-scope .landing-vg-steps__item {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding-bottom: 15px;
+}
+.landing-scope .landing-vg-steps__item:last-child {
+  padding-bottom: 0;
+}
+.landing-scope .landing-vg-steps__item::before {
+  content: '';
+  position: absolute;
+  left: 5.5px;
+  top: 15px;
+  bottom: 1px;
+  width: 1px;
+  background: rgba(17, 17, 17, 0.14);
+}
+.landing-scope .landing-vg-steps__item:last-child::before {
+  display: none;
+}
+.landing-scope .landing-vg-steps__dot {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  border-radius: 50%;
+  margin-top: 2px;
+  border: 2px solid rgba(17, 17, 17, 0.25);
+  background: #fff;
+}
+.landing-scope .landing-vg-steps__item--done .landing-vg-steps__dot {
+  background: var(--landing-blue);
+  border-color: var(--landing-blue);
+}
+.landing-scope .landing-vg-steps__item--on .landing-vg-steps__dot {
+  border-color: var(--landing-blue);
+  box-shadow: 0 0 0 4px rgba(26, 64, 255, 0.14);
+}
+.landing-scope .landing-vg-steps__title {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.landing-scope .landing-vg-steps__meta {
+  display: block;
+  font-family: var(--fm);
+  font-size: 10px;
+  color: var(--landing-muted);
+  margin-top: 2px;
+}
+
+/* -- stat -- */
+.landing-scope .landing-vg-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px 4px;
+}
+.landing-scope .landing-vg-stat__big {
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(32px, 3.2vw, 44px);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--landing-ink);
+}
+.landing-scope .landing-vg-stat__big em {
+  font-style: normal;
+  color: var(--landing-blue);
+}
+.landing-scope .landing-vg-stat__label {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  margin-top: 9px;
+}
+.landing-scope .landing-vg-stat__sub {
+  display: block;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--landing-muted);
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+/* -- ledger -- */
+.landing-scope .landing-vg-ledger {
+  background: #fff;
+  border: 1px solid var(--landing-line);
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 12px;
+  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.05);
+}
+.landing-scope .landing-vg-ledger__row {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 0.95fr;
+  gap: 10px;
+  padding: 9px 14px;
+  border-bottom: 1px dashed rgba(17, 17, 17, 0.08);
+  align-items: baseline;
+}
+.landing-scope .landing-vg-ledger__row:last-child {
+  border-bottom: 0;
+}
+.landing-scope .landing-vg-ledger__row--head {
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+  background: rgba(17, 17, 17, 0.02);
+  border-bottom: 1px solid var(--landing-line);
+}
+.landing-scope .landing-vg-ledger__row b {
+  font-weight: 600;
+}
+.landing-scope .landing-vg-ledger__cell--ok {
+  color: #0a7d44;
+  font-weight: 600;
+}
+.landing-scope .landing-vg-ledger__cell--mb {
+  color: var(--landing-blue);
+  font-weight: 600;
+}
+
+/* -- doc -- */
+.landing-scope .landing-vg-doc h4 {
+  margin: 2px 0 0;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: 16.5px;
+  letter-spacing: -0.01em;
+  padding-right: 20px;
+}
+.landing-scope .landing-vg-doc__lines {
+  margin-top: 10px;
+  display: grid;
+  gap: 7px;
+}
+.landing-scope .landing-vg-doc__lines span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: rgba(17, 17, 17, 0.82);
+}
+.landing-scope .landing-vg-doc__lines span::before {
+  content: '✓';
+  color: #0a7d44;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+/* ---------------------------------------------------------------------
+ * Product page template (SLICE 4b) — standalone `#productPage` (lines
+ * 1595-1747, 1779-1787 `.pp-cover`). Class names use the project's
+ * `landing-pp__*` BEM convention (not the standalone's bare `.pp-*`
+ * names), same rationale as S4a's `landing-vg-*` deviation.
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-pp {
+  position: relative;
+}
+.landing-scope .landing-pp__hero {
+  position: relative;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 150px 20px 0;
+}
+.landing-scope .landing-pp__cover {
+  display: none;
+  position: absolute;
+  top: 150px;
+  right: 20px;
+  width: min(300px, 23vw);
+  aspect-ratio: 1 / 1;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 44px 90px -45px rgba(8, 8, 8, 0.55);
+  transform: rotate(2.5deg);
+  transition: transform 0.5s var(--landing-ease);
+  background-size: cover;
+  background-position: 50% 50%;
+}
+@media (min-width: 1180px) {
+  .landing-scope .landing-pp__cover {
+    display: block;
+  }
+}
+.landing-scope .landing-pp__cover:hover {
+  transform: rotate(0deg);
+}
+.landing-scope .landing-pp__cover-shade {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  background: linear-gradient(to top, rgba(8, 8, 8, 0.52), rgba(8, 8, 8, 0) 55%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+.landing-scope .landing-pp__cover-kicker {
+  position: absolute;
+  left: 18px;
+  top: 15px;
+  font-style: normal;
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+}
+.landing-scope .landing-pp__cover-title {
+  position: absolute;
+  left: 18px;
+  bottom: 16px;
+  right: 18px;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: 21px;
+  letter-spacing: -0.02em;
+  color: #fff;
+  line-height: 1.12;
+}
+.landing-scope .landing-pp__eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.landing-scope .landing-pp__badge {
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--landing-blue);
+  border: 1px solid rgba(26, 64, 255, 0.35);
+  border-radius: 999px;
+  padding: 4px 11px;
+  background: rgba(26, 64, 255, 0.06);
+}
+.landing-scope .landing-pp__h1 {
+  margin: 18px 0 0;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(42px, 6vw, 84px);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  max-width: 15ch;
+}
+.landing-scope .landing-pp__lead {
+  margin: 22px 0 0;
+  font-size: clamp(16px, 1.4vw, 19px);
+  line-height: 1.65;
+  color: var(--landing-muted);
+  max-width: 620px;
+}
+.landing-scope .landing-pp__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  margin-top: 32px;
+}
+.landing-scope .landing-pp__cta-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: rgba(17, 17, 17, 0.75);
+  transition: color 0.3s;
+}
+.landing-scope .landing-pp__cta-ghost i {
+  font-style: normal;
+  color: var(--landing-blue);
+  transition: transform 0.3s;
+}
+.landing-scope .landing-pp__cta-ghost:hover {
+  color: var(--landing-ink);
+}
+.landing-scope .landing-pp__cta-ghost:hover i {
+  transform: translateX(4px);
+}
+
+/* -- app window (.pp-win) -- */
+.landing-scope .landing-pp__win {
+  margin-top: 56px;
+  background: #fff;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 60px 120px -70px rgba(17, 17, 17, 0.5);
+  overflow: hidden;
+}
+.landing-scope .landing-pp__win-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--landing-line);
+  background: rgba(248, 247, 245, 0.75);
+}
+.landing-scope .landing-pp__win-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-pp__win-dots {
+  display: inline-flex;
+  gap: 5px;
+}
+.landing-scope .landing-pp__win-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(17, 17, 17, 0.12);
+}
+.landing-scope .landing-pp__win-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--fm);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--landing-blue);
+}
+.landing-scope .landing-pp__win-tag::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.15);
+}
+.landing-scope .landing-pp__win-body {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  align-items: stretch;
+  background: radial-gradient(rgba(17, 17, 17, 0.045) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+@media (min-width: 900px) {
+  .landing-scope .landing-pp__win-body {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding: 22px;
+  }
+}
+
+/* -- section rhythm + zigzag `.pp-shead` compositions -- */
+.landing-scope .landing-pp__body {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.landing-scope .landing-pp__sec {
+  padding-top: 84px;
+}
+.landing-scope .landing-pp__shead-copy {
+  min-width: 0;
+}
+.landing-scope .landing-pp__shead-title {
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(27px, 3.2vw, 42px);
+  letter-spacing: -0.025em;
+  line-height: 1.06;
+  margin: 12px 0 0;
+  max-width: 24ch;
+}
+.landing-scope .landing-pp__shead-eyebrow {
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-pp__shead-lede {
+  margin: 14px 0 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-pp__shead--split {
+  display: grid;
+  gap: 14px;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-pp__shead--split {
+    grid-template-columns: 1fr auto;
+    align-items: end;
+  }
+  .landing-scope .landing-pp__shead--split .landing-pp__shead-lede {
+    justify-self: end;
+    max-width: 320px;
+    margin: 0 0 8px;
+    padding-left: 24px;
+    border-left: 2px solid var(--landing-blue);
+  }
+}
+.landing-scope .landing-pp__shead--center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.landing-scope .landing-pp__shead--center .landing-pp__shead-title {
+  max-width: 24ch;
+}
+.landing-scope .landing-pp__shead--center .landing-pp__shead-lede {
+  max-width: 46ch;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-pp__shead--right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+  }
+  .landing-scope .landing-pp__shead--right .landing-pp__shead-title {
+    max-width: 22ch;
+  }
+  .landing-scope .landing-pp__shead--right .landing-pp__shead-lede {
+    max-width: 44ch;
+  }
+}
+
+/* -- stories (alternating) -- */
+.landing-scope .landing-pp__stories {
+  margin-top: 14px;
+}
+.landing-scope .landing-pp__story {
+  display: grid;
+  gap: 28px;
+  padding: 44px 0;
+  align-items: center;
+}
+.landing-scope .landing-pp__story:last-child {
+  padding-bottom: 8px;
+}
+@media (min-width: 900px) {
+  .landing-scope .landing-pp__story {
+    grid-template-columns: 1fr 1fr;
+    gap: 72px;
+  }
+  .landing-scope .landing-pp__story--alt .landing-pp__story-pane {
+    order: -1;
+  }
+  .landing-scope .landing-pp__story--alt .landing-pp__story-copy {
+    justify-self: end;
+    text-align: right;
+  }
+  .landing-scope .landing-pp__story--alt h3 {
+    max-width: 20ch;
+  }
+  .landing-scope .landing-pp__story--alt p {
+    max-width: 46ch;
+  }
+}
+.landing-scope .landing-pp__story-kicker {
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--landing-blue);
+}
+.landing-scope .landing-pp__story-copy h3 {
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(22px, 2.5vw, 31px);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 12px 0 0;
+}
+.landing-scope .landing-pp__story-copy p {
+  margin: 14px 0 0;
+  font-size: 15.5px;
+  line-height: 1.72;
+  color: var(--landing-muted);
+  max-width: 48ch;
+}
+.landing-scope .landing-pp__story-pane {
+  position: relative;
+  border-radius: 20px;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  background-color: rgba(255, 255, 255, 0.55);
+  background-image: radial-gradient(rgba(17, 17, 17, 0.05) 1px, transparent 1px);
+  background-size: 16px 16px;
+  padding: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 250px;
+}
+.landing-scope .landing-pp__story-pane > * {
+  width: min(370px, 100%);
+}
+
+/* -- capabilities -- */
+.landing-scope .landing-pp__caps {
+  display: grid;
+  gap: 14px;
+  margin-top: 38px;
+}
+@media (min-width: 700px) {
+  .landing-scope .landing-pp__caps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1100px) {
+  .landing-scope .landing-pp__caps {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.landing-scope .landing-pp__cap {
+  background: #fff;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: 18px;
+  padding: 22px 20px;
+  transition: transform 0.35s var(--landing-ease), border-color 0.35s, box-shadow 0.35s;
+}
+.landing-scope .landing-pp__cap:hover {
+  transform: translateY(-4px);
+  border-color: rgba(26, 64, 255, 0.3);
+  box-shadow: 0 30px 60px -40px rgba(17, 17, 17, 0.35);
+}
+.landing-scope .landing-pp__cap i {
+  font-style: normal;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--landing-blue);
+}
+.landing-scope .landing-pp__cap b {
+  display: block;
+  margin-top: 12px;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+.landing-scope .landing-pp__cap p {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  line-height: 1.62;
+  color: var(--landing-muted);
+}
+
+/* -- snapshot (side-sticky .pp-side2 + .pp-spec) -- */
+.landing-scope .landing-pp__side2 {
+  display: grid;
+  gap: 32px;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-pp__side2 {
+    grid-template-columns: 4fr 7fr;
+    gap: 64px;
+    align-items: start;
+  }
+  .landing-scope .landing-pp__side2 .landing-pp__shead {
+    position: sticky;
+    top: 130px;
+  }
+  .landing-scope .landing-pp__side2 .landing-pp__spec {
+    margin-top: 0;
+  }
+}
+.landing-scope .landing-pp__spec {
+  margin-top: 38px;
+  border: 1px solid var(--landing-line);
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.6);
+}
+.landing-scope .landing-pp__spec-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 16px;
+  padding: 15px 22px;
+  border-bottom: 1px solid var(--landing-line);
+  font-size: 14.5px;
+}
+.landing-scope .landing-pp__spec-row:last-child {
+  border-bottom: 0;
+}
+.landing-scope .landing-pp__spec-row:nth-child(odd) {
+  background: rgba(17, 17, 17, 0.016);
+}
+@media (max-width: 640px) {
+  .landing-scope .landing-pp__spec-row {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+}
+.landing-scope .landing-pp__spec-label {
+  font-family: var(--fm);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+  padding-top: 3px;
+}
+.landing-scope .landing-pp__spec-value {
+  color: rgba(17, 17, 17, 0.92);
+  line-height: 1.55;
+}
+.landing-scope .landing-pp__spec-value b {
+  font-weight: 600;
+}
+
+/* -- steps -- */
+.landing-scope .landing-pp__steps {
+  display: grid;
+  gap: 14px;
+  margin-top: 38px;
+}
+@media (min-width: 900px) {
+  .landing-scope .landing-pp__steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.landing-scope .landing-pp__step {
+  position: relative;
+  border: 1px solid var(--landing-line);
+  border-radius: 18px;
+  padding: 24px 22px;
+  background: #fff;
+}
+.landing-scope .landing-pp__step i {
+  font-style: normal;
+  font-family: var(--fm);
+  font-size: 11px;
+  color: var(--landing-blue);
+  letter-spacing: 0.14em;
+}
+.landing-scope .landing-pp__step b {
+  display: block;
+  margin-top: 14px;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: 17.5px;
+  letter-spacing: -0.01em;
+}
+.landing-scope .landing-pp__step p {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  line-height: 1.62;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-pp__step::after {
+  content: '→';
+  position: absolute;
+  top: 26px;
+  right: 20px;
+  color: rgba(26, 64, 255, 0.45);
+  font-size: 15px;
+}
+.landing-scope .landing-pp__step:last-child::after {
+  content: '✓';
+  color: #0a7d44;
+}
+
+/* -- night panel (jewel gradient #2) -- */
+.landing-scope .landing-pp__night {
+  padding: 84px 20px;
+}
+.landing-scope .landing-pp__npanel {
+  position: relative;
+  max-width: 1160px;
+  margin: 0 auto;
+  border-radius: 28px;
+  overflow: hidden;
+  padding: clamp(28px, 4.5vw, 60px);
+  display: grid;
+  gap: 30px;
+  box-shadow: 0 60px 130px -60px rgba(6, 10, 40, 0.6);
+  background-size: cover;
+  background-position: 50% 50%;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-pp__npanel {
+    grid-template-columns: 5fr 6fr;
+    gap: 52px;
+    align-items: center;
+  }
+}
+.landing-scope .landing-pp__npanel-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, rgba(5, 9, 30, 0.93), rgba(8, 16, 56, 0.74) 48%, rgba(26, 64, 255, 0.3));
+}
+.landing-scope .landing-pp__npanel-text,
+.landing-scope .landing-pp__npanel-log {
+  position: relative;
+  z-index: 1;
+}
+.landing-scope .landing-pp__night-kicker {
+  color: rgba(255, 255, 255, 0.7);
+}
+.landing-scope .landing-pp__night-h2 {
+  color: #fff;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(24px, 2.6vw, 36px);
+  margin: 12px 0 0;
+}
+.landing-scope .landing-pp__night-h2 em {
+  font-style: normal;
+  color: #cdd9ff;
+}
+.landing-scope .landing-pp__night-quote {
+  margin: 22px 0 0;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(17px, 1.6vw, 21px);
+  letter-spacing: -0.015em;
+  line-height: 1.45;
+  max-width: 34ch;
+  color: rgba(255, 255, 255, 0.92);
+}
+.landing-scope .landing-pp__log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+.landing-scope .landing-pp__log-header b {
+  color: #fff;
+}
+.landing-scope .landing-pp__log-row {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.85);
+}
+.landing-scope .landing-pp__log-row:last-child {
+  border-bottom: 0;
+}
+.landing-scope .landing-pp__log-time {
+  flex: 0 0 auto;
+  font-family: var(--fm);
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.55);
+}
+.landing-scope .landing-pp__log-row span[data-testid='product-night-log-text'] .lb {
+  color: #cdd9ff;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------
+ * Mega menu (SLICE 4b) — standalone `#pmenu` (lines 1572-1592,
+ * 1831-1854, `.pm-big`/`.pm-list`). DEVIATION FROM HANDOFF/design: both
+ * HANDOFF point 6 and design (#261 §6) describe texture-backed "art"
+ * tiles (`.pm-art`, t5/t3) — verified against the actual final markup/CSS
+ * and confirmed there is NO `.pm-art` class anywhere; HANDOFF point 5b
+ * ("volvió a su versión limpia sin tiles de arte") is what actually
+ * shipped. Ported the real plain two-column layout, not the reverted
+ * earlier iteration — see MegaMenu.tsx doc comment for the full note.
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-mega {
+  position: relative;
+}
+.landing-scope .landing-mega__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  opacity: 0.75;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: opacity 0.3s;
+}
+.landing-scope .landing-mega__trigger:hover,
+.landing-scope .landing-mega__trigger[aria-expanded='true'] {
+  opacity: 1;
+}
+.landing-scope .landing-mega__panel {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: grid;
+  gap: 28px;
+  width: min(760px, 90vw);
+  margin-top: 20px;
+  padding: 28px;
+  border-radius: 20px;
+  background: var(--landing-paper);
+  color: var(--landing-ink);
+  box-shadow: 0 40px 90px -40px rgba(17, 17, 17, 0.4), 0 0 0 1px var(--landing-line);
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-mega__panel {
+    grid-template-columns: 5fr 7fr;
+    column-gap: 56px;
+  }
+}
+.landing-scope .landing-mega__col {
+  min-width: 0;
+}
+.landing-scope .landing-mega__kicker {
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+  margin: 0 0 12px;
+}
+.landing-scope .landing-mega__big {
+  position: relative;
+  display: block;
+  padding: 16px 18px;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+  transition: transform 0.35s var(--landing-ease), border-color 0.35s var(--landing-ease);
+}
+.landing-scope .landing-mega__big + .landing-mega__big {
+  margin-top: 10px;
+}
+.landing-scope .landing-mega__big:hover {
+  transform: translateY(-2px);
+  border-color: rgba(26, 64, 255, 0.35);
+}
+.landing-scope .landing-mega__big b {
+  display: block;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  color: var(--landing-ink);
+}
+.landing-scope .landing-mega__big > span {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-mega__index {
+  position: absolute;
+  right: 10px;
+  top: 2px;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: 56px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: rgba(17, 17, 17, 0.05);
+}
+.landing-scope .landing-mega__list {
+  display: grid;
+  gap: 2px;
+}
+@media (min-width: 760px) {
+  .landing-scope .landing-mega__list {
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 24px;
+  }
+}
+.landing-scope .landing-mega__list-item {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 12px;
+  transition: background 0.25s var(--landing-ease);
+}
+.landing-scope .landing-mega__list-item:hover {
+  background: rgba(26, 64, 255, 0.06);
+}
+.landing-scope .landing-mega__list-item b {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--landing-ink);
+}
+.landing-scope .landing-mega__list-item span {
+  display: block;
+  margin-top: 1px;
+  font-size: 12.5px;
+  color: var(--landing-muted);
+}
+
+/* ---------------------------------------------------------------------
+ * Blog listing + article (SLICE 6) — standalone `#blogPage` (lines
+ * 1520-1566, 2773-2827). Class names use the project's `landing-bp__*`/
+ * `landing-ba__*` BEM convention (not the standalone's bare `.bp-*` names),
+ * same rationale as S4a/S4b's `landing-vg-*`/`landing-pp__*` deviations.
+ * Editorial card art reuses the shared t1-t7 texture backgrounds (HANDOFF
+ * §5b) via `LANDING_TEXTURES`, applied as a plain CSS `background-image`
+ * inline style (same pattern as `landing-pp__cover`) — no new asset.
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-bp {
+  padding: 150px 20px 110px;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-bp {
+    padding: 178px 48px 140px;
+  }
+}
+.landing-scope .landing-bp__wrap {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.landing-scope .landing-bp__head h1 {
+  margin: 16px 0 0;
+  max-width: 920px;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(34px, 4.6vw, 60px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+.landing-scope .landing-bp__kicker {
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-bp__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 28px;
+}
+.landing-scope .landing-bp__tab {
+  border: 1px solid var(--landing-line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(17, 17, 17, 0.6);
+  cursor: pointer;
+  transition: border-color 0.25s var(--landing-ease), color 0.25s var(--landing-ease),
+    background 0.25s var(--landing-ease);
+}
+.landing-scope .landing-bp__tab:hover {
+  border-color: rgba(26, 64, 255, 0.45);
+  color: var(--landing-ink);
+}
+.landing-scope .landing-bp__tab--on {
+  background: var(--landing-ink);
+  border-color: var(--landing-ink);
+  color: #fff;
+}
+.landing-scope .landing-bp__media {
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+.landing-scope .landing-bp__media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 8, 8, 0), rgba(8, 8, 8, 0.28));
+}
+.landing-scope .landing-bp__gn {
+  position: absolute;
+  right: 14px;
+  top: 4px;
+  z-index: 1;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: 70px;
+  letter-spacing: -0.04em;
+  color: rgba(255, 255, 255, 0.24);
+  line-height: 1;
+}
+.landing-scope .landing-bp__cat {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  z-index: 1;
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(8, 8, 8, 0.45);
+  backdrop-filter: blur(6px);
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+.landing-scope .landing-bp__feat {
+  position: relative;
+  display: grid;
+  margin-top: 40px;
+  background: #fff;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 30px 70px -45px rgba(17, 17, 17, 0.35);
+  transition: transform 0.5s var(--landing-ease), box-shadow 0.5s var(--landing-ease),
+    border-color 0.5s var(--landing-ease);
+}
+@media (min-width: 900px) {
+  .landing-scope .landing-bp__feat {
+    grid-template-columns: 7fr 6fr;
+  }
+}
+.landing-scope .landing-bp__feat .landing-bp__media {
+  min-height: 240px;
+}
+.landing-scope .landing-bp__feat .landing-bp__gn {
+  font-size: 112px;
+}
+.landing-scope .landing-bp__fbody {
+  padding: 28px 28px 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.landing-scope .landing-bp__feat h2 {
+  margin: 10px 0 0;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(24px, 2.6vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--landing-ink);
+}
+.landing-scope .landing-bp__meta {
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-bp__excerpt {
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-bp__more {
+  margin-top: auto;
+  padding-top: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--landing-ink);
+  transition: color 0.3s;
+}
+.landing-scope .landing-bp__more i {
+  font-style: normal;
+  color: var(--landing-blue);
+  transition: transform 0.3s;
+}
+.landing-scope .landing-bp__feat:hover,
+.landing-scope .landing-bp__card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(26, 64, 255, 0.3);
+  box-shadow: 0 44px 90px -48px rgba(17, 17, 17, 0.42);
+}
+.landing-scope .landing-bp__feat:hover .landing-bp__more,
+.landing-scope .landing-bp__card:hover .landing-bp__more {
+  color: var(--landing-blue);
+}
+.landing-scope .landing-bp__feat:hover .landing-bp__more i,
+.landing-scope .landing-bp__card:hover .landing-bp__more i {
+  transform: translateX(4px);
+}
+.landing-scope .landing-bp__grid {
+  display: grid;
+  gap: 20px;
+  margin-top: 20px;
+}
+@media (min-width: 760px) {
+  .landing-scope .landing-bp__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.landing-scope .landing-bp__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 24px 55px -40px rgba(17, 17, 17, 0.3);
+  transition: transform 0.5s var(--landing-ease), box-shadow 0.5s var(--landing-ease),
+    border-color 0.5s var(--landing-ease);
+}
+.landing-scope .landing-bp__card .landing-bp__media {
+  aspect-ratio: 16 / 10;
+}
+.landing-scope .landing-bp__body {
+  padding: 20px 20px 22px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  align-items: flex-start;
+}
+.landing-scope .landing-bp__card h3 {
+  margin: 10px 0 0;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: 18.5px;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--landing-ink);
+}
+.landing-scope .landing-bp__card .landing-bp__excerpt {
+  font-size: 14px;
+}
+
+/* -- article -- */
+.landing-scope .landing-ba {
+  position: relative;
+}
+.landing-scope .landing-ba__hero {
+  position: relative;
+  height: 50vh;
+  min-height: 340px;
+  width: 100%;
+  overflow: hidden;
+}
+@media (min-width: 768px) {
+  .landing-scope .landing-ba__hero {
+    height: 60vh;
+  }
+}
+.landing-scope .landing-ba__hero-img {
+  object-fit: cover;
+}
+.landing-scope .landing-ba__hero-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 8, 8, 0) 40%, rgba(8, 8, 8, 0.78));
+}
+.landing-scope .landing-ba__hero-content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 24px 20px clamp(28px, 5vw, 64px);
+}
+@media (min-width: 768px) {
+  .landing-scope .landing-ba__hero-content {
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+}
+.landing-scope .landing-ba__hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-family: var(--fm);
+  font-size: 11px;
+  color: rgba(248, 247, 245, 0.7);
+}
+.landing-scope .landing-ba__cat {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.landing-scope .landing-ba__hero-content h1 {
+  max-width: 760px;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(28px, 4vw, 46px);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+.landing-scope .landing-ba__wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.landing-scope .landing-ba__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 48px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--landing-muted);
+  transition: color 0.3s;
+}
+.landing-scope .landing-ba__back:hover {
+  color: var(--landing-ink);
+}
+.landing-scope .landing-ba__body {
+  margin-top: 40px;
+  padding-bottom: 40px;
+}
+.landing-scope .landing-ba__body h2 {
+  margin: 40px 0 16px;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(21px, 2.4vw, 26px);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.landing-scope .landing-ba__body p {
+  margin: 4px 0;
+  font-size: 15.5px;
+  line-height: 1.85;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-ba__body ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+}
+.landing-scope .landing-ba__body ol li + li {
+  margin-top: 8px;
+}
+.landing-scope .landing-ba__label {
+  margin-top: 16px;
+  font-weight: 600;
+  color: var(--landing-ink);
+}
+.landing-scope .landing-ba__spacer {
+  height: 8px;
+}
+.landing-scope .landing-ba__empty {
+  padding: 60px 0;
+  text-align: center;
+}
+.landing-scope .landing-ba__related {
+  border-top: 1px solid var(--landing-line);
+  padding: 64px 0 96px;
+}
+.landing-scope .landing-ba__related h2 {
+  margin: 0 0 32px;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(22px, 2.6vw, 28px);
+  letter-spacing: -0.02em;
+}
+
+/* ---------------------------------------------------------------------
+ * Contact route (SLICE 7) — standalone `#contactPage` (lines 2741-2771,
+ * CSS ~1477-1518 `.cp-*`). Class names use the project's `landing-cp__*`
+ * BEM convention (not the standalone's bare `.cp-*` names), same rationale
+ * as S4a/S6's `landing-vg-*`/`landing-bp__*` deviations. No dialog/overlay
+ * transform (standalone's `#contactPage` was a fixed-position overlay
+ * toggled by a JS hash router — this is a real route, so it renders inline
+ * like every other landing page).
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-cp {
+  padding: 0 20px;
+}
+.landing-scope .landing-cp__grid {
+  display: grid;
+  gap: 48px;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding-top: 150px;
+  padding-bottom: 96px;
+}
+@media (min-width: 1024px) {
+  .landing-scope .landing-cp__grid {
+    grid-template-columns: 6fr 5fr;
+    gap: 72px;
+    align-items: start;
+  }
+}
+.landing-scope .landing-cp__kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-cp__kicker::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--landing-blue);
+  flex: 0 0 6px;
+}
+.landing-scope .landing-cp__left h1 {
+  margin: 16px 0 0;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: clamp(40px, 5.2vw, 72px);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+}
+.landing-scope .landing-cp__dot {
+  color: var(--landing-blue);
+}
+.landing-scope .landing-cp__lead {
+  margin-top: 18px;
+  max-width: 520px;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-cp__channels {
+  margin-top: 40px;
+  border-top: 1px solid var(--landing-line);
+}
+.landing-scope .landing-cp__channel {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 2px;
+  border-bottom: 1px solid var(--landing-line);
+  transition: transform 0.3s var(--landing-ease);
+}
+.landing-scope a.landing-cp__channel:hover {
+  transform: translateX(4px);
+}
+.landing-scope a.landing-cp__channel:hover .landing-cp__channel-v {
+  color: var(--landing-blue);
+}
+.landing-scope .landing-cp__channel-k {
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-cp__channel-v {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--landing-ink);
+  transition: color 0.3s;
+}
+.landing-scope .landing-cp__card {
+  position: relative;
+  background: #fff;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: 24px;
+  padding: 26px 26px 28px;
+  box-shadow: 0 40px 90px -48px rgba(17, 17, 17, 0.3);
+}
+.landing-scope .landing-cp__chead {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--landing-line);
+}
+.landing-scope .landing-cp__field {
+  display: block;
+  margin-top: 18px;
+}
+.landing-scope .landing-cp__field > span {
+  display: block;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+  margin-bottom: 8px;
+}
+.landing-scope .landing-cp__field input,
+.landing-scope .landing-cp__field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--landing-line);
+  border-radius: 12px;
+  background: var(--landing-paper);
+  padding: 13px 14px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--landing-ink);
+  resize: vertical;
+  transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+}
+.landing-scope .landing-cp__field input:focus,
+.landing-scope .landing-cp__field textarea:focus {
+  outline: none;
+  border-color: var(--landing-blue);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(26, 64, 255, 0.12);
+}
+.landing-scope .landing-cp__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.landing-scope .landing-cp__chip {
+  border: 1px solid var(--landing-line);
+  background: #fff;
+  border-radius: 99px;
+  padding: 9px 15px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(17, 17, 17, 0.75);
+  cursor: pointer;
+  transition: border-color 0.25s var(--landing-ease), color 0.25s var(--landing-ease),
+    background 0.25s var(--landing-ease);
+}
+.landing-scope .landing-cp__chip:hover {
+  border-color: rgba(26, 64, 255, 0.4);
+  color: var(--landing-ink);
+}
+.landing-scope .landing-cp__chip--on {
+  background: var(--landing-blue);
+  border-color: var(--landing-blue);
+  color: #fff;
+  box-shadow: 0 8px 18px -8px rgba(26, 64, 255, 0.6);
+}
+.landing-scope .landing-cp__error {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #b3261e;
+}
+.landing-scope .landing-cp__send {
+  width: 100%;
+  margin-top: 24px;
+}
+.landing-scope .landing-cp__note {
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--landing-muted);
+  text-align: center;
+}
+
+/* ---------------------------------------------------------------------
+ * Reduced motion (standalone line 836 `.banner-photo{animation:none}`
+ * pattern, plus line 1000's `.pinga` entry) — the only CSS keyframe
+ * animations ported are the closing banner's Ken Burns pan and the
+ * vg-card header's ping dot; every other motion in this port is
+ * framer-motion, already gated by `useReducedMotion()` at the component
+ * level (Reveal, ShaderHero, EclipseSection, FinanceEquation).
+ * ------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .landing-scope .landing-closing__backdrop img {
+    animation: none;
+  }
+  .landing-scope .landing-vg-card__dot-ping {
+    animation: none;
+  }
+}

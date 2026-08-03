@@ -42,7 +42,7 @@ export const APPLICATION_STATUS_LABELS: Record<TenantApplicationStatus, string> 
 export const APPLICATION_STATUS_COLORS: Record<TenantApplicationStatus, string> = {
   submitted: 'bg-muted text-foreground',
   under_review: 'bg-plan-status-blue-bg text-plan-status-blue',
-  needs_info: 'bg-orange-100 text-orange-700',
+  needs_info: 'bg-[#F8F0E0] text-[#B7791F]',
   pre_approved: 'bg-plan-status-purple-bg text-plan-status-purple',
   approved: 'bg-plan-status-green-bg text-plan-status-green',
   rejected: 'bg-plan-status-red-bg text-plan-status-red',

@@ -39,7 +39,6 @@ vi.mock('@/lib/hooks/use-agent', () => ({
   useAgentExecution: () => ({
     ..._hookState,
     runScoring: mockRunScoring,
-    runMatching: vi.fn(),
     clearResult: vi.fn(),
   }),
 }))

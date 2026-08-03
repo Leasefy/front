@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Handshake, MapPin, Calendar, CurrencyDollar, PenNib, Clock, CheckCircle, XCircle, WarningCircle, SpinnerGap } from '@phosphor-icons/react';
+import { Handshake, MapPin, Calendar, CurrencyDollar, PenNib, Clock, CheckCircle, XCircle, WarningCircle } from '@phosphor-icons/react';
 
 import { useContracts } from '@/lib/hooks/useContracts';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Spinner } from '@/components/ui/spinner';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 
@@ -17,14 +18,14 @@ import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 // ============================================================================
 
 const STATUS_CONFIG: Record<ContractStatus, { color: string; icon: typeof CheckCircle }> = {
-  draft: { color: 'bg-neutral-100 text-neutral-600', icon: Clock },
-  pending_landlord: { color: 'bg-amber-100 text-amber-700', icon: Clock },
-  pending_tenant: { color: 'bg-indigo-100 text-indigo-700', icon: PenNib },
-  rejected_pending_modifications: { color: 'bg-amber-100 text-amber-700', icon: Clock },
-  signed: { color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
-  active: { color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle },
-  expired: { color: 'bg-neutral-100 text-neutral-500', icon: XCircle },
-  cancelled: { color: 'bg-red-100 text-red-600', icon: XCircle },
+  draft: { color: 'bg-surface-muted text-fg-muted', icon: Clock },
+  pending_landlord: { color: 'bg-warning-soft text-warning', icon: Clock },
+  pending_tenant: { color: 'bg-primary-soft text-primary', icon: PenNib },
+  rejected_pending_modifications: { color: 'bg-warning-soft text-warning', icon: Clock },
+  signed: { color: 'bg-primary-soft text-primary', icon: CheckCircle },
+  active: { color: 'bg-success-soft text-success', icon: CheckCircle },
+  expired: { color: 'bg-surface-muted text-fg-muted', icon: XCircle },
+  cancelled: { color: 'bg-danger-soft text-danger', icon: XCircle },
 };
 
 // ============================================================================
@@ -43,17 +44,17 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 + index * 0.05 }}
       className={cn(
-        'rounded-3xl border bg-white dark:bg-[#1a1a1c] p-6 transition-all',
+        'rounded-xl border bg-surface p-6 transition-all',
         isPendingTenant
-          ? 'border-indigo-200 dark:border-indigo-800/60 ring-2 ring-indigo-500/10'
-          : 'border-neutral-200 dark:border-neutral-800'
+          ? 'border-primary/30 ring-2 ring-primary/10'
+          : 'border-border'
       )}
     >
       {/* Action needed banner */}
       {isPendingTenant && (
-        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/50">
-          <PenNib className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-          <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-primary-soft border border-primary/30">
+          <PenNib className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium text-primary">
             {locale === 'es' ? 'Requiere tu firma' : 'Requires your signature'}
           </span>
         </div>
@@ -62,14 +63,14 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-stone-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
-            <MapPin className="w-5 h-5 text-neutral-500" />
+          <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
+            <MapPin className="w-5 h-5 text-fg-muted" />
           </div>
           <div className="min-w-0">
-            <h3 className="font-semibold text-neutral-900 dark:text-white truncate">
+            <h3 className="font-semibold text-fg truncate">
               {contract.propertyAddress}
             </h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="text-sm text-fg-muted">
               {contract.propertyCity}
             </p>
           </div>
@@ -86,26 +87,26 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
       {/* Details grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-5">
         <div>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
+          <p className="text-xs text-fg-muted mb-0.5">
             {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
           </p>
-          <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+          <p className="text-sm font-semibold text-fg">
             {formatCurrency(contract.monthlyRent)}
           </p>
         </div>
         <div>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
+          <p className="text-xs text-fg-muted mb-0.5">
             {locale === 'es' ? 'Inicio' : 'Start'}
           </p>
-          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
+          <p className="text-sm font-medium text-fg">
             {formatDate(contract.startDate)}
           </p>
         </div>
         <div>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
+          <p className="text-xs text-fg-muted mb-0.5">
             {locale === 'es' ? 'Fin' : 'End'}
           </p>
-          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
+          <p className="text-sm font-medium text-fg">
             {formatDate(contract.endDate)}
           </p>
         </div>
@@ -115,7 +116,7 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
       {isPendingTenant ? (
         <Link
           href={`/inquilino/contratos/${contract.id}/firmar`}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white uppercase tracking-wide font-mono text-sm font-semibold transition-colors"
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary hover:opacity-90 text-white text-sm font-semibold transition-colors"
         >
           <PenNib className="w-4 h-4" />
           {locale === 'es' ? 'Firmar contrato' : 'Sign contract'}
@@ -123,7 +124,7 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
       ) : (
         <Link
           href={`/inquilino/contratos/${contract.id}/firmar`}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-neutral-200 dark:border-neutral-700 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-[#2a2a2c] transition-colors"
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-border text-sm font-medium text-fg hover:bg-surface-muted transition-colors"
         >
           {locale === 'es' ? 'Ver contrato' : 'View contract'}
         </Link>
@@ -143,8 +144,8 @@ export default function ContratosPage() {
   // Loading
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10] flex items-center justify-center">
-        <SpinnerGap className="w-8 h-8 animate-spin text-neutral-400" />
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Spinner size="lg" variant="muted" />
       </div>
     );
   }
@@ -152,16 +153,16 @@ export default function ContratosPage() {
   // Error
   if (error) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+      <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-2xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
-              <WarningCircle className="w-8 h-8 text-red-500" />
+            <div className="w-16 h-16 rounded-xl bg-danger-soft flex items-center justify-center mx-auto mb-4">
+              <WarningCircle className="w-8 h-8 text-danger" />
             </div>
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">
+            <h2 className="text-lg font-semibold text-fg mb-2">
               {locale === 'es' ? 'Error cargando contratos' : 'Error loading contracts'}
             </h2>
-            <p className="text-neutral-500 dark:text-neutral-400">{error}</p>
+            <p className="text-fg-muted">{error}</p>
           </div>
         </div>
       </div>
@@ -176,7 +177,7 @@ export default function ContratosPage() {
   });
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f0f10]">
+    <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
         <motion.header
@@ -184,10 +185,10 @@ export default function ContratosPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-medium text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-3xl font-medium text-fg tracking-tight">
             {locale === 'es' ? 'Mis Contratos' : 'My Contracts'}
           </h1>
-          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-fg-muted">
             {locale === 'es'
               ? 'Revisa y firma tus contratos de arrendamiento'
               : 'Review and sign your rental contracts'}

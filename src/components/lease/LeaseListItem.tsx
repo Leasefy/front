@@ -28,48 +28,45 @@ export function LeaseListItem({ lease, onSelect, isSelected }: LeaseListItemProp
       onClick={onSelect}
       className={cn(
         'w-full text-left p-4 border-b border-border last:border-0',
-        'hover:bg-muted/50 transition-colors',
-        isSelected && 'bg-muted'
+        'hover:bg-surface-hover transition-colors',
+        isSelected && 'bg-surface-muted'
       )}
     >
       <div className="flex items-center gap-4">
         {/* Property icon */}
         <div className={cn(
-          'w-10 h-10 rounded-sm flex items-center justify-center flex-shrink-0',
-          isSelected ? 'bg-foreground' : 'bg-muted'
+          'w-10 h-10 rounded-[14px] flex items-center justify-center flex-shrink-0',
+          isSelected ? 'bg-primary' : 'bg-surface-muted'
         )}>
           <Buildings className={cn(
             'w-5 h-5',
-            isSelected ? 'text-white' : 'text-muted-foreground'
+            isSelected ? 'text-primary-fg' : 'text-fg-muted'
           )} />
         </div>
 
         {/* Main info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className={cn(
-              'text-sm font-medium truncate',
-              isSelected ? 'text-foreground' : 'text-foreground'
-            )}>
+            <h3 className="text-sm font-medium truncate text-fg">
               {lease.propertyTitle}
             </h3>
             {isEndingSoon && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-muted text-muted-foreground rounded-sm flex-shrink-0">
+              <span className="text-[10px] px-1.5 py-0.5 bg-surface-muted text-fg-muted rounded-full flex-shrink-0">
                 Vence pronto
               </span>
             )}
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+          <p className="text-xs text-fg-muted mt-0.5 truncate">
             {lease.tenantName}
           </p>
         </div>
 
         {/* Rent amount */}
         <div className="text-right flex-shrink-0">
-          <p className="text-sm font-medium text-foreground">
+          <p className="text-sm font-medium text-fg font-mono tabular-nums">
             {formatCurrency(lease.monthlyRent)}
           </p>
-          <p className="text-[10px] text-muted-foreground">/mes</p>
+          <p className="text-[10px] text-fg-muted">/mes</p>
         </div>
       </div>
     </button>

@@ -1,10 +1,22 @@
 import type { Icon } from '@phosphor-icons/react';
-import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { EmptyState as CadenceEmptyState } from '@leasefy/cadence';
+import { Button } from '@/components/ui/button';
+
+/**
+ * EmptyState — thin wrapper over the Cadence `EmptyState`.
+ *
+ * Renders the Cadence brand moment: a white Phosphor icon on the signature
+ * grainy cobalt→cyan gradient tile, ink title + muted description, and an
+ * optional CTA as a Cadence pill `Button` (secondary white pill, next/link).
+ *
+ * The local prop API is preserved exactly so the 27 importers keep working:
+ *   - `icon` is still a Phosphor `Icon` component (rendered as a node here).
+ *   - `action` is still `{ label, href }` (mapped to the DS `action` slot).
+ */
 
 // ============================================================================
-// TextTs
+// Types (API local intacta)
 // ============================================================================
 
 export interface EmptyStateAction {
@@ -29,43 +41,26 @@ export interface EmptyStateProps {
 // Component
 // ============================================================================
 
-/**
- * EmptyState - Reusable empty state component for lists and pages
- *
- * Features:
- * - Centered icon with muted background
- * - Title and description text
- * - Optional call-to-action button
- * - Consistent styling across the app
- */
 export function EmptyState({
-  icon: Icon,
+  icon: IconComponent,
   title,
   description,
   action,
   className,
 }: EmptyStateProps) {
   return (
-    <div className={cn('rounded-2xl bg-neutral-50/80 dark:bg-white/[0.03]', className)}>
-      <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
-        {/* Icon */}
-        <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.06] flex items-center justify-center mb-5 shadow-sm dark:shadow-none">
-          <Icon className="h-6 w-6 text-neutral-400 dark:text-neutral-500" />
-        </div>
-
-        {/* Title */}
-        <h3 className="text-base font-semibold text-foreground mb-1.5">{title}</h3>
-
-        {/* Description */}
-        <p className="text-sm text-muted-foreground max-w-sm leading-relaxed mb-6">{description}</p>
-
-        {/* Optional CTA */}
-        {action && (
-          <Button asChild>
+    <CadenceEmptyState
+      icon={<IconComponent aria-hidden="true" />}
+      title={title}
+      description={description}
+      className={className}
+      action={
+        action ? (
+          <Button asChild variant="secondary" size="sm">
             <Link href={action.href}>{action.label}</Link>
           </Button>
-        )}
-      </div>
-    </div>
+        ) : undefined
+      }
+    />
   );
 }

@@ -11,6 +11,7 @@ import * as React from 'react'
 
 import { useI18n } from '@/lib/i18n'
 import { useDebtorCompromisos } from '@/lib/hooks/cobranza/use-debtor-compromisos'
+import { Button } from '@/components/ui'
 
 void React
 
@@ -28,7 +29,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
         {Array.from({ length: 3 }, (_, i) => (
           <div
             key={i}
-            className="h-24 bg-neutral-100 dark:bg-neutral-800 rounded-md animate-pulse"
+            className="h-24 bg-neutral-100 dark:bg-neutral-800 rounded-sm animate-pulse"
           />
         ))}
       </div>
@@ -37,17 +38,19 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 flex items-center justify-between">
-        <p className="text-sm text-red-700 dark:text-red-400">
+      <div className="rounded-md border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
+        <p className="text-sm text-danger">
           {t('inmobiliaria.ai.cobranza.detail.compromisos.error')}: {error}
         </p>
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => void refetch()}
-          className="text-sm font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700"
+          hideArrow
         >
           {t('inmobiliaria.ai.cobranza.detail.compromisos.errorRetry')}
-        </button>
+        </Button>
       </div>
     )
   }
@@ -62,7 +65,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
     legals.length === 0
   ) {
     return (
-      <div className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
+      <div className="rounded-md border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
           {t('inmobiliaria.ai.cobranza.detail.compromisos.empty')}
         </p>
@@ -81,7 +84,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
             {paymentPlans.map((p) => (
               <li
                 key={p.id}
-                className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3"
+                className="rounded-sm border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-mono text-neutral-500 dark:text-neutral-400">
@@ -112,7 +115,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
             {claims.map((c) => (
               <li
                 key={c.id}
-                className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3"
+                className="rounded-sm border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-neutral-900 dark:text-white">
@@ -142,7 +145,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
             {legals.map((l) => (
               <li
                 key={l.id}
-                className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3"
+                className="rounded-sm border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-neutral-900 dark:text-white">

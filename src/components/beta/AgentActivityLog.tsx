@@ -1,5 +1,6 @@
 'use client';
 
+import { MonoLabel } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -38,28 +39,28 @@ const ICON_MAP: Record<string, Icon> = {
 // ============================================================================
 
 const STATUS_DOT: Record<string, string> = {
-  completed: 'bg-emerald-500',
-  failed: 'bg-red-500',
-  running: 'bg-blue-500 animate-pulse',
-  dispatching: 'bg-neutral-400 animate-pulse',
+  completed: 'bg-success',
+  failed: 'bg-danger',
+  running: 'bg-primary animate-pulse',
+  dispatching: 'bg-fg-subtle animate-pulse',
 };
 
 const AGENT_COLOR_BG: Record<string, string> = {
-  emerald: 'bg-emerald-50 dark:bg-emerald-500/10',
-  blue: 'bg-blue-50 dark:bg-blue-500/10',
-  amber: 'bg-amber-50 dark:bg-amber-500/10',
-  purple: 'bg-purple-50 dark:bg-purple-500/10',
-  pink: 'bg-pink-50 dark:bg-pink-500/10',
-  indigo: 'bg-indigo-50 dark:bg-indigo-600/10',
+  emerald: 'bg-success-soft',
+  blue: 'bg-primary-soft',
+  amber: 'bg-warning-soft',
+  purple: 'bg-surface-muted',
+  pink: 'bg-surface-muted',
+  indigo: 'bg-primary-soft',
 };
 
 const AGENT_COLOR_TEXT: Record<string, string> = {
-  emerald: 'text-emerald-600 dark:text-emerald-400',
-  blue: 'text-blue-600 dark:text-blue-400',
-  amber: 'text-amber-600 dark:text-amber-400',
-  purple: 'text-purple-600 dark:text-purple-400',
-  pink: 'text-pink-600 dark:text-pink-400',
-  indigo: 'text-indigo-600 dark:text-indigo-400',
+  emerald: 'text-success',
+  blue: 'text-primary',
+  amber: 'text-warning',
+  purple: 'text-fg-muted',
+  pink: 'text-fg-muted',
+  indigo: 'text-primary',
 };
 
 // ============================================================================
@@ -100,7 +101,7 @@ function AgentExecutionRow({ agent }: { agent: AgentExecution }) {
         ) : agent.status === 'completed' ? (
           <CheckCircle className="w-3.5 h-3.5 shrink-0" weight="fill" />
         ) : agent.status === 'failed' ? (
-          <XCircle className="w-3.5 h-3.5 shrink-0 text-red-500" weight="fill" />
+          <XCircle className="w-3.5 h-3.5 shrink-0 text-danger" weight="fill" />
         ) : AgentIcon ? (
           <AgentIcon className="w-3.5 h-3.5 shrink-0" weight="duotone" />
         ) : null}
@@ -139,12 +140,12 @@ function ActivityItem({ entry, onNavigate }: ActivityItemProps) {
         'w-full text-left p-3 rounded-xl',
         'border transition-colors',
         isActive
-          ? 'border-blue-200/60 dark:border-blue-500/20 hover:bg-blue-50/50 dark:hover:bg-blue-500/5'
+          ? 'border-primary/30 hover:bg-primary-soft'
           : hasFailed
-          ? 'border-red-200/60 dark:border-red-500/20 hover:bg-red-50/50 dark:hover:bg-red-500/5'
+          ? 'border-danger/30 hover:bg-danger-soft'
           : allCompleted
-          ? 'border-emerald-200/60 dark:border-emerald-500/20 hover:bg-emerald-50/50 dark:hover:bg-emerald-500/5'
-          : 'border-neutral-200 dark:border-border hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
+          ? 'border-success/30 hover:bg-success-soft'
+          : 'border-border hover:bg-surface-muted'
       )}
     >
       {/* Conversation title + timestamp */}
@@ -203,9 +204,9 @@ export function AgentActivityLog() {
       {/* Active executions */}
       {active.length > 0 && (
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-2 px-1">
+          <MonoLabel className="block mb-2 px-1 tracking-wider text-primary">
             {t('beta.agents.active')} ({active.length})
-          </h3>
+          </MonoLabel>
           <div className="space-y-2">
             {active.map((entry) => (
               <ActivityItem
@@ -221,9 +222,9 @@ export function AgentActivityLog() {
       {/* Finished executions */}
       {finished.length > 0 && (
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+          <MonoLabel className="block mb-2 px-1 tracking-wider text-muted-foreground">
             {t('beta.agents.recent')} ({finished.length})
-          </h3>
+          </MonoLabel>
           <div className="space-y-2">
             {finished.map((entry) => (
               <ActivityItem

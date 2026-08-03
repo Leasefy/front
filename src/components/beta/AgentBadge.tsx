@@ -7,6 +7,9 @@ import {
   FileText,
   ChatCircle,
   ChartBar,
+  Scales,
+  ArrowsLeftRight,
+  Bank,
   CheckCircle,
   XCircle,
   CircleNotch,
@@ -27,6 +30,9 @@ const ICON_MAP: Record<string, Icon> = {
   FileText,
   ChatCircle,
   ChartBar,
+  Scales,
+  ArrowsLeftRight,
+  Bank,
 };
 
 // ============================================================================
@@ -38,40 +44,40 @@ const COLOR_CLASSES: Record<
   { bg: string; border: string; text: string; activeBg: string }
 > = {
   emerald: {
-    bg: 'bg-emerald-50 dark:bg-emerald-500/10',
-    border: 'border-emerald-200 dark:border-emerald-500/30',
-    text: 'text-emerald-600 dark:text-emerald-400',
-    activeBg: 'bg-emerald-100 dark:bg-emerald-500/20',
+    bg: 'bg-success-soft',
+    border: 'border-success/30',
+    text: 'text-success',
+    activeBg: 'bg-success-soft',
   },
   blue: {
-    bg: 'bg-blue-50 dark:bg-blue-500/10',
-    border: 'border-blue-200 dark:border-blue-500/30',
-    text: 'text-blue-600 dark:text-blue-400',
-    activeBg: 'bg-blue-100 dark:bg-blue-500/20',
+    bg: 'bg-primary-soft',
+    border: 'border-primary/30',
+    text: 'text-primary',
+    activeBg: 'bg-primary-soft',
   },
   amber: {
-    bg: 'bg-amber-50 dark:bg-amber-500/10',
-    border: 'border-amber-200 dark:border-amber-500/30',
-    text: 'text-amber-600 dark:text-amber-400',
-    activeBg: 'bg-amber-100 dark:bg-amber-500/20',
+    bg: 'bg-warning-soft',
+    border: 'border-warning/30',
+    text: 'text-warning',
+    activeBg: 'bg-warning-soft',
   },
   purple: {
-    bg: 'bg-purple-50 dark:bg-purple-500/10',
-    border: 'border-purple-200 dark:border-purple-500/30',
-    text: 'text-purple-600 dark:text-purple-400',
-    activeBg: 'bg-purple-100 dark:bg-purple-500/20',
+    bg: 'bg-surface-muted',
+    border: 'border-border',
+    text: 'text-fg-muted',
+    activeBg: 'bg-surface-muted',
   },
   pink: {
-    bg: 'bg-pink-50 dark:bg-pink-500/10',
-    border: 'border-pink-200 dark:border-pink-500/30',
-    text: 'text-pink-600 dark:text-pink-400',
-    activeBg: 'bg-pink-100 dark:bg-pink-500/20',
+    bg: 'bg-surface-muted',
+    border: 'border-border',
+    text: 'text-fg-muted',
+    activeBg: 'bg-surface-muted',
   },
   indigo: {
-    bg: 'bg-indigo-50 dark:bg-indigo-600/10',
-    border: 'border-indigo-200 dark:border-indigo-500/30',
-    text: 'text-indigo-600 dark:text-indigo-400',
-    activeBg: 'bg-indigo-100 dark:bg-indigo-600/20',
+    bg: 'bg-primary-soft',
+    border: 'border-primary/30',
+    text: 'text-primary',
+    activeBg: 'bg-primary-soft',
   },
 };
 
@@ -120,14 +126,14 @@ export function AgentBadge({ agentType, status, duration, className }: AgentBadg
           colors.text,
         ],
         status === 'completed' && [
-          'bg-emerald-50 dark:bg-emerald-500/10',
-          'border-emerald-200 dark:border-emerald-500/30',
-          'text-emerald-600 dark:text-emerald-400',
+          'bg-success-soft',
+          'border-success/30',
+          'text-success',
         ],
         status === 'failed' && [
-          'bg-red-50 dark:bg-red-500/10',
-          'border-red-200 dark:border-red-500/30',
-          'text-red-600 dark:text-red-400',
+          'bg-danger-soft',
+          'border-danger/30',
+          'text-danger',
         ],
         className
       )}

@@ -1,5 +1,6 @@
 'use client';
 
+import { Eyebrow } from '@leasefy/cadence';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -41,9 +42,9 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-sm font-medium text-foreground">
+      <label className="text-sm font-medium text-fg">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="text-danger ml-0.5">*</span>}
       </label>
       {children}
     </div>
@@ -124,9 +125,7 @@ export function StepInmueble() {
 
       {/* Optional fields */}
       <div className="pt-2 border-t border-border">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-4">
-          Datos opcionales
-        </p>
+        <Eyebrow className="mb-4">Datos opcionales</Eyebrow>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Estrato */}

@@ -255,7 +255,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
           max-w-none p-0
           sm:rounded-none sm:translate-x-0 sm:translate-y-0
           sm:left-0 sm:top-0 sm:w-full sm:h-full sm:m-0
-          md:rounded-2xl md:max-w-2xl md:mx-auto md:my-12
+          md:rounded-xl md:max-w-2xl md:mx-auto md:my-12
           md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2
           md:w-full md:h-auto
           overflow-y-auto
@@ -274,7 +274,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
               role="alert"
               aria-live="assertive"
               data-testid="cf-cap-banner"
-              className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-800"
+              className="rounded-xl border border-[#B7791F]/30 bg-[#F8F0E0] px-4 py-3 text-sm text-[#B7791F] dark:bg-[#B7791F]/30 dark:text-[#B7791F] dark:border-[#B7791F]/30"
             >
               {t('inmobiliaria.ai.cotizador.askWhy.capExhausted.body', {
                 cap: error && error.code === 429 ? error.cap : capCount,
@@ -401,7 +401,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                       >
                         <Minus size={16} />
                       </button>
-                      <span className="min-w-[2rem] text-center text-base font-semibold">
+                      <span className="min-w-[2rem] text-center text-base font-semibold font-mono tabular-nums">
                         {draftValues.codeudores}
                       </span>
                       <button
@@ -483,7 +483,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
             {/* Error UX (D-33-13) */}
             {error && error.code === 'timeout' && (
               <div className="mt-2 space-y-2">
-                <p role="alert" className="text-sm text-rose-600 dark:text-rose-400">
+                <p role="alert" className="text-sm text-[#C4503B] dark:text-[#E0664D]">
                   {t('inmobiliaria.ai.cotizador.askWhy.errorGeneric')}
                 </p>
                 <button
@@ -499,7 +499,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
             )}
             {error && (error.code === 500 || error.code === 'network') && (
               <div className="mt-2 space-y-2">
-                <p role="alert" className="text-sm text-rose-600 dark:text-rose-400">
+                <p role="alert" className="text-sm text-[#C4503B] dark:text-[#E0664D]">
                   {t('inmobiliaria.ai.cotizador.askWhy.errorGeneric')}
                 </p>
                 <button
@@ -514,7 +514,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
               </div>
             )}
             {error && error.code === 400 && (
-              <p role="alert" className="mt-2 text-sm text-rose-600 dark:text-rose-400">
+              <p role="alert" className="mt-2 text-sm text-[#C4503B] dark:text-[#E0664D]">
                 {t('inmobiliaria.ai.cotizador.askWhy.error400Prefix') + error.message}
               </p>
             )}
@@ -542,7 +542,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                   void handleSubmit()
                 }}
                 className={[
-                  'w-full rounded-xl px-4 py-2.5 text-sm font-semibold uppercase tracking-wide transition-colors',
+                  'w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors',
                   canSubmit
                     ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                     : 'bg-muted text-muted-foreground cursor-not-allowed',

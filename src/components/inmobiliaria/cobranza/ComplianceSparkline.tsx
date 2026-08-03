@@ -89,8 +89,8 @@ export function ComplianceSparkline({ buckets, ariaLabel }: ComplianceSparklineP
                 isZero
                   ? 'fill-muted text-muted'
                   : hover === i
-                    ? 'fill-indigo-600 dark:fill-indigo-400'
-                    : 'fill-indigo-500/70 dark:fill-indigo-400/60'
+                    ? 'fill-[#1A40FF]'
+                    : 'fill-[#1A40FF]/70'
               }
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}

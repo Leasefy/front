@@ -21,8 +21,8 @@ export function NotificationRowSkeleton() {
 
       {/* Actions */}
       <div className="flex items-center gap-1">
-        <Skeleton className="h-8 w-8 rounded-lg" />
-        <Skeleton className="h-8 w-8 rounded-lg" />
+        <Skeleton className="h-8 w-8 rounded-md" />
+        <Skeleton className="h-8 w-8 rounded-md" />
       </div>
     </div>
   );

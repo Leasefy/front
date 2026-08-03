@@ -190,6 +190,14 @@ export interface Application {
   documents: Partial<DocumentInfo>;
   hasCoSigner: boolean;
   coSigner?: CoSignerInfo;
+  /** Steps the user explicitly advanced through (a step never counts as
+   *  completed from mere data presence — prefilled data must be reviewed). */
+  confirmedSteps?: number[];
+  /** Set when data was prefilled from a previous application — drives the
+   *  "revisa tus datos" notice in the wizard. */
+  prefilledAt?: string;
+  /** True once the user dismissed the prefill notice. */
+  prefillNoticeDismissed?: boolean;
   createdAt: string;
   updatedAt: string;
 }

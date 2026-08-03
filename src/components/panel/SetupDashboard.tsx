@@ -112,7 +112,7 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-100 rounded-full text-xs font-semibold text-indigo-700 mb-3"
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-soft rounded-full text-xs font-semibold text-primary mb-3"
               >
                 <Sparkle className="w-3.5 h-3.5" />
                 Configurando tu cuenta
@@ -139,7 +139,7 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
               <button
                 type="button"
                 onClick={onDismiss}
-                className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+                className="p-2 text-fg-subtle hover:text-fg-muted hover:bg-surface-muted rounded-md transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -154,20 +154,20 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
           transition={{ delay: 0.3 }}
           className="mb-8"
         >
-          <div className="bg-card border border-plan-border rounded-lg overflow-hidden">
+          <div className="bg-card border border-plan-border rounded-md overflow-hidden">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-plan-primary">Progreso de configuración</h2>
-                <span className="text-2xl font-bold text-indigo-600">{progressPercentage}%</span>
+                <span className="text-2xl font-bold text-primary">{progressPercentage}%</span>
               </div>
 
               {/* Progress bar */}
-              <div className="h-3 bg-neutral-100 rounded-full overflow-hidden mb-6">
+              <div className="h-3 bg-surface-muted rounded-full overflow-hidden mb-6">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPercentage}%` }}
                   transition={{ duration: 1, delay: 0.5 }}
-                  className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full"
+                  className="h-full bg-primary-soft dark:bg-[#1A40FF]/12 rounded-full"
                 />
               </div>
 
@@ -185,34 +185,34 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
                       transition={{ delay: 0.4 + index * 0.1 }}
                     >
                       {task.completed ? (
-                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
-                          <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center mb-3">
+                        <div className="p-4 rounded-xl bg-success-soft border border-success/20">
+                          <div className="w-10 h-10 rounded-md bg-success flex items-center justify-center mb-3">
                             <Check className="w-5 h-5 text-white" strokeWidth={3} />
                           </div>
-                          <p className="text-sm font-medium text-emerald-700">{task.title}</p>
-                          <p className="text-xs text-emerald-600 mt-0.5">Completado</p>
+                          <p className="text-sm font-medium text-success">{task.title}</p>
+                          <p className="font-mono text-[10.5px] uppercase tracking-[0.06em] text-success mt-1">Completado</p>
                         </div>
                       ) : isNext ? (
                         <Link
                           href={task.href}
-                          className="block p-4 rounded-xl bg-indigo-50 border-2 border-indigo-300 hover:border-indigo-400 hover:shadow-md transition-all group"
+                          className="block p-4 rounded-xl bg-primary-soft border-2 border-primary/30 hover:border-primary/30 hover: transition-all group"
                         >
-                          <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                          <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                             <Icon className="w-5 h-5 text-white" />
                           </div>
-                          <p className="text-sm font-semibold text-indigo-700">{task.title}</p>
-                          <p className="text-xs text-indigo-600 mt-0.5 flex items-center gap-1">
+                          <p className="text-sm font-semibold text-primary">{task.title}</p>
+                          <p className="text-xs text-primary mt-0.5 flex items-center gap-1">
                             Continuar
                             <ArrowRight className="w-3 h-3" />
                           </p>
                         </Link>
                       ) : (
-                        <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200 opacity-60">
-                          <div className="w-10 h-10 rounded-lg bg-neutral-200 flex items-center justify-center mb-3">
-                            <Circle className="w-5 h-5 text-neutral-400" />
+                        <div className="p-4 rounded-xl bg-surface-muted border border-border opacity-60">
+                          <div className="w-10 h-10 rounded-md bg-surface-muted flex items-center justify-center mb-3">
+                            <Circle className="w-5 h-5 text-fg-subtle" />
                           </div>
-                          <p className="text-sm font-medium text-neutral-500">{task.title}</p>
-                          <p className="text-xs text-neutral-400 mt-0.5">Pendiente</p>
+                          <p className="text-sm font-medium text-fg-muted">{task.title}</p>
+                          <p className="text-xs text-fg-subtle mt-0.5">Pendiente</p>
                         </div>
                       )}
                     </motion.div>
@@ -231,10 +231,10 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
             transition={{ delay: 0.6 }}
             className="lg:col-span-2"
           >
-            <div className="bg-card border border-plan-border rounded-lg overflow-hidden">
+            <div className="bg-card border border-plan-border rounded-md overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
                 <h2 className="font-semibold text-plan-primary">Tu propiedad en borrador</h2>
-                <span className="text-xs font-medium text-amber-600 bg-amber-100 px-2 py-1 rounded-full">
+                <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.06em] text-fg-muted bg-surface-muted px-2 py-1 rounded-full">
                   Borrador
                 </span>
               </div>
@@ -242,10 +242,10 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
               <div className="p-5">
                 <div className="flex gap-5">
                   {/* Placeholder image */}
-                  <div className="relative w-32 h-32 rounded-lg overflow-hidden flex-shrink-0 bg-neutral-100 border-2 border-dashed border-neutral-300 flex items-center justify-center">
+                  <div className="relative w-32 h-32 rounded-md overflow-hidden flex-shrink-0 bg-surface-muted border-2 border-dashed border-border-strong flex items-center justify-center">
                     <div className="text-center">
-                      <Camera className="w-8 h-8 text-neutral-300 mx-auto mb-1" />
-                      <span className="text-xs text-neutral-400">Sin fotos</span>
+                      <Camera className="w-8 h-8 text-fg-subtle mx-auto mb-1" />
+                      <span className="text-xs text-fg-subtle">Sin fotos</span>
                     </div>
                   </div>
 
@@ -259,15 +259,15 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
                     </p>
 
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-xs text-fg-muted bg-surface-muted px-2 py-1 rounded-full">
                         <Camera className="w-3 h-3" />
                         Agregar fotos
                       </span>
-                      <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-xs text-fg-muted bg-surface-muted px-2 py-1 rounded-full">
                         <FileText className="w-3 h-3" />
                         Descripción
                       </span>
-                      <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-xs text-fg-muted bg-surface-muted px-2 py-1 rounded-full">
                         <Buildings className="w-3 h-3" />
                         Amenidades
                       </span>
@@ -275,7 +275,7 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
 
                     <Link
                       href="/publicar?from=panel"
-                      className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-indigo-600 text-white uppercase tracking-wide font-mono text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
+                      className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-primary text-white text-sm font-semibold rounded-md hover:opacity-90 transition-colors"
                     >
                       Completar propiedad
                       <ArrowRight className="w-4 h-4" />
@@ -292,7 +292,7 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
           >
-            <div className="bg-card border border-plan-border rounded-lg overflow-hidden">
+            <div className="bg-card border border-plan-border rounded-md overflow-hidden">
               <div className="px-5 py-4 border-b border-plan-border">
                 <h2 className="font-semibold text-plan-primary">Recursos para ti</h2>
               </div>
@@ -306,16 +306,16 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
                       href={resource.href}
                       className="flex items-center gap-4 p-4 hover:bg-muted transition-colors group"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-200 transition-colors">
-                        <Icon className="w-5 h-5 text-indigo-600" />
+                      <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center flex-shrink-0 group-hover:bg-primary-soft transition-colors">
+                        <Icon className="w-5 h-5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-plan-primary group-hover:text-indigo-600 transition-colors">
+                        <p className="text-sm font-medium text-plan-primary group-hover:text-primary transition-colors">
                           {resource.title}
                         </p>
                         <p className="text-xs text-plan-muted">{resource.description}</p>
                       </div>
-                      <CaretRight className="w-4 h-4 text-plan-muted group-hover:text-indigo-600 transition-colors" />
+                      <CaretRight className="w-4 h-4 text-plan-muted group-hover:text-primary transition-colors" />
                     </Link>
                   )
                 })}
@@ -331,14 +331,14 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
           transition={{ delay: 0.8 }}
           className="mt-6"
         >
-          <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-lg p-6 text-white">
+          <div className="bg-primary-soft dark:bg-[#1A40FF]/12 rounded-md p-6 text-primary">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                <Sparkle className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center flex-shrink-0">
+                <Sparkle className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <h3 className="font-semibold text-lg">Consejo rápido</h3>
-                <p className="text-indigo-100 mt-1 text-sm">
+                <p className="text-primary mt-1 text-sm">
                   Los anuncios con al menos 10 fotos de buena calidad reciben 3x más solicitudes.
                   Asegúrate de incluir fotos de todas las habitaciones, baños, cocina y áreas comunes.
                 </p>

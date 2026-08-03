@@ -75,7 +75,7 @@ export function useLegalArtifacts(
   }, [agencyId, filters?.kind, filters?.status])
 
   useEffect(() => {
-    if (!agencyId) return
+    if (!agencyId) { setIsLoading(false); return }
     void fetchData()
   }, [fetchData, agencyId])
 

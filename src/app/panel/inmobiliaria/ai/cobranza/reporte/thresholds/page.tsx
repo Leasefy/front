@@ -17,9 +17,6 @@
  *   mvp:docs/DESIGN.md §4 (card surfaces)
  */
 
-import Link from 'next/link'
-import { CaretLeft } from '@phosphor-icons/react'
-
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useThresholds } from '@/lib/hooks/cobranza/use-thresholds'
@@ -42,13 +39,6 @@ function ThresholdsContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div>
-        <Link
-          href="/panel/inmobiliaria/ai/cobranza/reporte"
-          className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wide text-muted-foreground hover:text-foreground transition"
-        >
-          <CaretLeft className="w-3.5 h-3.5" aria-hidden="true" />
-          {t('inmobiliaria.ai.cobranza.reporte.pageTitle')}
-        </Link>
         <h1 className="text-h2 font-heading text-foreground mt-2">
           {t('inmobiliaria.ai.cobranza.reporte.thresholds.pageTitle')}
         </h1>
@@ -67,7 +57,7 @@ function ThresholdsContent() {
       {isLoading && !active && <PageSkeleton variant="list" />}
 
       {error && (
-        <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 p-3 text-sm text-rose-700 dark:text-rose-400">
+        <div className="rounded-xl bg-danger-soft text-danger">
           Error: {error}
         </div>
       )}

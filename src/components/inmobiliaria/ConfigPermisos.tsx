@@ -26,12 +26,23 @@ import {
   Wrench,
   ClipboardText,
   Handshake,
+  CreditCard,
+  Scales,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Spinner } from '@/components/ui/spinner';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Dialog,
@@ -66,6 +77,12 @@ import {
 interface ConfigPermisosProps {
   permissions: Record<AgencyRole, RolePermissions>;
   onSave?: (permissions: Record<AgencyRole, RolePermissions>) => void;
+  /**
+   * Reset every role to the system defaults on the server (destructive — also
+   * clears per-member overrides). When provided, "Restablecer" delegates here
+   * instead of doing a local-only reset. Guarded by a confirmation dialog.
+   */
+  onReset?: () => void | Promise<void>;
   isLoading?: boolean;
 }
 
@@ -84,6 +101,8 @@ const MODULE_ICONS: Record<PermissionModule, React.ElementType> = {
   documentos: FileText,
   analytics: ChartBar,
   contratos: Handshake,
+  subscription: CreditCard,
+  avaluos: Scales,
 };
 
 // Action icons map
@@ -138,15 +157,18 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
           <div className="flex items-center justify-center">
             <label
               className={cn(
-                'relative flex items-center justify-center w-10 h-10 rounded-lg transition-all cursor-pointer',
+                'relative flex items-center justify-center w-10 h-10 rounded-md transition-all cursor-pointer',
                 isEnabled
                   ? isDangerous
-                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                    : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                  : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400',
+                    ? 'bg-warning-soft text-warning'
+                    : 'bg-success-soft text-success'
+                  : 'bg-surface-muted text-fg-muted',
                 isLocked && 'opacity-60 cursor-not-allowed'
               )}
             >
+              {/* allowlist: sr-only native checkbox is the accessible control behind a bespoke
+                  colored action-tile toggle (icon + state color) — Cadence Checkbox/Switch can't
+                  host the tile visual; the input stays hidden purely for a11y/keyboard. */}
               <input
                 type="checkbox"
                 checked={isEnabled}
@@ -160,7 +182,7 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
                 <ActionIcon className="w-4 h-4" />
               )}
               {isDangerous && isEnabled && (
-                <Warning className="absolute -top-1 -right-1 w-3.5 h-3.5 text-amber-500" weight="fill" />
+                <Warning className="absolute -top-1 -right-1 w-3.5 h-3.5 text-warning" weight="fill" />
               )}
             </label>
           </div>
@@ -168,12 +190,12 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
         <TooltipContent side="top">
           <div className="text-xs">
             <p className="font-medium">{getActionLabel(action)}</p>
-            <p className="text-neutral-400">{actionDescription}</p>
+            <p className="text-fg-subtle">{actionDescription}</p>
             {isDangerous && isEnabled && (
-              <p className="text-amber-400 mt-1">{t('inmobiliaria.config.permissions.sensitivePermission')}</p>
+              <p className="text-warning mt-1">{t('inmobiliaria.config.permissions.sensitivePermission')}</p>
             )}
             {isLocked && (
-              <p className="text-neutral-500 mt-1">{t('inmobiliaria.config.permissions.adminAlwaysHas')}</p>
+              <p className="text-fg-muted mt-1">{t('inmobiliaria.config.permissions.adminAlwaysHas')}</p>
             )}
           </div>
         </TooltipContent>
@@ -209,22 +231,22 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
     <motion.tr
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-[#141416] transition-colors"
+      className="border-b border-border hover:bg-muted/40 transition-colors"
     >
       {/* Module Name */}
-      <td className="p-4">
+      <TableCell className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <ModuleIcon className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
+          <div className="w-9 h-9 rounded-md bg-surface-muted flex items-center justify-center">
+            <ModuleIcon className="w-5 h-5 text-fg-muted" />
           </div>
-          <span className="font-medium text-neutral-900 dark:text-white">
+          <span className="font-medium text-fg">
             {getModuleLabel(module)}
           </span>
         </div>
-      </td>
+      </TableCell>
 
       {/* Select All for Row */}
-      <td className="p-4">
+      <TableCell className="p-4">
         <div className="flex items-center justify-center">
           <Checkbox
             checked={allEnabled ? true : someEnabled ? 'indeterminate' : false}
@@ -233,11 +255,11 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
             className={cn(isAdmin && 'opacity-60 cursor-not-allowed')}
           />
         </div>
-      </td>
+      </TableCell>
 
       {/* Action Columns */}
       {ALL_PERMISSION_ACTIONS.map((action) => (
-        <td key={action} className="p-4">
+        <TableCell key={action} className="p-4">
           <PermissionCell
             module={module}
             action={action}
@@ -245,7 +267,7 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
             isAdmin={isAdmin}
             onChange={(enabled) => onToggle(module, action, enabled)}
           />
-        </td>
+        </TableCell>
       ))}
     </motion.tr>
   );
@@ -258,6 +280,7 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
 export function ConfigPermisos({
   permissions: initialPermissions,
   onSave,
+  onReset,
   isLoading = false,
 }: ConfigPermisosProps) {
   const { t } = useI18n();
@@ -336,11 +359,17 @@ export function ConfigPermisos({
     return enabled.length > 0 && enabled.length < ALL_PERMISSION_MODULES.length;
   }, [currentPermissions]);
 
-  // Reset to defaults
-  const handleReset = () => {
+  // Reset to defaults. When the parent wires `onReset`, delegate to it (it
+  // resets on the server via DELETE and refetches, remounting this component
+  // with the fresh matrix). Without a handler, fall back to a local-only reset.
+  const handleReset = async () => {
+    setResetDialogOpen(false);
+    if (onReset) {
+      await onReset();
+      return;
+    }
     setPermissions(DEFAULT_ROLE_PERMISSIONS);
     setHasChanges(true);
-    setResetDialogOpen(false);
   };
 
   // Save changes
@@ -354,12 +383,12 @@ export function ConfigPermisos({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-indigo-500" />
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-fg flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-fg-muted" />
             {t('inmobiliaria.config.permissions.permissionsTitle')}
           </h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+          <p className="text-sm text-fg-muted">
             {t('inmobiliaria.config.permissions.permissionsSubtitle')}
           </p>
         </div>
@@ -375,12 +404,13 @@ export function ConfigPermisos({
           </Button>
           <Button
             size="sm"
+            hideArrow
             onClick={() => setConfirmDialogOpen(true)}
             disabled={!hasChanges || isLoading}
           >
             {isLoading ? (
               <>
-                <ArrowClockwise className="w-4 h-4 mr-2 animate-spin" />
+                <Spinner size="sm" variant="current" className="mr-2" />
                 {t('inmobiliaria.config.permissions.saving')}
               </>
             ) : (
@@ -398,10 +428,10 @@ export function ConfigPermisos({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
+          className="flex items-center gap-2 p-3 rounded-md bg-warning-soft border border-warning/30"
         >
-          <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
-          <p className="text-sm text-amber-700 dark:text-amber-300">
+          <Info className="w-5 h-5 text-warning shrink-0" />
+          <p className="text-sm text-warning">
             {t('inmobiliaria.config.permissions.unsavedChanges')}
           </p>
         </motion.div>
@@ -409,12 +439,16 @@ export function ConfigPermisos({
 
       {/* Role Tabs */}
       <Tabs value={activeRole} onValueChange={(v) => setActiveRole(v as AgencyRole)}>
-        <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:flex">
+        <TabsList variant="segmented" className="w-full sm:w-auto">
           {ALL_ROLES.map((role) => (
-            <TabsTrigger key={role} value={role} className="gap-2">
+            <TabsTrigger
+              key={role}
+              value={role}
+              className="inline-flex flex-1 items-center justify-center gap-2 sm:flex-initial"
+            >
               <span className="hidden sm:inline">{getRoleLabel(role)}</span>
               <span className="sm:hidden">{getRoleLabel(role).slice(0, 3)}</span>
-              <span className="inline-flex px-1.5 py-0.5 rounded-full bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 text-xs font-medium">
+              <span className="inline-flex rounded-full bg-surface-muted px-1.5 py-0.5 text-xs tabular-nums text-fg-muted">
                 {getPermissionCount(role)}
               </span>
             </TabsTrigger>
@@ -425,53 +459,69 @@ export function ConfigPermisos({
           <TabsContent key={role} value={role}>
             {/* Admin Note */}
             {role === 'admin' && (
-              <div className="mb-4 p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+              <div className="mb-4 p-3 rounded-md bg-surface-muted border border-border">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  <p className="text-sm text-purple-700 dark:text-purple-300">
+                  <ShieldCheck className="w-5 h-5 text-fg-muted" />
+                  <p className="text-sm text-fg-muted">
                     {t('inmobiliaria.config.permissions.adminNote')}
                   </p>
                 </div>
               </div>
             )}
 
+            {/* Member override note — saving/reset makes the role template
+                authoritative and clears per-member customizations for that role. */}
+            {role !== 'admin' && (
+              <div className="mb-4 p-3 rounded-md bg-surface-muted border border-border">
+                <div className="flex items-center gap-2">
+                  <Info className="w-5 h-5 text-fg-muted shrink-0" />
+                  <p className="text-sm text-fg-muted">
+                    {t('inmobiliaria.config.permissions.memberOverrideNote')}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Permission Matrix Table */}
-            <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c]">
-              <table className="w-full min-w-[700px]">
-                <thead>
-                  <tr className="border-b border-neutral-100 dark:border-neutral-800">
-                    <th className="text-left p-4 w-[200px]">
-                      <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+            <div className="overflow-x-auto rounded-xl border border-border bg-card">
+              <Table className="w-full min-w-[700px]">
+                <TableHeader>
+                  <TableRow className="border-b border-faint dark:border-strong">
+                    <TableHead className="text-left p-4 w-[200px]">
+                      <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
                         {t('inmobiliaria.config.permissions.module')}
                       </span>
-                    </th>
-                    <th className="p-4 w-[60px] text-center">
-                      <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                    </TableHead>
+                    <TableHead className="p-4 w-[60px] text-center">
+                      <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
                         {t('inmobiliaria.config.permissions.all')}
                       </span>
-                    </th>
+                    </TableHead>
                     {ALL_PERMISSION_ACTIONS.map((action) => {
                       const ActionIcon = ACTION_ICONS[action];
                       const allEnabled = isActionFullyEnabled(action);
                       const someEnabled = isActionPartiallyEnabled(action);
 
                       return (
-                        <th key={action} className="p-4 w-[80px]">
+                        <TableHead key={action} className="p-4 w-[80px]">
                           <div className="flex flex-col items-center gap-1">
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
+                                  {/* allowlist: table column bulk-toggle trigger (grant/revoke an
+                                      action across all modules) — a clickable column header with
+                                      icon+label+checkbox, no Cadence primitive models it */}
                                   <button
                                     onClick={() => handleToggleAllAction(action, !allEnabled)}
                                     disabled={isAdmin}
                                     className={cn(
                                       'flex flex-col items-center gap-1 p-1 rounded transition-colors',
-                                      !isAdmin && 'hover:bg-neutral-100 dark:hover:bg-neutral-800',
+                                      !isAdmin && 'hover:bg-surface-muted dark:hover:bg-ink',
                                       isAdmin && 'opacity-60 cursor-not-allowed'
                                     )}
                                   >
-                                    <ActionIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                                    <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                                    <ActionIcon className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
+                                    <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
                                       {getActionLabel(action)}
                                     </span>
                                     <Checkbox
@@ -491,12 +541,12 @@ export function ConfigPermisos({
                               </Tooltip>
                             </TooltipProvider>
                           </div>
-                        </th>
+                        </TableHead>
                       );
                     })}
-                  </tr>
-                </thead>
-                <tbody>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {ALL_PERMISSION_MODULES.map((module) => (
                     <PermissionRow
                       key={module}
@@ -507,27 +557,27 @@ export function ConfigPermisos({
                       onToggleAll={handleToggleAllModule}
                     />
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
 
             {/* Legend */}
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-neutral-500 dark:text-neutral-400">
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-fg-muted">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                  <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" weight="bold" />
+                <div className="w-6 h-6 rounded-sm bg-success-soft flex items-center justify-center">
+                  <Check className="w-3.5 h-3.5 text-success" weight="bold" />
                 </div>
                 <span>{t('inmobiliaria.config.permissions.legendActive')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                  <Check className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" weight="bold" />
+                <div className="w-6 h-6 rounded-sm bg-warning-soft flex items-center justify-center">
+                  <Check className="w-3.5 h-3.5 text-warning" weight="bold" />
                 </div>
                 <span>{t('inmobiliaria.config.permissions.legendSensitive')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-                  <Eye className="w-3.5 h-3.5 text-neutral-400" />
+                <div className="w-6 h-6 rounded-sm bg-surface-muted flex items-center justify-center">
+                  <Eye className="w-3.5 h-3.5 text-fg-muted" />
                 </div>
                 <span>{t('inmobiliaria.config.permissions.legendNoPermission')}</span>
               </div>
@@ -560,13 +610,13 @@ export function ConfigPermisos({
       <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-amber-600 dark:text-amber-400">{t('inmobiliaria.config.permissions.resetTitle')}</DialogTitle>
+            <DialogTitle className="text-warning">{t('inmobiliaria.config.permissions.resetTitle')}</DialogTitle>
             <DialogDescription>
               {t('inmobiliaria.config.permissions.resetDescription')}
             </DialogDescription>
           </DialogHeader>
-          <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-            <p className="text-sm text-amber-700 dark:text-amber-300">
+          <div className="p-4 rounded-md bg-warning-soft border border-warning/30">
+            <p className="text-sm text-warning">
               {t('inmobiliaria.config.permissions.resetWarning')}
             </p>
           </div>
@@ -574,7 +624,7 @@ export function ConfigPermisos({
             <Button variant="outline" onClick={() => setResetDialogOpen(false)}>
               {t('inmobiliaria.config.permissions.cancel')}
             </Button>
-            <Button variant="destructive" onClick={handleReset}>
+            <Button variant="destructive" onClick={handleReset} disabled={isLoading}>
               {t('inmobiliaria.config.permissions.reset')}
             </Button>
           </DialogFooter>

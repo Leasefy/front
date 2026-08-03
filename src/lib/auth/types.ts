@@ -5,6 +5,8 @@
  * Backend uses uppercase roles (Prisma enum).
  */
 
+import type { ActiveContext } from './active-context'
+
 // ============================================================================
 // Roles
 // ============================================================================
@@ -117,6 +119,10 @@ export interface Agency {
   portfolioSize?: string
   yearsInBusiness?: number
   services?: string[]
+  /** Brand colors. GET /inmobiliaria/agency returns this for every active member
+   *  (unlike the admin-only /inmobiliaria/config), so team members get the brand
+   *  identity too. Hex '#rrggbb'. */
+  branding?: { primaryColor?: string; secondaryColor?: string }
 }
 
 export type AgencySize = 'small' | 'medium' | 'large' | 'enterprise'
@@ -156,11 +162,17 @@ export interface User {
   birthDate?: string
   emergencyContactName?: string
   emergencyContactPhone?: string
+  /** ISO timestamp of Supabase email confirmation; undefined if not confirmed */
+  emailConfirmedAt?: string
   role: UserRole
   /** The raw backend role before frontend mapping */
   backendRole?: BackendRole
   /** True if the user has an email+password credential (false = Google-only) */
   hasPassword?: boolean
+  /** Where this profile came from: 'backend' = GET /users/me (authoritative),
+   *  'session' = degraded Supabase-session fallback while the backend is
+   *  unreachable (fabricates onboardingCompleted — never trust it as truth). */
+  profileSource?: 'backend' | 'session'
   // Onboarding fields
   onboardingCompleted?: boolean
   onboardingStep?: number
@@ -185,11 +197,25 @@ export interface AuthState {
    * Callers should redirect to /onboarding/seleccionar-rol when this is true.
    */
   needsOnboarding: boolean
-  /** Agency the user belongs to (populated for AGENT / INMOBILIARIA roles) */
+  /** Agency the user belongs to (populated for AGENT / INMOBILIARIA roles AND
+   *  for personal-role users who hold an agency membership — coexistence) */
   agency: Agency | null
   /** The user's role within the agency */
   agencyRole: AgencyMemberRole | null
+  /** Membership status within the agency ('ACTIVE' | 'INVITED' | …) or null. */
+  agencyMemberStatus: string | null
+  /** True ONLY when the user is an ACTIVE agency member — this is what grants
+   *  agency-panel access. An INVITED (not-yet-accepted) member is false. */
+  hasActiveAgencyMembership: boolean
+  /** True once the agency-membership probe has settled for the current session.
+   *  The agency panel HOLDS (spinner) rather than bouncing a personal-role user
+   *  while this is false, so a dual-context user isn't redirected mid-probe. */
+  agencyMembershipChecked: boolean
+  /** Effective active context. Pure agency → 'agency'; pure tenant/landlord →
+   *  'personal'; dual-context → the user's persisted choice (default personal). */
+  activeContext: ActiveContext
 }
+
 
 export interface AuthContextType extends AuthState {
   signInWithGoogle: () => Promise<void>
@@ -206,10 +232,18 @@ export interface AuthContextType extends AuthState {
   /** Alias for signOut - backwards compatible */
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
-  updateProfile: (data: { firstName?: string; lastName?: string; phone?: string; rut?: string; address?: string; birthDate?: string; emergencyContactName?: string; emergencyContactPhone?: string }) => Promise<void>
+  /** null clears a field on the backend; undefined leaves it unchanged */
+  updateProfile: (data: { firstName?: string | null; lastName?: string | null; phone?: string | null; rut?: string | null; address?: string | null; birthDate?: string | null; emergencyContactName?: string | null; emergencyContactPhone?: string | null }) => Promise<void>
   setMfaVerified: () => void
   /** Set agency context (called after registration or login for agency members) */
   setAgency: (agency: Agency | null, role: AgencyMemberRole | null) => void
+  /** Manually retry fetching the agency membership (e.g. an error card's
+   *  "Intentar de nuevo" button). Also re-arms the automatic self-heal
+   *  backstop in `AuthProvider` if it had already given up retrying. */
+  refreshAgency: () => Promise<void>
+  /** Switch the active context for a DUAL-CONTEXT user. Persisted per-user;
+   *  a no-op for single-context users. */
+  setActiveContext: (context: ActiveContext) => void
 }
 
 /**

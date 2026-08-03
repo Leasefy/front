@@ -10,6 +10,7 @@ import { Eyebrow } from '@/components/brand';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
+import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
 import {
   Key,
@@ -137,6 +138,10 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, mfaRequired } = useAuth();
+  // Admin can switch signup profiles off (see /admin/registration-profiles).
+  // Fails open: while loading or if the config backend is down, all are shown.
+  const { isEnabled: isProfileEnabled } = useEnabledProfiles();
+  const visibleRoleCards = roleCards.filter((card) => isProfileEnabled(card.id));
 
   const [mode, setMode] = React.useState<AuthMode>('login');
   const [registerStep, setRegisterStep] = React.useState<RegisterStep>('role');
@@ -543,7 +548,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               </div>
             ) : (
               <>
-                {roleCards.map((card, index) => {
+                {visibleRoleCards.map((card, index) => {
                   const Icon = card.icon;
                   const isSelected = selectedRole === card.id;
 

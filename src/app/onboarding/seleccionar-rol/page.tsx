@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { House, Buildings, Storefront } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/use-auth'
+import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 
@@ -16,6 +17,9 @@ const PENDING_INVITATION_KEY = 'pending-invitation-token'
 export default function SeleccionarRolPage() {
   const router = useRouter()
   const { user, hasActiveAgencyMembership } = useAuth()
+  // Admin can switch signup profiles off (see /admin/registration-profiles).
+  // Fails open: while loading or if the config backend is down, all are shown.
+  const { isEnabled: isProfileEnabled } = useEnabledProfiles()
   const [selected, setSelected] = useState<RoleChoice>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -71,6 +75,7 @@ export default function SeleccionarRolPage() {
 
         <div className="grid grid-cols-1 gap-4 mb-8">
           {/* Tenant card */}
+          {isProfileEnabled('tenant') && (
           <button
             type="button"
             onClick={() => setSelected('tenant')}
@@ -103,8 +108,10 @@ export default function SeleccionarRolPage() {
               </motion.div>
             )}
           </button>
+          )}
 
           {/* Landlord card */}
+          {isProfileEnabled('landlord') && (
           <button
             type="button"
             onClick={() => setSelected('landlord')}
@@ -137,8 +144,10 @@ export default function SeleccionarRolPage() {
               </motion.div>
             )}
           </button>
+          )}
 
           {/* Inmobiliaria card */}
+          {isProfileEnabled('agency') && (
           <button
             type="button"
             onClick={() => setSelected('inmobiliaria')}
@@ -171,6 +180,7 @@ export default function SeleccionarRolPage() {
               </motion.div>
             )}
           </button>
+          )}
         </div>
 
         {/* Continue button */}

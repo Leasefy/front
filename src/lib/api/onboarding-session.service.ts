@@ -94,6 +94,80 @@ function isErrorLike(value: unknown): value is { error: string } {
   )
 }
 
+// ── Zod validation body → Spanish per-field message ─────────────────────────
+//
+// The agent registers its onboarding routes on an `OpenAPIHono` WITHOUT a
+// custom `defaultHook`, so a body that fails Zod validation is returned by
+// `@hono/zod-validator` as `c.json(safeParseResult, 400)`. The serialized
+// shape is:
+//
+//   { success: false, error: { name: 'ZodError', issues: [ ZodIssue, ... ] } }
+//
+// Each issue carries a `path` (e.g. `['address', 'calle']`) and a default
+// English `message`. We translate the leaf field to a Spanish label and the
+// issue code to a short Spanish detail so the user sees "Calle: mínimo 2
+// caracteres" instead of a bare "(400)". Handler-thrown errors keep the
+// `{ error: string }` shape and are handled by `isErrorLike` below.
+
+interface ZodIssueLike {
+  path: (string | number)[]
+  message: string
+  code?: string
+  minimum?: number
+  maximum?: number
+  type?: string
+  validation?: string
+}
+
+function isZodValidationBody(value: unknown): value is { error: { issues: ZodIssueLike[] } } {
+  if (typeof value !== 'object' || value === null) return false
+  const error = (value as { error?: unknown }).error
+  if (typeof error !== 'object' || error === null) return false
+  const issues = (error as { issues?: unknown }).issues
+  return Array.isArray(issues) && issues.length > 0
+}
+
+const FIELD_LABELS_ES: Record<string, string> = {
+  legalName: 'Razón social',
+  nit: 'NIT',
+  calle: 'Calle',
+  ciudad: 'Ciudad',
+  departamento: 'Departamento',
+  codigoPostal: 'Código postal',
+  primaryContactEmail: 'Correo de contacto',
+  primaryContactPhone: 'Teléfono de contacto',
+}
+
+function issueFieldLabel(issue: ZodIssueLike): string {
+  const leaf = issue.path.length > 0 ? String(issue.path[issue.path.length - 1]) : ''
+  return FIELD_LABELS_ES[leaf] ?? (leaf || 'Campo')
+}
+
+function issueDetailEs(issue: ZodIssueLike): string {
+  const chars = (n: number) => `${n} ${n === 1 ? 'carácter' : 'caracteres'}`
+  if (issue.code === 'too_small' && issue.type === 'string' && typeof issue.minimum === 'number') {
+    return `mínimo ${chars(issue.minimum)}`
+  }
+  if (issue.code === 'too_big' && issue.type === 'string' && typeof issue.maximum === 'number') {
+    return `máximo ${chars(issue.maximum)}`
+  }
+  if (issue.code === 'invalid_string' && issue.validation === 'email') {
+    return 'correo inválido'
+  }
+  if (issue.code === 'invalid_type') {
+    return 'campo requerido'
+  }
+  // Unknown/custom issue (e.g. the NIT regex message) — surface the raw
+  // message the agent sent rather than dropping the detail.
+  return issue.message
+}
+
+function formatZodValidationMessage(body: { error: { issues: ZodIssueLike[] } }): string {
+  return body.error.issues
+    .map((issue) => `${issueFieldLabel(issue)}: ${issueDetailEs(issue)}`)
+    .join('; ')
+}
+
 async function throwForErrorResponse(res: Response): Promise<never> {
   const status = res.status
   let parsedBody: unknown = null
@@ -103,9 +177,14 @@ async function throwForErrorResponse(res: Response): Promise<never> {
     parsedBody = null
   }
 
-  const message = isErrorLike(parsedBody)
-    ? parsedBody.error
-    : `La sesión de onboarding respondió con un error (${status}).`
+  let message: string
+  if (isZodValidationBody(parsedBody)) {
+    message = formatZodValidationMessage(parsedBody)
+  } else if (isErrorLike(parsedBody)) {
+    message = parsedBody.error
+  } else {
+    message = `La sesión de onboarding respondió con un error (${status}).`
+  }
   const kind = STATUS_TO_KIND[status] ?? 'unknown'
 
   if (kind === 'conflict') {

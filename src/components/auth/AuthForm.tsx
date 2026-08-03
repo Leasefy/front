@@ -10,20 +10,15 @@ import { Eyebrow } from '@/components/brand';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
-import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
 import {
-  Key,
-  Briefcase,
   SpinnerGap,
   ArrowLeft,
   CheckCircle,
-  Check,
-  MagnifyingGlass,
 } from '@phosphor-icons/react';
 
 type AuthMode = 'login' | 'register' | 'forgot-password' | 'reset-sent';
-type RegisterStep = 'role' | 'credentials' | 'confirm-email';
+type RegisterStep = 'credentials' | 'confirm-email';
 
 interface LoginFormData {
   email: string;
@@ -48,34 +43,13 @@ interface AuthFormProps {
   returnUrl?: string;
 }
 
-const roleCards = [
-  {
-    id: 'tenant' as const,
-    title: 'Inquilino',
-    description: 'Busca propiedades, aplica y gestiona tu arriendo en un solo lugar.',
-    icon: MagnifyingGlass,
-    href: '/onboarding/inquilino',
-  },
-  {
-    id: 'landlord' as const,
-    title: 'Propietario',
-    description: 'Publica tu propiedad, evalúa candidatos con IA y automatiza cobros.',
-    icon: Key,
-    href: '/onboarding/propietario',
-  },
-  {
-    id: 'agency' as const,
-    title: 'Inmobiliaria',
-    description: 'Gestiona múltiples propiedades con herramientas profesionales.',
-    icon: Briefcase,
-    href: '/onboarding/inmobiliaria',
-  },
-];
-
-const roleLabels: Record<string, string> = {
-  tenant: 'Inquilino',
-  landlord: 'Propietario',
-  agency: 'Inmobiliaria',
+// Role → onboarding entry point. The profile *picker* itself lives at
+// /onboarding/seleccionar-rol (the single selection surface); this map only
+// resolves the deep-link destination when a caller already knows the role.
+const roleHrefById: Record<'tenant' | 'landlord' | 'agency', string> = {
+  tenant: '/onboarding/inquilino',
+  landlord: '/onboarding/propietario',
+  agency: '/onboarding/inmobiliaria',
 };
 
 function GoogleIcon({ className }: { className?: string }) {
@@ -138,14 +112,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership } = useAuth();
-  // Admin can switch signup profiles off (see /admin/registration-profiles).
-  // Fails open: while loading or if the config backend is down, all are shown.
-  const { isEnabled: isProfileEnabled } = useEnabledProfiles();
-  const visibleRoleCards = roleCards.filter((card) => isProfileEnabled(card.id));
 
   const [mode, setMode] = React.useState<AuthMode>('login');
-  const [registerStep, setRegisterStep] = React.useState<RegisterStep>('role');
-  const [selectedRole, setSelectedRole] = React.useState<'tenant' | 'landlord' | 'agency' | null>(null);
+  const [registerStep, setRegisterStep] = React.useState<RegisterStep>('credentials');
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [resetEmail, setResetEmail] = React.useState<string>('');
@@ -225,7 +194,12 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     if (isAgencyUser && !agencyMembershipChecked && !probeWaitElapsed) return;
     window.location.href = getRoleHomeRoute(user.role, agencyRole);
   }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed]);
-  const preselectedRole = defaultRole || searchParams.get('role') as 'tenant' | 'landlord' | 'agency' | null;
+  // A caller may deep-link with the role already chosen — via the `defaultRole`
+  // prop (e.g. the publish wizard) or a `?role=` query. When present, the
+  // post-signup destination skips the picker and goes straight to that role's
+  // onboarding. Without it, signup lands on /onboarding/seleccionar-rol (the
+  // single profile picker).
+  const explicitRole = (defaultRole || searchParams.get('role')) as 'tenant' | 'landlord' | 'agency' | null;
   const initialMode = defaultMode || searchParams.get('mode') as AuthMode | null;
 
   const loginForm = useForm<LoginFormData>({
@@ -241,49 +215,32 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   });
 
   React.useEffect(() => {
-    if (initialMode === 'register' || preselectedRole) {
+    if (initialMode === 'register' || explicitRole) {
       setMode('register');
-      if (preselectedRole) {
-        setSelectedRole(preselectedRole);
-      }
     }
-  }, [initialMode, preselectedRole]);
-
-  // Auto-redirect when defaultRole is provided and mode is register (from publish wizard)
-  React.useEffect(() => {
-    if (defaultRole && selectedRole && mode === 'register' && registerStep === 'role') {
-      setRegisterStep('credentials');
-    }
-  }, [defaultRole, selectedRole, mode, registerStep]);
+  }, [initialMode, explicitRole]);
 
   const handleModeSwitch = (newMode: AuthMode) => {
     setMode(newMode);
-    setRegisterStep('role');
-    setSelectedRole(null);
+    setRegisterStep('credentials');
     setError(null);
     loginForm.reset();
     registerForm.reset();
     forgotPasswordForm.reset();
   };
 
-  const handleRoleSelect = (role: 'tenant' | 'landlord' | 'agency') => {
-    setSelectedRole(role);
-  };
-
-  const handleRoleContinue = () => {
-    if (selectedRole) {
-      setRegisterStep('credentials');
-      setError(null);
-    }
-  };
-
   const getOnboardingHref = (role: 'tenant' | 'landlord' | 'agency') => {
-    const card = roleCards.find(r => r.id === role);
-    if (!card) return '/';
+    const href = roleHrefById[role];
     return returnUrl && returnUrl !== '/'
-      ? `${card.href}?returnUrl=${encodeURIComponent(returnUrl)}`
-      : card.href;
+      ? `${href}?returnUrl=${encodeURIComponent(returnUrl)}`
+      : href;
   };
+
+  // Where signup should land: an explicit deep-link role goes straight to that
+  // role's onboarding (carrying returnUrl forward); otherwise the single
+  // profile picker at /onboarding/seleccionar-rol.
+  const onboardingDest = () =>
+    explicitRole ? getOnboardingHref(explicitRole) : '/onboarding/seleccionar-rol';
 
   // Redirect to the correct dashboard based on user role
   const redirectAfterLogin = React.useCallback((role: string | undefined) => {
@@ -369,7 +326,6 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       setError('Las contraseñas no coinciden.');
       return;
     }
-    if (!selectedRole) return;
 
     setIsLoading(true);
     setError(null);
@@ -378,15 +334,15 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       // /auth/callback (which exchanges the code server-side and honors returnUrl)
       // instead of Supabase's default Site URL (the root "/"), which would drop the
       // invitation/onboarding context and land the user as a bare TENANT.
-      const dest = returnUrl && returnUrl !== '/' ? returnUrl : getOnboardingHref(selectedRole);
+      const dest = returnUrl && returnUrl !== '/' ? returnUrl : onboardingDest();
       const emailRedirectTo = `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(dest)}`;
       const { requiresConfirmation } = await signUpWithEmail(data.email, data.password, emailRedirectTo);
       if (requiresConfirmation) {
         setResetEmail(data.email);
         setRegisterStep('confirm-email');
       } else {
-        // Auto-confirmed — go straight to onboarding
-        router.push(getOnboardingHref(selectedRole));
+        // Auto-confirmed — go straight to onboarding (or the deep-link role's onboarding)
+        router.push(onboardingDest());
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
@@ -460,7 +416,6 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
 
         <h1 className="mt-3 font-heading text-[24px] font-medium text-fg tracking-[-0.01em] leading-tight">
           {mode === 'login' && 'Bienvenido de vuelta'}
-          {mode === 'register' && registerStep === 'role' && '¿Cómo usarás Leasefy?'}
           {mode === 'register' && registerStep === 'credentials' && 'Crea tu cuenta'}
           {mode === 'register' && registerStep === 'confirm-email' && 'Revisa tu correo'}
           {mode === 'forgot-password' && 'Recupera tu contraseña'}
@@ -468,10 +423,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
         </h1>
         <p className="mt-1.5 text-[13.5px] text-fg-subtle leading-relaxed">
           {mode === 'login' && 'Ingresa a tu cuenta para continuar.'}
-          {mode === 'register' && registerStep === 'role' && 'Selecciona tu perfil para personalizar tu experiencia.'}
-          {mode === 'register' && registerStep === 'credentials' && (
-            <>Como <span className="font-medium text-fg-muted">{selectedRole ? roleLabels[selectedRole] : ''}</span>. Ingresa tus datos para continuar.</>
-          )}
+          {mode === 'register' && registerStep === 'credentials' && 'Ingresa tus datos para continuar.'}
           {mode === 'register' && registerStep === 'confirm-email' && (
             <>Enviamos un enlace de confirmación a <span className="font-medium text-fg-muted">{resetEmail}</span>.</>
           )}
@@ -549,115 +501,15 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           </motion.div>
         )}
 
-        {/* ── Register: Role selection ───────────────────────────────────── */}
-        {mode === 'register' && registerStep === 'role' && (
-          <motion.div
-            key="register-role"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="space-y-2.5"
-          >
-            {defaultRole ? (
-              <div className="flex flex-col items-center gap-3 py-8">
-                <SpinnerGap className="w-6 h-6 animate-spin text-fg-subtle" />
-                <p className="text-sm text-fg-subtle">Configurando tu cuenta...</p>
-              </div>
-            ) : (
-              <>
-                {visibleRoleCards.map((card, index) => {
-                  const Icon = card.icon;
-                  const isSelected = selectedRole === card.id;
-
-                  return (
-                    <motion.button
-                      key={card.id}
-                      type="button"
-                      onClick={() => handleRoleSelect(card.id)}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className={cn(
-                        'relative w-full text-left transition-colors duration-150 rounded-xl p-4 group border',
-                        isSelected
-                          ? 'border-ink bg-ink'
-                          : 'border-border bg-surface hover:border-border-strong hover:bg-surface-hover'
-                      )}
-                    >
-                      <div className="flex items-center gap-3.5">
-                        <div className={cn(
-                          'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-150',
-                          isSelected ? 'bg-white/10' : 'bg-surface-muted'
-                        )}>
-                          <Icon className={cn('w-5 h-5 transition-colors duration-150', isSelected ? 'text-ink-fg' : 'text-fg-muted')} weight={isSelected ? 'fill' : 'regular'} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className={cn('text-[14px] font-medium transition-colors duration-150', isSelected ? 'text-ink-fg' : 'text-fg')}>{card.title}</h3>
-                          <p className={cn('text-[12.5px] mt-0.5 transition-colors duration-150 leading-snug', isSelected ? 'text-ink-fg-muted' : 'text-fg-subtle')}>{card.description}</p>
-                        </div>
-                        <div className={cn(
-                          'w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors duration-150',
-                          isSelected ? 'bg-ink-fg' : 'border border-border-strong group-hover:border-fg-subtle'
-                        )}>
-                          {isSelected && (
-                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }}>
-                              <Check className="w-3 h-3 text-ink" weight="bold" />
-                            </motion.div>
-                          )}
-                        </div>
-                      </div>
-                    </motion.button>
-                  );
-                })}
-
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="pt-3">
-                  <Button
-                    type="button"
-                    disabled={!selectedRole}
-                    onClick={handleRoleContinue}
-                    className="w-full h-11 rounded-full text-[14px]"
-                  >
-                    {selectedRole ? 'Continuar' : 'Selecciona una opción'}
-                  </Button>
-                </motion.div>
-
-                <p className="pt-4 text-[13px] text-fg-subtle">
-                  ¿Ya tienes cuenta?{' '}
-                  <button
-                    type="button"
-                    onClick={() => handleModeSwitch('login')}
-                    className="font-medium text-[#1A40FF] hover:underline underline-offset-2"
-                  >
-                    Inicia sesión
-                  </button>
-                </p>
-              </>
-            )}
-          </motion.div>
-        )}
-
         {/* ── Register: Credentials ──────────────────────────────────────── */}
         {mode === 'register' && registerStep === 'credentials' && (
           <motion.div
             key="register-credentials"
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -16 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
           >
-            {/* Back button */}
-            {!defaultRole && (
-              <button
-                type="button"
-                onClick={() => { setRegisterStep('role'); setError(null); registerForm.reset(); }}
-                className="inline-flex items-center gap-2 text-[13px] text-fg-subtle hover:text-fg transition-colors mb-6"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Cambiar perfil
-              </button>
-            )}
-
             <GoogleButton onClick={handleGoogleRegister} disabled={isLoading} isLoading={isLoading}>
               Registrarse con Google
             </GoogleButton>
@@ -702,6 +554,17 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
               </Button>
             </form>
+
+            <p className="mt-7 text-[13px] text-fg-subtle">
+              ¿Ya tienes cuenta?{' '}
+              <button
+                type="button"
+                onClick={() => handleModeSwitch('login')}
+                className="font-medium text-[#1A40FF] hover:underline underline-offset-2"
+              >
+                Inicia sesión
+              </button>
+            </p>
           </motion.div>
         )}
 

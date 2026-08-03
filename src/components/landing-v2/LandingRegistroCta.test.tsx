@@ -49,12 +49,12 @@ function render(props: React.ComponentProps<typeof LandingRegistroCta>) {
 }
 
 describe('<LandingRegistroCta>', () => {
-  it('renders "Empezar ahora" -> /registro when logged out (header variant)', () => {
+  it('renders "Empezar ahora" -> /auth?mode=register when logged out (header variant)', () => {
     mockUseAuth.mockReturnValue({ user: null, isAuthenticated: false, isLoading: false })
     render({ variant: 'header' })
     const anchor = container.querySelector('a')!
     expect(anchor.textContent).toBe('Empezar ahora')
-    expect(anchor.getAttribute('href')).toBe('/registro')
+    expect(anchor.getAttribute('href')).toBe('/auth?mode=register')
     expect(anchor.className).toBe('btn primary sm')
   })
 
@@ -63,7 +63,7 @@ describe('<LandingRegistroCta>', () => {
     render({ variant: 'header' })
     const anchor = container.querySelector('a')!
     expect(anchor.textContent).toBe('Empezar ahora')
-    expect(anchor.getAttribute('href')).toBe('/registro')
+    expect(anchor.getAttribute('href')).toBe('/auth?mode=register')
   })
 
   it('renders nothing for the header variant when authenticated', () => {
@@ -107,6 +107,6 @@ describe('<LandingRegistroCta>', () => {
     render({ variant: 'banner' })
     const anchor = container.querySelector('a')!
     expect(anchor.textContent).toBe('Empezar ahora')
-    expect(anchor.getAttribute('href')).toBe('/registro')
+    expect(anchor.getAttribute('href')).toBe('/auth?mode=register')
   })
 })

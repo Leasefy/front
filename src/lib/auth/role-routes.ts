@@ -1,5 +1,26 @@
-import type { UserRole } from './types'
+import type { AgencyMemberRole, UserRole } from './types'
 import type { ActiveContext } from './active-context'
+
+/**
+ * Per-agency-sub-role landing route for an agency member after login. Each role
+ * lands on a destination it CAN access by its default permissions (Inicio is
+ * ungated for all members, so an unknown/null sub-role falls back safely there).
+ * ADMIN → Inicio (full access); AGENTE → pipeline; CONTADOR → cobros;
+ * VIEWER → dashboard.
+ */
+export function getAgencyHomeRoute(agencyRole: AgencyMemberRole | null | undefined): string {
+  switch (agencyRole) {
+    case 'AGENTE':
+      return '/panel/inmobiliaria/pipeline'
+    case 'CONTADOR':
+      return '/panel/inmobiliaria/cobros'
+    case 'VIEWER':
+      return '/panel/inmobiliaria/dashboard'
+    case 'ADMIN':
+    default:
+      return '/panel/inmobiliaria'
+  }
+}
 
 /**
  * Single source of truth for the "where does this role land after auth"
@@ -7,9 +28,16 @@ import type { ActiveContext } from './active-context'
  * effect and `redirectAfterLogin`), ProtectedRoute's role-mismatch redirect,
  * and LandingAuthCta's "Ir al panel" CTA — do not re-implement this switch
  * anywhere else.
+ *
+ * For agency users, pass `agencyRole` to land on the per-sub-role destination.
+ * Omitting it (backward-compat) routes agency users to the safe default
+ * '/panel/inmobiliaria' (Inicio), which every member can access.
  */
-export function getRoleHomeRoute(role: UserRole | string | undefined): string {
-  if (role === 'agency') return '/panel/inmobiliaria'
+export function getRoleHomeRoute(
+  role: UserRole | string | undefined,
+  agencyRole?: AgencyMemberRole | null,
+): string {
+  if (role === 'agency') return getAgencyHomeRoute(agencyRole)
   if (role === 'landlord') return '/panel'
   return '/inquilino'
 }
@@ -30,6 +58,7 @@ export function getRoleHomeRoute(role: UserRole | string | undefined): string {
 export function getUserHomeRoute(
   user: { role?: UserRole | string } | null | undefined,
   activeContext?: ActiveContext | null,
+  agencyRole?: AgencyMemberRole | null,
 ): string {
   if (!user) return '/'
   // Dual-context disambiguation: a user carrying an ACTIVE agency membership
@@ -37,8 +66,8 @@ export function getUserHomeRoute(
   // active context is 'agency', route to the agency panel; otherwise fall back
   // to the personal role route. `activeContext` is omitted/undefined for
   // single-context callers, preserving today's behavior exactly.
-  if (activeContext === 'agency') return '/panel/inmobiliaria'
-  return getRoleHomeRoute(user.role)
+  if (activeContext === 'agency') return getAgencyHomeRoute(agencyRole)
+  return getRoleHomeRoute(user.role, agencyRole)
 }
 
 /**

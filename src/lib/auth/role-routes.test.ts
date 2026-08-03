@@ -5,8 +5,31 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { getRoleHomeRoute, getUserHomeRoute, isPanelRoleAllowed } from './role-routes'
+import { getAgencyHomeRoute, getRoleHomeRoute, getUserHomeRoute, isPanelRoleAllowed } from './role-routes'
 import { toFrontendRole } from './types'
+
+describe('getAgencyHomeRoute — per-agency-sub-role landing route', () => {
+  it('maps ADMIN to Inicio (/panel/inmobiliaria, full access)', () => {
+    expect(getAgencyHomeRoute('ADMIN')).toBe('/panel/inmobiliaria')
+  })
+
+  it('maps AGENTE to the pipeline', () => {
+    expect(getAgencyHomeRoute('AGENTE')).toBe('/panel/inmobiliaria/pipeline')
+  })
+
+  it('maps CONTADOR to cobros', () => {
+    expect(getAgencyHomeRoute('CONTADOR')).toBe('/panel/inmobiliaria/cobros')
+  })
+
+  it('maps VIEWER to the dashboard', () => {
+    expect(getAgencyHomeRoute('VIEWER')).toBe('/panel/inmobiliaria/dashboard')
+  })
+
+  it('defaults null/undefined sub-role to the safe Inicio route (ungated for all members)', () => {
+    expect(getAgencyHomeRoute(null)).toBe('/panel/inmobiliaria')
+    expect(getAgencyHomeRoute(undefined)).toBe('/panel/inmobiliaria')
+  })
+})
 
 describe('getRoleHomeRoute', () => {
   it('maps agency to the inmobiliaria panel', () => {
@@ -23,6 +46,22 @@ describe('getRoleHomeRoute', () => {
 
   it('defaults unknown/undefined roles to /inquilino', () => {
     expect(getRoleHomeRoute(undefined)).toBe('/inquilino')
+  })
+
+  it('routes an agency user to the safe default when no agencyRole is passed (backward-compat)', () => {
+    expect(getRoleHomeRoute('agency')).toBe('/panel/inmobiliaria')
+  })
+
+  it('threads agencyRole through to the per-sub-role route for agency users', () => {
+    expect(getRoleHomeRoute('agency', 'AGENTE')).toBe('/panel/inmobiliaria/pipeline')
+    expect(getRoleHomeRoute('agency', 'CONTADOR')).toBe('/panel/inmobiliaria/cobros')
+    expect(getRoleHomeRoute('agency', 'VIEWER')).toBe('/panel/inmobiliaria/dashboard')
+    expect(getRoleHomeRoute('agency', 'ADMIN')).toBe('/panel/inmobiliaria')
+  })
+
+  it('ignores agencyRole for non-agency roles', () => {
+    expect(getRoleHomeRoute('landlord', 'AGENTE')).toBe('/panel')
+    expect(getRoleHomeRoute('tenant', 'CONTADOR')).toBe('/inquilino')
   })
 })
 

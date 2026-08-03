@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { House, Buildings, Storefront } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles'
+import { getAgencyHomeRoute } from '@/lib/auth/role-routes'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 
@@ -16,12 +17,23 @@ const PENDING_INVITATION_KEY = 'pending-invitation-token'
 
 export default function SeleccionarRolPage() {
   const router = useRouter()
-  const { user, hasActiveAgencyMembership } = useAuth()
+  const { user, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole } = useAuth()
   // Admin can switch signup profiles off (see /admin/registration-profiles).
   // Fails open: while loading or if the config backend is down, all are shown.
   const { isEnabled: isProfileEnabled } = useEnabledProfiles()
   const [selected, setSelected] = useState<RoleChoice>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  // Bounded fallback for the membership-probe wait below: if the probe never
+  // settles (e.g. it wasn't triggered on this client-side navigation, or the
+  // session is degraded), stop waiting after a few seconds and fall through to
+  // the normal guards instead of showing a spinner forever. Mirrors the auth
+  // context's own "never hang" philosophy.
+  const [probeWaitElapsed, setProbeWaitElapsed] = useState(false)
+  useEffect(() => {
+    const id = setTimeout(() => setProbeWaitElapsed(true), 4000)
+    return () => clearTimeout(id)
+  }, [])
 
   // Defense-in-depth: an invited user must NEVER see the personal role picker.
   // If a pending invitation token is present, send them to /registro (the
@@ -35,16 +47,31 @@ export default function SeleccionarRolPage() {
     }
   }
 
+  // Wait for the async agency-membership probe (GET /inmobiliaria/agency) to
+  // settle before deciding whether to show the personal role picker. Without
+  // this, a user whose role is already assigned (e.g. an invited CONTADOR/AGENTE
+  // who just confirmed their email) would briefly see the picker before the
+  // ACTIVE-membership guard below redirects them to their panel.
+  if (user && !agencyMembershipChecked && !probeWaitElapsed) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center p-6">
+        <Spinner />
+      </div>
+    )
+  }
+
   // An ACTIVE agency member must never see the personal role picker either —
-  // they already have an agency destination. Send them to the agency panel.
+  // they already have an agency destination. Send them to their per-sub-role
+  // agency landing route (the spinner/bounded-wait above guarantees agencyRole
+  // is resolved by the time we get here).
   if (hasActiveAgencyMembership) {
-    router.replace('/panel/inmobiliaria')
+    router.replace(getAgencyHomeRoute(agencyRole))
     return null
   }
 
   // If user already completed onboarding, redirect to their dashboard
   if (user?.onboardingCompleted) {
-    router.replace(user.role === 'landlord' ? '/panel' : user.role === 'agency' ? '/panel/inmobiliaria' : '/inquilino')
+    router.replace(user.role === 'landlord' ? '/panel' : user.role === 'agency' ? getAgencyHomeRoute(agencyRole) : '/inquilino')
     return null
   }
 

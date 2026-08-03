@@ -26,6 +26,8 @@ import {
   Wrench,
   ClipboardText,
   Handshake,
+  CreditCard,
+  Scales,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -75,6 +77,12 @@ import {
 interface ConfigPermisosProps {
   permissions: Record<AgencyRole, RolePermissions>;
   onSave?: (permissions: Record<AgencyRole, RolePermissions>) => void;
+  /**
+   * Reset every role to the system defaults on the server (destructive — also
+   * clears per-member overrides). When provided, "Restablecer" delegates here
+   * instead of doing a local-only reset. Guarded by a confirmation dialog.
+   */
+  onReset?: () => void | Promise<void>;
   isLoading?: boolean;
 }
 
@@ -93,6 +101,8 @@ const MODULE_ICONS: Record<PermissionModule, React.ElementType> = {
   documentos: FileText,
   analytics: ChartBar,
   contratos: Handshake,
+  subscription: CreditCard,
+  avaluos: Scales,
 };
 
 // Action icons map
@@ -270,6 +280,7 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
 export function ConfigPermisos({
   permissions: initialPermissions,
   onSave,
+  onReset,
   isLoading = false,
 }: ConfigPermisosProps) {
   const { t } = useI18n();
@@ -348,11 +359,17 @@ export function ConfigPermisos({
     return enabled.length > 0 && enabled.length < ALL_PERMISSION_MODULES.length;
   }, [currentPermissions]);
 
-  // Reset to defaults
-  const handleReset = () => {
+  // Reset to defaults. When the parent wires `onReset`, delegate to it (it
+  // resets on the server via DELETE and refetches, remounting this component
+  // with the fresh matrix). Without a handler, fall back to a local-only reset.
+  const handleReset = async () => {
+    setResetDialogOpen(false);
+    if (onReset) {
+      await onReset();
+      return;
+    }
     setPermissions(DEFAULT_ROLE_PERMISSIONS);
     setHasChanges(true);
-    setResetDialogOpen(false);
   };
 
   // Save changes
@@ -447,6 +464,19 @@ export function ConfigPermisos({
                   <ShieldCheck className="w-5 h-5 text-fg-muted" />
                   <p className="text-sm text-fg-muted">
                     {t('inmobiliaria.config.permissions.adminNote')}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Member override note — saving/reset makes the role template
+                authoritative and clears per-member customizations for that role. */}
+            {role !== 'admin' && (
+              <div className="mb-4 p-3 rounded-md bg-surface-muted border border-border">
+                <div className="flex items-center gap-2">
+                  <Info className="w-5 h-5 text-fg-muted shrink-0" />
+                  <p className="text-sm text-fg-muted">
+                    {t('inmobiliaria.config.permissions.memberOverrideNote')}
                   </p>
                 </div>
               </div>
@@ -594,7 +624,7 @@ export function ConfigPermisos({
             <Button variant="outline" onClick={() => setResetDialogOpen(false)}>
               {t('inmobiliaria.config.permissions.cancel')}
             </Button>
-            <Button variant="destructive" onClick={handleReset}>
+            <Button variant="destructive" onClick={handleReset} disabled={isLoading}>
               {t('inmobiliaria.config.permissions.reset')}
             </Button>
           </DialogFooter>

@@ -10,7 +10,7 @@ import { PropertySearchView } from '@/components/property/PropertySearchView';
 export default function ExplorarPage() {
   return (
     <Suspense>
-      <PropertySearchView embedded />
+      <PropertySearchView embedded basePath="/inquilino/propiedades" />
     </Suspense>
   );
 }

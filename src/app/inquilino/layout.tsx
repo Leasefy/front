@@ -9,6 +9,7 @@ import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { TenantProfileProvider, useTenantProfile } from '@/lib/context/TenantProfileContext';
 import { I18nProvider, useI18n } from '@/lib/i18n';
+import { FooterCompact } from '@/components/layout/FooterCompact';
 import { cn } from '@/lib/utils';
 
 // Define the setup steps (2 steps: basic info + preferences. Income is collected during application)
@@ -130,6 +131,8 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
         <main id="main-content" tabIndex={-1}>
           {children}
         </main>
+        {/* Compact footer on every tenant window (visible but small). */}
+        <FooterCompact />
       </div>
       <Toaster position="top-right" />
     </div>

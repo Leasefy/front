@@ -11,6 +11,12 @@
  */
 const AVALUO_MICRO_BASE = process.env.NEXT_PUBLIC_AVALUO_API_URL ?? '';
 
-export const AVALUO_WIZARD_URL = AVALUO_MICRO_BASE
-  ? `${AVALUO_MICRO_BASE.replace(/\/$/, '')}/avaluo`
+/**
+ * The avalúo micro's origin (no trailing slash), used to compose wizard URLs
+ * from a token + path returned by the back. Empty when the micro base is unset.
+ */
+export const AVALUO_WIZARD_ORIGIN = AVALUO_MICRO_BASE.replace(/\/$/, '');
+
+export const AVALUO_WIZARD_URL = AVALUO_WIZARD_ORIGIN
+  ? `${AVALUO_WIZARD_ORIGIN}/avaluo`
   : '';

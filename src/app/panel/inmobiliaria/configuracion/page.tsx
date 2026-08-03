@@ -50,17 +50,63 @@ import {
   useAgencyBilling,
   inmobiliariaConfigApi,
 } from '@/lib/hooks/useInmobiliaria';
-import { permissionsApi, agencyApi } from '@/lib/api/inmobiliaria.service';
+import { permissionsApi, agencyApi, rolePermissionsApi } from '@/lib/api/inmobiliaria.service';
+import type { PermMap, RoleMatrices, UpdateRolePermissionsBody } from '@/lib/api/inmobiliaria.service';
 import { DEFAULT_ROLE_PERMISSIONS } from '@/lib/types/inmobiliaria';
 import { useNotificationSettings } from '@/lib/hooks/useSettings';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import type {
   UpdateAgencyPayload,
   AgencyIntegration,
   RolePermissions,
   AgencyRole,
+  PermissionModule,
+  PermissionAction,
   UserInvite,
 } from '@/lib/types/inmobiliaria';
+
+// ============================================================================
+// Role-permission matrix mapping (backend RoleMatrices ↔ UI matrix)
+// ============================================================================
+
+/**
+ * UI role key ('admin'/'agente'/'contador'/'viewer') maps to the backend
+ * RoleMatrices key ('ADMIN'/'AGENTE'/'CONTADOR'/'VIEWER') — the matrix helpers
+ * below encode this pairing directly.
+ */
+
+/** Backend PermMap (module → actions) → UI RolePermissions (drops empty modules). */
+function permMapToRolePermissions(role: AgencyRole, map: PermMap): RolePermissions {
+  return {
+    role,
+    permissions: Object.entries(map)
+      .filter(([, actions]) => actions.length > 0)
+      .map(([module, actions]) => ({
+        module: module as PermissionModule,
+        actions: [...actions] as PermissionAction[],
+      })),
+  };
+}
+
+/** Backend RoleMatrices → the UI matrix ConfigPermisos consumes. */
+function matricesToUiMatrix(matrices: RoleMatrices): Record<AgencyRole, RolePermissions> {
+  return {
+    admin: permMapToRolePermissions('admin', matrices.roles.ADMIN),
+    agente: permMapToRolePermissions('agente', matrices.roles.AGENTE),
+    contador: permMapToRolePermissions('contador', matrices.roles.CONTADOR),
+    viewer: permMapToRolePermissions('viewer', matrices.roles.VIEWER),
+  };
+}
+
+/** UI RolePermissions → backend PermMap (module → actions). */
+function rolePermissionsToPermMap(rp: RolePermissions): PermMap {
+  const map: PermMap = {};
+  for (const p of rp.permissions) {
+    map[p.module] = [...p.actions];
+  }
+  return map;
+}
 
 // ============================================================================
 // Types
@@ -116,6 +162,15 @@ function ConfiguracionContent() {
   const [permissions, setPermissions] = useState<Record<AgencyRole, RolePermissions>>(
     DEFAULT_ROLE_PERMISSIONS
   );
+  // Bumped after every successful server sync (load/save/reset) — used as the
+  // ConfigPermisos `key` so it remounts with the fresh matrix (and its per-role
+  // counts + unsaved-changes state reset to the loaded values).
+  const [permissionsVersion, setPermissionsVersion] = useState(0);
+  const [isSavingPermissions, setIsSavingPermissions] = useState(false);
+
+  // Current user's effective permissions (refetched after a role-template change
+  // clears per-member overrides, so the caller's own access reflects the update).
+  const { refetch: refetchMyPermissions } = usePermissions();
 
   // Phase 38 plan 38-06 — AI panel tour preference (hybrid localStorage + DB persistence).
   // tourDismissed === null means the context hasn't hydrated yet; show a spinner-state.
@@ -155,51 +210,28 @@ function ConfiguracionContent() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Hydrate permissions matrix from backend per-member data.
+  // Load the agency's per-role permission matrices in ONE request.
   //
-  // Context: the backend stores permissions per MEMBER (not per role). The UI
-  // shows a role-level matrix (admin/agente/contador/viewer) as a template.
-  // We reconstruct each role's current template by looking at the first active
-  // member of that role. If `usingDefaults` is true, we keep the hardcoded
-  // default for that role. If false, we use the member's effective permissions.
+  // The backend resolves the agency from the JWT and returns a COMPLETE matrix
+  // for every role (admin/agente/contador/viewer), each keyed module→actions.
+  // This replaces the old per-member fan-out that reconstructed each role's
+  // template from its first active member. Non-admins get 403 → defaults remain.
   useEffect(() => {
-    if (!users || users.length === 0) return;
-
-    const nonAdminRoles: AgencyRole[] = ['agente', 'contador', 'viewer'];
     let cancelled = false;
-
     (async () => {
       try {
-        const updates: Partial<Record<AgencyRole, RolePermissions>> = {};
-        await Promise.all(
-          nonAdminRoles.map(async (role) => {
-            const member = users.find((u) => u.role === role && u.status === 'active');
-            if (!member) return;
-            try {
-              const res = await permissionsApi.getMemberPermissions(member.id);
-              if (res.usingDefaults || res.effectivePermissions === 'FULL_ACCESS') return;
-              // Convert Record<string, string[]> → RolePermissions
-              const permissionsArray = Object.entries(res.effectivePermissions).map(
-                ([module, actions]) => ({ module, actions }),
-              );
-              updates[role] = { role, permissions: permissionsArray } as RolePermissions;
-            } catch {
-              // Skip role on error — keep default
-            }
-          }),
-        );
-        if (!cancelled && Object.keys(updates).length > 0) {
-          setPermissions((prev) => ({ ...prev, ...updates }));
-        }
+        const matrices = await rolePermissionsApi.getRolePermissions();
+        if (cancelled) return;
+        setPermissions(matricesToUiMatrix(matrices));
+        setPermissionsVersion((v) => v + 1);
       } catch {
-        // Silent fail — defaults remain
+        // 403 (non-admin) or network error — defaults remain.
       }
     })();
-
     return () => {
       cancelled = true;
     };
-  }, [users]);
+  }, []);
 
   // Only agency ADMINs may write agency settings (backend enforces via 403).
   const isAgencyAdmin = config?.agency?.memberRole === 'ADMIN';
@@ -352,33 +384,25 @@ function ConfiguracionContent() {
   // Handlers - Permisos
   // -------------------------------------------------------------------------
 
+  /**
+   * Persist the edited role templates in ONE request via
+   * PUT /inmobiliaria/agency/role-permissions. ADMIN is never sent (it is
+   * full-access and read-only on the backend). The write also clears per-member
+   * permission overrides for ACTIVE members of the edited roles, so we refresh
+   * the caller's own effective permissions afterward.
+   */
   const handleSavePermissions = async (newPermissions: Record<AgencyRole, RolePermissions>) => {
+    setIsSavingPermissions(true);
     try {
-      // Update each non-admin member's custom permissions based on their role
-      const memberList = users ?? [];
-      const updatePromises = memberList
-        .filter((u) => u.role !== 'admin' && u.status === 'active')
-        .map((member) => {
-          const roleKey = member.role.toLowerCase() as AgencyRole;
-          const rolePerms = newPermissions[roleKey];
-          if (!rolePerms) return Promise.resolve();
-          // Convert RolePermissions to the flat Record<string, string[]> the API expects
-          const permMap: Record<string, string[]> = {};
-          for (const mp of rolePerms.permissions) {
-            permMap[mp.module] = mp.actions;
-          }
-          return permissionsApi.updateMemberPermissions(member.id, permMap);
-        });
-
-      // Nothing to persist (no active non-admin members) — update the local
-      // config but do NOT claim a server-side success.
-      if (updatePromises.length === 0) {
-        setPermissions(newPermissions);
-        return;
-      }
-
-      await Promise.all(updatePromises);
-      setPermissions(newPermissions);
+      const body: UpdateRolePermissionsBody = {
+        AGENTE: rolePermissionsToPermMap(newPermissions.agente),
+        CONTADOR: rolePermissionsToPermMap(newPermissions.contador),
+        VIEWER: rolePermissionsToPermMap(newPermissions.viewer),
+      };
+      const matrices = await rolePermissionsApi.updateRolePermissions(body);
+      setPermissions(matricesToUiMatrix(matrices));
+      setPermissionsVersion((v) => v + 1);
+      await refetchMyPermissions();
       toast.success(t('inmobiliaria.config.toasts.permissionsSaved'), {
         description: t('inmobiliaria.config.toasts.permissionsSavedDesc'),
       });
@@ -386,6 +410,33 @@ function ConfiguracionContent() {
       toast.error(t('inmobiliaria.config.toasts.error') || 'Error al guardar permisos', {
         description: error instanceof Error ? error.message : undefined,
       });
+    } finally {
+      setIsSavingPermissions(false);
+    }
+  };
+
+  /**
+   * Reset every role to the system defaults via
+   * DELETE /inmobiliaria/agency/role-permissions. Also clears per-member
+   * overrides for AGENTE/CONTADOR/VIEWER on the backend — destructive, so
+   * ConfigPermisos guards this behind a confirmation dialog.
+   */
+  const handleResetPermissions = async () => {
+    setIsSavingPermissions(true);
+    try {
+      const matrices = await rolePermissionsApi.resetRolePermissions();
+      setPermissions(matricesToUiMatrix(matrices));
+      setPermissionsVersion((v) => v + 1);
+      await refetchMyPermissions();
+      toast.success(t('inmobiliaria.config.toasts.permissionsReset'), {
+        description: t('inmobiliaria.config.toasts.permissionsResetDesc'),
+      });
+    } catch (error) {
+      toast.error(t('inmobiliaria.config.toasts.error') || 'Error al restablecer permisos', {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setIsSavingPermissions(false);
     }
   };
 
@@ -543,7 +594,13 @@ function ConfiguracionContent() {
 
         {/* Permisos Tab */}
         {activeTab === 'permisos' && (
-          <ConfigPermisos permissions={permissions} onSave={handleSavePermissions} />
+          <ConfigPermisos
+            key={`permisos-${permissionsVersion}`}
+            permissions={permissions}
+            onSave={handleSavePermissions}
+            onReset={handleResetPermissions}
+            isLoading={isSavingPermissions}
+          />
         )}
 
         {/* Integraciones Tab */}

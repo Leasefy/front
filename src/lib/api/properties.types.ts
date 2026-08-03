@@ -60,6 +60,22 @@ export interface BackendProperty {
   // Relations (included by backend)
   images?: BackendPropertyImage[];
   propertyAccess?: BackendPropertyAccessAgent[];
+  // GET /properties/:id (detail) includes the offering agency's branding;
+  // the list endpoint (GET /properties) returns only `{ name }`.
+  agency?: {
+    name: string;
+    branding?: {
+      primaryColor?: string;
+      secondaryColor?: string;
+      socials?: {
+        instagram?: string;
+        facebook?: string;
+        x?: string;
+        tiktok?: string;
+        whatsapp?: string;
+      } | null;
+    } | null;
+  } | null;
 }
 
 export interface PaginationMeta {

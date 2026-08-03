@@ -512,9 +512,18 @@ function RegistroContent() {
                           {...authForm.register('email', { required: 'Requerido', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Email inválido' } })}
                           type="email"
                           placeholder="tu@email.com"
-                          className="w-full pl-9"
+                          // The invitation is bound to a specific email; the invitee must
+                          // create the account with THAT address (it carries their assigned
+                          // role). readOnly (not disabled) so react-hook-form still submits it.
+                          readOnly={Boolean(invitation?.invitedEmail ?? invitation?.email)}
+                          className={`w-full pl-9${(invitation?.invitedEmail ?? invitation?.email) ? ' bg-muted cursor-not-allowed text-muted-foreground' : ''}`}
                         />
                       </div>
+                      {(invitation?.invitedEmail ?? invitation?.email) && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Este es el correo al que se envió la invitación y no se puede modificar.
+                        </p>
+                      )}
                       {authForm.formState.errors.email && (
                         <p className="text-xs text-destructive mt-1">{authForm.formState.errors.email.message}</p>
                       )}

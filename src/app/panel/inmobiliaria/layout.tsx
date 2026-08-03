@@ -49,6 +49,9 @@ import { CommandPaletteProvider, useCommandPalette } from '@/lib/context/Command
 import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
 import { useMySubscription } from '@/lib/hooks/useSubscription';
+import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
+import { useAuth } from '@/lib/auth/use-auth';
+import { hexToHslTriplet } from '@/lib/utils/hex-to-hsl';
 
 /** Registers the global ⌘K keyboard shortcut for the command palette. */
 function CommandPaletteShortcuts() {
@@ -97,6 +100,32 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // users never see a flash of "Upgrade".
   const { subscription } = useMySubscription();
   const showUpgradeCta = subscription?.planId === 'starter';
+
+  // Real agency identity for the sidebar brand row. PRIMARY source is the auth
+  // membership probe (`useAuth().agency`), which is available to EVERY active
+  // member regardless of role — a CONTADOR/AGENTE/VIEWER can't read
+  // GET /inmobiliaria/config (it's admin-gated via @RequirePermission
+  // 'configuracion'), so relying on config alone left team members with the
+  // generic "Inmobiliaria" fallback. Config is kept as a secondary source for
+  // admins. Falls back to the i18n title while loading / if empty, so the brand
+  // never flashes empty. `logoUrl` empty → PlanSidebar shows the LeasefyMark.
+  const { agency } = useAuth();
+  const { config } = useInmobiliariaConfig();
+  const agencyName =
+    agency?.name?.trim() ||
+    config?.agency?.name?.trim() ||
+    t('inmobiliaria.common.title');
+  const agencyLogoUrl =
+    agency?.logoUrl?.trim() || config?.agency?.logoUrl?.trim() || undefined;
+  // Agency brand color (Option A: sidebar accents only). Same all-members source
+  // as name/logo so team members get it too. Converted to an HSL triplet because
+  // PlanSidebar scopes it onto `--primary` (consumed via hsl(var(--primary))).
+  // Invalid/empty → undefined → PlanSidebar keeps the DS default color.
+  const agencyPrimaryColor =
+    agency?.branding?.primaryColor?.trim() ||
+    config?.agency?.branding?.primaryColor?.trim() ||
+    undefined;
+  const brandPrimaryHsl = hexToHslTriplet(agencyPrimaryColor) ?? undefined;
 
   // All nav items with their corresponding permission module (null = always visible).
   // `NavItemWithModule` (imported) extends NavItem with an optional `module`
@@ -258,11 +287,13 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         navItems={INMOBILIARIA_NAV_ITEMS}
         loading={permissionsLoading}
         logo={{
-          title: t('inmobiliaria.common.title'),
+          title: agencyName,
           href: '/panel/inmobiliaria',
         }}
         // cadence §Navigation: static brand row + search-opens-⌘K + footer cards
-        workspaceName={t('inmobiliaria.common.title')}
+        workspaceName={agencyName}
+        workspaceLogoUrl={agencyLogoUrl}
+        brandPrimaryHsl={brandPrimaryHsl}
         onSearchClick={openCommandPalette}
         searchPlaceholder="Buscar"
         showInvite

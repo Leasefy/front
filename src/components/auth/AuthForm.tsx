@@ -137,7 +137,7 @@ function ErrorBanner({ children }: { children: React.ReactNode }) {
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, mfaRequired } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership } = useAuth();
   // Admin can switch signup profiles off (see /admin/registration-profiles).
   // Fails open: while loading or if the config backend is down, all are shown.
   const { isEnabled: isProfileEnabled } = useEnabledProfiles();
@@ -153,6 +153,18 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // Without this guard, a pre-existing session would auto-redirect away from /auth,
   // preventing users from logging in as a different account.
   const didAuthenticateInForm = React.useRef(false);
+
+  // Bounded fallback for the agency-membership-probe wait in the auto-redirect
+  // effect below. An agency user's `agencyRole` is populated ASYNC by the probe,
+  // so we hold the per-sub-role redirect until `agencyMembershipChecked` is true.
+  // If the probe never settles, stop waiting after a few seconds and proceed
+  // with whatever `agencyRole` is (defaulting to '/panel/inmobiliaria'). Mirrors
+  // the pattern in src/app/onboarding/seleccionar-rol/page.tsx.
+  const [probeWaitElapsed, setProbeWaitElapsed] = React.useState(false);
+  React.useEffect(() => {
+    const id = setTimeout(() => setProbeWaitElapsed(true), 4000);
+    return () => clearTimeout(id);
+  }, []);
 
   const returnUrl = sanitizeReturnUrl(returnUrlProp || searchParams.get('returnUrl'), '/');
 
@@ -204,9 +216,15 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       window.location.href = returnUrl;
       return;
     }
-    // No returnUrl — redirect to the correct panel based on role
-    window.location.href = getRoleHomeRoute(user.role);
-  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, mfaRequired]);
+    // No returnUrl — redirect to the correct panel based on role. For an agency
+    // user, hold until the membership probe settles so `agencyRole` is resolved
+    // and the per-sub-role landing route is used (otherwise it'd fall to the
+    // default). The bounded `probeWaitElapsed` guarantees we never hang.
+    // Non-agency users (tenant/landlord) redirect immediately as before.
+    const isAgencyUser = user.role === 'agency' || hasActiveAgencyMembership;
+    if (isAgencyUser && !agencyMembershipChecked && !probeWaitElapsed) return;
+    window.location.href = getRoleHomeRoute(user.role, agencyRole);
+  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, mfaRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed]);
   const preselectedRole = defaultRole || searchParams.get('role') as 'tenant' | 'landlord' | 'agency' | null;
   const initialMode = defaultMode || searchParams.get('mode') as AuthMode | null;
 
@@ -273,8 +291,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       router.push(returnUrl);
       return;
     }
-    router.push(getRoleHomeRoute(role));
-  }, [returnUrl, router]);
+    router.push(getRoleHomeRoute(role, agencyRole));
+  }, [returnUrl, router, agencyRole]);
 
   // ── Login ────────────────────────────────────────────────────────────────
   const handleGoogleLogin = async () => {

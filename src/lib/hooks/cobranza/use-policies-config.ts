@@ -15,6 +15,13 @@ export interface PoliciesConfigResponse {
   versionNumber: number | null
 }
 
+// Wire shape returned by the agent — snake_case. Mapped to the camelCase
+// PoliciesConfigResponse below. GET .../policies → { policy_json, version_number }.
+interface PoliciesConfigWire {
+  policy_json: PolicyConfig | null
+  version_number: number | null
+}
+
 export interface UsePoliciesConfigResult {
   data: PoliciesConfigResponse | null
   isLoading: boolean
@@ -47,8 +54,9 @@ export function usePoliciesConfig(): UsePoliciesConfigResult {
         { headers: agentAuthHeaders() },
       )
       if (!res.ok) throw new Error(`${res.status}`)
-      const json = (await res.json()) as PoliciesConfigResponse
-      setData(json)
+      // Agent returns snake_case { policy_json, version_number }; map to camelCase.
+      const raw = (await res.json()) as PoliciesConfigWire
+      setData({ policy: raw.policy_json ?? null, versionNumber: raw.version_number ?? null })
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'fetch_failed')

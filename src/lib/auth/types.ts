@@ -119,6 +119,10 @@ export interface Agency {
   portfolioSize?: string
   yearsInBusiness?: number
   services?: string[]
+  /** Brand colors. GET /inmobiliaria/agency returns this for every active member
+   *  (unlike the admin-only /inmobiliaria/config), so team members get the brand
+   *  identity too. Hex '#rrggbb'. */
+  branding?: { primaryColor?: string; secondaryColor?: string }
 }
 
 export type AgencySize = 'small' | 'medium' | 'large' | 'enterprise'

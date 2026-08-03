@@ -4,6 +4,91 @@
  */
 
 export interface paths {
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause cobranza for a debtor (D-31-01) */
+        post: operations["pauseCobranzaDebtor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/force-stage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Force a debtor to a target cartera stage (D-31-02, admin-only) */
+        post: operations["forceStageCobranzaDebtor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/wa-send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send an approved WhatsApp template to a debtor (D-31-03) */
+        post: operations["manualWaSendCobranzaDebtor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/manual-call": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Trigger a Vapi manual outbound call to a debtor (D-31-04, admin-only) */
+        post: operations["manualCallCobranzaDebtor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/wa-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the approved WhatsApp templates available to this tenant */
+        get: operations["listCobranzaWaTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dashboard/summary/{agencyId}": {
         parameters: {
             query?: never;
@@ -3490,91 +3575,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/pause": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Pause cobranza for a debtor (D-31-01) */
-        post: operations["pauseCobranzaDebtor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/force-stage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Force a debtor to a target cartera stage (D-31-02, admin-only) */
-        post: operations["forceStageCobranzaDebtor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/wa-send": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Send an approved WhatsApp template to a debtor (D-31-03) */
-        post: operations["manualWaSendCobranzaDebtor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/manual-call": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Trigger a Vapi manual outbound call to a debtor (D-31-04, admin-only) */
-        post: operations["manualCallCobranzaDebtor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/cobranza/wa-templates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List the approved WhatsApp templates available to this tenant */
-        get: operations["listCobranzaWaTemplates"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/agency/{agencyId}/cobranza/escalations": {
         parameters: {
             query?: never;
@@ -6138,299 +6138,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cotizador/quote": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Multi-aseguradora quote pipeline. Default: synchronous JSON response. Opt-in: when `?stream=1`, the response Content-Type is text/event-stream and the body is an SSE-framed stream of events whose payloads are the SSE* component schemas (`SSECarrierStart`, `SSECarrierVerdict`, `SSECarrierError`, `SSEPartialRanking`, `SSERecovery`, `SSEFinalVerdict`, `SSEHeartbeat`). */
-        post: operations["cotizadorQuoteCreate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cotizador/quote/{id}/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Server-Sent Events stream — subscribe / reconnect to a quote session started by POST /api/cotizador/quote. Supports Last-Event-ID re-sync over the anchored 12h TTL window (D-24-10). The response is a text/event-stream wire; event payloads conform to the SSE* component schemas (discriminated by the SSE `event:` field). */
-        get: operations["cotizadorStreamSubscribe"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cotizador/quote/{id}/re-quote": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Interactive re-quote (D-24-09/D-24-11/D-24-12/D-24-18/D-24-20). PATCH a subset of {canon_mensual_cop, codeudores, tipo_inmueble}; only the affected carriers re-run (data-driven via cotizador_assumption_registry). Regenerates reasoning_trace_es every call. Returns 429 when the session budget cap is reached. */
-        post: operations["cotizadorReQuote"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/cotizador/cohort-taxonomy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Admin read of the cotizador_cohort_taxonomy table (D-24-13). Read-only by design — the leasefy_admin RLS policy guards writes. Deterministic ordering by cohortId ASC. */
-        get: operations["cotizadorCohortTaxonomyList"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cotizador/policy-outcome": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Record a real-world policy lifecycle outcome (D-25-01, D-25-02, D-25-03). Append-only event log linked to the originating quote_id. Idempotency-Key header required — retries with the same key return 200 with the original row. */
-        post: operations["cotizadorPolicyOutcomeCreate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cotizador/carrier-events/{carrier}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Per-carrier direct webhook. HMAC-SHA256 verification via X-Carrier-Signature (CARRIER_WEBHOOK_SECRET_{CARRIER} env var). Returns 501 — implementation deferred to Phase 27. Contract is locked here so Phase 27 can add parser logic without touching auth plumbing (D-25-02, 25-06). */
-        post: operations["cotizadorCarrierWebhook"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cotizador/sla": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Per-tenant SLA metric read (D-25-09, D-25-10). Returns hourly metric rows for the requesting tenant. Tenant isolation enforced via withTenantScope + FORCE RLS (T-25-10-02 — cross-tenant UUID returns only the GUC-scoped rows). */
-        get: operations["cotizadorSlaList"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cotizador/costs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Per-tenant cost read (D-25-14). Returns cost aggregates for the requesting tenant. group_by=tenant excluded (caller is already scoped to one tenant). Tenant isolation via withTenantScope + FORCE RLS. */
-        get: operations["cotizadorCostsList"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/cotizador/carriers/{carrier}/reset-degradation": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Admin manual reset of a carrier's degraded state (D-25-07 escape hatch). Returns prior state so operators can audit what was cleared. Auth: COTIZADOR_ADMIN_API_KEY header (not bearerAuth — admin shared secret). */
-        post: operations["cotizadorAdminResetDegradation"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/cotizador/sla": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Cross-tenant SLA rollup (leasefy_admin, D-25-11). System-actor query — no withTenantScope (admin sees all tenants). Returns at most 500 rows; capped=true when truncated. */
-        get: operations["cotizadorAdminSlaList"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/cotizador/costs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Cross-tenant cost aggregates (leasefy_admin). Admin-scoped — no withTenantScope. Optional tenant_id filter narrows to a single tenant. group_by=tenant available (unlike the per-tenant endpoint which excludes it). */
-        get: operations["cotizadorAdminCostsList"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/cotizador/drift": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Drift reports per (tenant, carrier) (D-25-12). Admin-scoped — no withTenantScope. Compares predicted verdicts against ground-truth outcomes to surface accuracy degradation. */
-        get: operations["cotizadorAdminDriftList"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cotizador/data-subject/{cedula_hash}/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Acceso (Habeas Data Ley 1581/2012): enqueue an asynchronous export of all cotizador* rows associated with the data subject's cedula_hash. Returns 202 Accepted with a job_id; poll GET /api/cotizador/arco/jobs/{job_id} for the presigned S3 export URL (24h TTL). Two-key counsel gate (D-26-11). */
-        get: operations["cotizadorArcoAcceso"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cotizador/data-subject/{cedula_hash}/rectify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Rectificación (Habeas Data Ley 1581/2012): enqueue a correction of a cedula_hash-derived column. Only fields in ARCO_RECTIFIABLE_FIELDS may be corrected (D-26-12). Returns 202 Accepted. Idempotency-Key required (D-26-10). */
-        post: operations["cotizadorArcoRectificacion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cotizador/data-subject/{cedula_hash}/delete-all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Cancelación (Habeas Data Ley 1581/2012): enqueue a hard DELETE of all cotizador* rows for this cedula_hash within the tenant (D-26-08). FK CASCADE reaps children. Returns 202 Accepted. Idempotency-Key required. */
-        delete: operations["cotizadorArcoCancelacion"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cotizador/data-subject/{cedula_hash}/object": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Oposición (Habeas Data Ley 1581/2012): enqueue an objection that triggers defense-in-depth blocklist enforcement (D-26-09 layers 1+2+3). Subsequent POST /api/cotizador/quote for this cedula_hash returns 451 Unavailable For Legal Reasons. Returns 202 Accepted. Idempotency-Key required. */
-        post: operations["cotizadorArcoOposicion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cotizador/arco/jobs/{job_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Poll the status of an async ARCO job (D-26-10). Returns current status (pending | running | completed | failed) + result_uri for Acceso exports (presigned S3 URL, 24h TTL). Two-key counsel gate applies here too. */
-        get: operations["cotizadorArcoJobStatus"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        CobranzaInterventionOk: {
+            /** @enum {boolean} */
+            ok: true;
+        };
+        CobranzaInterventionError: {
+            error: string;
+        };
+        CobranzaPauseBody: {
+            /** Format: date-time */
+            paused_until: string;
+            reason: string;
+        };
+        CobranzaForceStageBody: {
+            /** @enum {string} */
+            target_stage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX";
+            reason: string;
+        };
+        CobranzaWaSendOk: {
+            /** @enum {boolean} */
+            ok: true;
+            providerMessageId: string | null;
+        };
+        CobranzaWaSendBody: {
+            template_id: string;
+            variables: {
+                [key: string]: string;
+            };
+        };
+        CobranzaManualCallOk: {
+            /** @enum {boolean} */
+            ok: true;
+            callId: string;
+            stub?: boolean;
+        };
+        CobranzaManualCallBody: {
+            reason: string;
+        };
+        CobranzaWaTemplatesList: {
+            templates: {
+                id: string;
+                label: string;
+                variables: string[];
+            }[];
+        };
         DashboardSummaryResponse: {
             /** Format: uuid */
             agencyId: string;
@@ -6613,7 +6368,7 @@ export interface components {
              * @example standard
              * @enum {string}
              */
-            billingModel: "standard" | "performance" | "hybrid";
+            billingModel?: "standard" | "performance" | "hybrid";
         };
         OnboardingInviteToken: {
             /** Format: email */
@@ -6805,7 +6560,7 @@ export interface components {
             primaryContactEmail: string;
             primaryContactPhone: string;
             /** @enum {string} */
-            billingModel: "standard" | "performance" | "hybrid";
+            billingModel?: "standard" | "performance" | "hybrid";
             /** Format: uuid */
             tenantId?: string;
         };
@@ -7771,50 +7526,6 @@ export interface components {
         CobranzaRevealPiiRequest: {
             /** @enum {string} */
             field: "cedula" | "phone" | "email" | "fiador_cedula";
-        };
-        CobranzaInterventionOk: {
-            /** @enum {boolean} */
-            ok: true;
-        };
-        CobranzaInterventionError: {
-            error: string;
-        };
-        CobranzaPauseBody: {
-            /** Format: date-time */
-            paused_until: string;
-            reason: string;
-        };
-        CobranzaForceStageBody: {
-            /** @enum {string} */
-            target_stage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX";
-            reason: string;
-        };
-        CobranzaWaSendOk: {
-            /** @enum {boolean} */
-            ok: true;
-            providerMessageId: string | null;
-        };
-        CobranzaWaSendBody: {
-            template_id: string;
-            variables: {
-                [key: string]: string;
-            };
-        };
-        CobranzaManualCallOk: {
-            /** @enum {boolean} */
-            ok: true;
-            callId: string;
-            stub?: boolean;
-        };
-        CobranzaManualCallBody: {
-            reason: string;
-        };
-        CobranzaWaTemplatesList: {
-            templates: {
-                id: string;
-                label: string;
-                variables: string[];
-            }[];
         };
         CobranzaEscalationCard: {
             id: string;
@@ -9482,333 +9193,6 @@ export interface components {
             /** Format: email */
             email?: string | null;
         };
-        /** @description Per-carrier quote result (Phase 20 D-20-15 8-carrier set). */
-        AseguradoraQuote: {
-            /** @enum {string} */
-            aseguradora: "sura" | "solidaria" | "mapfre" | "bolivar" | "estado" | "equidad" | "mundial" | "zurich";
-            /** @enum {string} */
-            status: "approved" | "conditional" | "rejected" | "error";
-            prima_mensual_cop: number | null;
-            condiciones: string[];
-            motivo_rechazo: string | null;
-            latency_ms: number;
-            raw_excerpt: {
-                [key: string]: unknown;
-            } | null;
-            stub_mode: boolean;
-            error: {
-                /** @enum {string} */
-                code: "timeout" | "transport" | "auth" | "rate_limit" | "parse";
-                message: string;
-            } | null;
-        };
-        /** @description Phase 24 D-24-13/D-24-16 cohort-taxonomy match. null when no taxonomy row matched the candidate predicate OR when confidence < threshold (D-24-16). The field is ALWAYS present on the synchronous response and on the SSEFinalVerdict event (additive contract — Phase 22/23 byte-for-byte compat preserved otherwise). */
-        CohortInsights: {
-            cohort_id: string;
-            label_es: string;
-            confidence: number;
-        } | null;
-        /** @description Recovery via alternate-path guidance (vs counterfactual). */
-        RecoveryAltPath: {
-            /** @enum {string} */
-            type: "alt_path";
-            advice_es: string;
-        };
-        /** @description Counterfactual recovery payload (D-23-09). */
-        RecoveryCounterfactual: {
-            /** @enum {string} */
-            type: "counterfactual";
-            what_ifs: {
-                [key: string]: unknown;
-            }[];
-            selected_levers_log: {
-                selected_levers: string[];
-                rationale_per_lever: {
-                    [key: string]: string;
-                };
-            };
-            fallback_message_es: string | null;
-        };
-        /** @description Recovery output discriminated by `type`. */
-        Recovery: components["schemas"]["RecoveryAltPath"] | components["schemas"]["RecoveryCounterfactual"];
-        /** @description Carrier currently in degraded mode (D-25-09). Present in POST /api/cotizador/quote 200 response when ≥1 carrier is degraded. */
-        DegradedCarrier: {
-            carrier: string;
-            reason: string;
-            /** Format: date-time */
-            since_iso: string;
-        };
-        /** @description Synchronous POST /api/cotizador/quote response (default — no stream). Phase 24 additively introduces cohort_insights; Phase 25 v1.1 additively introduces optional degraded_carriers. All other fields are byte-identical to Phase 23. */
-        CotizadorQuoteResponse: {
-            /** @enum {string} */
-            asegurabilidad: "yes" | "partial" | "no";
-            aseguradoras_consultadas: components["schemas"]["AseguradoraQuote"][];
-            mejor_opcion: components["schemas"]["AseguradoraQuote"] & (Record<string, never> | null);
-            alternativas: components["schemas"]["AseguradoraQuote"][];
-            stub_mode?: boolean;
-            cached: boolean;
-            /** Format: uuid */
-            quoteRequestId: string;
-            reasoning_trace_es: string | null;
-            cohort_insights: components["schemas"]["CohortInsights"];
-            recovery?: components["schemas"]["Recovery"];
-            /** @description Carriers currently in degraded mode (D-25-09). Present only when ≥1 carrier is degraded. Consumers that ignore unknown fields are unaffected (additive contract). Field is never in required[] — existing Phase 22/23 callers stay byte-for-byte compatible. */
-            degraded_carriers?: components["schemas"]["DegradedCarrier"][];
-        };
-        /** @description Standard error shape across the cotizador surface. */
-        CotizadorErrorResponse: {
-            /** @enum {boolean} */
-            success: false;
-            error: string;
-        };
-        /** @description POST /api/cotizador/quote body. cedula is HASHED at the server boundary (sha256(cedula | tenant_salt)) — raw cedula NEVER persisted (Habeas Data). */
-        CotizadorQuoteRequest: {
-            cedula: string;
-            ciudad: string;
-            canon_mensual_cop: number;
-            /** @enum {string} */
-            tipo_inmueble: "apartamento" | "casa" | "local";
-            /** Format: uuid */
-            tenant_id: string;
-            /** @default 0 */
-            codeudores: number;
-        };
-        /** @description SSE event `carrier.start`: emitted at fan-out start, once per carrier. The producer side writes the event to `cotizador_quote_stream_events` and the SSE wire atomically. */
-        SSECarrierStart: {
-            carrier: string;
-            started_at_ms: number;
-        };
-        /** @description SSE event `carrier.verdict`: emitted when a carrier returns a successful response (approved / conditional / rejected / error). prima_mensual_cop is non-null only when verdict === "approved". */
-        SSECarrierVerdict: {
-            carrier: string;
-            /** @enum {string} */
-            verdict: "approved" | "conditional" | "rejected" | "error";
-            prima_mensual_cop: number | null;
-            condiciones?: string[];
-        };
-        /** @description SSE event `carrier.error`: emitted when a carrier dispatch fails (timeout, transport, parse). Structurally distinct from SSECarrierVerdict (D-24-05 mutual exclusion): error_code + retryable required, no verdict / prima_mensual_cop fields. */
-        SSECarrierError: {
-            carrier: string;
-            error_code: string;
-            message: string;
-            retryable: boolean;
-        };
-        /** @description SSE event `agent.partial_ranking`: emitted once after the fan-out completes, before the final verdict + recovery + trace narration step. Carries the deterministic ranking + accepting count so the UI can render an interim view while the trace is being generated. */
-        SSEPartialRanking: {
-            ranked_carriers: {
-                carrier: string;
-                total_score: number;
-            }[];
-            accepting_count: number;
-        };
-        /** @description SSE event `agent.recovery`: emitted on rejection before agent.final_verdict. type discriminates the payload shape (alt_path | counterfactual). */
-        SSERecovery: {
-            /** @enum {string} */
-            type: "alt_path" | "counterfactual";
-            payload?: unknown;
-        };
-        /** @description SSE event `agent.final_verdict`: the TERMINAL event on the stream. D-24-02: reasoning_trace_es lives ONLY here. cohort_insights is the Phase 24 D-24-13/D-24-16 cohort match output (null when no taxonomy row matched or confidence below threshold). */
-        SSEFinalVerdict: {
-            /** @enum {string} */
-            asegurabilidad: "yes" | "partial" | "no";
-            mejor_opcion: {
-                carrier: string;
-                prima_mensual_cop: number;
-            } | null;
-            reasoning_trace_es: string | null;
-            cohort_insights: {
-                cohort_id: string;
-                label_es: string;
-                confidence: number;
-            } | null;
-            failed_carriers: string[];
-        };
-        /** @description SSE event `agent.heartbeat`: emitted every 5s during fan-out idle intervals so idle proxies do not disconnect. awaiting carries the set of carrier names still pending. */
-        SSEHeartbeat: {
-            elapsed_ms: number;
-            awaiting: string[];
-        };
-        /** @description Discriminated union over the 7 Phase 24 SSE event payload shapes. The SSE event type (carrier.start, carrier.verdict, carrier.error, agent.partial_ranking, agent.recovery, agent.final_verdict, agent.heartbeat) lives in the SSE `event:` field; this schema describes the payload (the SSE `data:` field). */
-        SSEEventPayload: components["schemas"]["SSECarrierStart"] | components["schemas"]["SSECarrierVerdict"] | components["schemas"]["SSECarrierError"] | components["schemas"]["SSEPartialRanking"] | components["schemas"]["SSERecovery"] | components["schemas"]["SSEFinalVerdict"] | components["schemas"]["SSEHeartbeat"];
-        /** @description Aggregate verdict across all consulted carriers. mejor_opcion is null on full rejection. */
-        QuoteVerdict: {
-            /** @enum {string} */
-            asegurabilidad: "yes" | "partial" | "no";
-            aseguradoras_consultadas: components["schemas"]["AseguradoraQuote"][];
-            mejor_opcion: components["schemas"]["AseguradoraQuote"] & (Record<string, never> | null);
-            alternativas: components["schemas"]["AseguradoraQuote"][];
-            stub_mode?: boolean;
-        };
-        /** @description POST /api/cotizador/quote/{id}/re-quote 200 response. delta_carriers + retained_carriers surface the D-24-11 selective re-run scope; session_cost_accumulator_usd reports the POST-increment value (D-24-20 session budget cap). */
-        CotizadorReQuoteResponse: {
-            /** @enum {boolean} */
-            success: true;
-            verdict: components["schemas"]["QuoteVerdict"];
-            reasoning_trace_es: string | null;
-            cohort_insights: components["schemas"]["CohortInsights"];
-            delta_carriers: string[];
-            retained_carriers: string[];
-            session_cost_accumulator_usd: number;
-            /** Format: uuid */
-            quoteRequestId: string;
-        };
-        /** @description POST /api/cotizador/quote/{id}/re-quote body (D-24-09/D-24-11). PATCH semantics — at LEAST one of canon_mensual_cop, codeudores, tipo_inmueble must be present. Empty bodies return 400. */
-        CotizadorReQuoteRequest: {
-            /** Format: uuid */
-            tenant_id: string;
-            canon_mensual_cop?: number;
-            codeudores?: number;
-            /** @enum {string} */
-            tipo_inmueble?: "apartamento" | "casa" | "local";
-        };
-        /** @description A single row of cotizador_cohort_taxonomy (D-24-13). matchPredicate is the JSON predicate (z-score range + categorical filters) the cohort evaluator matches against the candidate features. */
-        CohortTaxonomyRow: {
-            cohortId: string;
-            labelEs: string;
-            matchPredicate: {
-                [key: string]: unknown;
-            };
-            descriptionEs: string;
-            syntheticStats: {
-                [key: string]: unknown;
-            };
-        };
-        /** @description GET /api/admin/cotizador/cohort-taxonomy 200 response. Ordered by cohortId ASC for deterministic consumption. */
-        CotizadorCohortTaxonomyResponse: {
-            /** @enum {boolean} */
-            success: true;
-            cohort_taxonomy: components["schemas"]["CohortTaxonomyRow"][];
-        };
-        /** @description Standard error response shape for Phase 25 endpoints. */
-        Phase25ErrorResponse: {
-            /** @enum {boolean} */
-            success: false;
-            error: string;
-        };
-        /** @description POST /api/cotizador/policy-outcome body. source_actor is hardcoded server-side to "inmobiliaria_relay" — callers cannot forge carrier_direct source (D-25-02, T-25-05-03). observed_at is the caller-supplied event time; recorded_at is the server-side ingest time. */
-        PolicyOutcomeRequest: {
-            /** Format: uuid */
-            quote_id: string;
-            /** Format: uuid */
-            tenant_id: string;
-            /** @enum {string} */
-            outcome_type: "policy_emitted" | "policy_cancelled" | "rejected_second_review" | "claim_filed" | "other";
-            outcome_payload?: {
-                [key: string]: unknown;
-            };
-            /** @enum {string} */
-            source_actor: "inmobiliaria_relay";
-            /** Format: date-time */
-            observed_at: string;
-        };
-        /** @description Per-carrier, per-hour SLA metric row. Computed by the cotizador fan-out instrumentation (D-25-09). */
-        SlaMetric: {
-            /** Format: uuid */
-            tenant_id: string;
-            carrier: string;
-            /** Format: date-time */
-            hour_bucket_start: string;
-            n_attempts: number;
-            n_errors: number;
-            p50_latency_ms: number;
-            p95_latency_ms: number;
-            p99_latency_ms: number;
-        };
-        /** @description Per-quote cost breakdown. Cost fields are serialized as strings in the actual response to preserve Decimal precision; this schema documents the numeric shape for codegen consumers (D-25-14). */
-        CotizadorCostRow: {
-            /** Format: uuid */
-            quote_id: string;
-            /** Format: uuid */
-            tenant_id: string;
-            anthropic_cost_usd: number;
-            carrier_api_cost_usd: number;
-            sekure_commission_usd: number;
-            datacredito_cost_usd: number;
-            total_cost_usd: number;
-            /** Format: date-time */
-            computed_at: string;
-        };
-        /** @description Drift report row: predicted vs observed outcome accuracy for a (tenant, carrier) pair over a computation window (D-25-12). */
-        DriftReport: {
-            /** Format: uuid */
-            tenant_id: string;
-            carrier: string;
-            /** Format: date-time */
-            window_start: string;
-            /** Format: date-time */
-            window_end: string;
-            n_outcomes: number;
-            accuracy_pct: number;
-            /**
-             * @description null when no breach threshold is exceeded.
-             * @enum {string|null}
-             */
-            breach_severity: "low" | "medium" | "high" | "critical" | null;
-            /** Format: date-time */
-            computed_at: string;
-        };
-        /** @description 200 echo on idempotent replay (D-26-10 / T-26-06-03). Returned when Idempotency-Key matches an existing job for the same tenant. Original job_id returned. */
-        ArcoJobIdempotentEcho: {
-            /** Format: uuid */
-            job_id: string;
-            status_url: string;
-            /** @enum {boolean} */
-            duplicate: true;
-        };
-        /** @description 202 Accepted response for ARCO action endpoints (D-26-10). The job is enqueued asynchronously via Inngest. Poll GET /api/cotizador/arco/jobs/{job_id} for status. */
-        ArcoJobAccepted: {
-            /** Format: uuid */
-            job_id: string;
-            status_url: string;
-            estimated_completion: string;
-        };
-        /** @description Standard ARCO error response. */
-        ArcoErrorResponse: {
-            error: string;
-        };
-        /** @description Two-key counsel gate block (D-26-11). Returned when COTIZADOR_ARCO_ENABLED is unset or the compliance_acknowledgments ACK row is absent. Contact compliance@leasefy.co. */
-        Arco503Response: {
-            /** @enum {boolean} */
-            pending_counsel_review: true;
-            /** @enum {string} */
-            contact: "compliance@leasefy.co";
-        };
-        ArcoFieldNotRectifiable: {
-            /** @enum {string} */
-            error: "field_not_rectifiable";
-            field: string;
-            allowlist: string[];
-        };
-        /** @description Rectificación request body. Raw cédula keys (cedula, cedula_raw) are blocked at Zod refine (T-26-06-01). */
-        ArcoRectifyRequest: {
-            /** Format: uuid */
-            tenant_id: string;
-            /** @description Field name to rectify. Must be in ARCO_RECTIFIABLE_FIELDS (consent_authorization_id, name_correction, address_correction). D-26-12: carrier verdicts, drift deltas, recalibration outcomes are NOT rectifiable. */
-            field: string;
-            corrected_value: string;
-        };
-        /** @description Cancelación body. Only tenant_id is required — the cedula_hash comes from the X-Cotizador-Data-Subject-Cedula-Hash header (T-26-06-01). */
-        ArcoCancelacionRequest: {
-            /** Format: uuid */
-            tenant_id: string;
-        };
-        /** @description Oposición body. reason is optional — the data subject may omit it. Raw cédula keys are blocked (T-26-06-01). */
-        ArcoOposicionRequest: {
-            /** Format: uuid */
-            tenant_id: string;
-            reason?: string;
-        };
-        /** @description Job status for GET /api/cotizador/arco/jobs/{job_id}. result_uri is a presigned S3 URL (24h TTL) for Acceso exports; null for other actions. error_message is non-null only on failed status. */
-        ArcoJobStatus: {
-            /** @enum {string} */
-            status: "pending" | "running" | "completed" | "failed";
-            /** Format: date-time */
-            requested_at: string;
-            /** Format: date-time */
-            completed_at: string | null;
-            result_uri: string | null;
-            error_message: string | null;
-        };
     };
     responses: never;
     parameters: never;
@@ -9818,6 +9202,361 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    pauseCobranzaDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaPauseBody"];
+            };
+        };
+        responses: {
+            /** @description Paused */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Debtor not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Audit-first write failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
+    forceStageCobranzaDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaForceStageBody"];
+            };
+        };
+        responses: {
+            /** @description Stage forced */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Debtor or state not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Audit-first or transaction failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
+    manualWaSendCobranzaDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaWaSendBody"];
+            };
+        };
+        responses: {
+            /** @description Template send dispatched to BSP */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaWaSendOk"];
+                };
+            };
+            /** @description Validation error or unknown template_id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Debtor not found or has no phone */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Audit-first write failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description BSP send failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
+    manualCallCobranzaDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaManualCallBody"];
+            };
+        };
+        responses: {
+            /** @description Vapi call created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaManualCallOk"];
+                };
+            };
+            /** @description Stub-mode (VAPI_API_KEY unset) — audit written, no upstream call */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaManualCallOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Debtor not found or has no phone */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Audit-first write failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Vapi unreachable or non-2xx */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable or Vapi config missing */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
+    listCobranzaWaTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Approved templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaWaTemplatesList"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
     getMemberPermissions: {
         parameters: {
             query?: never;
@@ -12050,361 +11789,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CobranzaRevealPiiError"];
-                };
-            };
-        };
-    };
-    pauseCobranzaDebtor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                debtorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CobranzaPauseBody"];
-            };
-        };
-        responses: {
-            /** @description Paused */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionOk"];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Debtor not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Audit-first write failed */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Database unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-        };
-    };
-    forceStageCobranzaDebtor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                debtorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CobranzaForceStageBody"];
-            };
-        };
-        responses: {
-            /** @description Stage forced */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionOk"];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Debtor or state not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Audit-first or transaction failed */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Database unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-        };
-    };
-    manualWaSendCobranzaDebtor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                debtorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CobranzaWaSendBody"];
-            };
-        };
-        responses: {
-            /** @description Template send dispatched to BSP */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaWaSendOk"];
-                };
-            };
-            /** @description Validation error or unknown template_id */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Debtor not found or has no phone */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Audit-first write failed */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description BSP send failed */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Database unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-        };
-    };
-    manualCallCobranzaDebtor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                debtorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CobranzaManualCallBody"];
-            };
-        };
-        responses: {
-            /** @description Vapi call created */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaManualCallOk"];
-                };
-            };
-            /** @description Stub-mode (VAPI_API_KEY unset) — audit written, no upstream call */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaManualCallOk"];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Debtor not found or has no phone */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Audit-first write failed */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Vapi unreachable or non-2xx */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Database unavailable or Vapi config missing */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-        };
-    };
-    listCobranzaWaTemplates: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Approved templates */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaWaTemplatesList"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Database unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
                 };
             };
         };
@@ -19271,943 +18655,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RetencionError"];
-                };
-            };
-        };
-    };
-    cotizadorQuoteCreate: {
-        parameters: {
-            query?: {
-                stream?: "1";
-            };
-            header: {
-                "x-cotizador-consent": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CotizadorQuoteRequest"];
-            };
-        };
-        responses: {
-            /** @description Synchronous quote verdict (when `?stream=1` omitted). v1.1: additively includes optional degraded_carriers[] field (D-25-09). When `?stream=1` is set, the response is a Server-Sent Events stream. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorQuoteResponse"];
-                };
-            };
-            /** @description Invalid body, missing/malformed consent header, or invalid query. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-            /** @description D-07 production allowlist gate — tenant not enabled for cotizador. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-            /** @description G5 runtime PII leak — incident logged. */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-            /** @description Orchestration failure or guardrail block. */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-        };
-    };
-    cotizadorStreamSubscribe: {
-        parameters: {
-            query?: {
-                tenant_id?: string;
-            };
-            header?: {
-                "last-event-id"?: string;
-                "x-tenant-id"?: string;
-            };
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Server-Sent Events stream. Content-Type: text/event-stream. The body is an SSE-framed sequence whose `data:` field carries a JSON payload matching one of the `SSE*` component schemas. The terminal event is `agent.final_verdict`; the server closes the stream deterministically thereafter (T-24-08-C — no indefinite keep-alive). */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SSEEventPayload"];
-                };
-            };
-            /** @description Missing/malformed tenant_id or Last-Event-ID. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-            /** @description Quote not found (cross-tenant + missing both return 404). */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-            /** @description Session expired (anchored 12h TTL — D-24-10). */
-            410: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-            /** @description Database unavailable (stub mode). */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-        };
-    };
-    cotizadorReQuote: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CotizadorReQuoteRequest"];
-            };
-        };
-        responses: {
-            /** @description Merged re-quote verdict + delta scope + post-increment session cost. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorReQuoteResponse"];
-                };
-            };
-            /** @description Invalid JSON body or empty/all-undefined partial. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-            /** @description Session not found (cross-tenant returns 404 — no existence leak). */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-            /** @description Session expired (anchored 12h TTL — D-24-10). */
-            410: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-            /** @description G9 session budget cap exceeded (D-24-20) — violation_type `g9_session_budget_cap_exceeded`. */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-            /** @description Orchestration failure or guardrail block. */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-            /** @description Database unavailable (stub mode). */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-        };
-    };
-    cotizadorCohortTaxonomyList: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cohort taxonomy rows (ordered by cohortId ASC). */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorCohortTaxonomyResponse"];
-                };
-            };
-            /** @description Missing or invalid `Authorization: Bearer <COTIZADOR_ADMIN_API_KEY>`. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-            /** @description Database unavailable (stub mode). */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CotizadorErrorResponse"];
-                };
-            };
-        };
-    };
-    cotizadorPolicyOutcomeCreate: {
-        parameters: {
-            query?: never;
-            header: {
-                "idempotency-key": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PolicyOutcomeRequest"];
-            };
-        };
-        responses: {
-            /** @description Idempotent duplicate — original row returned. Retries with the same Idempotency-Key return this shape (Stripe/Wompi convention). */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {boolean} */
-                        success: true;
-                        /** Format: uuid */
-                        id: string;
-                        /** @enum {boolean} */
-                        duplicate: true;
-                    };
-                };
-            };
-            /** @description Outcome recorded (new INSERT). */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {boolean} */
-                        success: true;
-                        /** Format: uuid */
-                        id: string;
-                        /** @enum {boolean} */
-                        duplicate: false;
-                    };
-                };
-            };
-            /** @description Missing Idempotency-Key header, invalid JSON body, or Zod validation failure. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Phase25ErrorResponse"];
-                };
-            };
-            /** @description quote_id not found or cross-tenant isolation (T-25-05-01 — no existence leak). */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Phase25ErrorResponse"];
-                };
-            };
-        };
-    };
-    cotizadorCarrierWebhook: {
-        parameters: {
-            query?: never;
-            header: {
-                "x-carrier-signature": string;
-            };
-            path: {
-                carrier: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description HMAC mismatch or missing X-Carrier-Signature header. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {string} */
-                        error: "invalid_signature";
-                    };
-                };
-            };
-            /** @description Carrier not in AseguradoraName registry (T-25-06-03). */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {string} */
-                        error: "unknown_carrier";
-                    };
-                };
-            };
-            /** @description CARRIER_WEBHOOK_SECRET_{CARRIER} env var missing — not silent accept-all (T-25-06-02). */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {string} */
-                        error: "webhook_not_configured";
-                    };
-                };
-            };
-            /** @description Contract locked — implementation deferred to Phase 27. Valid signature + known carrier. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {string} */
-                        status: "accepted";
-                        /** @enum {string} */
-                        processing: "deferred-to-phase-27";
-                    };
-                };
-            };
-        };
-    };
-    cotizadorSlaList: {
-        parameters: {
-            query: {
-                tenant_id: string;
-                from?: string;
-                to?: string;
-                carrier?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description SLA metrics for tenant. Returns at most 500 rows ordered by hour_bucket_start ASC. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {boolean} */
-                        success: true;
-                        sla: components["schemas"]["SlaMetric"][];
-                    };
-                };
-            };
-            /** @description Missing or invalid tenant_id. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Phase25ErrorResponse"];
-                };
-            };
-            /** @description Missing or invalid AGENT_API_KEY bearer token. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Phase25ErrorResponse"];
-                };
-            };
-        };
-    };
-    cotizadorCostsList: {
-        parameters: {
-            query: {
-                tenant_id: string;
-                from?: string;
-                to?: string;
-                group_by?: "carrier" | "day";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Per-quote costs for tenant. Cost fields serialized as strings for Decimal precision. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {boolean} */
-                        success: true;
-                        costs: components["schemas"]["CotizadorCostRow"][];
-                    };
-                };
-            };
-            /** @description Missing or invalid tenant_id. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Phase25ErrorResponse"];
-                };
-            };
-            /** @description Missing or invalid AGENT_API_KEY bearer token. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Phase25ErrorResponse"];
-                };
-            };
-        };
-    };
-    cotizadorAdminResetDegradation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                carrier: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Carrier degradation state cleared. prior_state reflects state before the reset. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {boolean} */
-                        success: true;
-                        carrier: string;
-                        /** Format: date-time */
-                        reset_at: string;
-                        prior_state: {
-                            degraded: boolean;
-                            /** Format: date-time */
-                            degraded_since: string | null;
-                        };
-                    };
-                };
-            };
-            /** @description Missing or invalid COTIZADOR_ADMIN_API_KEY. Auth: admin shared-secret header (T-25-14-03). */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Phase25ErrorResponse"];
-                };
-            };
-            /** @description Forbidden — caller does not have leasefy_admin role. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Phase25ErrorResponse"];
-                };
-            };
-            /** @description Unknown carrier — not in AseguradoraName registry. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Phase25ErrorResponse"];
-                };
-            };
-        };
-    };
-    cotizadorAdminSlaList: {
-        parameters: {
-            query?: {
-                tenant_id?: string;
-                from?: string;
-                to?: string;
-                carrier?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cross-tenant SLA rollups (leasefy_admin). Returns at most 500 rows; capped=true when truncated. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {boolean} */
-                        success: true;
-                        sla: components["schemas"]["SlaMetric"][];
-                        row_count: number;
-                        capped: boolean;
-                    };
-                };
-            };
-            /** @description Missing or invalid COTIZADOR_ADMIN_API_KEY. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Phase25ErrorResponse"];
-                };
-            };
-            /** @description Forbidden — caller does not have leasefy_admin role. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Phase25ErrorResponse"];
-                };
-            };
-        };
-    };
-    cotizadorAdminCostsList: {
-        parameters: {
-            query?: {
-                tenant_id?: string;
-                from?: string;
-                to?: string;
-                group_by?: "carrier" | "tenant" | "day";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cross-tenant cost aggregates (leasefy_admin). Cost fields serialized as strings. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {boolean} */
-                        success: true;
-                        costs: components["schemas"]["CotizadorCostRow"][];
-                    };
-                };
-            };
-            /** @description Missing or invalid COTIZADOR_ADMIN_API_KEY. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Phase25ErrorResponse"];
-                };
-            };
-        };
-    };
-    cotizadorAdminDriftList: {
-        parameters: {
-            query?: {
-                tenant_id?: string;
-                from?: string;
-                to?: string;
-                carrier?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Drift reports per (tenant, carrier) within the requested window. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {boolean} */
-                        success: true;
-                        drift: components["schemas"]["DriftReport"][];
-                    };
-                };
-            };
-            /** @description Missing or invalid COTIZADOR_ADMIN_API_KEY. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Phase25ErrorResponse"];
-                };
-            };
-        };
-    };
-    cotizadorArcoAcceso: {
-        parameters: {
-            query: {
-                tenant_id: string;
-            };
-            header: {
-                "x-cotizador-data-subject-cedula-hash": string;
-            };
-            path: {
-                cedula_hash: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Idempotent replay — existing job for this (cedula_hash, tenant_id) returned. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoJobIdempotentEcho"];
-                };
-            };
-            /** @description Acceso job enqueued. Poll status_url for the export URI. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoJobAccepted"];
-                };
-            };
-            /** @description Missing or malformed X-Cotizador-Data-Subject-Cedula-Hash header, or invalid tenant_id. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoErrorResponse"];
-                };
-            };
-            /** @description Two-key counsel gate not satisfied (D-26-11) or database unavailable. */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Arco503Response"];
-                };
-            };
-        };
-    };
-    cotizadorArcoRectificacion: {
-        parameters: {
-            query?: never;
-            header: {
-                "x-cotizador-data-subject-cedula-hash": string;
-                "idempotency-key": string;
-            };
-            path: {
-                cedula_hash: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ArcoRectifyRequest"];
-            };
-        };
-        responses: {
-            /** @description Idempotent replay — existing job returned. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoJobIdempotentEcho"];
-                };
-            };
-            /** @description Rectificación job enqueued. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoJobAccepted"];
-                };
-            };
-            /** @description Missing Idempotency-Key, malformed cedula_hash header, or invalid body. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoErrorResponse"];
-                };
-            };
-            /** @description Field not in ARCO_RECTIFIABLE_FIELDS (D-26-12). */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoFieldNotRectifiable"];
-                };
-            };
-            /** @description Two-key counsel gate not satisfied or database unavailable. */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Arco503Response"];
-                };
-            };
-        };
-    };
-    cotizadorArcoCancelacion: {
-        parameters: {
-            query?: never;
-            header: {
-                "x-cotizador-data-subject-cedula-hash": string;
-                "idempotency-key": string;
-            };
-            path: {
-                cedula_hash: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ArcoCancelacionRequest"];
-            };
-        };
-        responses: {
-            /** @description Idempotent replay — existing job returned. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoJobIdempotentEcho"];
-                };
-            };
-            /** @description Cancelación job enqueued. Hard DELETE runs asynchronously. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoJobAccepted"];
-                };
-            };
-            /** @description Missing Idempotency-Key, malformed cedula_hash header, or invalid body. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoErrorResponse"];
-                };
-            };
-            /** @description Two-key counsel gate not satisfied or database unavailable. */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Arco503Response"];
-                };
-            };
-        };
-    };
-    cotizadorArcoOposicion: {
-        parameters: {
-            query?: never;
-            header: {
-                "x-cotizador-data-subject-cedula-hash": string;
-                "idempotency-key": string;
-            };
-            path: {
-                cedula_hash: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ArcoOposicionRequest"];
-            };
-        };
-        responses: {
-            /** @description Idempotent replay — existing job returned. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoJobIdempotentEcho"];
-                };
-            };
-            /** @description Oposición job enqueued. Blocklist enforcement activates asynchronously. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoJobAccepted"];
-                };
-            };
-            /** @description Missing Idempotency-Key, malformed cedula_hash header, or invalid body. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoErrorResponse"];
-                };
-            };
-            /** @description Two-key counsel gate not satisfied or database unavailable. */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Arco503Response"];
-                };
-            };
-        };
-    };
-    cotizadorArcoJobStatus: {
-        parameters: {
-            query: {
-                tenant_id: string;
-            };
-            header?: never;
-            path: {
-                job_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Job status. result_uri is null except for completed Acceso jobs. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoJobStatus"];
-                };
-            };
-            /** @description Invalid job_id (not a UUID) or missing/invalid tenant_id. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoErrorResponse"];
-                };
-            };
-            /** @description Job not found. Cross-tenant jobs return 404 (no existence leak — T-26-06-02). */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArcoErrorResponse"];
-                };
-            };
-            /** @description Two-key counsel gate not satisfied or database unavailable. */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Arco503Response"];
                 };
             };
         };

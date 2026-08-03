@@ -7,6 +7,7 @@ import {
   consignacionesApi,
   pipelineApi,
   cobrosApi,
+  avaluosApi,
   dispersionesApi,
   mantenimientoApi,
   renovacionesApi,
@@ -218,6 +219,34 @@ export function useCobroSummary(month: string) {
 }
 
 // ============================================================================
+// Avalúos (agency records-by-state)
+// ============================================================================
+
+/**
+ * The agency's own avalúos, optionally filtered by lifecycle state and paginated.
+ * Mirrors useCobros: `data` (the paginated envelope) plus convenience `avaluos`
+ * (its items), `total`, and `pageSize`. Empty until Phase 2 #3 wires the request
+ * flow that tags new avalúos with the agency email.
+ */
+export function useAgencyAvaluos(
+  params?: { state?: string; page?: number },
+  options?: { skip?: boolean },
+) {
+  const { data, ...rest } = useApiData(
+    () => avaluosApi.list(params),
+    [params?.state, params?.page],
+    options?.skip,
+  );
+  return {
+    data,
+    avaluos: data?.items ?? [],
+    total: data?.total ?? 0,
+    pageSize: data?.pageSize ?? 100,
+    ...rest,
+  };
+}
+
+// ============================================================================
 // Dispersiones
 // ============================================================================
 
@@ -405,10 +434,11 @@ export function useInmobiliariaConfig() {
   return { config: data, ...rest };
 }
 
-export function useAgencyUsers() {
+export function useAgencyUsers(enabled = true) {
   const { data, ...rest } = useApiData(
     () => inmobiliariaConfigApi.getUsers(),
-    []
+    [enabled],
+    !enabled,
   );
   return { users: data ?? [], ...rest };
 }
@@ -458,6 +488,7 @@ export {
   consignacionesApi,
   pipelineApi,
   cobrosApi,
+  avaluosApi,
   dispersionesApi,
   mantenimientoApi,
   renovacionesApi,

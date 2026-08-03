@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { usePermissionsContext } from '@/lib/context/PermissionsContext';
@@ -27,6 +29,56 @@ export function WorkspaceNav() {
   const { t } = useI18n();
   const { canAccess, isAdmin, agencyRole } = usePermissionsContext();
 
+  const scrollRef = useRef<HTMLElement | null>(null);
+  const [overflow, setOverflow] = useState({ start: false, end: false });
+
+  // Reflect scroll position → which edge fades/arrows are actionable.
+  const syncOverflow = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setOverflow({
+      start: el.scrollLeft > 1,
+      end: el.scrollLeft < maxScroll - 1,
+    });
+  }, []);
+
+  // A plain mouse only emits vertical wheel deltas, so the horizontal bar can
+  // never scroll. Translate deltaY → scrollLeft. React attaches `wheel` as a
+  // passive listener, so we wire it manually with { passive: false } to allow
+  // preventDefault and keep the page from scrolling underneath.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0 || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (maxScroll <= 0) return;
+      const atStart = el.scrollLeft <= 0 && e.deltaY < 0;
+      const atEnd = el.scrollLeft >= maxScroll && e.deltaY > 0;
+      if (atStart || atEnd) return; // let the page scroll at the edges
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('scroll', syncOverflow, { passive: true });
+    window.addEventListener('resize', syncOverflow);
+    syncOverflow();
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('scroll', syncOverflow);
+      window.removeEventListener('resize', syncOverflow);
+    };
+  }, [syncOverflow, pathname]);
+
+  const scrollByStep = (dir: 1 | -1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.round(el.clientWidth * 0.7), behavior: 'smooth' });
+  };
+
   const workspace = findAgentWorkspace(pathname ?? '');
   if (!workspace) return null;
 
@@ -49,9 +101,46 @@ export function WorkspaceNav() {
   return (
     <div className="sticky top-16 z-20 border-b border-border bg-bg/85 backdrop-blur-md">
       <div className="relative">
-        {/* right edge fade — hints there's more to scroll */}
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-bg to-transparent" />
+        {/* left edge fade + arrow — only actionable once scrolled */}
+        <div
+          className={cn(
+            'pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-bg to-transparent transition-opacity',
+            overflow.start ? 'opacity-100' : 'opacity-0'
+          )}
+        />
+        <button
+          type="button"
+          aria-label="Desplazar secciones a la izquierda"
+          tabIndex={overflow.start ? 0 : -1}
+          onClick={() => scrollByStep(-1)}
+          className={cn(
+            'absolute left-1 top-1/2 z-20 -translate-y-1/2 rounded-full border border-border bg-bg p-1 text-fg-muted shadow-sm transition-opacity hover:text-fg',
+            overflow.start ? 'opacity-100' : 'pointer-events-none opacity-0'
+          )}
+        >
+          <CaretLeft className="h-4 w-4" />
+        </button>
+        {/* right edge fade + arrow — hints there's more to scroll */}
+        <div
+          className={cn(
+            'pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-bg to-transparent transition-opacity',
+            overflow.end ? 'opacity-100' : 'opacity-0'
+          )}
+        />
+        <button
+          type="button"
+          aria-label="Desplazar secciones a la derecha"
+          tabIndex={overflow.end ? 0 : -1}
+          onClick={() => scrollByStep(1)}
+          className={cn(
+            'absolute right-1 top-1/2 z-20 -translate-y-1/2 rounded-full border border-border bg-bg p-1 text-fg-muted shadow-sm transition-opacity hover:text-fg',
+            overflow.end ? 'opacity-100' : 'pointer-events-none opacity-0'
+          )}
+        >
+          <CaretRight className="h-4 w-4" />
+        </button>
         <nav
+          ref={scrollRef}
           aria-label={`Secciones de ${t(workspace.labelKey)}`}
           // Lenis otherwise hijacks the wheel and the bar never scrolls.
           data-lenis-prevent

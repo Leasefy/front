@@ -19,8 +19,10 @@ SOURCE="live"
 
 # Step 1: Try the live agent dev server
 if curl --max-time 5 --silent --fail "$AGENT_URL" -o "$TMPFILE" 2>/dev/null; then
-  # Validate that the response is valid JSON before overwriting the snapshot
-  if node -e "JSON.parse(require('fs').readFileSync('$TMPFILE', 'utf8'))" 2>/dev/null; then
+  # Validate that the response is valid JSON before overwriting the snapshot.
+  # Read via stdin (fd 0) so Windows-native node never has to resolve the POSIX
+  # /tmp path that Git Bash's mktemp produces (bash opens the file, not node).
+  if node -e "JSON.parse(require('fs').readFileSync(0, 'utf8'))" < "$TMPFILE" 2>/dev/null; then
     # Atomic snapshot update
     mv "$TMPFILE" "$SNAPSHOT"
     # Run codegen from live URL

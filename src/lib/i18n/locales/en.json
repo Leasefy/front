@@ -1097,6 +1097,8 @@
         "userDeleted": "User deleted",
         "permissionsSaved": "Permissions updated",
         "permissionsSavedDesc": "Permission changes have been saved",
+        "permissionsReset": "Permissions reset",
+        "permissionsResetDesc": "All role permissions were restored to their default values",
         "integrationEnabled": "Integration enabled",
         "integrationDisabled": "Integration disabled",
         "configureIntegration": "Configure integration",
@@ -1217,7 +1219,12 @@
         "uploading": "Uploading logo...",
         "saveColors": "Save colors",
         "colorsSaved": "Colors updated",
-        "invalidHex": "Invalid color. Use the #RRGGBB format."
+        "invalidHex": "Invalid color. Use the #RRGGBB format.",
+        "socials": "Social media",
+        "socialsDesc": "Links to your networks; shown on your published listings",
+        "saveSocials": "Save social links",
+        "socialsSaved": "Social links updated",
+        "invalidUrl": "Invalid link. Must start with http:// or https://"
       },
       "users": {
         "title": "Team",
@@ -1323,7 +1330,8 @@
         "resetTitle": "Reset permissions",
         "resetDescription": "This will reset permissions for all roles to their default values.",
         "resetWarning": "All custom changes will be lost. This action cannot be undone.",
-        "adminNote": "Admins have all permissions by default and cannot be modified."
+        "adminNote": "Admins have all permissions by default and cannot be modified.",
+        "memberOverrideNote": "Saving or resetting a role's permissions will reset the individual customizations of that role's members."
       },
       "integrations": {
         "title": "Integrations",
@@ -6654,45 +6662,45 @@
           "avaluos": {
             "eyebrow": "Agent · Appraisals",
             "salaTitulo": "Appraisals",
-            "salaDesc": "Request certified appraisals of your properties without leaving the panel: you request and pay online, a certified appraiser visits the property and you receive the report with a signed certificate. Track every request here, end to end.",
+            "salaDesc": "Request reference value estimates for your properties without leaving the panel: you mint a link, the property details and online payment are captured, the engine crunches market data and a Leasefy reviewer signs the certificate. It's fully remote, with no physical visit. Track every request here, end to end.",
             "colaTitle": "My appraisal requests",
-            "colaDesc": "Every appraisal you requested, end to end: request → appraiser visit → report → signed certificate. You always see the up-to-date status; the visit and signature are handled by Leasefy's partner appraiser.",
+            "colaDesc": "Every appraisal you requested, end to end: request → market-data estimate → review → signed certificate. You always see the up-to-date status; the review and signature are handled by a Leasefy reviewer. No physical visit is performed.",
             "colaKpiLabel": "Active",
             "colaEmptyTitle": "No requests yet",
-            "colaEmptyHint": "Request your first appraisal: the agent handles the request and you track every step here until the signed certificate.",
+            "colaEmptyHint": "Request your first appraisal: mint the link, the estimate is generated and you track every step here until the signed certificate.",
             "casoColaLabel": "My requests",
             "misSolicitudes": "My requests",
             "solicitarTitle": "Request an appraisal",
-            "solicitarDetalle": "Open the wizard, enter the property details and pay online — the visit is scheduled within minutes.",
+            "solicitarDetalle": "Mint a shareable link; your client enters the property details and pays online. The appraisal is issued in your agency's name.",
             "solicitarCta": "Request appraisal",
             "solicitarUnavailable": "The request wizard isn't enabled in this environment yet. Reach out to your Leasefy contact to activate it.",
             "solicitarProximamente": "Coming soon",
             "comoFunciona": {
               "title": "How does it work?",
               "step1": {
-                "title": "Request the appraisal",
-                "desc": "Enter the property details in the wizard and pay online."
+                "title": "Mint and share the link",
+                "desc": "Send the link to your client; the property details and online payment are captured."
               },
               "step2": {
-                "title": "Appraiser visit",
-                "desc": "A certified appraiser schedules and visits the property."
+                "title": "Market-data estimate",
+                "desc": "The engine crunches market data and generates the reference value estimate, with no physical visit."
               },
               "step3": {
-                "title": "Market-data report",
-                "desc": "The agent's engine crunches market data and the appraiser prepares the report."
+                "title": "Review and signature",
+                "desc": "A Leasefy reviewer reviews the estimate and signs the certificate."
               },
               "step4": {
                 "title": "Signed certificate",
-                "desc": "Download the signed certificate from My requests."
+                "desc": "Download the signed certificate; it also arrives at the agency's email."
               }
             },
-            "firmaNota": "The visit and the certificate signature are handled by Leasefy's partner appraiser.",
+            "firmaNota": "The review and the certificate signature are handled by a Leasefy reviewer. No physical visit to the property is performed.",
             "estado": {
               "detectado": "Requested",
               "sugerido": "In preparation",
-              "en_revision": "Appraiser reviewing",
+              "en_revision": "Leasefy reviewing",
               "aprobado": "Approved",
-              "ejecutando": "Visit & report underway",
+              "ejecutando": "Estimate underway",
               "resuelto": "Certificate delivered",
               "rechazado": "Rejected",
               "fallo": "Issue detected"

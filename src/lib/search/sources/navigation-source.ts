@@ -58,7 +58,7 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'page', title: 'Prospección (Pipeline)', context: 'Portafolio', href: '/panel/inmobiliaria/pipeline', keywords: 'leads captacion kanban', permission: { module: 'pipeline', action: 'view' } },
   { kind: 'page', title: 'Equipo', context: 'Portafolio', href: '/panel/inmobiliaria/agentes', keywords: 'agentes usuarios miembros', permission: { module: 'agentes', action: 'view' } },
   { kind: 'action', title: 'Nuevo agente', context: 'Equipo', href: '/panel/inmobiliaria/agentes', keywords: 'invitar crear agente miembro equipo', permission: { module: 'agentes', action: 'create' } },
-  { kind: 'action', title: 'Nuevo avalúo', context: 'Avalúos', href: '/panel/inmobiliaria/avaluos/nuevo', keywords: 'crear avaluo valoracion', permission: { module: 'avaluos', action: 'create' } },
+  { kind: 'action', title: 'Solicitar avalúo', context: 'Avalúos', href: '/panel/inmobiliaria/ai/avaluos', keywords: 'crear avaluo valoracion solicitar nuevo', permission: { module: 'avaluos', action: 'create' } },
 
   // ── Finanzas ──────────────────────────────────────────────────────────────
   { kind: 'page', title: 'Cobros manuales', context: 'Finanzas', href: '/panel/inmobiliaria/cobros', keywords: 'recaudo pagos recibir', permission: { module: 'cobros', action: 'view' } },

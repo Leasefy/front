@@ -28,6 +28,8 @@ export interface PropertyGridProps {
   onPropertyHover?: (id: string | null) => void;
   /** Ref callback for property elements (for scroll-to-property) */
   propertyRefCallback?: (id: string, el: HTMLDivElement | null) => void;
+  /** Prefix for card detail links. Public '/propiedades', tenant '/inquilino/propiedades'. */
+  basePath?: string;
 }
 
 /**
@@ -44,6 +46,7 @@ export function PropertyGrid({
   hoveredPropertyId,
   onPropertyHover,
   propertyRefCallback,
+  basePath,
 }: PropertyGridProps) {
   const [displayCount, setDisplayCount] = useState(INITIAL_ITEMS);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -122,6 +125,7 @@ export function PropertyGrid({
               isHighlighted={hoveredPropertyId === property.id}
               onHoverStart={() => onPropertyHover?.(property.id)}
               onHoverEnd={() => onPropertyHover?.(null)}
+              basePath={basePath}
             />
           </div>
         ))}

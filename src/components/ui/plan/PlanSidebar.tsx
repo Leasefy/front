@@ -106,6 +106,14 @@ export interface PlanSidebarProps {
   searchPlaceholder?: string;
   /** Workspace name shown in the static header brand row (defaults to `logo.title`). */
   workspaceName?: string;
+  /** Optional workspace logo URL. When a non-empty string, it replaces the
+   *  LeasefyMark brand tile in both the expanded brand row and the collapsed rail. */
+  workspaceLogoUrl?: string;
+  /** Optional agency brand color as an HSL triplet ("H S% L%", e.g. "227 100% 55%").
+   *  When set, overrides `--primary` ONLY within the sidebar subtree so the active
+   *  nav accent + brand tile adopt the agency color. Must be an HSL triplet because
+   *  the DS consumes primary via `hsl(var(--primary))`. Empty → DS default. */
+  brandPrimaryHsl?: string;
   /** Show the "Invita a tu equipo" footer card (cadence §Navigation). */
   showInvite?: boolean;
   /** Handler for the invite-card button. */
@@ -318,6 +326,8 @@ interface SidebarContentProps {
   onSearchClick?: () => void;
   searchPlaceholder?: string;
   workspaceName?: string;
+  workspaceLogoUrl?: string;
+  brandPrimaryHsl?: string;
   showInvite?: boolean;
   onInvite?: () => void;
 }
@@ -338,6 +348,8 @@ function SidebarContent({
   onSearchClick,
   searchPlaceholder,
   workspaceName,
+  workspaceLogoUrl,
+  brandPrimaryHsl,
   showInvite = false,
   onInvite,
 }: SidebarContentProps) {
@@ -370,7 +382,13 @@ function SidebarContent({
   };
 
   return (
-    <div className="flex flex-col h-full bg-bg relative">
+    <div
+      className="flex flex-col h-full bg-bg relative"
+      // Agency brand tint: scope the DS `--primary` to this subtree so the active
+      // nav accent and brand tile adopt the agency color, without affecting the
+      // rest of the app. Only set when a valid HSL triplet is provided.
+      style={brandPrimaryHsl ? ({ ['--primary']: brandPrimaryHsl } as React.CSSProperties) : undefined}
+    >
       {/* Collapse Button */}
       {showCollapseButton && (
         <button
@@ -402,7 +420,18 @@ function SidebarContent({
       {isCollapsed ? (
         <div className="h-[60px] flex items-center justify-center px-2">
           <Link href={logo?.href ?? '/'} className="flex items-center" onClick={onItemClick}>
-            <LeasefyMark variant="tile" size={32} />
+            {workspaceLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={workspaceLogoUrl}
+                alt={workspaceName ?? logo?.title ?? ''}
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded-[8px] object-cover"
+              />
+            ) : (
+              <LeasefyMark variant="tile" size={32} />
+            )}
           </Link>
         </div>
       ) : workspaceName ? (
@@ -410,17 +439,27 @@ function SidebarContent({
         // no bordered box, no caret: brand tile + workspace name linking home.
         <div className="px-3 pt-3">
           <Link
-            href="/"
+            href={logo?.href ?? '/panel/inmobiliaria'}
             onClick={onItemClick}
             aria-label="Leasefy — inicio"
             className="flex w-full items-center gap-[10px] rounded-[12px] px-[10px] py-[8px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <LeasefyMark variant="tile" size={28} />
-            <span className="flex min-w-0 flex-1 flex-col items-start leading-[1.2]">
+            {workspaceLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={workspaceLogoUrl}
+                alt={workspaceName ?? logo?.title ?? ''}
+                width={28}
+                height={28}
+                className="h-7 w-7 rounded-[8px] object-cover"
+              />
+            ) : (
+              <LeasefyMark variant="tile" size={28} />
+            )}
+            <span className="flex min-w-0 flex-1 items-center leading-[1.2]">
               <span className="truncate font-display text-[14px] font-semibold text-fg">
                 {workspaceName}
               </span>
-              <span className="font-mono text-[10px] text-fg-subtle">Workspace</span>
             </span>
           </Link>
         </div>
@@ -628,6 +667,8 @@ export function PlanSidebar({
   onSearchClick,
   searchPlaceholder,
   workspaceName,
+  workspaceLogoUrl,
+  brandPrimaryHsl,
   showInvite = false,
   onInvite,
 }: PlanSidebarProps) {
@@ -670,6 +711,8 @@ export function PlanSidebar({
           onSearchClick={onSearchClick}
           searchPlaceholder={searchPlaceholder}
           workspaceName={workspaceName}
+          workspaceLogoUrl={workspaceLogoUrl}
+          brandPrimaryHsl={brandPrimaryHsl}
           showInvite={showInvite}
           onInvite={onInvite}
         />
@@ -706,6 +749,8 @@ export function PlanSidebar({
             }
             searchPlaceholder={searchPlaceholder}
             workspaceName={workspaceName}
+            workspaceLogoUrl={workspaceLogoUrl}
+            brandPrimaryHsl={brandPrimaryHsl}
             showInvite={showInvite}
             onInvite={
               onInvite

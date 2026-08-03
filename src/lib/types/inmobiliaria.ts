@@ -947,6 +947,19 @@ export interface AgencyBranding {
   secondaryColor: string;  // Hex color '#rrggbb'
 }
 
+/**
+ * Agency social media links (stored in Agency.branding.socials). All optional
+ * URL strings — a blank network is an empty string, not omitted, so partial
+ * edits never drop other networks on save.
+ */
+export interface AgencySocials {
+  instagram?: string;
+  facebook?: string;
+  x?: string;
+  tiktok?: string;
+  whatsapp?: string;
+}
+
 // Helper for default branding colors (used when the agency has none saved)
 export function getDefaultBranding(): AgencyBranding {
   return {
@@ -1093,8 +1106,12 @@ export interface AgencyProfile {
   department?: string | null;
   postalCode?: string | null;
   supportEmail?: string | null;
-  /** Brand colors — hex '#rrggbb' only */
-  branding?: { primaryColor?: string | null; secondaryColor?: string | null } | null;
+  /** Brand colors — hex '#rrggbb' only — plus optional social media links */
+  branding?: {
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+    socials?: AgencySocials | null;
+  } | null;
   defaultCommissionPercent?: number;
   defaultLateFeePercent?: number;
   paymentDueDay?: number;
@@ -1139,8 +1156,13 @@ export interface UpdateAgencyPayload {
   department?: string;
   postalCode?: string;
   supportEmail?: string;
-  /** Hex '#rrggbb' only — the backend rejects other formats */
-  branding?: { primaryColor?: string; secondaryColor?: string };
+  /**
+   * Brand colors (hex '#rrggbb' only) + social links. The backend deep-merges
+   * top-level branding keys, so sending only `{ socials }` preserves the
+   * colors. Always send the COMPLETE socials object (all 5 keys) so partial
+   * edits don't drop other networks.
+   */
+  branding?: { primaryColor?: string; secondaryColor?: string; socials?: AgencySocials };
   defaultCommissionPercent?: number;
   defaultLateFeePercent?: number;
   paymentDueDay?: number;
@@ -1311,7 +1333,9 @@ export type PermissionModule =
   | 'configuracion'
   | 'documentos'
   | 'analytics'
-  | 'contratos';
+  | 'contratos'
+  | 'subscription'
+  | 'avaluos';
 
 export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'export';
 
@@ -1413,6 +1437,8 @@ export function getModuleLabel(module: PermissionModule): string {
     documentos: 'Documentos',
     analytics: 'Analitica',
     contratos: 'Contratos',
+    subscription: 'Suscripción',
+    avaluos: 'Avalúos',
   };
   return labels[module];
 }
@@ -1445,6 +1471,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AgencyRole, RolePermissions> = {
       { module: 'configuracion', actions: ['view', 'edit'] },
       { module: 'documentos', actions: ['view', 'create', 'edit', 'delete'] },
       { module: 'analytics', actions: ['view', 'export'] },
+      { module: 'subscription', actions: ['view', 'edit'] },
+      { module: 'avaluos', actions: ['view', 'create', 'edit', 'delete', 'export'] },
     ],
   },
   agente: {
@@ -1458,6 +1486,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AgencyRole, RolePermissions> = {
       { module: 'cobros', actions: ['view'] },
       { module: 'operaciones', actions: ['view', 'edit'] },
       { module: 'documentos', actions: ['view'] },
+      { module: 'avaluos', actions: ['view', 'create'] },
     ],
   },
   contador: {
@@ -1469,6 +1498,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AgencyRole, RolePermissions> = {
       { module: 'dispersiones', actions: ['view', 'create', 'edit', 'export'] },
       { module: 'reportes', actions: ['view', 'export'] },
       { module: 'analytics', actions: ['view', 'export'] },
+      { module: 'subscription', actions: ['view'] },
     ],
   },
   viewer: {
@@ -1498,6 +1528,8 @@ export const ALL_PERMISSION_MODULES: PermissionModule[] = [
   'documentos',
   'analytics',
   'contratos',
+  'subscription',
+  'avaluos',
 ];
 
 // All actions for permission matrix

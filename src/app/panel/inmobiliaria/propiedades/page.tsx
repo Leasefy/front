@@ -586,13 +586,35 @@ function PropiedadesContent() {
                               <Eye className="w-4 h-4" />
                             </Button>
                           </IconTooltip>
-                          <IconTooltip label="Editar propiedad">
+                          <IconTooltip
+                            label={
+                              property.status === 'rented'
+                                ? 'Propiedad arrendada — protegida por su contrato'
+                                : 'Editar propiedad'
+                            }
+                          >
                             <Button
                               variant="ghost"
                               size="icon"
                               hideArrow
-                              onClick={() => setEditingProperty(property)}
-                              aria-label="Editar propiedad"
+                              onClick={() => {
+                                if (property.status === 'rented') {
+                                  toast.error('No se puede editar esta propiedad', {
+                                    description:
+                                      'Está arrendada y tiene un contrato vigente. Podrás editarla cuando el arriendo finalice.',
+                                  });
+                                  return;
+                                }
+                                setEditingProperty(property);
+                              }}
+                              aria-label={
+                                property.status === 'rented'
+                                  ? 'Propiedad arrendada — no se puede editar'
+                                  : 'Editar propiedad'
+                              }
+                              className={cn(
+                                property.status === 'rented' && 'opacity-40',
+                              )}
                             >
                               <PencilSimple className="w-4 h-4" />
                             </Button>

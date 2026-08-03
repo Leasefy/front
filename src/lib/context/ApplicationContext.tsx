@@ -128,7 +128,9 @@ const ApplicationContext = createContext<ApplicationContextValue | null>(null);
 
 interface ApplicationProviderProps {
   propertyId: string;
-  children: ReactNode;
+  // Optional so the classic JSX runtime (children passed positionally, not in
+  // the props object) typechecks when the provider is rendered with children.
+  children?: ReactNode;
   initialName?: string;
   initialEmail?: string;
   // Agent attribution (from shareable links)

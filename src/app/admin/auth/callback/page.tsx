@@ -7,9 +7,18 @@ import { Wordmark } from '@/components/admin/Wordmark'
 
 /**
  * /admin/auth/callback — handles BOTH Supabase OTP-return flavors (FRONT.md §3.2):
- *   1. PKCE (`?code=...`)                        → exchangeCodeForSession
- *   2. Implicit (`#access_token=...&refresh=…`)  → setSession
- * Hard-navigates to `next` after the session is set.
+ *   1. PKCE (`?code=...`)                        → exchanged by detectSessionInUrl
+ *   2. Implicit (`#access_token=...&refresh=…`)  → exchanged by detectSessionInUrl
+ * Hard-navigates to `next` once the session is set.
+ *
+ * IMPORTANT: this page must NEVER call `sb.auth.getSession()`. The app-wide
+ * AuthProvider (mounted in the root layout, so it also wraps /admin) runs its
+ * own onAuthStateChange handler on mount; while that handler is mid-flight,
+ * `getSession()` deadlocks and the callback hangs forever on "verificando
+ * sesión…" (project convention — see admin/(panel)/layout.tsx and
+ * auth-context.tsx). We subscribe to onAuthStateChange instead and let the SSR
+ * browser client's `detectSessionInUrl` exchange the code/hash, then navigate on
+ * the resulting session.
  */
 export default function AdminAuthCallbackPage() {
   return (
@@ -27,60 +36,59 @@ function CallbackInner() {
     const sb = getSupabase()
     const next = sp.get('next') ?? '/admin'
 
-    async function run() {
-      if (!sb) {
-        setErr('Supabase no configurado.')
-        return
-      }
-
-      // The SSR browser client auto-exchanges ?code= on init (detectSessionInUrl),
-      // racing this page's explicit exchange. getSession() awaits that init; if the
-      // session already exists the code was consumed — just navigate.
-      const { data: existing } = await sb.auth.getSession()
-      if (existing.session) {
-        window.location.href = next
-        return
-      }
-
-      // Flavor 2 — implicit hash tokens.
-      if (typeof window !== 'undefined' && window.location.hash) {
-        const raw = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash
-        const params = new URLSearchParams(raw)
-        const errorCode = params.get('error') ?? params.get('error_code')
-        if (errorCode) {
-          const desc = params.get('error_description')
-          setErr(desc ? `${errorCode}: ${desc}` : errorCode)
-          return
-        }
-        const access_token = params.get('access_token')
-        const refresh_token = params.get('refresh_token')
-        if (access_token && refresh_token) {
-          const { error } = await sb.auth.setSession({ access_token, refresh_token })
-          if (error) {
-            setErr(`setSession: ${error.message}`)
-            return
-          }
-          window.location.href = next
-          return
-        }
-      }
-
-      // Flavor 1 — PKCE code.
-      const code = sp.get('code')
-      if (code) {
-        const { error } = await sb.auth.exchangeCodeForSession(code)
-        if (error) {
-          setErr(`exchangeCodeForSession: ${error.message}`)
-          return
-        }
-        window.location.href = next
-        return
-      }
-
-      setErr('Link de magic link inválido o expirado. Pedí uno nuevo.')
+    if (!sb) {
+      setErr('Supabase no configurado.')
+      return
     }
 
-    void run()
+    // Surface an explicit error carried in the implicit-flow hash (expired /
+    // already-used link) before we wait on anything.
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const raw = window.location.hash.startsWith('#')
+        ? window.location.hash.slice(1)
+        : window.location.hash
+      const params = new URLSearchParams(raw)
+      const errorCode = params.get('error') ?? params.get('error_code')
+      if (errorCode) {
+        const desc = params.get('error_description')
+        setErr(desc ? `${errorCode}: ${desc}` : errorCode)
+        return
+      }
+    }
+
+    // Are we returning from a magic link (code / implicit tokens present)? If so,
+    // the FIRST onAuthStateChange event (INITIAL_SESSION) may report a *stale*
+    // persisted account — e.g. a tenant already logged in on leasefy.co. We must
+    // wait for the freshly exchanged session (SIGNED_IN) before navigating, or
+    // we'd carry the wrong account into the admin gate.
+    const returningFromLink =
+      !!sp.get('code') ||
+      (typeof window !== 'undefined' && /(?:^|[#&])access_token=/.test(window.location.hash))
+
+    let navigated = false
+    const go = () => {
+      if (navigated) return
+      navigated = true
+      window.location.href = next
+    }
+
+    const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
+      if (returningFromLink && event === 'INITIAL_SESSION') return
+      if (session) go()
+    })
+
+    // Never-hang safety net (mirrors auth-context.tsx). If no usable session
+    // arrives, the link was invalid/expired — tell the user instead of spinning.
+    const safety = setTimeout(() => {
+      if (!navigated) {
+        setErr('No pudimos verificar el magic link. Puede haber expirado o ya fue usado — pedí uno nuevo.')
+      }
+    }, 8000)
+
+    return () => {
+      clearTimeout(safety)
+      subscription.unsubscribe()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

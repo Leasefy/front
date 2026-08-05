@@ -19,6 +19,9 @@ import {
   type AvaluoDetailResponse,
   type Adjustment,
 } from '@/lib/admin/avaluos'
+import { CertificatePdfViewer } from './CertificatePdfViewer'
+import { PhotoDescriptionsEditor } from './PhotoDescriptionsEditor'
+import { SignatureCanvas } from './SignatureCanvas'
 
 function Meta({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
@@ -71,9 +74,13 @@ const MODE_ACTIVE_CLASS: Record<Mode, string> = {
  *
  * La data de decisión (valor, banda, narrativa, ajustes, comps, Ley 820,
  * confianza) sólo viaja en `pending-review`, así que la buscamos ahí por id.
- * `/detail` agrega comparables detallados + sufficiency + cobertura de banda.
- * No hay fotos ni PDF en el canal admin — están gateados por el capability
- * token del dueño; se omiten a propósito.
+ * `/detail` agrega comparables detallados + sufficiency + cobertura de banda +
+ * las descripciones editables por foto (`photos`).
+ *
+ * El back admin ahora proxya el PDF del certificado (`/avaluos/:id/certificate`,
+ * stream Bearer-gated) y las fotos/descripciones — el service token viaja
+ * server-side, nunca al browser. Por eso el reviewer ve el PDF embebido, edita
+ * las descripciones (fence Ley-1673) y firma con el canvas.
  */
 export default function AvaluoDetailPage() {
   const params = useParams<{ id: string }>()
@@ -90,6 +97,7 @@ export default function AvaluoDetailPage() {
 
   const [mode, setMode] = useState<Mode | null>(null)
   const [reason, setReason] = useState('')
+  const [signatureImage, setSignatureImage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [done, setDone] = useState<'firmado' | 'rechazado' | null>(null)
@@ -114,17 +122,24 @@ export default function AvaluoDetailPage() {
     setSubmitting(true)
     setSubmitError(null)
     try {
-      const body = mode === 'reject' ? { action: 'reject' as const, reason } : { action: 'approve' as const }
+      const body =
+        mode === 'reject'
+          ? { action: 'reject' as const, reason }
+          : { action: 'approve' as const, ...(signatureImage ? { signatureImage } : {}) }
       const res = await signoffAvaluo(id, body)
       setDone(res.state)
       setMode(null)
       setReason('')
+      setSignatureImage(null)
       queue.refetch()
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         // "illegal transition ..." → another admin already decided
         setSubmitError('Este avalúo ya fue revisado por otro admin. Actualizando…')
         queue.refetch()
+      } else if (err instanceof ApiError && err.status === 422) {
+        // The only 422 on signoff is an invalid signature image payload.
+        setSubmitError('La firma dibujada no es válida. Limpiala y volvé a dibujarla.')
       } else {
         setSubmitError(err instanceof ApiError ? err.message : 'Error de red')
       }
@@ -248,6 +263,19 @@ export default function AvaluoDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Photo descriptions — editable while in review (Ley-1673 fenced) */}
+          {pending && (d?.photos?.length ?? 0) > 0 && (
+            <div className="card p-5">
+              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-1">
+                descripciones de fotos · {d?.photos.length}
+              </div>
+              <p className="text-xs text-fg-muted mb-4">
+                Corregí la prosa de anexo antes de firmar. Se congela al firmar.
+              </p>
+              <PhotoDescriptionsEditor id={id} photos={d!.photos} />
+            </div>
+          )}
         </div>
 
         {/* Sidebar: band coverage + sufficiency + Ley 820 */}
@@ -293,6 +321,14 @@ export default function AvaluoDetailPage() {
         </div>
       </div>
 
+      {/* Certificate PDF — the back streams it (preview pre-pago, clean post-pago) */}
+      <div className="card p-5">
+        <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle mb-3">
+          certificado (PDF)
+        </div>
+        <CertificatePdfViewer id={id} />
+      </div>
+
       {/* Action — only while pending */}
       {pending && (
         <div className="card p-5 border-t-4 border-t-brand">
@@ -313,6 +349,17 @@ export default function AvaluoDetailPage() {
 
           {mode && (
             <>
+              {mode === 'approve' && (
+                <div className="mb-4">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-muted">
+                    firma (opcional · Ley 527 — firma electrónica)
+                  </span>
+                  <div className="mt-2">
+                    <SignatureCanvas onChange={setSignatureImage} disabled={submitting} />
+                  </div>
+                </div>
+              )}
+
               {mode === 'reject' && (
                 <label className="block">
                   <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-muted">
@@ -349,6 +396,7 @@ export default function AvaluoDetailPage() {
                   onClick={() => {
                     setMode(null)
                     setReason('')
+                    setSignatureImage(null)
                     setSubmitError(null)
                   }}
                   disabled={submitting}

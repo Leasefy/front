@@ -41,10 +41,18 @@ async function bearer(): Promise<string | null> {
 }
 
 export interface ApiOptions {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
+  method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
   query?: Record<string, string | number | undefined | null>
   body?: unknown
   signal?: AbortSignal
+  /**
+   * By default a 403 redirects to `/admin/forbidden` (the "not on the allowlist"
+   * page). Set this for calls that PROXY another service (avaluo micro, cotizador)
+   * where a 403 is a DOMAIN error, not an allowlist rejection — the allowlist
+   * guard already passed when the screen loaded. The 403 then throws an ApiError
+   * for the caller to surface instead of a misleading redirect.
+   */
+  noForbiddenRedirect?: boolean
 }
 
 function buildUrl(path: string, query?: ApiOptions['query']): string {
@@ -83,7 +91,7 @@ export async function adminApi<T>(path: string, opts: ApiOptions = {}): Promise<
     redirectTo('/admin/login')
     throw new ApiError(401, 'Sesión expirada')
   }
-  if (res.status === 403) {
+  if (res.status === 403 && !opts.noForbiddenRedirect) {
     redirectTo('/admin/forbidden')
     throw new ApiError(403, 'No autorizado')
   }
@@ -103,6 +111,47 @@ export async function adminApi<T>(path: string, opts: ApiOptions = {}): Promise<
 
   if (res.status === 204) return undefined as T
   return (await res.json()) as T
+}
+
+/**
+ * Fetch a binary admin resource (e.g. the certificate PDF stream) as a Blob,
+ * reusing the same Bearer token + 401/403 redirect handling as `adminApi`.
+ *
+ * The endpoint is Bearer-gated, so the URL cannot be dropped into an
+ * `<iframe src>` / `<a href>` directly (no way to attach the header) — the
+ * caller fetches the bytes here, wraps them in an object URL, and is
+ * responsible for `URL.revokeObjectURL` when done.
+ */
+export async function adminApiBlob(path: string, opts: ApiOptions = {}): Promise<Blob> {
+  const token = await bearer()
+  if (!token) {
+    redirectTo('/admin/login')
+    throw new ApiError(401, 'No session')
+  }
+
+  const res = await fetch(buildUrl(path, opts.query), {
+    method: opts.method ?? 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+    signal: opts.signal,
+  })
+
+  if (res.status === 401) {
+    await getSupabase()?.auth.signOut()
+    redirectTo('/admin/login')
+    throw new ApiError(401, 'Sesión expirada')
+  }
+  if (res.status === 403) {
+    redirectTo('/admin/forbidden')
+    throw new ApiError(403, 'No autorizado')
+  }
+  if (!res.ok) {
+    // The micro streams a PDF on success but returns a JSON error envelope on
+    // failure (503/404/…). Surface the status; the body is best-effort.
+    const body = await res.json().catch(() => undefined)
+    throw new ApiError(res.status, `Error ${res.status}`, body)
+  }
+
+  return res.blob()
 }
 
 /** Full API URL for browser-driven downloads (e.g. CSV export links). */

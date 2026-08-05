@@ -43,7 +43,7 @@ export function LandingFooter() {
           arriendos de punta a punta.
         </p>
         <div className="landing-footer__cta">
-          <Link href="/registro">Empezar ahora</Link>
+          <Link href="/auth?mode=register">Empezar ahora</Link>
           <a href="https://wa.me/573000000000" target="_blank" rel="noopener noreferrer">
             Escribir por WhatsApp
           </a>

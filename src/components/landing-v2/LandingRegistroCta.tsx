@@ -48,7 +48,7 @@ export function LandingRegistroCta({ variant }: LandingRegistroCtaProps) {
   }
 
   return (
-    <a className={className} href="/registro">
+    <a className={className} href="/auth?mode=register">
       Empezar ahora
     </a>
   )

@@ -16,7 +16,7 @@
  * through unchanged). Ignore docs/INTEGRATION.md §4.1 — it is stale.
  */
 
-import { adminApi } from '@/lib/admin/api'
+import { adminApi, adminApiBlob } from '@/lib/admin/api'
 
 // ---------------------------------------------------------------------------
 // Shared value objects
@@ -88,16 +88,88 @@ export interface DetailComparable {
   adjustments: Adjustment[]
 }
 
+/**
+ * One photo's prefill row for the reviewer editor: the storage key + its current
+ * MUTABLE draft description (annex prose, never the number). Ordered by the
+ * submission's `photoKeys`; empty for a null submission or a photo-less cert.
+ */
+export interface PhotoDetail {
+  key: string
+  description: string
+}
+
 export interface AvaluoDetailResponse {
   id: string
   comparables: DetailComparable[]
   band: { lowCop: number | null; highCop: number | null; coverageBps: number } | null
   sufficiency: { status: string; scoreBps: number; compCount: number } | null
+  photos: PhotoDetail[]
 }
 
 export function fetchAvaluoDetail(id: string, signal?: AbortSignal): Promise<AvaluoDetailResponse> {
   return adminApi(`/avaluos/${id}/detail`, { signal })
 }
+
+// ---------------------------------------------------------------------------
+// 2b. Certificate PDF — GET /avaluos/:id/certificate (Bearer-gated stream)
+//     (micro: GET /api/avaluo/[id]/certificate · back injects the service token)
+//     The back streams the PDF passthrough; pre-payment it is the WATERMARKED
+//     preview, post-payment the clean bytes (`X-Avaluo-Variant` header). The
+//     route is Bearer-gated, so we fetch the bytes and wrap them in an object URL
+//     — the URL can NOT go straight into an <iframe src> (no header there).
+// ---------------------------------------------------------------------------
+
+export function fetchAvaluoCertificatePdf(id: string, signal?: AbortSignal): Promise<Blob> {
+  return adminApiBlob(`/avaluos/${id}/certificate`, { signal })
+}
+
+// ---------------------------------------------------------------------------
+// 2c. Photo descriptions — PUT /avaluos/:id/photo-descriptions
+//     (micro: PUT /api/avaluo/[id]/photo-descriptions)
+//     The reviewer edits the AI-drafted per-photo captions BEFORE signing. Every
+//     edit passes the micro's Ley-1673 fence: any violation → 422 with the shape
+//     below and NOTHING is persisted. 409 when the cert is no longer `en_revisión`.
+// ---------------------------------------------------------------------------
+
+export interface PhotoDescriptionEdit {
+  key: string
+  description: string
+}
+
+/** One rejected edit from a 422 (Ley-1673 fence). `reason` is a stable code. */
+export interface PhotoDescriptionViolation {
+  key: string
+  reason: 'invalid' | 'too_long' | 'lexicon'
+  /** Reserved-lexicon terms that tripped the fence (only for `reason: 'lexicon'`). */
+  violations?: string[]
+}
+
+/** The 422 body the micro returns when any edit is rejected. */
+export interface PhotoDescriptionsRejected {
+  error: string
+  violations: PhotoDescriptionViolation[]
+}
+
+export interface PhotoDescriptionsResult {
+  id: string
+  drafts: Array<{ key: string; order: number; description: string }>
+}
+
+export function savePhotoDescriptions(
+  id: string,
+  edits: PhotoDescriptionEdit[],
+): Promise<PhotoDescriptionsResult> {
+  return adminApi(`/avaluos/${id}/photo-descriptions`, {
+    method: 'PUT',
+    body: { edits },
+    // A 403 here is a proxied micro auth error, not an allowlist rejection —
+    // surface it in the editor instead of redirecting to /admin/forbidden.
+    noForbiddenRedirect: true,
+  })
+}
+
+/** Max chars per description — mirrors the micro's `PHOTO_DESCRIPTION_MAX_CHARS`. */
+export const PHOTO_DESCRIPTION_MAX_CHARS = 240
 
 // ---------------------------------------------------------------------------
 // 3. Signoff — POST /avaluos/:id/signoff
@@ -106,7 +178,12 @@ export function fetchAvaluoDetail(id: string, signal?: AbortSignal): Promise<Ava
 // ---------------------------------------------------------------------------
 
 export type SignoffBody =
-  | { action: 'approve' }
+  // FASE FIRMA: approve MAY carry the reviewer's mouse-drawn signature (a
+  // `data:image/png;base64,...` trace from the canvas). It is DATA (the visible
+  // mark), never identity — the signer stays server-derived. Absent → the honest
+  // text-only electronic signature. A malformed/oversized payload → 422 from the
+  // micro (`{ error: 'invalid signature image', reason }`).
+  | { action: 'approve'; signatureImage?: string }
   | { action: 'reject'; reason: string }
 
 export interface SignoffResult {

@@ -53,6 +53,15 @@ function mockFetchOnce(response: Response) {
   return fetchMock
 }
 
+async function catchSubmitAgency(): Promise<OnboardingSessionError> {
+  try {
+    await submitAgency(SESSION_ID, AGENCY_BODY)
+  } catch (err) {
+    return err as OnboardingSessionError
+  }
+  throw new Error('expected submitAgency to reject')
+}
+
 const AGENCY_BODY: OnboardingSessionAgencyRequest = {
   legalName: 'Inmobiliaria Acme S.A.S.',
   nit: '900123456-1',
@@ -176,6 +185,84 @@ describe('submitAgency — error map', () => {
       kind: 'network',
       status: null,
     })
+  })
+})
+
+describe('submitAgency — 400 Zod validation detail', () => {
+  // Shape emitted by @hono/zod-openapi's default validator hook (no custom
+  // defaultHook on the agent's OpenAPIHono): `c.json(safeParseResult, 400)`.
+  it('surfaces the failing field + Spanish detail from a Zod validation body', async () => {
+    const ZOD_400 = {
+      success: false,
+      error: {
+        name: 'ZodError',
+        issues: [
+          {
+            code: 'too_small',
+            minimum: 2,
+            type: 'string',
+            inclusive: true,
+            exact: false,
+            message: 'String must contain at least 2 character(s)',
+            path: ['address', 'calle'],
+          },
+        ],
+      },
+    }
+    mockFetchOnce(jsonResponse(ZOD_400, 400))
+
+    const error = await catchSubmitAgency()
+    expect(error).toBeInstanceOf(OnboardingSessionError)
+    expect(error.kind).toBe('validation')
+    expect(error.status).toBe(400)
+    expect(error.message).toContain('Calle')
+    expect(error.message).toContain('mínimo 2 caracteres')
+  })
+
+  it('joins multiple Zod issues (field + detail) into one message', async () => {
+    const ZOD_400 = {
+      success: false,
+      error: {
+        name: 'ZodError',
+        issues: [
+          {
+            code: 'too_small',
+            minimum: 2,
+            type: 'string',
+            message: 'String must contain at least 2 character(s)',
+            path: ['address', 'ciudad'],
+          },
+          {
+            code: 'invalid_string',
+            validation: 'email',
+            message: 'Invalid email',
+            path: ['primaryContactEmail'],
+          },
+        ],
+      },
+    }
+    mockFetchOnce(jsonResponse(ZOD_400, 400))
+
+    const error = await catchSubmitAgency()
+    expect(error.kind).toBe('validation')
+    expect(error.message).toContain('Ciudad')
+    expect(error.message).toContain('Correo')
+    expect(error.message).toContain('correo inválido')
+  })
+
+  it('falls back to the generic message when the 400 body is not JSON-parseable', async () => {
+    const badResponse = {
+      ok: false,
+      status: 400,
+      json: async () => {
+        throw new SyntaxError('Unexpected token < in JSON')
+      },
+    } as unknown as Response
+    mockFetchOnce(badResponse)
+
+    const error = await catchSubmitAgency()
+    expect(error.kind).toBe('validation')
+    expect(error.message).toContain('respondió con un error (400)')
   })
 })
 

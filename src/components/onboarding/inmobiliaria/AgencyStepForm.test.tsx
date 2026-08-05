@@ -51,6 +51,25 @@ function setInputValue(input: HTMLInputElement, value: string) {
   })
 }
 
+async function clickSubmit() {
+  const submitBtn = container.querySelector(
+    '[data-testid="agency-step-form"] button[type="submit"]',
+  ) as HTMLButtonElement
+  await act(async () => {
+    submitBtn.click()
+    await new Promise((r) => setTimeout(r, 0))
+  })
+}
+
+/** Fills the always-editable address/contact fields so a submit passes the schema. */
+function fillEditableFields() {
+  setInputValue(byId('address.calle'), 'Calle 100 # 10-20')
+  setInputValue(byId('address.ciudad'), 'Bogotá')
+  setInputValue(byId('address.departamento'), 'Cundinamarca')
+  setInputValue(byId('primaryContactEmail'), 'ana@andes.test')
+  setInputValue(byId('primaryContactPhone'), '3000000000')
+}
+
 describe('<AgencyStepForm> — prefill', () => {
   it('renders with legalName/nit prefilled from the pre-step values', () => {
     render({ prefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-7' } })
@@ -81,14 +100,49 @@ describe('<AgencyStepForm> — prefill', () => {
     expect(byId('legalName').value).toBe('')
     expect(byId('nit').value).toBe('')
   })
+})
 
-  it('prefilled inputs remain editable', () => {
+describe('<AgencyStepForm> — razón social + NIT read-only', () => {
+  it('renders legalName and nit as read-only when both come prefilled', () => {
     render({ prefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-7' } })
 
-    setInputValue(byId('legalName'), 'Otro Nombre SAS')
+    expect(byId('legalName').readOnly).toBe(true)
+    expect(byId('nit').readOnly).toBe(true)
+  })
+
+  it('keeps read-only legalName + nit in the submitted step payload', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(null)
+    render({ prefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-7' }, onSubmit })
+
+    fillEditableFields()
+    await clickSubmit()
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    const body = onSubmit.mock.calls[0][0]
+    expect(body.legalName).toBe('Inmobiliaria Andes SAS')
+    expect(body.nit).toBe('900123456-7')
+  })
+
+  it('degrades legalName + nit to editable inputs when NOT prefilled (fallback)', () => {
+    render()
+
+    expect(byId('legalName').readOnly).toBe(false)
+    expect(byId('nit').readOnly).toBe(false)
+
+    setInputValue(byId('legalName'), 'Escrito a mano SAS')
     setInputValue(byId('nit'), '800999888-1')
 
-    expect(byId('legalName').value).toBe('Otro Nombre SAS')
+    expect(byId('legalName').value).toBe('Escrito a mano SAS')
     expect(byId('nit').value).toBe('800999888-1')
+  })
+
+  it('keeps address/contact fields editable even when legalName + nit are confirmed', () => {
+    render({ prefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-7' } })
+
+    expect(byId('address.calle').readOnly).toBe(false)
+    expect(byId('primaryContactEmail').readOnly).toBe(false)
+
+    setInputValue(byId('address.calle'), 'Calle 100 # 10-20')
+    expect(byId('address.calle').value).toBe('Calle 100 # 10-20')
   })
 })

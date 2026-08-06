@@ -13,8 +13,10 @@ export const agencyStepSchema = z.object({
   legalName: z.string().trim().min(1, 'La razón social es obligatoria.'),
   nit: z.string().trim().min(1, 'El NIT es obligatorio.'),
   address: z.object({
-    calle: z.string().trim().min(1, 'La calle es obligatoria.'),
-    ciudad: z.string().trim().min(1, 'La ciudad es obligatoria.'),
+    // `calle` (contract key) is surfaced to the user as "Dirección"; `ciudad`
+    // as "Municipio". The keys stay as the agent contract defines them.
+    calle: z.string().trim().min(1, 'La dirección es obligatoria.'),
+    ciudad: z.string().trim().min(1, 'El municipio es obligatorio.'),
     departamento: z.string().trim().min(1, 'El departamento es obligatorio.'),
     codigoPostal: z.string().trim().optional(),
   }),

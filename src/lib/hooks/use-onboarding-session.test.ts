@@ -27,6 +27,7 @@ vi.mock('../api/onboarding-session.service', async () => {
     submitPolicy: vi.fn(),
     presignHabeasData: vi.fn(),
     confirmHabeasData: vi.fn(),
+    acceptTerms: vi.fn(),
     completeOnboarding: vi.fn(),
   }
 })

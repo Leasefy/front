@@ -64,7 +64,7 @@ export function LandingHeader({ forceSolid }: LandingHeaderProps) {
           )
         })}
       </nav>
-      <Link href="/registro" className="landing-header__cta">
+      <Link href="/auth?mode=register" className="landing-header__cta">
         Empezar ahora
       </Link>
     </header>

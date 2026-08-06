@@ -515,6 +515,8 @@ export interface AgencyAvaluoItem {
   valueCop: number | null;
   method: string;
   city: string | null;
+  /** Owner/client the certificate is issued for; null when the back has no name on file. */
+  ownerName: string | null;
   identity: string;
   submissionId: string | null;
   createdAt: string;

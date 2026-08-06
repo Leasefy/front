@@ -404,7 +404,7 @@ function AvaluosSala() {
             {/* Table header */}
             <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 px-4 py-2.5 bg-muted/40 border-b border-border">
               <span className="text-xs font-medium text-muted-foreground">Estado</span>
-              <span className="text-xs font-medium text-muted-foreground">Método</span>
+              <span className="text-xs font-medium text-muted-foreground">Propietario</span>
               <span className="text-xs font-medium text-muted-foreground text-right">Valor</span>
               <span className="text-xs font-medium text-muted-foreground hidden sm:block text-right">
                 Creado
@@ -422,9 +422,14 @@ function AvaluosSala() {
                   >
                     <Badge variant={meta.variant}>{meta.label}</Badge>
 
-                    <span className="text-xs font-mono uppercase tracking-wide text-muted-foreground truncate">
-                      {item.method || '—'}
-                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm text-foreground truncate">
+                        {item.ownerName?.trim() || 'Propietario sin nombre'}
+                      </p>
+                      <p className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground truncate">
+                        {item.method || '—'}
+                      </p>
+                    </div>
 
                     <span className="text-sm font-medium tabular-nums text-right whitespace-nowrap">
                       {item.valueCop == null ? '—' : formatCurrency(item.valueCop)}
@@ -486,7 +491,7 @@ function AvaluosSala() {
                 <li key={item.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center gap-3">
                   <Badge variant={meta.variant}>{meta.label}</Badge>
                   <span className="flex-1 min-w-0 text-sm text-foreground truncate">
-                    {item.city || 'Inmueble'} ·{' '}
+                    {item.ownerName?.trim() || item.city || 'Inmueble'} ·{' '}
                     <span className="text-muted-foreground">
                       {item.valueCop == null ? 'Sin valor' : formatCurrency(item.valueCop)}
                     </span>

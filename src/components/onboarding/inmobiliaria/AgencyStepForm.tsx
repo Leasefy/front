@@ -29,8 +29,16 @@ export interface AgencyStepFormProps {
    * Everything already known about the agency — the pre-step
    * (`OwnerNameStepForm`) razón social/NIT and/or the agent resume draft's
    * `proposedAgencyName`/`contactEmail`/`contactPhone` (see
-   * `computeAgencyStepPrefill` in `agency-step-prefill.ts`). Only sets the
-   * form's INITIAL values — every field stays fully editable.
+   * `computeAgencyStepPrefill` in `agency-step-prefill.ts`).
+   *
+   * `legalName` + `nit` were already captured (and the NIT is LOCKED once the
+   * agency is provisioned — the back ignores later NIT edits), so when they
+   * arrive prefilled they render as read-only "confirmed" fields instead of
+   * editable inputs. They stay `register`ed (readOnly, not removed), so their
+   * values are still sent in the step payload — the agent schema requires
+   * `legalName` + `nit`. If a value is missing (edge case), that field
+   * degrades to an editable input. Every other field is always editable and
+   * only seeded with its initial value.
    */
   prefill?: Partial<AgencyStepFormValues>
 }
@@ -38,6 +46,17 @@ export interface AgencyStepFormProps {
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
   return <p className="mt-1.5 text-xs text-danger">{message}</p>
+}
+
+/** A read-only "confirmado" note under a locked field. */
+function ConfirmedHint() {
+  return (
+    <p className="mt-1.5 text-xs text-fg-subtle">Confirmado en el paso anterior · no editable.</p>
+  )
+}
+
+function hasPrefilledValue(value: string | undefined): boolean {
+  return typeof value === 'string' && value.trim().length > 0
 }
 
 export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }: AgencyStepFormProps) {
@@ -57,12 +76,22 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
     },
   })
 
+<<<<<<< HEAD
   // Municipio options depend on the chosen departamento. Watching the field
   // re-renders the municipio combobox with the right list; changing the
   // departamento clears the municipio (see the departamento onChange below).
   const departamento = watch('address.departamento')
   const departamentoOptions = DEPARTAMENTO_NOMBRES.map((n) => ({ value: n, label: n }))
   const municipioOptions = municipiosDe(departamento).map((m) => ({ value: m, label: m }))
+=======
+  // Razón social + NIT were captured one screen earlier (and the NIT is
+  // locked post-provisioning). When they arrive prefilled, present them as
+  // read-only "confirmed" fields — but keep them `register`ed so their values
+  // still ship in the payload (the agent schema requires both). Missing values
+  // degrade to editable inputs.
+  const legalNameConfirmed = hasPrefilledValue(prefill?.legalName)
+  const nitConfirmed = hasPrefilledValue(prefill?.nit)
+>>>>>>> 5f3dad4a4f8bdf087cec769737a92e2e2b8c9529
 
   const submit = handleSubmit(async (values) => {
     const parsed = agencyStepSchema.safeParse(values)
@@ -79,18 +108,38 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
     <form noValidate onSubmit={submit} className="space-y-5" data-testid="agency-step-form">
       <div>
         <label htmlFor="legalName" className="block text-sm font-medium text-fg mb-2">
-          Razón social <span className="text-danger">*</span>
+          Razón social {!legalNameConfirmed && <span className="text-danger">*</span>}
         </label>
-        <Input id="legalName" type="text" autoComplete="organization" {...register('legalName')} />
-        <FieldError message={errors.legalName?.message} />
+        <Input
+          id="legalName"
+          type="text"
+          autoComplete="organization"
+          readOnly={legalNameConfirmed}
+          aria-readonly={legalNameConfirmed || undefined}
+          className={legalNameConfirmed ? 'bg-surface-muted text-fg-subtle cursor-not-allowed' : undefined}
+          {...register('legalName')}
+        />
+        {legalNameConfirmed ? <ConfirmedHint /> : <FieldError message={errors.legalName?.message} />}
       </div>
 
       <div>
         <label htmlFor="nit" className="block text-sm font-medium text-fg mb-2">
-          NIT <span className="text-danger">*</span>
+          NIT {!nitConfirmed && <span className="text-danger">*</span>}
         </label>
-        <Input id="nit" type="text" inputMode="numeric" className="font-mono tabular-nums" {...register('nit')} />
-        <FieldError message={errors.nit?.message} />
+        <Input
+          id="nit"
+          type="text"
+          inputMode="numeric"
+          readOnly={nitConfirmed}
+          aria-readonly={nitConfirmed || undefined}
+          className={
+            nitConfirmed
+              ? 'font-mono tabular-nums bg-surface-muted text-fg-subtle cursor-not-allowed'
+              : 'font-mono tabular-nums'
+          }
+          {...register('nit')}
+        />
+        {nitConfirmed ? <ConfirmedHint /> : <FieldError message={errors.nit?.message} />}
       </div>
 
       {/* Dirección (contract key `calle`) — full width, free text. */}

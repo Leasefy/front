@@ -336,7 +336,10 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       // invitation/onboarding context and land the user as a bare TENANT.
       const dest = returnUrl && returnUrl !== '/' ? returnUrl : onboardingDest();
       const emailRedirectTo = `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(dest)}`;
-      const { requiresConfirmation } = await signUpWithEmail(data.email, data.password, emailRedirectTo, selectedRole);
+      // Persist the deep-linked role (if any) as intended_role on the Supabase
+      // user. Without a deep-link the user picks their role at
+      // /onboarding/seleccionar-rol, so this is `undefined` here.
+      const { requiresConfirmation } = await signUpWithEmail(data.email, data.password, emailRedirectTo, explicitRole ?? undefined);
       if (requiresConfirmation) {
         setResetEmail(data.email);
         setRegisterStep('confirm-email');

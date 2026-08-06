@@ -61,11 +61,14 @@ async function clickSubmit() {
   })
 }
 
-/** Fills the always-editable address/contact fields so a submit passes the schema. */
+/**
+ * Fills the free-text editable fields so a submit passes the schema. Departamento
+ * and Municipio are searchable comboboxes (Radix Popover) that can't be operated
+ * under happy-dom, so callers that need a passing submit seed them via
+ * `prefill.address` instead (the Controller renders their initial value).
+ */
 function fillEditableFields() {
   setInputValue(byId('address.calle'), 'Calle 100 # 10-20')
-  setInputValue(byId('address.ciudad'), 'Bogotá')
-  setInputValue(byId('address.departamento'), 'Cundinamarca')
   setInputValue(byId('primaryContactEmail'), 'ana@andes.test')
   setInputValue(byId('primaryContactPhone'), '3000000000')
 }
@@ -112,7 +115,16 @@ describe('<AgencyStepForm> — razón social + NIT read-only', () => {
 
   it('keeps read-only legalName + nit in the submitted step payload', async () => {
     const onSubmit = vi.fn().mockResolvedValue(null)
-    render({ prefill: { legalName: 'Inmobiliaria Andes SAS', nit: '900123456-7' }, onSubmit })
+    render({
+      prefill: {
+        legalName: 'Inmobiliaria Andes SAS',
+        nit: '900123456-7',
+        // Departamento + Municipio are comboboxes (not operable under happy-dom),
+        // so seed them here to let the submit pass the schema.
+        address: { departamento: 'Cundinamarca', ciudad: 'Bogotá', calle: '', codigoPostal: '' },
+      },
+      onSubmit,
+    })
 
     fillEditableFields()
     await clickSubmit()

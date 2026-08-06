@@ -76,14 +76,13 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
     },
   })
 
-<<<<<<< HEAD
   // Municipio options depend on the chosen departamento. Watching the field
   // re-renders the municipio combobox with the right list; changing the
   // departamento clears the municipio (see the departamento onChange below).
   const departamento = watch('address.departamento')
   const departamentoOptions = DEPARTAMENTO_NOMBRES.map((n) => ({ value: n, label: n }))
   const municipioOptions = municipiosDe(departamento).map((m) => ({ value: m, label: m }))
-=======
+
   // Razón social + NIT were captured one screen earlier (and the NIT is
   // locked post-provisioning). When they arrive prefilled, present them as
   // read-only "confirmed" fields — but keep them `register`ed so their values
@@ -91,7 +90,6 @@ export function AgencyStepForm({ isSubmitting, onSubmit, submitError, prefill }:
   // degrade to editable inputs.
   const legalNameConfirmed = hasPrefilledValue(prefill?.legalName)
   const nitConfirmed = hasPrefilledValue(prefill?.nit)
->>>>>>> 5f3dad4a4f8bdf087cec769737a92e2e2b8c9529
 
   const submit = handleSubmit(async (values) => {
     const parsed = agencyStepSchema.safeParse(values)

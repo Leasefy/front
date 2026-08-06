@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, ShareNetwork, VideoCamera, MapPin, TrendUp, Clock, Check, Calendar } from '@phosphor-icons/react';
+import { Heart, ShareNetwork, VideoCamera, MapPin, TrendUp, Clock, Check, Calendar, Copy } from '@phosphor-icons/react';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { SegmentedControl } from '@leasefy/cadence';
@@ -96,9 +96,16 @@ export function StickyCTA({
   onWishlistToggle,
   className,
 }: StickyCTAProps) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, hasActiveAgencyMembership } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+
+  // An inmobiliaria/agent viewing a property is NOT a prospective tenant: they
+  // must not apply or schedule a visit. Instead they get a "share this property"
+  // panel (copy link). Covers agency owners, invited agents (backendRole AGENT),
+  // and personal-role users with an active agency membership.
+  const isAgencyViewer =
+    !!user && (user.role === 'agency' || user.backendRole === 'AGENT' || hasActiveAgencyMembership);
 
   const [ctaMode, setCtaMode] = useState<'apply' | 'visit'>('apply');
   const [visitTextT, setVisitType] = useState<'presencial' | 'virtual'>('presencial');
@@ -115,6 +122,30 @@ export function StickyCTA({
   // Social proof (mock, visual only)
   const [stats, setStats] = useState<ReturnType<typeof generateMockStats> | null>(null);
   const [currentViewers, setCurrentViewers] = useState(0);
+
+  // Shareable public URL of this property (built client-side to avoid an SSR
+  // hydration mismatch). Used by the header share button and the agency panel.
+  const [shareUrl, setShareUrl] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setShareUrl(`${window.location.origin}/propiedades/${propertyId}`);
+    }
+  }, [propertyId]);
+
+  const handleCopyShare = async () => {
+    const url = shareUrl || (typeof window !== 'undefined' ? `${window.location.origin}/propiedades/${propertyId}` : '');
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard can fail (permissions/insecure context) — the link stays
+      // visible in the input for the user to select and copy manually.
+    }
+  };
 
   // ─── Social proof ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -258,10 +289,16 @@ export function StickyCTA({
                 type="button"
                 size="icon"
                 variant="outline"
+                onClick={handleCopyShare}
                 className="h-10 w-10 hover:bg-surface-muted text-muted-foreground"
-                aria-label="Compartir"
+                aria-label={copied ? 'Enlace copiado' : 'Compartir'}
+                data-testid="share-copy-header"
               >
-                <ShareNetwork className="w-[18px] h-[18px]" />
+                {copied ? (
+                  <Check className="w-[18px] h-[18px] text-[hsl(var(--success-500))]" />
+                ) : (
+                  <ShareNetwork className="w-[18px] h-[18px]" />
+                )}
               </Button>
             </div>
           </div>
@@ -281,6 +318,53 @@ export function StickyCTA({
             )}
           </div>
 
+          {isAgencyViewer ? (
+            /* ── Agency/agent viewer: share panel (no apply / no visit) ── */
+            <div data-testid="agency-share-panel">
+              <div className="flex items-start gap-2.5 mb-4">
+                <ShareNetwork className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                <p className="text-[13px] text-muted-foreground">
+                  Compartí esta propiedad con un interesado por el canal que prefieras.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-muted px-3 h-11 mb-3">
+                <input
+                  readOnly
+                  value={shareUrl}
+                  aria-label="Enlace de la propiedad"
+                  data-testid="agency-share-url"
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="flex-1 min-w-0 bg-transparent text-[13px] text-fg-muted outline-none truncate"
+                />
+              </div>
+
+              <Button
+                type="button"
+                onClick={handleCopyShare}
+                hideArrow
+                className="w-full gap-2"
+                data-testid="agency-share-copy"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Enlace copiado
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    Copiar enlace
+                  </>
+                )}
+              </Button>
+
+              <p className="text-[11px] text-muted-foreground text-center mt-3">
+                Como inmobiliaria no aplicas ni agendas visitas — compartí el enlace con tus clientes.
+              </p>
+            </div>
+          ) : (
+          <>
           {/* Tab selector */}
           <div className="mb-6">
             <SegmentedControl<'apply' | 'visit'>
@@ -493,6 +577,8 @@ export function StickyCTA({
               </p>
             </div>
           )}
+          </>
+          )}
         </div>
 
         {/* Activity footer */}
@@ -521,11 +607,27 @@ export function MobileStickyCTA({
   propertyId: string;
   price: number;
 }) {
+  const { user, hasActiveAgencyMembership } = useAuth();
+  const isAgencyViewer =
+    !!user && (user.role === 'agency' || user.backendRole === 'AGENT' || hasActiveAgencyMembership);
+
   const [stats, setStats] = useState<ReturnType<typeof generateMockStats> | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     setStats(generateMockStats(propertyId));
   }, [propertyId]);
+
+  const handleCopyShare = async () => {
+    if (typeof window === 'undefined') return;
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/propiedades/${propertyId}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard can fail silently (permissions/insecure context).
+    }
+  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-xl border-t border-border lg:hidden z-30">
@@ -551,12 +653,30 @@ export function MobileStickyCTA({
             </p>
           </div>
           <div className="flex gap-2">
-            <Button asChild hideArrow>
-              <Link href={`/aplicar/${propertyId}`}>Postularme</Link>
-            </Button>
-            <Button variant="outline" hideArrow>
-              Visita
-            </Button>
+            {isAgencyViewer ? (
+              <Button type="button" onClick={handleCopyShare} hideArrow className="gap-2" data-testid="mobile-agency-share">
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Copiado
+                  </>
+                ) : (
+                  <>
+                    <ShareNetwork className="w-4 h-4" />
+                    Compartir
+                  </>
+                )}
+              </Button>
+            ) : (
+              <>
+                <Button asChild hideArrow>
+                  <Link href={`/aplicar/${propertyId}`}>Postularme</Link>
+                </Button>
+                <Button variant="outline" hideArrow>
+                  Visita
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

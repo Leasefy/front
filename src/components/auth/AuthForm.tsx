@@ -336,7 +336,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       // invitation/onboarding context and land the user as a bare TENANT.
       const dest = returnUrl && returnUrl !== '/' ? returnUrl : onboardingDest();
       const emailRedirectTo = `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(dest)}`;
-      const { requiresConfirmation } = await signUpWithEmail(data.email, data.password, emailRedirectTo);
+      const { requiresConfirmation } = await signUpWithEmail(data.email, data.password, emailRedirectTo, selectedRole);
       if (requiresConfirmation) {
         setResetEmail(data.email);
         setRegisterStep('confirm-email');

@@ -146,3 +146,48 @@ describe('<AgencyStepForm> — razón social + NIT read-only', () => {
     expect(byId('address.calle').value).toBe('Calle 100 # 10-20')
   })
 })
+
+describe('<AgencyStepForm> — address fields', () => {
+  it('labels the street field "Dirección" (not "Calle") and keeps it as an editable input', () => {
+    render()
+
+    expect(container.textContent).toContain('Dirección')
+    expect(container.textContent).not.toContain('Calle')
+
+    setInputValue(byId('address.calle'), 'Cra 7 # 71-21')
+    expect(byId('address.calle').value).toBe('Cra 7 # 71-21')
+  })
+
+  it('renders "Departamento" and "Municipio" labels (not "Ciudad")', () => {
+    render()
+
+    expect(container.textContent).toContain('Departamento')
+    expect(container.textContent).toContain('Municipio')
+    expect(container.textContent).not.toContain('Ciudad')
+  })
+
+  it('renders departamento and municipio as combobox controls', () => {
+    render()
+
+    const comboboxes = container.querySelectorAll('[role="combobox"]')
+    expect(comboboxes.length).toBe(2)
+  })
+
+  it('disables the municipio combobox until a departamento is chosen', () => {
+    render()
+
+    // Municipio is the second combobox; with no departamento selected it must
+    // be disabled so a municipio can never be picked without its departamento.
+    const comboboxes = container.querySelectorAll<HTMLButtonElement>('[role="combobox"]')
+    const municipio = comboboxes[1]
+    expect(municipio.disabled).toBe(true)
+  })
+
+  it('enables the municipio combobox when a departamento is prefilled', () => {
+    render({ prefill: { address: { departamento: 'Antioquia', calle: '', ciudad: '', codigoPostal: '' } } })
+
+    const comboboxes = container.querySelectorAll<HTMLButtonElement>('[role="combobox"]')
+    const municipio = comboboxes[1]
+    expect(municipio.disabled).toBe(false)
+  })
+})

@@ -31,6 +31,7 @@ import {
   submitPolicy as submitPolicyStep,
   presignHabeasData as presignHabeasDataStep,
   confirmHabeasData as confirmHabeasDataStep,
+  acceptTerms as acceptTermsStep,
   completeOnboarding as completeOnboardingStep,
   resumeOnboarding,
 } from '../api/onboarding-session.service'
@@ -95,6 +96,8 @@ export interface UseOnboardingSessionResult {
   confirmHabeasData: (
     body: OnboardingSessionHabeasDataConfirmRequest,
   ) => Promise<OnboardingSessionHabeasDataConfirmResponse | null>
+  /** Completes the `habeas_data` step from a terms acceptance (see acceptTerms in the service). */
+  acceptTerms: () => Promise<OnboardingSessionHabeasDataConfirmResponse | null>
   completeOnboarding: () => Promise<OnboardingSessionCompleteResponse | null>
 }
 
@@ -232,6 +235,10 @@ export function useOnboardingSession(sessionId: string): UseOnboardingSessionRes
       runStep(() => confirmHabeasDataStep(sessionId, body)),
     [runStep, sessionId],
   )
+  const acceptTerms = useCallback(
+    () => runStep(() => acceptTermsStep(sessionId)),
+    [runStep, sessionId],
+  )
 
   // presignHabeasData and completeOnboarding don't return a StepEnvelope —
   // handled separately: presign leaves currentStep/nextStep/draft untouched,
@@ -282,6 +289,7 @@ export function useOnboardingSession(sessionId: string): UseOnboardingSessionRes
     submitPolicy,
     presignHabeasData,
     confirmHabeasData,
+    acceptTerms,
     completeOnboarding,
   }
 }

@@ -22,9 +22,12 @@ const VARIANT_CLASS: Record<LandingRegistroCtaProps['variant'], string> = {
 }
 
 /**
- * Landing "Empezar ahora" (/registro) CTA — session-aware sibling of
- * LandingAuthCta. Registering while already authenticated errors out, so
- * this hides (header/mobile) or redirects to the panel (banner) instead.
+ * Landing "Empezar ahora" CTA — session-aware sibling of LandingAuthCta. Sends
+ * new (logged-out) users to /auth in "create account" mode (the profile picker),
+ * NOT to /registro — that route is the invitation-completion flow and requires
+ * an `invitationToken`, so a plain visitor lands on "Invitación inválida".
+ * Registering while already authenticated errors out, so this hides
+ * (header/mobile) or redirects to the panel (banner) instead.
  *
  * SSR/hydration note: same as LandingAuthCta — useAuth()'s initial state is
  * always `{ user: null, isLoading: true }` on server + first client render,

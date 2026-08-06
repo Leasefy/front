@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import type { User, AuthContextType, Agency, AgencyMemberRole } from './types'
+import type { User, AuthContextType, Agency, AgencyMemberRole, UserRole } from './types'
 import { toFrontendRole } from './types'
 import { fetchAgencyProfile, type AgencyFetchResult } from './agency-fetch'
 import { getSupabase } from '@/lib/supabase/client'
@@ -643,13 +643,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [fetchUser, checkMfaLevel])
 
   /** Sign up with email and password. Returns whether email confirmation is required. */
-  const signUpWithEmail = useCallback(async (email: string, password: string, redirectTo?: string) => {
+  const signUpWithEmail = useCallback(async (email: string, password: string, redirectTo?: string, intendedRole?: UserRole) => {
     const supabase = getSupabase()
     if (!supabase) throw new Error('Supabase not initialized')
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
+      options: {
+        ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
+        // Persist the profile chosen at signup as user_metadata so it survives
+        // regardless of the confirmation link (readable server-side too).
+        ...(intendedRole ? { data: { intended_role: intendedRole } } : {}),
+      },
     })
     if (error) throw error
     const requiresConfirmation = !data.session

@@ -273,6 +273,41 @@ export function confirmHabeasData(
   return postStep(sessionId, '/habeas-data/confirm', body)
 }
 
+/**
+ * Completes the `habeas_data` wizard step from a terms-and-conditions
+ * acceptance instead of a signed-PDF upload (see `TermsStepForm`).
+ *
+ * Contract (shipped by the agent):
+ *   POST /onboarding/session/{sessionId}/habeas-data/accept-terms
+ *   body: { accepted: true, termsVersion: string }
+ *   → records the acceptance (WHO + which version + when) into
+ *     `terms_acceptances`, marks the `habeas_data` step complete, and runs the
+ *     same atomic tenant commit as `/complete` in ONE call (the SPA does NOT
+ *     call `/complete` separately). Idempotent on double-click.
+ * `termsVersion` is REQUIRED by the agent (400 if absent) and is recorded
+ * verbatim, so the row reflects exactly the T&C text the user saw. The
+ * response is a superset of the step envelope (currentStep/nextStep/draft) plus
+ * the tenant-commit fields (tenantId/agencyId/status/dashboardUrl). Once
+ * `pnpm api:gen` regenerates the agent types, swap the response type for the
+ * generated `OnboardingSessionAcceptTermsResponse`.
+ */
+
+/**
+ * Version identifier of the Terms & Conditions text currently rendered by
+ * `TermsStepForm`. Sent verbatim to the agent for legal traceability. BUMP THIS
+ * whenever the T&C copy changes so acceptances are attributed to the right text.
+ */
+export const CURRENT_TERMS_VERSION = '2026-08'
+
+export function acceptTerms(
+  sessionId: string,
+): Promise<OnboardingSessionHabeasDataConfirmResponse> {
+  return postStep(sessionId, '/habeas-data/accept-terms', {
+    accepted: true,
+    termsVersion: CURRENT_TERMS_VERSION,
+  })
+}
+
 /** No request body — the back derives the tenant from the persisted draft. */
 export function completeOnboarding(sessionId: string): Promise<OnboardingSessionCompleteResponse> {
   return request(sessionId, '/complete', {

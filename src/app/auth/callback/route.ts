@@ -7,7 +7,10 @@ import { sanitizeReturnUrl } from '@/lib/utils'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const returnUrl = sanitizeReturnUrl(searchParams.get('returnUrl'), '/')
+  // No explicit returnUrl → send OAuth users to the client-side resolver, which
+  // reads GET /users/me and routes by role/onboarding (this server route can't).
+  // An explicit, safe returnUrl (invitations, deep-links) is still honored.
+  const returnUrl = sanitizeReturnUrl(searchParams.get('returnUrl'), '/auth/post-login')
 
   if (code) {
     const cookieStore = cookies()

@@ -35,6 +35,7 @@ import {
   Brain,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { AgencySubscriptionGuard } from '@/components/auth/AgencySubscriptionGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
 import { filterAgencyNav, type NavItemWithModule } from '@/lib/nav/agency-nav-filter';
@@ -336,19 +337,21 @@ export default function InmobiliariaLayout({ children }: InmobiliariaLayoutProps
   // membership) are admitted alongside pure-agency users.
   return (
     <ProtectedRoute allowedRoles={['agency']} allowAgencyMembers>
-      <I18nProvider>
-        <PermissionsProvider>
-          <PanelPrefsProvider>
-            <SidebarProvider>
-              {/* CommandPaletteProvider wraps the inner layout so both the
-                  shortcut hook and the modal can read/write palette state. */}
-              <CommandPaletteProvider>
-                <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
-              </CommandPaletteProvider>
-            </SidebarProvider>
-          </PanelPrefsProvider>
-        </PermissionsProvider>
-      </I18nProvider>
+      <AgencySubscriptionGuard>
+        <I18nProvider>
+          <PermissionsProvider>
+            <PanelPrefsProvider>
+              <SidebarProvider>
+                {/* CommandPaletteProvider wraps the inner layout so both the
+                    shortcut hook and the modal can read/write palette state. */}
+                <CommandPaletteProvider>
+                  <InmobiliariaLayoutInner>{children}</InmobiliariaLayoutInner>
+                </CommandPaletteProvider>
+              </SidebarProvider>
+            </PanelPrefsProvider>
+          </PermissionsProvider>
+        </I18nProvider>
+      </AgencySubscriptionGuard>
     </ProtectedRoute>
   );
 }

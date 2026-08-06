@@ -119,8 +119,9 @@ function AvaluosSala() {
   const [page, setPage] = useState(0)
 
   // Two distinct ways to request an avalúo, both backed by `avaluosApi.solicitar()`:
-  //  - Directo: the agency member does it themselves now → navigate to the wizard
-  //    in the same tab (a new-tab popup would be blocked after the await).
+  //  - Directo: the agency member does it themselves now → open the wizard in a
+  //    NEW tab so the panel (and the agency session) stays alive. See the anti-popup
+  //    pattern in `onSolicitarDirecto` for why the tab is opened synchronously.
   //    Independent loading state so it never blocks the link action's spinner.
   //  - Link para compartir: mint a SHAREABLE wizard link the agency sends to a
   //    third party (owner/client). Keep the last minted link so it can be
@@ -169,23 +170,36 @@ function AvaluosSala() {
     }
   }
 
-  // Directo — the agency member fills it out right now: navigate to the wizard in
-  // the SAME tab. A `window.open(_, '_blank')` here would be popup-blocked: it runs
-  // after `await requestAvaluo()`, so the user-gesture context is already gone.
-  // Same-tab navigation after an await is never blocked. On success we leave
-  // `openingWizard` true so the button keeps showing "Abriendo asistente…" through
-  // the navigation; on failure the finally clause clears it and the toast is shown.
+  // Directo — the agency member fills it out right now, but we must NOT navigate the
+  // panel away: that would tear down their agency session context. Open the wizard in
+  // a NEW tab instead. The catch: `window.open(url, '_blank')` AFTER an await is
+  // popup-blocked, because the user-gesture context is gone by then. Anti-popup
+  // pattern: open a blank tab SYNCHRONOUSLY inside the click (gesture still alive),
+  // keep the handle, and point it at the wizard URL once the request resolves.
+  //  - request failed → close the placeholder tab (toast already shown).
+  //  - popup blocked even synchronously (handle is null) → degrade to same-tab nav so
+  //    the action still works; session preservation is best-effort in that case.
+  // `opener` is nulled before navigating (while the tab is still same-origin about:blank)
+  // to prevent the wizard tab from reaching back into the panel via window.opener.
   const onSolicitarDirecto = async () => {
     setOpeningWizard(true)
-    let navigating = false
+    const newTab = window.open('about:blank', '_blank')
     try {
       const wizardUrl = await requestAvaluo()
-      if (wizardUrl) {
-        navigating = true
+      if (!wizardUrl) {
+        newTab?.close()
+        return
+      }
+      if (newTab) {
+        newTab.opener = null
+        newTab.location.replace(wizardUrl)
+      } else {
         window.location.assign(wizardUrl)
       }
+    } catch {
+      newTab?.close()
     } finally {
-      if (!navigating) setOpeningWizard(false)
+      setOpeningWizard(false)
     }
   }
 

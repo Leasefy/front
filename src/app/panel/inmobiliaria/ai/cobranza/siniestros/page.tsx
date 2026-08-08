@@ -212,14 +212,36 @@ function SiniestrosContent() {
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {/*
+              Con error NO se puede decir «sin siniestros»: eso es una
+              afirmación sobre los datos, y con la carga fallida no sabemos
+              cuántos hay. La pantalla mostraba el 401 en rojo Y debajo «Sin
+              siniestros con el filtro seleccionado» — o sea, tranquilizando
+              justo cuando no debía.
+            */}
             {claims.length === 0 && !isLoading && (
               <TableRow>
                 <TableCell colSpan={5} className="px-3 py-12 text-center">
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    {isEs
-                      ? 'Sin siniestros con el filtro seleccionado.'
-                      : 'No claims match the selected filter.'}
+                    {error
+                      ? isEs
+                        ? 'No pudimos cargar los siniestros.'
+                        : 'We could not load the claims.'
+                      : isEs
+                        ? 'Sin siniestros con el filtro seleccionado.'
+                        : 'No claims match the selected filter.'}
                   </p>
+                  {error && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      hideArrow
+                      className="mt-3"
+                      onClick={() => void refetch()}
+                    >
+                      {isEs ? 'Reintentar' : 'Retry'}
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             )}

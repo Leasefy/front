@@ -294,8 +294,10 @@ export default function InquilinoPage() {
                     {locale === 'es' ? 'Basado en tu perfil y preferencias' : 'Based on your profile and preferences'}
                   </p>
                 </div>
+                {/* Apunta al catálogo propio, no a Explorar: la sección se
+                    llama "Propiedades para ti" y mandaba al listado general. */}
                 <Link
-                  href="/inquilino/explorar"
+                  href="/inquilino/para-ti"
                   className="text-sm text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white font-medium flex items-center gap-1 transition-colors"
                 >
                   {t('common.showMore')}

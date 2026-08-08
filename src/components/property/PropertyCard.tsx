@@ -22,6 +22,8 @@ export interface PropertyCardProps {
   className?: string;
   /** Prefix for the detail link. Public '/propiedades', tenant '/inquilino/propiedades'. */
   basePath?: string;
+  /** Query extra en el link (p.ej. `from=para-ti`) para que el detalle sepa de dónde vino. */
+  linkQuery?: string;
 }
 
 export function PropertyCard({
@@ -34,6 +36,7 @@ export function PropertyCard({
   onHoverEnd,
   className,
   basePath = '/propiedades',
+  linkQuery,
 }: PropertyCardProps) {
   const {
     id,
@@ -101,7 +104,7 @@ export function PropertyCard({
 
   return (
     <Link
-      href={`${basePath}/${id}`}
+      href={linkQuery ? `${basePath}/${id}?${linkQuery}` : `${basePath}/${id}`}
       className={cn(
         'group block rounded-xl transition-all duration-300 ease-out',
         isHighlighted && 'ring-2 ring-primary ring-offset-2',

@@ -45,6 +45,8 @@ export interface PropertyGridProps {
    * explícito, y esconder propiedades se siente a trampa.
    */
   aprobacion?: Aprobacion | null;
+  /** Query extra en los links de las tarjetas (p.ej. `from=para-ti`). */
+  linkQuery?: string;
 }
 
 /**
@@ -63,6 +65,7 @@ export function PropertyGrid({
   propertyRefCallback,
   basePath,
   aprobacion,
+  linkQuery,
 }: PropertyGridProps) {
   const [displayCount, setDisplayCount] = useState(INITIAL_ITEMS);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -146,6 +149,7 @@ export function PropertyGrid({
                 onHoverStart={() => onPropertyHover?.(property.id)}
                 onHoverEnd={() => onPropertyHover?.(null)}
                 basePath={basePath}
+                linkQuery={linkQuery}
               />
               {sobreTope && <SobreTopeOverlay referencia={referenciaCanon(aprobacion ?? null)} />}
             </div>

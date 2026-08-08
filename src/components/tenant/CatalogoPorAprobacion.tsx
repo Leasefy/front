@@ -99,6 +99,7 @@ export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }
           onWishlistToggle={toggleWishlist}
           isLoading={isLoading}
           basePath="/inquilino/propiedades"
+          linkQuery="from=para-ti"
           aprobacion={aprobacion}
         />
       </div>

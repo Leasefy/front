@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Toaster } from '@/components/ui/toast';
-import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck } from '@phosphor-icons/react';
+import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck, Sparkle } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
@@ -28,6 +28,9 @@ function useTenantNavItems() {
 
   return [
     { label: t('nav.panel'), href: '/inquilino', icon: SquaresFour, exact: true },
+    // Su catálogo va ANTES de Explorar: lo primero es lo que puede tomar,
+    // y hasta ahora no había forma de llegar acá sin saberse la URL.
+    { label: locale === 'es' ? 'Para ti' : 'For you', href: '/inquilino/para-ti', icon: Sparkle },
     { label: locale === 'es' ? 'Explorar' : 'Explore', href: '/inquilino/explorar', icon: MagnifyingGlass },
     // Va temprano a propósito: la aprobación es lo primero del recorrido —
     // sin ella no se puede postular a nada (docs/VOCABULARIO.md).

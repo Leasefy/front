@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * /inquilino/aprobacion — "Mi aprobación".
+ * /inquilino/aprobacion — "Mi tope de arriendo".
  *
  * La pantalla del premio: es acá donde el inquilino ve **hasta cuánto** lo
  * respaldan las aseguradoras, y desde acá salta al catálogo ya filtrado.
@@ -92,7 +92,7 @@ export default function AprobacionPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
       <header className="space-y-1">
         <p className="text-[11px] font-mono uppercase tracking-wider text-fg-muted">
-          {tf(`${NS}.eyebrow`, 'Mi aprobación')}
+          {tf(`${NS}.eyebrow`, 'Mi tope de arriendo')}
         </p>
       </header>
 

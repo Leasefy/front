@@ -65,7 +65,7 @@
     "forYou": "Para Ti",
     "help": "Ayuda",
     "logout": "Cerrar sesión",
-    "approval": "Mi aprobación"
+    "approval": "Mi tope de arriendo"
   },
   "header": {
     "search": "Buscar propiedades, pagos, documentos...",
@@ -9026,7 +9026,7 @@
   },
   "inquilino": {
     "aprobacion": {
-      "eyebrow": "Mi aprobación",
+      "eyebrow": "Mi tope de arriendo",
       "cargando": "Cargando tu aprobación...",
       "error": {
         "title": "No pudimos cargar tu aprobación"

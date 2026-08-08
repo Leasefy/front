@@ -65,7 +65,7 @@
     "forYou": "For You",
     "help": "Help",
     "logout": "Log out",
-    "approval": "My approval"
+    "approval": "My rental cap"
   },
   "header": {
     "search": "Search properties, payments, documents...",
@@ -9025,7 +9025,7 @@
   },
   "inquilino": {
     "aprobacion": {
-      "eyebrow": "My approval",
+      "eyebrow": "My rental cap",
       "cargando": "Loading your approval...",
       "error": {
         "title": "We could not load your approval"

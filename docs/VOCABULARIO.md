@@ -37,7 +37,7 @@ todas las que quepan bajo su tope.
 |---|---|---|
 | **Inquilino** | **"aprobación"** | Nunca "asegurabilidad" — es palabra de seguros, no de arriendo |
 | Inquilino · el número | **"tope aprobado"** | *"Estás aprobado hasta $2.400.000"* |
-| Inquilino · su panel | **"Mi aprobación"** | Objeto singular: uno, con vigencia |
+| Inquilino · su panel | **"Mi tope de arriendo"** | "Mi aprobación" era ambiguo: en el mismo sidebar está "Mis postulaciones", **que también se aprueban**. Decir de qué es el tope lo desambigua y conserva la palabra del inquilino. Cambiado 2026-08-08 |
 | Inquilino · la acción | *"Conoce hasta cuánto te arrendamos"* | **Nunca "estúdiate ahora"** — suena a academia (Nico) |
 | **Agencia** | **"asegurabilidad"** | Ya establecido, la agencia sí es letrada en seguros |
 | Agencia · el número | **"máximo afianzable"** | El término de Juan |

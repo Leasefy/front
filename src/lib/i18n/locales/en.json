@@ -9230,6 +9230,13 @@
         "parte2": "Open it on this same device, finish setting up your profile and you go into your catalog.",
         "guardada": "Your approval is saved in this browser, so you don't have to check again or pay again. If you open the link on another device, an advisor will re-link it for you."
       }
+    },
+    "catalogoAprobacion": {
+      "volver": "Back to dashboard",
+      "titulo": "Properties for you",
+      "cargando": "Looking for properties…",
+      "dentroDeTuTope": "are within your approved cap",
+      "sinTope": "Your approval is ready. Once we confirm your cap we'll mark what works for you."
     }
   }
 }

@@ -9231,6 +9231,13 @@
         "parte2": "Ábrelo en este mismo dispositivo, terminas de crear tu perfil y entras a tu catálogo.",
         "guardada": "Tu aprobación quedó guardada en este navegador, así que no tienes que volver a consultarla ni a pagar. Si abres el enlace en otro dispositivo, un asesor te la reasocia."
       }
+    },
+    "catalogoAprobacion": {
+      "volver": "Volver al panel",
+      "titulo": "Propiedades para ti",
+      "cargando": "Buscando propiedades…",
+      "dentroDeTuTope": "están dentro de tu tope aprobado",
+      "sinTope": "Tu aprobación está lista. Cuando confirmemos tu tope te marcamos lo que va contigo."
     }
   }
 }

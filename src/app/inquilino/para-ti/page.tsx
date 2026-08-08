@@ -26,6 +26,7 @@ import {
 import { PropertyMatchCard } from '@/components/tenant/PropertyMatchCard';
 import { TopeAprobadoBanner, SobreTopeOverlay } from '@/components/tenant/TopeAprobadoBanner';
 import { QueSignificaPostularse } from '@/components/tenant/QueSignificaPostularse';
+import { CatalogoPorAprobacion } from '@/components/tenant/CatalogoPorAprobacion';
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { referenciaCanon, superaReferencia } from '@/lib/api/aprobacion.service';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
@@ -155,6 +156,16 @@ export default function ParaTiPage() {
         </div>
       </div>
     );
+  }
+
+  /*
+   * Tiene aprobación pero no perfil de scoring: es el caso de todo el que llega
+   * por el recorrido nuevo. Antes caía en el vacío de abajo —"necesitamos
+   * conocer tu perfil"— justo después de que se le prometiera su catálogo.
+   * Su aprobación YA nos dice qué puede tomar; con eso alcanza.
+   */
+  if ((!hasVerifiedProfile || !profile) && aprobacionVigente && aprobacion) {
+    return <CatalogoPorAprobacion aprobacion={aprobacion} />;
   }
 
   // No profile state

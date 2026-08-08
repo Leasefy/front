@@ -8620,10 +8620,15 @@ export interface components {
             id: string;
             /** Format: uuid */
             debtorId: string;
+            debtorName: string | null;
+            debtorDocument: string | null;
+            outstandingCop: number | null;
+            delinquencyDays: number | null;
             aseguradora: string;
             status: string;
             /** Format: uuid */
             approvedByHumanUserId: string | null;
+            approvedByEmail: string | null;
             packetPdfUrl: string | null;
             createdAt: string;
             filedAt: string | null;

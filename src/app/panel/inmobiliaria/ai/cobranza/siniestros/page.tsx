@@ -71,7 +71,7 @@ const STATUS_LABELS: Record<InsuranceClaimStatus, { es: string; en: string }> = 
 }
 
 function SiniestrosContent() {
-  const { t, locale } = useI18n()
+  const { t, locale, formatCurrency } = useI18n()
   const router = useRouter()
   const isEs = locale.startsWith('es')
 
@@ -194,6 +194,13 @@ function SiniestrosContent() {
         <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
           <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
             <TableRow>
+              {/* Destinatario y monto primero: la tabla mostraba aseguradora,
+                  estado y fechas, o sea que aprobar un siniestro era autorizar
+                  un reclamo sin saber de quién ni por cuánto. */}
+              <TableHead>{isEs ? 'Deudor' : 'Debtor'}</TableHead>
+              <TableHead className="text-right">
+                {isEs ? 'Saldo en mora' : 'Outstanding'}
+              </TableHead>
               <TableHead>
                 {t('inmobiliaria.ai.cobranza.siniestros.list.columns.aseguradora')}
               </TableHead>
@@ -221,7 +228,7 @@ function SiniestrosContent() {
             */}
             {claims.length === 0 && !isLoading && (
               <TableRow>
-                <TableCell colSpan={5} className="px-3 py-12 text-center">
+                <TableCell colSpan={7} className="px-3 py-12 text-center">
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
                     {error
                       ? isEs
@@ -256,6 +263,28 @@ function SiniestrosContent() {
                 }}
                 className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
               >
+                <TableCell className="px-3 py-2">
+                  <span className="block text-neutral-900 dark:text-white">
+                    {c.debtorName ?? (isEs ? 'Deudor no encontrado' : 'Debtor not found')}
+                  </span>
+                  {c.debtorDocument && (
+                    <span className="block text-xs text-neutral-500 dark:text-neutral-400 font-mono tabular-nums">
+                      {c.debtorDocument}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="px-3 py-2 text-right whitespace-nowrap">
+                  <span className="block text-neutral-900 dark:text-white font-mono tabular-nums">
+                    {c.outstandingCop != null ? formatCurrency(c.outstandingCop) : '—'}
+                  </span>
+                  {/* Sólo con mora real: «0 días de mora» al lado de un saldo
+                      se lee como un error de cálculo, no como información. */}
+                  {c.delinquencyDays != null && c.delinquencyDays > 0 && (
+                    <span className="block text-xs text-neutral-500 dark:text-neutral-400 font-mono tabular-nums">
+                      {c.delinquencyDays} {isEs ? 'días de mora' : 'days overdue'}
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell className="px-3 py-2 text-neutral-900 dark:text-white capitalize whitespace-nowrap">
                   {c.aseguradora}
                 </TableCell>
@@ -282,8 +311,14 @@ function SiniestrosContent() {
                       })
                     : '—'}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">
-                  {c.approvedByHumanUserId ? c.approvedByHumanUserId.slice(0, 8) + '…' : '—'}
+                {/* El correo, no el UUID: «4a0efc55…» no le dice nada a nadie.
+                    Si el aprobador ya no está en el equipo cae al id recortado,
+                    que al menos es rastreable en la auditoría. */}
+                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400">
+                  {c.approvedByEmail ??
+                    (c.approvedByHumanUserId
+                      ? c.approvedByHumanUserId.slice(0, 8) + '…'
+                      : '—')}
                 </TableCell>
               </TableRow>
             ))}

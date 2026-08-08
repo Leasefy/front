@@ -159,8 +159,50 @@ describe('helpers', () => {
     expect(shortApplicationRef('')).toBe('—')
   })
 
-  it('VERDICT_CONFIG covers both verdicts', () => {
-    expect(VERDICT_CONFIG.approved.label).toMatch(/aprobada/i)
-    expect(VERDICT_CONFIG.review.label).toMatch(/revisi/i)
+  it('VERDICT_CONFIG expone claves i18n, no literales', () => {
+    // El copy vive en locales/{es,en}.json (VOCABULARIO §Cómo se aplica).
+    expect(VERDICT_CONFIG.approved.labelKey).toMatch(/^inmobiliaria\.recorrido\.verdict\./)
+    expect(VERDICT_CONFIG.review.labelKey).toMatch(/^inmobiliaria\.recorrido\.verdict\./)
+  })
+
+  it('VERDICT_CONFIG usa tokens y no colores crudos', () => {
+    // `bg-[#E8F3EC]` es anti-patrón de DESIGN.md §9 y además ignora el modo oscuro.
+    for (const cfg of Object.values(VERDICT_CONFIG)) {
+      expect(cfg.className).not.toMatch(/#[0-9a-f]{3,8}/i)
+    }
+  })
+})
+
+describe('producción nunca sirve postulaciones inventadas', () => {
+  // Sin esta guarda basta una env sin poner en el deploy para que una
+  // inmobiliaria real trabaje cuatro candidatos que no existen.
+  const realFetch = globalThis.fetch
+  afterEach(() => {
+    globalThis.fetch = realFetch
+    vi.unstubAllEnvs()
+  })
+
+  it('sale a la red aunque falte NEXT_PUBLIC_AGENT_URL', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_PUBLIC_AGENT_URL', undefined)
+    vi.stubEnv('NEXT_PUBLIC_USE_MOCK_API', undefined)
+    const f = mockFetch(200, OK)
+    globalThis.fetch = f
+
+    await fetchFunnelApplications(AGENCY)
+
+    expect(f).toHaveBeenCalled()
+  })
+
+  it('ignora NEXT_PUBLIC_USE_MOCK_API === "true"', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_PUBLIC_AGENT_URL', 'http://agent.test')
+    vi.stubEnv('NEXT_PUBLIC_USE_MOCK_API', 'true')
+    const f = mockFetch(200, OK)
+    globalThis.fetch = f
+
+    await fetchFunnelApplications(AGENCY)
+
+    expect(f).toHaveBeenCalled()
   })
 })

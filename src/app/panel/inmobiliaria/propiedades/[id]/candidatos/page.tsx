@@ -13,6 +13,7 @@ import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { CandidateDrawer } from '@/components/inmobiliaria/CandidateDrawer';
+import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
 import { useContracts } from '@/lib/hooks/useContracts';
 import type { LandlordCandidate, LandlordApplicationStatus } from '@/lib/api/applications.types';
 import type { Property } from '@/lib/types/property';
@@ -72,12 +73,16 @@ const ACTION_CONFIG: Record<
   ActionType,
   { title: string; label: string; placeholder: string; required: boolean; confirmLabel: string; confirmVariant: ConfirmVariant }
 > = {
+  // "Pre-aprobar" es palabra muerta (docs/VOCABULARIO.md): *"pero preaprobar
+  // qué"*. El estado que produce ya se muestra como "En revisión" — la acción
+  // que lo produce ahora dice lo mismo, así el par acción/estado concuerda.
+  // El identificador `preapprove` no cambia: es contrato con el backend.
   preapprove: {
-    title: 'Pre-aprobar candidato',
+    title: 'Pasar candidato a revisión',
     label: 'Mensaje al candidato (opcional)',
     placeholder: 'Mensaje que verá el candidato...',
     required: false,
-    confirmLabel: 'Pre-aprobar',
+    confirmLabel: 'Pasar a revisión',
     confirmVariant: 'default',
   },
   approve: {
@@ -91,7 +96,7 @@ const ACTION_CONFIG: Record<
   reject: {
     title: 'Rechazar postulación',
     label: 'Motivo del rechazo',
-    placeholder: 'Explicá el motivo del rechazo al candidato...',
+    placeholder: 'Explica el motivo del rechazo al candidato...',
     required: true,
     confirmLabel: 'Rechazar',
     confirmVariant: 'destructive',
@@ -99,7 +104,7 @@ const ACTION_CONFIG: Record<
   'request-info': {
     title: 'Solicitar información',
     label: 'Mensaje al candidato',
-    placeholder: '¿Qué información adicional necesitás?',
+    placeholder: '¿Qué información adicional necesitas?',
     required: true,
     confirmLabel: 'Enviar solicitud',
     confirmVariant: 'default',
@@ -216,7 +221,7 @@ function CandidateActions({
           onClick={() => onAction('preapprove', candidate)}
           className={cn(COARSE_HIT_AREA, 'bg-primary-soft text-primary hover:bg-primary-soft/80 whitespace-nowrap')}
         >
-          Pre-aprobar
+          Pasar a revisión
         </Button>
         <Button
           variant="ghost"
@@ -430,6 +435,17 @@ function CandidatosContent() {
           </div>
         </div>
       </div>
+
+      {/* Recorrido del inquilino: acá se comparan (paso 9) y se decide (10).
+          Las dos rutas cuelgan de esta misma pantalla, así que se pasan por
+          `hrefs` — `pasos.ts` no puede hardcodear una ruta con [id]. */}
+      <RecorridoHilo
+        paso="comparacion"
+        hrefs={{
+          comparacion: `/panel/inmobiliaria/propiedades/${propertyId}/candidatos`,
+          decision: `/panel/inmobiliaria/propiedades/${propertyId}/candidatos`,
+        }}
+      />
 
       {/* Stats */}
       {candidates.length > 0 && (

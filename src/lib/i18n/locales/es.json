@@ -54,7 +54,7 @@
   "nav": {
     "panel": "Panel",
     "myRental": "Mi Arriendo",
-    "applications": "Aplicaciones",
+    "applications": "Mis postulaciones",
     "contracts": "Contratos",
     "payments": "Pagos",
     "documents": "Documentos",
@@ -64,7 +64,8 @@
     "saved": "Guardados",
     "forYou": "Para Ti",
     "help": "Ayuda",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "approval": "Mi aprobación"
   },
   "header": {
     "search": "Buscar propiedades, pagos, documentos...",
@@ -140,7 +141,7 @@
     "propertyType": "Tipo de propiedad",
     "apartment": "Departamento",
     "house": "Casa",
-    "studio": "Estudio",
+    "studio": "Apartaestudio",
     "room": "Habitación",
     "bedrooms": "Dormitorios",
     "bathrooms": "Baños",
@@ -175,9 +176,9 @@
     "previousRentals": "Arriendos anteriores"
   },
   "applications": {
-    "title": "Mis Aplicaciones",
+    "title": "Mis postulaciones",
     "subtitle": "Gestiona tus postulaciones a propiedades",
-    "noApplications": "No tienes aplicaciones",
+    "noApplications": "No tienes postulaciones",
     "startApplying": "Comienza a postular a propiedades",
     "browseProperties": "Explorar propiedades",
     "active": "Activas",
@@ -190,9 +191,9 @@
     "appliedOn": "Postulado el",
     "lastUpdate": "Última actualización",
     "viewProperty": "Ver propiedad",
-    "viewApplication": "Ver aplicación",
-    "withdrawApplication": "Retirar aplicación",
-    "confirmWithdraw": "¿Estás seguro de que deseas retirar esta aplicación?",
+    "viewApplication": "Ver postulación",
+    "withdrawApplication": "Retirar postulación",
+    "confirmWithdraw": "¿Estás seguro de que deseas retirar esta postulación?",
     "steps": {
       "submitted": "Enviada",
       "review": "En revisión",
@@ -472,7 +473,7 @@
       "sms": "Notificaciones SMS",
       "payments": "Recordatorios de pago",
       "messages": "Nuevos mensajes",
-      "applications": "Actualizaciones de aplicaciones",
+      "applications": "Actualizaciones de postulaciones",
       "documents": "Documentos por firmar",
       "marketing": "Ofertas y promociones",
       "news": "Novedades de Leasefy"
@@ -572,7 +573,7 @@
     "notifications": {
       "title": "Notificaciones",
       "subtitle": "Controla cómo te contactamos",
-      "newApplication": "Nueva aplicación",
+      "newApplication": "Nueva postulación",
       "newApplicationDesc": "Cuando un candidato aplica a tu propiedad",
       "paymentReceived": "Pago recibido",
       "paymentReceivedDesc": "Cuando recibes un pago de arriendo",
@@ -857,7 +858,7 @@
       "propietarios": "Propietarios",
       "portafolio": "Consignaciones",
       "propiedades": "Inmuebles",
-      "pipeline": "Prospección (Pipeline)",
+      "pipeline": "Prospección",
       "agentes": "Agentes",
       "cobros": "Cobros manuales",
       "contratos": "Contratos",
@@ -895,7 +896,18 @@
       "secFinanzas": "Finanzas",
       "secAnalisis": "Análisis",
       "equipo": "Equipo",
-      "cmdPaletteTrigger": "Buscar todo…"
+      "cmdPaletteTrigger": "Buscar todo…",
+      "secComercial": "Comercial",
+      "secAdministracion": "Administración",
+      "secGeneral": "General",
+      "solicitudes": "Solicitudes",
+      "contabilidad": "Contabilidad general",
+      "proximamente": "Próximamente",
+      "aprendizaje": "Aprendizaje del asistente",
+      "hintPipeline": "pipeline",
+      "hintCatalogo": "catálogo",
+      "hintRevision": "revisión",
+      "hintEgresos": "a propietarios"
     },
     "mobileNav": {
       "moreButton": "Más",
@@ -2490,7 +2502,7 @@
         "propertyType": {
           "apartment": "Apartamento",
           "house": "Casa",
-          "studio": "Estudio",
+          "studio": "Apartaestudio",
           "commercial": "Local",
           "office": "Oficina",
           "warehouse": "Bodega"
@@ -2721,7 +2733,7 @@
       "propertyType": {
         "apartment": "Apartamento",
         "house": "Casa",
-        "studio": "Estudio",
+        "studio": "Apartaestudio",
         "commercial": "Local Comercial",
         "office": "Oficina",
         "warehouse": "Bodega"
@@ -2807,7 +2819,7 @@
         "allTypes": "Todos",
         "apartment": "Apto",
         "house": "Casa",
-        "studio": "Estudio",
+        "studio": "Apartaestudio",
         "commercial": "Local",
         "office": "Oficina",
         "warehouse": "Bodega",
@@ -4255,8 +4267,8 @@
         "conciliacionMovimientos": "Movimientos",
         "conciliacionConexiones": "Conexiones",
         "conciliacionLiquidaciones": "Liquidaciones",
-        "estudio": "Estudio del inquilino",
-        "estudioCola": "Estudios por revisar",
+        "estudio": "Evaluación de candidatos",
+        "estudioCola": "Evaluaciones por revisar",
         "estudioConfiguracion": "Configuración",
         "estudioAnalitica": "Analítica",
         "matching": "Matching",
@@ -4292,14 +4304,14 @@
         "cobranzaEquipo": "Equipo IA",
         "cobranzaReportes": "Reportes",
         "estudioResumen": "Resumen",
-        "estudioCasos": "Estudios",
-        "estudioCrear": "Crear estudio",
+        "estudioCasos": "Evaluaciones",
+        "estudioCrear": "Nueva evaluación",
         "estudioEquipo": "Equipo IA",
         "cotizadorResumen": "Resumen",
         "cotizadorNueva": "Nueva consulta",
         "cotizadorComparar": "Comparador",
         "cotizadorEquipo": "Equipo IA",
-        "estudioSolicitud": "Solicitud al candidato",
+        "estudioSolicitud": "Solicitud de aprobación",
         "estudioReglas": "Reglas",
         "cotizadorEjecucion": "Ejecución",
         "cotizadorIntegraciones": "Integraciones",
@@ -6272,12 +6284,12 @@
           "description": "Cruza los extractos bancarios con tus cobros automáticamente. El agente sugiere los cruces y deja en la cola solo los casos dudosos para tu aprobación."
         },
         "estudio": {
-          "title": "Agente de Estudio",
-          "description": "Estudio del inquilino completo: identidad, ingresos y antecedentes verificados en minutos, con una decisión auditable y trazable para cada postulante."
+          "title": "Agente de Evaluación",
+          "description": "Evaluación de candidatos completo: identidad, ingresos y antecedentes verificados en minutos, con una decisión auditable y trazable para cada postulante."
         },
         "matching": {
           "title": "Agente de Matching",
-          "description": "Conecta propiedades vacantes con candidatos pre-aprobados. El agente propone los mejores cruces y el contacto sale únicamente con tu aprobación."
+          "description": "Conecta propiedades vacantes con candidatos aprobados. El agente propone los mejores cruces y el contacto sale únicamente con tu aprobación."
         },
         "pagos": {
           "title": "Agente de Pagos",
@@ -6322,7 +6334,7 @@
           "cotizador": "Asegurabilidad",
           "conciliacion": "Conciliación",
           "pagos": "Pagos a proveedores",
-          "estudio": "Estudio del inquilino",
+          "estudio": "Evaluación de candidatos",
           "matching": "Matching",
           "avaluos": "Avalúos"
         },
@@ -6489,15 +6501,15 @@
             }
           },
           "estudio": {
-            "eyebrow": "Agente · Estudio del inquilino",
-            "salaTitulo": "Estudio del inquilino",
+            "eyebrow": "Agente · Evaluación de candidatos",
+            "salaTitulo": "Evaluación de candidatos",
             "salaDesc": "El agente estudia a cada candidato — identidad y capacidad de pago — y te trae solo los casos dudosos para que decidas tú.",
             "colaDesc": "Revisa el resultado del estudio (nivel y puntaje) y su evidencia, y decide tú.",
             "colaEmptyHint": "No hay estudios pendientes — buena señal. Los estudios llegan cuando un candidato se postula; los casos dudosos aparecerán aquí para tu decisión.",
             "casoColaLabel": "Cola de estudio",
             "crossPregunta": "¿Qué propiedad le calza?",
             "crossDestino": "Workspace de Matching",
-            "analiticaDesc": "Desempeño del estudio del inquilino en los últimos 30 días: evaluaciones procesadas, decisiones tomadas y tasa de escalamiento a revisión humana por día.",
+            "analiticaDesc": "Desempeño del evaluación de candidatos en los últimos 30 días: evaluaciones procesadas, decisiones tomadas y tasa de escalamiento a revisión humana por día.",
             "colaTitle": "Estudios por revisar",
             "colaLabel": "Estudios por revisar",
             "comoFunciona": {
@@ -6535,10 +6547,10 @@
             "salaTitulo": "Matching",
             "salaDesc": "Te encuentra inquilinos ya validados para tus propiedades vacantes. Revisas la mejor coincidencia y apruebas el contacto — nada se envía sin ti.",
             "colaDesc": "Candidatos que el agente emparejó con propiedades compatibles. Revisa la mejor coincidencia y sus factores de calce, luego acciónala (para contactar) o descártala. Modo Copiloto: nada se hace sin ti.",
-            "colaEmptyHint": "Aún no hay coincidencias. El agente cruza los candidatos aprobados en Estudio del inquilino con tus propiedades vacantes — los resultados aparecerán aquí.",
+            "colaEmptyHint": "Aún no hay coincidencias. El agente cruza los candidatos aprobados en Evaluación de candidatos con tus propiedades vacantes — los resultados aparecerán aquí.",
             "casoColaLabel": "Cola de matching",
             "crossPregunta": "¿Es confiable este candidato?",
-            "crossDestino": "Estudio del inquilino",
+            "crossDestino": "Evaluación de candidatos",
             "analiticaDesc": "Cuántas coincidencias propuso el agente, qué tan bien calzaron y cuántos candidatos terminaron contactados, día a día.",
             "colaTitle": "Candidatos sugeridos",
             "colaLabel": "Candidatos sugeridos",
@@ -7417,7 +7429,7 @@
               "desc": "Toma los datos del inmueble (ciudad, canon, tipo) directamente del inventario de propiedades."
             },
             "estudio": {
-              "title": "Estudio del inquilino",
+              "title": "Evaluación de candidatos",
               "desc": "Conecta el resultado del estudio con la asegurabilidad para decidir con la información completa."
             },
             "contratos": {
@@ -8229,7 +8241,7 @@
     },
     "candidates": {
       "title": "Candidatos",
-      "subtitle": "Evalúa y gestiona las aplicaciones de tus candidatos",
+      "subtitle": "Evalúa y gestiona las postulaciones de tus candidatos",
       "scoringGuideToggle": "¿Cómo funciona el scoring de candidatos?",
       "scoringGuideTitle": "Sistema de evaluación de candidatos",
       "scoringGuideDescription": "Cada candidato recibe un puntaje de 0 a 100 basado en múltiples factores verificados. Este score se traduce en un nivel de riesgo (A–D) para facilitar tu decisión.",
@@ -8287,7 +8299,7 @@
       "emptyDescription": "Cuando los inquilinos apliquen a tus propiedades, aparecerán aquí para que puedas evaluarlos.",
       "emptyAction": "Ver propiedades",
       "emptyFilteredMessage": "No se encontraron candidatos con los filtros aplicados",
-      "emptyDefaultMessage": "Cuando recibas aplicaciones, aparecerán aquí",
+      "emptyDefaultMessage": "Cuando recibas postulaciones, aparecerán aquí",
       "approveAction": "Aprobar",
       "rejectAction": "Rechazar",
       "messageAction": "Mensaje",
@@ -9001,7 +9013,7 @@
       "agencyPanel": "Panel de Inmobiliaria",
       "agencyAi": "Agentes IA",
       "assistant": "Asistente",
-      "myApplications": "Mis Aplicaciones",
+      "myApplications": "Mis postulaciones",
       "myLease": "Mi Arriendo",
       "apply": "Aplicar a Propiedad",
       "demo": "Demo"
@@ -9010,6 +9022,78 @@
   "wishlist": {
     "errors": {
       "saveFailed": "No se pudo actualizar tus favoritos. Intenta de nuevo."
+    }
+  },
+  "inquilino": {
+    "aprobacion": {
+      "eyebrow": "Mi aprobación",
+      "cargando": "Cargando tu aprobación...",
+      "error": {
+        "title": "No pudimos cargar tu aprobación"
+      },
+      "aprobado": {
+        "badge": "Aprobado",
+        "label": "Estás aprobado hasta",
+        "ayuda": "Puedes postularte a cualquier propiedad con un canon hasta ese valor. Y a todas las que quieras: con esta aprobación no vuelves a pagar.",
+        "sinTope": {
+          "title": "Estás aprobado",
+          "ayuda": "Estamos terminando de calcular hasta cuánto podemos respaldarte. Te avisamos apenas esté listo."
+        },
+        "cta": "Ver mis propiedades",
+        "ctaSecundaria": "Mis postulaciones"
+      },
+      "aseguradoras": {
+        "title": "Consultamos varias aseguradoras"
+      },
+      "vigencia": {
+        "dias": "Vence en {n} días",
+        "manana": "Vence mañana",
+        "hoy": "Vence hoy",
+        "ayer": "Venció ayer",
+        "vencida": "Venció hace {n} días"
+      },
+      "rechazado": {
+        "title": "Por ahora no podemos aprobarte",
+        "desc": "Las aseguradoras que consultamos no respaldaron tu solicitud esta vez.",
+        "salidas": "Qué puedes hacer",
+        "perfil": {
+          "title": "Mejora tu perfil crediticio",
+          "desc": "Ponerte al día con tus obligaciones y bajar tu nivel de endeudamiento cambia el resultado más rápido de lo que parece."
+        },
+        "reintentar": {
+          "title": "Vuelve a intentarlo más adelante",
+          "desc": "Esto no es definitivo. Las aseguradoras vuelven a mirar tu situación cada vez que te estudias."
+        },
+        "tercero": {
+          "title": "Alguien puede postularse por ti",
+          "desc": "Quien firma no tiene que ser quien vive en el inmueble. Un familiar o un amigo puede postularse y tú vives ahí: es legal y es como funciona más de la mitad de los arriendos en Colombia."
+        }
+      },
+      "proceso": {
+        "title": "Estamos consultando a las aseguradoras",
+        "desc": "Le preguntamos a todas con las que trabajamos, no solo a una. Puede tomar unos minutos.",
+        "liberar": "Te avisamos por correo apenas tengamos respuesta — puedes cerrar esta página tranquilo."
+      },
+      "vacio": {
+        "title": "Todavía no tienes una aprobación",
+        "desc": "Con una aprobación sabes hasta cuánto puedes arrendar, y te postulas a todas las propiedades que quieras con el mismo estudio.",
+        "cta": "Conoce hasta cuánto te arrendamos",
+        "comoFunciona": "Cómo funciona"
+      },
+      "pasos": {
+        "uno": {
+          "title": "Te estudiamos",
+          "desc": "Consultamos a todas las aseguradoras con las que trabajamos, no solo a una. Así tienes más chances de salir aprobado."
+        },
+        "dos": {
+          "title": "Eliges",
+          "desc": "Te mostramos las propiedades que van con tu tope aprobado, para que no pierdas tiempo con las que no aplican."
+        },
+        "tres": {
+          "title": "El propietario decide",
+          "desc": "Te postulas a las que quieras con el mismo estudio, sin volver a pagar."
+        }
+      }
     }
   }
 }

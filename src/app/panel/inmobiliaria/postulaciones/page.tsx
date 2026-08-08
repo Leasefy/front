@@ -31,7 +31,9 @@ const STATUS_CONFIG: Record<
   DRAFT:           { label: 'Borrador',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
   SUBMITTED:       { label: 'Postulado',         bg: 'bg-primary-soft',   text: 'text-primary' },
   UNDER_REVIEW:    { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
-  PREAPPROVED:     { label: 'Pre-aprobado',      bg: 'bg-surface-muted',  text: 'text-fg-muted' },
+  // "Pre-aprobado" no significa nada para quien lo lee (ver docs/VOCABULARIO.md):
+  // mientras el backend siga emitiendo PREAPPROVED, se muestra como "En revisión".
+  PREAPPROVED:     { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
   APPROVED:        { label: 'Aprobado',          bg: 'bg-success-soft',   text: 'text-success' },
   REJECTED:        { label: 'Rechazado',         bg: 'bg-danger-soft',    text: 'text-danger' },
   NEEDS_INFO:      { label: 'Pide info',         bg: 'bg-warning-soft',   text: 'text-warning' },

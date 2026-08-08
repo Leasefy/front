@@ -27,7 +27,9 @@ const STATUS_CONFIG: Record<
   DRAFT:           { label: 'Borrador',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
   SUBMITTED:       { label: 'Postulado',         bg: 'bg-primary-soft',   text: 'text-primary' },
   UNDER_REVIEW:    { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
-  PREAPPROVED:     { label: 'Pre-aprobado',      bg: 'bg-surface-muted',  text: 'text-fg-muted' },
+  // "Pre-aprobado" no significa nada para quien lo lee (ver docs/VOCABULARIO.md):
+  // mientras el backend siga emitiendo PREAPPROVED, se muestra como "En revisión".
+  PREAPPROVED:     { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
   APPROVED:        { label: 'Aprobado',          bg: 'bg-success-soft',   text: 'text-success' },
   REJECTED:        { label: 'Rechazado',         bg: 'bg-danger-soft',    text: 'text-danger' },
   NEEDS_INFO:      { label: 'Pide info',         bg: 'bg-warning-soft',   text: 'text-warning' },
@@ -384,10 +386,12 @@ function CandidatosContent() {
     await fetchData();
   }, [actionModal, fetchData]);
 
-  // Stats
-  const activeCount     = candidates.filter((c) => c.status === 'SUBMITTED' || c.status === 'UNDER_REVIEW').length;
-  const preapprovedCount = candidates.filter((c) => c.status === 'PREAPPROVED').length;
-  const approvedCount   = candidates.filter((c) => c.status === 'APPROVED').length;
+  // Stats — solo dos destinos posibles: en revisión o aprobado (docs/VOCABULARIO.md).
+  // PREAPPROVED cuenta como "en revisión": no es un estado que el usuario deba distinguir.
+  const activeCount   = candidates.filter(
+    (c) => c.status === 'SUBMITTED' || c.status === 'UNDER_REVIEW' || c.status === 'PREAPPROVED',
+  ).length;
+  const approvedCount = candidates.filter((c) => c.status === 'APPROVED').length;
 
   // Solo bloquea la vista en el primer load — los auto-refresh son silenciosos.
   if (isLoading && !property) {
@@ -429,9 +433,8 @@ function CandidatosContent() {
 
       {/* Stats */}
       {candidates.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <CandidateStatTile value={activeCount} label="En revisión" tone="info" />
-          <CandidateStatTile value={preapprovedCount} label="Pre-aprobados" tone="info" />
           <CandidateStatTile value={approvedCount} label="Aprobados" tone="ok" />
         </div>
       )}

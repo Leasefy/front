@@ -169,7 +169,7 @@ export function MfaSetupSection() {
       setFactorId(currentEnroll.factorId);
       setEnrollData(null);
       setCode('');
-      toast.success('Autenticacion de dos factores activada');
+      toast.success('Autenticación de dos factores activada');
     } catch (err) {
       console.error('[MFA] Verify error:', err);
       const msg = (err as Error).message || '';
@@ -209,7 +209,7 @@ export function MfaSetupSection() {
       setState('idle');
       setFactorId(null);
       setShowDisableModal(false);
-      toast.success('Autenticacion de dos factores desactivada');
+      toast.success('Autenticación de dos factores desactivada');
     } catch (err) {
       toast.error((err as Error).message || 'Error al desactivar 2FA');
     } finally {
@@ -232,7 +232,7 @@ export function MfaSetupSection() {
             <ShieldCheck className="w-5 h-5 text-fg-muted" />
           </div>
           <div>
-            <p className="text-sm font-medium text-fg">Autenticacion de dos factores</p>
+            <p className="text-sm font-medium text-fg">Autenticación de dos factores</p>
             <p className="text-xs text-fg-subtle">Cargando...</p>
           </div>
         </div>
@@ -251,7 +251,7 @@ export function MfaSetupSection() {
               <ShieldCheck className="w-5 h-5 text-success" />
             </div>
             <div>
-              <p className="text-sm font-medium text-fg">Autenticacion de dos factores</p>
+              <p className="text-sm font-medium text-fg">Autenticación de dos factores</p>
               <div className="flex items-center gap-2 mt-0.5">
                 <Badge variant="success">
                   <Check className="w-3 h-3" />
@@ -412,7 +412,7 @@ export function MfaSetupSection() {
           <ShieldCheck className="w-5 h-5 text-fg-muted" />
         </div>
         <div>
-          <p className="text-sm font-medium text-fg">Autenticacion de dos factores</p>
+          <p className="text-sm font-medium text-fg">Autenticación de dos factores</p>
           <p className="text-xs text-fg-subtle">Capa extra de seguridad para tu cuenta</p>
         </div>
       </div>

@@ -120,7 +120,7 @@ export default function MfaVerifyPage() {
               Verificacion de seguridad
             </h1>
             <p className="text-sm text-fg-muted">
-              Ingresa el codigo de 6 digitos de tu app de autenticacion
+              Ingresa el código de 6 dígitos de tu app de autenticación
             </p>
           </div>
 

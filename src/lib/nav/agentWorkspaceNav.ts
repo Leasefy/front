@@ -102,7 +102,8 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.cobranzaReportesPropietarios', href: `${AI}/cobranza/reportes-propietarios`, icon: Files, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.analitica', href: `${AI}/cobranza/analitica`, icon: ChartLineUp, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaResultados', href: `${AI}/cobranza/resultados`, icon: Trophy, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaPlaybooks', href: `${AI}/cobranza/plantillas`, icon: FileText, module: 'cobranza' },
+      // OCULTO — «Playbooks» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPlaybooks', href: `${AI}/cobranza/plantillas`, icon: FileText, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.compliance', href: `${AI}/cobranza/compliance`, icon: ClipboardText, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.arco', href: `${AI}/cobranza/arco`, icon: ShieldCheck, module: 'cobranza' },
       // OCULTO — «Equipo IA» (ver nota al pie del archivo).
@@ -234,6 +235,27 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
  * claves i18n intactas: para reactivarlas basta descomentar las 4 líneas y el
  * import de `UsersThree`. No quedan otros enlaces a esas rutas en la app, así
  * que sólo se alcanzan escribiendo la URL a mano.
+ */
+
+/**
+ * NOTA — «Playbooks» oculto (2026-08-08, decisión de Nico).
+ *
+ * `.../cobranza/plantillas` era un editor de los guiones del agente: lo que
+ * dice en la llamada, las plantillas de WhatsApp y las respuestas a objeciones.
+ *
+ * No va, y no es por un bug: **qué dice el agente lo definimos nosotros.** No es
+ * una perilla de la inmobiliaria. Lo único que la inmobiliaria configura son los
+ * acuerdos que el agente puede ofrecer —descuento máximo, meses de plan, pago
+ * mínimo, planes permitidos, camino de dificultad, intentos de negociación—, y
+ * eso ya vive en `.../cobranza/configuracion` §Negociación, cableado al endpoint
+ * que el agente lee de verdad (`GET/PATCH /api/agency/:id/policy`).
+ *
+ * Además la pantalla nunca pudo cumplir lo que ofrecía: `agent.script_templates`
+ * está vacía, nada la llena y nada la lee en runtime — los guiones vivos son
+ * datos en código (`agent/src/cartera/scripts/templates/`).
+ *
+ * Se deja la ruta y su i18n en su sitio (sólo alcanzable escribiendo la URL).
+ * Si algún día el runtime pasa a leer la tabla, descomentar la línea y listo.
  */
 
 /** Find the agent workspace whose basePath contains `pathname` (or null). */

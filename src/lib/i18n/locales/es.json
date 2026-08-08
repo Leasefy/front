@@ -9094,6 +9094,144 @@
           "desc": "Te postulas a las que quieras con el mismo estudio, sin volver a pagar."
         }
       }
+    },
+    "postularse": {
+      "titulo": "Qué pasa cuando te postulas",
+      "intro": "Estas propiedades están dentro de lo que las aseguradoras te aprobaron, así que puedes tomarlas. Postularte es el primer paso de un proceso, no el final.",
+      "pasos": {
+        "postulas": {
+          "titulo": "Te postulas",
+          "texto": "Puedes postularte a varias propiedades al tiempo con la misma aprobación, sin volver a consultar ni a pagar."
+        },
+        "comparan": {
+          "titulo": "Te comparan con otros candidatos",
+          "texto": "Postularte no reserva la propiedad ni te la entrega. La inmobiliaria revisa tu postulación junto con las demás."
+        },
+        "respuesta": {
+          "titulo": "Te dan una respuesta",
+          "texto": "Te avisamos acá y por correo si te eligieron. Si no te eligieron también te lo decimos, no te quedas esperando."
+        },
+        "firma": {
+          "titulo": "Firmas en línea",
+          "texto": "Si te eligen, el contrato se firma desde acá. No tienes que ir a ninguna oficina."
+        }
+      }
+    },
+    "tope": {
+      "vencida": "Tu aprobación venció",
+      "sinTope": "Todavía no sabes hasta cuánto puedes arrendar",
+      "invita": "Con tu aprobación te mostramos solo las propiedades que van contigo.",
+      "cta": {
+        "renovar": "Renovar",
+        "conocer": "Conoce tu tope"
+      },
+      "aprobadoHasta": "Estás aprobado hasta",
+      "aprobadoPara": "Estás aprobado para",
+      "calculando": "Estamos calculando tu tope",
+      "condicionada": "Con condiciones por resolver",
+      "venceEn": "Vence en",
+      "dias": "días",
+      "venceManana": "Vence mañana",
+      "venceHoy": "Vence hoy",
+      "overlay": {
+        "sobreTope": "Por encima de tu tope",
+        "sobreConsultado": "Por encima de lo que consultaste",
+        "consultaste": "Consultaste",
+        "asesorRevisa": "un asesor puede revisarlo"
+      },
+      "porMes": "/mes"
+    },
+    "resultado": {
+      "aprobado": {
+        "titulo": "Estás aprobado",
+        "bajada": "Las aseguradoras respaldan tu arriendo.",
+        "sigue1": "Ya te puedes postular a las propiedades que te gusten.",
+        "sigue2": "Tu aprobación sirve para varias: no vuelves a consultar ni a pagar.",
+        "sigue3ConSesion": "En el catálogo te marcamos lo que va contigo.",
+        "sigue3SinSesion": "Crea tu cuenta para guardarla y postularte."
+      },
+      "condiciones": {
+        "titulo": "Te aprueban, con condiciones",
+        "bajada": "Es un sí. Solo falta resolver un detalle con la aseguradora.",
+        "queSignifica": "Qué suele significar",
+        "queSignificaTexto": "Normalmente piden un codeudor o un depósito adicional. Cambia según la aseguradora, y un asesor te dice cuál te conviene más.",
+        "sigue1": "Puedes seguir viendo propiedades y postularte.",
+        "sigue2": "Un asesor te contacta para cerrar la condición.",
+        "sigue3ConSesion": "Tu aprobación queda guardada en tu cuenta.",
+        "sigue3SinSesion": "Crea tu cuenta para no perder esta aprobación."
+      },
+      "rechazo": {
+        "titulo": "Por ahora no podemos afianzarte",
+        "bajada": "Las aseguradoras que consultamos no te respaldan en este momento. No es definitivo.",
+        "salidas": "Lo que sí puedes hacer",
+        "otro": {
+          "titulo": "Que alguien se postule por ti",
+          "texto": "Es más común de lo que parece: muchos arriendos los firma un familiar. Si alguien cercano queda aprobado, esa persona es la titular y tú vives ahí."
+        },
+        "codeudor": {
+          "titulo": "Presentarte con un codeudor",
+          "texto": "Con un codeudor cambia el análisis. Un asesor puede revisar tu caso."
+        },
+        "seguir": {
+          "titulo": "Seguir viendo propiedades",
+          "texto": "Puedes explorar el catálogo completo mientras resuelves lo anterior."
+        },
+        "cta": "Ver propiedades disponibles"
+      },
+      "cifra": {
+        "hasta": "Te afianzamos hasta",
+        "hastaNota": "Con este tope te mostramos las propiedades que van contigo.",
+        "para": "Aprobado para un canon de",
+        "paraNota": "Es el canon que consultaste. Si te interesa algo más caro, un asesor lo revisa.",
+        "calculando": "Estamos calculando hasta cuánto te afianzamos. Te lo confirmamos en un momento."
+      },
+      "aseguradoras": {
+        "una": "Una aseguradora te respalda",
+        "varias": "aseguradoras te respaldan",
+        "condicional": "con condiciones"
+      },
+      "queSigue": "Qué sigue",
+      "verCatalogo": "Ver mi catálogo",
+      "cuentaNota": "Creamos tu cuenta con lo que ya nos diste. Solo faltan tres datos.",
+      "otraPersona": "Consultar otra persona",
+      "otraConsulta": "Hacer otra consulta",
+      "demo": {
+        "titulo": "Resultado de ejemplo.",
+        "texto": "El servicio de aprobación todavía no está publicado, así que estos datos no son reales y no se guardan."
+      },
+      "notaAgencia": "Estás viendo el resultado como lo ve el candidato. Puedes enviarle este mismo link a cualquier otra persona.",
+      "porMes": "/mes"
+    },
+    "crearCuenta": {
+      "titulo": "Crea tu cuenta para entrar",
+      "bajada": "Tu aprobación queda guardada y adentro te mostramos solo las propiedades que puedes tomar. Te faltan tres datos.",
+      "yaTenemos": "Esto ya lo tenemos",
+      "celular": "Celular",
+      "cedula": "Cédula",
+      "ciudad": "Ciudad",
+      "nombre": "Nombre",
+      "correo": "Correo",
+      "password": "Contraseña",
+      "ph": {
+        "nombre": "Ej: María Restrepo",
+        "correo": "Ej: maria@correo.com",
+        "password": "Mínimo 6 caracteres"
+      },
+      "cta": "Crear cuenta y ver mi catálogo",
+      "volver": "Volver al resultado",
+      "err": {
+        "nombre": "Escribe tu nombre.",
+        "email": "Escribe un correo válido.",
+        "password": "Mínimo 6 caracteres.",
+        "existe": "Ya existe una cuenta con este correo. Inicia sesión y tu aprobación te espera adentro.",
+        "generico": "No pudimos crear tu cuenta. Intenta de nuevo."
+      },
+      "confirma": {
+        "titulo": "Confirma tu correo",
+        "parte1": "Te enviamos un enlace a",
+        "parte2": "Ábrelo y entras directo a tu catálogo.",
+        "guardada": "Tu aprobación ya quedó guardada. No tienes que volver a consultarla ni a pagar."
+      }
     }
   }
 }

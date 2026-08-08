@@ -3,11 +3,20 @@
  * copy "para que suene mejor".
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react-dom/test-utils'
 
 import { QueSignificaPostularse } from './QueSignificaPostularse'
+
+
+// Con `t` devolviendo la clave, `useTf` cae al respaldo — que es el español
+// real de la pantalla. Así los tests siguen leyendo la copy que ve el usuario,
+// no un identificador.
+vi.mock('@/lib/i18n', () => ({
+  useI18n: () => ({ t: (key: string) => key, locale: 'es' }),
+  useOptionalI18n: () => ({ t: (key: string) => key, locale: 'es' }),
+}))
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 

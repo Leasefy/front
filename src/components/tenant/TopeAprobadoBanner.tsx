@@ -16,6 +16,7 @@ import Link from 'next/link'
 import { Hourglass, SealCheck } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
+import { useTf } from '@/lib/i18n/use-tf'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import {
@@ -26,6 +27,8 @@ import {
   type EstadoVigencia,
   type Referencia,
 } from '@/lib/api/aprobacion.service'
+
+const NS = 'inquilino.tope'
 
 export function TopeAprobadoBanner({
   aprobacion,
@@ -46,6 +49,7 @@ export function TopeAprobadoBanner({
    */
   detalle?: { href: string; label: string }
 }) {
+  const tf = useTf()
   // Sin aprobación: la banda invita, no regaña.
   if (!aprobacion || !vigente) {
     return (
@@ -58,17 +62,19 @@ export function TopeAprobadoBanner({
         <div>
           <p className="text-sm font-medium text-fg">
             {aprobacion?.estado === 'aprobado'
-              ? 'Tu aprobación venció'
-              : 'Todavía no sabes hasta cuánto puedes arrendar'}
+              ? tf(`${NS}.vencida`, 'Tu aprobación venció')
+              : tf(`${NS}.sinTope`, 'Todavía no sabes hasta cuánto puedes arrendar')}
           </p>
           <p className="text-sm text-fg-muted mt-0.5">
-            Con tu aprobación te mostramos solo las propiedades que van contigo.
+            {tf(`${NS}.invita`, 'Con tu aprobación te mostramos solo las propiedades que van contigo.')}
           </p>
         </div>
         <Button asChild className="shrink-0">
           {/* El Button ya trae su propia flecha. */}
           <Link href="/aprobacion">
-            {aprobacion?.estado === 'aprobado' ? 'Renovar' : 'Conoce tu tope'}
+            {aprobacion?.estado === 'aprobado'
+              ? tf(`${NS}.cta.renovar`, 'Renovar')
+              : tf(`${NS}.cta.conocer`, 'Conoce tu tope')}
           </Link>
         </Button>
       </div>
@@ -96,19 +102,23 @@ export function TopeAprobadoBanner({
               ("para"). Decir "hasta" con el segundo le pondría a la persona un
               límite que ninguna aseguradora calculó. */}
           <p className="text-sm text-fg-muted">
-            {ref?.tipo === 'tope' ? 'Estás aprobado hasta' : 'Estás aprobado para'}
+            {ref?.tipo === 'tope'
+              ? tf(`${NS}.aprobadoHasta`, 'Estás aprobado hasta')
+              : tf(`${NS}.aprobadoPara`, 'Estás aprobado para')}
           </p>
           {ref ? (
             <p className="font-mono tabular-nums text-xl font-semibold text-fg leading-tight">
               {formatCurrency(ref.valorCop)}
-              <span className="text-sm font-sans font-normal text-fg-muted"> /mes</span>
+              <span className="text-sm font-sans font-normal text-fg-muted"> {tf(`${NS}.porMes`, '/mes')}</span>
             </p>
           ) : (
             /* Aprobado sin número: se dice, no se inventa. */
-            <p className="text-sm text-fg">Estamos calculando tu tope</p>
+            <p className="text-sm text-fg">{tf(`${NS}.calculando`, 'Estamos calculando tu tope')}</p>
           )}
           {aprobacion.condicionada && (
-            <p className="text-xs text-warning mt-0.5">Con condiciones por resolver</p>
+            <p className="text-xs text-warning mt-0.5">
+              {tf(`${NS}.condicionada`, 'Con condiciones por resolver')}
+            </p>
           )}
         </div>
       </div>
@@ -124,7 +134,11 @@ export function TopeAprobadoBanner({
             )}
           >
             <Hourglass className="w-3.5 h-3.5" aria-hidden="true" />
-            {dias > 1 ? `Vence en ${dias} días` : dias === 1 ? 'Vence mañana' : 'Vence hoy'}
+            {dias > 1
+              ? `${tf(`${NS}.venceEn`, 'Vence en')} ${dias} ${tf(`${NS}.dias`, 'días')}`
+              : dias === 1
+                ? tf(`${NS}.venceManana`, 'Vence mañana')
+                : tf(`${NS}.venceHoy`, 'Vence hoy')}
           </span>
         )}
         <Button asChild variant="secondary" hideArrow>
@@ -145,6 +159,7 @@ export function TopeAprobadoBanner({
  * no descartándola.
  */
 export function SobreTopeOverlay({ referencia }: { referencia: Referencia | null }) {
+  const tf = useTf()
   const esTope = referencia?.tipo === 'tope'
 
   return (
@@ -152,13 +167,15 @@ export function SobreTopeOverlay({ referencia }: { referencia: Referencia | null
     // está prohibido en Cadence (DESIGN.md §1 y §9). La marca se lee igual.
     <div className="absolute inset-x-0 bottom-0 z-10 rounded-b-lg border-t border-border bg-surface-muted px-3 py-2">
       <p className="text-xs font-medium text-fg">
-        {esTope ? 'Por encima de tu tope' : 'Por encima de lo que consultaste'}
+        {esTope
+          ? tf(`${NS}.overlay.sobreTope`, 'Por encima de tu tope')
+          : tf(`${NS}.overlay.sobreConsultado`, 'Por encima de lo que consultaste')}
       </p>
       {referencia && (
         <p className="text-xs text-fg-muted">
-          {esTope ? 'Estás aprobado hasta ' : 'Consultaste '}
+          {esTope ? tf(`${NS}.aprobadoHasta`, 'Estás aprobado hasta') + ' ' : tf(`${NS}.overlay.consultaste`, 'Consultaste') + ' '}
           <span className="font-mono tabular-nums">{formatCurrency(referencia.valorCop)}</span>
-          {!esTope && ' — un asesor puede revisarlo'}
+          {!esTope && ` — ${tf(`${NS}.overlay.asesorRevisa`, 'un asesor puede revisarlo')}`}
         </p>
       )}
     </div>

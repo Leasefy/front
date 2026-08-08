@@ -9093,6 +9093,144 @@
           "desc": "You apply to as many as you want with the same assessment, without paying again."
         }
       }
+    },
+    "postularse": {
+      "titulo": "What happens when you apply",
+      "intro": "These properties are within what the insurers approved for you, so you can take them. Applying is the first step of a process, not the end.",
+      "pasos": {
+        "postulas": {
+          "titulo": "You apply",
+          "texto": "You can apply to several properties at once with the same approval, without checking again or paying again."
+        },
+        "comparan": {
+          "titulo": "You're compared with other candidates",
+          "texto": "Applying does not reserve the property or hand it to you. The agency reviews your application alongside the others."
+        },
+        "respuesta": {
+          "titulo": "You get an answer",
+          "texto": "We'll tell you here and by email if you were chosen. If you weren't, we'll tell you too — you won't be left waiting."
+        },
+        "firma": {
+          "titulo": "You sign online",
+          "texto": "If you're chosen, the contract is signed from here. You don't have to go to any office."
+        }
+      }
+    },
+    "tope": {
+      "vencida": "Your approval expired",
+      "sinTope": "You don't know yet how much you can rent",
+      "invita": "With your approval we show you only the properties that work for you.",
+      "cta": {
+        "renovar": "Renew",
+        "conocer": "Find out your cap"
+      },
+      "aprobadoHasta": "You're approved up to",
+      "aprobadoPara": "You're approved for",
+      "calculando": "We're calculating your cap",
+      "condicionada": "Conditions still to resolve",
+      "venceEn": "Expires in",
+      "dias": "days",
+      "venceManana": "Expires tomorrow",
+      "venceHoy": "Expires today",
+      "overlay": {
+        "sobreTope": "Above your cap",
+        "sobreConsultado": "Above what you asked about",
+        "consultaste": "You asked about",
+        "asesorRevisa": "an advisor can review it"
+      },
+      "porMes": "/mo"
+    },
+    "resultado": {
+      "aprobado": {
+        "titulo": "You're approved",
+        "bajada": "The insurers back your lease.",
+        "sigue1": "You can now apply to the properties you like.",
+        "sigue2": "Your approval works for several: no checking again, no paying again.",
+        "sigue3ConSesion": "In the catalog we mark what works for you.",
+        "sigue3SinSesion": "Create your account to save it and apply."
+      },
+      "condiciones": {
+        "titulo": "You're approved, with conditions",
+        "bajada": "It's a yes. There's just one detail to settle with the insurer.",
+        "queSignifica": "What this usually means",
+        "queSignificaTexto": "They usually ask for a co-signer or an extra deposit. It varies by insurer, and an advisor will tell you which suits you best.",
+        "sigue1": "You can keep browsing properties and apply.",
+        "sigue2": "An advisor will contact you to settle the condition.",
+        "sigue3ConSesion": "Your approval is saved to your account.",
+        "sigue3SinSesion": "Create your account so you don't lose this approval."
+      },
+      "rechazo": {
+        "titulo": "We can't back you right now",
+        "bajada": "The insurers we checked don't back you at this time. It's not final.",
+        "salidas": "What you can do",
+        "otro": {
+          "titulo": "Have someone apply for you",
+          "texto": "It's more common than it seems: many leases are signed by a family member. If someone close to you is approved, they're the holder and you live there."
+        },
+        "codeudor": {
+          "titulo": "Apply with a co-signer",
+          "texto": "A co-signer changes the analysis. An advisor can review your case."
+        },
+        "seguir": {
+          "titulo": "Keep browsing properties",
+          "texto": "You can explore the full catalog while you sort out the above."
+        },
+        "cta": "See available properties"
+      },
+      "cifra": {
+        "hasta": "We back you up to",
+        "hastaNota": "With this cap we show you the properties that work for you.",
+        "para": "Approved for a rent of",
+        "paraNota": "That's the rent you asked about. If something pricier interests you, an advisor will review it.",
+        "calculando": "We're calculating how much we can back. We'll confirm shortly."
+      },
+      "aseguradoras": {
+        "una": "One insurer backs you",
+        "varias": "insurers back you",
+        "condicional": "with conditions"
+      },
+      "queSigue": "What's next",
+      "verCatalogo": "See my catalog",
+      "cuentaNota": "We create your account with what you already gave us. Only three details left.",
+      "otraPersona": "Check another person",
+      "otraConsulta": "Make another check",
+      "demo": {
+        "titulo": "Sample result.",
+        "texto": "The approval service isn't published yet, so this data isn't real and isn't saved."
+      },
+      "notaAgencia": "You're seeing the result as the candidate sees it. You can send this same link to anyone else.",
+      "porMes": "/mo"
+    },
+    "crearCuenta": {
+      "titulo": "Create your account to get in",
+      "bajada": "Your approval is saved, and inside we show you only the properties you can take. Three details left.",
+      "yaTenemos": "We already have this",
+      "celular": "Mobile",
+      "cedula": "ID number",
+      "ciudad": "City",
+      "nombre": "Name",
+      "correo": "Email",
+      "password": "Password",
+      "ph": {
+        "nombre": "e.g. María Restrepo",
+        "correo": "e.g. maria@email.com",
+        "password": "At least 6 characters"
+      },
+      "cta": "Create account and see my catalog",
+      "volver": "Back to the result",
+      "err": {
+        "nombre": "Enter your name.",
+        "email": "Enter a valid email.",
+        "password": "At least 6 characters.",
+        "existe": "An account with this email already exists. Sign in and your approval is waiting inside.",
+        "generico": "We couldn't create your account. Please try again."
+      },
+      "confirma": {
+        "titulo": "Confirm your email",
+        "parte1": "We sent a link to",
+        "parte2": "Open it and you'll go straight to your catalog.",
+        "guardada": "Your approval is already saved. You don't have to check again or pay again."
+      }
     }
   }
 }

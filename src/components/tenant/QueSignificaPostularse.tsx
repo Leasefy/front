@@ -25,28 +25,35 @@
 
 import { Buildings, FileText, PaperPlaneTilt, UsersThree } from '@phosphor-icons/react'
 
+import { useTf } from '@/lib/i18n/use-tf'
 import { cn } from '@/lib/utils'
+
+const NS = 'inquilino.postularse'
 
 const PASOS = [
   {
+    clave: 'postulas',
     icono: PaperPlaneTilt,
     titulo: 'Te postulas',
     texto:
       'Puedes postularte a varias propiedades al tiempo con la misma aprobación, sin volver a consultar ni a pagar.',
   },
   {
+    clave: 'comparan',
     icono: UsersThree,
     titulo: 'Te comparan con otros candidatos',
     texto:
       'Postularte no reserva la propiedad ni te la entrega. La inmobiliaria revisa tu postulación junto con las demás.',
   },
   {
+    clave: 'respuesta',
     icono: Buildings,
     titulo: 'Te dan una respuesta',
     texto:
       'Te avisamos acá y por correo si te eligieron. Si no te eligieron también te lo decimos, no te quedas esperando.',
   },
   {
+    clave: 'firma',
     icono: FileText,
     titulo: 'Firmas en línea',
     texto: 'Si te eligen, el contrato se firma desde acá. No tienes que ir a ninguna oficina.',
@@ -54,22 +61,25 @@ const PASOS = [
 ]
 
 export function QueSignificaPostularse({ className }: { className?: string }) {
+  const tf = useTf()
   return (
     <section
       className={cn('rounded-lg border border-border bg-surface p-5', className)}
       aria-labelledby="que-significa-postularse"
     >
       <h2 id="que-significa-postularse" className="text-sm font-medium text-fg">
-        Qué pasa cuando te postulas
+        {tf(`${NS}.titulo`, 'Qué pasa cuando te postulas')}
       </h2>
       <p className="text-sm text-fg-muted mt-1 leading-relaxed">
-        Estas propiedades están dentro de lo que las aseguradoras te aprobaron, así que puedes
-        tomarlas. Postularte es el primer paso de un proceso, no el final.
+        {tf(
+          `${NS}.intro`,
+          'Estas propiedades están dentro de lo que las aseguradoras te aprobaron, así que puedes tomarlas. Postularte es el primer paso de un proceso, no el final.',
+        )}
       </p>
 
       <ol className="mt-4 grid gap-4 sm:grid-cols-2">
-        {PASOS.map(({ icono: Icono, titulo, texto }, i) => (
-          <li key={titulo} className="flex items-start gap-3">
+        {PASOS.map(({ clave, icono: Icono, titulo, texto }, i) => (
+          <li key={clave} className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-md bg-surface-muted flex items-center justify-center shrink-0">
               <Icono className="w-5 h-5 text-fg" aria-hidden="true" />
             </div>
@@ -78,9 +88,9 @@ export function QueSignificaPostularse({ className }: { className?: string }) {
                 <span className="font-mono tabular-nums text-fg-muted mr-1.5">
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                {titulo}
+                {tf(`${NS}.pasos.${clave}.titulo`, titulo)}
               </p>
-              <p className="text-sm text-fg-muted mt-0.5 leading-relaxed">{texto}</p>
+              <p className="text-sm text-fg-muted mt-0.5 leading-relaxed">{tf(`${NS}.pasos.${clave}.texto`, texto)}</p>
             </div>
           </li>
         ))}

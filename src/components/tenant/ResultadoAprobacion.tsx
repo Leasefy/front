@@ -32,6 +32,7 @@ import {
 } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
+import { useTf, type Tf } from '@/lib/i18n/use-tf'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -54,6 +55,8 @@ export interface ResultadoAprobacionProps {
   onEntrar: () => void
 }
 
+const NS = 'inquilino.resultado'
+
 export function ResultadoAprobacion({
   result,
   canonConsultadoCop,
@@ -62,6 +65,7 @@ export function ResultadoAprobacion({
   onNuevaConsulta,
   onEntrar,
 }: ResultadoAprobacionProps) {
+  const tf = useTf()
   // Con sesión el catálogo propio ya existe. Sin ella, el camino pasa por crear
   // la cuenta — nunca por el catálogo público, que no sabe nada de su aprobación.
   const rutaCatalogo = conSesion ? '/inquilino/para-ti' : null
@@ -70,6 +74,7 @@ export function ResultadoAprobacion({
     <div className="space-y-4">
       {result.asegurabilidad === 'yes' && (
         <Aprobado
+          tf={tf}
           result={result}
           canonConsultadoCop={canonConsultadoCop}
           rutaCatalogo={rutaCatalogo}
@@ -79,6 +84,7 @@ export function ResultadoAprobacion({
       )}
       {result.asegurabilidad === 'partial' && (
         <ConCondiciones
+          tf={tf}
           result={result}
           canonConsultadoCop={canonConsultadoCop}
           rutaCatalogo={rutaCatalogo}
@@ -86,20 +92,22 @@ export function ResultadoAprobacion({
           conSesion={conSesion}
         />
       )}
-      {result.asegurabilidad === 'no' && <NoAprobado rutaCatalogo={rutaCatalogo} />}
+      {result.asegurabilidad === 'no' && <NoAprobado tf={tf} rutaCatalogo={rutaCatalogo} />}
 
       {/* `stubMode` viene del contrato del agente y significa "esto no es real".
           Va abajo y visible: un resultado de demostración que se lea como una
           aprobación de verdad es peor que no mostrar nada. */}
-      {result.stubMode && <AvisoDemo />}
+      {result.stubMode && <AvisoDemo tf={tf} />}
 
-      {esAgencia && <NotaAgencia />}
+      {esAgencia && <NotaAgencia tf={tf} />}
 
       {/* Para la inmobiliaria esto es "el siguiente candidato"; para quien se
           acaba de consultar a sí mismo, es corregir un dato. */}
       <div className="flex justify-center">
         <Button variant="link" onClick={onNuevaConsulta} hideArrow>
-          {esAgencia ? 'Consultar otra persona' : 'Hacer otra consulta'}
+          {esAgencia
+            ? tf(`${NS}.otraPersona`, 'Consultar otra persona')
+            : tf(`${NS}.otraConsulta`, 'Hacer otra consulta')}
         </Button>
       </div>
     </div>
@@ -111,12 +119,14 @@ export function ResultadoAprobacion({
 /* ------------------------------------------------------------------ */
 
 function Aprobado({
+  tf,
   result,
   canonConsultadoCop,
   rutaCatalogo,
   onEntrar,
   conSesion,
 }: {
+  tf: Tf
   result: PreApprovalResult
   canonConsultadoCop: number | null
   rutaCatalogo: string | null
@@ -129,28 +139,31 @@ function Aprobado({
         <Encabezado
           icono={<SealCheck className="w-6 h-6 text-success" weight="fill" aria-hidden="true" />}
           fondo="bg-success-soft"
-          titulo="Estás aprobado"
-          bajada="Las aseguradoras respaldan tu arriendo."
+          titulo={tf(`${NS}.aprobado.titulo`, 'Estás aprobado')}
+          bajada={tf(`${NS}.aprobado.bajada`, 'Las aseguradoras respaldan tu arriendo.')}
         />
 
         <Cifra
+          tf={tf}
           maxAfianzableCop={result.maxAfianzableCop}
           canonConsultadoCop={canonConsultadoCop}
         />
 
-        <Aseguradoras result={result} />
+        <Aseguradoras tf={tf} result={result} />
 
         <QueSigue
+          tf={tf}
           items={[
-            'Ya te puedes postular a las propiedades que te gusten.',
-            'Tu aprobación sirve para varias: no vuelves a consultar ni a pagar.',
+            tf(`${NS}.aprobado.sigue1`, 'Ya te puedes postular a las propiedades que te gusten.'),
+            tf(`${NS}.aprobado.sigue2`, 'Tu aprobación sirve para varias: no vuelves a consultar ni a pagar.'),
             conSesion
-              ? 'En el catálogo te marcamos lo que va contigo.'
-              : 'Crea tu cuenta para guardarla y postularte.',
+              ? tf(`${NS}.aprobado.sigue3ConSesion`, 'En el catálogo te marcamos lo que va contigo.')
+              : tf(`${NS}.aprobado.sigue3SinSesion`, 'Crea tu cuenta para guardarla y postularte.'),
           ]}
         />
 
         <EntrarAMiCatalogo
+          tf={tf}
           rutaCatalogo={rutaCatalogo}
           onEntrar={onEntrar}
           conSesion={conSesion}
@@ -165,12 +178,14 @@ function Aprobado({
 /* ------------------------------------------------------------------ */
 
 function ConCondiciones({
+  tf,
   result,
   canonConsultadoCop,
   rutaCatalogo,
   onEntrar,
   conSesion,
 }: {
+  tf: Tf
   result: PreApprovalResult
   canonConsultadoCop: number | null
   rutaCatalogo: string | null
@@ -183,11 +198,12 @@ function ConCondiciones({
         <Encabezado
           icono={<SealCheck className="w-6 h-6 text-warning" weight="fill" aria-hidden="true" />}
           fondo="bg-warning-soft"
-          titulo="Te aprueban, con condiciones"
-          bajada="Es un sí. Solo falta resolver un detalle con la aseguradora."
+          titulo={tf(`${NS}.condiciones.titulo`, 'Te aprueban, con condiciones')}
+          bajada={tf(`${NS}.condiciones.bajada`, 'Es un sí. Solo falta resolver un detalle con la aseguradora.')}
         />
 
         <Cifra
+          tf={tf}
           maxAfianzableCop={result.maxAfianzableCop}
           canonConsultadoCop={canonConsultadoCop}
         />
@@ -195,26 +211,32 @@ function ConCondiciones({
         {/* La palabra "condicional" no le dice nada a nadie. Acá se explica en
             los términos en los que la persona lo va a vivir. */}
         <div className="rounded-lg border border-border bg-surface-muted p-4">
-          <p className="text-sm font-medium text-fg">Qué suele significar</p>
+          <p className="text-sm font-medium text-fg">
+            {tf(`${NS}.condiciones.queSignifica`, 'Qué suele significar')}
+          </p>
           <p className="text-sm text-fg-muted mt-1 leading-relaxed">
-            Normalmente piden un codeudor o un depósito adicional. Cambia según la aseguradora,
-            y un asesor te dice cuál te conviene más.
+            {tf(
+              `${NS}.condiciones.queSignificaTexto`,
+              'Normalmente piden un codeudor o un depósito adicional. Cambia según la aseguradora, y un asesor te dice cuál te conviene más.',
+            )}
           </p>
         </div>
 
-        <Aseguradoras result={result} />
+        <Aseguradoras tf={tf} result={result} />
 
         <QueSigue
+          tf={tf}
           items={[
-            'Puedes seguir viendo propiedades y postularte.',
-            'Un asesor te contacta para cerrar la condición.',
+            tf(`${NS}.condiciones.sigue1`, 'Puedes seguir viendo propiedades y postularte.'),
+            tf(`${NS}.condiciones.sigue2`, 'Un asesor te contacta para cerrar la condición.'),
             conSesion
-              ? 'Tu aprobación queda guardada en tu cuenta.'
-              : 'Crea tu cuenta para no perder esta aprobación.',
+              ? tf(`${NS}.condiciones.sigue3ConSesion`, 'Tu aprobación queda guardada en tu cuenta.')
+              : tf(`${NS}.condiciones.sigue3SinSesion`, 'Crea tu cuenta para no perder esta aprobación.'),
           ]}
         />
 
         <EntrarAMiCatalogo
+          tf={tf}
           rutaCatalogo={rutaCatalogo}
           onEntrar={onEntrar}
           conSesion={conSesion}
@@ -235,34 +257,36 @@ function ConCondiciones({
  * reales, y la primera es la que más se usa en Colombia — que el titular sea
  * otra persona y ella viva ahí igual.
  */
-function NoAprobado({ rutaCatalogo }: { rutaCatalogo: string | null }) {
+function NoAprobado({ tf, rutaCatalogo }: { tf: Tf; rutaCatalogo: string | null }) {
   return (
     <Card>
       <CardContent className="pt-6 space-y-6">
         <Encabezado
           icono={<WarningCircle className="w-6 h-6 text-fg-muted" aria-hidden="true" />}
           fondo="bg-surface-muted"
-          titulo="Por ahora no podemos afianzarte"
-          bajada="Las aseguradoras que consultamos no te respaldan en este momento. No es definitivo."
+          titulo={tf(`${NS}.rechazo.titulo`, 'Por ahora no podemos afianzarte')}
+          bajada={tf(`${NS}.rechazo.bajada`, 'Las aseguradoras que consultamos no te respaldan en este momento. No es definitivo.')}
         />
 
         <div className="space-y-3">
-          <p className="text-sm font-medium text-fg">Lo que sí puedes hacer</p>
+          <p className="text-sm font-medium text-fg">
+            {tf(`${NS}.rechazo.salidas`, 'Lo que sí puedes hacer')}
+          </p>
 
           <Salida
             icono={<UsersThree className="w-5 h-5 text-fg" aria-hidden="true" />}
-            titulo="Que alguien se postule por ti"
-            texto="Es más común de lo que parece: muchos arriendos los firma un familiar. Si alguien cercano queda aprobado, esa persona es la titular y tú vives ahí."
+            titulo={tf(`${NS}.rechazo.otro.titulo`, 'Que alguien se postule por ti')}
+            texto={tf(`${NS}.rechazo.otro.texto`, 'Es más común de lo que parece: muchos arriendos los firma un familiar. Si alguien cercano queda aprobado, esa persona es la titular y tú vives ahí.')}
           />
           <Salida
             icono={<Checks className="w-5 h-5 text-fg" aria-hidden="true" />}
-            titulo="Presentarte con un codeudor"
-            texto="Con un codeudor cambia el análisis. Un asesor puede revisar tu caso."
+            titulo={tf(`${NS}.rechazo.codeudor.titulo`, 'Presentarte con un codeudor')}
+            texto={tf(`${NS}.rechazo.codeudor.texto`, 'Con un codeudor cambia el análisis. Un asesor puede revisar tu caso.')}
           />
           <Salida
             icono={<ArrowRight className="w-5 h-5 text-fg" aria-hidden="true" />}
-            titulo="Seguir viendo propiedades"
-            texto="Puedes explorar el catálogo completo mientras resuelves lo anterior."
+            titulo={tf(`${NS}.rechazo.seguir.titulo`, 'Seguir viendo propiedades')}
+            texto={tf(`${NS}.rechazo.seguir.texto`, 'Puedes explorar el catálogo completo mientras resuelves lo anterior.')}
           />
         </div>
 
@@ -270,7 +294,7 @@ function NoAprobado({ rutaCatalogo }: { rutaCatalogo: string | null }) {
             público le sirve igual, y obligarlo a registrarse después de un no
             sería cobrarle un peaje por una mala noticia. */}
         <Button asChild variant="secondary" className="w-full" hideArrow>
-          <Link href={rutaCatalogo ?? '/propiedades'}>Ver propiedades disponibles</Link>
+          <Link href={rutaCatalogo ?? '/propiedades'}>{tf(`${NS}.rechazo.cta`, 'Ver propiedades disponibles')}</Link>
         </Button>
       </CardContent>
     </Card>
@@ -290,10 +314,12 @@ function NoAprobado({ rutaCatalogo }: { rutaCatalogo: string | null }) {
  * crear la cuenta y aterrizar adentro.
  */
 function EntrarAMiCatalogo({
+  tf,
   rutaCatalogo,
   onEntrar,
   conSesion,
 }: {
+  tf: Tf
   rutaCatalogo: string | null
   onEntrar: () => void
   conSesion: boolean
@@ -301,7 +327,7 @@ function EntrarAMiCatalogo({
   if (conSesion && rutaCatalogo) {
     return (
       <Button asChild className="w-full">
-        <Link href={rutaCatalogo}>Ver mi catálogo</Link>
+        <Link href={rutaCatalogo}>{tf(`${NS}.verCatalogo`, 'Ver mi catálogo')}</Link>
       </Button>
     )
   }
@@ -309,10 +335,10 @@ function EntrarAMiCatalogo({
   return (
     <div className="space-y-2">
       <Button className="w-full" onClick={onEntrar}>
-        Ver mi catálogo
+        {tf(`${NS}.verCatalogo`, 'Ver mi catálogo')}
       </Button>
       <p className="text-xs text-fg-muted text-center">
-        Creamos tu cuenta con lo que ya nos diste. Solo faltan tres datos.
+        {tf(`${NS}.cuentaNota`, 'Creamos tu cuenta con lo que ya nos diste. Solo faltan tres datos.')}
       </p>
     </div>
   )
@@ -355,22 +381,24 @@ function Encabezado({
  * Confundirlos le pondría a alguien un límite que ninguna aseguradora calculó.
  */
 function Cifra({
+  tf,
   maxAfianzableCop,
   canonConsultadoCop,
 }: {
+  tf: Tf
   maxAfianzableCop: number | null
   canonConsultadoCop: number | null
 }) {
   if (maxAfianzableCop !== null) {
     return (
       <div className="rounded-lg border border-border bg-surface-muted p-4">
-        <p className="text-sm text-fg-muted">Te afianzamos hasta</p>
+        <p className="text-sm text-fg-muted">{tf(`${NS}.cifra.hasta`, 'Te afianzamos hasta')}</p>
         <p className="font-mono tabular-nums text-3xl font-semibold text-fg leading-tight mt-1">
           {formatCurrency(maxAfianzableCop)}
-          <span className="text-base font-sans font-normal text-fg-muted"> /mes</span>
+          <span className="text-base font-sans font-normal text-fg-muted"> {tf(`${NS}.porMes`, '/mes')}</span>
         </p>
         <p className="text-xs text-fg-muted mt-2">
-          Con este tope te mostramos las propiedades que van contigo.
+          {tf(`${NS}.cifra.hastaNota`, 'Con este tope te mostramos las propiedades que van contigo.')}
         </p>
       </div>
     )
@@ -379,13 +407,13 @@ function Cifra({
   if (canonConsultadoCop !== null) {
     return (
       <div className="rounded-lg border border-border bg-surface-muted p-4">
-        <p className="text-sm text-fg-muted">Aprobado para un canon de</p>
+        <p className="text-sm text-fg-muted">{tf(`${NS}.cifra.para`, 'Aprobado para un canon de')}</p>
         <p className="font-mono tabular-nums text-3xl font-semibold text-fg leading-tight mt-1">
           {formatCurrency(canonConsultadoCop)}
-          <span className="text-base font-sans font-normal text-fg-muted"> /mes</span>
+          <span className="text-base font-sans font-normal text-fg-muted"> {tf(`${NS}.porMes`, '/mes')}</span>
         </p>
         <p className="text-xs text-fg-muted mt-2">
-          Es el canon que consultaste. Si te interesa algo más caro, un asesor lo revisa.
+          {tf(`${NS}.cifra.paraNota`, 'Es el canon que consultaste. Si te interesa algo más caro, un asesor lo revisa.')}
         </p>
       </div>
     )
@@ -398,20 +426,22 @@ function Cifra({
   return (
     <div className="rounded-lg border border-border bg-surface-muted p-4">
       <p className="text-sm text-fg-muted">
-        Estamos calculando hasta cuánto te afianzamos. Te lo confirmamos en un momento.
+        {tf(`${NS}.cifra.calculando`, 'Estamos calculando hasta cuánto te afianzamos. Te lo confirmamos en un momento.')}
       </p>
     </div>
   )
 }
 
-function Aseguradoras({ result }: { result: PreApprovalResult }) {
+function Aseguradoras({ tf, result }: { tf: Tf; result: PreApprovalResult }) {
   if (result.aseguradoras.length === 0) return null
   const n = result.aseguradoras.length
 
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium text-fg">
-        {n === 1 ? 'Una aseguradora te respalda' : `${n} aseguradoras te respaldan`}
+        {n === 1
+          ? tf(`${NS}.aseguradoras.una`, 'Una aseguradora te respalda')
+          : `${n} ${tf(`${NS}.aseguradoras.varias`, 'aseguradoras te respaldan')}`}
       </p>
       <div className="flex flex-wrap gap-2">
         {result.aseguradoras.map((a) => (
@@ -428,7 +458,9 @@ function Aseguradoras({ result }: { result: PreApprovalResult }) {
             />
             {aseguradoraDisplayName(a.aseguradora)}
             {a.status === 'conditional' && (
-              <span className="text-xs text-fg-muted">con condiciones</span>
+              <span className="text-xs text-fg-muted">
+                {tf(`${NS}.aseguradoras.condicional`, 'con condiciones')}
+              </span>
             )}
           </span>
         ))}
@@ -437,10 +469,10 @@ function Aseguradoras({ result }: { result: PreApprovalResult }) {
   )
 }
 
-function QueSigue({ items }: { items: string[] }) {
+function QueSigue({ tf, items }: { tf: Tf; items: string[] }) {
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-fg">Qué sigue</p>
+      <p className="text-sm font-medium text-fg">{tf(`${NS}.queSigue`, 'Qué sigue')}</p>
       <ul className="space-y-1.5">
         {items.map((t) => (
           <li key={t} className="flex items-start gap-2 text-sm text-fg-muted">
@@ -475,24 +507,23 @@ function Salida({
   )
 }
 
-function AvisoDemo() {
+function AvisoDemo({ tf }: { tf: Tf }) {
   return (
     <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft px-4 py-3">
       <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
       <p className="text-sm text-fg">
-        <strong className="font-medium">Resultado de ejemplo.</strong> El servicio de aprobación
-        todavía no está publicado, así que estos datos no son reales y no se guardan.
+        <strong className="font-medium">{tf(`${NS}.demo.titulo`, 'Resultado de ejemplo.')}</strong>{' '}
+        {tf(`${NS}.demo.texto`, 'El servicio de aprobación todavía no está publicado, así que estos datos no son reales y no se guardan.')}
       </p>
     </div>
   )
 }
 
-function NotaAgencia() {
+function NotaAgencia({ tf }: { tf: Tf }) {
   return (
     <div className="rounded-lg border border-border bg-surface-muted px-4 py-3">
       <p className="text-sm text-fg-muted">
-        Estás viendo el resultado como lo ve el candidato. Puedes enviarle este mismo link a
-        cualquier otra persona.
+        {tf(`${NS}.notaAgencia`, 'Estás viendo el resultado como lo ve el candidato. Puedes enviarle este mismo link a cualquier otra persona.')}
       </p>
     </div>
   )

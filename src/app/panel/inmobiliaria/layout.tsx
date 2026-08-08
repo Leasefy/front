@@ -14,6 +14,7 @@ import {
   CurrencyDollar,
   Kanban,
   ChartLine,
+  Calculator,
   ChartLineUp,
   Wrench,
   ArrowsClockwise,
@@ -131,32 +132,37 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // `NavItemWithModule` (imported) extends NavItem with an optional `module`
   // permission gate, an optional `roles` role gate, and `adminOnly`.
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
-    // ── PRINCIPAL ──
+    // ═══════════════════════════════════════════════════════════════════════
+    // Agrupación por MÓDULO DE NEGOCIO — Comercial · Administración · Finanzas
+    //
+    // Reemplaza el corte anterior por naturaleza técnica (Agentes IA /
+    // Portafolio / Operaciones / Análisis), que obligaba a cada persona a
+    // recorrer todo el menú para encontrar lo suyo: los agentes vivían juntos
+    // en una sección aparte, separados del trabajo que hacen. Ahora cada ítem
+    // vive donde el equipo lo busca, y el pill IA marca cuál está asistido por
+    // un agente. "Una inmobiliaria se compone de esos tres factores:
+    // comercial, administración y finanzas" (definición del negocio).
+    //
+    // Reglas de la agrupación:
+    //   · Un ítem vive en UN solo módulo — nada se duplica.
+    //   · Lo transversal (resúmenes, equipo, config) va a GENERAL, al final.
+    //   · `ai: true` = asistido por agente · `tag` = estado ("Próximamente").
+    //   · `hint` desambigua sin engordar la etiqueta ("Documentos · revisión").
+    //
+    // Los gates NO cambian: cada ítem conserva su `module`/`roles` exactos, así
+    // que reordenar no le abre a nadie una pantalla que antes no veía.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // ── INICIO ──
     { kind: 'section', label: t('inmobiliaria.nav.secInicio'), href: '#sec-inicio', icon: SquaresFour, module: null },
     // AI CHAT HOME F3: "Inicio" opens the embedded chat at the panel root —
     // exact match so it doesn't stay highlighted on every subroute.
     { label: t('inmobiliaria.nav.inicio'),       href: '/panel/inmobiliaria',              icon: House,         exact: true, module: null },
-    // ── AGENTES IA ──
-    { kind: 'section', label: t('inmobiliaria.nav.secAgentes'), href: '#sec-agentes', icon: Sparkle, module: null },
-    {
-      label: t('inmobiliaria.ai.nav.cobranza'),
-      href: '/panel/inmobiliaria/ai/cobranza',
-      icon: ChatCircleText,
-      module: 'cobranza',
-      dataTourTarget: 'sidebar-cobranza',
-      // Las funciones del agente (Casos/Pendientes/Inbox/Pagos/Cartas/…) ya NO
-      // viven aquí: se renderizan como tabs DENTRO del workspace (WorkspaceNav),
-      // alimentadas por src/lib/nav/agentWorkspaceNav.ts. El sidebar muestra el
-      // agente como un único ítem para no abrumar.
-    } as NavItemWithModule,
-    {
-      label: t('inmobiliaria.ai.nav.cotizador'),
-      href: '/panel/inmobiliaria/ai/asegurabilidad',
-      icon: FileText,
-      module: 'cotizador',
-      dataTourTarget: 'sidebar-cotizador',
-      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
-    } as NavItemWithModule,
+
+    // ── COMERCIAL ──  Conseguir inmuebles, estudiar clientes y cerrar renta.
+    { kind: 'section', label: t('inmobiliaria.nav.secComercial'), href: '#sec-comercial', scope: 'comercial', icon: Kanban, module: null },
+    { label: t('inmobiliaria.nav.pipeline'),     href: '/panel/inmobiliaria/pipeline', scope: 'comercial',     icon: Kanban,        module: 'pipeline', hint: t('inmobiliaria.nav.hintPipeline') },
+    { label: t('inmobiliaria.nav.portafolio'),   href: '/panel/inmobiliaria/portafolio', scope: 'comercial',   icon: Buildings,     module: 'portafolio' },
     {
       // Avalúos (7º agente): standalone service proxied by the agent backend;
       // read-only tracking workspace (la inmobiliaria solicita y consulta —
@@ -164,22 +170,13 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       // Gated by the agent module 'avaluos' with the ABSENT-module = ALLOWED
       // fallback (see agent-module-access.ts) so either repo merges first.
       label: t('inmobiliaria.ai.nav.avaluos'),
-      href: '/panel/inmobiliaria/ai/avaluos',
+      href: '/panel/inmobiliaria/ai/avaluos', scope: 'comercial',
       icon: Scales,
       module: 'avaluos',
+      ai: true,
       // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
-    {
-      // F6: Conciliación is the first complete agent workspace — the parent
-      // now points at the Sala (/ai/conciliacion); the legacy /conciliacion
-      // movimientos page stays reachable from the Sala's domain slot.
-      label: t('inmobiliaria.nav.conciliacion'),
-      href: '/panel/inmobiliaria/ai/conciliacion',
-      icon: Bank,
-      module: null,
-      roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
-      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
-    } as NavItemWithModule,
+    { label: t('inmobiliaria.nav.propiedades'),  href: '/panel/inmobiliaria/propiedades', scope: 'comercial',  icon: House,         module: 'portafolio', hint: t('inmobiliaria.nav.hintCatalogo') },
     {
       // F7: Estudio del inquilino complete workspace. Gated by the agent
       // module 'estudio' (my-permissions payload, agent-repo pair PR) with
@@ -187,20 +184,77 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       // either repo can merge first; backend still scopes by membership and
       // decisions are audit-first per T-323.
       label: t('inmobiliaria.ai.nav.estudio'),
-      href: '/panel/inmobiliaria/ai/estudio',
+      href: '/panel/inmobiliaria/ai/estudio', scope: 'comercial',
       icon: ShieldCheck,
       module: 'estudio',
+      ai: true,
       // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
+    {
+      // Asegurabilidad va en COMERCIAL: es el paso previo a rentar — manda el
+      // candidato a las aseguradoras y devuelve el máximo afianzable, que es
+      // lo que define qué catálogo se le puede ofrecer.
+      label: t('inmobiliaria.ai.nav.cotizador'),
+      href: '/panel/inmobiliaria/ai/asegurabilidad', scope: 'comercial',
+      icon: FileText,
+      module: 'cotizador',
+      ai: true,
+      dataTourTarget: 'sidebar-cotizador',
+      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
+    } as NavItemWithModule,
+    { label: t('inmobiliaria.nav.postulaciones'), href: '/panel/inmobiliaria/postulaciones', scope: 'comercial', icon: ClipboardText, module: null, ai: true },
     {
       // F8: Matching complete workspace. Gated by the agent module 'matching'
       // with the same ABSENT-module = ALLOWED fallback as estudio (see
       // agent-module-access.ts); backend scopes by agency membership and
       // outreach happens only with approval.
       label: t('inmobiliaria.ai.nav.matching'),
-      href: '/panel/inmobiliaria/ai/matching',
+      href: '/panel/inmobiliaria/ai/matching', scope: 'comercial',
       icon: GitMerge,
       module: 'matching',
+      ai: true,
+      // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
+    } as NavItemWithModule,
+
+    // ── ADMINISTRACIÓN ──  Sostener el contrato vivo y atender al cliente.
+    { kind: 'section', label: t('inmobiliaria.nav.secAdministracion'), href: '#sec-administracion', scope: 'administracion', icon: FilePlus, module: null },
+    // 'contratos' is its own AGENCY_MODULES key (all roles have contratos:['view']);
+    // gating it on 'portafolio' wrongly hid it from CONTADOR (portafolio: []).
+    { label: t('inmobiliaria.nav.contratos'),    href: '/panel/inmobiliaria/contratos', scope: 'administracion',    icon: FilePlus,      module: 'contratos' },
+    { label: t('inmobiliaria.nav.renovaciones'), href: '/panel/inmobiliaria/renovaciones', scope: 'administracion', icon: ArrowsClockwise, module: 'operaciones' },
+    { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', scope: 'administracion', icon: UserCircle,    module: 'propietarios' },
+    { label: t('inmobiliaria.nav.operaciones'),  href: '/panel/inmobiliaria/operaciones', scope: 'administracion',  icon: Wrench,        module: 'operaciones', ai: true },
+    { label: t('inmobiliaria.nav.solicitudes'),  href: '/panel/inmobiliaria/pqrs', scope: 'administracion',         icon: Lifebuoy,      module: null, hint: t('inmobiliaria.nav.pqrs'), ai: true },
+    { label: t('inmobiliaria.nav.mensajes'),     href: '/panel/inmobiliaria/mensajes', scope: 'administracion',     icon: Chat,          badge: 5, module: null },
+    { label: t('inmobiliaria.nav.agenda'),       href: '/panel/inmobiliaria/agenda', scope: 'administracion',       icon: CalendarBlank, module: null },
+    { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos/revision', scope: 'administracion', icon: ListChecks, module: 'documentos', hint: t('inmobiliaria.nav.hintRevision'), ai: true },
+
+    // ── FINANZAS ──  Cobrar, conciliar, dispersar y facturar.
+    { kind: 'section', label: t('inmobiliaria.nav.secFinanzas'), href: '#sec-finanzas', scope: 'finanzas', icon: Wallet, module: null },
+    {
+      label: t('inmobiliaria.ai.nav.cobranza'),
+      href: '/panel/inmobiliaria/ai/cobranza', scope: 'finanzas',
+      icon: ChatCircleText,
+      module: 'cobranza',
+      ai: true,
+      tag: t('inmobiliaria.nav.proximamente'),
+      dataTourTarget: 'sidebar-cobranza',
+      // Las funciones del agente (Casos/Pendientes/Inbox/Pagos/Cartas/…) ya NO
+      // viven aquí: se renderizan como tabs DENTRO del workspace (WorkspaceNav),
+      // alimentadas por src/lib/nav/agentWorkspaceNav.ts. El sidebar muestra el
+      // agente como un único ítem para no abrumar.
+    } as NavItemWithModule,
+    { label: t('inmobiliaria.nav.cobros'),       href: '/panel/inmobiliaria/cobros', scope: 'finanzas',       icon: CurrencyDollar, module: 'cobros' },
+    {
+      // F6: Conciliación is the first complete agent workspace — the parent
+      // now points at the Sala (/ai/conciliacion); the legacy /conciliacion
+      // movimientos page stays reachable from the Sala's domain slot.
+      label: t('inmobiliaria.nav.conciliacion'),
+      href: '/panel/inmobiliaria/ai/conciliacion', scope: 'finanzas',
+      icon: Bank,
+      module: null,
+      roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+      ai: true,
       // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
     {
@@ -209,61 +263,45 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       // cross-linked from the Sala's domain slot. The ADMIN|CONTADOR role gate
       // from F4 is PRESERVED on the parent and both children.
       label: t('inmobiliaria.ai.nav.pagos'),
-      href: '/panel/inmobiliaria/ai/pagos',
+      href: '/panel/inmobiliaria/ai/pagos', scope: 'finanzas',
       icon: CurrencyDollar,
       module: null,
       roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR],
+      ai: true,
       // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
+    { label: t('inmobiliaria.nav.dispersiones'), href: '/panel/inmobiliaria/dispersiones', scope: 'finanzas', icon: PaperPlaneTilt, module: 'dispersiones', hint: t('inmobiliaria.nav.hintEgresos') },
+    { label: t('inmobiliaria.nav.tesoreria'),    href: '/panel/inmobiliaria/tesoreria', scope: 'finanzas',    icon: Wallet,         module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
+    { label: t('inmobiliaria.nav.facturacion'),  href: '/panel/inmobiliaria/facturacion', scope: 'finanzas',  icon: Receipt,        module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
+    // Contabilidad general: pedida en la definición del módulo financiero, sin
+    // pantalla todavía. Se lista deshabilitada para que el módulo se lea
+    // completo y nadie la dé por perdida — `disabled` la vuelve no navegable.
+    { label: t('inmobiliaria.nav.contabilidad'), href: '#', scope: 'finanzas', icon: Calculator, module: null, disabled: true, tag: t('inmobiliaria.nav.proximamente'), roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
+
+    // ── GENERAL ──  Transversal a los tres módulos.
+    { kind: 'section', label: t('inmobiliaria.nav.secGeneral'), href: '#sec-general', scope: 'general', icon: ChartLine, module: null },
+    // Resumen del negocio: el antiguo "Dashboard" (sin su parte de agentes IA).
+    // Gated por el módulo 'dashboard' que lo gobierna (todos los roles lo tienen
+    // ⇒ visible tras cargar permisos; oculto durante la carga — fail-closed).
+    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria/dashboard', scope: 'general',    icon: SquaresFour,   exact: true, module: 'dashboard' },
+    { label: t('inmobiliaria.nav.reportes'),     href: '/panel/inmobiliaria/reportes', scope: 'general',     icon: ChartLine,     module: 'reportes' },
+    { label: t('inmobiliaria.nav.analitica'),    href: '/panel/inmobiliaria/analytics', scope: 'general',    icon: ChartLineUp,   module: 'analytics' },
+    { label: t('inmobiliaria.nav.equipo'),       href: '/panel/inmobiliaria/agentes', scope: 'general',      icon: Users,         module: 'agentes' },
+    { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos', scope: 'general',   icon: FileText,      module: 'documentos', exact: true },
     {
       // F3: Aprendizaje del asistente — certification fence for the AI chat's
       // self-learning lessons. Visible to every agency member (read-only for
       // VIEWER/CONTADOR; certify/discard actions inside the page are gated to
-      // OPERATOR+). Plain label (no t() key) to keep this an additive change.
-      label: 'Aprendizaje del asistente',
-      href: '/panel/inmobiliaria/ai/aprendizaje',
+      // OPERATOR+).
+      label: t('inmobiliaria.nav.aprendizaje'),
+      href: '/panel/inmobiliaria/ai/aprendizaje', scope: 'general',
       icon: Brain,
       module: null,
+      ai: true,
     } as NavItemWithModule,
-    { label: t('inmobiliaria.nav.postulaciones'), href: '/panel/inmobiliaria/postulaciones', icon: ClipboardText, module: null },
-    // ── PORTAFOLIO ──
-    { kind: 'section', label: t('inmobiliaria.nav.secPortafolio'), href: '#sec-portafolio', icon: Buildings, module: null },
-    { label: t('inmobiliaria.nav.propiedades'),  href: '/panel/inmobiliaria/propiedades',  icon: House,         module: 'portafolio' },
-    // 'contratos' is its own AGENCY_MODULES key (all roles have contratos:['view']);
-    // gating it on 'portafolio' wrongly hid it from CONTADOR (portafolio: []).
-    { label: t('inmobiliaria.nav.contratos'),    href: '/panel/inmobiliaria/contratos',    icon: FilePlus,      module: 'contratos' },
-    { label: t('inmobiliaria.nav.portafolio'),   href: '/panel/inmobiliaria/portafolio',   icon: Buildings,     module: 'portafolio' },
-    { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', icon: UserCircle,    module: 'propietarios' },
-    { label: t('inmobiliaria.nav.pipeline'),     href: '/panel/inmobiliaria/pipeline',     icon: Kanban,        module: 'pipeline' },
-    { label: t('inmobiliaria.nav.equipo'),       href: '/panel/inmobiliaria/agentes',      icon: Users,         module: 'agentes' },
-    // ── FINANZAS ──
-    { kind: 'section', label: t('inmobiliaria.nav.secFinanzas'), href: '#sec-finanzas', icon: Wallet, module: null },
-    { label: t('inmobiliaria.nav.cobros'),       href: '/panel/inmobiliaria/cobros',       icon: CurrencyDollar, module: 'cobros' },
-    { label: t('inmobiliaria.nav.dispersiones'), href: '/panel/inmobiliaria/dispersiones', icon: PaperPlaneTilt, module: 'dispersiones' },
-    { label: t('inmobiliaria.nav.tesoreria'),    href: '/panel/inmobiliaria/tesoreria',    icon: Wallet,         module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
-    { label: t('inmobiliaria.nav.facturacion'),  href: '/panel/inmobiliaria/facturacion',  icon: Receipt,        module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
-    // ── ANÁLISIS ──
-    { kind: 'section', label: t('inmobiliaria.nav.secAnalisis'), href: '#sec-analisis', icon: ChartLine, module: null },
-    // Resumen del negocio: el antiguo "Dashboard" (sin su parte de agentes IA),
-    // ahora vive en Análisis como el resumen ejecutivo. Gated por el módulo
-    // 'dashboard' que lo gobierna (todos los roles lo tienen ⇒ visible tras
-    // cargar permisos; oculto durante la carga — fail-closed).
-    { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria/dashboard',    icon: SquaresFour,   exact: true, module: 'dashboard' },
-    { label: t('inmobiliaria.nav.reportes'),     href: '/panel/inmobiliaria/reportes',     icon: ChartLine,     module: 'reportes' },
-    { label: t('inmobiliaria.nav.analitica'),    href: '/panel/inmobiliaria/analytics',    icon: ChartLineUp,   module: 'analytics' },
-    // ── OPERACIONES ──
-    { kind: 'section', label: t('inmobiliaria.nav.secOperaciones'), href: '#sec-operaciones', icon: Wrench, module: null },
-    { label: t('inmobiliaria.nav.renovaciones'), href: '/panel/inmobiliaria/renovaciones',  icon: ArrowsClockwise, module: 'operaciones' },
-    { label: t('inmobiliaria.nav.operaciones'),  href: '/panel/inmobiliaria/operaciones',  icon: Wrench,        module: 'operaciones' },
-    { label: t('inmobiliaria.nav.pqrs'),         href: '/panel/inmobiliaria/pqrs',         icon: Lifebuoy,      module: null },
-    { label: t('inmobiliaria.nav.agenda'),       href: '/panel/inmobiliaria/agenda',       icon: CalendarBlank, module: null },
-    { label: t('inmobiliaria.nav.mensajes'),     href: '/panel/inmobiliaria/mensajes',     icon: Chat,          badge: 5, module: null },
-    // ── BOTTOM ──
-    { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos',   icon: FileText,      module: 'documentos', exact: true },
-    { label: t('inmobiliaria.nav.documentosRevision'), href: '/panel/inmobiliaria/documentos/revision', icon: ListChecks, module: 'documentos' },
     // Configuración → gated on 'configuracion': only ADMIN has it in the matrix
     // (AGENTE/CONTADOR/VIEWER all have configuracion:[]) ⇒ effectively admin-only.
-    { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', icon: Gear,         module: 'configuracion', dataTourTarget: 'sidebar-configuraciones' },
+    { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', scope: 'general', icon: Gear,         module: 'configuracion', dataTourTarget: 'sidebar-configuraciones' },
   ], [t]);
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {

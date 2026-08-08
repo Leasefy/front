@@ -6,7 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import type { Icon } from '@phosphor-icons/react';
 import { CaretLeft, CaretRight, CaretDown, SignOut, Question, TrendUp, CheckCircle, Circle, ArrowUpRight, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { LeasefyMark, LeasefyLogo } from '@/components/brand';
+import { LeasefyLogo, LeasefySymbol, LeasefyLogotype } from '@/components/brand';
+import { SidebarThemeToggle } from './SidebarThemeToggle';
 import { useAuth } from '@/lib/auth';
 import { useSidebar } from '@/lib/context/SidebarContext';
 import {
@@ -59,8 +60,48 @@ export interface NavItem {
   kind?: 'section';
   /** Small pill shown after the label (e.g. "Pronto" for not-yet-built sections). Additive. */
   tag?: string;
+  /**
+   * Qualifier appended to the label as `Etiqueta · pista`. Disambiguates rows
+   * that share a noun ("Documentos" vs "Documentos · revisión") without
+   * inflating the label. Additive — items without it render unchanged.
+   */
+  hint?: string;
+  /**
+   * Marks the row as backed by an AI agent → renders the "IA" pill. A flag
+   * rather than another free-text `tag` so every agent row reads identically,
+   * and so a row can carry BOTH pills (Cobranza = IA + Próximamente).
+   */
+  ai?: boolean;
   /** data-tour-target attribute for Phase 38 PanelTour primitive. Additive — items without it render unchanged. */
   dataTourTarget?: string;
+}
+
+/** Label as rendered: `Etiqueta · pista` when a hint is present. */
+function displayLabel(item: NavItem): string {
+  return item.hint ? `${item.label} · ${item.hint}` : item.label;
+}
+
+/**
+ * Right-aligned pills for a row: the "IA" marker and/or the free-text `tag`
+ * ("Próximamente"). Returns undefined when the row carries neither, so
+ * SidebarItem keeps rendering its numeric `count` untouched.
+ */
+function TrailingPills({ item }: { item: NavItem }) {
+  if (!item.ai && !item.tag) return null;
+  return (
+    <span className="flex items-center gap-1.5">
+      {item.ai && (
+        <span className="text-[9px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-primary-soft text-primary">
+          IA
+        </span>
+      )}
+      {item.tag && (
+        <span className="text-[9px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-warning-soft text-warning">
+          {item.tag}
+        </span>
+      )}
+    </span>
+  );
 }
 
 export interface ProfileCompletionStep {
@@ -161,13 +202,13 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
           'text-muted-foreground/70 cursor-not-allowed',
           isCollapsed && 'justify-center px-2'
         )}
-        title={isCollapsed ? `${item.label}${item.tag ? ` — ${item.tag}` : ''}` : undefined}
+        title={isCollapsed ? `${displayLabel(item)}${item.tag ? ` — ${item.tag}` : ''}` : undefined}
       >
         <Icon className="w-[18px] h-[18px] stroke-[1.5px]" />
-        {!isCollapsed && <span className="flex-1">{item.label}</span>}
-        {!isCollapsed && item.tag && (
-          <span className="ml-auto text-[9px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-plan-border/60 text-plan-muted">
-            {item.tag}
+        {!isCollapsed && <span className="flex-1">{displayLabel(item)}</span>}
+        {!isCollapsed && (
+          <span className="ml-auto">
+            <TrailingPills item={item} />
           </span>
         )}
       </div>
@@ -236,7 +277,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
         onClick={onClick}
         aria-current={isActive ? 'page' : undefined}
         data-tour-target={item.dataTourTarget}
-        title={item.label}
+        title={`${displayLabel(item)}${item.ai ? ' — IA' : ''}${item.tag ? ` — ${item.tag}` : ''}`}
         className={cn(
           'flex items-center justify-center px-2.5 py-2.5 rounded-full transition-colors',
           isActive
@@ -260,9 +301,12 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
     <Link href={item.href} legacyBehavior passHref>
       <SidebarItem
         icon={<Icon weight={isActive ? 'duotone' : 'regular'} className={cn('w-[18px] h-[18px]', isActive && '!text-primary')} />}
-        label={item.label}
+        label={displayLabel(item)}
         active={isActive}
         count={item.badge !== undefined && item.badge > 0 ? item.badge : undefined}
+        // `badge` takes a node and renders it as-is (see SidebarItemProps), so
+        // the IA / Próximamente pills ride here without forking the DS row.
+        badge={item.ai || item.tag ? <TrailingPills item={item} /> : undefined}
         depth={depth}
         onClick={onClick}
       />
@@ -430,37 +474,29 @@ function SidebarContent({
                 className="h-8 w-8 rounded-[8px] object-cover"
               />
             ) : (
-              <LeasefyMark variant="tile" size={32} />
+              // Mismo criterio monocromo que la fila expandida, para que el rail
+              // colapsado no cambie de identidad al plegar el sidebar.
+              <span className="flex h-8 w-8 items-center justify-center text-fg">
+                <LeasefySymbol size={18} />
+              </span>
             )}
           </Link>
         </div>
       ) : workspaceName ? (
-        // Static brand row — profiles can't be switched, so no dropdown,
-        // no bordered box, no caret: brand tile + workspace name linking home.
-        <div className="px-3 pt-3">
+        // Firma del PRODUCTO, no del cliente: el lockup de Leasefy solo, sin
+        // nombre ni logo de la inmobiliaria. La identidad de la agencia ya vive
+        // en su propio contexto (encabezados, documentos, marca del panel vía
+        // brandPrimaryHsl); repetirla acá arriba solo confundía sobre en qué
+        // producto estás parado. Monocromo con `text-fg` → negro en claro,
+        // blanco en oscuro, sin ramificar por tema.
+        <div className="px-3 pt-4 pb-3">
           <Link
             href={logo?.href ?? '/panel/inmobiliaria'}
             onClick={onItemClick}
             aria-label="Leasefy — inicio"
-            className="flex w-full items-center gap-[10px] rounded-[12px] px-[10px] py-[8px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex w-full items-center rounded-[12px] px-[10px] py-[6px] text-fg outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {workspaceLogoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={workspaceLogoUrl}
-                alt={workspaceName ?? logo?.title ?? ''}
-                width={28}
-                height={28}
-                className="h-7 w-7 rounded-[8px] object-cover"
-              />
-            ) : (
-              <LeasefyMark variant="tile" size={28} />
-            )}
-            <span className="flex min-w-0 flex-1 items-center leading-[1.2]">
-              <span className="truncate font-display text-[14px] font-semibold text-fg">
-                {workspaceName}
-              </span>
-            </span>
+            <LeasefyLogotype size={26} />
           </Link>
         </div>
       ) : (
@@ -605,7 +641,7 @@ function SidebarContent({
       {/* Footer — cadence §Navigation: invite card + upgrade CTA, then Help.
           Collapsed rail shows only the Help icon. */}
       {isCollapsed ? (
-        <div className="px-2 pb-3">
+        <div className="px-2 pb-3 space-y-1">
           <Link
             href="/ayuda"
             onClick={onItemClick}
@@ -614,6 +650,7 @@ function SidebarContent({
           >
             <Question className="w-[18px] h-[18px]" />
           </Link>
+          <SidebarThemeToggle collapsed />
         </div>
       ) : (
         <div className="px-3 pb-3 space-y-2.5">
@@ -639,14 +676,19 @@ function SidebarContent({
               }}
             />
           )}
-          <Link
-            href="/ayuda"
-            onClick={onItemClick}
-            className="flex items-center gap-3 px-3 py-2 rounded-full text-[13px] text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
-          >
-            <Question className="w-[18px] h-[18px]" />
-            <span>Ayuda</span>
-          </Link>
+          {/* Ayuda y tema comparten fila: son los dos ajustes de chrome, y así
+              el pie no crece una línea más por cada uno. */}
+          <div className="flex items-center gap-2">
+            <Link
+              href="/ayuda"
+              onClick={onItemClick}
+              className="flex flex-1 items-center gap-3 px-3 py-2 rounded-full text-[13px] text-fg-muted hover:text-fg hover:bg-surface-muted transition-colors"
+            >
+              <Question className="w-[18px] h-[18px]" />
+              <span>Ayuda</span>
+            </Link>
+            <SidebarThemeToggle />
+          </div>
         </div>
       )}
     </div>

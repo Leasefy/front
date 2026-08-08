@@ -28,11 +28,16 @@ const PopoverContent = React.forwardRef<
   <DSPopoverContent
     ref={ref}
     sideOffset={sideOffset}
+    // El mecanismo real para que la rueda funcione acá dentro (DESIGN.md §8).
+    // El `onWheel + stopPropagation` de abajo no alcanza: Lenis escucha en
+    // `window` con un listener nativo, y frenar el evento sintético de React no
+    // lo evita. Se conserva por si algún otro handler intermedio lo aprovecha.
+    data-lenis-prevent
     className={cn(
       // z-[400]: Dialog/Sheet viven en z-[300]; el z-50 del DS dejaría este
       // popover DETRÁS del overlay del modal que lo contiene. Igual que select.tsx.
       "z-[400]",
-      "max-w-[calc(100vw-1rem)] max-h-[var(--radix-popover-content-available-height)] overflow-y-auto",
+      "max-w-[calc(100vw-1rem)] max-h-[var(--radix-popover-content-available-height)] overflow-y-auto overscroll-contain",
       className
     )}
     onWheel={(e) => {

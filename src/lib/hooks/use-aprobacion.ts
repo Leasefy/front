@@ -52,7 +52,25 @@ export function useAprobacion(): UseAprobacionResult {
       return
     }
     try {
-      setAprobacion(await fetchAprobacion())
+      const delBackend = await fetchAprobacion()
+      /*
+       * El backend manda, salvo cuando dice "no tengo nada".
+       *
+       * `sin_estudio` también es lo que devuelve un 404, y hoy `/api/tenant/
+       * aprobacion` no existe. Sin esta línea pasaba lo peor del recorrido:
+       * la persona se aprobaba, creaba su cuenta para entrar a ver su
+       * catálogo… y al entrar su aprobación había desaparecido, porque la
+       * sesión pisaba el respaldo local con un "sin_estudio" que no era una
+       * respuesta, era un hueco.
+       *
+       * Un vacío del backend no borra algo que la persona ya se ganó. Cuando
+       * el endpoint exista y devuelva un estado de verdad, ese gana.
+       */
+      if (delBackend.estado === 'sin_estudio') {
+        setAprobacion(leerAprobacionLocal() ?? delBackend)
+      } else {
+        setAprobacion(delBackend)
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No pudimos cargar tu aprobación.')
       // Un fallo de red no debe bloquear el botón: se cae al respaldo local si

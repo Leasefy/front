@@ -6,10 +6,13 @@ detalle de la sidebar). Todo vive en `~/rent/mvp-inmobiliaria`, rama
 
 ---
 
-## ⚠️ Lo primero: SIGUE SIN COMMITEAR
+## Estado: COMMITEADO, sin pushear
 
-**0 commits** sobre `develop` (`dcab5284`). **54 archivos** tocados.
-La rama **no existe en `origin`**. Ya son dos sesiones de trabajo apilado en un árbol sucio.
+**9 commits** sobre `develop` (`dcab5284`), árbol limpio. La rama **todavía no existe en
+`origin`** — el push y el PR los decide Nico.
+
+`pnpm build` **corrido y verde** (245 páginas). ⚠️ Correrlo mata los chunks del `next dev` que
+comparte `.next`: parar el dev antes, y reiniciarlo después.
 
 ---
 
@@ -211,7 +214,7 @@ error visible (hay un test por cada lado).
 
 ## 5. Estado de calidad
 
-`tsc --noEmit` limpio · **216 archivos / 1728 tests** · `next lint` limpio
+`tsc --noEmit` limpio · **218 archivos / 1742 tests** · `next lint` limpio
 (el único warning es previo, en `use-pendientes.ts` de cobranza).
 
 **`pnpm build` NUNCA se corrió** — es el gate que el CI no cubre y que ya rompió Vercel antes.

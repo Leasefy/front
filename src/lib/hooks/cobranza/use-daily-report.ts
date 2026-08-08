@@ -20,6 +20,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { useAuth } from '@/lib/auth'
+import type { components } from '@/lib/api/generated/agent'
 
 // ----- GET /daily-report/today ---------------------------------------------
 
@@ -42,12 +43,22 @@ export interface DailyReportDebtor {
   last_contact_at?: string | null
 }
 
-export interface DailyReportAlert {
-  kpi: string
-  threshold: number | string
-  actual: number | string
-  severity: 'warn' | 'critical' | string
-}
+/**
+ * ⚠️ Esto estaba escrito a mano como `{ kpi, threshold, actual, severity }` y de
+ * los cuatro campos sólo acertaba `threshold`. El banner del reporte quedaba
+ * literalmente así:
+ *
+ *     ⚠  : undefined (umbral 12)
+ *
+ * Y lo peor no es el «undefined»: el agente YA manda `message_es` con la frase
+ * completa —«Índice de morosidad en 62.22% — por encima del umbral 12%»— y la
+ * pantalla la tiraba a la basura para armar la suya con campos inexistentes.
+ * Además `severity` nunca coincidía con `level`, así que una alerta CRITICAL se
+ * pintaba siempre como advertencia.
+ *
+ * Se toma del contrato generado (`pnpm api:gen`) y no se vuelve a transcribir.
+ */
+export type DailyReportAlert = components['schemas']['CarteraDailyReportAlert']
 
 export interface DailyReportResponse {
   report_date: string

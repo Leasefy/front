@@ -19,6 +19,7 @@ import { useStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-stage-tran
 import type { StageTransitionEvent } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
 import { CobranzaResultadosKpis } from '@/components/inmobiliaria/cobranza/CobranzaResultadosKpis'
 import { CobranzaAnaliticaResumen } from '@/components/inmobiliaria/cobranza/CobranzaAnaliticaResumen'
+import { CobranzaReporteResumen } from '@/components/inmobiliaria/cobranza/CobranzaReporteResumen'
 import { CobranzaAtencionPreview } from '@/components/inmobiliaria/cobranza/CobranzaAtencionPreview'
 import { CobranzaWowBanner } from '@/components/inmobiliaria/cobranza/CobranzaWowBanner'
 import { CobranzaStageCard } from '@/components/inmobiliaria/cobranza/CobranzaStageCard'
@@ -285,6 +286,11 @@ export default function CobranzaOverviewPage() {
       {/* «Cómo va el agente» — antes vivía en /cobranza/resultados, que hacía
           este mismo trabajo. Sustituye a CobranzaExecKpiGrid, cuya grilla tenía
           5 de 8 tarjetas con el guión quemado. */}
+      {/* «Qué mirar hoy» — las alertas de umbral y los deudores que más pesan,
+          que estaban escondidas en Reporte diario. Va ARRIBA de las métricas:
+          primero lo que pide reacción, después cómo viene la cosa. */}
+      <CobranzaReporteResumen />
+
       <CobranzaResultadosKpis overview={data} />
 
       {/* «Cómo lo está logrando» — los tres widgets de /cobranza/analitica que

@@ -34,7 +34,7 @@ import { useAuth } from '@/lib/auth'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { useDailyReport, useDailyReportHistory, downloadHistoryCsv } from '@/lib/hooks/cobranza/use-daily-report'
 import { useThresholds } from '@/lib/hooks/cobranza/use-thresholds'
-import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { toDebtorRef } from '@/lib/hooks/cobranza/compliance-entries'
 import { CobranzaReporteSkeleton } from '@/components/skeleton/panel/CobranzaReporteSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui/button'
@@ -204,12 +204,12 @@ function ReporteViewerContent() {
             <section className="space-y-2">
               {data.alerts.map((alert, idx) => (
                 <motion.div
-                  key={`${alert.kpi}-${idx}`}
+                  key={`${alert.code}-${idx}`}
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={[
                     'rounded-xl border p-3 flex items-start gap-3',
-                    alert.severity === 'critical'
+                    alert.level === 'CRITICAL'
                       ? 'border-danger/30 bg-danger-soft'
                       : 'border-warning/30 bg-warning-soft',
                   ].join(' ')}
@@ -218,24 +218,21 @@ function ReporteViewerContent() {
                   <Warning
                     className={[
                       'w-4 h-4 flex-shrink-0 mt-0.5',
-                      alert.severity === 'critical'
-                        ? 'text-danger'
-                        : 'text-warning',
+                      alert.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
                     ].join(' ')}
                     weight="fill"
                     aria-hidden="true"
                   />
+                  {/* `message_es` viene redactado del agente. Antes se ignoraba
+                      para componer «{kpi}: {actual} (umbral {threshold})» con
+                      campos que no existen → «: undefined (umbral 12)». */}
                   <p
                     className={[
-                      'text-xs font-mono tabular-nums',
-                      alert.severity === 'critical'
-                        ? 'text-danger'
-                        : 'text-warning',
+                      'text-xs',
+                      alert.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
                     ].join(' ')}
                   >
-                    {alert.kpi}: {String(alert.actual)} (
-                    {locale.startsWith('es') ? 'umbral' : 'threshold'}{' '}
-                    {String(alert.threshold)})
+                    {alert.message_es}
                   </p>
                 </motion.div>
               ))}
@@ -274,12 +271,16 @@ function ReporteViewerContent() {
                 <TableBody>
                   {data.top_debtors.slice(0, topN).map((d) => (
                     <TableRow key={d.debtor_id} className="border-b border-border last:border-0">
-                      <TableCell className="px-3 py-2">
-                        <Mask
-                          field="cedula"
-                          value={d.debtor_id_masked ?? d.debtor_id}
-                          onReveal={undefined}
-                        />
+                      {/* `debtor_id_masked` no existe en la respuesta — el
+                          agente sólo manda `debtor_id`. O sea que esto le
+                          entregaba a <Mask field="cedula"> un UUID crudo de 36
+                          caracteres y lo presentaba con candado, como si fuera
+                          una cédula enmascarada. No es una cédula ni está
+                          enmascarado: es la llave interna de la fila. Se muestra
+                          el prefijo, que es lo único que sirve — casar la fila
+                          con su caso o con la auditoría. */}
+                      <TableCell className="px-3 py-2 font-mono text-xs text-foreground">
+                        {toDebtorRef(d.debtor_id_masked ?? d.debtor_id)}
                       </TableCell>
                       <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                         {d.dpd}

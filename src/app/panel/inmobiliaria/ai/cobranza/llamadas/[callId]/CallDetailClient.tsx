@@ -17,6 +17,12 @@ import CallTranscript from '@/components/inmobiliaria/cobranza/call/CallTranscri
 import CallQAPanel from '@/components/inmobiliaria/cobranza/call/CallQAPanel'
 import CallStateTracePanel from '@/components/inmobiliaria/cobranza/call/CallStateTracePanel'
 import CallCostPanel from '@/components/inmobiliaria/cobranza/call/CallCostPanel'
+import CallSummaryPanel from '@/components/inmobiliaria/cobranza/call/CallSummaryPanel'
+import {
+  callOutcomeLabel,
+  channelLabel,
+  directionLabel,
+} from '@/lib/cobranza/call-vocab'
 
 interface CallDetailClientProps {
   callId: string
@@ -42,14 +48,14 @@ function qaTone(score: number | null | undefined): {
       ring: 'ring-neutral-200 dark:ring-neutral-700',
     }
   }
-  if (score >= 0.8) {
+  if (score >= 80) {
     return {
       bg: 'bg-success-soft',
       text: 'text-success',
       ring: 'ring-success/30',
     }
   }
-  if (score >= 0.6) {
+  if (score >= 60) {
     return {
       bg: 'bg-warning-soft',
       text: 'text-warning',
@@ -87,17 +93,21 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
     }
   }, [])
 
+  // `startedAt` (connected_at) es null cuando nadie contestó; `initiatedAt`
+  // siempre existe. Mostrar vacío en una llamada no contestada es peor que
+  // mostrar cuándo se intentó.
   const startedAtLabel = useMemo(() => {
-    if (!data?.startedAt) return ''
+    const iso = data?.startedAt ?? data?.initiatedAt
+    if (!iso) return ''
     try {
       return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'es-CO', {
         dateStyle: 'medium',
         timeStyle: 'short',
-      }).format(new Date(data.startedAt))
+      }).format(new Date(iso))
     } catch {
-      return data.startedAt
+      return iso
     }
-  }, [data?.startedAt, locale])
+  }, [data?.startedAt, data?.initiatedAt, locale])
 
   const exportTranscript = useCallback(async () => {
     if (isExportingTranscript || !data) return
@@ -187,9 +197,11 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
     )
   }
 
+  // Escala 0-100 (la garantiza `calls_qa_score_decimal_range`). El código
+  // viejo comparaba contra 0,8 / 0,6 y multiplicaba por 100, así que toda
+  // llamada salía roja con un número de cuatro cifras.
   const qa = qaTone(data.qa.overall)
-  const overallPct =
-    data.qa.overall == null ? null : Math.round(data.qa.overall * 100)
+  const overallPct = data.qa.overall == null ? null : Math.round(data.qa.overall)
 
   return (
     <main className="p-6 lg:p-8 space-y-6">
@@ -203,27 +215,37 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
         </Link>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
-              {data.debtorNameRedacted}
+            <h1 className="text-2xl font-semibold text-fg tracking-tight">
+              {data.debtorNameMasked}
             </h1>
-            <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+            <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-fg-muted">
               <div className="flex gap-1">
                 <dt className="font-medium">
                   {t('inmobiliaria.ai.cobranza.call.header.startedAt')}:
                 </dt>
                 <dd>{startedAtLabel}</dd>
               </div>
-              <div className="flex gap-1">
-                <dt className="font-medium">
-                  {t('inmobiliaria.ai.cobranza.call.header.duration')}:
-                </dt>
-                <dd>{formatSec(data.durationSec)}</dd>
-              </div>
+              {data.durationSeconds != null && (
+                <div className="flex gap-1">
+                  <dt className="font-medium">
+                    {t('inmobiliaria.ai.cobranza.call.header.duration')}:
+                  </dt>
+                  <dd className="font-mono tabular-nums">{formatSec(data.durationSeconds)}</dd>
+                </div>
+              )}
               <div className="flex gap-1">
                 <dt className="font-medium">
                   {t('inmobiliaria.ai.cobranza.call.header.outcome')}:
                 </dt>
-                <dd className="uppercase tracking-wide">{data.outcome}</dd>
+                {/* Nunca el slug crudo — ver call-vocab.ts */}
+                <dd>{callOutcomeLabel(data.outcome) ?? '—'}</dd>
+              </div>
+              <div className="flex gap-1">
+                <dt className="font-medium">Canal:</dt>
+                <dd>
+                  {channelLabel(data.channel)}
+                  {data.direction === 'inbound' && ` · ${directionLabel(data.direction)}`}
+                </dd>
               </div>
             </dl>
           </div>
@@ -292,6 +314,8 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
 
         {/* RIGHT COLUMN: QA / state / cost */}
         <aside className="space-y-4">
+          {/* Primero lo que pasó; los indicadores de proceso van después. */}
+          <CallSummaryPanel summary={data.summary} />
           <CallQAPanel qa={data.qa} />
           <CallStateTracePanel stateTrace={data.stateTrace} />
           <CallCostPanel cost={data.cost} />

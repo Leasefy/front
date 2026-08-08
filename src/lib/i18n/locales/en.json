@@ -5397,10 +5397,10 @@
           "qa": {
             "title": "Call quality",
             "overall": "Overall",
-            "tone": "Tone",
+            "rapport": "Rapport",
             "compliance": "Compliance",
-            "recovery": "Recovery",
-            "clarity": "Clarity",
+            "resolution": "Resolution",
+            "sentiment": "Sentiment",
             "empty": "QA pending."
           },
           "stateTrace": {

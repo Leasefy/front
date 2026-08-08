@@ -30,7 +30,10 @@ function severityTone(severity: string): string {
 
 export function CompliancePill({ flag }: CompliancePillProps) {
   const { t } = useI18n()
-  const tone = severityTone(flag.severity)
+  // El agente manda los flags como slugs sueltos, sin severidad. Sin dato,
+  // el tono neutro — pintar de rojo lo que no sabemos si es grave convierte
+  // cualquier marca en alarma.
+  const tone = severityTone(flag.severity ?? 'info')
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip>

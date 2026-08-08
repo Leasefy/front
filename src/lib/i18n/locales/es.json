@@ -5398,10 +5398,10 @@
           "qa": {
             "title": "Calidad de la llamada",
             "overall": "General",
-            "tone": "Tono",
+            "rapport": "Trato",
             "compliance": "Cumplimiento",
-            "recovery": "Recuperación",
-            "clarity": "Claridad",
+            "resolution": "Resolución",
+            "sentiment": "Sentimiento",
             "empty": "QA pendiente."
           },
           "stateTrace": {

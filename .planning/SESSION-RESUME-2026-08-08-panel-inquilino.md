@@ -1,136 +1,116 @@
-# Sesión 2026-08-08 — El panel del inquilino, usándolo de verdad
+# Sesión 2026-08-08 — Panel del inquilino: QA, PR #63, y el mapa de inmobiliaria
 
 **Punto de retome. Leé esto primero.** Sucede al de 2026-08-07 (que sigue valiendo para el
-detalle del vocabulario y del recorrido público). Todo en `~/rent/mvp-inmobiliaria`, rama
-**`feat/experiencia-inmobiliaria`**.
+detalle del vocabulario y del recorrido público). Todo en `~/rent/mvp-inmobiliaria`, `:3002`.
 
 ---
 
-## Estado
+## 🟢 Estado: PR #63 abierto y verde
 
-**24 commits** sobre `develop` (`dcab5284`) · **79 archivos** · árbol limpio ·
-**la rama NO existe en `origin`** — el push y el PR los decide Nico.
+**https://github.com/Leasefy/front/pull/63** — `feat/experiencia-inmobiliaria` → `develop`
 
-`tsc` limpio · **219 archivos / 1749 tests** · `next lint` sin errores ·
-**`pnpm build` verde** (245 páginas).
+**38 commits · 105 archivos · +9577/−1693 · MERGEABLE · árbol limpio · todo pusheado.**
+Espera aprobación de Víctor.
 
-⚠️ Correr `next build` **mata los chunks del `next dev`** que comparte `.next`: parar el dev
-antes y reiniciarlo después. Ya pasó una vez.
+| Compuerta | |
+|---|---|
+| Typecheck & Unit Tests (CI) | ✅ pass |
+| **Vercel** | ✅ pass — deployment completado |
+| Playwright E2E | ⏭️ skipping (manual, nunca bloquea) |
+| Local: 220 archivos / **1756 tests** · `tsc` · `lint` · **`pnpm build`** | ✅ |
 
----
-
-## Cómo ver el recorrido funcionando (sin esperar correos)
-
-```bash
-SP=/tmp/claude-501/-Users-nicolasgarcia-rent-mvp/<session>/scratchpad
-SRK=$(grep -rhoE "SUPABASE_SERVICE_ROLE[A-Z_]*=.+" ~/rent/agent-develop/.env* | head -1 | cut -d= -f2-)
-SRK="$SRK" nohup node $SP/abrir.mjs > $SP/abrir.log 2>&1 & disown
-```
-
-`abrir.mjs` abre un Chrome **visible**, siembra la aprobación en `localStorage`, entra y aterriza
-en el catálogo. Deja la ventana abierta.
-
-- **Cuenta de inquilino ya confirmada:** `maria.inquilina@leasefy-dev.co` · `PRueba123#`
-- La **service role key** del Supabase de dev (`jraqurdcjwnifzpdqtnm`) está en
-  `~/rent/agent-develop/.env*` y en `~/rent/back/.env`. Sirve para crear cuentas ya confirmadas
-  (`POST /auth/v1/admin/users` con `email_confirm: true`) y saltarse el correo.
-- El select de ciudad **no abre en modo visible** con automatización (a mano sí). Por eso el
-  script siembra la aprobación en vez de llenar el formulario.
+⚠️ El CI **no corre `next build`**. Se verificó a mano antes de pushear — es el hueco que ya dejó
+un branch inmergeable sin que nadie lo notara ([[project-mvp-ci-build-gap]]).
+⚠️ Correr `pnpm build` **mata los chunks del `next dev`**: parar el dev antes, levantarlo después.
 
 ---
 
-## Lo que se construyó y arregló hoy
+## Lo que hizo esta sesión
 
-### El catálogo del recorrido no existía en pantalla
+### El QA: lo que estaba en `develop` y llegaba al usuario
 
-`/inquilino/para-ti` se cerraba con `hasVerifiedProfile` —el perfil de scoring A/B/C/D— y le
-decía *"necesitamos conocer tu perfil, completa una aplicación o solicita una evaluación"* a
-quien acababa de aprobarse. Son dos cosas distintas: el scoring dice *qué tan probable es que te
-acepten*; la aprobación dice *hasta cuánto te respaldan*, y con eso alcanza para armar un
-catálogo. → **`components/tenant/CatalogoPorAprobacion.tsx`**.
+**Cuatro operaciones que afirmaban éxito sin hacer nada** en `/inquilino/configuracion`. Esperaban
+un `setTimeout` y respondían "listo": cambiar contraseña, cerrar otras sesiones, descargar mis
+datos (Ley 1581) y guardar preferencias. **Las cuatro implementaciones reales ya estaban escritas
+en el repo** — nunca se cablearon. Ver [[reference-operaciones-que-fingen-exito]].
 
-**Solo muestra lo que puede tomar.** La regla "lo que se pasa del tope se ve, marcado" es para el
-catálogo **general** (`explorar`, `/propiedades`), donde navegar libre importa. Acá contradecía la
-promesa de la pantalla. Sin nada dentro del tope hay estado vacío propio.
-Las **arrendadas** también quedan fuera (bajó la cuenta de 14 a 7).
+**Urgencia fabricada** en el panel pegado al botón de postularse: "7 personas viendo ahora" con un
+contador que se movía solo cada 10 s. Salía de sumar los códigos de las letras del `propertyId`.
 
-### El link de confirmación no aterrizaba
+**Un mock que producción podía servir**: faltando `NEXT_PUBLIC_AGENT_URL`, `fetchAprobacion`
+devolvía una aprobación de $2.400.000 **sin marca de demo**. Ahora `NODE_ENV === 'production'` lo
+corta, con tests.
 
-Tres cosas encadenadas:
-1. Apuntaba a `/inquilino/para-ti`, detrás de `ProtectedRoute allowedRoles={['tenant']}` — sin
-   registro en el backend el guard rebota. Y un `returnUrl` explícito **salta `/auth/post-login`**,
-   que resuelve MFA y onboarding. Ahora va al onboarding, como el registro normal.
-2. `TenantOnboardingShell` **descartaba el `returnUrl`**. Ahora lo honra (con `sanitizeReturnUrl`;
-   hay test del caso feo: un destino absoluto no secuestra el aterrizaje).
-3. La copy prometía "entras directo a tu catálogo" y "tu aprobación quedó guardada" — sin decir
-   que está guardada **en ese navegador**.
+**Badges escritos a mano** en los 3 sidebars · **un botón muerto** ("Evaluar mi perfil" solo
+escribía en consola) · **dos imágenes** que el código pedía y no existían.
 
-### La pantalla de la aprobación no veía la aprobación
+### Lo que se construyó encima
 
-Era la **única** que llamaba a `fetchAprobacion()` por su cuenta en vez de `useAprobacion`, así
-que no veía el respaldo local y decía "Todavía no tienes una aprobación" a quien sí la tenía.
-Justo la pantalla que lleva su nombre. También estaba en `max-w-3xl` cuando el estándar del área
-es `max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10` (10 de 13 pantallas).
+- **La aprobación abre el home**, en sus 4 estados (antes el home no la mencionaba)
+- **CTA de opinión (Tally)** en los 3 portales — se carga al clic, con salida si el script no carga
+- **El home ya no promete propiedades que su catálogo no tiene**: aplica el mismo filtro por tope
+- Pasada de consistencia por las 14 pantallas: `h1` faltante, 3 estilos de vacío, títulos en Title
+  Case, andamiaje sobre vacíos, concordancia ("1 consultadas · 1 te aprobaron")
 
-### Crear la cuenta borraba la aprobación
+### La lección que se repitió toda la sesión
 
-Con sesión, un `sin_estudio` del backend (que es lo que devuelve su 404) pisaba el respaldo local.
-Ahora **un vacío del backend no borra lo que la persona ya se ganó**; cualquier otro estado sí
-manda. Con test del caso inverso.
-
-### Un patrón que se repitió: andamiaje alrededor de un vacío
-
-`Mi Arriendo` y `Mis postulaciones` montaban KPI en cero, pestañas para filtrar nada y
-conmutadores de vista para elegir cómo ver nada. Peor: *"Estado general · Al día · Todos los pagos
-al día"* **es falso** sin pagos. Ahora sin datos solo queda el estado vacío, y su CTA lleva a
-**su catálogo**, no a Explorar ni al historial.
-
-**Buscar este patrón en el resto del panel** — casi seguro hay más.
-
-### Navegación y marca
-
-- **"Para ti" no estaba en el sidebar ni enlazado** desde el panel: solo se llegaba sabiendo la
-  URL. Y el panel ya tenía una sección "Propiedades para ti" cuyo "Ver más" iba a Explorar.
-- **El detalle borraba el recorrido**: breadcrumb fijo en "Propiedades" → Explorar. Ahora las
-  tarjetas marcan el origen (`?from=para-ti`) y la migaja lo respeta.
-- **El logo del sidebar era distinto según el rol**: inquilino y propietario caían a un fallback
-  (`LeasefyLogo` 30) mientras inmobiliaria usaba el lockup (`LeasefyLogotype` 26). Unificado.
-- **El footer de marketing** colgaba de todas las pantallas del inquilino. Fuera.
-- `Sparkle` → **`Target`** en "Para ti": las chispas están reservadas para IA, y esto es un filtro
-  por monto.
-
-### Vocabulario
-
-**"Mi aprobación" → "Mi tope de arriendo"** (en: *My rental cap*). El motivo real: en el mismo
-sidebar está **"Mis postulaciones", que también se aprueban**. Dos aprobaciones compitiendo por el
-mismo nombre. Aplicado en sidebar, pantalla, los dos idiomas y `docs/VOCABULARIO.md`.
-La **ruta sigue** siendo `/inquilino/aprobacion` — renombrarla pide otro redirect permanente.
-
-### i18n
-
-`useTf(clave, respaldo)` compartido (`lib/i18n/use-tf.ts`) + claves en `es` y `en`.
-Usa **`useOptionalI18n`, no `useI18n`**: el segundo **lanza** sin provider y tumbaba la pantalla
-pública de resultado **en blanco**. Test `lib/i18n/claves-aprobacion.test.ts` que lee las claves
-que los componentes piden de verdad y falla si falta alguna en cualquier idioma.
+**Casi todos los defectos salieron usándolo, no leyéndolo, con los tests en verde.**
+Ver [[reference-demo-inquilino-3002]] para entrar sin esperar correos.
 
 ---
 
-## 🔴 Lo que falta, y no es del front
+## 🔴 Lo que falta y NO es del front
 
-**`HANDOFF-VICTOR-RECORRIDO-INQUILINO.md`** (raíz del repo) tiene los 7 puntos con evidencia.
-Los tres del mínimo: **pushear el funnel** (vive en 11 ramas locales), **`canonCop` opcional**
-(hoy consultar sin propiedad da 422) y **`maxAfianzableCop`** en la respuesta.
+Dos documentos en la raíz del repo:
+- **`HANDOFF-VICTOR-PANEL-INQUILINO.md`** — el panel, con sesión. Auditoría de red de las 14
+  pantallas: 15 lecturas en 200, 8 escrituras probadas una por una.
+- **`HANDOFF-VICTOR-RECORRIDO-INQUILINO.md`** — el recorrido público, antes de tener cuenta.
 
-**Dos decisiones de Nico, no de código:**
-- **Supabase Redirect URLs** no incluye `localhost:3002`, así que el link del correo aterriza en
-  el **:3001**. Verificado generando el link real. Sin eso, todo el aterrizaje no se ejecuta.
-- **Confirmación de correo** activa: nadie entra directo. El código soporta las dos formas.
+**Los cuatro bloqueos:**
+
+| # | Qué | Impacto |
+|---|---|---|
+| 1 | `GET /notifications` → **500** (Prisma) | En las 14 pantallas |
+| 2 | `GET /api/tenant/aprobacion` → **404** | El tope no sobrevive al cambio de navegador |
+| 3 | El **funnel sin pushear** (11 ramas locales) | Nadie puede sacar una aprobación |
+| 4 | `GET /evaluations/mine` → **404** | La tarjeta "Tu score" no puede mostrar nada |
+
+Más: PSE da 503, y dos decisiones de Supabase (Redirect URLs sin `localhost:3002`, confirmación
+de correo).
 
 ---
 
-## Qué sigue
+## ▶️ SIGUIENTE: experiencia de inmobiliaria (pasos 7→11)
 
-- Barrer el patrón "andamiaje alrededor de un vacío" en el resto del panel del inquilino.
-- **Panel de inmobiliaria, pasos 7→11** — sigue siendo el milestone acordado. Ya hay cimientos sin
-  usar: `funnel-applications.service.ts` está escrito, con mocks y tests, y **ninguna UI lo consume**.
-- La pantalla de pago (paso 3): existe el endpoint, falta el `solicitudId` del backend.
+**Mapa levantado el 2026-08-08 mirando el código, no el plan.** Esto es lo que existe de verdad:
+
+| # | Paso | Estado | Dónde |
+|---|---|---|---|
+| 1 | Entra al catálogo | ✅ | `/propiedades`, `/inquilino/explorar` |
+| 2 | Estudio de asegurabilidad | ✅ | `/aprobacion` |
+| 3 | **Paga el estudio** | 🔴 **no hay pantalla** | Solo `src/app/api/estudio/wompi-session/route.ts`, que exige un `solicitudId` que el back no da |
+| 4 | Evaluación multi-aseguradora | ✅ | `funnel.service.ts` |
+| 5 | Catálogo filtrado por monto | ✅ | `/inquilino/para-ti` |
+| 6 | Se postula a varias | ✅ | `PostularButton` |
+| 7 | **Alerta a la inmobiliaria** | 🔴 **no existe UI** | `funnel-applications.service.ts` está escrito, con tipos y tests, y **ninguna pantalla lo consume** |
+| 8 | Estudio del inquilino (A/B/C/D) | 🟡 existe, desconectado | `/ai/estudio/*` + `CandidateDrawer` (lee `/evaluations/:id/result`, real) |
+| 9 | Comparar candidatos | 🟡 tabla + ficha de a uno | `/propiedades/[id]/candidatos` — **no hay comparación lado a lado** |
+| 10 | Aceptar candidato | 🟡 se acepta | **los demás quedan sin estado** — rompe la promesa "si no te eligieron te lo decimos" |
+| 11 | Preparar contrato | 🔴 | `/contratos/nuevo` **no menciona aseguradora ni su ID** en ningún lado |
+
+**Ojo:** `/postulaciones` usa `landlordApplicationsApi.getAllCandidates` (postulaciones a
+propiedades), **no** el funnel. Y `/ai/asegurabilidad/cola` es la cola del agente cotizador
+—flujo iniciado por la agencia— que es otra cosa distinta del funnel iniciado por el inquilino.
+
+**"Pre-aprobar" sigue vivo** en las acciones de candidatos: está muerto según
+`docs/VOCABULARIO.md`.
+
+### Dos decisiones antes de arrancar
+
+1. **Las ~12 operaciones simuladas del panel de inmobiliaria** (reportes, propietarios,
+   facturación, cobros, dispersiones) — mismo defecto que las del inquilino. Recomendación:
+   **PR aparte**, mezclarlo hace la revisión imposible.
+2. **Nada llega a producción sin Víctor**: el paso 7 no tiene de dónde leer sin el funnel
+   pusheado, y el 3 necesita el `solicitudId`.
+
+El plan de 11 pasos con su detalle de UX está en `.planning/PLAN-EXPERIENCIA-ESTUDIOS.md` §4.

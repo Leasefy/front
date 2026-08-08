@@ -183,7 +183,7 @@ export default function ParaTiPage() {
 
           <div className="bg-surface border border-plan-border p-12 text-center">
             <div className="w-16 h-16 rounded-full bg-primary-soft flex items-center justify-center mx-auto mb-6">
-              <Sparkle className="w-8 h-8 text-primary" />
+              <Target className="w-8 h-8 text-primary" />
             </div>
             <h1 className="text-xl font-semibold text-plan-primary mb-3">
               {locale === 'es' ? 'Recomendaciones personalizadas' : 'Personalized recommendations'}

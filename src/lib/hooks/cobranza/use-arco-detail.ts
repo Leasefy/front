@@ -47,6 +47,12 @@ export interface ArcoDetailData {
   subjectDescription: string
   /** Días hábiles restantes. Cero o negativo = plazo vencido. */
   slaRemainingDays: number
+  /** Término que rige, en días hábiles — ya incluye la prórroga si la hay. */
+  slaBusinessDays: number | null
+  /** Prórroga concedida (Ley 1581 Arts. 14 y 15). Null = sin prórroga. */
+  slaExtensionDays: number | null
+  slaExtensionReason: string | null
+  slaExtendedAt: string | null
   isClosed: boolean
   isOverdue: boolean
   isUrgent: boolean
@@ -65,6 +71,10 @@ interface ArcoDetailApiResponse {
   requesterCedulaHash: string
   subjectDescription: string
   sla_remaining_days: number
+  sla_business_days?: number
+  slaExtensionDays?: number | null
+  slaExtensionReason?: string | null
+  slaExtendedAt?: string | null
   resolutionPayload: Record<string, unknown> | null
   auditLogIds: string[]
   timeline: ArcoDetailTimelineEntry[]
@@ -92,6 +102,12 @@ export function normalizeArcoDetail(raw: ArcoDetailApiResponse): ArcoDetailData 
     cedulaRef: toCedulaRef(raw.requesterCedulaHash),
     subjectDescription: raw.subjectDescription,
     slaRemainingDays: remaining,
+    slaBusinessDays: Number.isFinite(raw.sla_business_days)
+      ? (raw.sla_business_days as number)
+      : null,
+    slaExtensionDays: raw.slaExtensionDays ?? null,
+    slaExtensionReason: raw.slaExtensionReason ?? null,
+    slaExtendedAt: raw.slaExtendedAt ?? null,
     isClosed,
     isOverdue: !isClosed && remaining <= 0,
     isUrgent: !isClosed && remaining > 0 && remaining <= ARCO_URGENT_THRESHOLD_DAYS,

@@ -6201,7 +6201,20 @@
           "rejected": "Request rejected",
           "triaged": "Request taken. Now in progress."
         },
-        "triage": "Take request"
+        "triage": "Take request",
+        "extend": {
+          "action": "Extend the deadline",
+          "title": "Extend the response deadline",
+          "body": "Law 1581 allows one extension of up to {max} more business days, and only if you tell the requester the reasons and the date you will answer. Confirming sends them that notice by email.",
+          "daysLabel": "Additional business days (max {max})",
+          "reasonLabel": "Reason for the delay",
+          "reasonPlaceholder": "E.g.: we are gathering records from the property’s historical archive.",
+          "reasonHint": "Copied verbatim into the requester’s email. Write something that reads well on its own.",
+          "confirm": "Extend and notify",
+          "toastOk": "Deadline extended and the requester was notified.",
+          "toastError": "Could not notify the requester, so the deadline was not extended.",
+          "grantedLabel": "Deadline extended"
+        }
       },
       "templates": {
         "title": "Collection templates",

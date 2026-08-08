@@ -11,7 +11,7 @@
  * agente, no contra la que el front esperaba.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   normalizeArcoResponse,
   deriveArcoKpis,
@@ -146,6 +146,22 @@ describe('deriveSlaTerms — el plazo sale del contrato, no de una constante', (
     expect(deriveSlaTerms(rows).acceso).toBe(10)
   })
 
+
+  /**
+   * El reloj va congelado en un miércoles.
+   *
+   * Sin congelarlo, estos casos pasaban de lunes a viernes y fallaban sábado y
+   * domingo: el helper cuenta hábiles hacia ATRÁS desde hoy, y el despeje los
+   * cuenta hacia ADELANTE hasta hoy. Si hoy no es hábil, las dos cuentas
+   * difieren en uno. Un test que sólo falla el fin de semana no dice nada de la
+   * lógica, sólo del día en que se corrió.
+   */
+  beforeEach(() => {
+    vi.useFakeTimers({ now: new Date('2026-08-12T12:00:00Z'), toFake: ['Date'] })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
 
   /** Fecha de envío a N días hábiles atrás, para forzar un `elapsed` conocido. */
   const submittedBusinessDaysAgo = (n: number) => {

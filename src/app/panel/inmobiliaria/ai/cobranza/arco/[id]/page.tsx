@@ -496,6 +496,138 @@ function TriageButton({
   )
 }
 
+// ─── AMPLIAR EL PLAZO (PRÓRROGA) ────────────────────────────────────────────────
+
+/** Techo legal, en días hábiles: Art. 14 da 5 para consultas, Art. 15 da 8. */
+const MAX_EXTENSION_DAYS: Record<ArcoRequestType, number> = {
+  acceso: 5,
+  rectificacion: 8,
+  cancelacion: 8,
+  oposicion: 8,
+}
+
+/**
+ * Prórroga de los Arts. 14 y 15 de la Ley 1581.
+ *
+ * La ley NO concede la prórroga por decidirla: la concede por informársela al
+ * interesado, con los motivos de la demora y la fecha exacta en que se
+ * atenderá. Por eso el motivo es obligatorio y el back manda el correo antes de
+ * guardar nada — si el aviso no sale, no hay prórroga.
+ *
+ * Se puede una sola vez, así que el botón desaparece cuando ya hay una.
+ */
+function ExtendDialog({
+  requestId,
+  type,
+  detailRefetch,
+  t,
+}: {
+  requestId: string
+  type: ArcoRequestType
+  detailRefetch: () => Promise<void>
+  t: (key: string, opts?: Record<string, string>) => string
+}) {
+  const actionBase = useArcoActionBase(requestId)
+  const maxDays = MAX_EXTENSION_DAYS[type]
+  const [open, setOpen] = useState(false)
+  const [days, setDays] = useState(String(maxDays))
+  const [reason, setReason] = useState('')
+  const [isBusy, setIsBusy] = useState(false)
+
+  const NS = 'inmobiliaria.ai.arco.extend'
+  // El back exige 20 caracteres: «ocupado» no es un motivo de demora.
+  const reasonTooShort = reason.trim().length < 20
+  const parsedDays = Number(days)
+  const daysInvalid = !Number.isInteger(parsedDays) || parsedDays < 1 || parsedDays > maxDays
+
+  const handleExtend = async () => {
+    if (!actionBase || reasonTooShort || daysInvalid) return
+    setIsBusy(true)
+    try {
+      const res = await agentFetch(`${actionBase}/extend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ days: parsedDays, reason: reason.trim() }),
+      })
+      if (!res.ok) throw new Error(String(res.status))
+      toast.success(t(`${NS}.toastOk`))
+      setOpen(false)
+      setReason('')
+      await detailRefetch()
+    } catch {
+      toast.error(t(`${NS}.toastError`))
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" size="sm" hideArrow disabled={!actionBase}>
+          {t(`${NS}.action`)}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t(`${NS}.title`)}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t(`${NS}.body`).replace('{max}', String(maxDays))}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label htmlFor="arco-extend-days" className="text-xs font-medium text-fg-muted">
+              {t(`${NS}.daysLabel`).replace('{max}', String(maxDays))}
+            </label>
+            <Input
+              id="arco-extend-days"
+              type="number"
+              min={1}
+              max={maxDays}
+              value={days}
+              onChange={(e) => setDays(e.target.value)}
+              disabled={isBusy}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="arco-extend-reason" className="text-xs font-medium text-fg-muted">
+              {t(`${NS}.reasonLabel`)}
+            </label>
+            <Textarea
+              id="arco-extend-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={1000}
+              disabled={isBusy}
+              className="min-h-[88px]"
+              placeholder={t(`${NS}.reasonPlaceholder`)}
+            />
+            {/* El motivo se le copia tal cual al solicitante en el correo. */}
+            <p className="text-caption text-fg-subtle">{t(`${NS}.reasonHint`)}</p>
+          </div>
+        </div>
+
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isBusy}>{t('common.cancel')}</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={isBusy || reasonTooShort || daysInvalid}
+            onClick={(e) => {
+              // El diálogo cierra solo al confirmar; acá lo controlamos nosotros
+              // para no cerrarlo si el aviso al solicitante falla.
+              e.preventDefault()
+              void handleExtend()
+            }}
+          >
+            {t(`${NS}.confirm`)}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
 // ─── REQUESTER SIDEBAR ──────────────────────────────────────────────────────────
 
 interface RequesterSidebarProps {
@@ -595,6 +727,40 @@ function RequesterSidebar({ detail, t }: RequesterSidebarProps) {
 
       <KeyValueList items={items} compact />
 
+      {/* Prórroga concedida. Va con el motivo a la vista porque es exactamente
+          lo que se le informó al solicitante y lo que sustenta el plazo extra
+          si alguien lo cuestiona. */}
+      {detail.slaExtensionDays != null && (
+        <div className="space-y-1.5 border-t border-border-faint pt-4">
+          <MonoLabel>{t('inmobiliaria.ai.arco.extend.grantedLabel')}</MonoLabel>
+          <p className="text-body-sm text-fg">
+            {/* Las claves `sla.day`/`sla.days` traen `{count}` adentro: hay que
+                reemplazarlo, no concatenar el número por fuera. */}
+            <span className="font-mono tabular-nums">
+              {t(
+                `inmobiliaria.ai.arco.sla.${detail.slaExtensionDays === 1 ? 'day' : 'days'}`,
+              ).replace('{count}', `+${detail.slaExtensionDays}`)}
+            </span>
+            {detail.slaExtendedAt && (
+              <span className="text-fg-muted">
+                {' · '}
+                <span className="font-mono text-xs tabular-nums">
+                  {shortDateTime.format(new Date(detail.slaExtendedAt))}
+                </span>
+              </span>
+            )}
+          </p>
+          {detail.slaExtensionReason && (
+            <p
+              data-lenis-prevent
+              className="max-h-32 overflow-y-auto whitespace-pre-line break-words rounded-sm bg-surface-muted p-3 text-body-sm leading-relaxed text-fg-muted"
+            >
+              {detail.slaExtensionReason}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Lo que pide: prosa, no una cifra. Va a lo ancho de la tarjeta y
           envuelve.
 
@@ -688,9 +854,20 @@ export default function ArcoDetailPage({ params }: ArcoDetailPageProps) {
           </h1>
           <ArcoStatusBadge status={detail.status} />
         </div>
-        {detail.status === 'pending_admin_triage' && (
-          <TriageButton requestId={params.id} detailRefetch={detailRefetch} t={t} />
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {detail.status === 'pending_admin_triage' && (
+            <TriageButton requestId={params.id} detailRefetch={detailRefetch} t={t} />
+          )}
+          {/* Una sola prórroga, y sólo mientras el término siga corriendo. */}
+          {!detail.isClosed && detail.slaExtensionDays == null && (
+            <ExtendDialog
+              requestId={params.id}
+              type={detail.type}
+              detailRefetch={detailRefetch}
+              t={t}
+            />
+          )}
+        </div>
       </div>
 
       {/* Two-column layout: left (timeline + resolve panel), right (sidebar) */}

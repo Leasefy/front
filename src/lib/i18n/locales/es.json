@@ -6202,7 +6202,20 @@
           "rejected": "Solicitud rechazada",
           "triaged": "Solicitud tomada. Queda en curso."
         },
-        "triage": "Tomar la solicitud"
+        "triage": "Tomar la solicitud",
+        "extend": {
+          "action": "Ampliar el plazo",
+          "title": "Ampliar el plazo de respuesta",
+          "body": "La Ley 1581 permite ampliar el término una sola vez, hasta {max} días hábiles más, y solo si le informas al solicitante los motivos y la fecha en que responderás. Al confirmar le enviamos ese aviso por correo.",
+          "daysLabel": "Días hábiles adicionales (máximo {max})",
+          "reasonLabel": "Motivo de la demora",
+          "reasonPlaceholder": "Ej.: estamos recopilando los registros del archivo histórico del inmueble.",
+          "reasonHint": "Se le copia textual al solicitante en el correo. Escribí algo que se entienda por fuera.",
+          "confirm": "Ampliar y avisar",
+          "toastOk": "Plazo ampliado y aviso enviado al solicitante.",
+          "toastError": "No se pudo avisarle al solicitante, así que el plazo no se amplió.",
+          "grantedLabel": "Plazo ampliado"
+        }
       },
       "templates": {
         "title": "Plantillas de cobranza",

@@ -70,6 +70,21 @@ const KIND_LABELS: Record<LegalArtifactKind, { es: string; en: string }> = {
   pre_bureau_notification: { es: 'Bureau', en: 'Bureau notification' },
 }
 
+/**
+ * `physical_send_method` es un enum de la base y se estaba pintando crudo en la
+ * tabla: el usuario leía «servicio_472» y «email_only». 4-72 es el operador
+ * postal nacional, y en una carta prejurídica el método de envío no es un
+ * detalle técnico — es la prueba de notificación.
+ *
+ * El CHECK de la tabla admite exactamente estos tres; cualquier valor nuevo cae
+ * al propio slug, que es feo pero honesto (mejor que inventarle un nombre).
+ */
+const SEND_METHOD_LABELS: Record<string, { es: string; en: string }> = {
+  servicio_472: { es: 'Correo certificado (4-72)', en: 'Certified mail (4-72)' },
+  email_only: { es: 'Solo correo electrónico', en: 'Email only' },
+  operator_manual: { es: 'Entrega manual del operador', en: 'Manual operator delivery' },
+}
+
 const STATUS_LABELS: Record<LegalArtifactStatus, { es: string; en: string }> = {
   pending_human_review: { es: 'Pendiente revisión', en: 'Pending review' },
   approved: { es: 'Aprobada', en: 'Approved' },
@@ -293,7 +308,12 @@ function CartasContent() {
                     : '—'}
                 </TableCell>
                 <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400">
-                  {a.physicalSendMethod ?? '—'}
+                  {a.physicalSendMethod
+                    ? (isEs
+                        ? SEND_METHOD_LABELS[a.physicalSendMethod]?.es
+                        : SEND_METHOD_LABELS[a.physicalSendMethod]?.en) ??
+                      a.physicalSendMethod
+                    : '—'}
                 </TableCell>
               </TableRow>
             ))}

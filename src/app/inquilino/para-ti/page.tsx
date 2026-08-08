@@ -24,6 +24,10 @@ import {
   getAccessiblePropertiesPercentage,
 } from '@/lib/context/TenantProfileContext';
 import { PropertyMatchCard } from '@/components/tenant/PropertyMatchCard';
+import { TopeAprobadoBanner, SobreTopeOverlay } from '@/components/tenant/TopeAprobadoBanner';
+import { QueSignificaPostularse } from '@/components/tenant/QueSignificaPostularse';
+import { useAprobacion } from '@/lib/hooks/use-aprobacion';
+import { referenciaCanon, superaReferencia } from '@/lib/api/aprobacion.service';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { formatCurrency } from '@/lib/format';
 import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
@@ -45,6 +49,8 @@ const ITEMS_PER_PAGE = 9;
 export default function ParaTiPage() {
   const { t, locale } = useI18n();
   const { profile, hasVerifiedProfile, isLoading } = useTenantProfile();
+  const { aprobacion, vigente: aprobacionVigente } = useAprobacion();
+  const referencia = referenciaCanon(aprobacion);
   const [sortBy, setSortBy] = useState<SortOption>('match');
   const [probabilityFunnel, setProbabilityFunnel] = useState<ProbabilityFunnel>('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -370,17 +376,29 @@ export default function ParaTiPage() {
           </div>
         </div>
 
+        {/* El tope aprobado, siempre a la vista: es lo que vuelve personal al catálogo. */}
+        <TopeAprobadoBanner aprobacion={aprobacion} vigente={aprobacionVigente} className="mb-4" />
+
+        {/* Por qué este catálogo es suyo, y qué significa postularse. Solo tiene
+            sentido cuando hay aprobación vigente: sin ella no hay catálogo
+            propio del que hablar, y el banner de arriba ya invita a conseguirla. */}
+        {aprobacionVigente && <QueSignificaPostularse className="mb-6" />}
+
         {/* Properties Grid */}
         {paginatedRecommendations.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
-              {paginatedRecommendations.map((match) => (
-                <PropertyMatchCard
-                  key={match.property.id}
-                  match={match}
-                  onViewProperty={() => handleViewProperty(match)}
-                />
-              ))}
+              {paginatedRecommendations.map((match) => {
+                // Lo que se pasa de la referencia SE VE, marcado y con el motivo.
+                const sobreTope =
+                  aprobacionVigente && superaReferencia(match.property.monthlyRent, aprobacion) === true
+                return (
+                  <div key={match.property.id} className={cn('relative', sobreTope && 'opacity-75')}>
+                    <PropertyMatchCard match={match} onViewProperty={() => handleViewProperty(match)} />
+                    {sobreTope && <SobreTopeOverlay referencia={referencia} />}
+                  </div>
+                )
+              })}
             </div>
 
             {/* Pagination */}

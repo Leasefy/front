@@ -642,8 +642,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return null
   }, [fetchUser, checkMfaLevel])
 
-  /** Sign up with email and password. Returns whether email confirmation is required. */
-  const signUpWithEmail = useCallback(async (email: string, password: string, redirectTo?: string, intendedRole?: UserRole) => {
+  /**
+   * Sign up with email and password. Returns whether email confirmation is required.
+   *
+   * `perfil` lleva datos que ya conocemos de la persona **antes** de que tenga
+   * cuenta — hoy los del recorrido de aprobación (nombre, celular, cédula,
+   * ciudad). Van a `user_metadata`, que sobrevive al link de confirmación y se
+   * puede leer del lado del servidor. Sin esto habría que volver a pedirle cosas
+   * que acaba de escribir dos pantallas atrás.
+   */
+  const signUpWithEmail = useCallback(async (email: string, password: string, redirectTo?: string, intendedRole?: UserRole, perfil?: Record<string, string>) => {
     const supabase = getSupabase()
     if (!supabase) throw new Error('Supabase not initialized')
     const { data, error } = await supabase.auth.signUp({
@@ -653,7 +661,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
         // Persist the profile chosen at signup as user_metadata so it survives
         // regardless of the confirmation link (readable server-side too).
-        ...(intendedRole ? { data: { intended_role: intendedRole } } : {}),
+        ...(intendedRole || perfil
+          ? { data: { ...(intendedRole ? { intended_role: intendedRole } : {}), ...(perfil ?? {}) } }
+          : {}),
       },
     })
     if (error) throw error

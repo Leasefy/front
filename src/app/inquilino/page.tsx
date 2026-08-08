@@ -336,11 +336,18 @@ export default function InquilinoPage() {
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
 
-                      {/* Match badge */}
-                      <div className="absolute top-3 left-3 px-2.5 py-1 text-white text-xs font-medium rounded-full flex items-center gap-1" style={{ backgroundColor: '#14130f' }}>
-                        <Check className="w-3 h-3" weight="bold" />
-                        {92 - index * 5}% match
-                      </div>
+                      {/*
+                        Acá iba una insignia "92% match". El número salía de
+                        `92 - index * 5`: la posición en el arreglo, no un
+                        cálculo. La primera tarjeta siempre decía 92%.
+
+                        El match REAL existe y es del backend —`/recommendations`
+                        devuelve `matchScore` y lo pinta `PropertyMatchCard`—
+                        pero esta sección no usa ese endpoint, usa
+                        `useFeaturedProperties`. Así que la insignia afirmaba
+                        una afinidad que nadie midió. Fuera hasta que la sección
+                        se conecte al motor (ver el handoff de Víctor).
+                      */}
 
                       {/* Heart - Glass effect */}
                       <div

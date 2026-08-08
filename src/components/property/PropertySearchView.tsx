@@ -294,7 +294,7 @@ export function PropertySearchView({ embedded = false, basePath }: PropertySearc
                 'font-medium text-foreground tracking-tight mb-4',
                 embedded ? 'text-base' : 'text-lg'
               )}>
-                Busqueda inteligente
+                Búsqueda inteligente
               </h1>
               <AISearchInput
                 value={aiSearchQuery}

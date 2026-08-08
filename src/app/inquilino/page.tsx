@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -21,6 +21,7 @@ import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
 // viera de otro producto.
 import { EmptyState } from '@/components/ui/empty-state';
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
+import { referenciaCanon } from '@/lib/api/aprobacion.service';
 import {
   deriveTenantOnboardingStatus,
   readTenantOnboardingCacheStatus,
@@ -131,8 +132,25 @@ export default function InquilinoPage() {
     ? { id: activeLeases[0].id, propertyName: activeLeases[0].propertyTitle }
     : null;
 
-  // Featured properties for recommendation (always show)
-  const { properties: featuredProperties, isLoading: featuredLoading } = useFeaturedProperties(4);
+  /*
+   * Vista previa de su catálogo. Se piden más de las que se muestran porque
+   * después se filtran.
+   *
+   * El filtro es el MISMO que el de `/inquilino/para-ti`, y eso es el punto:
+   * antes el home mostraba destacadas sin filtrar, así que alguien aprobado
+   * hasta $2.800.000 podía ver acá una de $4.000.000, hacer clic en "Ver más"
+   * y no encontrarla en su catálogo. La vista previa prometía algo que el
+   * destino no tenía.
+   */
+  const { properties: featuredRaw, isLoading: featuredLoading } = useFeaturedProperties(12);
+  const referenciaHome = referenciaCanon(aprobacion);
+  const featuredProperties = useMemo(() => {
+    const disponibles = featuredRaw.filter((p) => p.status !== 'rented');
+    const dentro = referenciaHome
+      ? disponibles.filter((p) => p.monthlyRent <= referenciaHome.valorCop)
+      : disponibles;
+    return [...dentro].sort((a, b) => a.monthlyRent - b.monthlyRent).slice(0, 4);
+  }, [featuredRaw, referenciaHome]);
 
   // Loading state — wait for auth + real data so the "new user" banner doesn't flash
   if (authLoading || isOnboardingComplete === null || applicationsLoading || leasesLoading) {
@@ -303,8 +321,18 @@ export default function InquilinoPage() {
                   <h2 className="text-xl font-semibold text-fg dark:text-white">
                     {locale === 'es' ? 'Propiedades para ti' : 'Properties for you'}
                   </h2>
+                  {/* Decía "Basado en tu perfil y preferencias", que no es lo
+                      que hace: no hay motor de perfil detrás de esta sección.
+                      Ahora dice lo que sí es cierto, y cambia según tenga o no
+                      un tope aprobado. */}
                   <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
-                    {locale === 'es' ? 'Basado en tu perfil y preferencias' : 'Based on your profile and preferences'}
+                    {referenciaHome
+                      ? locale === 'es'
+                        ? 'Dentro de tu tope aprobado'
+                        : 'Within your approved cap'
+                      : locale === 'es'
+                        ? 'Disponibles ahora'
+                        : 'Available now'}
                   </p>
                 </div>
                 {/* Apunta al catálogo propio, no a Explorar: la sección se

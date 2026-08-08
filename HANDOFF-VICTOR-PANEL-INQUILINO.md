@@ -22,6 +22,9 @@ Complementa a `HANDOFF-VICTOR-RECORRIDO-INQUILINO.md`, que cubre el **recorrido 
 
 Todo lo demás del panel está conectado y respondiendo.
 
+**Un cuarto, menor:** `GET /evaluations/mine` no existe (404), así que la tarjeta "Tu score" no
+puede mostrar nunca un resultado — ver el detalle más abajo.
+
 ---
 
 ## ✅ Lo que ya funciona (verificado, no asumido)
@@ -133,29 +136,40 @@ La pantalla de Pagos ofrece PSE. El endpoint existe pero el servicio responde **
 (¿configuración del proveedor?). Hoy no se nota porque la cuenta de prueba no tiene arriendo
 activo, pero en cuanto alguien firme, se nota.
 
-### Evaluación del inquilino (el "score") — no conectada, y está bien declarado
+### Evaluación del inquilino (el "score") — no conectada, pero ya no es un botón muerto
 
 `useEvaluation` **siempre** devuelve `null` y lo dice en su cabecera: la evaluación de
 autoservicio del inquilino *"is a planned feature that is NOT yet connected to the backend"*.
 Además purga a propósito los scores falsos que persistía la implementación vieja.
 
-Efecto visible: la tarjeta **"Tu score"** del panel está permanentemente bloqueada/borrosa.
-No inventa un número — pero ocupa un lugar destacado del home sin poder dar nada.
+**Lo que estaba roto y ya arreglamos:** el panel del score ofrecía un botón primario grande,
+*"Evaluar mi perfil"*, cableado a `purchaseEvaluation()` — una función que **solo escribe una
+advertencia en consola**. Se tocaba y no pasaba nada: ni aviso, ni error, ni navegación.
 
-**Decisión pendiente (tuya y de Nico):** o se conecta (`POST /evaluations/:applicationId` ya existe
-para el flujo de inmobiliaria) o se saca del home hasta que exista.
+Ahora esa pantalla dice la verdad —*"Tu evaluación la hace la inmobiliaria cuando te postulas a
+una propiedad. No tienes que pedirla ni pagarla aparte."*— y ofrece la salida real: ir a su
+catálogo y postularse. La etiqueta de la tarjeta pasó de *"Evaluar perfil"* a *"Al postularte"*.
 
-### "Propiedades para ti" del home no usa el motor de recomendaciones
+**Lo tuyo:** cuando corras `POST /evaluations/:applicationId` sobre una postulación de un
+inquilino, necesitamos leer ese resultado desde su panel. Hoy no hay endpoint para eso —
+`GET /evaluations/mine` responde 404. Con eso la tarjeta deja de estar bloqueada.
 
-La sección del home llama a `useFeaturedProperties` (propiedades destacadas), **no** a
-`/recommendations`. Por eso mostraba una insignia *"92% match"* cuyo número salía de
-`92 - index * 5` — la posición en el arreglo. La primera tarjeta siempre decía 92%.
+### "Propiedades para ti" del home ahora respeta el tope
 
-**Ya la quitamos** (2026-08-08): afirmaba una afinidad que nadie midió.
+La sección llama a `useFeaturedProperties`, **no** a `/recommendations`. Eso causaba dos cosas:
+
+1. Una insignia *"92% match"* cuyo número salía de `92 - index * 5` — la posición en el arreglo.
+   La primera tarjeta siempre decía 92%. **Quitada.**
+2. Más grave: la vista previa **no filtraba por el tope**, así que alguien aprobado hasta
+   $2.800.000 podía ver acá una de $4.000.000, hacer clic en "Ver más" y no encontrarla en su
+   catálogo. **Ya filtra igual que `/inquilino/para-ti`** — verificado: lo que muestra el home es
+   siempre un subconjunto del catálogo.
+
+El subtítulo también mentía: decía *"Basado en tu perfil y preferencias"* sin ningún motor de
+perfil detrás. Ahora dice *"Dentro de tu tope aprobado"* (o *"Disponibles ahora"* sin aprobación).
 
 Tu `/recommendations` **sí devuelve `matchScore` real** y `PropertyMatchCard` lo pinta bien en
-`/inquilino/para-ti`. Falta decidir si la sección del home se conecta a ese endpoint o se queda
-como "destacadas" sin porcentaje.
+`/inquilino/para-ti`. Queda abierto si el home se conecta a ese endpoint — hoy no lo necesita.
 
 ### `GET /documents` no existe (y no hace falta)
 

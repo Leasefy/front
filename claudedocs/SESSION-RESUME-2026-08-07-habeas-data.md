@@ -204,13 +204,19 @@ preset, `require('@leasefy/cadence/tailwind-preset')`. El snippet está en
 - `15624b5a` novedades: una sola por sección (trabajo previo, va aparte)
 - `ef510abb` el arreglo de Habeas Data + los dos docs
 
-**`~/rent/agent-develop`** — rama `fix/arco-triage-status-constraint`, 3 commits:
+**`~/rent/agent-develop`** — rama `fix/arco-triage-status-constraint`, 5 commits:
 - `64dca1ef` triage escribía un status que la tabla rechaza
 - `e509e86d` los términos de la Ley 1581 estaban invertidos
 - `e5ae40f6` el reporte diario moría por tamaño y el import encogía montos
+- `fc5689ff` festivos colombianos + prórroga de los Arts. 14 y 15
+- `73742557` tabla `agent.co_holidays` (generada) para que SQL cuente igual
 
-**`~/rent/admin`** — rama `fix/arco-sla-dias-habiles`, 1 commit:
+**`~/rent/admin`** — rama `fix/arco-sla-dias-habiles`, 2 commits:
 - `9e3d43f` «vencidas» contaba días calendario y un solo término
+- `7d87d2a` descontar festivos y sumar la prórroga
+
+⚠️ **Dos migraciones aplicadas en la base de dev** (`20260808000000_arco_sla_extension`
+y `20260808010000_co_holidays`), las dos aditivas. En prod hay que correrlas.
 
 ⚠️ Nada pusheado, en ninguno de los cuatro. **El front necesita los commits del
 agente**: sin ellos «Tomar la solicitud» no funciona y los plazos siguen
@@ -282,16 +288,54 @@ decisión de Victor, no un pendiente que se cierre solo.
 
 ---
 
+## 14. Festivos y prórrogas
+
+**Festivos.** Un día hábil en Colombia no es «cualquier día que no sea fin de
+semana»: son 18 al año. El conteo saltaba sólo sábados y domingos, o sea que
+mostraba más plazo del que hay —hasta dos días en Semana Santa—. Se calculan,
+no se listan: una tabla de fechas envejece en silencio y el 1 de enero del año
+que falta el sistema vuelve a contar de más sin que nada falle.
+
+Anclado contra calendarios reales. Un hallazgo que quedó escrito en el test
+para que nadie lo «arregle»: **2025 tuvo 17 festivos, no 18** — San Pedro y
+Sagrado Corazón caen el mismo lunes 30 de junio.
+
+Para que el backoffice cuente igual sin reimplementar el calendario en SQL, las
+fechas viven en `agent.co_holidays`, **generadas** desde el módulo del agente
+(el comando está en la migración).
+
+⚠️ Ahí apareció un bug que no se ve leyendo el SQL: con la serie llamada `d`,
+el `d` de adentro del `NOT EXISTS` resolvía contra la tabla de festivos —el
+ámbito más cercano— y la condición quedaba `h.d = h.d`, siempre cierta. Todos
+los días se excluían y el conteo daba 0. Lo encontró comparar SQL contra
+TypeScript fila por fila, no la revisión a ojo. Alias explícito `gs(day)`.
+
+**Prórrogas.** Art. 14 permite 5 días hábiles más en una consulta; Art. 15
+num. 3, ocho en un reclamo. Una sola vez, y sólo «informando al interesado los
+motivos de la demora y la fecha en que se atenderá».
+
+> La ley no concede la prórroga por decidirla, sino por informarla.
+
+Por eso el endpoint **manda el correo antes de guardar nada**: si el aviso no
+sale, devuelve 502 y no registra. Una prórroga sin aviso le mostraría a la
+inmobiliaria días de plazo que no tiene — el mismo patrón que veníamos sacando
+de esta pantalla. Verificado en vivo: con el dominio de prueba el correo falla,
+la respuesta es 502 y la base queda intacta.
+
+El motivo exige 20 caracteres —«ocupado» no es un motivo— y se le copia textual
+al solicitante con la fecha exacta de respuesta. Los límites están también en
+la base: el techo por tipo y que motivo, días y fecha vayan juntos.
+
+---
+
 ## Pendientes
 
 1. **Pushear** las cuatro ramas (decisión de Victor).
 2. El drift de esquema de §13 — decidir si `schema.prisma` se alinea a la base
    o al revés. No se resuelve con `prisma migrate dev`.
-3. Festivos colombianos en el conteo de días hábiles (§12).
-4. Las prórrogas de los Arts. 14 y 15 (5 y 8 días hábiles) no están: exigen
-   avisar al interesado con motivos y fecha, así que son una acción del
-   operador, no un plazo automático.
-5. Dos tests del agente fallan desde antes de esta sesión y no son míos
+3. `agent.co_holidays` cubre 2020–2060. Fuera de ese rango el conteo vuelve a
+   ir corto **sin avisar**; el generador sí calcula cualquier año.
+4. Dos tests del agente fallan desde antes de esta sesión y no son míos
    (verificado contra la base limpia): `full-call-path` (dedup SETNX) y
    `cotizador-cost-aggregator` (límite de concurrencia 5 vs 10).
 
@@ -306,7 +350,11 @@ decisión de Victor, no un pendiente que se cierre solo.
 `agentWorkspaceNav.ts` · `es.json`/`en.json` · `docs/DESIGN.md` ·
 `docs/COLOR_SYSTEM.md` · `.gitignore`
 
-**En el agente:** `agency-arco-requests.ts` + su test.
+**En el agente:** `agency-arco-requests.ts` + su test · `colombian-holidays.ts`
+(+ test) · `tenant-scope.ts` · `agency-cartera-import.ts` (+ test) ·
+`schema.prisma` · 2 migraciones.
+
+**En el backoffice:** `src/app/(admin)/arco/page.tsx`.
 
 `tsc` limpio · **1.599 tests verdes** (front, Node 20) · 7 verdes en el test del
 agente · lint sin errores nuevos · **`next build` verde**, corrido en un worktree

@@ -17,6 +17,7 @@ import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { useLandlordNotifications, useTenantNotifications } from '@/lib/hooks/useNotifications';
 import { LANDLORD_CATEGORIES, TENANT_CATEGORIES, formatNotificationTime } from '@/lib/types/notification';
 import type { BaseNotification, LandlordNotificationCategory, TenantNotificationCategory } from '@/lib/types/notification';
+import { FeedbackCta } from '@/components/feedback/FeedbackCta';
 import { AvatarSubscriptionIndicator } from './SubscriptionBadge';
 import { openPlanMobileSidebar } from './PlanSidebar';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
@@ -518,6 +519,18 @@ export function PlanHeader({
           {/* Quick Action Icons - Only for Landlords */}
           {isLandlord && (
             <>
+              {/* Va antes del rayo y es el único con texto del grupo: pedir
+                  opinión solo funciona si se lee. Desde `md` para no apretar
+                  el cluster de iconos en pantallas chicas. */}
+              <FeedbackCta
+                className="hidden md:inline-flex mr-1"
+                locale={locale}
+                hiddenFields={{
+                  panel: isInmobiliaria ? 'inmobiliaria' : 'propietario',
+                  ruta: pathname ?? '',
+                }}
+              />
+
               {/* Subscription Popover — admin-only in inmobiliaria context */}
               {canShowAdminActions && <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
                 <PopoverTrigger asChild>

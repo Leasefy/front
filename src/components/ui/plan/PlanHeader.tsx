@@ -516,20 +516,29 @@ export function PlanHeader({
           )}
           {actions}
 
+          {/*
+            Los tres portales, no solo los de `/panel`. Va fuera del bloque de
+            abajo a propósito: ese está gateado por `isLandlord`
+            (`pathname.startsWith('/panel')`), así que el inquilino —que usa
+            este mismo header— se quedaba sin poder opinar. Y es de quien menos
+            sabemos.
+
+            Primero del grupo, a la izquierda del rayo, y el único con texto:
+            pedir opinión solo funciona si se lee. Desde `md` para no apretar el
+            cluster de iconos en pantallas chicas.
+          */}
+          <FeedbackCta
+            className="hidden md:inline-flex mr-1"
+            locale={locale}
+            hiddenFields={{
+              panel: isInmobiliaria ? 'inmobiliaria' : isLandlord ? 'propietario' : 'inquilino',
+              ruta: pathname ?? '',
+            }}
+          />
+
           {/* Quick Action Icons - Only for Landlords */}
           {isLandlord && (
             <>
-              {/* Va antes del rayo y es el único con texto del grupo: pedir
-                  opinión solo funciona si se lee. Desde `md` para no apretar
-                  el cluster de iconos en pantallas chicas. */}
-              <FeedbackCta
-                className="hidden md:inline-flex mr-1"
-                locale={locale}
-                hiddenFields={{
-                  panel: isInmobiliaria ? 'inmobiliaria' : 'propietario',
-                  ruta: pathname ?? '',
-                }}
-              />
 
               {/* Subscription Popover — admin-only in inmobiliaria context */}
               {canShowAdminActions && <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>

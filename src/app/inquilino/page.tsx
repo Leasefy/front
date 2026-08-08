@@ -15,6 +15,7 @@ import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { TenantDashboardEmpty } from '@/components/tenant/TenantDashboardEmpty';
 import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
+import { EmptyState } from '@/components/data-display/EmptyState';
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import {
   deriveTenantOnboardingStatus,
@@ -379,32 +380,59 @@ export default function InquilinoPage() {
               </div>
             </motion.section>
 
-            {/* Empty State for Applications - Show when no applications */}
+            {/*
+              Antes esto era un bloque suelto: sin encabezado y sobre un fondo
+              `surface-muted/80` que encima del fondo de la página no se ve, así
+              que quedaba flotando después de las tarjetas sin pertenecer a
+              nada. Un vacío sin sección no dice de qué está vacío.
+
+              Ahora es una sección como la de arriba —título, subtítulo y enlace
+              a la lista completa— y el vacío usa el `EmptyState` compartido,
+              el mismo de Documentos y Contratos, dentro de una tarjeta con
+              borde como el resto de las superficies del home.
+            */}
             {activeApplications.length === 0 && (
               <motion.section
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
               >
-                <div className="rounded-xl bg-surface-muted/80 dark:bg-surface/[0.03] py-14 px-6 text-center">
-                  <div className="w-14 h-14 rounded-xl bg-surface dark:bg-surface/[0.06] flex items-center justify-center mx-auto mb-5">
-                    <FileText className="w-6 h-6 text-fg-subtle dark:text-fg-muted" />
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold text-fg dark:text-white">
+                      {t('nav.applications')}
+                    </h2>
+                    <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
+                      {locale === 'es'
+                        ? 'El estado de cada propiedad a la que te postules'
+                        : 'The status of every property you apply to'}
+                    </p>
                   </div>
+                  <Link
+                    href="/inquilino/aplicaciones"
+                    className="text-sm text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white font-medium flex items-center gap-1 transition-colors"
+                  >
+                    {t('common.showMore')}
+                    <ArrowUpRight className="w-4 h-4" />
+                  </Link>
+                </div>
+
+                <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618]">
                   {/* "aplicación / aplicar" está muerto: docs/VOCABULARIO.md.
                       Y el CTA va a su catálogo, que es lo siguiente que haría. */}
-                  <h3 className="text-base font-semibold text-fg mb-1.5">
-                    {locale === 'es' ? 'Todavía no te has postulado' : 'You have not applied yet'}
-                  </h3>
-                  <p className="text-sm text-fg-muted max-w-sm mx-auto leading-relaxed mb-6">
-                    {locale === 'es'
-                      ? 'Cuando te postules a una propiedad, podrás seguir acá cómo va tu postulación.'
-                      : 'When you apply to a property, you\'ll be able to follow your application here.'}
-                  </p>
-                  <Button asChild>
-                    <Link href="/inquilino/para-ti">
-                      {locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me'}
-                    </Link>
-                  </Button>
+                  <EmptyState
+                    icon={FileText}
+                    title={locale === 'es' ? 'Todavía no te has postulado' : 'You have not applied yet'}
+                    description={
+                      locale === 'es'
+                        ? 'Cuando te postules a una propiedad, podrás seguir acá cómo va tu postulación.'
+                        : 'When you apply to a property, you\'ll be able to follow your application here.'
+                    }
+                    primaryCta={{
+                      label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me',
+                      href: '/inquilino/para-ti',
+                    }}
+                  />
                 </div>
               </motion.section>
             )}

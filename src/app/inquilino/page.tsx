@@ -14,6 +14,8 @@ import { useTenantApplications } from '@/lib/hooks/useApplications';
 import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { TenantDashboardEmpty } from '@/components/tenant/TenantDashboardEmpty';
+import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
+import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import {
   deriveTenantOnboardingStatus,
   readTenantOnboardingCacheStatus,
@@ -44,6 +46,7 @@ export default function InquilinoPage() {
 
   // Evaluation state
   const { evaluation, isPaid, score, purchaseEvaluation } = useEvaluation();
+  const { aprobacion, vigente: aprobacionVigente } = useAprobacion();
   const [scoreSheetOpen, setScoreSheetOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
 
@@ -164,36 +167,36 @@ export default function InquilinoPage() {
               seguidas por el mismo hecho. Queda una. */}
         </motion.header>
 
-        {/* Welcome Card for New Users */}
+        {/*
+          Lo primero del home es la aprobación, y reemplaza al viejo
+          "¡Perfil completado!".
+
+          El perfil completo no es el hito que le importa a nadie: es un trámite
+          nuestro. El hito es **hasta cuánto puede arrendar** — sin eso no se
+          puede postular a nada, y con eso el catálogo deja de ser una vitrina.
+          El banner cubre los cuatro estados, así que el home empuja la acción
+          correcta en cada uno: conseguirla, esperarla, ver qué hacer si le
+          dijeron que no, o ir a su catálogo si ya la tiene.
+
+          Desde el home el paso siguiente es el catálogo, no el detalle: por eso
+          `detalle` apunta a "para ti" y no a la pantalla del tope.
+        */}
         {isNewUser && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mb-8 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-6 sm:p-8"
+            className="mb-8"
           >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              <div className="w-14 h-14 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/20 flex items-center justify-center flex-shrink-0">
-                <CheckCircle className="w-7 h-7 text-[#2C7A53] dark:text-[#3EAE70]" weight="fill" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
-                  {locale === 'es' ? '¡Perfil completado!' : 'Profile completed!'}
-                </h2>
-                {/* "aplica" está muerto (docs/VOCABULARIO.md), y el CTA va a su
-                    catálogo: es lo siguiente que haría, no el listado general. */}
-                <p className="text-fg-muted dark:text-fg-subtle">
-                  {locale === 'es'
-                    ? 'Ya puedes ver las propiedades que van contigo y postularte a las que quieras.'
-                    : 'You can now see the properties that match you and apply to any of them.'}
-                </p>
-              </div>
-              <Button asChild className="flex-shrink-0">
-                <Link href="/inquilino/para-ti">
-                  {locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me'}
-                </Link>
-              </Button>
-            </div>
+            <TopeAprobadoBanner
+              aprobacion={aprobacion}
+              vigente={aprobacionVigente}
+              detalle={{
+                href: '/inquilino/para-ti',
+                label: locale === 'es' ? 'Ver mis propiedades' : 'View my properties',
+                variant: 'default',
+              }}
+            />
           </motion.div>
         )}
 

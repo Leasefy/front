@@ -9122,7 +9122,9 @@
       "invita": "With your approval we show you only the properties that work for you.",
       "cta": {
         "renovar": "Renew",
-        "conocer": "Find out your cap"
+        "conocer": "Find out your cap",
+        "verEstado": "View status",
+        "queHacer": "See what you can do"
       },
       "aprobadoHasta": "You're approved up to",
       "aprobadoPara": "You're approved for",
@@ -9138,7 +9140,15 @@
         "consultaste": "You asked about",
         "asesorRevisa": "an advisor can review it"
       },
-      "porMes": "/mo"
+      "porMes": "/mo",
+      "proceso": {
+        "titulo": "We are checking with the insurers",
+        "texto": "We will let you know as soon as we know how much we can back you for."
+      },
+      "rechazado": {
+        "titulo": "We cannot approve you right now",
+        "texto": "This is not a final no. There are ways forward."
+      }
     },
     "resultado": {
       "aprobado": {

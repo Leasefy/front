@@ -9123,7 +9123,9 @@
       "invita": "Con tu aprobación te mostramos solo las propiedades que van contigo.",
       "cta": {
         "renovar": "Renovar",
-        "conocer": "Conoce tu tope"
+        "conocer": "Conoce tu tope",
+        "verEstado": "Ver estado",
+        "queHacer": "Ver qué puedes hacer"
       },
       "aprobadoHasta": "Estás aprobado hasta",
       "aprobadoPara": "Estás aprobado para",
@@ -9139,7 +9141,15 @@
         "consultaste": "Consultaste",
         "asesorRevisa": "un asesor puede revisarlo"
       },
-      "porMes": "/mes"
+      "porMes": "/mes",
+      "proceso": {
+        "titulo": "Estamos consultando a las aseguradoras",
+        "texto": "Te avisamos apenas sepamos hasta cuánto podemos respaldarte."
+      },
+      "rechazado": {
+        "titulo": "Por ahora no podemos aprobarte",
+        "texto": "No es un no definitivo. Hay caminos para seguir adelante."
+      }
     },
     "resultado": {
       "aprobado": {

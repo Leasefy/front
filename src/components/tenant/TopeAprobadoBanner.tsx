@@ -46,10 +46,78 @@ export function TopeAprobadoBanner({
    * y `/inquilino/aprobacion` lo mandaría al login — justo después de haberse
    * aprobado. En ese caso lo útil es otra cosa: su aprobación vive solo en este
    * navegador, así que lo que necesita es una cuenta donde guardarla.
+   *
+   * `variant` existe porque el peso del botón depende de dónde esté la banda:
+   * dentro del catálogo "Ver detalle" es secundario —ya está donde importa—,
+   * pero en el home ir a su catálogo ES la acción, y un botón apagado al lado
+   * del número no incentiva nada.
    */
-  detalle?: { href: string; label: string }
+  detalle?: { href: string; label: string; variant?: 'default' | 'secondary' }
 }) {
   const tf = useTf()
+
+  /*
+   * En proceso: no invita ni regaña, informa. Mandarlo a "Conoce tu tope"
+   * cuando ya lo pidió lo haría empezar de nuevo algo que ya está corriendo.
+   */
+  if (aprobacion?.estado === 'en_proceso') {
+    return (
+      <div
+        className={cn(
+          'rounded-lg border border-border bg-surface p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4',
+          className,
+        )}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-md bg-surface-muted flex items-center justify-center shrink-0">
+            <Hourglass className="w-5 h-5 text-fg-muted" aria-hidden="true" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-fg">
+              {tf(`${NS}.proceso.titulo`, 'Estamos consultando a las aseguradoras')}
+            </p>
+            <p className="text-sm text-fg-muted mt-0.5">
+              {tf(`${NS}.proceso.texto`, 'Te avisamos apenas sepamos hasta cuánto podemos respaldarte.')}
+            </p>
+          </div>
+        </div>
+        <Button asChild variant="secondary" hideArrow className="shrink-0">
+          <Link href="/inquilino/aprobacion">{tf(`${NS}.cta.verEstado`, 'Ver estado')}</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  /*
+   * Rechazado: la salida no es "consultá otra vez" —eso es pedirle que repita
+   * lo que acaba de fallar— sino la pantalla que explica qué puede hacer
+   * (mejorar perfil, esperar, o que alguien se postule por él).
+   */
+  if (aprobacion?.estado === 'rechazado') {
+    return (
+      <div
+        className={cn(
+          'rounded-lg border border-border bg-surface p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4',
+          className,
+        )}
+      >
+        <div>
+          <p className="text-sm font-medium text-fg">
+            {tf(`${NS}.rechazado.titulo`, 'Por ahora no podemos aprobarte')}
+          </p>
+          <p className="text-sm text-fg-muted mt-0.5">
+            {tf(`${NS}.rechazado.texto`, 'No es un no definitivo. Hay caminos para seguir adelante.')}
+          </p>
+        </div>
+        <Button asChild variant="secondary" hideArrow className="shrink-0">
+          <Link href="/inquilino/aprobacion">
+            {tf(`${NS}.cta.queHacer`, 'Ver qué puedes hacer')}
+          </Link>
+        </Button>
+      </div>
+    )
+  }
+
   // Sin aprobación: la banda invita, no regaña.
   if (!aprobacion || !vigente) {
     return (
@@ -141,7 +209,11 @@ export function TopeAprobadoBanner({
                 : tf(`${NS}.venceHoy`, 'Vence hoy')}
           </span>
         )}
-        <Button asChild variant="secondary" hideArrow>
+        <Button
+          asChild
+          variant={detalle.variant ?? 'secondary'}
+          hideArrow={(detalle.variant ?? 'secondary') === 'secondary'}
+        >
           <Link href={detalle.href}>{detalle.label}</Link>
         </Button>
       </div>

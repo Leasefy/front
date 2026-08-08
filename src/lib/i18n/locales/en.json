@@ -9235,8 +9235,13 @@
       "volver": "Back to dashboard",
       "titulo": "Properties for you",
       "cargando": "Looking for properties…",
-      "dentroDeTuTope": "are within your approved cap",
-      "sinTope": "Your approval is ready. Once we confirm your cap we'll mark what works for you."
+      "sinTope": "Your approval is ready. Once we confirm your cap we'll show you what works for you.",
+      "puedesTomar": "you can take with your approval",
+      "vacio": "There are no properties within your cap right now",
+      "vacioTexto": "New ones come up often. Meanwhile you can browse the full catalog.",
+      "verTodo": "See all properties",
+      "hayMas": "There are",
+      "hayMasFin": "properties above your cap."
     }
   }
 }

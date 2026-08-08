@@ -9236,8 +9236,13 @@
       "volver": "Volver al panel",
       "titulo": "Propiedades para ti",
       "cargando": "Buscando propiedades…",
-      "dentroDeTuTope": "están dentro de tu tope aprobado",
-      "sinTope": "Tu aprobación está lista. Cuando confirmemos tu tope te marcamos lo que va contigo."
+      "sinTope": "Tu aprobación está lista. Cuando confirmemos tu tope te mostramos lo que va contigo.",
+      "puedesTomar": "que puedes tomar con tu aprobación",
+      "vacio": "Ahora mismo no hay propiedades dentro de tu tope",
+      "vacioTexto": "Aparecen nuevas seguido. Mientras tanto puedes ver el catálogo completo.",
+      "verTodo": "Ver todas las propiedades",
+      "hayMas": "Hay",
+      "hayMasFin": "propiedades por encima de tu tope."
     }
   }
 }

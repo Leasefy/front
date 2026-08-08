@@ -242,6 +242,30 @@ algo que ya se ganó por un dato que nos falta a nosotros.
 
 ---
 
+## 8. `GET /notifications` responde **500 en todas las pantallas**
+
+Salió en el QA del 2026-08-08. Cada carga de cualquier ruta del panel dispara
+`GET http://localhost:3000/notifications` y **siempre** vuelve 500. No rompe nada visible —el front
+lo traga— pero deja un error en consola en cada navegación y tapa cualquier fallo real que aparezca
+ahí. Verificado en 12 rutas del panel del inquilino, 12 de 12.
+
+## 9. Endpoints que el front ya usa y conviene que estén
+
+Estos tres se cablearon el 2026-08-08 (antes eran `setTimeout` que fingían éxito). Si alguno no
+existe o responde error, la acción ahora **avisa que falló** en vez de mentir — que es lo correcto,
+pero deja a la persona sin poder hacerlo:
+
+| Endpoint | Para qué | Si falta |
+|---|---|---|
+| `PATCH /users/me/notification-settings` | Guardar preferencias de notificación | Los interruptores no guardan y lo dicen |
+| `GET /users/me/notification-settings` | Cargarlas al abrir | Ídem |
+| `POST /users/me/data-export` | **Derecho de acceso, Ley 1581** | No se puede pedir la copia de datos |
+
+El de `data-export` es el que más urge: es una obligación legal, y hasta ayer la pantalla prometía
+"te enviaremos tus datos en 24 horas" sin que nadie recibiera la solicitud.
+
+---
+
 ## Lo que NO es tuyo (para que no lo persigas)
 
 - **Confirmación de correo en Supabase.** Está activa, así que al crear la cuenta la persona no

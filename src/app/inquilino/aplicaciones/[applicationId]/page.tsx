@@ -158,7 +158,7 @@ export default function ApplicationDetailPage() {
     setIsWithdrawing(true);
     try {
       await applicationsApi.withdraw(applicationId);
-      toast.success(locale === 'es' ? 'Aplicación retirada' : 'Application withdrawn');
+      toast.success(locale === 'es' ? 'Postulación retirada' : 'Application withdrawn');
       setConfirmWithdrawOpen(false);
       await refetch();
     } catch (e) {
@@ -195,11 +195,11 @@ export default function ApplicationDetailPage() {
             <FileText className="w-10 h-10 text-fg-subtle" />
           </div>
           <h2 className="text-2xl font-semibold text-fg mb-3">
-            {locale === 'es' ? 'Aplicación no encontrada' : 'Application not found'}
+            {locale === 'es' ? 'Postulación no encontrada' : 'Application not found'}
           </h2>
           <p className="text-fg-muted mb-6 max-w-sm">
             {error || (locale === 'es'
-              ? 'No pudimos encontrar esta aplicación. Es posible que haya sido eliminada o el enlace sea incorrecto.'
+              ? 'No pudimos encontrar esta postulación. Es posible que haya sido eliminada o el enlace sea incorrecto.'
               : 'We couldn\'t find this application. It may have been deleted or the link is incorrect.')}
           </p>
           <Button onClick={() => router.push('/inquilino/aplicaciones')}>
@@ -324,7 +324,7 @@ export default function ApplicationDetailPage() {
             {/* Property Image */}
             <div className="relative w-full lg:w-[400px] h-64 lg:h-auto flex-shrink-0">
               <Image
-                src={property?.thumbnail || '/placeholder-property.jpg'}
+                src={property?.thumbnail || '/placeholder-property.svg'}
                 alt={property?.title || 'Propiedad'}
                 fill
                 className="object-cover"
@@ -461,7 +461,7 @@ export default function ApplicationDetailPage() {
                         </div>
                         <div>
                           <p className="font-semibold text-success">
-                            {locale === 'es' ? '¡Felicidades! Tu aplicación fue aprobada' : 'Congratulations! Your application was approved'}
+                            {locale === 'es' ? '¡Felicidades! Tu postulación fue aprobada' : 'Congratulations! Your application was approved'}
                           </p>
                           <p className="text-sm text-success mt-1">
                             {locale === 'es'
@@ -658,7 +658,7 @@ export default function ApplicationDetailPage() {
                           </p>
                           <p className="text-sm text-danger mt-1">
                             {locale === 'es'
-                              ? 'El proceso se cerró. Para intentar de nuevo tenés que crear una nueva aplicación.'
+                              ? 'El proceso se cerró. Para intentar de nuevo tienes que crear una nueva postulación.'
                               : 'The process is closed. To try again you need to create a new application.'}
                           </p>
                         </div>
@@ -731,7 +731,7 @@ export default function ApplicationDetailPage() {
                       </p>
                       <p className="text-sm text-danger mt-1">
                         {locale === 'es'
-                          ? 'Esta aplicación se cerró. Puede ser porque la propiedad fue rentada a otro candidato o porque el propietario tomó otra decisión. No es un rechazo a tu perfil — vas a recibir alternativas en breve.'
+                          ? 'Esta postulación se cerró. Puede ser porque la propiedad fue rentada a otro candidato o porque el propietario tomó otra decisión. No es un rechazo a tu perfil — vas a recibir alternativas en breve.'
                           : 'This application was closed. The property may have been rented to another candidate or the landlord chose differently. It\'s not a rejection of your profile — you\'ll receive alternatives shortly.'}
                       </p>
                       <Link
@@ -760,7 +760,7 @@ export default function ApplicationDetailPage() {
               className="rounded-xl bg-surface-muted p-6"
             >
               <h2 className="text-lg font-semibold text-fg mb-6">
-                {locale === 'es' ? 'Historial de la aplicación' : 'Application history'}
+                {locale === 'es' ? 'Historial de la postulación' : 'Application history'}
               </h2>
 
               <div className="relative">
@@ -937,7 +937,7 @@ export default function ApplicationDetailPage() {
                     </div>
                     <div className="text-left">
                       <p className="text-sm font-medium text-danger">
-                        {locale === 'es' ? 'Retirar aplicación' : 'Withdraw application'}
+                        {locale === 'es' ? 'Retirar postulación' : 'Withdraw application'}
                       </p>
                       <p className="text-xs text-fg-muted">
                         {locale === 'es' ? 'Cancelar solicitud' : 'Cancel request'}
@@ -991,7 +991,7 @@ export default function ApplicationDetailPage() {
                     </p>
                     <p className="text-sm text-warning">
                       {locale === 'es'
-                        ? 'El propietario está evaluando tu aplicación. Normalmente toma entre 24-48 horas.'
+                        ? 'El propietario está evaluando tu postulación. Normalmente toma entre 24-48 horas.'
                         : 'The landlord is evaluating your application. This typically takes 24-48 hours.'}
                     </p>
                   </div>
@@ -1099,7 +1099,7 @@ export default function ApplicationDetailPage() {
                   ? 'Retirando...'
                   : 'Withdrawing...'
                 : locale === 'es'
-                  ? 'Retirar aplicación'
+                  ? 'Retirar postulación'
                   : 'Withdraw application'}
             </AlertDialogAction>
           </AlertDialogFooter>

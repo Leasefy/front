@@ -146,7 +146,7 @@ function mapToTenantView(ba: BackendApplication): TenantApplicationView {
       ? {
           id: ba.property.id,
           title: ba.property.title,
-          thumbnail: firstImage?.url || '/placeholder-property.jpg',
+          thumbnail: firstImage?.url || '/placeholder-property.svg',
           city: ba.property.city,
           neighborhood: ba.property.neighborhood,
           monthlyRent: ba.property.monthlyRent,

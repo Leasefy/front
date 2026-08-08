@@ -437,7 +437,7 @@ export default function AplicacionesPage() {
                               {/* Image */}
                               <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
                                 <Image
-                                  src={application.property?.thumbnail || '/placeholder-property.jpg'}
+                                  src={application.property?.thumbnail || '/placeholder-property.svg'}
                                   alt={application.property?.title || 'Propiedad'}
                                   fill
                                   quality={90}
@@ -503,7 +503,7 @@ export default function AplicacionesPage() {
 
                                 <div className="mt-4">
                                   <div className="flex items-center justify-between text-xs text-fg-muted mb-2">
-                                    <span>{locale === 'es' ? 'Progreso de aplicación' : 'Application progress'}</span>
+                                    <span>{locale === 'es' ? 'Progreso de tu postulación' : 'Application progress'}</span>
                                     <span>{status.progress}% {locale === 'es' ? 'completado' : 'complete'}</span>
                                   </div>
                                   <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
@@ -542,8 +542,8 @@ export default function AplicacionesPage() {
                                         {application.status === 'pre_approved' && (locale === 'es' ? 'Agendar visita' : 'Schedule visit')}
                                         {application.status === 'approved' && nextStepForApproved(contractsByApp[application.id], locale)}
                                         {application.status === 'rejected' && (locale === 'es' ? 'Proceso cerrado — explorá alternativas' : 'Process closed — explore alternatives')}
-                                        {application.status === 'withdrawn' && (locale === 'es' ? 'Aplicación cerrada' : 'Application closed')}
-                                        {application.status === 'contract_failed' && (locale === 'es' ? 'Contrato no prosperó — crear nueva aplicación' : 'Contract didn\'t succeed — create a new application')}
+                                        {application.status === 'withdrawn' && (locale === 'es' ? 'Postulación cerrada' : 'Application closed')}
+                                        {application.status === 'contract_failed' && (locale === 'es' ? 'Contrato no prosperó — crear nueva postulación' : 'Contract didn\'t succeed — create a new application')}
                                       </p>
                                     </div>
                                   </div>
@@ -596,7 +596,7 @@ export default function AplicacionesPage() {
                             {/* Image */}
                             <div className="relative aspect-[4/3] overflow-hidden">
                               <Image
-                                src={application.property?.thumbnail || '/placeholder-property.jpg'}
+                                src={application.property?.thumbnail || '/placeholder-property.svg'}
                                 alt={application.property?.title || 'Propiedad'}
                                 fill
                                 quality={90}
@@ -750,7 +750,7 @@ export default function AplicacionesPage() {
                     ? 'Con tu tope aprobado te mostramos las propiedades que puedes tomar. Postularte es el primer paso.'
                     : 'Explore available properties and apply to start your rental process.')
                 : (locale === 'es'
-                    ? 'Las aplicaciones aprobadas o rechazadas aparecerán aquí.'
+                    ? 'Las postulaciones aprobadas o rechazadas aparecerán aquí.'
                     : 'Approved or rejected applications will appear here.')
               }
               /* A SU catálogo, no al listado general: ahí están las que puede

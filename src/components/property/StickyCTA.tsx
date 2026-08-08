@@ -14,6 +14,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { visitsApi } from '@/lib/api/visits.service';
 import { ApiError } from '@/lib/api/client';
 import type { VisitSlot } from '@/lib/api/visits.types';
+import { PostularButton } from '@/components/tenant/PostularButton';
 
 interface StickyCTAProps {
   propertyId: string;
@@ -397,9 +398,9 @@ export function StickyCTA({
                   </p>
                 </div>
               </div>
-              <Link href={`/aplicar/${propertyId}`} className="block">
-                <Button className="w-full">Postularme a esta propiedad</Button>
-              </Link>
+              <PostularButton propertyId={propertyId} canonCop={price} className="w-full">
+                Postularme a esta propiedad
+              </PostularButton>
               <p className="text-[11px] text-muted-foreground text-center mt-3">
                 Completa tu solicitud en minutos
               </p>
@@ -669,9 +670,7 @@ export function MobileStickyCTA({
               </Button>
             ) : (
               <>
-                <Button asChild hideArrow>
-                  <Link href={`/aplicar/${propertyId}`}>Postularme</Link>
-                </Button>
+                <PostularButton propertyId={propertyId} canonCop={price} hideArrow />
                 <Button variant="outline" hideArrow>
                   Visita
                 </Button>

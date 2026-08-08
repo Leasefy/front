@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Toaster } from '@/components/ui/toast';
-import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass } from '@phosphor-icons/react';
+import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
@@ -29,6 +29,9 @@ function useTenantNavItems() {
   return [
     { label: t('nav.panel'), href: '/inquilino', icon: SquaresFour, exact: true },
     { label: locale === 'es' ? 'Explorar' : 'Explore', href: '/inquilino/explorar', icon: MagnifyingGlass },
+    // Va temprano a propósito: la aprobación es lo primero del recorrido —
+    // sin ella no se puede postular a nada (docs/VOCABULARIO.md).
+    { label: t('nav.approval'), href: '/inquilino/aprobacion', icon: SealCheck },
     { label: t('nav.myRental'), href: '/inquilino/arriendo', icon: House },
     { label: t('nav.applications'), href: '/inquilino/aplicaciones', icon: FileMagnifyingGlass },
     { label: t('nav.contracts'), href: '/inquilino/contratos', icon: Handshake },

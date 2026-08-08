@@ -135,7 +135,9 @@ function TemplateCard({
   tpl: TemplateRow
   t: (k: string) => string
 }) {
-  const preview = tpl.bodyPublished ?? tpl.bodyDraft ?? ''
+  // El texto vivo, no el borrador: la tarjeta muestra lo que hoy le llega al
+  // deudor y la píldora avisa si hay cambios sin publicar.
+  const preview = tpl.liveBody
   const level = tokenBadgeLevel(tpl.tokenCount)
 
   return (
@@ -268,14 +270,17 @@ export default function PlantillasPage() {
             {t('inmobiliaria.ai.templates.title')}
           </h1>
         </header>
+        {/*
+          Sin CTA a propósito. Había un «Crear plantilla» que apuntaba a
+          `?tab=drafts` — un parámetro que esta página no lee — así que
+          recargaba la misma pantalla. Y no podría hacer otra cosa: el agente
+          expone list / draft / publish / wa-status, no hay endpoint de creación.
+          Un botón que no puede cumplir es peor que no tener botón.
+        */}
         <EmptyState
           icon={FileText}
           title={t('inmobiliaria.ai.cobranza.plantillas.empty.title')}
           description={t('inmobiliaria.ai.cobranza.plantillas.empty.description')}
-          primaryCta={{
-            label: t('inmobiliaria.ai.cobranza.plantillas.empty.cta.label'),
-            href: '/panel/inmobiliaria/ai/cobranza/plantillas?tab=drafts',
-          }}
         />
       </main>
     )
@@ -321,14 +326,20 @@ export default function PlantillasPage() {
       {data && (
         <Tabs defaultValue="stage">
           <TabsList>
+            {/*
+              Los conteos van sobre lo que hay, no sobre lo que se esperaba.
+              Las etiquetas traían «(14)», «(8)» y «(5)» quemados en el copy —
+              las 27 plantillas que la fase 36 dio por sentadas— así que la
+              pestaña decía «WhatsApp (8)» encima de dos tarjetas.
+            */}
             <TabsTrigger value="stage">
-              {t('inmobiliaria.ai.templates.tabs.stages')}
+              {t('inmobiliaria.ai.templates.tabs.stages')} ({stageTemplates.length})
             </TabsTrigger>
             <TabsTrigger value="whatsapp">
-              {t('inmobiliaria.ai.templates.tabs.whatsapp')}
+              {t('inmobiliaria.ai.templates.tabs.whatsapp')} ({waTemplates.length})
             </TabsTrigger>
             <TabsTrigger value="objection">
-              {t('inmobiliaria.ai.templates.tabs.objections')}
+              {t('inmobiliaria.ai.templates.tabs.objections')} ({objectionTemplates.length})
             </TabsTrigger>
           </TabsList>
 

@@ -5941,10 +5941,7 @@
         "plantillas": {
           "empty": {
             "title": "You're using the default templates",
-            "description": "Customize scripts and messages for your agency.",
-            "cta": {
-              "label": "Create template"
-            }
+            "description": "Your agency has no templates of its own in the catalog yet. The agent keeps using the scripts it ships with."
           }
         },
         "arco": {
@@ -6225,9 +6222,9 @@
         "title": "Collection templates",
         "breadcrumb": "Templates",
         "tabs": {
-          "stages": "Collection stages (14)",
-          "whatsapp": "WhatsApp (8)",
-          "objections": "Objection handlers (5)"
+          "stages": "Collection stages",
+          "whatsapp": "WhatsApp",
+          "objections": "Objection handlers"
         },
         "status": {
           "draft": "Draft",
@@ -6273,8 +6270,9 @@
         },
         "empty": {
           "title": "No templates configured",
-          "body": "Configure collection templates for the agent to use in calls and messages."
+          "body": "No templates in this category."
         },
+        "notFound": "This template is not in the catalog.",
         "error": {
           "load": "Could not load templates. Please try again.",
           "saveDraft": "Could not save draft. Please try again.",

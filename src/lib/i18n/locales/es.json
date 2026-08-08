@@ -5942,10 +5942,7 @@
         "plantillas": {
           "empty": {
             "title": "Estás usando las plantillas por defecto",
-            "description": "Personaliza scripts y mensajes para tu inmobiliaria.",
-            "cta": {
-              "label": "Crear plantilla"
-            }
+            "description": "Tu inmobiliaria todavía no tiene plantillas propias en el catálogo. El agente sigue usando los guiones que trae de fábrica."
           }
         },
         "arco": {
@@ -6226,9 +6223,9 @@
         "title": "Plantillas de cobranza",
         "breadcrumb": "Plantillas",
         "tabs": {
-          "stages": "Etapas de cobranza (14)",
-          "whatsapp": "WhatsApp (8)",
-          "objections": "Manejadores de objeciones (5)"
+          "stages": "Etapas de cobranza",
+          "whatsapp": "WhatsApp",
+          "objections": "Manejadores de objeciones"
         },
         "status": {
           "draft": "Borrador",
@@ -6274,8 +6271,9 @@
         },
         "empty": {
           "title": "Sin plantillas configuradas",
-          "body": "Configura plantillas de cobranza para que el agente las use en llamadas y mensajes."
+          "body": "No hay plantillas en esta categoría."
         },
+        "notFound": "Esta plantilla no está en el catálogo.",
         "error": {
           "load": "No se pudo cargar las plantillas. Intenta de nuevo.",
           "saveDraft": "No se pudo guardar el borrador. Intenta de nuevo.",

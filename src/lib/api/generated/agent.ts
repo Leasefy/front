@@ -2375,6 +2375,7 @@ export interface paths {
                             stage: string;
                             language: string;
                             tone_variant: string;
+                            body: string;
                             body_draft: string | null;
                             body_published: string | null;
                             wa_submission_status: string | null;
@@ -2457,6 +2458,7 @@ export interface paths {
                             stage: string;
                             language: string;
                             tone_variant: string;
+                            body: string;
                             body_draft: string | null;
                             body_published: string | null;
                             wa_submission_status: string | null;
@@ -2555,6 +2557,7 @@ export interface paths {
                             stage: string;
                             language: string;
                             tone_variant: string;
+                            body: string;
                             body_draft: string | null;
                             body_published: string | null;
                             wa_submission_status: string | null;
@@ -2644,6 +2647,7 @@ export interface paths {
                         "application/json": {
                             status: string | null;
                             rejection_reason?: string | null;
+                            checked: boolean;
                         };
                     };
                 };
@@ -7608,8 +7612,10 @@ export interface components {
                 }[];
             };
             retention: {
-                compliance_pct: number;
+                compliance_pct: number | null;
                 target: number;
+                measured_rows: number;
+                overdue_rows: number;
             };
             sparkline: {
                 daily_buckets_30d: {

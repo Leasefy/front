@@ -1,26 +1,37 @@
 'use client'
 
 /**
- * Llamadas list page — real implementation.
+ * Llamadas — registro global de contactos del agente de cobranza.
  *
- * Backed by GET /api/agency/{agencyId}/cobranza/calls (not yet deployed).
- * Handles loading / empty / error states cleanly; lights up automatically
- * once the endpoint is live.
+ * Qué muestra y por qué:
  *
- * Pattern mirrors: cartas/page.tsx + siniestros/page.tsx
- * Refs DESIGN.md §1 (sobrio + warm), §4 (cards rounded-xl), §11 (skeleton), §16 (tabular-nums).
+ * La tabla vieja tenía canal, duración, hora, QA y un contador de alertas.
+ * Nada de eso responde la pregunta con la que uno entra a esta pantalla:
+ * QUÉ PASÓ EN LA LLAMADA. Ese dato existe desde Phase 13 — el CallSummarizer
+ * escribe un resumen estructurado después de cada llamada (resultado,
+ * promesa de pago, dificultad económica, señales de fraude, sentimiento y un
+ * digest en español) — pero no salía del microservicio. Ahora sí, y las dos
+ * columnas nuevas son las que importan: **qué pasó** y **qué prometió**.
+ *
+ * Columnas adaptativas: las que dependen del resumen (Promesa, Señales) sólo
+ * se montan si al menos una fila tiene algo que poner. Una columna entera de
+ * guiones no informa que no hay datos — informa que la pantalla está rota.
+ * Ver la regla en CobranzaResultadosKpis / feedback_andamiaje_sobre_vacio.
+ *
+ * DS: tokens de Cadence (`bg-surface`, `text-fg`, `border-border`), primitivas
+ * del DS vía el shim de `@/components/ui`, `PageHeader`/`ErrorState` del DS.
+ * Refs DESIGN.md §2 (tokens), §11 (estados), §12 (badges), §16 (numéricos).
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { PhoneCall, Warning } from '@phosphor-icons/react'
+import { PhoneCall, Warning, ShieldWarning, Handshake } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import {
-  Button,
   Badge,
   Table,
   TableHeader,
@@ -29,44 +40,26 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui'
-import { Chip } from '@leasefy/cadence'
+import { Button } from '@/components/ui'
+import { Chip, ErrorState } from '@leasefy/cadence'
 import {
   useCalls,
+  type CallSummary,
   type CallOutcomeFilter,
   type CallChannelFilter,
   type CallDirectionFilter,
 } from '@/lib/hooks/cobranza/use-calls'
+import {
+  callOutcomeLabel,
+  summaryOutcomeLabel,
+  channelLabel,
+  directionLabel,
+  sentimentLabel,
+  outcomeBadgeVariant,
+} from '@/lib/cobranza/call-vocab'
+import { formatCurrency } from '@/lib/format'
 
-// ── Badge helpers ─────────────────────────────────────────────────────────────
-
-function outcomeBadgeVariant(
-  outcome: string | null,
-): 'default' | 'secondary' | 'success' | 'warning' | 'destructive' {
-  // Semantic status tints vía tokens del DS (contrato §8)
-  switch (outcome) {
-    case 'completed':
-      return 'success'
-    case 'no_answer':
-    case 'voicemail':
-      return 'secondary'
-    case 'wrong_party':
-    case 'failed':
-      return 'destructive'
-    case 'opt_out':
-      return 'warning'
-    case 'escalated':
-      return 'default'
-    default:
-      return 'secondary'
-  }
-}
-
-// Channel is metadata, not a state signal — gray-first per brand contract §2.
-function channelBadgeVariant(_channel: string): 'secondary' {
-  return 'secondary'
-}
-
-// ── Label maps ────────────────────────────────────────────────────────────────
+// ── Filtros ───────────────────────────────────────────────────────────────────
 
 const OUTCOME_OPTIONS: CallOutcomeFilter[] = [
   'completed',
@@ -82,33 +75,11 @@ const CHANNEL_OPTIONS: CallChannelFilter[] = ['voice', 'whatsapp', 'sms', 'email
 
 const DIRECTION_OPTIONS: CallDirectionFilter[] = ['outbound', 'inbound']
 
-const OUTCOME_LABELS: Record<CallOutcomeFilter, { es: string; en: string }> = {
-  completed: { es: 'Completada', en: 'Completed' },
-  no_answer: { es: 'Sin respuesta', en: 'No answer' },
-  voicemail: { es: 'Buzón de voz', en: 'Voicemail' },
-  wrong_party: { es: 'Persona equivocada', en: 'Wrong party' },
-  failed: { es: 'Fallida', en: 'Failed' },
-  opt_out: { es: 'Opt-out', en: 'Opt-out' },
-  escalated: { es: 'Escalada', en: 'Escalated' },
-}
+// ── Utilidades ────────────────────────────────────────────────────────────────
 
-const CHANNEL_LABELS: Record<CallChannelFilter, { es: string; en: string }> = {
-  voice: { es: 'Voz', en: 'Voice' },
-  whatsapp: { es: 'WhatsApp', en: 'WhatsApp' },
-  sms: { es: 'SMS', en: 'SMS' },
-  email: { es: 'Email', en: 'Email' },
-}
-
-const DIRECTION_LABELS: Record<CallDirectionFilter, { es: string; en: string }> = {
-  outbound: { es: 'Saliente', en: 'Outbound' },
-  inbound: { es: 'Entrante', en: 'Inbound' },
-}
-
-// ── Utilities ─────────────────────────────────────────────────────────────────
-
-function formatDuration(seconds: number | null, isEs: boolean): string {
+function formatDuration(seconds: number | null): string {
   if (seconds == null) return '—'
-  if (seconds < 60) return isEs ? `${seconds}s` : `${seconds}s`
+  if (seconds < 60) return `${seconds}s`
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
   return s === 0 ? `${m}m` : `${m}m ${s}s`
@@ -118,12 +89,12 @@ function formatRelative(iso: string, locale: string): string {
   try {
     const diff = Date.now() - new Date(iso).getTime()
     const minutes = Math.floor(diff / 60_000)
-    if (minutes < 2) return locale.startsWith('es') ? 'Hace un momento' : 'Just now'
-    if (minutes < 60) return locale.startsWith('es') ? `Hace ${minutes}m` : `${minutes}m ago`
+    if (minutes < 2) return 'Hace un momento'
+    if (minutes < 60) return `Hace ${minutes}m`
     const hours = Math.floor(minutes / 60)
-    if (hours < 24) return locale.startsWith('es') ? `Hace ${hours}h` : `${hours}h ago`
+    if (hours < 24) return `Hace ${hours}h`
     const days = Math.floor(hours / 24)
-    if (days < 7) return locale.startsWith('es') ? `Hace ${days}d` : `${days}d ago`
+    if (days < 7) return `Hace ${days}d`
     return new Date(iso).toLocaleDateString(locale, {
       year: 'numeric',
       month: 'short',
@@ -134,12 +105,95 @@ function formatRelative(iso: string, locale: string): string {
   }
 }
 
-// ── Main content ──────────────────────────────────────────────────────────────
+/** «20 de agosto» — la fecha de una promesa no necesita el año si es cercana. */
+function formatPromiseDate(isoDate: string | null): string | null {
+  if (!isoDate) return null
+  const d = new Date(`${isoDate}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return isoDate
+  return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })
+}
+
+/**
+ * El resultado que se muestra: el del resumen cuando existe (dice más que el
+ * estado mecánico), el de la columna si no.
+ */
+function displayOutcome(call: CallSummary): { label: string | null; slug: string | null } {
+  const fromSummary = call.summary?.outcome ?? null
+  if (fromSummary) return { label: summaryOutcomeLabel(fromSummary), slug: fromSummary }
+  return { label: callOutcomeLabel(call.outcome), slug: call.outcome }
+}
+
+// ── Celdas ────────────────────────────────────────────────────────────────────
+
+function PromesaCell({ call }: { call: CallSummary }) {
+  const promesa = call.summary?.paymentPromised
+  if (!promesa) return <span className="text-fg-subtle">—</span>
+
+  const fecha = formatPromiseDate(promesa.dueDate)
+
+  return (
+    <div className="flex flex-col items-end gap-0.5">
+      {promesa.amountCop != null ? (
+        <span className="font-mono tabular-nums text-fg">
+          {formatCurrency(promesa.amountCop)}
+        </span>
+      ) : (
+        <span className="text-fg-muted text-sm">Sin monto</span>
+      )}
+      {fecha && <span className="text-xs text-fg-muted whitespace-nowrap">{fecha}</span>}
+    </div>
+  )
+}
+
+function SenalesCell({ call }: { call: CallSummary }) {
+  const s = call.summary
+  const flags = call.complianceFlagsCount
+  const fraude = s?.fraudFlagsCount ?? 0
+  const hardship = s?.hardshipDetected ?? false
+  // «neutral» no es una señal: es la ausencia de una. Contarlo como señal
+  // deja la celda montada y vacía, porque después no se pinta.
+  const sentimiento = s?.sentiment && s.sentiment !== 'neutral' ? s.sentiment : null
+
+  const nada = flags === 0 && fraude === 0 && !hardship && !sentimiento
+  if (nada) return <span className="text-fg-subtle">—</span>
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {fraude > 0 && (
+        <span
+          className="inline-flex items-center gap-1 text-danger text-xs font-medium"
+          title="Señales de fraude detectadas en la llamada"
+        >
+          <ShieldWarning className="w-3.5 h-3.5" weight="fill" aria-hidden="true" />
+          {fraude}
+        </span>
+      )}
+      {flags > 0 && (
+        <span
+          className="inline-flex items-center gap-1 text-warning text-xs font-medium"
+          title="Alertas de cumplimiento"
+        >
+          <Warning className="w-3.5 h-3.5" weight="fill" aria-hidden="true" />
+          {flags}
+        </span>
+      )}
+      {hardship && (
+        <Badge variant="secondary" title="El deudor mencionó una dificultad económica">
+          Dificultad
+        </Badge>
+      )}
+      {sentimiento && sentimiento !== 'neutral' && (
+        <span className="text-xs text-fg-muted">{sentimentLabel(sentimiento)}</span>
+      )}
+    </div>
+  )
+}
+
+// ── Contenido ─────────────────────────────────────────────────────────────────
 
 function LlamadasContent() {
   const { t, locale } = useI18n()
   const router = useRouter()
-  const isEs = locale.startsWith('es')
 
   const [outcomeFilter, setOutcomeFilter] = useState<CallOutcomeFilter | undefined>()
   const [channelFilter, setChannelFilter] = useState<CallChannelFilter | undefined>()
@@ -163,22 +217,55 @@ function LlamadasContent() {
   const hasFilters =
     outcomeFilter !== undefined || channelFilter !== undefined || directionFilter !== undefined
 
+  const clearFilters = useCallback(() => {
+    setOutcomeFilter(undefined)
+    setChannelFilter(undefined)
+    setDirectionFilter(undefined)
+  }, [])
+
+  /**
+   * Qué columnas opcionales tienen algo que decir. Se calcula sobre la página
+   * cargada: si ninguna llamada trae promesa, la columna no se monta.
+   */
+  const columnas = useMemo(
+    () => ({
+      promesa: calls.some((c) => c.summary?.paymentPromised != null),
+      senales: calls.some(
+        (c) =>
+          c.complianceFlagsCount > 0 ||
+          (c.summary?.fraudFlagsCount ?? 0) > 0 ||
+          c.summary?.hardshipDetected === true ||
+          (c.summary?.sentiment != null && c.summary.sentiment !== 'neutral'),
+      ),
+      qa: calls.some((c) => c.qaScore != null),
+      duracion: calls.some((c) => c.durationSeconds != null),
+    }),
+    [calls],
+  )
+
+  const columnCount =
+    3 + // deudor, resultado, cuándo
+    (columnas.promesa ? 1 : 0) +
+    (columnas.senales ? 1 : 0) +
+    (columnas.qa ? 1 : 0) +
+    (columnas.duracion ? 1 : 0)
+
   // ── Skeleton ────────────────────────────────────────────────────────────────
   if (isLoading && calls.length === 0 && !error) {
     return (
       <main className="p-4 lg:p-8 max-w-7xl mx-auto" aria-busy="true">
-        <header className="mb-5">
-          <div className="h-7 w-40 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse" />
-          <div className="h-4 w-64 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse mt-2" />
+        <header className="mb-5 space-y-2">
+          <div className="h-7 w-40 rounded bg-surface-muted animate-pulse" />
+          <div className="h-4 w-64 rounded bg-surface-muted animate-pulse" />
         </header>
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-          <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-            <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800 animate-pulse">
+        <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
+          <Table>
+            <TableBody className="animate-pulse">
               {Array.from({ length: 6 }, (_, i) => (
                 <TableRow key={`skel-${i}`}>
-                  {Array.from({ length: 7 }, (_, j) => (
-                    <TableCell key={j} className="px-3 py-3">
-                      <div className="h-3 w-full bg-neutral-200 dark:bg-neutral-800 rounded" />
+                  {Array.from({ length: 5 }, (_, j) => (
+                    <TableCell key={j}>
+                      <div className="h-3 w-full rounded bg-surface-muted" />
                     </TableCell>
                   ))}
                 </TableRow>
@@ -190,7 +277,7 @@ function LlamadasContent() {
     )
   }
 
-  // ── Global empty state (no filters, no data, no error) ───────────────────────
+  // ── Vacío global (sin filtros, sin datos, sin error) ─────────────────────────
   if (!isLoading && !hasFilters && calls.length === 0 && !error) {
     return (
       <main className="p-6 lg:p-8">
@@ -203,23 +290,33 @@ function LlamadasContent() {
     )
   }
 
+  // ── Error sin datos: la pantalla NO puede afirmar nada sobre las llamadas ────
+  if (error && calls.length === 0) {
+    return (
+      <main className="p-6 lg:p-8 max-w-7xl mx-auto">
+        <ErrorState
+          title="No pudimos cargar las llamadas"
+          message={`El servicio del agente respondió con un error (${error}). No sabemos cuántas llamadas hay.`}
+          retryLabel="Reintentar"
+          onRetry={() => void refetch()}
+        />
+      </main>
+    )
+  }
+
   return (
     <main className="p-4 lg:p-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-5">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
-            {t('inmobiliaria.ai.cobranza.llamadas.list.pageTitle')}
-          </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            {t('inmobiliaria.ai.cobranza.llamadas.list.pageSubtitle')}
-          </p>
-        </div>
+      <div className="mb-5 space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-fg">
+          {t('inmobiliaria.ai.cobranza.llamadas.list.pageTitle')}
+        </h1>
+        <p className="text-sm text-fg-muted">
+          {t('inmobiliaria.ai.cobranza.llamadas.list.pageSubtitle')}
+        </p>
       </div>
 
-      {/* Filters */}
+      {/* Filtros */}
       <div className="flex flex-wrap gap-3 mb-4">
-        {/* Outcome filter */}
         <fieldset>
           <legend className="sr-only">
             {t('inmobiliaria.ai.cobranza.llamadas.list.filters.outcome')}
@@ -232,13 +329,12 @@ function LlamadasContent() {
                 selected={outcomeFilter === o}
                 onClick={() => setOutcomeFilter((prev) => (prev === o ? undefined : o))}
               >
-                {OUTCOME_LABELS[o][isEs ? 'es' : 'en']}
+                {callOutcomeLabel(o)}
               </Chip>
             ))}
           </div>
         </fieldset>
 
-        {/* Channel filter */}
         <fieldset>
           <legend className="sr-only">
             {t('inmobiliaria.ai.cobranza.llamadas.list.filters.channel')}
@@ -251,13 +347,12 @@ function LlamadasContent() {
                 selected={channelFilter === c}
                 onClick={() => setChannelFilter((prev) => (prev === c ? undefined : c))}
               >
-                {CHANNEL_LABELS[c][isEs ? 'es' : 'en']}
+                {channelLabel(c)}
               </Chip>
             ))}
           </div>
         </fieldset>
 
-        {/* Direction filter */}
         <fieldset>
           <legend className="sr-only">
             {t('inmobiliaria.ai.cobranza.llamadas.list.filters.direction')}
@@ -270,7 +365,7 @@ function LlamadasContent() {
                 selected={directionFilter === d}
                 onClick={() => setDirectionFilter((prev) => (prev === d ? undefined : d))}
               >
-                {DIRECTION_LABELS[d][isEs ? 'es' : 'en']}
+                {directionLabel(d)}
               </Chip>
             ))}
           </div>
@@ -281,156 +376,167 @@ function LlamadasContent() {
             variant="link"
             size="sm"
             hideArrow
-            onClick={() => {
-              setOutcomeFilter(undefined)
-              setChannelFilter(undefined)
-              setDirectionFilter(undefined)
-            }}
+            onClick={clearFilters}
             className="self-center px-0 h-auto"
           >
-            {isEs ? 'Limpiar filtros' : 'Clear filters'}
+            Limpiar filtros
           </Button>
         )}
       </div>
 
-      {/* Error */}
-      {error && (
+      {/*
+        Error CON datos en pantalla: el refresco falló pero lo que se ve sigue
+        siendo válido, sólo que viejo. Se avisa sin borrar la tabla.
+      */}
+      {error && calls.length > 0 && (
         <div
-          role="alert"
-          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2 mb-4"
+          role="status"
+          className="rounded-xl border border-warning/30 bg-warning-soft p-3 text-sm text-warning flex items-center gap-2 mb-4"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-          <span>Error: {error}</span>
+          <span>
+            No pudimos actualizar la lista ({error}). Estás viendo la última carga que sí funcionó.
+          </span>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="ml-auto underline underline-offset-2 hover:opacity-80"
+          >
+            Reintentar
+          </button>
         </div>
       )}
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-          <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+      <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableHead>
-                {t('inmobiliaria.ai.cobranza.llamadas.list.columns.debtor')}
-              </TableHead>
-              <TableHead>
-                {t('inmobiliaria.ai.cobranza.llamadas.list.columns.channel')}
-              </TableHead>
-              <TableHead>
-                {t('inmobiliaria.ai.cobranza.llamadas.list.columns.outcome')}
-              </TableHead>
-              <TableHead>
-                {t('inmobiliaria.ai.cobranza.llamadas.list.columns.duration')}
-              </TableHead>
-              <TableHead>
-                {t('inmobiliaria.ai.cobranza.llamadas.list.columns.initiatedAt')}
-              </TableHead>
-              <TableHead>
-                {t('inmobiliaria.ai.cobranza.llamadas.list.columns.qaScore')}
-              </TableHead>
-              <TableHead>
-                {t('inmobiliaria.ai.cobranza.llamadas.list.columns.flags')}
-              </TableHead>
+              <TableHead>Deudor</TableHead>
+              <TableHead>Qué pasó</TableHead>
+              {columnas.promesa && <TableHead numeric>Promesa</TableHead>}
+              {columnas.senales && <TableHead>Señales</TableHead>}
+              {columnas.duracion && <TableHead numeric>Duración</TableHead>}
+              {columnas.qa && <TableHead numeric>QA</TableHead>}
+              <TableHead>Cuándo</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <TableBody>
             {calls.length === 0 && !isLoading && (
               <TableRow>
-                <TableCell colSpan={7} className="px-3 py-12 text-center">
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    {isEs
-                      ? 'Sin llamadas con los filtros seleccionados.'
-                      : 'No calls match the selected filters.'}
+                <TableCell colSpan={columnCount} className="py-12 text-center">
+                  <p className="text-sm text-fg-muted">
+                    Ninguna llamada coincide con los filtros seleccionados.
                   </p>
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="mt-2 text-sm text-primary underline underline-offset-2"
+                  >
+                    Limpiar filtros
+                  </button>
                 </TableCell>
               </TableRow>
             )}
-            {calls.map((call) => (
-              <TableRow
-                key={call.id}
-                onClick={() => navigateToCall(call.id)}
-                role="link"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') navigateToCall(call.id)
-                }}
-                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {/* Debtor (masked) */}
-                <TableCell className="px-3 py-2">
-                  <div className="font-medium text-neutral-900 dark:text-white text-sm whitespace-nowrap">
-                    {call.debtorNameMasked}
-                  </div>
-                  <div className="text-xs text-neutral-400 dark:text-neutral-500 tabular-nums">
-                    {call.debtorCedulaMasked}
-                  </div>
-                </TableCell>
 
-                {/* Channel + direction badges */}
-                <TableCell className="px-3 py-2 whitespace-nowrap">
-                  <div className="flex flex-col gap-1">
-                    <Badge variant={channelBadgeVariant(call.channel)}>
-                      {CHANNEL_LABELS[call.channel]?.[isEs ? 'es' : 'en'] ?? call.channel}
-                    </Badge>
-                    <span className="inline-flex items-center text-xs text-neutral-400 dark:text-neutral-500">
-                      {DIRECTION_LABELS[call.direction]?.[isEs ? 'es' : 'en'] ?? call.direction}
-                    </span>
-                  </div>
-                </TableCell>
+            {calls.map((call) => {
+              const outcome = displayOutcome(call)
+              return (
+                <TableRow
+                  key={call.id}
+                  onClick={() => navigateToCall(call.id)}
+                  role="link"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') navigateToCall(call.id)
+                  }}
+                  className="cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {/* Deudor + canal (el canal es metadato del contacto, no una columna propia) */}
+                  <TableCell>
+                    <div className="font-medium text-fg whitespace-nowrap">
+                      {call.debtorNameMasked}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-fg-muted">
+                      <span className="font-mono tabular-nums">{call.debtorCedulaMasked}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{channelLabel(call.channel)}</span>
+                      {call.direction === 'inbound' && (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span>{directionLabel(call.direction)}</span>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
 
-                {/* Outcome badge */}
-                <TableCell className="px-3 py-2">
-                  {call.outcome ? (
-                    <Badge variant={outcomeBadgeVariant(call.outcome)}>
-                      {OUTCOME_LABELS[call.outcome as CallOutcomeFilter]?.[isEs ? 'es' : 'en'] ??
-                        call.outcome}
-                    </Badge>
-                  ) : (
-                    <span className="text-xs text-neutral-400 dark:text-neutral-500">—</span>
+                  {/* Qué pasó — el resultado y, debajo, el digest del resumen */}
+                  <TableCell className="max-w-md">
+                    <div className="flex flex-col gap-1">
+                      {outcome.label ? (
+                        <Badge variant={outcomeBadgeVariant(outcome.slug)} className="w-fit">
+                          {outcome.label}
+                        </Badge>
+                      ) : (
+                        <span className="text-sm text-fg-muted">Todavía sin resultado</span>
+                      )}
+                      {call.summary?.digest && (
+                        <p className="text-xs leading-relaxed text-fg-muted">
+                          {call.summary.digest}
+                        </p>
+                      )}
+                      {call.summary?.paymentPromised && !columnas.promesa && (
+                        <span className="inline-flex items-center gap-1 text-xs text-success">
+                          <Handshake className="w-3.5 h-3.5" aria-hidden="true" />
+                          Prometió pagar
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+
+                  {columnas.promesa && (
+                    <TableCell numeric>
+                      <PromesaCell call={call} />
+                    </TableCell>
                   )}
-                </TableCell>
 
-                {/* Duration */}
-                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
-                  {formatDuration(call.durationSeconds, isEs)}
-                </TableCell>
-
-                {/* initiatedAt — relative time */}
-                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
-                  {formatRelative(call.initiatedAt, locale)}
-                </TableCell>
-
-                {/* QA score */}
-                <TableCell className="px-3 py-2 text-xs tabular-nums whitespace-nowrap">
-                  {call.qaScore != null ? (
-                    <span
-                      className={
-                        call.qaScore >= 80
-                          ? 'text-success'
-                          : call.qaScore >= 60
-                            ? 'text-warning'
-                            : 'text-danger'
-                      }
-                    >
-                      {call.qaScore}
-                    </span>
-                  ) : (
-                    <span className="text-neutral-400 dark:text-neutral-500">—</span>
+                  {columnas.senales && (
+                    <TableCell>
+                      <SenalesCell call={call} />
+                    </TableCell>
                   )}
-                </TableCell>
 
-                {/* Compliance flags */}
-                <TableCell className="px-3 py-2 text-xs tabular-nums whitespace-nowrap">
-                  {call.complianceFlagsCount > 0 ? (
-                    <span className="inline-flex items-center gap-0.5 text-warning font-medium">
-                      <Warning className="w-3 h-3" weight="fill" aria-hidden="true" />
-                      {call.complianceFlagsCount}
-                    </span>
-                  ) : (
-                    <span className="text-neutral-400 dark:text-neutral-500">0</span>
+                  {columnas.duracion && (
+                    <TableCell numeric muted className="whitespace-nowrap">
+                      {formatDuration(call.durationSeconds)}
+                    </TableCell>
                   )}
-                </TableCell>
-              </TableRow>
-            ))}
+
+                  {columnas.qa && (
+                    <TableCell numeric className="whitespace-nowrap">
+                      {call.qaScore != null ? (
+                        <span
+                          className={
+                            call.qaScore >= 80
+                              ? 'text-success'
+                              : call.qaScore >= 60
+                                ? 'text-warning'
+                                : 'text-danger'
+                          }
+                        >
+                          {Math.round(call.qaScore)}
+                        </span>
+                      ) : (
+                        <span className="text-fg-subtle">—</span>
+                      )}
+                    </TableCell>
+                  )}
+
+                  <TableCell muted className="whitespace-nowrap">
+                    {formatRelative(call.initiatedAt, locale)}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </div>

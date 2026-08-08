@@ -7435,6 +7435,21 @@ export interface components {
             resolution: number | null;
             sentiment: number | null;
         };
+        CobranzaCallSummaryDetail: {
+            outcome: string | null;
+            digest: string | null;
+            sentiment: string | null;
+            paymentPromised: {
+                amountCop: number | null;
+                dueDate: string | null;
+                channel: string | null;
+            } | null;
+            hardshipDetected: boolean;
+            fraudFlags: string[];
+            nextActionRecommended: string | null;
+            keyTopics: string[];
+            unresolvedObjection: string | null;
+        } | null;
         CallStateTraceRow: {
             /** Format: uuid */
             id: string;
@@ -7455,6 +7470,8 @@ export interface components {
             id: string;
             /** Format: uuid */
             debtorId: string | null;
+            debtorNameMasked: string;
+            debtorCedulaMasked: string;
             vapiCallId: string | null;
             direction: string;
             channel: string;
@@ -7466,6 +7483,9 @@ export interface components {
             durationSeconds: number | null;
             qaDimensions: components["schemas"]["CallQaDimensions"];
             complianceFlags: string[];
+            summary: components["schemas"]["CobranzaCallSummaryDetail"];
+            hasRecording: boolean;
+            hasTranscript: boolean;
             stateTrace: components["schemas"]["CallStateTraceRow"][];
             costBreakdown: components["schemas"]["CallCostBreakdown"];
             generatedAt: string;
@@ -7491,6 +7511,19 @@ export interface components {
         CobranzaCallTranscriptError: {
             error: string;
         };
+        CobranzaCallSummaryListItem: {
+            outcome: string | null;
+            digest: string | null;
+            sentiment: string | null;
+            paymentPromised: {
+                amountCop: number | null;
+                dueDate: string | null;
+                channel: string | null;
+            } | null;
+            hardshipDetected: boolean;
+            fraudFlagsCount: number;
+            nextActionRecommended: string | null;
+        } | null;
         CobranzaAgencyCallListItem: {
             /** Format: uuid */
             id: string;
@@ -7507,6 +7540,9 @@ export interface components {
             endedAt: string | null;
             qaScore: number | null;
             complianceFlagsCount: number;
+            summary: components["schemas"]["CobranzaCallSummaryListItem"];
+            hasRecording: boolean;
+            hasTranscript: boolean;
         };
         CobranzaAgencyCallsListResponse: {
             calls: components["schemas"]["CobranzaAgencyCallListItem"][];

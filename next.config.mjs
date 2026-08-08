@@ -110,7 +110,37 @@ const nextConfig = {
   // wires the same data into Next's redirects() (build-validated, not
   // vitest-covered). CSP/security headers above are untouched.
   async redirects() {
-    return LEGACY_PRODUCT_REDIRECTS_DATA;
+    return [
+      ...LEGACY_PRODUCT_REDIRECTS_DATA,
+      // "Pre-aprobado" murió del vocabulario (docs/VOCABULARIO.md): nadie supo
+      // explicar qué significaba. La pantalla pasó a /aprobacion, pero el link
+      // viejo ya se envió por WhatsApp y correo a candidatos — permanente para
+      // que ninguno de esos caiga en un 404.
+      { source: "/preaprobacion", destination: "/aprobacion", permanent: true },
+    ];
+  },
+  // DEV-ONLY agent proxy. Opt-in: does nothing unless AGENT_PROXY_TARGET is set.
+  //
+  // Why: the agent service pins CORS_ALLOWED_ORIGINS to http://localhost:3001,
+  // so a second local front (e.g. :3002 for parallel work) gets net::ERR_FAILED
+  // on every agent call. Because 'cobranza' and 'cotizador' are FAIL-CLOSED
+  // agent modules (src/lib/auth/agent-module-access.ts), that failure silently
+  // hides both from the sidebar — it reads as "the feature is missing".
+  //
+  // Routing agent traffic through the Next server makes it same-origin, so no
+  // CORS is involved. Point NEXT_PUBLIC_AGENT_URL at this path with an ABSOLUTE
+  // same-origin base (several hooks do `new URL(`${agentUrl}/api/...`)`, which
+  // throws on a bare relative base):
+  //
+  //   NEXT_PUBLIC_AGENT_URL=http://localhost:3002/agent-proxy
+  //   AGENT_PROXY_TARGET=http://localhost:4100
+  //
+  // Production is untouched: no AGENT_PROXY_TARGET → no rewrite, and
+  // NEXT_PUBLIC_AGENT_URL keeps pointing straight at the agent.
+  async rewrites() {
+    const target = process.env.AGENT_PROXY_TARGET;
+    if (!target) return [];
+    return [{ source: "/agent-proxy/:path*", destination: `${target}/:path*` }];
   },
 };
 

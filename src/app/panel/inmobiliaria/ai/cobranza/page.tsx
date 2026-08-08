@@ -17,7 +17,7 @@ import { useI18n } from '@/lib/i18n'
 import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
 import type { StageTransitionEvent } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
-import { CobranzaExecKpiGrid } from '@/components/inmobiliaria/cobranza/CobranzaExecKpiGrid'
+import { CobranzaResultadosKpis } from '@/components/inmobiliaria/cobranza/CobranzaResultadosKpis'
 import { CobranzaAtencionPreview } from '@/components/inmobiliaria/cobranza/CobranzaAtencionPreview'
 import { CobranzaWowBanner } from '@/components/inmobiliaria/cobranza/CobranzaWowBanner'
 import { CobranzaStageCard } from '@/components/inmobiliaria/cobranza/CobranzaStageCard'
@@ -281,7 +281,10 @@ export default function CobranzaOverviewPage() {
 
       {/* Fila ejecutiva de 8 métricas (visión #4) — superset del KPI strip de 4.
           Solo 4 tienen fuente en el overview; las demás muestran "—" (sin inventar). */}
-      <CobranzaExecKpiGrid data={data} isLoading={isLoading} />
+      {/* «Cómo va el agente» — antes vivía en /cobranza/resultados, que hacía
+          este mismo trabajo. Sustituye a CobranzaExecKpiGrid, cuya grilla tenía
+          5 de 8 tarjetas con el guión quemado. */}
+      <CobranzaResultadosKpis overview={data} />
 
       {/* Qué necesita tu atención hoy — preview top-5 de /pendientes (cross-link,
           no duplica la lista completa). */}

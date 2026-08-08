@@ -14,7 +14,7 @@ import {
   ChartLine,
   Files,
   ChartLineUp,
-  Trophy,
+  // Trophy,  ← reactivar junto con la pestaña «Resultados»
   FileText,
   ClipboardText,
   ShieldCheck,
@@ -101,7 +101,8 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.cobranzaReporte', href: `${AI}/cobranza/reporte`, icon: ChartLine, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaReportesPropietarios', href: `${AI}/cobranza/reportes-propietarios`, icon: Files, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.analitica', href: `${AI}/cobranza/analitica`, icon: ChartLineUp, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaResultados', href: `${AI}/cobranza/resultados`, icon: Trophy, module: 'cobranza' },
+      // FUSIONADO en el Resumen — «Resultados» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaResultados', href: `${AI}/cobranza/resultados`, icon: Trophy, module: 'cobranza' },
       // OCULTO — «Playbooks» (ver nota al pie del archivo).
       // { labelKey: 'inmobiliaria.ai.nav.cobranzaPlaybooks', href: `${AI}/cobranza/plantillas`, icon: FileText, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.compliance', href: `${AI}/cobranza/compliance`, icon: ClipboardText, module: 'cobranza' },
@@ -256,6 +257,26 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
  *
  * Se deja la ruta y su i18n en su sitio (sólo alcanzable escribiendo la URL).
  * Si algún día el runtime pasa a leer la tabla, descomentar la línea y listo.
+ */
+
+/**
+ * NOTA — «Resultados» fusionado en el Resumen (2026-08-08, decisión de Nico).
+ *
+ * `.../cobranza/resultados` y el Resumen hacían el mismo trabajo: KPI ejecutivos
+ * del agente. Tanto, que Resultados llevaba una tarjeta al pie explicando que
+ * ella no era la analítica ni el reporte diario.
+ *
+ * El reparto quedó así:
+ *   Resumen           → cómo va el agente (las métricas con fuente real)
+ *   Analítica         → el detalle por etapa, objeciones, cadencia y costo
+ *   Reporte diario    → el corte operativo del día
+ *
+ * Las métricas de Resultados se movieron a `CobranzaResultadosKpis`, que ahora
+ * monta el Resumen. De paso murió `CobranzaExecKpiGrid`: de sus ocho tarjetas,
+ * cinco tenían el guión escrito a mano (`value: DASH`) — no eran métricas sin
+ * datos, eran métricas sin fuente posible.
+ *
+ * La ruta y su i18n se quedan (sólo alcanzable escribiendo la URL).
  */
 
 /** Find the agent workspace whose basePath contains `pathname` (or null). */

@@ -7,6 +7,13 @@ import { PropertyCardSkeleton } from '@/components/skeleton';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SobreTopeOverlay } from '@/components/tenant/TopeAprobadoBanner';
+import {
+  referenciaCanon,
+  superaReferencia,
+  type Aprobacion,
+} from '@/lib/api/aprobacion.service';
+import { cn } from '@/lib/utils';
 import type { Property } from '@/lib/types/property';
 import type { QualificationResult } from '@/lib/scoring/propertyMatching';
 
@@ -30,6 +37,14 @@ export interface PropertyGridProps {
   propertyRefCallback?: (id: string, el: HTMLDivElement | null) => void;
   /** Prefix for card detail links. Public '/propiedades', tenant '/inquilino/propiedades'. */
   basePath?: string;
+  /**
+   * Aprobación de quien mira, para marcar lo que se pasa de su referencia.
+   *
+   * Opcional: sin ella el grid se comporta exactamente como siempre. Se marca,
+   * nunca se esconde ni se deshabilita — poder navegar todo el catálogo fue
+   * explícito, y esconder propiedades se siente a trampa.
+   */
+  aprobacion?: Aprobacion | null;
 }
 
 /**
@@ -47,6 +62,7 @@ export function PropertyGrid({
   onPropertyHover,
   propertyRefCallback,
   basePath,
+  aprobacion,
 }: PropertyGridProps) {
   const [displayCount, setDisplayCount] = useState(INITIAL_ITEMS);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -111,24 +127,30 @@ export function PropertyGrid({
     <div className="space-y-8">
       {/* Property Grid - 2 columns for split view */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {displayedProperties.map((property) => (
-          <div
-            key={property.id}
-            ref={(el) => propertyRefCallback?.(property.id, el)}
-            className="animate-in fade-in duration-300"
-          >
-            <PropertyCard
-              property={property}
-              isWishlisted={isWishlisted(property.id)}
-              onWishlistToggle={onWishlistToggle}
-              qualification={qualifications?.get(property.id)}
-              isHighlighted={hoveredPropertyId === property.id}
-              onHoverStart={() => onPropertyHover?.(property.id)}
-              onHoverEnd={() => onPropertyHover?.(null)}
-              basePath={basePath}
-            />
-          </div>
-        ))}
+        {displayedProperties.map((property) => {
+          // `=== true` a propósito: `null` es "no sabemos", y no se marca nada
+          // por un dato que falta.
+          const sobreTope = superaReferencia(property.monthlyRent, aprobacion ?? null) === true;
+          return (
+            <div
+              key={property.id}
+              ref={(el) => propertyRefCallback?.(property.id, el)}
+              className={cn('animate-in fade-in duration-300 relative', sobreTope && 'opacity-75')}
+            >
+              <PropertyCard
+                property={property}
+                isWishlisted={isWishlisted(property.id)}
+                onWishlistToggle={onWishlistToggle}
+                qualification={qualifications?.get(property.id)}
+                isHighlighted={hoveredPropertyId === property.id}
+                onHoverStart={() => onPropertyHover?.(property.id)}
+                onHoverEnd={() => onPropertyHover?.(null)}
+                basePath={basePath}
+              />
+              {sobreTope && <SobreTopeOverlay referencia={referenciaCanon(aprobacion ?? null)} />}
+            </div>
+          );
+        })}
       </div>
 
       {/* Load More Section - Left aligned */}

@@ -332,15 +332,12 @@ function EntrarAMiCatalogo({
     )
   }
 
+  // Sin nota debajo: la pantalla siguiente ya explica qué falta y qué ya
+  // tenemos. Anunciarlo antes es decirlo dos veces.
   return (
-    <div className="space-y-2">
-      <Button className="w-full" onClick={onEntrar}>
-        {tf(`${NS}.verCatalogo`, 'Ver mi catálogo')}
-      </Button>
-      <p className="text-xs text-fg-muted text-center">
-        {tf(`${NS}.cuentaNota`, 'Creamos tu cuenta con lo que ya nos diste. Solo faltan tres datos.')}
-      </p>
-    </div>
+    <Button className="w-full" onClick={onEntrar}>
+      {tf(`${NS}.verCatalogo`, 'Ver mi catálogo')}
+    </Button>
   )
 }
 

@@ -8650,6 +8650,8 @@ export interface components {
             id: string;
             /** Format: uuid */
             debtorId: string;
+            debtorName: string | null;
+            debtorDocument: string | null;
             kind: string;
             status: string;
             pdfUrl: string;

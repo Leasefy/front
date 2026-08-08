@@ -239,6 +239,11 @@ function CartasContent() {
         <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
           <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
             <TableRow>
+              {/* Destinatario primero: la tabla mostraba tipo, estado y fechas,
+                  o sea que había que adivinar de quién era cada carta. Una
+                  prejurídica sin destinatario visible no se puede revisar, y
+                  revisarla es justo lo que esta pantalla pide hacer. */}
+              <TableHead>{isEs ? 'Deudor' : 'Debtor'}</TableHead>
               <TableHead>
                 {t('inmobiliaria.ai.cobranza.cartas.columns.kind')}
               </TableHead>
@@ -259,7 +264,7 @@ function CartasContent() {
           <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
             {artifacts.length === 0 && !isLoading && (
               <TableRow>
-                <TableCell colSpan={5} className="px-3 py-12 text-center">
+                <TableCell colSpan={6} className="px-3 py-12 text-center">
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
                     {isEs
                       ? 'Sin cartas con los filtros seleccionados.'
@@ -279,6 +284,16 @@ function CartasContent() {
                 }}
                 className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
               >
+                <TableCell className="px-3 py-2">
+                  <span className="block text-neutral-900 dark:text-white">
+                    {a.debtorName ?? (isEs ? 'Deudor no encontrado' : 'Debtor not found')}
+                  </span>
+                  {a.debtorDocument && (
+                    <span className="block text-xs text-neutral-500 dark:text-neutral-400 font-mono tabular-nums">
+                      {a.debtorDocument}
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell className="px-3 py-2 text-neutral-900 dark:text-white capitalize whitespace-nowrap">
                   {isEs
                     ? (KIND_LABELS[a.kind as LegalArtifactKind]?.es ?? a.kind)

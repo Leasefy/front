@@ -27,6 +27,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { Plus, Trash, Warning, FloppyDisk } from '@phosphor-icons/react'
 import { RadioCardGroup, RadioCard } from '@leasefy/cadence'
 
@@ -1017,6 +1018,47 @@ function CobranzaConfiguracionContent() {
           <li>Máximo 1 contacto por día</li>
           <li>Máximo 1 contacto por canal por semana</li>
         </ul>
+      </section>
+
+      {/*
+        Reporte diario — su pantalla salió del menú porque lo que había que
+        mirar (alertas y deudores que más pesan) subió al Resumen. Pero los
+        umbrales y la suscripción son configuración de la inmobiliaria, de la
+        misma familia que los acuerdos de arriba, así que su puerta vive acá.
+        Sin esto quedaban sólo alcanzables escribiendo la URL.
+      */}
+      <section
+        data-testid="section-reporte"
+        className="rounded-xl border border-border bg-card p-6 space-y-3"
+        aria-labelledby="heading-reporte"
+      >
+        <div>
+          <h2 id="heading-reporte" className="text-xl font-semibold text-foreground">
+            Reporte diario
+          </h2>
+          <p className="text-sm text-fg-muted mt-1">
+            Cuándo avisarte y a quién. Lo que hay que mirar cada día ya aparece
+            en el resumen de Cobranza.
+          </p>
+        </div>
+        <div className="border-t border-border-faint" />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button asChild variant="secondary" size="sm" hideArrow>
+            <Link href="/panel/inmobiliaria/ai/cobranza/reporte/thresholds">
+              Umbrales de alerta
+            </Link>
+          </Button>
+          <Button asChild variant="secondary" size="sm" hideArrow>
+            <Link href="/panel/inmobiliaria/ai/cobranza/reporte/suscripcion">
+              Suscripción
+            </Link>
+          </Button>
+          <Button asChild variant="link" size="sm" hideArrow className="px-1">
+            <Link href="/panel/inmobiliaria/ai/cobranza/reporte">
+              Ver histórico y exportar CSV
+            </Link>
+          </Button>
+        </div>
       </section>
     </main>
   )

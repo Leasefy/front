@@ -11,7 +11,7 @@ import {
   PhoneCall,
   Envelope,
   Siren,
-  ChartLine,
+  // ChartLine,  ← reactivar junto con la pestaña «Reporte diario»
   Files,
   ChartLineUp,
   // Trophy,  ← reactivar junto con la pestaña «Resultados»
@@ -98,7 +98,8 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.llamadas', href: `${AI}/cobranza/llamadas`, icon: PhoneCall, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cartas', href: `${AI}/cobranza/cartas`, icon: Envelope, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.siniestros', href: `${AI}/cobranza/siniestros`, icon: Siren, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaReporte', href: `${AI}/cobranza/reporte`, icon: ChartLine, module: 'cobranza' },
+      // FUSIONADO en el Resumen — «Reporte diario» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaReporte', href: `${AI}/cobranza/reporte`, icon: ChartLine, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaReportesPropietarios', href: `${AI}/cobranza/reportes-propietarios`, icon: Files, module: 'cobranza' },
       // FUSIONADO en el Resumen — «Analítica» (ver nota al pie del archivo).
       // { labelKey: 'inmobiliaria.ai.nav.analitica', href: `${AI}/cobranza/analitica`, icon: ChartLineUp, module: 'cobranza' },
@@ -301,6 +302,23 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
  * un cartel de «Sin datos aún» — con el número de fase interna a la vista.
  *
  * La ruta y su i18n se quedan (sólo alcanzable escribiendo la URL).
+ */
+
+/**
+ * NOTA — «Reporte diario» fusionado en el Resumen (2026-08-08, decisión de Nico).
+ *
+ * Lo que había que mirar cada día —las alertas de umbral y los deudores que más
+ * pesan— subió al Resumen, a «Qué mirar hoy».
+ *
+ * Lo que quedaba en esa pantalla NO se perdió, se repartió:
+ *   · Umbrales y Suscripción → Configuración §Reporte diario. Son perillas de la
+ *     inmobiliaria, de la misma familia que los acuerdos.
+ *   · Histórico de 30 días y Exportar CSV → siguen en `/cobranza/reporte`, ahora
+ *     detrás de dos puertas: «Ver reporte completo» en el Resumen y «Ver
+ *     histórico y exportar CSV» en Configuración.
+ *
+ * Los tres KPI del reporte no subieron a propósito: «llamadas fuera de horario»
+ * ya vive en Cumplimiento, y morosidad/recuperación en «Cómo va el agente».
  */
 
 /** Find the agent workspace whose basePath contains `pathname` (or null). */

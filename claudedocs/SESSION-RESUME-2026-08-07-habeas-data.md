@@ -200,16 +200,23 @@ preset, `require('@leasefy/cadence/tailwind-preset')`. El snippet está en
 
 ## Estado en git
 
-**`rent/mvp`** — rama `fix/habeas-data-arco` (de `develop`), 2 commits:
+**`rent/mvp`** — rama `fix/habeas-data-arco` (de `develop`), 9 commits:
 - `15624b5a` novedades: una sola por sección (trabajo previo, va aparte)
-- `ef510abb` el arreglo de Habeas Data + los dos docs
+- `ef510abb` la bandeja de Habeas Data leía un contrato que no existe
+- `a2939570` el término legal se lee del contrato, no se despeja
+- `d03bd056` ampliar el plazo desde la pantalla (Arts. 14 y 15)
+- `7062582a` las bitácoras decían «sin infracciones» con 19 registros
+- `bcfcb598` plazo real, retención honesta y tarjetas que llevan a algún lado
+- (+ 3 de documentación)
 
-**`~/rent/agent-develop`** — rama `fix/arco-triage-status-constraint`, 5 commits:
+**`~/rent/agent-develop`** — rama `fix/arco-triage-status-constraint`, 7 commits:
 - `64dca1ef` triage escribía un status que la tabla rechaza
 - `e509e86d` los términos de la Ley 1581 estaban invertidos
 - `e5ae40f6` el reporte diario moría por tamaño y el import encogía montos
 - `fc5689ff` festivos colombianos + prórroga de los Arts. 14 y 15
 - `73742557` tabla `agent.co_holidays` (generada) para que SQL cuente igual
+- `d43278d3` el registro de opt-out no traía el canal de origen
+- `4f307a26` el plazo de habeas data se contaba en días calendario
 
 **`~/rent/admin`** — rama `fix/arco-sla-dias-habiles`, 2 commits:
 - `9e3d43f` «vencidas» contaba días calendario y un solo término
@@ -326,11 +333,77 @@ El motivo exige 20 caracteres —«ocupado» no es un motivo— y se le copia te
 al solicitante con la fecha exacta de respuesta. Los límites están también en
 la base: el techo por tipo y que motivo, días y fecha vayan juntos.
 
+## 15. Cumplimiento: llenarla destapó tres cosas
+
+Nico pidió ver la pantalla de Cumplimiento con datos, no sólo su estado vacío.
+Salía vacía por una razón sin misterio: **la agencia demo tenía CERO filas en
+`agent.compliance_events`**. Los 162 eventos de la base son de otros tres
+tenants y de tipos que estas pantallas no leen.
+
+Siembra: `claudedocs/seed-compliance-demo.mjs` (29 eventos). Los tipos que usa
+—`cadence_skip`, `inbound_outside_hours`, `opt_out_request`,
+`opt_out_acknowledged`— **sí los escribe el sistema en producción**, así que
+reproduce un estado alcanzable. Rollback en el encabezado del script.
+
+### (a) Las dos bitácoras mentían al revés
+
+«Sin infracciones a Ley 2300 detectadas» **con 19 registros del otro lado**.
+Leían `json.items`; el agente manda `entries`. `undefined ?? []` da lista vacía
+⇒ estado vacío *celebratorio*. En cumplimiento eso no es un detalle de UI: le
+dice al operador que está todo bien justo cuando no lo está.
+
+Y no era sólo el envoltorio: `id` vs `event_id`, `timestamp` vs `requested_at`.
+Arreglar la lista sola habría pintado una tabla de `undefined`. La
+normalización quedó en `lib/hooks/cobranza/compliance-entries.ts`, con el
+contrato real al lado.
+
+### (b) El deudor salía como UUID dentro de un `<Mask>`
+
+Las tres superficies pasaban el UUID pelado a `<Mask field="cedula">`, que
+espera un valor YA enmascarado: 36 caracteres presentados como si fueran una
+cédula. El comentario del componente decía «server-masked» y tres líneas abajo
+admitía que es el UUID pelado.
+
+### (c) El plazo y la retención
+
+Misma enfermedad que ya habíamos corregido dos veces: `Math.ceil(15 -
+daysSince(...))` — quince días **calendario**, un término para todos los tipos.
+Los términos vivían dentro de un módulo de rutas, así que para esta pantalla
+era más fácil reescribir la cuenta que importarla. **Tercer duplicado de la
+misma regla** (front, backoffice, este) ⇒ se extrajeron a `lib/arco-sla.ts`.
+
+Además: la barra se dibujaba contra 15 fijo, y **la banda roja disparaba con
+`remaining_days <= 15`**, que con un término de 15 es cierto SIEMPRE que haya
+una solicitud abierta. Salía aunque faltaran dos semanas — una alerta encendida
+todo el tiempo deja de leerse.
+
+**Retención: `100` fijo con un TODO.** Un 100% verde que no medía nada, en la
+pantalla cuyo trabajo es avisar cuando algo va mal. Ahora se mide contra
+`retention_expires_at` (la columna que barre `cotizador-retention-cron`): si el
+cron deja de correr, el número baja. Sin filas que medir devuelve `null`, no
+100 — «no hay nada» y «está todo bien» no son lo mismo.
+
+### (d) Las tarjetas no llevaban a ninguna parte
+
+Mostraban un reloj legal corriendo y no eran clickeables. El operador veía
+«VENCIDO HACE 2D» y tenía que adivinar dónde se atiende. Ahora llevan al
+registro de no contactar, donde está el acuse.
+
+⚠️ **Dos sistemas paralelos para la misma ley.** Las solicitudes de esta
+pantalla son `opt_out_request` de `compliance_events`; las solicitudes ARCO
+reales viven en `agent.arco_requests` con su propio triage/resolución/prórroga.
+**Nada escribe `arco_request` en `compliance_events`** (verificado) — las de la
+demo las puse yo. El operador tiene que mirar dos lugares. Es decisión de
+producto, no de código.
+
+Y el acuse **es sólo un registro**: para el contador y deja constancia, pero el
+bloqueo de contacto lo hace `check-opt-out` en el agente por su lado.
+
 ---
 
 ## Pendientes
 
-1. **Pushear** las cuatro ramas (decisión de Victor).
+1. **Pushear** las tres ramas (decisión de Victor).
 2. El drift de esquema de §13 — decidir si `schema.prisma` se alinea a la base
    o al revés. No se resuelve con `prisma migrate dev`.
 3. `agent.co_holidays` cubre 2020–2060. Fuera de ese rango el conteo vuelve a
@@ -338,6 +411,13 @@ la base: el techo por tipo y que motivo, días y fecha vayan juntos.
 4. Dos tests del agente fallan desde antes de esta sesión y no son míos
    (verificado contra la base limpia): `full-call-path` (dedup SETNX) y
    `cotizador-cost-aggregator` (límite de concurrencia 5 vs 10).
+5. **Decidir si Cumplimiento debe ver también las solicitudes ARCO** (§15d).
+   Hoy son dos circuitos separados para la misma ley y el operador mira dos
+   pantallas.
+6. La retención sólo mide las tablas del cotizador (`cotizador_quote_requests`,
+   `cotizador_arco_jobs`) porque son las únicas con `retention_expires_at`. Los
+   datos de cobranza no tienen ventana declarada — si debieran tenerla, es una
+   decisión de política, no de código.
 
 ## Archivos
 
@@ -355,6 +435,15 @@ la base: el techo por tipo y que motivo, días y fecha vayan juntos.
 `schema.prisma` · 2 migraciones.
 
 **En el backoffice:** `src/app/(admin)/arco/page.tsx`.
+
+**Cumplimiento:** `compliance/page.tsx` · `compliance/ley-2300/page.tsx` ·
+`compliance/opt-out/page.tsx` · `HabeasDataSlaCard.tsx` ·
+`lib/hooks/cobranza/compliance-entries.ts` (nuevo) ·
+`use-compliance-overview.ts` · en el agente `agency-cobranza-compliance.ts`
+(+ test) y `lib/arco-sla.ts` (nuevo).
+
+**Siembras de demo** (versionadas, ya no en un temporal):
+`claudedocs/seed-arco-demo.mjs` · `claudedocs/seed-compliance-demo.mjs`.
 
 `tsc` limpio · **1.599 tests verdes** (front, Node 20) · 7 verdes en el test del
 agente · lint sin errores nuevos · **`next build` verde**, corrido en un worktree

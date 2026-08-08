@@ -178,7 +178,7 @@ export default function ParaTiPage() {
             className="inline-flex items-center gap-2 text-sm text-plan-secondary hover:text-plan-primary mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
-            {locale === 'es' ? 'Volver al panel' : 'Back to dashboard'}
+            {locale === 'es' ? 'Volver a Inicio' : 'Back to Home'}
           </Link>
 
           <div className="bg-surface border border-plan-border p-12 text-center">
@@ -226,7 +226,7 @@ export default function ParaTiPage() {
           className="inline-flex items-center gap-2 text-sm text-plan-secondary hover:text-plan-primary mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          {locale === 'es' ? 'Volver al panel' : 'Back to dashboard'}
+          {locale === 'es' ? 'Volver a Inicio' : 'Back to Home'}
         </Link>
 
         {/* Hero Section - Clean PLan style */}

@@ -52,7 +52,7 @@
     "minutes": "minutes"
   },
   "nav": {
-    "panel": "Dashboard",
+    "panel": "Home",
     "myRental": "My Rental",
     "applications": "Applications",
     "contracts": "Contracts",
@@ -9232,7 +9232,7 @@
       }
     },
     "catalogoAprobacion": {
-      "volver": "Back to dashboard",
+      "volver": "Back to Home",
       "titulo": "Properties for you",
       "cargando": "Looking for properties…",
       "sinTope": "Your approval is ready. Once we confirm your cap we'll show you what works for you.",

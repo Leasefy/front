@@ -52,7 +52,7 @@
     "minutes": "minutos"
   },
   "nav": {
-    "panel": "Panel",
+    "panel": "Inicio",
     "myRental": "Mi Arriendo",
     "applications": "Mis postulaciones",
     "contracts": "Contratos",
@@ -9233,7 +9233,7 @@
       }
     },
     "catalogoAprobacion": {
-      "volver": "Volver al panel",
+      "volver": "Volver a Inicio",
       "titulo": "Propiedades para ti",
       "cargando": "Buscando propiedades…",
       "sinTope": "Tu aprobación está lista. Cuando confirmemos tu tope te mostramos lo que va contigo.",

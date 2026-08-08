@@ -5728,10 +5728,14 @@
           "pageTitle": "Cumplimiento",
           "overview": {
             "ley2300Heading": "Ley 2300 — intentos fuera de horario",
-            "habeasDataHeading": "Habeas Data — SLA de 15 días",
+            "habeasDataHeading": "Habeas Data — plazo legal",
             "retentionHeading": "Retención de datos",
             "sparklineHeading": "Tasa de banderas (últimos 30 días)",
-            "debtorRefHint": "Referencia interna del deudor. La cédula no se muestra en pantallas de cumplimiento."
+            "debtorRefHint": "Referencia interna del deudor. La cédula no se muestra en pantallas de cumplimiento.",
+            "retentionUnmeasured": "Sin registros con ventana de retención vigente. No hay nada que medir todavía.",
+            "retentionCaption": "{rows} registros con ventana de retención · {overdue} fuera de plazo",
+            "retentionCaptionOne": "{rows} registro con ventana de retención · {overdue} fuera de plazo",
+            "cardAction": "Ir al registro de no contactar para atenderla"
           },
           "habeasData": {
             "remaining": {
@@ -5739,7 +5743,7 @@
               "hours": "Quedan {{hours}}h"
             },
             "overdue": "VENCIDO HACE {{days}}d",
-            "banner": "Hay solicitudes Habeas Data próximas a vencer el plazo legal de 15 días."
+            "banner": "Hay solicitudes de Habeas Data vencidas o a punto de vencer."
           },
           "trafficLight": {
             "green": "Más de 7 días restantes",

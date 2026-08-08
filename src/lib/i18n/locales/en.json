@@ -5727,10 +5727,14 @@
           "pageTitle": "Compliance",
           "overview": {
             "ley2300Heading": "Ley 2300 — outside-hours attempts",
-            "habeasDataHeading": "Habeas Data — 15-day SLA",
+            "habeasDataHeading": "Habeas Data — legal deadline",
             "retentionHeading": "Data retention",
             "sparklineHeading": "Flag rate (last 30 days)",
-            "debtorRefHint": "Internal debtor reference. The national ID is never shown on compliance screens."
+            "debtorRefHint": "Internal debtor reference. The national ID is never shown on compliance screens.",
+            "retentionUnmeasured": "No records with an active retention window. Nothing to measure yet.",
+            "retentionCaption": "{rows} records with a retention window · {overdue} past due",
+            "retentionCaptionOne": "{rows} record with a retention window · {overdue} past due",
+            "cardAction": "Go to the opt-out registry to handle it"
           },
           "habeasData": {
             "remaining": {
@@ -5738,7 +5742,7 @@
               "hours": "{{hours}}h remaining"
             },
             "overdue": "OVERDUE {{days}}d AGO",
-            "banner": "There are Habeas Data requests approaching the 15-day statutory deadline."
+            "banner": "There are Habeas Data requests overdue or about to expire."
           },
           "trafficLight": {
             "green": "More than 7 days remaining",

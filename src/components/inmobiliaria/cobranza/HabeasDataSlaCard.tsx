@@ -28,6 +28,7 @@ import * as React from 'react'
 
 import { MonoLabel } from '@leasefy/cadence'
 
+import Link from 'next/link'
 import { useI18n } from '@/lib/i18n'
 import { toDebtorRef } from '@/lib/hooks/cobranza/compliance-entries'
 import type { HabeasDataOpenRequest, HabeasDataColor } from '@/lib/hooks/cobranza/use-compliance-overview'
@@ -54,11 +55,19 @@ const CARD_BORDER_BY_COLOR: Record<HabeasDataColor, string> = {
   'red-pulse': 'border-danger/30 animate-pulse',
 }
 
-/** D-34-07 progress fill = elapsed/15-day window. Negative remaining ⇒ 100%. */
-function progressPct(remainingDays: number): number {
+/**
+ * Relleno de la barra = parte del término ya consumida.
+ *
+ * Estaba fijo en 15, así que una consulta —cuyo término son 10 días hábiles
+ * (Art. 14)— se dibujaba contra una ventana que no es la suya: la barra iba
+ * corta y sugería más holgura de la que hay. El término lo manda el back en
+ * `sla_business_days`; 15 queda de respaldo por si contesta un agente viejo.
+ */
+function progressPct(remainingDays: number, termDays = 15): number {
+  const term = termDays > 0 ? termDays : 15
   if (remainingDays <= 0) return 100
-  if (remainingDays >= 15) return 0
-  return Math.round(((15 - remainingDays) / 15) * 100)
+  if (remainingDays >= term) return 0
+  return Math.round(((term - remainingDays) / term) * 100)
 }
 
 function relativeFromIso(iso: string, locale: string): string {
@@ -74,7 +83,7 @@ function relativeFromIso(iso: string, locale: string): string {
 
 export function HabeasDataSlaCard({ request }: HabeasDataSlaCardProps) {
   const { t, locale } = useI18n()
-  const { remaining_days, color, debtor_id, timestamp } = request
+  const { remaining_days, color, debtor_id, timestamp, sla_business_days } = request
 
   // Countdown text:
   //   remaining_days >= 1 → "Quedan {days}d {hours}h"
@@ -96,18 +105,28 @@ export function HabeasDataSlaCard({ request }: HabeasDataSlaCardProps) {
     })
   }
 
-  const pct = progressPct(remaining_days)
+  const pct = progressPct(remaining_days, sla_business_days)
 
+  /**
+   * La tarjeta era un callejón sin salida: mostraba un reloj legal corriendo y
+   * no llevaba a ninguna parte. El operador veía «VENCIDO HACE 2D» y tenía que
+   * adivinar dónde se atiende eso.
+   *
+   * La acción que detiene el reloj es el acuse, y vive en el registro de
+   * «No contactar» — ahí está el botón «Marcar acuse». Así que la tarjeta lleva
+   * ahí.
+   */
   return (
-    <div
+    <Link
+      href="/panel/inmobiliaria/ai/cobranza/compliance/opt-out"
       data-color={color}
       data-event-id={request.id}
       className={[
-        'rounded-xl border bg-card p-4 space-y-3',
+        'block rounded-xl border bg-card p-4 space-y-3 transition-opacity hover:opacity-80',
+        'outline-none focus-visible:ring-2 focus-visible:ring-ring',
         CARD_BORDER_BY_COLOR[color],
       ].join(' ')}
-      role="group"
-      aria-label={`Habeas Data SLA ${countdown}`}
+      aria-label={`${t('inmobiliaria.ai.cobranza.compliance.overview.cardAction')} — ${countdown}`}
     >
       {/* Header: masked cedula + countdown text */}
       <div className="flex items-start justify-between gap-3">
@@ -160,6 +179,6 @@ export function HabeasDataSlaCard({ request }: HabeasDataSlaCardProps) {
           style={{ width: `${pct}%` }}
         />
       </div>
-    </div>
+    </Link>
   )
 }

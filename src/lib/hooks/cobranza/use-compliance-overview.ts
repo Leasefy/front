@@ -27,8 +27,10 @@ export interface HabeasDataOpenRequest {
   debtor_id: string
   /** ISO timestamp when the Habeas Data request was anchored (D-34-RES-A1). */
   timestamp: string
-  /** Server-computed Math.ceil(15 - daysSince(timestamp)). May go negative on overdue. */
+  /** Días HÁBILES restantes del término legal. Negativo = vencido. */
   remaining_days: number
+  /** Término que rige esta solicitud, en días hábiles (10 consulta / 15 reclamo). */
+  sla_business_days?: number
   color: HabeasDataColor
 }
 
@@ -41,8 +43,11 @@ export interface ComplianceOverviewResponse {
     open_requests: HabeasDataOpenRequest[]
   }
   retention: {
-    compliance_pct: number
+    /** `null` = no hay filas con ventana de retención. NO es lo mismo que 100. */
+    compliance_pct: number | null
     target: number
+    measured_rows: number
+    overdue_rows: number
   }
   sparkline: {
     daily_buckets_30d: Array<{ date: string; flag_rate_pct: number }>

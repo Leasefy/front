@@ -36,10 +36,7 @@ import {
   FileText,
   Handshake,
   Info,
-  PencilSimple,
-  PaperPlaneTilt,
   Warning,
-  X,
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -237,33 +234,31 @@ function AcuerdoPropuestoCard({
         )}
       </div>
 
-      {/* Acciones — sin endpoint de persistencia/aprobación desde esta superficie.
-          T-323: aprobar/escalar requieren aprobación humana en el detalle real;
-          desde aquí son placeholders honestos deshabilitados. */}
-      <div className="flex flex-wrap items-center gap-2 px-5 py-4 border-t border-border bg-surface-muted">
-        <Button size="sm" hideArrow disabled title="Próximamente">
-          <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
-          Aprobar
-        </Button>
-        <Button size="sm" variant="secondary" hideArrow disabled title="Próximamente">
-          <PencilSimple className="w-3.5 h-3.5" aria-hidden="true" />
-          Editar condiciones
-        </Button>
-        <Button size="sm" variant="outline" hideArrow disabled title="Próximamente">
-          <PaperPlaneTilt className="w-3.5 h-3.5" aria-hidden="true" />
-          Enviar al inquilino
-        </Button>
-        <Button size="sm" variant="ghost" hideArrow disabled title="Próximamente">
-          <Warning className="w-3.5 h-3.5" aria-hidden="true" />
-          Escalar
-        </Button>
-        <Button size="sm" variant="ghost" hideArrow disabled title="Próximamente" className="text-danger hover:text-danger">
-          <X className="w-3.5 h-3.5" aria-hidden="true" />
-          Rechazar
-        </Button>
-        <span className="ml-auto inline-flex items-center px-2.5 py-1 rounded-full bg-surface-muted text-fg-muted text-xs font-medium ring-1 ring-border">
-          Próximamente
-        </span>
+      {/*
+        Acá vivían cinco botones deshabilitados —Aprobar, Editar condiciones,
+        Enviar al inquilino, Escalar, Rechazar— con la etiqueta «Próximamente».
+        Se quitaron porque no eran una función pendiente: **esto todavía no es
+        un acuerdo**. `agreements/propose` calcula un borrador y no persiste
+        nada, así que no hay qué aprobar, ni qué rechazar, ni qué enviar. Un
+        botón «Aprobar» sobre algo que no existe promete un estado que la base
+        no tiene.
+
+        El siguiente paso real es ofrecerlo (POST /cartera/payment-plans/offer,
+        que sí crea el plan y su link de pago) y aprobarlo en el detalle del
+        plan. Ese botón no se agregó acá todavía: crea un plan vivo y genera un
+        link de cobro, y es una decisión de producto, no de cableado.
+      */}
+      <div className="px-5 py-4 border-t border-border bg-surface-muted">
+        <p className="text-xs text-fg-muted leading-relaxed">
+          Esto es un <span className="font-medium text-fg">borrador calculado</span>: sirve
+          para ver las condiciones antes de comprometerlas. Todavía no existe como acuerdo,
+          no se le envió nada al inquilino y no genera cobro. Los acuerdos vivos se aprueban
+          uno por uno en{' '}
+          <Link href={PLANES_BASE} className="text-primary underline underline-offset-2">
+            Pagos › Planes
+          </Link>
+          .
+        </p>
       </div>
     </div>
   )

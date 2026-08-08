@@ -138,33 +138,6 @@ function adaptOwnerReport(r: OwnerReport): ReportePreview {
   }
 }
 
-const REPORTES_EJEMPLO: ReportePreview[] = [
-  {
-    id: 'r-1',
-    propietario: 'María González',
-    inmueble: 'Apartamento Laureles',
-    diasMora: 18,
-    valor: '$2.450.000',
-    estado: 'pendiente',
-  },
-  {
-    id: 'r-2',
-    propietario: 'Carlos Restrepo',
-    inmueble: 'Casa Envigado',
-    diasMora: 9,
-    valor: '$1.800.000',
-    estado: 'borrador',
-  },
-  {
-    id: 'r-3',
-    propietario: 'Inversiones Bolívar S.A.S.',
-    inmueble: 'Local Poblado',
-    diasMora: 32,
-    valor: '$4.100.000',
-    estado: 'enviado',
-  },
-]
-
 // ── Acciones SIN endpoint — botones deshabilitados "Próximamente" ─────────────
 // (enviar/aprobar y descargar PDF SÍ tienen endpoint y se cablean aparte.)
 
@@ -334,9 +307,11 @@ function ReportesPropietariosContent() {
     [reports],
   )
 
-  // ¿Hay backend con data? Si no, caemos al ejemplo (preview/EmptyState).
+  // La única fuente es el backend. Antes había tres reportes de ejemplo
+  // quemados como fallback: se veían como cartera propia (nombre del
+  // propietario, mora, monto, estado de aprobación) y no lo eran.
   const hayReales = realReportes.length > 0
-  const fuente = hayReales ? realReportes : REPORTES_EJEMPLO
+  const fuente = realReportes
 
   const estadoOptions = [
     { value: 'todos', label: 'Todos' },
@@ -346,7 +321,7 @@ function ReportesPropietariosContent() {
   ]
   const [estadoFilter, setEstadoFilter] = useState<string>('todos')
 
-  const [selectedId, setSelectedId] = useState<string>(REPORTES_EJEMPLO[0].id)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   // Estado honesto del PDF (501 → "Próximamente").
   const [pdfMsg, setPdfMsg] = useState<string | null>(null)
@@ -358,16 +333,21 @@ function ReportesPropietariosContent() {
       ? fuente
       : fuente.filter((r) => r.estado === estadoFilter)
 
-  // Selección segura: si el id elegido ya no está en la fuente visible/actual,
-  // caemos al primero disponible.
-  const seleccionado =
-    fuente.find((r) => r.id === selectedId) ??
-    visibles[0] ??
-    fuente[0] ??
-    REPORTES_EJEMPLO[0]
+  /**
+   * Selección segura: si el id elegido ya no está en la fuente, caemos al
+   * primero disponible.
+   *
+   * OJO con el tipo: `visibles[0]` se tipa como `ReportePreview` aunque el
+   * array esté vacío (no hay `noUncheckedIndexedAccess`), así que TypeScript
+   * cree que esto nunca es null y NO avisa de los accesos de abajo. En runtime
+   * sí puede ser null — por eso el render se corta antes con `if
+   * (!seleccionado)`, no con optional chaining disperso.
+   */
+  const seleccionado: ReportePreview | null =
+    fuente.find((r) => r.id === selectedId) ?? visibles[0] ?? fuente[0] ?? null
 
-  const esReal = Boolean(seleccionado.raw)
-  const yaEnviado = seleccionado.estado === 'enviado'
+  const esReal = Boolean(seleccionado?.raw)
+  const yaEnviado = seleccionado?.estado === 'enviado'
 
   // El filtro segmentado también pide al backend la lista filtrada (camino real).
   const onFilterChange = (value: string) => {
@@ -433,24 +413,29 @@ function ReportesPropietariosContent() {
         </p>
       </header>
 
-      {/* Aviso — solo cuando aún no hay reportes reales (estamos en preview) */}
-      {!hayReales && (
-        <div className="flex items-start gap-2 rounded-xl border border-border bg-surface-muted p-3 text-sm text-fg-muted">
-          <FileText className="w-4 h-4 shrink-0 text-fg-muted mt-0.5" weight="duotone" aria-hidden="true" />
-          <p>
-            Vista previa del formato. Cuando haya reportes de gestión generados, aparecerán acá.
-            Mientras tanto, podés gestionar tus propietarios en{' '}
-            <Link
-              href={PROPIETARIOS_HREF}
-              className="text-primary underline-offset-4 hover:underline font-medium"
-            >
-              Propietarios
-            </Link>
-            .
-          </p>
-        </div>
-      )}
+      {/*
+        Sin reportes reales: SOLO el estado vacío.
 
+        Antes se caía a tres reportes de ejemplo quemados en el archivo —
+        «María González · Apartamento Laureles · 18 días de mora · $2.450.000 ·
+        Pendiente aprobación»— con un aviso arriba diciendo que era una vista
+        previa. Nadie lee el aviso: lo que se ve es el nombre de una persona,
+        una deuda y un estado de aprobación que no existen. Un ejemplo con
+        forma de dato ES un dato para quien lo mira.
+      */}
+      {isLoading && !hayReales ? (
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-4 text-sm text-fg-muted">
+          <Spinner size="sm" variant="muted" className="shrink-0" />
+          Cargando reportes…
+        </div>
+      ) : !seleccionado ? (
+        <EmptyState
+          icon={FileText}
+          title="Todavía no hay reportes de gestión"
+          description="Cuando el agente prepare el resumen de cobranza de un propietario, aparecerá acá para que lo revises y lo apruebes antes de enviarlo. Mientras tanto podés ver a tus propietarios y su cartera."
+          primaryCta={{ label: 'Ir a Propietarios', href: PROPIETARIOS_HREF }}
+        />
+      ) : (
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         {/* Columna izquierda — lista de reportes preparados */}
         <section className="space-y-3" aria-label="Reportes preparados">
@@ -611,14 +596,7 @@ function ReportesPropietariosContent() {
           </Card>
         </section>
       </div>
-
-      {/* Cierre — cross-link a la superficie real de propietarios */}
-      <EmptyState
-        icon={UsersThree}
-        title="¿Buscás un propietario en particular?"
-        description="Gestioná los datos de contacto, inmuebles y comunicaciones de tus propietarios desde su sección dedicada."
-        primaryCta={{ label: 'Ir a Propietarios', href: PROPIETARIOS_HREF }}
-      />
+      )}
     </main>
   )
 }

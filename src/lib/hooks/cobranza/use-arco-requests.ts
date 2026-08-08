@@ -64,6 +64,12 @@ interface ArcoApiRow {
   submittedAt: string
   auditLogIds?: string[]
   sla_remaining_days: number
+  /**
+   * Término legal aplicable, en días hábiles. Lo manda el agente desde
+   * 2026-08-07; antes había que despejarlo. Opcional para no romper contra un
+   * agente viejo — ver `deriveSlaTerms`.
+   */
+  sla_business_days?: number
 }
 
 /** Respuesta del agente: un arreglo por cada tipo de solicitud. */
@@ -92,6 +98,8 @@ export interface ArcoRequestRow {
   auditLogIds: string[]
   /** Días hábiles restantes. Cero o negativo = plazo vencido. */
   slaRemainingDays: number
+  /** Término legal aplicable en días hábiles, tal cual lo manda el agente. */
+  slaBusinessDays: number | null
   /** La solicitud ya se resolvió o rechazó: el reloj no corre. */
   isClosed: boolean
   /** Plazo vencido y todavía sin cerrar. */
@@ -145,11 +153,12 @@ const EMPTY_COUNTS: Record<ArcoRequestType, number> = {
 /**
  * Días hábiles (lun–vie) transcurridos desde `submittedAt` hasta ahora.
  *
- * Réplica EXACTA de `computeBusinessDaysRemaining` del agente
- * (`agency-arco-requests.ts`): mismo cursor, misma condición de corte, y sin
- * festivos —la ley no los descuenta en este cálculo—. Existe sólo para poder
- * despejar el término legal a partir de un dato real; el conteo que la UI
- * MUESTRA sigue siendo el que manda el back, nunca éste.
+ * ⚠️ SÓLO FALLBACK, para un agente anterior al 2026-08-07 que no manda
+ * `sla_business_days`. Replicar el algoritmo del agente acá era frágil por
+ * definición: cuando allá se corrigió el arranque del conteo (el Art. 14 cuenta
+ * desde la fecha de recibo, el Art. 15 desde el día siguiente), esta copia
+ * quedó desactualizada en el acto. Por eso el término ahora viaja en el
+ * contrato y esto sólo cubre el caso viejo.
  */
 function businessDaysElapsed(submittedAt: string): number {
   const now = new Date()
@@ -193,25 +202,24 @@ function mode(values: number[]): number | null {
 }
 
 /**
- * Despeja el término legal que el agente está aplicando, a partir de las
- * solicitudes reales: `término = días_restantes + días_hábiles_transcurridos`.
+ * Términos legales que el agente está aplicando, leídos del contrato.
  *
- * Por qué no una constante en el front: el término es una regla de negocio que
- * vive en el agente. Copiarla acá la deja libre de derivar —el encabezado
- * diría 15 mientras la cuenta regresiva corre con otro número— y encima
- * presentaría como un hecho legal algo que nadie verificó contra el sistema.
- * Derivarlo hace que el encabezado siga al back solo.
+ * El término es una regla de negocio que vive en el agente; una constante acá
+ * se desincroniza en silencio y encima presentaría como hecho legal un número
+ * que nadie verificó. Antes se despejaba (`restantes + hábiles transcurridos`),
+ * lo que obligaba a replicar el algoritmo del agente de este lado — y esa
+ * réplica se rompió apenas allá se corrigió el arranque del conteo. Ahora el
+ * agente manda `sla_business_days` y acá sólo se lee.
  *
- * Se toma la moda entre todas las filas del mismo grupo: una fila cuyo
- * `sla_remaining_days` se calculó del otro lado de la medianoche puede quedar
- * corrida en uno, y la mayoría la corrige.
+ * Se toma la moda del grupo por si alguna fila viniera con otro valor, y queda
+ * el despeje viejo como último recurso contra un agente anterior al cambio.
  *
- * Devuelve `null` cuando no hay ninguna solicitud de ese grupo: sin dato del
- * cual despejarlo, no hay número que mostrar.
+ * Devuelve `null` cuando no hay ninguna solicitud del grupo: sin dato, no hay
+ * número que mostrar.
  */
 export function deriveSlaTerms(rows: ArcoRequestRow[]): ArcoSlaTerms {
   const term = (row: ArcoRequestRow) =>
-    row.slaRemainingDays + businessDaysElapsed(row.submittedAt)
+    row.slaBusinessDays ?? row.slaRemainingDays + businessDaysElapsed(row.submittedAt)
 
   return {
     acceso: mode(rows.filter((r) => r.type === 'acceso').map(term)),
@@ -257,6 +265,9 @@ export function normalizeArcoResponse(payload: ArcoApiResponse): ArcoRequestRow[
         submittedAt: raw.submittedAt,
         auditLogIds: raw.auditLogIds ?? [],
         slaRemainingDays: remaining,
+        slaBusinessDays: Number.isFinite(raw.sla_business_days)
+          ? (raw.sla_business_days as number)
+          : null,
         isClosed,
         isOverdue: !isClosed && remaining <= 0,
         isUrgent: !isClosed && remaining > 0 && remaining <= ARCO_URGENT_THRESHOLD_DAYS,

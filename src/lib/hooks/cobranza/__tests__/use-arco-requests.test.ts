@@ -124,7 +124,29 @@ describe('normalizeArcoResponse — forma agrupada del agente', () => {
   })
 })
 
-describe('deriveSlaTerms — el plazo se despeja del dato, no se hardcodea', () => {
+describe('deriveSlaTerms — el plazo sale del contrato, no de una constante', () => {
+  it('usa el `sla_business_days` que manda el agente', () => {
+    // El agente aplica los términos de la Ley 1581: acceso (consulta, Art. 14)
+    // 10 días hábiles; reclamos (Art. 15 num. 3) 15. La pantalla los lee, no los
+    // decide: si allá cambian, el encabezado los sigue solo.
+    const rows = normalizeArcoResponse({
+      acceso: [row({ sla_business_days: 10, sla_remaining_days: 4 })],
+      cancelacion: [row({ type: 'cancelacion', sla_business_days: 15, sla_remaining_days: 10 })],
+    })
+    expect(deriveSlaTerms(rows)).toEqual({ acceso: 10, reclamo: 15 })
+  })
+
+  it('no despeja nada cuando el término viene explícito, aunque las fechas mientan', () => {
+    // `submittedAt` en el futuro haría negativo cualquier despeje; con el
+    // término explícito el resultado no depende de la fecha.
+    const future = new Date(Date.now() + 30 * 864e5).toISOString()
+    const rows = normalizeArcoResponse({
+      acceso: [row({ submittedAt: future, sla_business_days: 10, sla_remaining_days: 99 })],
+    })
+    expect(deriveSlaTerms(rows).acceso).toBe(10)
+  })
+
+
   /** Fecha de envío a N días hábiles atrás, para forzar un `elapsed` conocido. */
   const submittedBusinessDaysAgo = (n: number) => {
     const d = new Date()

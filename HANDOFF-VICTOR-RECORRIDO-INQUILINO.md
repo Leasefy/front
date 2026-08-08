@@ -22,6 +22,7 @@ Nada de esto es opinión: cada punto dice dónde lo verifiqué.
 | 4 | `GET /api/tenant/aprobacion` | Que la aprobación sobreviva a crear la cuenta |
 | 5 | `solicitudId` al crear el estudio | La pantalla de pago |
 | 6 | Motor real (hoy `stubMode: true` fijo) | Que el veredicto sea cierto |
+| 6b | Leer `user_metadata` en el primer login | Que el onboarding no vuelva a pedir nombre/cédula/celular |
 | 7 | `vigenteHasta` | La urgencia. Hoy ninguna aprobación vence |
 
 Los puntos **1, 2 y 3 son el mínimo** para que el recorrido deje de ser una demostración.
@@ -196,6 +197,33 @@ anuncia en pantalla con todas las letras ("Resultado de ejemplo… estos datos n
 aprobación falsa en pantallas que ya no avisan que era una demo.
 
 Cuando el motor consulte de verdad, mandá `stubMode: false` y el aviso desaparece solo.
+
+---
+
+## 6-bis. Mapear `user_metadata` → registro del usuario en el primer login
+
+Cuando la persona crea la cuenta desde el recorrido, ya nos dio **nombre, celular, cédula y
+ciudad**. Los mandamos en `user_metadata` del signup de Supabase:
+
+```jsonc
+{ "intended_role": "tenant", "full_name": "…", "phone": "+57…",
+  "document_number": "…", "city": "…" }
+```
+
+**Hoy nadie los lee.** El resultado es que el onboarding de inquilino
+(`StepTenantWelcome`) le vuelve a pedir **nombre, cédula y celular** — los tres — treinta
+segundos después de que los escribió.
+
+El front ya sabe prellenar: `TenantOnboardingContext` tiene `hydrateFromBackend`, que llena
+`displayName` / `phone` / `rut` desde el usuario **cuando `profileSource === 'backend'`**. O sea:
+apenas `GET /users/me` devuelva esos campos, el onboarding se prellena solo, sin tocar la UI.
+
+Lo mismo con `intended_role: 'tenant'`: si el backend lo respeta al crear el registro, la persona
+se ahorra también el selector de perfil.
+
+> Lo podríamos parchear del lado del front leyendo lo que guardamos en el navegador, pero sería
+> un arreglo de un solo dispositivo — el mismo problema del punto 4. El lugar correcto es el
+> backend.
 
 ---
 

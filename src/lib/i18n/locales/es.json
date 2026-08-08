@@ -9228,8 +9228,8 @@
       "confirma": {
         "titulo": "Confirma tu correo",
         "parte1": "Te enviamos un enlace a",
-        "parte2": "Ábrelo y entras directo a tu catálogo.",
-        "guardada": "Tu aprobación ya quedó guardada. No tienes que volver a consultarla ni a pagar."
+        "parte2": "Ábrelo en este mismo dispositivo, terminas de crear tu perfil y entras a tu catálogo.",
+        "guardada": "Tu aprobación quedó guardada en este navegador, así que no tienes que volver a consultarla ni a pagar. Si abres el enlace en otro dispositivo, un asesor te la reasocia."
       }
     }
   }

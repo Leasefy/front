@@ -33,6 +33,21 @@ import { useTf, type Tf } from '@/lib/i18n/use-tf'
 
 const NS = 'inquilino.crearCuenta'
 
+/**
+ * A dónde aterriza la persona después de confirmar (o al instante, si Supabase
+ * no exige confirmación).
+ *
+ * **No es `/inquilino/para-ti` directo, aunque sea lo que quiere ver.** Ese
+ * panel está detrás de `ProtectedRoute allowedRoles={['tenant']}`, y recién
+ * creada la cuenta el backend todavía no tiene el registro del usuario ni su
+ * rol resuelto: el guard la rebota. Es el mismo motivo por el que el registro
+ * normal (`AuthForm`) también apunta al onboarding y no a un panel.
+ *
+ * El onboarding sí sabe llevarla al final a donde iba — le pasamos el destino.
+ */
+const CATALOGO = '/inquilino/para-ti'
+const DESTINO = `/onboarding/inquilino?returnUrl=${encodeURIComponent(CATALOGO)}`
+
 export interface DatosConocidos {
   /** Número nacional, solo dígitos. */
   telefono: string
@@ -80,7 +95,7 @@ export function CrearCuentaDesdeAprobacion({
       const { requiresConfirmation } = await signUpWithEmail(
         email.trim(),
         password,
-        `${window.location.origin}/auth/callback?returnUrl=/inquilino/para-ti`,
+        `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(DESTINO)}`,
         'tenant',
         {
           full_name: nombre.trim(),
@@ -93,8 +108,8 @@ export function CrearCuentaDesdeAprobacion({
         setConfirmarCorreo(true)
         return
       }
-      // Con sesión activa se entra directo a su panel: es lo que vino a buscar.
-      router.push('/inquilino/para-ti')
+      // Mismo destino que el link de confirmación, por la misma razón.
+      router.push(DESTINO)
     } catch (err) {
       const msg = err instanceof Error ? err.message : ''
       setErrorGeneral(
@@ -205,14 +220,20 @@ function ConfirmaTuCorreo({ tf, email }: { tf: Tf; email: string }) {
             <p className="text-sm text-fg-muted mt-1 leading-relaxed">
               {tf(`${NS}.confirma.parte1`, 'Te enviamos un enlace a')}{' '}
               <span className="font-medium text-fg">{email}</span>.{' '}
-              {tf(`${NS}.confirma.parte2`, 'Ábrelo y entras directo a tu catálogo.')}
+              {tf(
+                `${NS}.confirma.parte2`,
+                'Ábrelo en este mismo dispositivo, terminas de crear tu perfil y entras a tu catálogo.',
+              )}
             </p>
           </div>
         </div>
 
         <div className="rounded-lg border border-border bg-surface-muted p-4">
           <p className="text-sm text-fg-muted">
-            {tf(`${NS}.confirma.guardada`, 'Tu aprobación ya quedó guardada. No tienes que volver a consultarla ni a pagar.')}
+            {tf(
+              `${NS}.confirma.guardada`,
+              'Tu aprobación quedó guardada en este navegador, así que no tienes que volver a consultarla ni a pagar. Si abres el enlace en otro dispositivo, un asesor te la reasocia.',
+            )}
           </p>
         </div>
       </CardContent>

@@ -18,7 +18,7 @@ import {
   FileText,
   ClipboardText,
   ShieldCheck,
-  UsersThree,
+  // UsersThree,  ← reactivar junto con las pestañas «Equipo IA»
   SlidersHorizontal,
   Plus,
   Table,
@@ -105,7 +105,8 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.cobranzaPlaybooks', href: `${AI}/cobranza/plantillas`, icon: FileText, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.compliance', href: `${AI}/cobranza/compliance`, icon: ClipboardText, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.arco', href: `${AI}/cobranza/arco`, icon: ShieldCheck, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaEquipo', href: `${AI}/cobranza/equipo`, icon: UsersThree, module: 'cobranza' },
+      // OCULTO — «Equipo IA» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaEquipo', href: `${AI}/cobranza/equipo`, icon: UsersThree, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.configuracion', href: `${AI}/cobranza/configuracion`, icon: SlidersHorizontal, module: 'cobranza' },
     ],
   },
@@ -123,7 +124,8 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.cotizadorComparar', href: `${AI}/asegurabilidad/comparar`, icon: Table, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.nav.cotizadorEjecucion', href: `${AI}/asegurabilidad/ejecucion`, icon: Lightning, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.cotizador.nav.aseguradoras', href: `${AI}/asegurabilidad/aseguradoras`, icon: ShieldCheck, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizadorEquipo', href: `${AI}/asegurabilidad/equipo`, icon: UsersThree, module: 'cotizador' },
+      // OCULTO — «Equipo IA» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cotizadorEquipo', href: `${AI}/asegurabilidad/equipo`, icon: UsersThree, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.cotizador.nav.insights', href: `${AI}/asegurabilidad/insights`, icon: ChartLineUp, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.cotizador.nav.costos', href: `${AI}/asegurabilidad/costos`, icon: CurrencyDollar, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.nav.cotizadorIntegraciones', href: `${AI}/asegurabilidad/integraciones`, icon: GitMerge, module: 'cotizador' },
@@ -174,7 +176,8 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.estudioCrear', href: `${AI}/estudio/nuevo`, icon: Plus, module: 'estudio' },
       { labelKey: 'inmobiliaria.ai.nav.estudioSolicitud', href: `${AI}/estudio/solicitud`, icon: PaperPlaneTilt, module: 'estudio' },
       { labelKey: 'inmobiliaria.ai.nav.estudioCola', href: `${AI}/estudio/cola`, icon: ClipboardText, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioEquipo', href: `${AI}/estudio/equipo`, icon: UsersThree, module: 'estudio' },
+      // OCULTO — «Equipo IA» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.estudioEquipo', href: `${AI}/estudio/equipo`, icon: UsersThree, module: 'estudio' },
       { labelKey: 'inmobiliaria.ai.nav.estudioAnalitica', href: `${AI}/estudio/analitica`, icon: ChartLineUp, module: 'estudio' },
       { labelKey: 'inmobiliaria.ai.nav.estudioReglas', href: `${AI}/estudio/reglas`, icon: Scales, module: 'estudio' },
       { labelKey: 'inmobiliaria.ai.nav.estudioConfiguracion', href: `${AI}/estudio/configuracion`, icon: SlidersHorizontal, module: 'estudio' },
@@ -210,13 +213,28 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.pagosRecordatorios', href: `${AI}/pagos/recordatorios`, icon: BellRinging, module: null, roles: CONTADOR_ROLES },
       { labelKey: 'inmobiliaria.ai.nav.pagosPropietarios', href: `${AI}/pagos/propietarios`, icon: Wallet, module: null, roles: CONTADOR_ROLES },
       { labelKey: 'inmobiliaria.ai.nav.pagosCola', href: `${AI}/pagos/cola`, icon: ClipboardText, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosEquipo', href: `${AI}/pagos/equipo`, icon: UsersThree, module: null, roles: CONTADOR_ROLES },
+      // OCULTO — «Equipo IA» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.pagosEquipo', href: `${AI}/pagos/equipo`, icon: UsersThree, module: null, roles: CONTADOR_ROLES },
       { labelKey: 'inmobiliaria.ai.nav.pagosAnalitica', href: `${AI}/pagos/analitica`, icon: ChartLineUp, module: null, roles: CONTADOR_ROLES },
       { labelKey: 'inmobiliaria.ai.nav.pagosReglas', href: `${AI}/pagos/reglas`, icon: Lightning, module: null, roles: CONTADOR_ROLES },
       { labelKey: 'inmobiliaria.ai.nav.pagosConfiguracion', href: `${AI}/pagos/configuracion`, icon: SlidersHorizontal, module: null, roles: CONTADOR_ROLES },
     ],
   },
 ];
+
+/**
+ * NOTA — «Equipo IA» oculto (2026-08-07, decisión de Nico).
+ *
+ * Las cuatro pestañas `.../equipo` (cobranza, asegurabilidad, estudio, pagos)
+ * están comentadas arriba. Son contenido estático de presentación —personas
+ * ficticias del equipo— sin backend que las alimente, así que no aportan nada
+ * operativo dentro del workspace.
+ *
+ * Las páginas siguen existiendo en `app/panel/inmobiliaria/ai/*​/equipo/` y sus
+ * claves i18n intactas: para reactivarlas basta descomentar las 4 líneas y el
+ * import de `UsersThree`. No quedan otros enlaces a esas rutas en la app, así
+ * que sólo se alcanzan escribiendo la URL a mano.
+ */
 
 /** Find the agent workspace whose basePath contains `pathname` (or null). */
 export function findAgentWorkspace(pathname: string): AgentWorkspace | null {

@@ -1,80 +1,97 @@
 'use client'
 
-import { Timer } from '@phosphor-icons/react'
+/**
+ * SlaCountdownBadge — cuánto queda del término legal de una solicitud ARCO.
+ *
+ * Envuelve el `StatusBadge` de Cadence. El punto del DS se apaga (`dot={false}`)
+ * porque acá el glifo que importa es el del reloj: el estado no se comunica
+ * sólo con color (DESIGN.md §7), y un temporizador dice más que un punto.
+ *
+ * El agente ya calcula los días hábiles restantes (`sla_remaining_days`), así
+ * que acá NO se recalcula nada: dos relojes que no coinciden es peor que uno.
+ */
+
+import { Timer, WarningCircle, CheckCircle, Clock } from '@phosphor-icons/react'
+import { StatusBadge, type SemanticTone } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
+// Un solo umbral para todo ARCO: acá decide el ámbar del badge, y en la lista
+// decide la franja de la fila y el conteo de «urgentes». Duplicarlo hacía que
+// cambiar uno dejara la fila y su badge diciendo cosas distintas.
+import { ARCO_URGENT_THRESHOLD_DAYS } from '@/lib/hooks/cobranza/use-arco-requests'
+
+const NS = 'inmobiliaria.ai.arco.sla'
 
 export type SlaBadgeProps = {
-  deadline: Date
-  type: 'acceso' | 'rectificacion' | 'cancelacion' | 'oposicion'
+  /** Días hábiles restantes. Cero o negativo = vencido. */
+  remainingDays: number
+  /** La solicitud ya se cerró: el reloj dejó de correr. */
+  isClosed?: boolean
+  /** El reloj aún no arranca (falta que la persona confirme su correo). */
+  isPaused?: boolean
   className?: string
 }
 
-/**
- * Counts business days (Mon–Fri) between now and the deadline.
- * Returns a negative number when the deadline has passed.
- */
-export function calcBusinessDaysRemaining(deadline: Date): number {
-  const now = new Date()
-  // Normalize both dates to midnight for consistent day counting
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const end = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate())
-
-  const direction = end >= start ? 1 : -1
-  let current = new Date(start)
-  let count = 0
-
-  while (true) {
-    const next = new Date(current)
-    next.setDate(next.getDate() + direction)
-
-    const day = next.getDay()
-    // Mon=1 through Fri=5 are business days
-    if (day !== 0 && day !== 6) {
-      count += direction
-    }
-
-    if (direction === 1 && next >= end) break
-    if (direction === -1 && next <= end) break
-    current = next
-  }
-
-  // If deadline is today or in the past (same day), return 0 or negative
-  if (end < start) {
-    // Already overdue — count backward
-    let overdueCount = 0
-    const c = new Date(end)
-    while (c < start) {
-      c.setDate(c.getDate() + 1)
-      const day = c.getDay()
-      if (day !== 0 && day !== 6) overdueCount++
-    }
-    return -overdueCount
-  }
-
-  return count
-}
-
-const SLA_COLORS = {
-  onTime: 'text-success bg-success-soft',
-  warning: 'text-warning bg-warning-soft',
-  overdue: 'text-danger bg-danger-soft',
-} as const
-
-export function SlaCountdownBadge({ deadline, type: _type, className }: SlaBadgeProps) {
+export function SlaCountdownBadge({
+  remainingDays,
+  isClosed = false,
+  isPaused = false,
+  className,
+}: SlaBadgeProps) {
   const { t } = useI18n()
-  const remaining = calcBusinessDaysRemaining(deadline)
 
-  const state: keyof typeof SLA_COLORS =
-    remaining <= 0 ? 'overdue' : remaining <= 2 ? 'warning' : 'onTime'
+  const { tone, icon, label } = ((): {
+    tone: SemanticTone
+    icon: React.ReactNode
+    label: string
+  } => {
+    if (isClosed) {
+      return {
+        tone: 'neutral',
+        icon: <CheckCircle className="h-3 w-3 shrink-0" weight="regular" aria-hidden="true" />,
+        label: t(`${NS}.closed`),
+      }
+    }
+    if (isPaused) {
+      return {
+        tone: 'neutral',
+        icon: <Clock className="h-3 w-3 shrink-0" weight="regular" aria-hidden="true" />,
+        label: t(`${NS}.paused`),
+      }
+    }
+    if (remainingDays < 0) {
+      return {
+        tone: 'critical',
+        icon: <WarningCircle className="h-3 w-3 shrink-0" weight="fill" aria-hidden="true" />,
+        label: t(`${NS}.overdueBy`).replace('{count}', String(Math.abs(remainingDays))),
+      }
+    }
+    if (remainingDays === 0) {
+      return {
+        tone: 'critical',
+        icon: <WarningCircle className="h-3 w-3 shrink-0" weight="fill" aria-hidden="true" />,
+        label: t(`${NS}.today`),
+      }
+    }
+    return {
+      tone: remainingDays <= ARCO_URGENT_THRESHOLD_DAYS ? 'warning' : 'success',
+      icon: <Timer className="h-3 w-3 shrink-0" weight="regular" aria-hidden="true" />,
+      label: t(remainingDays === 1 ? `${NS}.day` : `${NS}.days`).replace(
+        '{count}',
+        String(remainingDays),
+      ),
+    }
+  })()
 
   return (
-    <span
-      className={`inline-flex items-center gap-1 text-xs font-mono tabular-nums rounded-full px-2 py-0.5 ${SLA_COLORS[state]} ${className ?? ''}`}
+    <StatusBadge
+      tone={tone}
+      dot={false}
+      // Números en mono tabular: la columna de plazos se lee en vertical.
+      className={cn('gap-1 font-mono tabular-nums', className)}
     >
-      <Timer className="h-3 w-3" weight="regular" />
-      {remaining <= 0
-        ? t('inmobiliaria.ai.arco.sla.overdue')
-        : t('inmobiliaria.ai.arco.sla.days').replace('{count}', String(remaining))}
-    </span>
+      {icon}
+      {label}
+    </StatusBadge>
   )
 }

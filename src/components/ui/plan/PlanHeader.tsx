@@ -15,6 +15,8 @@ import { getPlanById, PLANS } from '@/lib/constants/subscription-plans';
 import { useMySubscription } from '@/lib/hooks/useSubscription';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { useLandlordNotifications, useTenantNotifications } from '@/lib/hooks/useNotifications';
+import { useArcoAlerts } from '@/lib/hooks/cobranza/use-arco-alerts';
+import { ArcoDeadlineAlert } from '@/components/inmobiliaria/cobranza/ArcoDeadlineAlert';
 import { LANDLORD_CATEGORIES, TENANT_CATEGORIES, formatNotificationTime } from '@/lib/types/notification';
 import type { BaseNotification, LandlordNotificationCategory, TenantNotificationCategory } from '@/lib/types/notification';
 import { AvatarSubscriptionIndicator } from './SubscriptionBadge';
@@ -147,6 +149,12 @@ export function PlanHeader({
   const activeNotifs = isLandlord ? landlordNotifs : tenantNotifs;
   const notifications = activeNotifs.notifications as BaseNotification[];
   const unreadCount = activeNotifs.unreadCount;
+
+  // Plazos ARCO (Habeas Data). Sólo en el panel de inmobiliaria y sólo con
+  // acceso al módulo de cobranza — el hook ya se gatea solo y no dispara ni un
+  // fetch fuera de ese caso, así que landlord/tenant no pagan nada por esto.
+  // Van fijos arriba de la lista, no mezclados: ver ArcoDeadlineAlert.
+  const arcoAlerts = useArcoAlerts(isInmobiliaria);
 
   const handleNotificationClick = (notification: BaseNotification) => {
     if (!notification.read) {
@@ -894,8 +902,20 @@ export function PlanHeader({
             <PopoverTrigger asChild>
               <button className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors">
                 <Bell className="w-5 h-5 stroke-[1.5px]" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-primary rounded-full ring-2 ring-bg" />
+                {/* Un plazo ARCO vencido pinta el punto en rojo: es la única
+                    condición del panel con consecuencia legal, así que gana
+                    sobre el punto azul de "hay algo sin leer". */}
+                {(arcoAlerts.all.length > 0 || unreadCount > 0) && (
+                  <span
+                    className={cn(
+                      'absolute top-1 right-1 w-2.5 h-2.5 rounded-full ring-2 ring-bg',
+                      arcoAlerts.hasOverdue
+                        ? 'bg-danger'
+                        : arcoAlerts.all.length > 0
+                          ? 'bg-warning'
+                          : 'bg-primary'
+                    )}
+                  />
                 )}
               </button>
             </PopoverTrigger>
@@ -917,6 +937,12 @@ export function PlanHeader({
                   </svg>
                 </button>
               </div>
+
+              {/* Plazos ARCO — fijos arriba, fuera de las pestañas leído/sin leer. */}
+              <ArcoDeadlineAlert
+                alerts={arcoAlerts}
+                onNavigate={() => setNotificationsOpen(false)}
+              />
 
               {/* Tabs — Cadence SegmentedControl */}
               <div className="px-5 py-3 border-b border-border-faint">

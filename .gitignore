@@ -63,3 +63,6 @@ next-env.d.ts
 /*.webp
 /*.gif
 /*.avif
+
+# Volcado de Redis local (aparece al correr redis-server desde la raíz del repo).
+dump.rdb

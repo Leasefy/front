@@ -115,7 +115,14 @@ export default function ArriendoPage() {
           </p>
         </motion.header>
 
-        {/* Stats Grid */}
+        {/*
+          Los KPI solo cuando hay algo que resumir.
+          Sin contratos decían "0", "$0" y —lo peor— "Al día · Todos los pagos
+          al día", que es una afirmación FALSA: no hay pagos que estén al día.
+          Un resumen de nada no informa, y encima ocupa el lugar donde debería
+          estar lo único útil de esta pantalla: qué hacer para tener un arriendo.
+        */}
+        {activeLeases.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -164,6 +171,7 @@ export default function ArriendoPage() {
             </p>
           </div>
         </motion.div>
+        )}
 
         {/* Leases List */}
         <motion.section
@@ -362,7 +370,10 @@ export default function ArriendoPage() {
               icon={House}
               title="No tienes arriendos activos"
               description="Cuando firmes un contrato de arriendo, tu información aparecerá aquí."
-              action={{ label: "Ver aplicaciones", href: "/inquilino/aplicaciones" }}
+              /* "aplicaciones" está muerto (docs/VOCABULARIO.md). Y quien no
+                 tiene arriendo no necesita revisar su historial: necesita
+                 encontrar dónde vivir. */
+              action={{ label: 'Ver propiedades para mí', href: '/inquilino/para-ti' }}
             />
           )}
         </motion.section>

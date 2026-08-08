@@ -212,6 +212,13 @@ export default function AplicacionesPage() {
   };
 
   const currentApplications = activeTab === 'active' ? activeApplications : completedApplications;
+  /*
+   * Sin ninguna postulación no hay nada que resumir, filtrar ni ver de dos
+   * formas. Los KPI en cero, las pestañas y el conmutador lista/tarjetas eran
+   * andamiaje alrededor de un vacío: ocupaban la pantalla y empujaban abajo lo
+   * único que importa ahí, que es cómo empezar.
+   */
+  const sinPostulaciones = activeApplications.length + completedApplications.length === 0;
 
   // Pagination logic
   const totalPages = Math.ceil(currentApplications.length / ITEMS_PER_PAGE);
@@ -279,6 +286,7 @@ export default function AplicacionesPage() {
         </motion.header>
 
         {/* Stats Grid */}
+        {!sinPostulaciones && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -318,8 +326,10 @@ export default function AplicacionesPage() {
             <p className="text-sm text-fg-muted mt-2">{locale === 'es' ? 'Aprobadas o rechazadas' : 'Approved or rejected'}</p>
           </div>
         </motion.div>
+        )}
 
         {/* Controls: Tabs + View Toggle */}
+        {!sinPostulaciones && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -393,6 +403,7 @@ export default function AplicacionesPage() {
             />
           </div>
         </motion.div>
+        )}
 
         {/* Applications */}
         <motion.section
@@ -731,18 +742,20 @@ export default function AplicacionesPage() {
             <EmptyState
               icon={FileText}
               title={activeTab === 'active'
-                ? (locale === 'es' ? 'No tienes aplicaciones en proceso' : 'No applications in progress')
-                : (locale === 'es' ? 'No tienes aplicaciones completadas' : 'No completed applications')
+                ? (locale === 'es' ? 'Todavía no te has postulado' : "You haven't applied yet")
+                : (locale === 'es' ? 'No tienes postulaciones cerradas' : 'No closed applications')
               }
               description={activeTab === 'active'
                 ? (locale === 'es'
-                    ? 'Explora propiedades disponibles y aplica para comenzar tu proceso de arriendo.'
+                    ? 'Con tu tope aprobado te mostramos las propiedades que puedes tomar. Postularte es el primer paso.'
                     : 'Explore available properties and apply to start your rental process.')
                 : (locale === 'es'
                     ? 'Las aplicaciones aprobadas o rechazadas aparecerán aquí.'
                     : 'Approved or rejected applications will appear here.')
               }
-              action={activeTab === 'active' ? { label: locale === 'es' ? 'Buscar propiedades' : 'Browse properties', href: '/inquilino/explorar' } : undefined}
+              /* A SU catálogo, no al listado general: ahí están las que puede
+                 tomar de verdad. "aplicar" está muerto (docs/VOCABULARIO.md). */
+              action={activeTab === 'active' ? { label: locale === 'es' ? 'Ver propiedades para mí' : 'See properties for me', href: '/inquilino/para-ti' } : undefined}
             />
           )}
         </motion.section>

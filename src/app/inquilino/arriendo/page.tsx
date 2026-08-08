@@ -179,12 +179,17 @@ export default function ArriendoPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-fg">{locale === 'es' ? 'Contratos activos' : 'Active contracts'}</h2>
-            <span className="text-sm text-fg-muted">
-              {activeLeases.length} {locale === 'es' ? (activeLeases.length !== 1 ? 'contratos' : 'contrato') : (activeLeases.length !== 1 ? 'contracts' : 'contract')}
-            </span>
-          </div>
+          {/* Sin contratos no va el encabezado: "Contratos activos · 0
+              contratos" arriba de "No tienes arriendos activos" dice lo mismo
+              dos veces, y la segunda ya lo dice mejor. */}
+          {activeLeases.length > 0 && (
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-fg">{locale === 'es' ? 'Contratos activos' : 'Active contracts'}</h2>
+              <span className="text-sm text-fg-muted">
+                {activeLeases.length} {locale === 'es' ? (activeLeases.length !== 1 ? 'contratos' : 'contrato') : (activeLeases.length !== 1 ? 'contracts' : 'contract')}
+              </span>
+            </div>
+          )}
 
           {activeLeases.length > 0 ? (
             <div className="space-y-4">

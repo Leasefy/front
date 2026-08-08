@@ -133,7 +133,16 @@ describe('aprobado', () => {
     await montar({})
     expect(texto()).toContain('Fianli')
     expect(texto()).toContain('Sura')
-    expect(texto()).toContain('2 consultadas · 1 te aprobaron')
+    // Concordancia: con UNA aprobada es "te aprobó", no "te aprobaron".
+    expect(texto()).toContain('2 consultadas · 1 te aprobó')
+  })
+
+  it('con una sola aseguradora no dice "varias" ni pluraliza', async () => {
+    await montar({ aseguradoras: [{ nombre: 'Fianli', aprobada: true }] })
+    const t = texto()
+    expect(t).toContain('1 consultada')
+    expect(t).not.toContain('1 consultadas')
+    expect(t).not.toContain('Consultamos varias')
   })
 })
 

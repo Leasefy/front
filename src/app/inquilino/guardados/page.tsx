@@ -13,6 +13,7 @@ import { useWishlistedProperties } from '@/lib/hooks/useProperties';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { IconButton } from '@leasefy/cadence';
 import { Spinner } from '@/components/ui/spinner';
 import type { Property } from '@/lib/types/property';
@@ -83,13 +84,19 @@ export default function GuardadosPage() {
                   : (locale === 'es' ? `${displayCount} propiedades guardadas` : `${displayCount} saved properties`)}
               </p>
             </div>
-            <Link
-              href="/inquilino/explorar"
-              className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
-            >
-              <MagnifyingGlass className="w-4 h-4" />
-              {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
-            </Link>
+            {/* El botón del encabezado solo cuando hay guardadas: sin nada, el
+                estado vacío ya ofrece la misma acción justo debajo, y dos
+                botones distintos para lo mismo en la misma pantalla confunden
+                sobre cuál es el camino. */}
+            {properties.length > 0 && (
+              <Link
+                href="/inquilino/explorar"
+                className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
+              >
+                <MagnifyingGlass className="w-4 h-4" />
+                {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
+              </Link>
+            )}
           </div>
         </motion.header>
 
@@ -100,53 +107,31 @@ export default function GuardadosPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-xl bg-surface-muted/80 p-8 sm:p-12 text-center"
           >
-            <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center mx-auto mb-5">
-              <Heart className="w-6 h-6 text-fg-subtle" />
-            </div>
-            <h2 className="text-base font-semibold text-fg mb-1.5">
-              {locale === 'es' ? 'No tienes propiedades guardadas' : 'No saved properties'}
-            </h2>
-            <p className="text-sm text-fg-muted max-w-sm mx-auto leading-relaxed mb-6">
-              {locale === 'es'
-                ? 'Explora propiedades y guarda las que te interesen tocando el corazón. Así podrás compararlas fácilmente.'
-                : 'Explore properties and save the ones you like by tapping the heart. This way you can easily compare them.'}
-            </p>
-            <Button asChild>
-              <Link href="/inquilino/explorar">
-                {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
-              </Link>
-            </Button>
+            {/*
+              Era un tercer estilo de vacío —círculo gris sobre `surface-muted/80`—
+              mientras Documentos, Contratos, Pagos y Postulaciones usan el
+              `EmptyState` de Cadence. Tres formas distintas de decir "no hay
+              nada" en el mismo panel.
 
-            {/* Tips */}
-            <div className="mt-10 pt-8 border-t border-border">
-              <p className="text-sm font-medium text-fg mb-4">
-                {locale === 'es' ? '¿Cómo guardar propiedades?' : 'How to save properties?'}
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-fg-muted">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center">
-                    <MagnifyingGlass className="w-4 h-4" />
-                  </div>
-                  <span>{locale === 'es' ? 'Busca propiedades' : 'Search properties'}</span>
-                </div>
-                <CaretRight className="w-4 h-4 hidden sm:block" />
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center">
-                    <Heart className="w-4 h-4 text-danger" />
-                  </div>
-                  <span>{locale === 'es' ? 'Toca el corazón' : 'Tap the heart'}</span>
-                </div>
-                <CaretRight className="w-4 h-4 hidden sm:block" />
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center">
-                    <Check className="w-4 h-4 text-success" />
-                  </div>
-                  <span>{locale === 'es' ? '¡Guardada!' : 'Saved!'}</span>
-                </div>
-              </div>
-            </div>
+              El mini-tutorial "¿Cómo guardar propiedades? → busca → toca el
+              corazón → ¡guardada!" también salió: explicar en tres pasos cómo
+              usar un botón que no está en esta pantalla es andamiaje sobre un
+              vacío. El corazón se explica solo donde vive, en las tarjetas.
+            */}
+            <EmptyState
+              icon={Heart}
+              title={locale === 'es' ? 'No tienes propiedades guardadas' : 'No saved properties'}
+              description={
+                locale === 'es'
+                  ? 'Toca el corazón en las propiedades que te interesen y las encuentras acá para compararlas.'
+                  : 'Tap the heart on the properties you like and find them here to compare them.'
+              }
+              action={{
+                label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me',
+                href: '/inquilino/para-ti',
+              }}
+            />
           </motion.div>
         ) : (
           /* Properties Grid */

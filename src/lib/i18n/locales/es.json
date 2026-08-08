@@ -53,7 +53,7 @@
   },
   "nav": {
     "panel": "Inicio",
-    "myRental": "Mi Arriendo",
+    "myRental": "Mi arriendo",
     "applications": "Mis postulaciones",
     "contracts": "Contratos",
     "payments": "Pagos",
@@ -131,7 +131,7 @@
     }
   },
   "rental": {
-    "title": "Mi Arriendo",
+    "title": "Mi arriendo",
     "noRental": "No tienes un arriendo activo",
     "findProperty": "Buscar propiedad",
     "currentRental": "Arriendo Actual",
@@ -387,7 +387,7 @@
     "sent": "Enviado"
   },
   "profile": {
-    "title": "Mi Perfil",
+    "title": "Mi perfil",
     "subtitle": "Gestiona tu información personal",
     "edit": "Editar perfil",
     "save": "Guardar cambios",
@@ -511,7 +511,7 @@
     }
   },
   "saved": {
-    "title": "Propiedades Guardadas",
+    "title": "Propiedades guardadas",
     "subtitle": "Tus propiedades favoritas",
     "noSaved": "No tienes propiedades guardadas",
     "browseProperties": "Explorar propiedades",
@@ -9014,7 +9014,7 @@
       "agencyAi": "Agentes IA",
       "assistant": "Asistente",
       "myApplications": "Mis postulaciones",
-      "myLease": "Mi Arriendo",
+      "myLease": "Mi arriendo",
       "apply": "Aplicar a Propiedad",
       "demo": "Demo"
     }

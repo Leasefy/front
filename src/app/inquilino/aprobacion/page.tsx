@@ -90,9 +90,18 @@ export default function AprobacionPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
-      <header className="space-y-1">
-        <p className="text-[11px] font-mono uppercase tracking-wider text-fg-muted">
-          {tf(`${NS}.eyebrow`, 'Mi tope de arriendo')}
+      {/*
+        Era solo una etiqueta mono en versalitas: la única pantalla del panel
+        **sin `h1`**, y sin subtítulo. Un lector de pantalla no encontraba
+        encabezado, y visualmente tampoco se parecía a las otras nueve, que
+        abren con título grande + una línea que dice qué hace la pantalla.
+      */}
+      <header>
+        <h1 className="text-3xl font-medium text-fg tracking-tight">
+          {tf(`${NS}.titulo`, 'Mi tope de arriendo')}
+        </h1>
+        <p className="mt-1 text-fg-muted">
+          {tf(`${NS}.subtitulo`, 'Hasta cuánto te respaldan las aseguradoras')}
         </p>
       </header>
 
@@ -183,10 +192,15 @@ function AprobadoView({
             </div>
             <div>
               <p className="text-sm font-medium text-fg">
-                {tf('inquilino.aprobacion.aseguradoras.title', 'Consultamos varias aseguradoras')}
+                {/* Con una sola aseguradora "Consultamos varias" es falso. */}
+                {data.aseguradoras.length === 1
+                  ? tf('inquilino.aprobacion.aseguradoras.titleUna', 'Consultamos a la aseguradora')
+                  : tf('inquilino.aprobacion.aseguradoras.title', 'Consultamos varias aseguradoras')}
               </p>
               <p className="text-sm text-fg-muted mt-0.5">
-                {`${data.aseguradoras.length} consultadas · ${aprobadas} te aprobaron`}
+                {data.aseguradoras.length === 1
+                  ? `1 consultada · ${aprobadas === 1 ? 'te aprobó' : 'no te aprobó'}`
+                  : `${data.aseguradoras.length} consultadas · ${aprobadas} te ${aprobadas === 1 ? 'aprobó' : 'aprobaron'}`}
               </p>
             </div>
           </div>

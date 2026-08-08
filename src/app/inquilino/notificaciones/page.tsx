@@ -182,7 +182,8 @@ export default function NotificacionesPage() {
     { id: 'all', label: locale === 'es' ? 'Todas' : 'All' },
     { id: 'unread', label: locale === 'es' ? 'Sin leer' : 'Unread', count: unreadCount },
     { id: 'payment', label: locale === 'es' ? 'Pagos' : 'Payments' },
-    { id: 'application', label: locale === 'es' ? 'Aplicaciones' : 'Applications' },
+    // "Aplicaciones" está muerto: docs/VOCABULARIO.md.
+    { id: 'application', label: locale === 'es' ? 'Postulaciones' : 'Applications' },
     { id: 'message', label: locale === 'es' ? 'Mensajes' : 'Messages' },
     { id: 'document', label: locale === 'es' ? 'Documentos' : 'Documents' },
   ];
@@ -205,15 +206,19 @@ export default function NotificacionesPage() {
                 <h1 className="text-2xl font-semibold text-fg dark:text-white tracking-tight">
                   {locale === 'es' ? 'Notificaciones' : 'Notifications'}
                 </h1>
-                <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
-                  {unreadCount > 0
-                    ? locale === 'es'
-                      ? `${unreadCount} sin leer`
-                      : `${unreadCount} unread`
-                    : locale === 'es'
-                    ? 'Todas leídas'
-                    : 'All read'}
-                </p>
+                {/* "Todas leídas" sin una sola notificación afirma que hubo
+                    algo que leer. Sin nada, mejor no decir nada. */}
+                {notifications.length > 0 && (
+                  <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
+                    {unreadCount > 0
+                      ? locale === 'es'
+                        ? `${unreadCount} sin leer`
+                        : `${unreadCount} unread`
+                      : locale === 'es'
+                      ? 'Todas leídas'
+                      : 'All read'}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -241,7 +246,9 @@ export default function NotificacionesPage() {
           </div>
         </motion.header>
 
-        {/* Filters */}
+        {/* Filtros — solo con notificaciones. Seis pestañas para filtrar nada
+            es andamiaje alrededor de un vacío. */}
+        {notifications.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -277,6 +284,7 @@ export default function NotificacionesPage() {
             ))}
           </div>
         </motion.div>
+        )}
 
         {/* Notifications List */}
         <motion.div

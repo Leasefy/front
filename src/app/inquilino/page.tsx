@@ -15,7 +15,11 @@ import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { TenantDashboardEmpty } from '@/components/tenant/TenantDashboardEmpty';
 import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
-import { EmptyState } from '@/components/data-display/EmptyState';
+// El de `ui/` es el de Cadence —la baldosa con degradado cobalto→cian— y es el
+// que usan las otras seis pantallas del inquilino. El de `data-display/` es
+// otro, con círculo gris: mezclarlos es justo lo que hacía que el home se
+// viera de otro producto.
+import { EmptyState } from '@/components/ui/empty-state';
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import {
   deriveTenantOnboardingStatus,
@@ -428,7 +432,7 @@ export default function InquilinoPage() {
                         ? 'Cuando te postules a una propiedad, podrás seguir acá cómo va tu postulación.'
                         : 'When you apply to a property, you\'ll be able to follow your application here.'
                     }
-                    primaryCta={{
+                    action={{
                       label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me',
                       href: '/inquilino/para-ti',
                     }}

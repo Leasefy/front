@@ -17,7 +17,9 @@
  * ni "estudio": se dice **aprobación** y **tope aprobado**.
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
+
+import { useAprobacion } from '@/lib/hooks/use-aprobacion'
 import Link from 'next/link'
 import {
   ArrowsClockwise,
@@ -35,7 +37,6 @@ import { useI18n } from '@/lib/i18n'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import {
-  fetchAprobacion,
   diasParaVencer,
   estadoVigencia,
   type Aprobacion,
@@ -55,25 +56,16 @@ export default function AprobacionPage() {
     [t],
   )
 
-  const [data, setData] = useState<Aprobacion | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      setData(await fetchAprobacion())
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos cargar tu aprobación.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void load()
-  }, [load])
+  /*
+   * MISMA fuente que el resto del recorrido (`useAprobacion`), no un fetch
+   * propio.
+   *
+   * Esta página llamaba a `fetchAprobacion()` directo, así que era la única que
+   * NO veía el respaldo local — y por lo tanto la única que le decía "todavía
+   * no tienes una aprobación" a alguien que acababa de aprobarse. Justo la
+   * pantalla que lleva su nombre.
+   */
+  const { aprobacion: data, cargando: loading, error, recargar: load } = useAprobacion()
 
   if (loading) {
     return (
@@ -97,7 +89,7 @@ export default function AprobacionPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 py-2">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
       <header className="space-y-1">
         <p className="text-[11px] font-mono uppercase tracking-wider text-fg-muted">
           {tf(`${NS}.eyebrow`, 'Mi aprobación')}

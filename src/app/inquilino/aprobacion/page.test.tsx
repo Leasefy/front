@@ -11,6 +11,7 @@
 
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import * as mockReact from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
@@ -25,10 +26,37 @@ vi.mock('@/lib/api/aprobacion.service', async (importOriginal) => {
   return { ...actual, fetchAprobacion: () => fetchMock() }
 })
 
+/*
+ * La página lee por `useAprobacion`, la misma fuente que el resto del recorrido
+ * (antes hacía su propio fetch y era la única que no veía el respaldo local).
+ * El mock replica ese contrato apoyándose en el mismo `fetchMock` de siempre.
+ */
+vi.mock('@/lib/hooks/use-aprobacion', () => ({
+  useAprobacion: () => {
+    const [estado, set] = mockReact.useState<{ a: unknown; e: string | null; cargando: boolean }>({
+      a: null, e: null, cargando: true,
+    })
+    mockReact.useEffect(() => {
+      Promise.resolve()
+        .then(() => fetchMock())
+        .then((a) => set({ a, e: null, cargando: false }))
+        .catch((err) => set({ a: null, e: err?.message ?? 'error', cargando: false }))
+    }, [])
+    return {
+      aprobacion: estado.a,
+      cargando: estado.cargando,
+      error: estado.e,
+      vigente: (estado.a as { estado?: string } | null)?.estado === 'aprobado',
+      recargar: () => {},
+    }
+  },
+}))
+
 vi.mock('@/lib/i18n', () => ({
   // Devolver la clave hace que `tf` caiga en el texto de respaldo: el test lee
   // exactamente la copy que ve el usuario.
   useI18n: () => ({ t: (key: string) => key, locale: 'es' }),
+  useOptionalI18n: () => ({ t: (key: string) => key, locale: 'es' }),
 }))
 
 import AprobacionPage from './page'

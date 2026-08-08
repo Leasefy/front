@@ -32,7 +32,6 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 import {
   Briefcase,
-  ChartLineUp,
   ChatCircleText,
   CheckCircle,
   Clock,
@@ -209,20 +208,14 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
     <section aria-label="Cómo va el agente" className="space-y-3">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <h2 className="text-base font-semibold text-fg">Cómo va el agente</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href={`${BASE}/analitica`}>
-              <ChartLineUp className="w-4 h-4" aria-hidden="true" />
-              Ver analítica
-            </Link>
-          </Button>
-          <Button asChild variant="secondary" size="sm" hideArrow>
-            <Link href={`${BASE}/reporte`}>
-              <Scales className="w-4 h-4" aria-hidden="true" />
-              Ver reporte diario
-            </Link>
-          </Button>
-        </div>
+        {/* Solo el reporte diario: la analítica se fusionó en esta misma
+            pantalla, así que enlazarla sería mandar a la gente a donde ya está. */}
+        <Button asChild variant="secondary" size="sm" hideArrow>
+          <Link href={`${BASE}/reporte`}>
+            <Scales className="w-4 h-4" aria-hidden="true" />
+            Ver reporte diario
+          </Link>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">

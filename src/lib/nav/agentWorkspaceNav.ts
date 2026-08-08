@@ -100,7 +100,8 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.siniestros', href: `${AI}/cobranza/siniestros`, icon: Siren, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaReporte', href: `${AI}/cobranza/reporte`, icon: ChartLine, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaReportesPropietarios', href: `${AI}/cobranza/reportes-propietarios`, icon: Files, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.analitica', href: `${AI}/cobranza/analitica`, icon: ChartLineUp, module: 'cobranza' },
+      // FUSIONADO en el Resumen — «Analítica» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.analitica', href: `${AI}/cobranza/analitica`, icon: ChartLineUp, module: 'cobranza' },
       // FUSIONADO en el Resumen — «Resultados» (ver nota al pie del archivo).
       // { labelKey: 'inmobiliaria.ai.nav.cobranzaResultados', href: `${AI}/cobranza/resultados`, icon: Trophy, module: 'cobranza' },
       // OCULTO — «Playbooks» (ver nota al pie del archivo).
@@ -275,6 +276,29 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
  * monta el Resumen. De paso murió `CobranzaExecKpiGrid`: de sus ocho tarjetas,
  * cinco tenían el guión escrito a mano (`value: DASH`) — no eran métricas sin
  * datos, eran métricas sin fuente posible.
+ *
+ * La ruta y su i18n se quedan (sólo alcanzable escribiendo la URL).
+ */
+
+/**
+ * NOTA — «Analítica» fusionada en el Resumen (2026-08-08, decisión de Nico).
+ *
+ * De sus cinco widgets se subieron TRES a `CobranzaAnaliticaResumen`, bajo
+ * «Cómo lo está logrando»: tasa de recuperación, costo por peso recuperado y
+ * objeciones más frecuentes.
+ *
+ * Los otros dos NO subieron:
+ *   · Top scripts — está muerto. El SQL hace `JOIN agent.script_templates`,
+ *     tabla vacía que nada llena, y ninguna llamada trae `script_template_id`.
+ *     Un INNER JOIN contra una tabla vacía no devuelve nada nunca. Es la cara
+ *     analítica del mismo hueco que sacó a Playbooks del panel.
+ *   · Cadencia (mix de canal + mapa 24×7) — sirve para afinar cuándo y por qué
+ *     canal contacta el agente, y eso lo afinamos nosotros. Lo que a la
+ *     inmobiliaria sí le toca de horarios (Ley 2300) vive en Cumplimiento.
+ *
+ * El bloque respeta la compuerta del backend (≥5 llamadas en 30 días): sin eso
+ * no se monta. Antes, no cumplirla significaba una pantalla entera dedicada a
+ * un cartel de «Sin datos aún» — con el número de fase interna a la vista.
  *
  * La ruta y su i18n se quedan (sólo alcanzable escribiendo la URL).
  */

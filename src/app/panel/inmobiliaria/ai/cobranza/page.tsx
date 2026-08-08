@@ -18,6 +18,7 @@ import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
 import type { StageTransitionEvent } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
 import { CobranzaResultadosKpis } from '@/components/inmobiliaria/cobranza/CobranzaResultadosKpis'
+import { CobranzaAnaliticaResumen } from '@/components/inmobiliaria/cobranza/CobranzaAnaliticaResumen'
 import { CobranzaAtencionPreview } from '@/components/inmobiliaria/cobranza/CobranzaAtencionPreview'
 import { CobranzaWowBanner } from '@/components/inmobiliaria/cobranza/CobranzaWowBanner'
 import { CobranzaStageCard } from '@/components/inmobiliaria/cobranza/CobranzaStageCard'
@@ -285,6 +286,11 @@ export default function CobranzaOverviewPage() {
           este mismo trabajo. Sustituye a CobranzaExecKpiGrid, cuya grilla tenía
           5 de 8 tarjetas con el guión quemado. */}
       <CobranzaResultadosKpis overview={data} />
+
+      {/* «Cómo lo está logrando» — los tres widgets de /cobranza/analitica que
+          le sirven a la inmobiliaria. Se monta solo si hay analítica de verdad
+          (≥5 llamadas en 30 días); si no, no ocupa lugar. */}
+      <CobranzaAnaliticaResumen />
 
       {/* Qué necesita tu atención hoy — preview top-5 de /pendientes (cross-link,
           no duplica la lista completa). */}

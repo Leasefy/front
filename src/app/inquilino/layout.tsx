@@ -41,7 +41,9 @@ function useTenantNavItems() {
     { label: t('nav.contracts'), href: '/inquilino/contratos', icon: Handshake },
     { label: t('nav.payments'), href: '/inquilino/pagos', icon: CreditCard },
     { label: t('nav.documents'), href: '/inquilino/documentos', icon: FileText },
-    { label: t('nav.messages'), href: '/inquilino/mensajes', icon: Chat, badge: 2 },
+    // Sin `badge`: el 2 estaba escrito a mano. La pantalla de Mensajes dice
+    // "Sin conversaciones" mientras el sidebar prometía dos sin leer.
+    { label: t('nav.messages'), href: '/inquilino/mensajes', icon: Chat },
   ];
 }
 

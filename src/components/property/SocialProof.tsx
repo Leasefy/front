@@ -1,5 +1,17 @@
 'use client';
 
+/**
+ * ⚠️ NO MONTAR TAL CUAL. Todo lo de acá sale de `generateMockStats()`: números
+ * derivados de las letras del `propertyId`, no de visitas reales.
+ *
+ * `SocialProofBanner` se quitó del detalle de propiedad (2026-08-08) porque
+ * mostraba "N viendo ahora" —con un contador que se movía solo cada 8 s para
+ * parecer vivo—, "N visitas hoy" y una insignia de demanda, justo en la
+ * pantalla donde la persona decide postularse. Urgencia inventada.
+ *
+ * El diseño sirve; conectalo a datos de verdad antes de volver a usarlo.
+ */
+
 import { useState, useEffect } from 'react';
 import { Eye, Users, TrendUp, Clock, Lightning, Shield } from '@phosphor-icons/react';
 import { MonoLabel } from '@leasefy/cadence';

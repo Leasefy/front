@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { PhotoGalleryModal } from '@/components/property/PhotoGalleryModal';
 import { PropertyAccordion } from '@/components/property/PropertyAccordion';
 import { StickyCTA, MobileStickyCTA } from '@/components/property/StickyCTA';
-import { SocialProofBanner } from '@/components/property/SocialProof';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import { useProperty } from '@/lib/hooks/useProperties';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -322,8 +321,17 @@ export function PropertyDetailView({
                 )}
               </div>
 
-              {/* Social Proof Banner - Styled */}
-              <SocialProofBanner propertyId={property.id} className="mb-8" />
+              {/*
+                Acá iba `SocialProofBanner`: "7 viendo ahora" con un punto que
+                latía, "38 visitas hoy" y una insignia de "demanda muy alta".
+                Nada de eso se medía — salía de `generateMockStats(propertyId)`,
+                un número derivado de las letras del id, y el contador de
+                "viendo ahora" se movía solo cada 8 segundos para parecer vivo.
+
+                Va fuera y no se reemplaza por un cero: es urgencia inventada,
+                puesta justo en la pantalla donde la persona decide postularse.
+                Vuelve cuando haya visitas de verdad que contar.
+              */}
 
               {/* Stats Row - Premium card style */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">

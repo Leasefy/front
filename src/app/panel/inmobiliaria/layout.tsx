@@ -225,7 +225,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', scope: 'administracion', icon: UserCircle,    module: 'propietarios' },
     { label: t('inmobiliaria.nav.operaciones'),  href: '/panel/inmobiliaria/operaciones', scope: 'administracion',  icon: Wrench,        module: 'operaciones', ai: true },
     { label: t('inmobiliaria.nav.solicitudes'),  href: '/panel/inmobiliaria/pqrs', scope: 'administracion',         icon: Lifebuoy,      module: null, hint: t('inmobiliaria.nav.pqrs'), ai: true },
-    { label: t('inmobiliaria.nav.mensajes'),     href: '/panel/inmobiliaria/mensajes', scope: 'administracion',     icon: Chat,          badge: 5, module: null },
+    // Sin `badge`: el 5 estaba escrito a mano, no contaba nada.
+    { label: t('inmobiliaria.nav.mensajes'),     href: '/panel/inmobiliaria/mensajes', scope: 'administracion',     icon: Chat,          module: null },
     { label: t('inmobiliaria.nav.agenda'),       href: '/panel/inmobiliaria/agenda', scope: 'administracion',       icon: CalendarBlank, module: null },
     { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos/revision', scope: 'administracion', icon: ListChecks, module: 'documentos', hint: t('inmobiliaria.nav.hintRevision'), ai: true },
 

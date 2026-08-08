@@ -61,14 +61,16 @@ function addDays(n: number): string {
   return d.toISOString().split('T')[0];
 }
 
-// Generate mock stats based on propertyId (social proof only, unchanged)
-function generateMockStats(propertyId: string) {
-  const seed = propertyId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return {
-    viewingNow: (seed % 8) + 3,
-    demandLevel: seed % 3 === 0 ? 'alta' : seed % 3 === 1 ? 'muy-alta' : 'media',
-  };
-}
+/*
+ * Acá vivía `generateMockStats(propertyId)`: sumaba los códigos de las letras
+ * del id y de ahí salían "N personas viendo ahora" —con un punto latiendo y un
+ * contador que subía o bajaba solo cada 10 segundos— y una insignia de "Muy
+ * solicitado". Nada de eso se medía.
+ *
+ * Iba en el panel pegado al botón de postularse: el peor lugar posible para
+ * urgencia inventada, porque es exactamente donde la persona decide. Fuera
+ * hasta que haya visitas de verdad que contar.
+ */
 
 // ─── Error messages ──────────────────────────────────────────────────────────
 
@@ -120,9 +122,6 @@ export function StickyCTA({
   const [slotsByDate, setSlotsByDate] = useState<SlotsByDate>({});
   const [slotsLoading, setSlotsLoading] = useState(false);
 
-  // Social proof (mock, visual only)
-  const [stats, setStats] = useState<ReturnType<typeof generateMockStats> | null>(null);
-  const [currentViewers, setCurrentViewers] = useState(0);
 
   // Shareable public URL of this property (built client-side to avoid an SSR
   // hydration mismatch). Used by the header share button and the agency panel.
@@ -148,17 +147,6 @@ export function StickyCTA({
     }
   };
 
-  // ─── Social proof ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    const mockStats = generateMockStats(propertyId);
-    setStats(mockStats);
-    setCurrentViewers(mockStats.viewingNow);
-
-    const interval = setInterval(() => {
-      setCurrentViewers((prev) => Math.max(2, Math.min(12, prev + (Math.random() > 0.5 ? 1 : -1))));
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [propertyId]);
 
   // ─── Fetch slots when visit tab opens ─────────────────────────────────────
   useEffect(() => {
@@ -234,28 +222,7 @@ export function StickyCTA({
   return (
     <div className={cn('lg:sticky lg:top-28', className)}>
       <Card className="overflow-hidden rounded-xl border-border shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
-        {/* Urgency Banner */}
-        {stats && stats.demandLevel !== 'media' && (
-          <div className="px-5 py-3 flex items-center justify-center gap-2.5 text-[13px] font-semibold bg-primary text-primary-foreground">
-            <TrendUp className="w-4 h-4" />
-            {stats.demandLevel === 'muy-alta'
-              ? 'Muy solicitado — No te quedes sin verlo'
-              : 'Popular esta semana'}
-          </div>
-        )}
-
         <div className="p-6">
-          {/* Live viewers */}
-          <div className="flex items-center gap-2.5 mb-5">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success-500))] opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[hsl(var(--success-500))]" />
-            </span>
-            <span className="text-[13px] text-muted-foreground">
-              <span className="font-semibold text-foreground">{currentViewers} personas</span> viendo ahora
-            </span>
-          </div>
-
           {/* Header */}
           <div className="flex items-start justify-between mb-6">
             <div>
@@ -612,12 +579,7 @@ export function MobileStickyCTA({
   const isAgencyViewer =
     !!user && (user.role === 'agency' || user.backendRole === 'AGENT' || hasActiveAgencyMembership);
 
-  const [stats, setStats] = useState<ReturnType<typeof generateMockStats> | null>(null);
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    setStats(generateMockStats(propertyId));
-  }, [propertyId]);
 
   const handleCopyShare = async () => {
     if (typeof window === 'undefined') return;
@@ -632,25 +594,12 @@ export function MobileStickyCTA({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-xl border-t border-border lg:hidden z-30">
-      {stats && stats.demandLevel !== 'media' && (
-        <div className="px-4 py-2 bg-primary text-primary-foreground text-[11px] font-semibold text-center flex items-center justify-center gap-1.5">
-          <TrendUp className="w-3.5 h-3.5" />
-          {stats.demandLevel === 'muy-alta' ? 'Muy solicitado' : 'Popular esta semana'}
-        </div>
-      )}
       <div className="p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-lg font-mono tabular-nums font-bold text-foreground tracking-tight">
               {formatCurrency(price)}
               <span className="text-[13px] font-medium text-muted-foreground font-sans">/mes</span>
-            </p>
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success-500))] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--success-500))]" />
-              </span>
-              {stats?.viewingNow || 0} personas viendo
             </p>
           </div>
           <div className="flex gap-2">

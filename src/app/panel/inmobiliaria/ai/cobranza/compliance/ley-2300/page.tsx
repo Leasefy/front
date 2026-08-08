@@ -6,7 +6,7 @@
  * Paginated table of outside-hours communication attempts (server unions
  * outbound `cadence_skip` + inbound `inbound_outside_hours` rows per 34-04).
  *
- * Columns: timestamp, debtor (Mask), channel, direction. 50/page cursor.
+ * Columns: timestamp, debtor (referencia corta), channel, direction. 50/page cursor.
  *
  * Refs mvp:docs/DESIGN.md §4 (cards, tables), §16 (tabular-nums).
  */
@@ -18,7 +18,6 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
-import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import {
@@ -31,19 +30,18 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui'
+import {
+  normalizeAttempts,
+  nextCursorOf,
+  type Attempt,
+  type ComplianceLogResponse,
+  type RawAttempt,
+} from '@/lib/hooks/cobranza/compliance-entries'
 
-interface Attempt {
-  event_id: string
-  debtor_id_masked: string
-  channel: string
-  timestamp: string
-  direction: 'inbound' | 'outbound'
-}
-
-interface AttemptsResponse {
-  items: Attempt[]
-  next_cursor: string | null
-}
+// El contrato real del agente y su normalización viven en un solo lugar:
+// `compliance-entries.ts`. Acá se leían `json.items` / `json.next_cursor`, que
+// el agente NO manda — la lista salía vacía siempre y esta pantalla decía «Sin
+// infracciones detectadas» con datos del otro lado.
 
 function Ley2300Content() {
   const { t, locale } = useI18n()
@@ -70,9 +68,10 @@ function Ley2300Content() {
           { headers: agentAuthHeaders() },
         )
         if (!res.ok) throw new Error(`${res.status}`)
-        const json = (await res.json()) as AttemptsResponse
-        setItems((prev) => (append ? [...prev, ...(json.items ?? [])] : json.items ?? []))
-        setNextCursor(json.next_cursor ?? null)
+        const json = (await res.json()) as ComplianceLogResponse<RawAttempt>
+        const page = normalizeAttempts(json)
+        setItems((prev) => (append ? [...prev, ...page] : page))
+        setNextCursor(nextCursorOf(json))
         setError(null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'fetch_failed')
@@ -145,14 +144,16 @@ function Ley2300Content() {
             </TableHeader>
             <TableBody>
               {items.map((row) => (
-                <TableRow key={row.event_id} className="border-b border-border last:border-0">
+                <TableRow key={row.eventId} className="border-b border-border last:border-0">
                   <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-foreground">
                     {new Date(row.timestamp).toLocaleString(locale)}
                   </TableCell>
-                  <TableCell className="px-3 py-2">
-                    <Mask field="cedula" value={row.debtor_id_masked} onReveal={undefined} />
+                  {/* Referencia, no cédula: `<Mask>` espera un valor ya
+                      enmascarado y acá recibía el UUID crudo de la fila. */}
+                  <TableCell className="px-3 py-2 font-mono text-xs text-fg-muted">
+                    {row.debtorRef}
                   </TableCell>
-                  <TableCell className="px-3 py-2 text-foreground">{row.channel}</TableCell>
+                  <TableCell className="px-3 py-2 text-foreground">{row.channel ?? '—'}</TableCell>
                   <TableCell className="px-3 py-2">
                     <Badge
                       variant={row.direction === 'inbound' ? 'default' : 'warning'}

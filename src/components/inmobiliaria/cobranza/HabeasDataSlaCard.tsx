@@ -4,7 +4,7 @@
  * HabeasDataSlaCard — Phase 34 plan 34-07 (D-34-07, D-34-RES-A1).
  *
  * Renders one open Habeas Data request as a card with:
- *  - Server-masked debtor identifier (Mask field=cedula, no reveal)
+ *  - Referencia corta del deudor (el server manda el UUID pelado)
  *  - Countdown text via i18n (days+hours when ≥ 1 day; hours only when < 1d;
  *    overdue variant when remaining_days ≤ 0)
  *  - Progress bar: width % = ((15 - remaining_days) / 15) * 100, clamped 0..100
@@ -29,7 +29,7 @@ import * as React from 'react'
 import { MonoLabel } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
-import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import { toDebtorRef } from '@/lib/hooks/cobranza/compliance-entries'
 import type { HabeasDataOpenRequest, HabeasDataColor } from '@/lib/hooks/cobranza/use-compliance-overview'
 
 void React
@@ -112,10 +112,18 @@ export function HabeasDataSlaCard({ request }: HabeasDataSlaCardProps) {
       {/* Header: masked cedula + countdown text */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          {/* debtor_id from server is the bare debtor UUID; we render the
-              server-masked identifier when present (server already redacts).
-              Mask with no onReveal — never revealable on the compliance surface. */}
-          <Mask field="cedula" value={debtor_id} onReveal={undefined} />
+          {/* El comentario de antes decía «server-masked» y el propio código
+              admitía debajo que es el UUID pelado del deudor. `<Mask>` espera un
+              valor YA enmascarado, así que pintaba 36 caracteres de UUID
+              presentados como si fueran una cédula: ni es una cédula, ni está
+              enmascarado. Se muestra una referencia corta, que es lo único que
+              sirve — casar la tarjeta con su fila en la bitácora. */}
+          <span
+            className="block font-mono text-body-sm text-fg"
+            title={t('inmobiliaria.ai.cobranza.compliance.overview.debtorRefHint')}
+          >
+            {toDebtorRef(debtor_id)}
+          </span>
           <p className="mt-1 text-xs text-muted-foreground tabular-nums font-mono">
             {relativeFromIso(timestamp, locale)}
           </p>

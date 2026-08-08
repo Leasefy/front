@@ -21,7 +21,6 @@ import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
-import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import {
@@ -33,19 +32,17 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui'
+import {
+  normalizeOptOuts,
+  nextCursorOf,
+  type OptOutEntry,
+  type ComplianceLogResponse,
+  type RawOptOut,
+} from '@/lib/hooks/cobranza/compliance-entries'
 
-interface OptOutEntry {
-  event_id: string
-  debtor_id_masked: string
-  requested_at: string
-  source: string
-  acknowledged_at: string | null
-}
-
-interface OptOutResponse {
-  items: OptOutEntry[]
-  next_cursor: string | null
-}
+// Mismo desajuste que en la bitácora de Ley 2300: acá se leía `json.items` /
+// `json.next_cursor` y el agente manda `entries` / `nextCursor`, así que el
+// registro salía vacío por contrato. Contrato real en `compliance-entries.ts`.
 
 function OptOutContent() {
   const { t, locale } = useI18n()
@@ -76,9 +73,10 @@ function OptOutContent() {
           { headers: agentAuthHeaders() },
         )
         if (!res.ok) throw new Error(`${res.status}`)
-        const json = (await res.json()) as OptOutResponse
-        setItems((prev) => (append ? [...prev, ...(json.items ?? [])] : json.items ?? []))
-        setNextCursor(json.next_cursor ?? null)
+        const json = (await res.json()) as ComplianceLogResponse<RawOptOut>
+        const page = normalizeOptOuts(json)
+        setItems((prev) => (append ? [...prev, ...page] : page))
+        setNextCursor(nextCursorOf(json))
         setError(null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'fetch_failed')
@@ -186,22 +184,24 @@ function OptOutContent() {
             </TableHeader>
             <TableBody>
               {items.map((row) => {
-                const isAcked = row.acknowledged_at !== null
-                const isAcking = acking.has(row.event_id)
+                const isAcked = row.acknowledgedAt !== null
+                const isAcking = acking.has(row.eventId)
                 return (
-                  <TableRow key={row.event_id} className="border-b border-border last:border-0">
+                  <TableRow key={row.eventId} className="border-b border-border last:border-0">
                     <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-foreground">
-                      {new Date(row.requested_at).toLocaleString(locale)}
+                      {new Date(row.requestedAt).toLocaleString(locale)}
                     </TableCell>
-                    <TableCell className="px-3 py-2">
-                      <Mask field="cedula" value={row.debtor_id_masked} onReveal={undefined} />
+                    {/* Referencia, no cédula: `<Mask>` espera un valor ya
+                        enmascarado y acá recibía el UUID crudo de la fila. */}
+                    <TableCell className="px-3 py-2 font-mono text-xs text-fg-muted">
+                      {row.debtorRef}
                     </TableCell>
-                    <TableCell className="px-3 py-2 text-foreground">{row.source}</TableCell>
+                    <TableCell className="px-3 py-2 text-foreground">{row.source ?? '—'}</TableCell>
                     <TableCell className="px-3 py-2 font-mono tabular-nums text-xs">
                       {isAcked ? (
                         <span className="inline-flex items-center gap-1 text-success">
                           <Check className="w-3.5 h-3.5" aria-hidden="true" />
-                          {new Date(row.acknowledged_at as string).toLocaleDateString(locale)}
+                          {new Date(row.acknowledgedAt as string).toLocaleDateString(locale)}
                         </span>
                       ) : (
                         <span className="text-warning">
@@ -215,7 +215,7 @@ function OptOutContent() {
                           variant="outline"
                           size="sm"
                           hideArrow
-                          onClick={() => void acknowledge(row.event_id)}
+                          onClick={() => void acknowledge(row.eventId)}
                           disabled={isAcking}
                         >
                           {isAcking

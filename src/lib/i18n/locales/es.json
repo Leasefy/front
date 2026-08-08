@@ -5730,7 +5730,8 @@
             "ley2300Heading": "Ley 2300 — intentos fuera de horario",
             "habeasDataHeading": "Habeas Data — SLA de 15 días",
             "retentionHeading": "Retención de datos",
-            "sparklineHeading": "Tasa de banderas (últimos 30 días)"
+            "sparklineHeading": "Tasa de banderas (últimos 30 días)",
+            "debtorRefHint": "Referencia interna del deudor. La cédula no se muestra en pantallas de cumplimiento."
           },
           "habeasData": {
             "remaining": {

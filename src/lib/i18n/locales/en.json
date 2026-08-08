@@ -5729,7 +5729,8 @@
             "ley2300Heading": "Ley 2300 — outside-hours attempts",
             "habeasDataHeading": "Habeas Data — 15-day SLA",
             "retentionHeading": "Data retention",
-            "sparklineHeading": "Flag rate (last 30 days)"
+            "sparklineHeading": "Flag rate (last 30 days)",
+            "debtorRefHint": "Internal debtor reference. The national ID is never shown on compliance screens."
           },
           "habeasData": {
             "remaining": {

@@ -482,28 +482,25 @@ function SidebarContent({
             )}
           </Link>
         </div>
-      ) : workspaceName ? (
+      ) : (
         // Firma del PRODUCTO, no del cliente: el lockup de Leasefy solo, sin
         // nombre ni logo de la inmobiliaria. La identidad de la agencia ya vive
         // en su propio contexto (encabezados, documentos, marca del panel vía
         // brandPrimaryHsl); repetirla acá arriba solo confundía sobre en qué
         // producto estás parado. Monocromo con `text-fg` → negro en claro,
         // blanco en oscuro, sin ramificar por tema.
+        //
+        // Igual en los TRES paneles. Antes inquilino y propietario caían a un
+        // fallback con otro logo y otro tamaño: la misma app cambiaba de firma
+        // según quién entrara.
         <div className="px-3 pt-4 pb-3">
           <Link
-            href={logo?.href ?? '/panel/inmobiliaria'}
+            href={logo?.href ?? '/'}
             onClick={onItemClick}
             aria-label="Leasefy — inicio"
             className="flex w-full items-center rounded-[12px] px-[10px] py-[6px] text-fg outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <LeasefyLogotype size={26} />
-          </Link>
-        </div>
-      ) : (
-        // Fallback for layouts that don't opt into the switcher — original brand logo.
-        <div className="h-[60px] flex items-center px-5">
-          <Link href={logo?.href ?? '/'} className="flex items-center" onClick={onItemClick}>
-            <LeasefyLogo orientation="horizontal" size={30} tone="auto" />
           </Link>
         </div>
       )}

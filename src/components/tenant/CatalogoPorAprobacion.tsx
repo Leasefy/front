@@ -65,7 +65,6 @@ export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }
     : disponibles
 
   const ordenadas = [...dentroDelTope].sort((a, b) => a.monthlyRent - b.monthlyRent)
-  const fuera = disponibles.length - dentroDelTope.length
 
   return (
     <div className="min-h-screen bg-plan-page">
@@ -119,16 +118,6 @@ export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }
           />
         )}
 
-        {/* La puerta al resto: navegar todo el catálogo sigue siendo libre,
-            solo que no es lo que esta pantalla promete. */}
-        {!isLoading && fuera > 0 && (
-          <p className="mt-6 text-sm text-fg-muted text-center">
-            {`${tf(`${NS}.hayMas`, 'Hay')} ${fuera} ${tf(`${NS}.hayMasFin`, 'propiedades por encima de tu tope.')} `}
-            <Link href="/inquilino/explorar" className="underline underline-offset-4 hover:text-fg">
-              {tf(`${NS}.verTodo`, 'Ver todas las propiedades')}
-            </Link>
-          </p>
-        )}
       </div>
     </div>
   )

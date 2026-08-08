@@ -9239,9 +9239,7 @@
       "puedesTomar": "you can take with your approval",
       "vacio": "There are no properties within your cap right now",
       "vacioTexto": "New ones come up often. Meanwhile you can browse the full catalog.",
-      "verTodo": "See all properties",
-      "hayMas": "There are",
-      "hayMasFin": "properties above your cap."
+      "verTodo": "See all properties"
     }
   }
 }

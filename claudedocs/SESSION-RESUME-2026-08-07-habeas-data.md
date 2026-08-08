@@ -72,11 +72,7 @@ replicando el algoritmo del agente. Se toma la moda entre las filas del grupo
 (una fila calculada del otro lado de la medianoche queda corrida en uno). Sin
 solicitudes de ese grupo → **no muestra número**.
 
-⚠️ **PENDIENTE JURÍDICO.** El sistema aplica acceso=15, reclamos=10. La Ley 1581
-parece repartirlos al revés (Art. 14 consultas = 10, Art. 15 reclamos = 15). No
-hay fuente citada en la research de la fase. Si es al revés, el error va hacia
-el lado peligroso: la inmobiliaria creería tener 15 días para un acceso cuando
-tiene 10, y la pantalla diría «en plazo» ya incumplida.
+✅ **RESUELTO** — y sí, estaban invertidos. Ver §12.
 
 ## 5. El design system — lo que estaba a mano
 
@@ -208,26 +204,96 @@ preset, `require('@leasefy/cadence/tailwind-preset')`. El snippet está en
 - `15624b5a` novedades: una sola por sección (trabajo previo, va aparte)
 - `ef510abb` el arreglo de Habeas Data + los dos docs
 
-**`~/rent/agent-develop`** — rama `fix/arco-triage-status-constraint`, 1 commit:
+**`~/rent/agent-develop`** — rama `fix/arco-triage-status-constraint`, 3 commits:
 - `64dca1ef` triage escribía un status que la tabla rechaza
+- `e509e86d` los términos de la Ley 1581 estaban invertidos
+- `e5ae40f6` el reporte diario moría por tamaño y el import encogía montos
 
-⚠️ Nada pusheado, en ninguno de los dos. **El front necesita el fix del agente**
-para que «Tomar la solicitud» funcione.
+**`~/rent/admin`** — rama `fix/arco-sla-dias-habiles`, 1 commit:
+- `9e3d43f` «vencidas» contaba días calendario y un solo término
+
+⚠️ Nada pusheado, en ninguno de los cuatro. **El front necesita los commits del
+agente**: sin ellos «Tomar la solicitud» no funciona y los plazos siguen
+invertidos.
 
 Sin commitear a propósito: `dump.rdb` (volcado de Redis, ahora en `.gitignore`)
 y los resumes de otras sesiones en `claudedocs/`.
 
 ---
 
+## 12. Los plazos estaban invertidos (y el error iba al lado peligroso)
+
+Texto oficial, del gestor normativo de Función Pública (norma 49981):
+
+> **Art. 14 — Consultas.** «La consulta será atendida en un término máximo de
+> **diez (10) días hábiles** contados **a partir de la fecha de recibo** de la
+> misma.» (prórroga máx. 5 días hábiles)
+>
+> **Art. 15 num. 3 — Reclamos.** «El término máximo para atender el reclamo será
+> de **quince (15) días hábiles** contados **a partir del día siguiente** a la
+> fecha de su recibo.» (prórroga máx. 8 días hábiles)
+
+El sistema aplicaba **acceso=15, reclamos=10**: al revés. Una consulta se
+marcaba «en plazo» cinco días después de estar incumplida ante la SIC.
+
+**Segundo error, del mismo lado:** el conteo arrancaba siempre el día siguiente
+al recibo. Correcto para el reclamo, pero la consulta corre desde la fecha de
+recibo — un día de más, justo en el término más corto.
+
+**Tercero:** el backoffice interno contaba `submitted_at < NOW() - INTERVAL
+'15 days'` — días CALENDARIO y un solo término para los cuatro tipos. Con los
+datos de prueba decía 3 vencidas donde hay 2, así que los dos paneles se
+contradecían.
+
+Corregido en los tres lados. Verificado: el SQL del backoffice y el TypeScript
+del agente dan lo mismo en las 12 filas, y la bandeja ahora muestra «Acceso: 10
+días hábiles / Rectificación, cancelación y oposición: 15».
+
+**El término ahora viaja en el contrato** (`sla_business_days`). Antes el front
+lo despejaba de `restantes + hábiles transcurridos`, lo que lo obligaba a
+mantener una réplica del algoritmo del agente — réplica que este mismo cambio
+habría roto en silencio.
+
+Queda anotado en el código: el conteo **no descuenta festivos colombianos**,
+sólo fines de semana, así que es optimista en semanas con festivo.
+
+## 13. Los heredados de cobranza
+
+- **El reporte diario moría por tamaño.** `withTenantScope` llamaba a
+  `$transaction` sin opciones, así que regía el default de Prisma: 5 s para
+  TODA lectura del agente. `buildDailyReport` arma el reporte entero dentro de
+  una sola de esas transacciones, y al crecer la cartera se pasa y tira P2028.
+  Falla más cuanto mejor le va a la inmobiliaria. Default a 20 s y ajustable
+  por llamada; lo de fondo es sacar el trabajo pesado de la transacción.
+- **El import encogía montos.** `toAmount` asumía que un punto es siempre
+  decimal: `"1.850.000"` daba `null` (la fila se caía) y **`"850.000"` daba
+  850** — $850.000 importado como $850. Es la cifra que se le reclama a una
+  persona, y dividida por mil no se ve rota en ninguna pantalla: se ve como una
+  deuda chica. 17 casos en tests.
+- **Las 11 migraciones ya no están pendientes:** `prisma migrate status` dice
+  «Database schema is up to date!».
+
+⚠️ Pero al verificar apareció otra cosa, **más grande y que no toqué**: hay
+drift entre `schema.prisma` y la base — **119 tablas**, 123 FKs que Prisma
+quitaría, 53 renombres de índice y **10 columnas que dropearía y recrearía**.
+Es el patrón de un esquema mitad escrito a mano y mitad introspectado. Generar
+una migración desde ese diff sería destructivo sobre todo el esquema. Es una
+decisión de Victor, no un pendiente que se cierre solo.
+
+---
+
 ## Pendientes
 
-1. **Confirmar los plazos con asesor jurídico** (§4) — el único con consecuencia
-   legal, y el único que no puedo cerrar yo.
-2. **Pushear** las dos ramas (decisión de Victor).
-3. `POST /triage` acepta `notes` (`max 1000`) y **los descarta**: el handler no
-   los guarda en ninguna columna. Hoy es inocuo porque el front no los manda.
-4. Heredados de la sesión anterior: 11 migraciones dev, `buildDailyReport` con
-   `$transaction` sin `timeout`, `toAmount()` que pierde `1.850.000`.
+1. **Pushear** las cuatro ramas (decisión de Victor).
+2. El drift de esquema de §13 — decidir si `schema.prisma` se alinea a la base
+   o al revés. No se resuelve con `prisma migrate dev`.
+3. Festivos colombianos en el conteo de días hábiles (§12).
+4. Las prórrogas de los Arts. 14 y 15 (5 y 8 días hábiles) no están: exigen
+   avisar al interesado con motivos y fecha, así que son una acción del
+   operador, no un plazo automático.
+5. Dos tests del agente fallan desde antes de esta sesión y no son míos
+   (verificado contra la base limpia): `full-call-path` (dedup SETNX) y
+   `cotizador-cost-aggregator` (límite de concurrencia 5 vs 10).
 
 ## Archivos
 

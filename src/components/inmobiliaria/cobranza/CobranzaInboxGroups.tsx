@@ -73,8 +73,14 @@ export const INBOX_GRUPO_META: Record<
     /** Clases del badge de grupo (pill no interactivo) — solo tokens DS. */
     badge: { bg: string; text: string; ring: string }
     /**
-     * T-323: false ⇒ el grupo NUNCA puede auto-responder (sin entender /
-     * requiere humano). La acción siempre es de un humano (Abrir / Tomar control).
+     * false ⇒ el grupo NUNCA debería auto-responderse (sin entender / disputa
+     * / requiere humano).
+     *
+     * ⚠️ HOY NO LO HACE CUMPLIR NADIE. Es una nota de política, no una
+     * salvaguarda: ni esta UI ni el agente la consultan. Hoy da igual porque
+     * el inbox no manda nada solo —responder es siempre un clic de una
+     * persona— pero el día que el agente conteste desde acá, la regla tiene
+     * que vivir del lado del agente, no en este objeto.
      */
     autoResponseAllowed: boolean
   }
@@ -180,14 +186,15 @@ export interface InboxItemCardProps {
   unread?: boolean
   /** Texto de tiempo relativo del último mensaje (ya formateado). */
   recibidoTexto?: string | null
+  /** Pausa al agente en este deudor para que lo atienda una persona. */
+  onTomarControl?: () => void
 }
 
 /**
- * Fila de una conversación. "Abrir" es un cross-link real al detalle del
- * deudor (superficie existente). "Ver conversación" abre el hilo con sus
- * mensajes reales (endpoint nuevo, vía onOpenThread). Las acciones que aún no
- * tienen endpoint (Aprobar respuesta sugerida / Tomar control) son placeholders
- * honestos "Próximamente" — T-323: nunca se auto-responde.
+ * Fila de una conversación. "Abrir deudor" es un cross-link al detalle,
+ * "Ver conversación" abre el hilo con sus mensajes reales, y "Tomar control"
+ * pausa al agente en ese deudor. El agente nunca auto-responde: responder es
+ * siempre una acción de una persona.
  */
 export function InboxItemCard({
   item,
@@ -196,6 +203,7 @@ export function InboxItemCard({
   isOpen = false,
   unread = false,
   recibidoTexto = null,
+  onTomarControl,
 }: InboxItemCardProps) {
   const meta = INBOX_GRUPO_META[item.grupo]
   const GrupoIcon = meta.icon
@@ -260,25 +268,31 @@ export function InboxItemCard({
           <Link href={deudorHref}>Abrir deudor</Link>
         </Button>
 
-        {/* Aprobar respuesta sugerida — SOLO en grupos donde está permitido (T-323).
-            Sin endpoint de envío → placeholder honesto deshabilitado. */}
-        {meta.autoResponseAllowed && (
+        {/*
+          Acá vivía «Aprobar respuesta sugerida», deshabilitado. Se quitó: el
+          hilo NO trae ninguna respuesta sugerida —el contrato del inbox no
+          tiene ese campo— así que el botón prometía revisar algo que no
+          existe. Cuando el agente empiece a proponer respuestas, vuelve.
+        */}
+
+        {/*
+          «Tomar control» = que el agente deje de contactar a este deudor
+          mientras vos te hacés cargo. Eso ES pausar el agente
+          (POST /cobranza/debtors/:debtorId/pause), que ya funciona desde la
+          ficha del deudor. Estuvo deshabilitado como «Próximamente» mientras
+          el endpoint existía.
+        */}
+        {onTomarControl && (
           <Button
             variant="ghost"
             size="sm"
             hideArrow
-            disabled
-            title="Próximamente"
+            onClick={onTomarControl}
+            title="Pausar al agente en este deudor para atenderlo vos"
           >
-            Aprobar respuesta sugerida · Próximamente
+            Tomar control
           </Button>
         )}
-
-        {/* Tomar control — siempre disponible como intención humana; sin endpoint
-            de envío todavía → placeholder honesto deshabilitado. */}
-        <Button variant="ghost" size="sm" hideArrow disabled title="Próximamente">
-          Tomar control · Próximamente
-        </Button>
       </div>
     </li>
   )
@@ -307,16 +321,21 @@ export interface InboxThreadPanelProps {
   unread?: boolean
   /** Formatea un timestamp ISO a texto relativo (inyectado por la página). */
   formatRecibido?: (iso: string) => string
+  /** Abre el envío manual de WhatsApp para el deudor del hilo. */
+  onResponder?: () => void
 }
 
 /**
  * Render de los mensajes reales de un hilo, oldest → newest. Burbujas alineadas
  * por dirección (inbound = inquilino, izquierda; outbound = agencia, derecha).
  *
- * T-323: este panel SOLO muestra y permite "Marcar leído" (estado de lectura,
- * sin contacto con el deudor). "Responder" / "Tomar control" quedan como
- * placeholder honesto "Próximamente" hasta que exista un endpoint de envío:
- * nunca se auto-responde, escala ni presiona.
+ * "Responder" abre el envío manual por WhatsApp (ManualWAModal →
+ * POST /cobranza/debtors/:debtorId/wa-send). Estuvo deshabilitado como
+ * «Próximamente» mientras el endpoint YA existía y ya se usaba desde la ficha
+ * del deudor — el hilo trae `debtorId`, que es todo lo que hacía falta.
+ *
+ * Sigue valiendo la regla de fondo: sólo se manda una plantilla aprobada, y
+ * sólo porque una persona la eligió y la envió. El agente no auto-responde.
  */
 export function InboxThreadPanel({
   messages,
@@ -325,6 +344,7 @@ export function InboxThreadPanel({
   marcandoLeido = false,
   unread = false,
   formatRecibido,
+  onResponder,
 }: InboxThreadPanelProps) {
   if (isLoading) {
     return (
@@ -380,7 +400,6 @@ export function InboxThreadPanel({
         })}
       </ul>
 
-      {/* Acciones del hilo — solo "Marcar leído" es real (estado de lectura). */}
       <div className="flex items-center justify-end gap-2 border-t border-border pt-3">
         {onMarkRead && (
           <Button
@@ -394,10 +413,16 @@ export function InboxThreadPanel({
             {marcandoLeido ? 'Marcando…' : 'Marcar leído'}
           </Button>
         )}
-        {/* Responder — sin endpoint de envío → placeholder honesto (T-323). */}
-        <Button variant="ghost" size="sm" hideArrow disabled title="Próximamente">
-          Responder · Próximamente
-        </Button>
+        {onResponder && (
+          <Button
+            size="sm"
+            hideArrow
+            onClick={onResponder}
+            title="Enviar una plantilla aprobada por WhatsApp"
+          >
+            Responder
+          </Button>
+        )}
       </div>
     </div>
   )

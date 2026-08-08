@@ -310,7 +310,7 @@ export default function NotificacionesPage() {
                   }
                   description={
                     locale === 'es'
-                      ? 'Cuando haya actividad en tus aplicaciones o arriendos, te notificaremos aquí.'
+                      ? 'Cuando haya actividad en tus postulaciones o arriendos, te notificaremos aquí.'
                       : 'When there is activity on your applications or leases, we will notify you here.'
                   }
                   className="rounded-xl border-border dark:border-white/10 bg-surface dark:bg-[#1a1a1c]"

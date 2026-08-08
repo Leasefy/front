@@ -282,7 +282,7 @@ export default function GuardadosPage() {
                       {displayCount} {displayCount === 1 ? (locale === 'es' ? 'propiedad guardada' : 'saved property') : (locale === 'es' ? 'propiedades guardadas' : 'saved properties')}
                     </p>
                     <p className="text-sm text-fg-muted">
-                      {locale === 'es' ? '¿Listo para aplicar a alguna?' : 'Ready to apply to one?'}
+                      {locale === 'es' ? '¿Listo para postularte a alguna?' : 'Ready to apply to one?'}
                     </p>
                   </div>
                 </div>

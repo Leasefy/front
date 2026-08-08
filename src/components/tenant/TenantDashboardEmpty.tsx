@@ -147,8 +147,9 @@ export function TenantDashboardEmpty() {
             {locale === 'es' ? `Hola, ${firstName}` : `Hi, ${firstName}`}
           </h1>
           <p className="mt-2 text-fg-muted dark:text-fg-subtle">
+            {/* "aplicar" está muerto: docs/VOCABULARIO.md */}
             {locale === 'es'
-              ? 'Completa tu perfil para aplicar a propiedades más rápido'
+              ? 'Completa tu perfil para postularte más rápido'
               : 'Complete your profile to apply to properties faster'}
           </p>
         </motion.header>

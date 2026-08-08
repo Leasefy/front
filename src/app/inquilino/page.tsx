@@ -159,13 +159,9 @@ export default function InquilinoPage() {
           <h1 className="text-3xl sm:text-4xl font-medium text-fg dark:text-white tracking-tight">
             {t('dashboard.hello', { name: firstName })}
           </h1>
-          {isNewUser && (
-            <p className="mt-2 text-fg-muted dark:text-fg-subtle">
-              {locale === 'es'
-                ? '¡Tu perfil está listo! Ahora puedes buscar y aplicar a propiedades.'
-                : 'Your profile is ready! Now you can search and apply to properties.'}
-            </p>
-          )}
+          {/* Acá iba un "¡Tu perfil está listo!" que repetía, palabra por
+              palabra, la tarjeta que viene justo debajo. Dos felicitaciones
+              seguidas por el mismo hecho. Queda una. */}
         </motion.header>
 
         {/* Welcome Card for New Users */}
@@ -184,15 +180,17 @@ export default function InquilinoPage() {
                 <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
                   {locale === 'es' ? '¡Perfil completado!' : 'Profile completed!'}
                 </h2>
+                {/* "aplica" está muerto (docs/VOCABULARIO.md), y el CTA va a su
+                    catálogo: es lo siguiente que haría, no el listado general. */}
                 <p className="text-fg-muted dark:text-fg-subtle">
                   {locale === 'es'
-                    ? 'Tu score de inquilino está activo. Explora propiedades y aplica con un solo clic.'
-                    : 'Your tenant score is active. Explore properties and apply with one click.'}
+                    ? 'Ya puedes ver las propiedades que van contigo y postularte a las que quieras.'
+                    : 'You can now see the properties that match you and apply to any of them.'}
                 </p>
               </div>
               <Button asChild className="flex-shrink-0">
-                <Link href="/inquilino/explorar">
-                  {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
+                <Link href="/inquilino/para-ti">
+                  {locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me'}
                 </Link>
               </Button>
             </div>
@@ -204,7 +202,9 @@ export default function InquilinoPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+          className={`grid gap-4 mb-8 ${
+            isNewUser ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 lg:grid-cols-4'
+          }`}
         >
           {/* Trust Score - Always show */}
           <ScoreCard
@@ -213,6 +213,11 @@ export default function InquilinoPage() {
             onClick={() => setScoreSheetOpen(true)}
           />
 
+          {/* Contadores — solo cuando cuentan algo. Un "Arriendos 0" y un
+              "Postulaciones 0" no resumen nada y ocupan el lugar de lo único
+              útil, que es por dónde empezar. */}
+          {!isNewUser && (
+          <>
           {/* Active Leases */}
           <Link href="/inquilino/arriendo" className="group">
             <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
@@ -238,12 +243,12 @@ export default function InquilinoPage() {
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('nav.applications')}</p>
               <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">{activeApplications.length}</p>
               <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
-                {activeApplications.length === 0
-                  ? (locale === 'es' ? 'Sin aplicaciones' : 'No applications')
-                  : (locale === 'es' ? 'En proceso' : 'In progress')}
+                {locale === 'es' ? 'En proceso' : 'In progress'}
               </p>
             </div>
           </Link>
+          </>
+          )}
 
           {/* Next Payment or CTA */}
           {nextPayment && primaryLease ? (
@@ -382,17 +387,19 @@ export default function InquilinoPage() {
                   <div className="w-14 h-14 rounded-xl bg-surface dark:bg-surface/[0.06] flex items-center justify-center mx-auto mb-5">
                     <FileText className="w-6 h-6 text-fg-subtle dark:text-fg-muted" />
                   </div>
+                  {/* "aplicación / aplicar" está muerto: docs/VOCABULARIO.md.
+                      Y el CTA va a su catálogo, que es lo siguiente que haría. */}
                   <h3 className="text-base font-semibold text-fg mb-1.5">
-                    {locale === 'es' ? 'Sin aplicaciones aún' : 'No applications yet'}
+                    {locale === 'es' ? 'Todavía no te has postulado' : 'You have not applied yet'}
                   </h3>
                   <p className="text-sm text-fg-muted max-w-sm mx-auto leading-relaxed mb-6">
                     {locale === 'es'
-                      ? 'Cuando apliques a una propiedad, podrás ver el estado de tu aplicación aquí.'
-                      : 'When you apply to a property, you\'ll see the status of your application here.'}
+                      ? 'Cuando te postules a una propiedad, podrás seguir acá cómo va tu postulación.'
+                      : 'When you apply to a property, you\'ll be able to follow your application here.'}
                   </p>
                   <Button asChild>
-                    <Link href="/inquilino/explorar">
-                      {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
+                    <Link href="/inquilino/para-ti">
+                      {locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me'}
                     </Link>
                   </Button>
                 </div>
@@ -431,7 +438,7 @@ export default function InquilinoPage() {
                     href: '/inquilino/aplicaciones',
                     icon: FileText,
                     label: t('nav.applications'),
-                    desc: locale === 'es' ? 'Ver mis aplicaciones' : 'View my applications'
+                    desc: locale === 'es' ? 'Ver mis postulaciones' : 'View my applications'
                   },
                   {
                     href: '/inquilino/perfil',

@@ -205,9 +205,10 @@ export default function ContratosPage() {
             <EmptyState
               icon={Handshake}
               title={locale === 'es' ? 'Sin contratos aún' : 'No contracts yet'}
+              /* "aplicación" está muerto: docs/VOCABULARIO.md. */
               description={locale === 'es'
-                ? 'Cuando un propietario apruebe tu aplicación y genere un contrato, aparecerá aquí para que lo firmes.'
-                : 'When a landlord approves your application and generates a contract, it will appear here for you to sign.'}
+                ? 'Cuando te elijan en una postulación y generen el contrato, aparecerá aquí para que lo firmes.'
+                : 'When you are selected for an application and the contract is generated, it will appear here for you to sign.'}
             />
           </motion.div>
         ) : (

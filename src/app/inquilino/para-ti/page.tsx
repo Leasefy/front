@@ -139,6 +139,19 @@ export default function ParaTiPage() {
     };
   }, [allRecommendations]);
 
+  /*
+   * El catálogo por aprobación se decide ANTES del esqueleto de carga, y a
+   * propósito: `CatalogoPorAprobacion` no usa las recomendaciones para nada
+   * —trae sus propias propiedades— pero estaba detrás de `recommendationsLoading`,
+   * así que el destino de todo el recorrido quedaba esperando a un endpoint del
+   * motor viejo que no le aporta un solo dato. Medido en local: 1,6–3,1 s de
+   * espera regalada, y si `/recommendations` se cae o se cuelga, el esqueleto
+   * se queda para siempre justo después de prometerle su catálogo.
+   */
+  if ((!hasVerifiedProfile || !profile) && aprobacionVigente && aprobacion) {
+    return <CatalogoPorAprobacion aprobacion={aprobacion} />;
+  }
+
   // Loading state
   if (isLoading || recommendationsLoading) {
     return (
@@ -163,6 +176,8 @@ export default function ParaTiPage() {
    * por el recorrido nuevo. Antes caía en el vacío de abajo —"necesitamos
    * conocer tu perfil"— justo después de que se le prometiera su catálogo.
    * Su aprobación YA nos dice qué puede tomar; con eso alcanza.
+   * (La decisión se toma arriba, antes del esqueleto; esto queda por si el
+   * perfil se resuelve después de la primera pasada.)
    */
   if ((!hasVerifiedProfile || !profile) && aprobacionVigente && aprobacion) {
     return <CatalogoPorAprobacion aprobacion={aprobacion} />;

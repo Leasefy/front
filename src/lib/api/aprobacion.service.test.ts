@@ -34,6 +34,39 @@ describe('fetchAprobacion — postura de producción', () => {
     vi.unstubAllEnvs()
   })
 
+  /*
+   * El caso que motivó la guarda de `NODE_ENV`. `mockAprobacion()` devuelve un
+   * `Aprobacion` **sin ninguna marca de demo** —a diferencia del funnel, que
+   * viaja con `stubMode`— así que la pantalla lo muestra como un hecho y el
+   * catálogo filtra propiedades reales contra un techo inventado. Alcanzaba con
+   * que `NEXT_PUBLIC_AGENT_URL` faltara en el deploy para fabricarle a una
+   * persona real una aprobación de $2.400.000 que nadie le dio.
+   */
+  it('en producción NO fabrica una aprobación aunque falte la URL del agente', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_PUBLIC_AGENT_URL', '')
+    const f = mockFetch(404, {})
+    globalThis.fetch = f
+
+    const r = await fetchAprobacion()
+
+    expect(f).toHaveBeenCalledTimes(1) // intentó de verdad, no cortó al mock
+    expect(r.estado).toBe('sin_estudio')
+    expect(r.topeAprobadoCop).toBeNull()
+  })
+
+  it('en producción tampoco fabrica con el override de mock puesto', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_PUBLIC_USE_MOCK_API', 'true')
+    const f = mockFetch(404, {})
+    globalThis.fetch = f
+
+    const r = await fetchAprobacion()
+
+    expect(f).toHaveBeenCalledTimes(1)
+    expect(r.estado).toBe('sin_estudio')
+  })
+
   it('con la URL del agente puesta y sin override, pega de verdad', async () => {
     const f = mockFetch(200, OK)
     globalThis.fetch = f

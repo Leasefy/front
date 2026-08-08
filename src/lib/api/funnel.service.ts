@@ -17,8 +17,12 @@
  * Sin esto, el recorrido completo del inquilino queda intransitable en local.
  *
  * En producción NUNCA cae acá: un 404 real sigue siendo un error visible.
+ * La guarda de `NODE_ENV` lo vuelve cierto de verdad — antes alcanzaba con que
+ * `NEXT_PUBLIC_AGENT_URL` faltara en el deploy para servir la demo a alguien
+ * real (rotulada, sí, pero servida).
  */
 function isMockMode(): boolean {
+  if (process.env.NODE_ENV === 'production') return false
   if (process.env.NEXT_PUBLIC_USE_MOCK_API === 'true') return true
   return !process.env.NEXT_PUBLIC_AGENT_URL
 }

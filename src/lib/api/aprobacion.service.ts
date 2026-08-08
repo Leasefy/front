@@ -74,11 +74,23 @@ export const SIN_APROBACION: Aprobacion = {
 
 /**
  * Mock activo cuando O BIEN no hay agente configurado (dev local sin backend)
- * O BIEN se fuerza con la env explícita. Con la URL puesta y sin override
- * SIEMPRE corre el fetch real: producción no puede servir mocks.
- * Se leen en cada llamada para que los tests puedan stubearlas.
+ * O BIEN se fuerza con la env explícita. Se leen en cada llamada para que los
+ * tests puedan stubearlas.
+ *
+ * ⚠️ **Nunca en producción, y acá importa más que en el funnel.**
+ *
+ * `mockAprobacion()` devuelve un `Aprobacion` común y corriente: aprobado, tope
+ * $2.400.000, dos aseguradoras. A diferencia del resultado del funnel —que
+ * viaja con `stubMode: true` y la UI rotula "Resultado de ejemplo"— este tipo
+ * **no tiene marca de demo**, así que la pantalla lo muestra como un hecho y el
+ * catálogo filtra propiedades reales contra un techo inventado.
+ *
+ * Antes bastaba con que `NEXT_PUBLIC_AGENT_URL` faltara en el deploy —una env
+ * sin poner en Vercel, nada más— para fabricarle a una persona real una
+ * aprobación que nadie le dio. Ahora producción falla a la vista.
  */
 function isMockMode(): boolean {
+  if (process.env.NODE_ENV === 'production') return false
   if (process.env.NEXT_PUBLIC_USE_MOCK_API === 'true') return true
   return !process.env.NEXT_PUBLIC_AGENT_URL
 }

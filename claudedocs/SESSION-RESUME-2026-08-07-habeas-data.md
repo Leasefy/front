@@ -1,9 +1,11 @@
 # RESUME — Habeas Data (ARCO): la pantalla que se veía igual llena que vacía
 
-**Fecha:** 2026-08-07 · **Repo:** `rent/mvp` rama **`develop`**
+**Fecha:** 2026-08-07 · **Repo:** `rent/mvp` rama **`fix/habeas-data-arco`**
 **Continúa:** `SESSION-RESUME-2026-08-07-cobranza-local.md` (levantar el stack local)
 
-> ⚠️ Nada commiteado, nada pusheado. El corte/PR lo decide Victor.
+> ⚠️ Commiteado, **nada pusheado**. El corte/PR lo decide Victor. Y hay un commit
+> hermano en `~/rent/agent-develop` sin el cual «Tomar la solicitud» no funciona.
+> Detalle al final, en «Estado en git».
 
 ---
 
@@ -89,10 +91,9 @@ bloque de la campana) · `Callout` (cabecera) · `Eyebrow`/`MonoLabel` ·
 un `<p>`. Meterle un `<div>` es HTML inválido → error de hidratación → no monta.
 `tsc` y `lint` limpios. Usar `<span>`.
 
-**`DESIGN.md` documenta tokens que NO existen** en el config resuelto de este
-repo: `bg-error-bg`, `text-warning-fg`, `bg-surface-raised`, `bg-surface-sunken`.
-El vocabulario real es `-soft` (`bg-danger-soft` + `text-danger`). Seguí el doc y
-generé clases muertas. Ver [[reference-cadence-token-vocab]].
+**`DESIGN.md` documentaba tokens que NO existen** — seguí el doc al pie y
+generé clases muertas. El vocabulario real es `-soft` (`bg-danger-soft` +
+`text-danger`). **Corregido**, junto con `COLOR_SYSTEM.md`: ver §11.
 
 **Tailwind no puede aplicar opacidad a los tokens de Cadence**: resuelven a
 `var(--danger-soft)` con un color literal, así que `bg-danger-soft/70` **no se
@@ -138,18 +139,94 @@ Script: `scratchpad/seed-arco-demo.mjs`.
 Rollback: `DELETE FROM agent.arco_requests WHERE requester_email LIKE '%@demo.leasefy.co';`
 
 ⚠️ La tabla **rechaza `pending_counsel_review`** (constraint). Ese valor es un
-flag de la respuesta 503 del gate de asesor, no un estado — el front lo tipa mal
-como estado y nunca puede llegarle.
+flag de la respuesta 503 del gate de asesor, no un estado. El front lo tipaba
+como estado; **quitado** del tipo, del mapa de tonos y de los dos JSON de i18n.
+
+## 9. Cierre — el hueco funcional y el bug del agente
+
+**«Tomar la solicitud» no existía.** `POST /arco/requests/:id/triage` estaba en
+el agente desde la fase 36 y ninguna pantalla lo llamaba: una solicitud se
+quedaba en «por revisar» hasta que alguien la resolvía o la rechazaba, así que
+dos personas del equipo no tenían cómo saber si la otra ya la había agarrado.
+
+Al cablearlo apareció que **el endpoint nunca pudo funcionar**: escribía
+`status: 'in_review'`, valor que el CHECK de la tabla no admite (sólo
+`pending_email_verification`, `pending_admin_triage`, `in_progress`, `resolved`,
+`rejected`). Toda llamada real reventaba con violación de constraint.
+
+Sobrevivió porque **los tests mockean Prisma y afirman sobre el row que ellos
+mismos arman**, no sobre lo que se le pasa al `UPDATE`. Se agregó un guard que
+compara el status escrito contra la lista literal del CHECK; con `in_review`
+falla, con `in_progress` pasa. (Comprobado: revertí el fix y el test viejo
+siguió en verde, el nuevo se puso rojo.)
+
+**El estado tampoco se veía al abrir una solicitud** — había que deducirlo del
+último evento del timeline. Ahora va al lado del título.
+
+## 10. La ficha del solicitante
+
+`KeyValueList` es el primitivo de **resumen financiero** del DS: etiqueta que se
+trunca, valor a la derecha en mono con `shrink-0`. Se le habían metido el
+nombre, el correo y una descripción de **hasta 2.000 caracteres**
+(`arco-public.ts:167`): salían en mono —que en el DS significa «dato técnico»— y
+el texto se desbordaba fuera de la tarjeta.
+
+Ahora el texto libre está afuera: identidad en prosa arriba, descripción abajo
+en su propio pozo (`bg-surface-muted`, que hace que el recorte se lea como
+«hay más» en vez de como una línea partida). En el `KeyValueList` quedan sólo
+los cuatro pares que sí son datos cortos.
+
+De paso: **Cadence remapea toda la escala de radios** — acá `rounded-lg` son
+22px, no los 8px de Tailwind. Para un pozo va `rounded-sm`.
+
+## 11. Los docs de diseño
+
+`DESIGN.md` y `COLOR_SYSTEM.md` documentaban tokens que **no existen**:
+`bg-surface-raised`, `bg-surface-sunken`, `bg-surface-brand`,
+`text-fg-secondary`, `border-border-subtle`, `text-on-primary`, `text-link`,
+`bg-error-bg`, `.text-eyebrow`, `.text-title`. Los valores hex sí eran
+correctos; lo viejo eran los nombres. Corregidos los dos.
+
+Tres cosas que cuestan caro y quedaron anotadas ahí:
+- **`text-fg-muted` existe en los dos vocabularios con valores distintos.** Acá
+  es el gris más fuerte; el más tenue es `text-fg-subtle`.
+- **`bg-surface` no es el fondo de página**, es la superficie elevada (blanca).
+  El fondo del panel es `bg-bg`.
+- Los hex de los estados también estaban corridos (`#3F8A53` → `#307E57`, etc.).
+
+**Cómo verificar un token** (ni grep ni el navegador sirven — el uso cero no
+prueba nada, y Tailwind sólo emite las clases que encuentra en el código, así
+que una clase válida sin usar se ve igual que una inexistente): preguntarle al
+preset, `require('@leasefy/cadence/tailwind-preset')`. El snippet está en
+`DESIGN.md` §2.
+
+---
+
+## Estado en git
+
+**`rent/mvp`** — rama `fix/habeas-data-arco` (de `develop`), 2 commits:
+- `15624b5a` novedades: una sola por sección (trabajo previo, va aparte)
+- `ef510abb` el arreglo de Habeas Data + los dos docs
+
+**`~/rent/agent-develop`** — rama `fix/arco-triage-status-constraint`, 1 commit:
+- `64dca1ef` triage escribía un status que la tabla rechaza
+
+⚠️ Nada pusheado, en ninguno de los dos. **El front necesita el fix del agente**
+para que «Tomar la solicitud» funcione.
+
+Sin commitear a propósito: `dump.rdb` (volcado de Redis, ahora en `.gitignore`)
+y los resumes de otras sesiones en `claudedocs/`.
 
 ---
 
 ## Pendientes
 
-1. **Confirmar los plazos con asesor jurídico** (§4) — el único con consecuencia legal.
-2. **Commitear**: 15 modificados + 4 nuevos, nada en git.
-3. Corregir `DESIGN.md` §2: documenta tokens inexistentes (§5).
-4. `pending_counsel_review`: estado fantasma en el tipo del front.
-5. Heredados de la sesión anterior: 11 migraciones dev, `buildDailyReport` con
+1. **Confirmar los plazos con asesor jurídico** (§4) — el único con consecuencia
+   legal, y el único que no puedo cerrar yo.
+2. **Pushear** las dos ramas (decisión de Victor).
+3. `POST /triage` acepta `notes` (`max 1000`) y **los descarta**: el handler no
+   los guarda en ninguna columna. Hoy es inocuo porque el front no los manda.
+4. Heredados de la sesión anterior: 11 migraciones dev, `buildDailyReport` con
    `$transaction` sin `timeout`, `toAmount()` que pierde `1.850.000`.
 
 ## Archivos
@@ -160,6 +237,13 @@ como estado y nunca puede llegarle.
 
 **Tocados:** las 2 páginas de `ai/cobranza/arco/` · `use-arco-requests.ts` ·
 `use-arco-detail.ts` · `ArcoStatusBadge` · `SlaCountdownBadge` · `PlanHeader` ·
-`agentWorkspaceNav.ts` · `es.json`/`en.json`
+`agentWorkspaceNav.ts` · `es.json`/`en.json` · `docs/DESIGN.md` ·
+`docs/COLOR_SYSTEM.md` · `.gitignore`
 
-`tsc` limpio · **1.599 tests verdes** · lint sin errores nuevos · `next build` verde.
+**En el agente:** `agency-arco-requests.ts` + su test.
+
+`tsc` limpio · **1.599 tests verdes** (front, Node 20) · 7 verdes en el test del
+agente · lint sin errores nuevos · **`next build` verde**, corrido en un worktree
+aparte para no tumbar el dev server de :3001.
+
+⚠️ Con Node 25 fallan 103 tests del front (happy-dom/localStorage). Node 20.

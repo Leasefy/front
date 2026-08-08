@@ -8,7 +8,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useCallDetail } from '@/lib/hooks/cobranza/use-call-detail'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button } from '@/components/ui'
@@ -115,10 +115,8 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
     if (!agentUrl || !agencyId) return
     setIsExportingTranscript(true)
     try {
-      const resp = await fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}/transcript?redacted=true`,
-        { headers: agentAuthHeaders() },
-      )
+      const resp = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}/transcript?redacted=true`)
       if (!resp.ok) throw new Error(`transcript fetch failed: ${resp.status}`)
       const json = (await resp.json()) as {
         turns: Array<{ speaker: 'agent' | 'debtor'; text: string; timestamp: string }>

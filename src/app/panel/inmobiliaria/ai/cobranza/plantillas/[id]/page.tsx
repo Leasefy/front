@@ -37,7 +37,7 @@ import {
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import {
   useTemplates,
   type TemplateApiItem,
@@ -343,11 +343,11 @@ function TemplateEditorContent({
     setIsSaving(true)
     try {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL ?? ''
-      const res = await fetch(
+      const res = await agentFetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/draft`,
         {
           method: 'PUT',
-          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
+          headers: { 'Content-Type': 'application/json' },
           // El agente valida `{ body }` (draftBodySchema). Mandábamos
           // `{ bodyDraft }`, así que «Guardar borrador» siempre daba 400.
           body: JSON.stringify({ body: localDraft }),
@@ -372,11 +372,11 @@ function TemplateEditorContent({
     setIsPublishing(true)
     try {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL ?? ''
-      const res = await fetch(
+      const res = await agentFetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/publish`,
         {
           method: 'POST',
-          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
+          headers: { 'Content-Type': 'application/json' },
         },
       )
       if (!res.ok) {
@@ -414,10 +414,8 @@ function TemplateEditorContent({
     setIsRefreshingWa(true)
     try {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL ?? ''
-      const res = await fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/wa-status`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/wa-status`)
       if (!res.ok) throw new Error(`${res.status}`)
       // Contrato real del agente: `{ status, rejection_reason }` en snake_case.
       // Leíamos `waSubmissionStatus`/`waRejectionReason`, que nunca llegan: la

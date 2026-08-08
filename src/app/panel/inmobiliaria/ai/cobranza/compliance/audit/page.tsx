@@ -27,7 +27,7 @@ import { ClipboardText } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
@@ -151,7 +151,7 @@ function AuditContent() {
       const qs = new URLSearchParams({ from, to })
       if (action) qs.set('kind', action)
       const url = `${agentUrl}/api/agency/${agencyId}/compliance/audit-log.csv?${qs.toString()}`
-      const resp = await fetch(url, { headers: agentAuthHeaders() })
+      const resp = await agentFetch(url)
       if (!resp.ok) throw new Error(`[exportCsv] backend returned ${resp.status}`)
       const blob = await resp.blob()
       const objectUrl = URL.createObjectURL(blob)

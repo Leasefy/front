@@ -7,7 +7,7 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
 import { IconButton, SegmentedControl } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import {
   ALLOWED_SPEEDS,
   useAudioPlayer,
@@ -61,7 +61,7 @@ export default function CallAudioPlayer({
     setAudioError(false)
     setObjectUrl('')
     const url = `${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}/audio`
-    void fetch(url, { headers: agentAuthHeaders() })
+    void agentFetch(url)
       .then((r) => {
         if (!r.ok) throw new Error(`audio ${r.status}`)
         return r.blob()

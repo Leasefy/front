@@ -17,7 +17,7 @@ import { Gavel } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import {
@@ -63,10 +63,8 @@ function Ley2300Content() {
       }
       try {
         const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''
-        const res = await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/compliance/ley-2300/attempts${qs}`,
-          { headers: agentAuthHeaders() },
-        )
+        const res = await agentFetch(
+          `${agentUrl}/api/agency/${agencyId}/cobranza/compliance/ley-2300/attempts${qs}`)
         if (!res.ok) throw new Error(`${res.status}`)
         const json = (await res.json()) as ComplianceLogResponse<RawAttempt>
         const page = normalizeAttempts(json)

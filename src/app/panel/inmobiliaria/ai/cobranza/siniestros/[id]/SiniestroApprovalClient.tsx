@@ -22,7 +22,7 @@ import { useRouter } from 'next/navigation'
 
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Checkbox } from '@/components/ui'
@@ -94,7 +94,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
     setPdfBlobUrl(null)
     void (async () => {
       try {
-        const res = await globalThis.fetch(pdfSrc, { headers: agentAuthHeaders() })
+        const res = await agentFetch(pdfSrc)
         if (!res.ok) throw new Error(`pdf ${res.status}`)
         const blob = await res.blob()
         if (cancelled) return

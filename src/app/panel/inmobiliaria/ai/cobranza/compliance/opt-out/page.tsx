@@ -19,7 +19,7 @@ import { Check, BellSlash } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
@@ -68,10 +68,8 @@ function OptOutContent() {
       }
       try {
         const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''
-        const res = await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/compliance/opt-out${qs}`,
-          { headers: agentAuthHeaders() },
-        )
+        const res = await agentFetch(
+          `${agentUrl}/api/agency/${agencyId}/cobranza/compliance/opt-out${qs}`)
         if (!res.ok) throw new Error(`${res.status}`)
         const json = (await res.json()) as ComplianceLogResponse<RawOptOut>
         const page = normalizeOptOuts(json)
@@ -106,11 +104,11 @@ function OptOutContent() {
       if (!agentUrl || !agencyId) return
       setAcking((prev) => new Set(prev).add(eventId))
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/compliance/opt-out/${eventId}/acknowledge`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
           },
         )
         if (res.ok) {

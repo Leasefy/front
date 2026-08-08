@@ -10,7 +10,7 @@
 import * as React from 'react'
 import { useEffect, useState } from 'react'
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
@@ -74,11 +74,11 @@ export function PauseModal({ open, onClose, debtorId, onSuccess }: PauseModalPro
     }
     setSubmitting(true)
     try {
-      const res = await globalThis.fetch(
+      const res = await agentFetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}/pause`,
         {
           method: 'POST',
-          headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             paused_until: new Date(pausedUntil + 'T00:00:00').toISOString(),
             reason: reason.trim(),

@@ -23,7 +23,7 @@ import { MonoLabel } from '@leasefy/cadence'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useSubscription } from '@/lib/hooks/cobranza/use-subscription'
 import { SubscriptionToggles } from '@/components/inmobiliaria/cobranza/SubscriptionToggles'
@@ -57,10 +57,8 @@ function SuscripcionContent() {
     let cancelled = false
     void (async () => {
       try {
-        const res = await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/subscription-stats`,
-          { headers: agentAuthHeaders() },
-        )
+        const res = await agentFetch(
+          `${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/subscription-stats`)
         if (cancelled) return
         if (res.status === 404) {
           setStatsSupported(false)

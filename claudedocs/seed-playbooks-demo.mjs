@@ -23,11 +23,17 @@
  * ciclo borrador → publicado → cambios sin publicar). No lo corras esperando
  * que el agente empiece a usar estos textos.
  *
- * Uso:
- *   cd ~/rent/agent-develop && node ~/rent/mvp/claudedocs/seed-playbooks-demo.mjs
+ * Uso (el script tiene que EJECUTARSE dentro del repo del agente: `pg` y el
+ * `.env` con DIRECT_URL viven allá, y ESM resuelve los imports contra la
+ * ubicación del archivo, no contra el cwd):
+ *
+ *   cp ~/rent/mvp/claudedocs/seed-playbooks-demo.mjs ~/rent/agent-develop/ && \
+ *   cd ~/rent/agent-develop && node seed-playbooks-demo.mjs && \
+ *   rm seed-playbooks-demo.mjs
  *
  * Rollback:
- *   DELETE FROM agent.script_templates WHERE tenant_id = '<AGENCY>';
+ *   DELETE FROM agent.script_templates          WHERE tenant_id = '<AGENCY>';
+ *   DELETE FROM agent.script_objection_handlers WHERE tenant_id = '<AGENCY>';
  */
 
 import 'dotenv/config'
@@ -72,18 +78,46 @@ const ROWS = [
   },
 ]
 
+/**
+ * Los manejadores de objeción viven en OTRA tabla y no tienen ciclo de
+ * borrador: `response_es` es el texto vivo y punto. Por eso en la lista salen
+ * siempre como «Publicada» y sin píldora de Meta.
+ */
+const OBJECTIONS = [
+  {
+    stage: 'S2',
+    key: 'no_tengo_plata',
+    response:
+      'Entiendo, {{deudor_nombre}}, y le agradezco que me lo diga de frente. No vine a presionarlo: vine a ver qué sí se puede. ¿Le sirve que miremos un abono parcial esta semana y el resto lo acomodamos?',
+    escalation: null,
+  },
+  {
+    stage: 'S2',
+    key: 'ya_pague',
+    response:
+      'Puede ser que el pago no se haya cruzado todavía. ¿Me confirma la fecha y el medio por el que pagó? Lo dejo anotado y lo verificamos hoy mismo antes de volver a contactarlo.',
+    escalation: 'requires_agency_followup',
+  },
+  {
+    stage: 'S3',
+    key: 'no_me_vuelvan_a_llamar',
+    response:
+      'Con mucho gusto, {{deudor_nombre}}. Registro ahora mismo su solicitud de no ser contactado y no volvemos a llamarlo. ¿Prefiere que le escribamos por correo o que no lo contactemos por ningún medio?',
+    escalation: 'opt_out_request',
+  },
+]
+
 const client = new pg.Client({
   connectionString: process.env.DIRECT_URL || process.env.DATABASE_URL,
 })
 await client.connect()
 
-const borradas = await client.query(
-  'DELETE FROM agent.script_templates WHERE tenant_id = $1',
-  [AGENCY],
-)
-if (borradas.rowCount) {
-  console.log(`Limpiadas ${borradas.rowCount} filas de una siembra anterior.`)
+let limpiadas = 0
+for (const tabla of ['script_templates', 'script_objection_handlers']) {
+  const r = await client.query(`DELETE FROM agent.${tabla} WHERE tenant_id = $1`, [AGENCY])
+  limpiadas += r.rowCount ?? 0
 }
+if (limpiadas) console.log(`Limpiadas ${limpiadas} filas de una siembra anterior.`)
 
 for (const r of ROWS) {
   await client.query(
@@ -96,6 +130,15 @@ for (const r of ROWS) {
   )
 }
 
+for (const o of OBJECTIONS) {
+  await client.query(
+    `INSERT INTO agent.script_objection_handlers
+       (id, stage, objection_key, response_es, escalation_signal, tenant_id, created_at)
+     VALUES ($1, $2::agent.cartera_stage, $3, $4, $5, $6, now())`,
+    [randomUUID(), o.stage, o.key, o.response, o.escalation, AGENCY],
+  )
+}
+
 const { rows } = await client.query(
   `SELECT stage::text, channel,
           CASE WHEN body_published IS NULL THEN 'borrador'
@@ -105,7 +148,9 @@ const { rows } = await client.query(
    FROM agent.script_templates WHERE tenant_id = $1 ORDER BY stage`,
   [AGENCY],
 )
-console.log(`\nSembradas ${ROWS.length} plantillas en la agencia demo:`)
+console.log(
+  `\nSembradas ${ROWS.length} plantillas + ${OBJECTIONS.length} objeciones en la agencia demo:`,
+)
 console.table(rows)
 
 await client.end()

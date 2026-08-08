@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useAuth } from '@/lib/auth'
 import type { components } from '@/lib/api/generated/agent'
 
@@ -94,10 +94,7 @@ export function useDailyReport(): UseDailyReportResult {
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/today`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/today`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as DailyReportResponse
       setData(json)
@@ -165,10 +162,7 @@ export function useDailyReportHistory(days = 30): UseDailyReportHistoryResult {
         const sp = new URLSearchParams()
         sp.set('days', String(days))
         if (cursor) sp.set('cursor', cursor)
-        const res = await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/history?${sp.toString()}`,
-          { headers: agentAuthHeaders() },
-        )
+        const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/history?${sp.toString()}`)
         if (!res.ok) throw new Error(`${res.status}`)
         const json = (await res.json()) as DailyReportHistoryResponse
         setItems((prev) => (append ? [...prev, ...(json.items ?? [])] : json.items ?? []))
@@ -225,10 +219,7 @@ export async function downloadHistoryCsv(
   days = 30,
 ): Promise<void> {
   if (!agentUrl) throw new Error('NEXT_PUBLIC_AGENT_URL not configured')
-  const res = await globalThis.fetch(
-    `${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/history.csv?days=${days}`,
-    { headers: agentAuthHeaders() },
-  )
+  const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/history.csv?days=${days}`)
   if (!res.ok) throw new Error(`${res.status}`)
   const blob = await res.blob()
   const url = URL.createObjectURL(blob)

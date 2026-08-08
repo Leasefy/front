@@ -16,6 +16,7 @@ import { useCallback, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import {
   usePIIRevealContext,
   type PIIFieldKey,
@@ -56,7 +57,7 @@ export function usePIIReveal(args: { field: PIIFieldKey }): UsePIIRevealResult {
     }
     setIsMinting(true)
     try {
-      const res = await globalThis.fetch(
+      const res = await agentFetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}/reveal-pii`,
         {
           method: 'POST',

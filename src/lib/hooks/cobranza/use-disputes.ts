@@ -30,6 +30,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useAuth } from '@/lib/auth'
 
 // ── Shapes (espejo del contrato del backend) ─────────────────────────────────
@@ -150,10 +151,7 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
       const sp = new URLSearchParams()
       if (status) sp.set('status', status)
       const qs = sp.toString()
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/disputes${qs ? `?${qs}` : ''}`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/disputes${qs ? `?${qs}` : ''}`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as DisputesListResponse
       setDisputes(Array.isArray(json.disputes) ? json.disputes : [])
@@ -185,10 +183,7 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) return null
       try {
-        const res = await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/disputes/${id}`,
-          { headers: agentAuthHeaders() },
-        )
+        const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/disputes/${id}`)
         if (!res.ok) return null
         return (await res.json()) as CobranzaDispute
       } catch {
@@ -207,7 +202,7 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
         return { ok: false, status: 0, data: null }
       }
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/disputes`,
           {
             method: 'POST',
@@ -239,7 +234,7 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
         return { ok: false, status: 0, data: null }
       }
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/disputes/${id}/resolve`,
           {
             method: 'POST',

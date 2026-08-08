@@ -21,7 +21,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { paths } from '@/lib/api/generated/agent'
 
@@ -120,10 +120,7 @@ export function useDebtorList(filters: UseDebtorListFilters = {}): UseDebtorList
     const qs = buildQs(filters, null)
     const suffix = qs ? `?${qs}` : ''
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/debtors${suffix}`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/debtors${suffix}`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as DebtorListResponse
       // Polling refresh REPLACES page 1 only. Since each filter change resets
@@ -183,10 +180,7 @@ export function useDebtorList(filters: UseDebtorListFilters = {}): UseDebtorList
     setIsLoadingMore(true)
     try {
       const qs = buildQs(filters, nextCursor)
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/debtors?${qs}`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/debtors?${qs}`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as DebtorListResponse
       setPages((prev) => [...prev, ...json.items])

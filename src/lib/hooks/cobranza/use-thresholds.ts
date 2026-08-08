@@ -25,6 +25,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 export interface ThresholdRow {
   version: number | null
@@ -86,7 +87,7 @@ export function useThresholds(): UseThresholdsResult {
       return
     }
     try {
-      const activeRes = await globalThis.fetch(activeUrl, { headers: agentAuthHeaders() })
+      const activeRes = await agentFetch(activeUrl)
       if (!activeRes.ok) throw new Error(`${activeRes.status}`)
       const activeJson = (await activeRes.json()) as ThresholdRow
       setActive(activeJson)
@@ -95,7 +96,7 @@ export function useThresholds(): UseThresholdsResult {
       const historyUrl = base('/history?limit=20')
       if (historyUrl) {
         try {
-          const histRes = await globalThis.fetch(historyUrl, { headers: agentAuthHeaders() })
+          const histRes = await agentFetch(historyUrl)
           if (histRes.status === 404) {
             setVersionsListSupported(false)
             setVersions(activeJson.version != null ? [activeJson] : [])
@@ -130,7 +131,7 @@ export function useThresholds(): UseThresholdsResult {
     async (body: ThresholdUpdateBody): Promise<ThresholdRow> => {
       const url = base('')
       if (!url) throw new Error('not_ready')
-      const res = await globalThis.fetch(url, {
+      const res = await agentFetch(url, {
         method: 'PUT',
         headers: agentAuthHeaders({ 'content-type': 'application/json' }),
         body: JSON.stringify(body),
@@ -150,7 +151,7 @@ export function useThresholds(): UseThresholdsResult {
     async (version: number): Promise<ThresholdRow> => {
       const url = base('/rollback')
       if (!url) throw new Error('not_ready')
-      const res = await globalThis.fetch(url, {
+      const res = await agentFetch(url, {
         method: 'POST',
         headers: agentAuthHeaders({ 'content-type': 'application/json' }),
         body: JSON.stringify({ to_version: version }),

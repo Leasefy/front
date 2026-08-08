@@ -13,7 +13,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import type { components } from '@/lib/api/generated/agent'
 
 export type LegalArtifactSummary = components['schemas']['CarteraLegalArtifactSummary']
@@ -60,9 +60,7 @@ export function useLegalArtifacts(
     if (filters?.status) url.searchParams.set('status', filters.status)
     try {
       setIsLoading(true)
-      const res = await globalThis.fetch(url.toString(), {
-        headers: agentAuthHeaders(),
-      })
+      const res = await agentFetch(url.toString())
       if (!res.ok) throw new Error(`${res.status}`)
       const json: LegalArtifactListResponse = await res.json()
       setData(json)

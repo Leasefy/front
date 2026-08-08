@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 export interface AuditLogEntry {
   id: string
@@ -104,10 +104,7 @@ export function useAuditLog(filters: AuditLogFilters): UseAuditLogResult {
         return
       }
       try {
-        const res = await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/audit-log${buildQs(filters, cursor)}`,
-          { headers: agentAuthHeaders() },
-        )
+        const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/audit-log${buildQs(filters, cursor)}`)
         if (!res.ok) throw new Error(`${res.status}`)
         const json = (await res.json()) as AuditLogResponse
         setItems((prev) => (append ? [...prev, ...(json.items ?? [])] : json.items ?? []))

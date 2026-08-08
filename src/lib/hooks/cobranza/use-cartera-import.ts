@@ -27,6 +27,7 @@
 
 import { useCallback, useState } from 'react'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useAuth } from '@/lib/auth'
 
 export interface CarteraImportErrorEntry {
@@ -97,7 +98,7 @@ export function useCarteraImport(): UseCarteraImportResult {
         form.set('file', file, file.name)
 
         // multipart: NO fijamos content-type — el navegador agrega el boundary.
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cartera/import`,
           {
             method: 'POST',

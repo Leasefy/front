@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 
 export type TranscriptSpeaker = 'operador' | 'deudor' | 'bot' | string
@@ -54,10 +54,7 @@ export function useCallTranscript({
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}/transcript`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}/transcript`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json: CallTranscriptResponse = await res.json()
       // T-31-PII reminder: do NOT pass json.turns[*].text into analytics or

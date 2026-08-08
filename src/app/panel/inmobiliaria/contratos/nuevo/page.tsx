@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/select';
 import { IconButton } from '@leasefy/cadence';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
 import { useContractActions } from '@/lib/hooks/useContracts';
 import { contractsApi } from '@/lib/api/contracts.service';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
@@ -300,6 +301,9 @@ function NuevoContratoContent() {
           )}
         </p>
       </div>
+
+      {/* Último paso del recorrido del inquilino (11). Ver src/lib/recorrido/pasos.ts. */}
+      <RecorridoHilo paso="contrato" className="mb-6" />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 1) Contract origin */}

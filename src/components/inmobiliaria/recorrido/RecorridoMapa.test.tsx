@@ -1,0 +1,130 @@
+/**
+ * RecorridoMapa — los 11 pasos con el corte donde cambia de manos.
+ *
+ * Lo que se protege:
+ *  · están los 11, con su descripción
+ *  · el corte aparece UNA sola vez, entre el 6 y el 7
+ *  · los pasos de la inmobiliaria que tienen pantalla son navegables, y los
+ *    que no la tienen lo dicen en vez de fingir un enlace
+ */
+
+import * as React from 'react'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { createRoot, type Root } from 'react-dom/client'
+import { act } from 'react'
+
+void React // jsx-preserve
+
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'))
+
+// Sin esto React avisa en cada render que el entorno no soporta act(). No
+// cambia el resultado, pero llena la salida de ruido y tapa avisos reales.
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
+import { RecorridoMapa } from './RecorridoMapa'
+
+let contenedor: HTMLDivElement
+let root: Root
+
+beforeEach(() => {
+  contenedor = document.createElement('div')
+  document.body.appendChild(contenedor)
+  root = createRoot(contenedor)
+})
+
+afterEach(() => {
+  act(() => root.unmount())
+  contenedor.remove()
+})
+
+function montar(ui: React.ReactElement) {
+  act(() => root.render(ui))
+  return contenedor
+}
+
+describe('RecorridoMapa', () => {
+  it('lista los 11 pasos', () => {
+    const el = montar(<RecorridoMapa />)
+    expect(el.querySelectorAll('li')).toHaveLength(11)
+  })
+
+  it('el recorrido cambia de manos una sola vez', () => {
+    const el = montar(<RecorridoMapa />)
+    const cortes = el.textContent?.match(/Acá cambia de manos/g) ?? []
+    expect(cortes).toHaveLength(1)
+  })
+
+  it('el corte cae entre el paso del inquilino y el primero de la inmobiliaria', () => {
+    const el = montar(<RecorridoMapa />)
+    const items = [...el.querySelectorAll('li')]
+    // El corte se dibuja dentro del <li> del paso 7 (índice 6).
+    expect(items[6].textContent).toContain('Acá cambia de manos')
+    expect(items[5].textContent).not.toContain('Acá cambia de manos')
+  })
+
+  it('marca de quién es cada paso', () => {
+    const el = montar(<RecorridoMapa />)
+    const items = [...el.querySelectorAll('li')]
+    expect(items[0].textContent).toContain('Inquilino')
+    expect(items[10].textContent).toContain('Tú')
+  })
+
+  it('sin paso actual no marca nada como hecho', () => {
+    const el = montar(<RecorridoMapa />)
+    // El check solo aparece en los pasos ya cumplidos.
+    expect(el.querySelectorAll('svg[data-hecho]')).toHaveLength(0)
+    expect(el.textContent).toContain('Explora el catálogo')
+  })
+
+  it('con paso actual, los anteriores quedan atrás y el actual se destaca', () => {
+    const el = montar(<RecorridoMapa pasoActual="comparacion" />)
+    const items = [...el.querySelectorAll('li')]
+    // El 9 es el actual: su marca conserva el número.
+    expect(items[8].textContent).toContain('9')
+    expect(items[8].textContent).toContain('Comparas los candidatos')
+  })
+
+  it('los pasos con pantalla son navegables', () => {
+    const el = montar(<RecorridoMapa />)
+    const hrefs = [...el.querySelectorAll('a')].map((a) => a.getAttribute('href'))
+    expect(hrefs).toContain('/panel/inmobiliaria/recorrido')
+    expect(hrefs).toContain('/panel/inmobiliaria/ai/estudio/cola')
+    expect(hrefs).toContain('/panel/inmobiliaria/contratos/nuevo')
+  })
+
+  it('los pasos suyos sin pantalla lo dicen en vez de fingir un enlace', () => {
+    const el = montar(<RecorridoMapa />)
+    const items = [...el.querySelectorAll('li')]
+    // 9 (comparación) y 10 (decisión) no tienen ruta estática.
+    expect(items[8].textContent).toContain('Todavía sin pantalla')
+    expect(items[9].textContent).toContain('Todavía sin pantalla')
+    expect(items[8].querySelector('a')).toBeNull()
+  })
+
+  it('una ruta de contexto convierte esos pasos en navegables', () => {
+    const el = montar(
+      <RecorridoMapa
+        hrefs={{
+          comparacion: '/panel/inmobiliaria/propiedades/p-9/candidatos',
+          decision: '/panel/inmobiliaria/propiedades/p-9/candidatos',
+        }}
+      />,
+    )
+    const items = [...el.querySelectorAll('li')]
+    expect(items[8].querySelector('a')).not.toBeNull()
+    expect(items[8].textContent).not.toContain('Todavía sin pantalla')
+  })
+
+  it('los pasos del inquilino nunca dicen "sin pantalla" — no son suyos', () => {
+    const el = montar(<RecorridoMapa />)
+    const items = [...el.querySelectorAll('li')]
+    for (const i of [0, 1, 2, 3, 4, 5]) {
+      expect(items[i].textContent).not.toContain('Todavía sin pantalla')
+    }
+  })
+
+  it('no deja escapar claves i18n sin resolver', () => {
+    const el = montar(<RecorridoMapa pasoActual="alerta" />)
+    expect(el.textContent).not.toContain('inmobiliaria.recorrido')
+  })
+})

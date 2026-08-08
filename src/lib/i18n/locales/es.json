@@ -907,7 +907,8 @@
       "hintPipeline": "pipeline",
       "hintCatalogo": "catálogo",
       "hintRevision": "revisión",
-      "hintEgresos": "a propietarios"
+      "hintEgresos": "a propietarios",
+      "recorrido": "Recorrido"
     },
     "mobileNav": {
       "moreButton": "Más",
@@ -7995,6 +7996,90 @@
       "hintNavigate": "navegar",
       "hintOpen": "abrir",
       "hintClose": "cerrar"
+    },
+    "recorrido": {
+      "titulo": "Recorrido del inquilino",
+      "subtitulo": "De que entra al catálogo a que firma. Los seis primeros pasos los hace el inquilino; del séptimo en adelante, tú.",
+      "pasoDe": "Paso {{n}} de {{total}}",
+      "teToca": "Te toca",
+      "esperandoAlInquilino": "Lo hace el inquilino",
+      "sigue": "Sigue",
+      "verPaso": "Ver",
+      "sinPantalla": "Todavía sin pantalla",
+      "cambioDeManos": "Acá cambia de manos",
+      "actorInquilino": "Inquilino",
+      "actorInmobiliaria": "Tú",
+      "verdict": {
+        "evaluada": "Evaluada",
+        "revision": "Necesita revisión"
+      },
+      "bandeja": {
+        "titulo": "Postulaciones que te llegaron",
+        "desc": "Entran acá apenas el inquilino se postula, con la evaluación ya hecha. Las más viejas van primero.",
+        "vacioTitulo": "Todavía no te ha llegado ninguna postulación",
+        "vacioDesc": "Cuando alguien con asegurabilidad vigente se postule a una de tus propiedades, aparece acá con su nivel y su puntaje. Así es el recorrido completo:",
+        "errorTitulo": "No pudimos cargar las postulaciones",
+        "errorDesc": "Esto no quiere decir que no haya ninguna. Vuelve a intentar en un momento.",
+        "reintentar": "Reintentar",
+        "colRef": "Referencia",
+        "colNivel": "Nivel",
+        "colPuntaje": "Puntaje",
+        "colEstado": "Estado",
+        "colLlego": "Llegó",
+        "escalada": "Escalada",
+        "sinResolver": "{{n}} necesitan tu revisión",
+        "comoFunciona": "Cómo funciona el recorrido",
+        "niveles": "Niveles: A = mejor perfil · B = buen perfil · C = perfil ajustado · D = mayor riesgo",
+        "colCandidato": "Candidato",
+        "verCandidatos": "Ver candidatos",
+        "sinNombre": "Sin datos del candidato"
+      },
+      "pasos": {
+        "catalogo": {
+          "label": "Explora el catálogo",
+          "desc": "Busca entre las propiedades publicadas, sin cuenta ni compromiso."
+        },
+        "asegurabilidad": {
+          "label": "Pide su asegurabilidad",
+          "desc": "Se estudia una sola vez y sin propiedad: el resultado le sirve para todas."
+        },
+        "pago": {
+          "label": "Paga el estudio",
+          "desc": "El costo del estudio lo asume el inquilino."
+        },
+        "aseguradoras": {
+          "label": "Se consulta a las aseguradoras",
+          "desc": "Va a todas las habilitadas, no a una sola, y queda el mejor máximo afianzable."
+        },
+        "compatibles": {
+          "label": "Se habilitan las propiedades",
+          "desc": "Solo ve las que caben bajo su máximo afianzable."
+        },
+        "postulacion": {
+          "label": "Se postula",
+          "desc": "Puede postularse a varias propiedades a la vez."
+        },
+        "alerta": {
+          "label": "Te llega la postulación",
+          "desc": "Entra a tu bandeja con la evaluación ya hecha."
+        },
+        "evaluacion": {
+          "label": "Evalúas al candidato",
+          "desc": "Nivel A, B, C o D. Lo que el agente no resuelve solo pasa a revisión."
+        },
+        "comparacion": {
+          "label": "Comparas los candidatos",
+          "desc": "Uno al lado del otro, dentro de la misma propiedad."
+        },
+        "decision": {
+          "label": "Eliges a uno",
+          "desc": "A los demás hay que avisarles: se les prometió cuando se postularon."
+        },
+        "contrato": {
+          "label": "Preparas el contrato",
+          "desc": "Queda registrado cuál aseguradora aprobó y con qué número."
+        }
+      }
     }
   },
   "validation": {

@@ -906,7 +906,8 @@
       "hintPipeline": "pipeline",
       "hintCatalogo": "catalog",
       "hintRevision": "review",
-      "hintEgresos": "to owners"
+      "hintEgresos": "to owners",
+      "recorrido": "Journey"
     },
     "mobileNav": {
       "moreButton": "More",
@@ -7994,6 +7995,90 @@
       "hintNavigate": "navigate",
       "hintOpen": "open",
       "hintClose": "close"
+    },
+    "recorrido": {
+      "titulo": "Tenant journey",
+      "subtitulo": "From browsing the catalog to signing. The tenant handles the first six steps; from the seventh on, it's you.",
+      "pasoDe": "Step {{n}} of {{total}}",
+      "teToca": "Your turn",
+      "esperandoAlInquilino": "Tenant's turn",
+      "sigue": "Next",
+      "verPaso": "Open",
+      "sinPantalla": "No screen yet",
+      "cambioDeManos": "Hands over here",
+      "actorInquilino": "Tenant",
+      "actorInmobiliaria": "You",
+      "verdict": {
+        "evaluada": "Assessed",
+        "revision": "Needs review"
+      },
+      "bandeja": {
+        "titulo": "Applications that reached you",
+        "desc": "They land here the moment the tenant applies, with the assessment already done. Oldest first.",
+        "vacioTitulo": "No applications have reached you yet",
+        "vacioDesc": "When someone with valid insurability applies to one of your listings, they show up here with their level and score. Here's the full journey:",
+        "errorTitulo": "We couldn't load the applications",
+        "errorDesc": "This doesn't mean there aren't any. Try again in a moment.",
+        "reintentar": "Try again",
+        "colRef": "Reference",
+        "colNivel": "Level",
+        "colPuntaje": "Score",
+        "colEstado": "Status",
+        "colLlego": "Arrived",
+        "escalada": "Escalated",
+        "sinResolver": "{{n}} need your review",
+        "comoFunciona": "How the journey works",
+        "niveles": "Levels: A = strongest profile · B = good profile · C = tight profile · D = higher risk",
+        "colCandidato": "Candidate",
+        "verCandidatos": "View candidates",
+        "sinNombre": "No candidate details"
+      },
+      "pasos": {
+        "catalogo": {
+          "label": "Browses the catalog",
+          "desc": "Searches published listings — no account, no commitment."
+        },
+        "asegurabilidad": {
+          "label": "Requests insurability",
+          "desc": "Assessed once, with no property attached: the result covers every listing."
+        },
+        "pago": {
+          "label": "Pays for the assessment",
+          "desc": "The tenant covers the cost of the assessment."
+        },
+        "aseguradoras": {
+          "label": "Insurers are queried",
+          "desc": "Every enabled insurer is asked, not just one, and the best coverage cap wins."
+        },
+        "compatibles": {
+          "label": "Matching listings unlock",
+          "desc": "They only see what fits under their coverage cap."
+        },
+        "postulacion": {
+          "label": "Applies",
+          "desc": "They can apply to several listings at once."
+        },
+        "alerta": {
+          "label": "The application reaches you",
+          "desc": "It lands in your inbox with the assessment already done."
+        },
+        "evaluacion": {
+          "label": "You assess the candidate",
+          "desc": "Level A, B, C or D. Whatever the agent can't settle goes to review."
+        },
+        "comparacion": {
+          "label": "You compare candidates",
+          "desc": "Side by side, within the same listing."
+        },
+        "decision": {
+          "label": "You pick one",
+          "desc": "The rest must be told — they were promised an answer when they applied."
+        },
+        "contrato": {
+          "label": "You prepare the contract",
+          "desc": "Which insurer approved, and under which number, is recorded."
+        }
+      }
     }
   },
   "validation": {

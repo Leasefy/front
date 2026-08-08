@@ -34,6 +34,7 @@ import {
   Scales,
   ListChecks,
   Brain,
+  Path,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
@@ -202,6 +203,11 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       dataTourTarget: 'sidebar-cotizador',
       // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
+    // El recorrido del inquilino (paso 7): lo que llega por el embudo que
+    // inicia el propio inquilino, con su evaluación ya hecha. Va ANTES de
+    // Postulaciones porque es lo que la enciende, y es una lista distinta:
+    // Postulaciones lee `GET /landlord/candidates`, otro embudo.
+    { label: t('inmobiliaria.nav.recorrido'), href: '/panel/inmobiliaria/recorrido', scope: 'comercial', icon: Path, module: null, ai: true },
     { label: t('inmobiliaria.nav.postulaciones'), href: '/panel/inmobiliaria/postulaciones', scope: 'comercial', icon: ClipboardText, module: null, ai: true },
     {
       // F8: Matching complete workspace. Gated by the agent module 'matching'

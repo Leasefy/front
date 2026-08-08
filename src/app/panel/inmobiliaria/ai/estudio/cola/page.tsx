@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import { ColaHumana } from '@/components/inmobiliaria/ai/ColaHumana'
+import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo'
 import { useI18n } from '@/lib/i18n'
 
 function EstudioCola() {
@@ -49,6 +50,11 @@ function EstudioCola() {
           </p>
         </div>
       </header>
+
+      {/* Dónde cae esta pantalla dentro del recorrido del inquilino (paso 8).
+          Aditivo: no cambia nada de la cola, solo dice qué la precede y qué
+          sigue. Ver src/lib/recorrido/pasos.ts. */}
+      <RecorridoHilo paso="evaluacion" />
 
       {/* Cola humana (transversal component) — opens the case detail */}
       <ColaHumana

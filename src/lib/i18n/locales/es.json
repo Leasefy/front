@@ -8080,6 +8080,97 @@
           "desc": "Queda registrado cuál aseguradora aprobó y con qué número."
         }
       }
+    },
+    "nuevo": {
+      "boton": "Nuevo",
+      "aria": "Empezar algo nuevo",
+      "grupos": {
+        "captar": "Captar",
+        "evaluar": "Evaluar",
+        "cerrar": "Cerrar"
+      },
+      "intro": {
+        "queVasAHacer": "Qué vas a hacer",
+        "necesitasTitulo": "Antes de empezar",
+        "empezar": "Empezar",
+        "ahoraNo": "Ahora no",
+        "soloPrimeraVez": "Esto se muestra una sola vez.",
+        "nuevaPestana": "Se abre en otra pestaña"
+      },
+      "flujos": {
+        "consignacion": {
+          "label": "Nueva consignación",
+          "desc": "Suma un inmueble al portafolio con su propietario",
+          "intro": {
+            "titulo": "Vas a crear una consignación",
+            "resumen": "Es el acuerdo con el propietario para administrar su inmueble. Queda guardado en el portafolio y desde ahí puedes publicarlo.",
+            "paso1": "Eliges al propietario, o lo creas si todavía no está.",
+            "paso2": "Cargas los datos del inmueble y el canon.",
+            "paso3": "Defines la comisión y quién lo atiende.",
+            "necesitas": "Ten a mano el documento del propietario y la dirección exacta del inmueble."
+          }
+        },
+        "inmueble": {
+          "label": "Nuevo inmueble",
+          "desc": "Publica una propiedad en el catálogo",
+          "intro": {
+            "titulo": "Vas a publicar un inmueble",
+            "resumen": "Es la ficha que ve quien está buscando arriendo. Mientras no esté publicado, nadie puede postularse.",
+            "paso1": "Describes el inmueble: tipo, área, habitaciones.",
+            "paso2": "Pones dirección, canon y administración.",
+            "paso3": "Subes las fotos y lo publicas.",
+            "necesitas": "Ten listas las fotos. Una ficha sin fotos casi no recibe visitas."
+          }
+        },
+        "avaluo": {
+          "label": "Nuevo avalúo",
+          "desc": "Pide el avalúo comercial de un inmueble",
+          "intro": {
+            "titulo": "Vas a solicitar un avalúo",
+            "resumen": "Lo hace un perito y llega firmado. La solicitud vive fuera del panel, así que se abre en otra pestaña y no pierdes lo que tengas abierto acá.",
+            "paso1": "Cargas la dirección y los datos del inmueble.",
+            "paso2": "Indicas para qué lo necesitas.",
+            "paso3": "Lo sigues desde Avalúos hasta que llega firmado.",
+            "necesitas": "Ten a mano la matrícula inmobiliaria."
+          }
+        },
+        "evaluacion": {
+          "label": "Nueva evaluación de candidato",
+          "desc": "Mide el riesgo de un candidato: nivel A, B, C o D",
+          "intro": {
+            "titulo": "Vas a evaluar a un candidato",
+            "resumen": "Es el scoring propio, el que sirve para elegir entre varios candidatos de un mismo inmueble. No es lo mismo que la asegurabilidad: esa dice hasta cuánto lo respalda una aseguradora.",
+            "paso1": "Cargas los datos del candidato.",
+            "paso2": "Adjuntas sus documentos de ingresos.",
+            "paso3": "El agente devuelve nivel y puntaje, con la evidencia de cada uno.",
+            "necesitas": "Ten los documentos del candidato en PDF."
+          }
+        },
+        "asegurabilidad": {
+          "label": "Nueva asegurabilidad",
+          "desc": "Consulta hasta cuánto lo respaldan las aseguradoras",
+          "intro": {
+            "titulo": "Vas a consultar la asegurabilidad",
+            "resumen": "Se les pregunta a las aseguradoras habilitadas y queda registrado el máximo afianzable. Con ese número sabes qué inmuebles puedes ofrecerle.",
+            "paso1": "Identificas al candidato.",
+            "paso2": "Eliges a qué aseguradoras consultar.",
+            "paso3": "Comparas las respuestas y te quedas con la mejor.",
+            "necesitas": "Necesitas la cédula del candidato y su autorización para consultarlo."
+          }
+        },
+        "contrato": {
+          "label": "Nuevo contrato",
+          "desc": "Prepara el contrato de arrendamiento",
+          "intro": {
+            "titulo": "Vas a preparar un contrato",
+            "resumen": "Se arma sobre una postulación ya aprobada. Al terminar queda listo para enviar a firma.",
+            "paso1": "Eliges el tipo de contrato y la propiedad.",
+            "paso2": "Confirmas canon, fechas y garantía.",
+            "paso3": "Revisas las cláusulas y lo mandas a firmar.",
+            "necesitas": "Necesitas la postulación aprobada del inquilino."
+          }
+        }
+      }
     }
   },
   "validation": {

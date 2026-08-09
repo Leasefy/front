@@ -8079,6 +8079,97 @@
           "desc": "Which insurer approved, and under which number, is recorded."
         }
       }
+    },
+    "nuevo": {
+      "boton": "New",
+      "aria": "Start something new",
+      "grupos": {
+        "captar": "Acquire",
+        "evaluar": "Assess",
+        "cerrar": "Close"
+      },
+      "intro": {
+        "queVasAHacer": "What you'll do",
+        "necesitasTitulo": "Before you start",
+        "empezar": "Start",
+        "ahoraNo": "Not now",
+        "soloPrimeraVez": "You'll only see this once.",
+        "nuevaPestana": "Opens in a new tab"
+      },
+      "flujos": {
+        "consignacion": {
+          "label": "New listing agreement",
+          "desc": "Add a property to the portfolio with its owner",
+          "intro": {
+            "titulo": "You're creating a listing agreement",
+            "resumen": "It's the agreement with the owner to manage their property. It's saved to the portfolio, and you can publish it from there.",
+            "paso1": "Pick the owner, or create one if they aren't there yet.",
+            "paso2": "Enter the property details and the rent.",
+            "paso3": "Set the commission and who handles it.",
+            "necesitas": "Have the owner's ID and the property's exact address handy."
+          }
+        },
+        "inmueble": {
+          "label": "New property",
+          "desc": "Publish a listing to the catalog",
+          "intro": {
+            "titulo": "You're publishing a property",
+            "resumen": "This is the listing renters see. Until it's published, nobody can apply.",
+            "paso1": "Describe the property: type, area, bedrooms.",
+            "paso2": "Set the address, rent and building fees.",
+            "paso3": "Upload the photos and publish.",
+            "necesitas": "Have the photos ready. A listing without photos gets almost no views."
+          }
+        },
+        "avaluo": {
+          "label": "New appraisal",
+          "desc": "Request a property's market appraisal",
+          "intro": {
+            "titulo": "You're requesting an appraisal",
+            "resumen": "A licensed appraiser does it and it comes back signed. The request lives outside this panel, so it opens in a new tab and you won't lose anything you have open here.",
+            "paso1": "Enter the address and property details.",
+            "paso2": "Say what you need it for.",
+            "paso3": "Track it under Appraisals until the signed report arrives.",
+            "necesitas": "Have the property's registry number handy."
+          }
+        },
+        "evaluacion": {
+          "label": "New candidate assessment",
+          "desc": "Score a candidate's risk: level A, B, C or D",
+          "intro": {
+            "titulo": "You're assessing a candidate",
+            "resumen": "This is our own scoring — the one that helps you choose between several candidates for the same property. It is not insurability: that one tells you how much an insurer will back them for.",
+            "paso1": "Enter the candidate's details.",
+            "paso2": "Attach their income documents.",
+            "paso3": "The agent returns a level and a score, with the evidence behind each.",
+            "necesitas": "Have the candidate's documents as PDFs."
+          }
+        },
+        "asegurabilidad": {
+          "label": "New insurability check",
+          "desc": "Check how much insurers will back them for",
+          "intro": {
+            "titulo": "You're checking insurability",
+            "resumen": "Every enabled insurer is asked, and the resulting coverage cap is recorded. That number tells you which properties you can offer them.",
+            "paso1": "Identify the candidate.",
+            "paso2": "Choose which insurers to ask.",
+            "paso3": "Compare the answers and keep the best one.",
+            "necesitas": "You'll need the candidate's ID number and their consent to run the check."
+          }
+        },
+        "contrato": {
+          "label": "New contract",
+          "desc": "Prepare the lease agreement",
+          "intro": {
+            "titulo": "You're preparing a contract",
+            "resumen": "It's built on an already-approved application. When you're done it's ready to send for signature.",
+            "paso1": "Choose the contract type and the property.",
+            "paso2": "Confirm rent, dates and guarantee.",
+            "paso3": "Review the clauses and send it for signature.",
+            "necesitas": "You'll need the tenant's approved application."
+          }
+        }
+      }
     }
   },
   "validation": {

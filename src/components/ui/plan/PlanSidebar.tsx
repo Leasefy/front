@@ -143,6 +143,9 @@ export interface PlanSidebarProps {
   /** Opens the command palette when the cadence SidebarSearch is clicked. When
    *  set, SidebarSearch replaces the `aboveNav` slot. */
   onSearchClick?: () => void;
+  /** Slot right under the search box — the panel's starting point (the agency
+   *  passes its «Nuevo» launcher here). Hidden while collapsed, like search. */
+  belowSearch?: React.ReactNode;
   /** Placeholder for the cadence SidebarSearch field. */
   searchPlaceholder?: string;
   /** Workspace name shown in the static header brand row (defaults to `logo.title`). */
@@ -366,6 +369,7 @@ interface SidebarContentProps {
   showCollapseButton?: boolean;
   profileCompletion?: ProfileCompletionConfig;
   aboveNav?: React.ReactNode;
+  belowSearch?: React.ReactNode;
   loading?: boolean;
   onSearchClick?: () => void;
   searchPlaceholder?: string;
@@ -388,6 +392,7 @@ function SidebarContent({
   upgradeLabel,
   profileCompletion,
   aboveNav,
+  belowSearch,
   loading = false,
   onSearchClick,
   searchPlaceholder,
@@ -524,6 +529,10 @@ function SidebarContent({
           )}
         </div>
       )}
+
+      {/* Punto de partida: debajo del buscador y antes de la navegación, que es
+          donde se lo busca cuando todavía no se sabe a dónde ir. */}
+      {!isCollapsed && belowSearch && <div className="px-3 pb-2 pt-1">{belowSearch}</div>}
 
       {/* Compass */}
       <nav
@@ -702,6 +711,7 @@ export function PlanSidebar({
   upgradeLabel,
   profileCompletion,
   aboveNav,
+  belowSearch,
   loading = false,
   onSearchClick,
   searchPlaceholder,
@@ -746,6 +756,7 @@ export function PlanSidebar({
           upgradeLabel={upgradeLabel}
           profileCompletion={profileCompletion}
           aboveNav={aboveNav}
+          belowSearch={belowSearch}
           loading={loading}
           onSearchClick={onSearchClick}
           searchPlaceholder={searchPlaceholder}
@@ -777,6 +788,7 @@ export function PlanSidebar({
             showCollapseButton={false}
             profileCompletion={profileCompletion}
             aboveNav={aboveNav}
+            belowSearch={belowSearch}
             loading={loading}
             onSearchClick={
               onSearchClick

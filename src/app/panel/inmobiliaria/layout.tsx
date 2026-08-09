@@ -49,6 +49,7 @@ import { cn } from '@/lib/utils';
 import { MobileNavBar } from '@/components/layout/MobileNavBar';
 import { CommandPaletteProvider, useCommandPalette } from '@/lib/context/CommandPaletteContext';
 import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
+import { BotonNuevo } from '@/components/inmobiliaria/BotonNuevo';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
 import { useMySubscription } from '@/lib/hooks/useSubscription';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
@@ -341,6 +342,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         brandPrimaryHsl={brandPrimaryHsl}
         onSearchClick={openCommandPalette}
         searchPlaceholder="Buscar"
+        // Punto de partida del panel: con 156 rutas agrupadas por módulo de
+        // negocio, quien entra por primera vez no tiene dónde empezar.
+        belowSearch={<BotonNuevo />}
         showInvite
         onInvite={() => router.push('/panel/inmobiliaria/agentes')}
         showUpgrade={showUpgradeCta}

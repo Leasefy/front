@@ -7987,7 +7987,7 @@
       },
       "quickActions": {
         "title": "Acciones rápidas",
-        "nuevaPropiedad": "Crear propiedad",
+        "nuevaConsignacion": "Nueva consignación",
         "cobranza": "Ir a Cobranza",
         "cotizador": "Ir a Asegurabilidad",
         "reportes": "Ver reportes",
@@ -8109,18 +8109,6 @@
             "paso2": "Cargas los datos del inmueble y el canon.",
             "paso3": "Defines la comisión y quién lo atiende.",
             "necesitas": "Ten a mano el documento del propietario y la dirección exacta del inmueble."
-          }
-        },
-        "inmueble": {
-          "label": "Nuevo inmueble",
-          "desc": "Publica una propiedad en el catálogo",
-          "intro": {
-            "titulo": "Vas a publicar un inmueble",
-            "resumen": "Es la ficha que ve quien está buscando arriendo. Mientras no esté publicado, nadie puede postularse.",
-            "paso1": "Describes el inmueble: tipo, área, habitaciones.",
-            "paso2": "Pones dirección, canon y administración.",
-            "paso3": "Subes las fotos y lo publicas.",
-            "necesitas": "Ten listas las fotos. Una ficha sin fotos casi no recibe visitas."
           }
         },
         "avaluo": {

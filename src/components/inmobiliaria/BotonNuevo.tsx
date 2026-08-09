@@ -27,19 +27,20 @@
  *    tensión partiéndolo en dos segmentos — el izquierdo abre un flujo de un
  *    clic, el del chevron despliega el resto.
  *
- * 4. **El segmento izquierdo muestra lo último que esa persona abrió.** No una
- *    preferencia elegida por nosotros: todos los flujos ya tienen su propio
- *    botón donde viven, así que fijar uno duplicaba algo que está a un clic, y
- *    cuál es "el más usado" no lo sabíamos. Quien capta inmuebles todo el día
- *    ve consignación; quien evalúa candidatos ve evaluación. Ver `FLUJO_INICIAL`
- *    para el arranque.
+ * 4. **El segmento izquierdo es siempre la consignación** (`FLUJO_PRINCIPAL`).
+ *    Hubo una versión que mostraba el último flujo abierto, y se cambió: un
+ *    botón que dice algo distinto cada vez que se mira es un historial, no un
+ *    punto de partida, y este lanzador está para quien todavía no sabe a dónde
+ *    ir. La consignación es lo único que se empieza en frío y la puerta de
+ *    entrada de todo lo demás: sin inmueble consignado no hay postulación, ni
+ *    evaluación, ni contrato.
  *
  * Todo el vestido sale del DS: `SplitButton` y `Button` de `@leasefy/cadence`,
  * y el Dialog y el DropdownMenu por sus adaptadores de `@/components/ui`, que
  * envuelven ese mismo DS con el contrato de layout de este panel.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, ArrowSquareOut, Check } from '@phosphor-icons/react'
 // SplitButton del DS: separa la acción principal del menú en dos segmentos,
@@ -73,17 +74,14 @@ import { AVALUO_WIZARD_URL } from '@/lib/avaluo/wizard-url'
 import { SelectorPostulacion } from '@/components/inmobiliaria/SelectorPostulacion'
 import {
   FLUJOS,
-  FLUJO_INICIAL,
+  FLUJO_PRINCIPAL,
   GRUPOS,
   flujoDescKey,
   flujoIntro,
   flujoLabelKey,
   grupoLabelKey,
   marcarFlujoVisto,
-  recordarUltimoFlujo,
-  ultimoFlujoUsado,
   yaVioElFlujo,
-  type FlujoKey,
   type FlujoNuevo,
 } from '@/lib/inmobiliaria/flujos'
 
@@ -98,15 +96,7 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
   const router = useRouter()
   const { canAccess } = usePermissionsContext()
   const [porExplicar, setPorExplicar] = useState<FlujoNuevo | null>(null)
-  /**
-   * El último flujo abierto, para el segmento principal. Arranca en `null` y se
-   * lee después del montaje a propósito: leer `localStorage` durante el render
-   * hace que el servidor y el cliente pinten etiquetas distintas (hydration
-   * mismatch). El primer pintado usa `FLUJO_INICIAL`, igual para todos.
-   */
-  const [ultimo, setUltimo] = useState<FlujoKey | null>(null)
   const [selectorAbierto, setSelectorAbierto] = useState(false)
-  useEffect(() => setUltimo(ultimoFlujoUsado()), [])
 
   /**
    * Se ofrece solo lo que la persona puede abrir de verdad, con el mismo gate
@@ -125,11 +115,6 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
 
   const abrir = useCallback(
     (flujo: FlujoNuevo) => {
-      // Se recuerda para que el segmento principal muestre lo último que esta
-      // persona abrió, en vez de una preferencia adivinada por nosotros.
-      recordarUltimoFlujo(flujo.key)
-      setUltimo(flujo.key)
-
       // Algunos flujos no arrancan en frío: antes hay que elegir algo. Un
       // contrato se arma sobre una postulación aprobada, así que se pregunta
       // cuál en vez de navegar a una pantalla que pediría el parámetro.
@@ -171,13 +156,9 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
   // Sin nada que ofrecer no se muestra un botón que abre un menú vacío.
   if (disponibles.length === 0) return null
 
-  // Lo último que abrió esta persona; si nunca abrió nada, el de arranque. El
-  // último `?? disponibles[0]` cubre el caso de no tener permiso sobre ninguno
-  // de los dos: el segmento principal nunca queda muerto.
-  const principal =
-    (ultimo && disponibles.find((f) => f.key === ultimo)) ??
-    disponibles.find((f) => f.key === FLUJO_INICIAL) ??
-    disponibles[0]
+  // El `?? disponibles[0]` cubre a quien no tiene permiso sobre el portafolio:
+  // el segmento principal nunca queda muerto.
+  const principal = disponibles.find((f) => f.key === FLUJO_PRINCIPAL) ?? disponibles[0]
 
   return (
     <>

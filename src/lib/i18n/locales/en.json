@@ -7986,7 +7986,7 @@
       },
       "quickActions": {
         "title": "Quick actions",
-        "nuevaPropiedad": "Create property",
+        "nuevaConsignacion": "New listing agreement",
         "cobranza": "Go to Collections",
         "cotizador": "Go to Insurability",
         "reportes": "View reports",
@@ -8108,18 +8108,6 @@
             "paso2": "Enter the property details and the rent.",
             "paso3": "Set the commission and who handles it.",
             "necesitas": "Have the owner's ID and the property's exact address handy."
-          }
-        },
-        "inmueble": {
-          "label": "New property",
-          "desc": "Publish a listing to the catalog",
-          "intro": {
-            "titulo": "You're publishing a property",
-            "resumen": "This is the listing renters see. Until it's published, nobody can apply.",
-            "paso1": "Describe the property: type, area, bedrooms.",
-            "paso2": "Set the address, rent and building fees.",
-            "paso3": "Upload the photos and publish.",
-            "necesitas": "Have the photos ready. A listing without photos gets almost no views."
           }
         },
         "avaluo": {

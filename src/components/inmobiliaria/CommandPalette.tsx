@@ -140,10 +140,14 @@ interface QuickAction {
 
 const QUICK_ACTIONS: QuickAction[] = [
   {
-    id: 'qa-nueva-propiedad',
-    labelKey: 'inmobiliaria.commandPalette.quickActions.nuevaPropiedad',
+    // Consignación, no "Crear propiedad": una inmobiliaria nunca administra un
+    // inmueble sin propietario, así que para ella entrar uno es siempre una
+    // consignación. Esto apuntaba a `/publicar` —el formulario del propietario,
+    // que no pide dueño, ni comisión, ni inventario— y dejaba una ficha a medias.
+    id: 'qa-nueva-consignacion',
+    labelKey: 'inmobiliaria.commandPalette.quickActions.nuevaConsignacion',
     icon: Plus,
-    href: '/publicar',
+    href: '/panel/inmobiliaria/portafolio/nuevo',
     permission: { module: 'portafolio', action: 'create' },
   },
   {

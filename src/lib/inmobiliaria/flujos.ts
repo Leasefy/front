@@ -19,7 +19,6 @@
 
 import {
   Buildings,
-  House,
   Scales,
   ShieldCheck,
   FileText,
@@ -29,7 +28,6 @@ import {
 
 export type FlujoKey =
   | 'consignacion'
-  | 'inmueble'
   | 'avaluo'
   | 'evaluacion'
   | 'asegurabilidad'
@@ -72,18 +70,20 @@ type Definicion = Omit<FlujoNuevo, never>
 
 export const FLUJOS: readonly FlujoNuevo[] = [
   // ── Captar: traer inmueble y propietario ──────────────────────────────
+  //
+  // Acá hubo un rato «Nuevo inmueble» (`/propiedades/nueva`) al lado de la
+  // consignación, y se sacó por una regla de negocio: **una inmobiliaria nunca
+  // administra un inmueble que no tiene propietario.** Ese formulario no pide
+  // propietario —ni comisión, ni agente, ni inventario— y publica igual al
+  // catálogo, así que desde este panel solo servía para crear una ficha a
+  // medias. Es un formulario del panel del propietario, que es dueño de lo
+  // suyo y no tiene a quién declarar. Para una agencia, entrar un inmueble es
+  // siempre una consignación.
   {
     key: 'consignacion',
     grupo: 'captar',
     icon: Buildings,
     href: '/panel/inmobiliaria/portafolio/nuevo',
-    module: 'portafolio',
-  },
-  {
-    key: 'inmueble',
-    grupo: 'captar',
-    icon: House,
-    href: '/panel/inmobiliaria/propiedades/nueva',
     module: 'portafolio',
   },
   {
@@ -127,52 +127,23 @@ export const FLUJOS: readonly FlujoNuevo[] = [
 export const GRUPOS: readonly GrupoFlujo[] = ['captar', 'evaluar', 'cerrar']
 
 /**
- * Con qué arranca el segmento principal del `SplitButton` **la primera vez**,
- * antes de que la persona haya usado ninguno.
+ * Qué muestra el segmento principal del `SplitButton`. Es fijo, y es la
+ * consignación.
  *
- * De ahí en adelante manda `ultimoFlujoUsado()`: el botón muestra lo último que
- * esa persona abrió. Se hizo así porque elegir un principal fijo era una
- * apuesta que no teníamos cómo ganar:
+ * Hubo una versión que mostraba el último flujo que esa persona había abierto.
+ * Se cambió: un botón que dice algo distinto cada vez que se mira deja de ser
+ * un punto de partida y pasa a ser un historial, y el lanzador existe
+ * justamente para quien todavía no sabe a dónde ir. Además el que ganaba en la
+ * práctica era el último abierto por casualidad —quedó mostrando "Nuevo
+ * contrato"—, que es el flujo que MENOS se puede empezar en frío: necesita una
+ * postulación aprobada.
  *
- *  · **Todos los flujos ya tienen su botón donde viven** — `/portafolio` tiene
- *    "Nueva consignación", `/propiedades` "Nueva propiedad", `/contratos`
- *    "Nuevo contrato". Un principal fijo duplica algo que está a un clic.
- *  · **Por frecuencia gana evaluación, no consignación**: una consignación se
- *    firma una vez por inmueble y dura un año; los candidatos se evalúan cada
- *    vez que el inmueble rota.
- *  · **El costo del error no es simétrico**: el wizard de consignación tiene
- *    seis pasos, así que un clic equivocado en la barra lateral se paga caro.
- *
- * La consignación queda de arranque porque es lo único que se hace **en frío**,
- * sin venir de ningún contexto previo: llama un propietario y se abre de cero.
- * Las evaluaciones casi siempre salen de una postulación que ya se está viendo.
+ * La consignación es lo contrario: es lo único que arranca sin venir de ningún
+ * contexto previo —llama un propietario y se abre de cero— y es la puerta de
+ * entrada de todo lo demás, porque sin inmueble consignado no hay postulación,
+ * ni evaluación, ni contrato.
  */
-export const FLUJO_INICIAL: FlujoKey = 'consignacion'
-
-/** Dónde se recuerda el último flujo abierto. Mismo prefijo legacy. */
-export const CLAVE_ULTIMO = 'arriendo-facil-flujo-ultimo'
-
-/** El último flujo que esta persona abrió, si sigue existiendo. */
-export function ultimoFlujoUsado(): FlujoKey | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const v = window.localStorage.getItem(CLAVE_ULTIMO)
-    // Se valida contra FLUJOS: una clave vieja de un flujo que ya no existe
-    // dejaría el botón principal sin destino.
-    return FLUJOS.some((f) => f.key === v) ? (v as FlujoKey) : null
-  } catch {
-    return null
-  }
-}
-
-export function recordarUltimoFlujo(k: FlujoKey): void {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(CLAVE_ULTIMO, k)
-  } catch {
-    // Que no se pueda recordar no debe impedir abrir el flujo.
-  }
-}
+export const FLUJO_PRINCIPAL: FlujoKey = 'consignacion'
 
 export const flujoLabelKey = (k: FlujoKey) => `${I18N}.${k}.label`
 export const flujoDescKey = (k: FlujoKey) => `${I18N}.${k}.desc`

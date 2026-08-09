@@ -395,9 +395,13 @@ function PropiedadesContent() {
             <Sparkle className="w-4 h-4 text-primary" weight="fill" />
             Capturar con IA
           </Button>
-          <Button hideArrow onClick={() => router.push('/publicar')}>
+          {/* Consignación, no "Nueva propiedad": una inmobiliaria nunca
+              administra un inmueble sin propietario. Esto mandaba a `/publicar`,
+              el formulario del propietario —que es dueño de lo suyo y no tiene a
+              quién declarar—, y dejaba el inmueble sin dueño ni comisión. */}
+          <Button hideArrow onClick={() => router.push('/panel/inmobiliaria/portafolio/nuevo')}>
             <Plus className="w-4 h-4" />
-            Nueva propiedad
+            Nueva consignación
           </Button>
         </div>
       </div>

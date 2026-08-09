@@ -12,9 +12,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import es from '../i18n/locales/es.json'
 import en from '../i18n/locales/en.json'
 import {
-  CLAVE_ULTIMO,
   FLUJOS,
-  FLUJO_INICIAL,
+  FLUJO_PRINCIPAL,
   GRUPOS,
   claveVisto,
   flujoDescKey,
@@ -22,8 +21,6 @@ import {
   flujoLabelKey,
   grupoLabelKey,
   marcarFlujoVisto,
-  recordarUltimoFlujo,
-  ultimoFlujoUsado,
   yaVioElFlujo,
 } from './flujos'
 
@@ -58,14 +55,35 @@ describe('FLUJOS', () => {
     }
   })
 
-  it('el flujo de arranque existe y es interno', () => {
-    // Va en el segmento izquierdo del SplitButton la primera vez: se abre de un
-    // clic. Si apuntara a una clave inexistente el botón quedaría sin acción, y
-    // si fuera el externo abriría una pestaña al tocar el botón del sidebar.
-    const inicial = FLUJOS.find((f) => f.key === FLUJO_INICIAL)
-    expect(inicial).toBeDefined()
-    expect(inicial?.externo).toBeFalsy()
-    expect(inicial?.href).toBeTruthy()
+  it('el flujo principal existe, es interno y arranca en frío', () => {
+    // Va en el segmento izquierdo del SplitButton: se abre de un clic. Si
+    // apuntara a una clave inexistente el botón quedaría sin acción; si fuera
+    // el externo abriría una pestaña al tocar el botón del sidebar; y si
+    // tuviera selector, el clic principal abriría un diálogo a preguntar en vez
+    // de empezar algo.
+    const principal = FLUJOS.find((f) => f.key === FLUJO_PRINCIPAL)
+    expect(principal).toBeDefined()
+    expect(principal?.externo).toBeFalsy()
+    expect(principal?.selector).toBeUndefined()
+    expect(principal?.href).toBeTruthy()
+  })
+
+  it('el principal es la consignación', () => {
+    // No es una preferencia estética: es lo único que se empieza sin venir de
+    // ningún contexto previo, y la puerta de entrada del resto —sin inmueble
+    // consignado no hay postulación, ni evaluación, ni contrato—. Estuvo un
+    // rato mostrando el último flujo abierto y terminó ofreciendo "Nuevo
+    // contrato", que es justo el que NO arranca en frío.
+    expect(FLUJO_PRINCIPAL).toBe('consignacion')
+  })
+
+  it('nadie entra un inmueble sin propietario', () => {
+    // Regla de negocio: una inmobiliaria nunca administra un inmueble que no
+    // tiene propietario, así que para ella entrar uno es SIEMPRE una
+    // consignación. `/propiedades/nueva` no pide propietario —ni comisión, ni
+    // agente, ni inventario— y publica igual al catálogo: es el formulario del
+    // panel del propietario, y desde acá solo crea una ficha a medias.
+    expect(FLUJOS.map((f) => f.href)).not.toContain('/panel/inmobiliaria/propiedades/nueva')
   })
 
   it('un flujo sin href resuelve su destino de otra forma, nunca queda mudo', () => {
@@ -158,7 +176,7 @@ describe('el copy de cada flujo existe en los dos idiomas', () => {
     return typeof v === 'string' && v.length > 0
   }
 
-  it('los 6 flujos aportan 8 claves cada uno', () => {
+  it('cada flujo aporta 8 claves', () => {
     expect(claves.length).toBe(GRUPOS.length + FLUJOS.length * 8 + 8)
   })
 
@@ -196,7 +214,7 @@ describe('recordar que ya se explicó', () => {
 
   it('marcar uno no marca los demás', () => {
     marcarFlujoVisto('asegurabilidad')
-    expect(yaVioElFlujo('inmueble')).toBe(false)
+    expect(yaVioElFlujo('consignacion')).toBe(false)
   })
 
   it('si el navegador no deja leer, se explica de más y no se rompe', () => {
@@ -213,43 +231,5 @@ describe('recordar que ya se explicó', () => {
       throw new Error('denegado')
     })
     expect(() => marcarFlujoVisto('asegurabilidad')).not.toThrow()
-  })
-})
-
-describe('el segmento principal recuerda el último flujo', () => {
-  beforeEach(() => window.localStorage.clear())
-  afterEach(() => {
-    vi.restoreAllMocks()
-    window.localStorage.clear()
-  })
-
-  it('sin historia devuelve null y el botón cae al de arranque', () => {
-    expect(ultimoFlujoUsado()).toBeNull()
-  })
-
-  it('devuelve lo último abierto', () => {
-    recordarUltimoFlujo('asegurabilidad')
-    expect(ultimoFlujoUsado()).toBe('asegurabilidad')
-    recordarUltimoFlujo('inmueble')
-    expect(ultimoFlujoUsado()).toBe('inmueble')
-  })
-
-  it('ignora una clave de un flujo que ya no existe', () => {
-    // Si se borra un flujo, el valor guardado queda huérfano y el segmento
-    // principal se quedaría sin destino.
-    window.localStorage.setItem(CLAVE_ULTIMO, 'flujo-que-se-borro')
-    expect(ultimoFlujoUsado()).toBeNull()
-  })
-
-  it('usa el prefijo legacy, como el resto', () => {
-    expect(CLAVE_ULTIMO).toMatch(/^arriendo-facil-/)
-  })
-
-  it('si el navegador no deja leer, cae al de arranque sin romperse', () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-      throw new Error('denegado')
-    })
-    expect(() => ultimoFlujoUsado()).not.toThrow()
-    expect(ultimoFlujoUsado()).toBeNull()
   })
 })

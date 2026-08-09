@@ -8090,6 +8090,7 @@
         "evaluar": "Evaluar",
         "cerrar": "Cerrar"
       },
+      "sinResolver": "No pudimos verificar tu acceso. Toca para reintentar.",
       "intro": {
         "queVasAHacer": "Qué vas a hacer",
         "necesitasTitulo": "Antes de empezar",

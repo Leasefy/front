@@ -76,12 +76,14 @@ import {
   FLUJOS,
   FLUJO_PRINCIPAL,
   GRUPOS,
+  estadoDelFlujo,
   flujoDescKey,
   flujoIntro,
   flujoLabelKey,
   grupoLabelKey,
   marcarFlujoVisto,
   yaVioElFlujo,
+  type EstadoFlujo,
   type FlujoNuevo,
 } from '@/lib/inmobiliaria/flujos'
 
@@ -94,23 +96,42 @@ export interface BotonNuevoProps {
 export function BotonNuevo({ className }: BotonNuevoProps) {
   const { t } = useI18n()
   const router = useRouter()
-  const { canAccess } = usePermissionsContext()
+  const { canAccess, agentPermsResolved, refetch } = usePermissionsContext()
   const [porExplicar, setPorExplicar] = useState<FlujoNuevo | null>(null)
   const [selectorAbierto, setSelectorAbierto] = useState(false)
 
   /**
-   * Se ofrece solo lo que la persona puede abrir de verdad, con el mismo gate
-   * que usa el sidebar: un menú que lleva a un "no tienes permiso" es peor que
-   * no tener el menú. El avalúo además desaparece si el micro no está
-   * configurado — su URL puede venir vacía.
+   * Qué se ofrece, y cómo. Se esconde lo que la persona no puede abrir —un menú
+   * que lleva a un "no tienes permiso" es peor que no tener el menú—, pero un
+   * flujo cuyo permiso NO SE PUDO RESOLVER se muestra deshabilitado en vez de
+   * desaparecer: es la diferencia entre "no tienes esto" y "no pudimos
+   * averiguarlo", y borrar sin decir nada se lee como lo primero.
+   *
+   * Esto no es hipotético: con el agente devolviendo 401, `cotizador` falla
+   * cerrado y **la asegurabilidad —el primer paso del recorrido— se caía del
+   * menú**, dejando un lanzador que empezaba por el final.
+   *
+   * El avalúo además desaparece si el micro no está configurado: ahí no es que
+   * no se sepa, es que no hay a dónde ir.
    */
-  const disponibles = useMemo(
+  const ofrecidos = useMemo<{ flujo: FlujoNuevo; estado: EstadoFlujo }[]>(
     () =>
-      FLUJOS.filter((f) => {
-        if (f.key === 'avaluo' && !AVALUO_WIZARD_URL) return false
-        return f.module === null || canAccess(f.module, 'view')
-      }),
-    [canAccess],
+      FLUJOS.filter((f) => !(f.key === 'avaluo' && !AVALUO_WIZARD_URL))
+        .map((flujo) => ({
+          flujo,
+          estado: estadoDelFlujo(flujo, {
+            canAccess,
+            permisosDelAgenteResueltos: agentPermsResolved,
+          }),
+        }))
+        .filter(({ estado }) => estado !== 'oculto'),
+    [canAccess, agentPermsResolved],
+  )
+
+  /** Los que se pueden abrir de un clic — de acá sale el segmento principal. */
+  const disponibles = useMemo(
+    () => ofrecidos.filter((o) => o.estado === 'disponible').map((o) => o.flujo),
+    [ofrecidos],
   )
 
   const abrir = useCallback(
@@ -178,36 +199,64 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
         menuContent={
           <>
             {GRUPOS.map((grupo, i) => {
-              const delGrupo = disponibles.filter((f) => f.grupo === grupo)
+              const delGrupo = ofrecidos.filter((o) => o.flujo.grupo === grupo)
               if (delGrupo.length === 0) return null
               return (
                 <div key={grupo}>
                   {i > 0 && <DropdownListSeparator />}
                   <DropdownListLabel>{t(grupoLabelKey(grupo))}</DropdownListLabel>
-                  {delGrupo.map((flujo) => {
+                  {delGrupo.map(({ flujo, estado }) => {
                     const Icono = flujo.icon
+                    const sinResolver = estado === 'sinResolver'
                     return (
                       <DropdownListItem
                         key={flujo.key}
-                        onSelect={() => elegir(flujo)}
+                        // Sin resolver no se abre: reintenta averiguarlo. Se
+                        // deja el ítem seleccionable para poder decir por qué —
+                        // un `disabled` puro no se enfoca ni se lee en voz alta.
+                        onSelect={(e) => {
+                          if (!sinResolver) {
+                            elegir(flujo)
+                            return
+                          }
+                          e.preventDefault()
+                          void refetch()
+                        }}
                         // items-start: el ítem del DS centra verticalmente, y
                         // con una descripción de dos líneas el icono queda
                         // flotando lejos del título al que pertenece.
                         className="items-start gap-2.5 py-2"
                       >
-                        <Icono className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
+                        <Icono
+                          className={cn(
+                            'mt-0.5 h-4 w-4 shrink-0',
+                            sinResolver ? 'text-fg-subtle' : 'text-fg-muted',
+                          )}
+                        />
                         <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-1 font-medium text-fg">
+                          <span
+                            className={cn(
+                              'flex items-center gap-1 font-medium',
+                              sinResolver ? 'text-fg-muted' : 'text-fg',
+                            )}
+                          >
                             {t(flujoLabelKey(flujo.key))}
-                            {flujo.externo && (
+                            {flujo.externo && !sinResolver && (
                               <ArrowSquareOut
                                 className="h-3 w-3 text-fg-subtle"
                                 aria-label={t(`${NS}.intro.nuevaPestana`)}
                               />
                             )}
                           </span>
-                          <span className="block text-xs leading-snug text-fg-muted">
-                            {t(flujoDescKey(flujo.key))}
+                          <span
+                            className={cn(
+                              'block text-xs leading-snug',
+                              sinResolver ? 'text-fg-subtle' : 'text-fg-muted',
+                            )}
+                          >
+                            {/* Se dice qué pasó y qué hacer. Callar acá es lo
+                                que hacía desaparecer el paso sin explicación. */}
+                            {sinResolver ? t(`${NS}.sinResolver`) : t(flujoDescKey(flujo.key))}
                           </span>
                         </span>
                       </DropdownListItem>

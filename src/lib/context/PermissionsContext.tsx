@@ -25,6 +25,18 @@ interface PermissionsContextValue {
   isLoading: boolean;
   error: string | null;
   canAccess: (module: string, action: string) => boolean;
+  /**
+   * `true` cuando el servicio del agente contestó. Existe porque `canAccess`
+   * devuelve `false` por DOS razones que no son la misma: "no tiene permiso" y
+   * "no se pudo saber". Los módulos del agente que fallan cerrados
+   * (`cobranza`, `cotizador`) desaparecen de la UI ante cualquier caída o 401,
+   * y desaparecer sin decir nada se lee como "esto no existe".
+   *
+   * NO afloja ningún gate: `canAccess` sigue siendo la única autoridad para
+   * conceder. Esto solo deja distinguir el negado del no-resuelto, para poder
+   * decir "no pudimos verificar tu acceso" en vez de borrar la opción.
+   */
+  agentPermsResolved: boolean;
   isAdmin: boolean;
   agencyRole: string | null;
   refetch: () => Promise<void>;
@@ -146,11 +158,13 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       isLoading,
       error,
       canAccess,
+      // Mientras carga no está resuelto: `isLoading` mantiene todo cerrado.
+      agentPermsResolved: !isLoading && agentPerms !== null,
       isAdmin: permissions?.isAdmin ?? false,
       agencyRole: permissions?.role ?? null,
       refetch: fetchPermissions,
     }),
-    [permissions, isLoading, error, canAccess, fetchPermissions],
+    [permissions, agentPerms, isLoading, error, canAccess, fetchPermissions],
   );
 
   return (

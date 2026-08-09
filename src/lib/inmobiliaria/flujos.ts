@@ -19,6 +19,8 @@
 
 import { Buildings, Scales, ShieldCheck, FilePlus, type Icon } from '@phosphor-icons/react'
 
+import { isAgentModule } from '@/lib/auth/agent-module-access'
+
 export type FlujoKey = 'consignacion' | 'avaluo' | 'asegurabilidad' | 'contrato'
 
 /** Los momentos del negocio, en el orden en que ocurren. */
@@ -136,6 +138,44 @@ export const GRUPOS: readonly GrupoFlujo[] = ['captar', 'evaluar', 'cerrar']
  * ni evaluación, ni contrato.
  */
 export const FLUJO_PRINCIPAL: FlujoKey = 'consignacion'
+
+/**
+ * En qué estado se ofrece un flujo.
+ *
+ * `sinResolver` es el que importa: **no se pudo saber** si esta persona tiene
+ * el módulo. `canAccess` devuelve `false` para eso igual que para un "no
+ * tienes permiso", y los módulos del agente que fallan cerrados (`cotizador`,
+ * `cobranza`) caen ahí ante cualquier 401 o caída del servicio.
+ *
+ * Tratar los dos casos igual **borraba del menú el primer paso del recorrido**
+ * —la asegurabilidad— sin decir una palabra, y un paso que desaparece se lee
+ * como un paso que no existe. Vale la misma regla que en las pantallas: ante
+ * un error se dice "no pudimos", nunca "no hay".
+ */
+export type EstadoFlujo = 'disponible' | 'sinResolver' | 'oculto'
+
+/**
+ * `permisosDelAgenteResueltos` viene de `PermissionsContext`: `true` cuando el
+ * servicio del agente contestó.
+ *
+ * Ojo con lo que esto NO hace: no concede nada. Un flujo `sinResolver` se
+ * muestra deshabilitado; la única forma de abrirlo es que `canAccess` diga que
+ * sí. La pantalla destino además tiene su propio guard.
+ */
+export function estadoDelFlujo(
+  flujo: FlujoNuevo,
+  ctx: {
+    canAccess: (module: string, action: string) => boolean
+    permisosDelAgenteResueltos: boolean
+  },
+): EstadoFlujo {
+  if (flujo.module === null) return 'disponible'
+  if (ctx.canAccess(flujo.module, 'view')) return 'disponible'
+  // Solo los módulos del agente pueden quedar sin resolver: los del monolito
+  // se niegan con un payload que sí llegó.
+  if (isAgentModule(flujo.module) && !ctx.permisosDelAgenteResueltos) return 'sinResolver'
+  return 'oculto'
+}
 
 export const flujoLabelKey = (k: FlujoKey) => `${I18N}.${k}.label`
 export const flujoDescKey = (k: FlujoKey) => `${I18N}.${k}.desc`

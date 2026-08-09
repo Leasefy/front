@@ -8089,6 +8089,7 @@
         "evaluar": "Assess",
         "cerrar": "Close"
       },
+      "sinResolver": "We couldn't verify your access. Tap to retry.",
       "intro": {
         "queVasAHacer": "What you'll do",
         "necesitasTitulo": "Before you start",

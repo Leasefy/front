@@ -16,6 +16,7 @@ import {
   FLUJO_PRINCIPAL,
   GRUPOS,
   claveVisto,
+  estadoDelFlujo,
   flujoDescKey,
   flujoIntro,
   flujoLabelKey,
@@ -142,6 +143,65 @@ describe('FLUJOS', () => {
   })
 })
 
+describe('estadoDelFlujo — negado y no-resuelto no son lo mismo', () => {
+  const flujoDe = (key: string) => FLUJOS.find((f) => f.key === key)!
+  const asegurabilidad = flujoDe('asegurabilidad') // module: 'cotizador' (agente)
+  const consignacion = flujoDe('consignacion') // module: 'portafolio' (monolito)
+
+  const nadie = () => false
+  const todos = () => true
+
+  it('con permiso, disponible', () => {
+    expect(
+      estadoDelFlujo(asegurabilidad, { canAccess: todos, permisosDelAgenteResueltos: true }),
+    ).toBe('disponible')
+  })
+
+  it('el agente contestó y NO lo tiene → se esconde', () => {
+    // Acá sí sabemos: no está en el plan. Ofrecerlo sería llevar a un muro.
+    expect(
+      estadoDelFlujo(asegurabilidad, { canAccess: nadie, permisosDelAgenteResueltos: true }),
+    ).toBe('oculto')
+  })
+
+  it('el agente NO contestó → se muestra sin resolver, no se borra', () => {
+    // El defecto que esto arregla: con el agente en 401, `cotizador` falla
+    // cerrado y la asegurabilidad —el PRIMER paso del recorrido— desaparecía
+    // del lanzador sin una palabra. Un paso que desaparece se lee como un paso
+    // que no existe.
+    expect(
+      estadoDelFlujo(asegurabilidad, { canAccess: nadie, permisosDelAgenteResueltos: false }),
+    ).toBe('sinResolver')
+  })
+
+  it('no resolver el agente no destapa los módulos del monolito', () => {
+    // El monolito niega con un payload que sí llegó: ahí un false es un no.
+    expect(
+      estadoDelFlujo(consignacion, { canAccess: nadie, permisosDelAgenteResueltos: false }),
+    ).toBe('oculto')
+  })
+
+  it('un flujo sin compuerta está siempre disponible', () => {
+    const libre = { ...asegurabilidad, module: null }
+    expect(estadoDelFlujo(libre, { canAccess: nadie, permisosDelAgenteResueltos: false })).toBe(
+      'disponible',
+    )
+  })
+
+  it('sin resolver NO concede: nunca devuelve disponible sin canAccess', () => {
+    // La garantía que hace que esto no sea un agujero. Lo único que cambia es
+    // qué se le dice a la persona; abrir sigue requiriendo permiso.
+    for (const flujo of FLUJOS) {
+      if (flujo.module === null) continue
+      for (const resuelto of [true, false]) {
+        expect(
+          estadoDelFlujo(flujo, { canAccess: nadie, permisosDelAgenteResueltos: resuelto }),
+        ).not.toBe('disponible')
+      }
+    }
+  })
+})
+
 describe('flujoIntro', () => {
   it('arma tres pasos y las claves del bloque', () => {
     const c = flujoIntro('consignacion')
@@ -177,6 +237,7 @@ describe('el copy de cada flujo existe en los dos idiomas', () => {
       'intro.ahoraNo',
       'intro.soloPrimeraVez',
       'intro.nuevaPestana',
+      'sinResolver',
     ].map((c) => `inmobiliaria.nuevo.${c}`),
   ]
 
@@ -188,7 +249,7 @@ describe('el copy de cada flujo existe en los dos idiomas', () => {
   }
 
   it('cada flujo aporta 8 claves', () => {
-    expect(claves.length).toBe(GRUPOS.length + FLUJOS.length * 8 + 8)
+    expect(claves.length).toBe(GRUPOS.length + FLUJOS.length * 8 + 9)
   })
 
   it('todas están en español', () => {

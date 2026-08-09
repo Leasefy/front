@@ -1019,15 +1019,28 @@
     animation: fade-in 0.4s ease-out forwards;
   }
 
-  /* Scale in animation for badges */
+  /* Scale in animation for badges.
+   *
+   * ⚠️ Anima `scale`, NO `transform` — y no es un detalle de estilo.
+   *
+   * Se escribió para badges, pero `animate-scale-in` es la animación que el DS
+   * le pone a TODOS sus diálogos, y esos se centran con
+   * `left-1/2 -translate-x-1/2`. Con `transform: scale(...)` + `forwards`, la
+   * animación pisa el translate y lo deja pisado para siempre: el diálogo queda
+   * con su borde izquierdo en la mitad de la pantalla. Medido antes del
+   * arreglo: viewport 1600, diálogo de 1024 → left 800, right 1824 (se salía).
+   *
+   * `scale` es una propiedad independiente: compone con `transform` en vez de
+   * reemplazarlo. Se ve igual y el centrado sobrevive.
+   */
   @keyframes scale-in {
     from {
       opacity: 0;
-      transform: scale(0.8);
+      scale: 0.8;
     }
     to {
       opacity: 1;
-      transform: scale(1);
+      scale: 1;
     }
   }
 

@@ -307,96 +307,103 @@ export default function PagosFunnelClient() {
         relación en vez de una tabla con sus controles.
       */}
       <Card className="overflow-hidden">
-      <div className="border-b border-border px-4 py-3 space-y-3">
-      {/* Date-window selector — excluyente → SegmentedControl (contrato §3) */}
-      <div className="flex flex-wrap items-center gap-2">
-        <SegmentedControl<DateWindow>
-          value={dateWindow}
-          onChange={setDateWindow}
-          aria-label={t('inmobiliaria.ai.cobranza.pagos.title')}
-          options={DATE_WINDOWS.map((w) => ({
-            value: w,
-            label: t(`inmobiliaria.ai.cobranza.pagos.dateWindow.${w}`),
-          }))}
-        />
-      </div>
-
-      {/* Filters row */}
-      <div className="flex flex-col md:flex-row md:items-center md:flex-wrap gap-3">
-        <fieldset>
-          <legend className="text-xs font-medium text-fg-muted mr-2 inline">
-            {t('inmobiliaria.ai.cobranza.pagos.filter.provider')}:
-          </legend>
-          <span className="inline-flex flex-wrap gap-2 align-middle">
-            {PROVIDERS.map((p) => (
-              <Chip
-                key={p}
-                size="sm"
-                selected={providers.includes(p)}
-                onClick={() => toggleProvider(p)}
-                data-testid={`pagos-provider-chip-${p}`}
+      {/*
+        Barra en DOS filas que usan el ancho, no tres apiladas contra el borde
+        izquierdo: lo excluyente (ventana temporal, orden) arriba y a los
+        extremos; lo acumulable (proveedor, estado) abajo.
+      */}
+      <div className="border-b border-border px-4 py-3 space-y-2.5">
+        {/* Fila 1 — ventana temporal · orden */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <SegmentedControl<DateWindow>
+            value={dateWindow}
+            onChange={setDateWindow}
+            aria-label={t('inmobiliaria.ai.cobranza.pagos.dateWindow.label')}
+            options={DATE_WINDOWS.map((w) => ({
+              value: w,
+              label: t(`inmobiliaria.ai.cobranza.pagos.dateWindow.${w}`),
+            }))}
+          />
+          <div className="flex items-center gap-2">
+            <label htmlFor="pagos-sort" className="text-xs font-medium text-fg-muted">
+              {t('inmobiliaria.ai.cobranza.pagos.sort.label')}:
+            </label>
+            <Select value={sort} onValueChange={(v) => setSort(v as PaymentsFunnelSort)}>
+              <SelectTrigger
+                id="pagos-sort"
+                data-testid="pagos-sort-select"
+                className="h-8 w-auto gap-1 text-xs"
               >
-                {t(`inmobiliaria.ai.cobranza.pagos.filter.${p}`)}
-              </Chip>
-            ))}
-          </span>
-        </fieldset>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at">
+                  {t('inmobiliaria.ai.cobranza.pagos.sort.createdAt')}
+                </SelectItem>
+                <SelectItem value="amount">
+                  {t('inmobiliaria.ai.cobranza.pagos.sort.amountDesc')}
+                </SelectItem>
+                <SelectItem value="disbursement_pending_days">
+                  {t('inmobiliaria.ai.cobranza.pagos.sort.disbursementPendingDays')}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-        <fieldset>
-          <legend className="text-xs font-medium text-fg-muted mr-2 inline">
-            {t('inmobiliaria.ai.cobranza.pagos.filter.status')}:
-          </legend>
-          <span className="inline-flex flex-wrap gap-2 align-middle">
-            {STATUSES.map((s) => (
-              <Chip
-                key={s}
-                size="sm"
-                selected={statuses.includes(s)}
-                onClick={() => toggleStatus(s)}
-                data-testid={`pagos-status-chip-${s}`}
-              >
-                {t(`inmobiliaria.ai.cobranza.pagos.status.${s}`)}
-              </Chip>
-            ))}
-          </span>
-        </fieldset>
+        {/* Fila 2 — filtros acumulables · limpiar */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <fieldset>
+            <legend className="text-xs font-medium text-fg-muted mr-2 inline">
+              {t('inmobiliaria.ai.cobranza.pagos.filter.provider')}:
+            </legend>
+            <span className="inline-flex flex-wrap gap-1.5 align-middle">
+              {PROVIDERS.map((p) => (
+                <Chip
+                  key={p}
+                  size="sm"
+                  selected={providers.includes(p)}
+                  onClick={() => toggleProvider(p)}
+                  data-testid={`pagos-provider-chip-${p}`}
+                >
+                  {t(`inmobiliaria.ai.cobranza.pagos.filter.${p}`)}
+                </Chip>
+              ))}
+            </span>
+          </fieldset>
 
-        <Button
-          variant="link"
-          size="sm"
-          hideArrow
-          onClick={clearFilters}
-          className="px-0 h-auto self-center"
-        >
-          {t('inmobiliaria.ai.cobranza.pagos.filter.clear')}
-        </Button>
-      </div>
+          <fieldset>
+            <legend className="text-xs font-medium text-fg-muted mr-2 inline">
+              {t('inmobiliaria.ai.cobranza.pagos.filter.status')}:
+            </legend>
+            <span className="inline-flex flex-wrap gap-1.5 align-middle">
+              {STATUSES.map((st) => (
+                <Chip
+                  key={st}
+                  size="sm"
+                  selected={statuses.includes(st)}
+                  onClick={() => toggleStatus(st)}
+                  data-testid={`pagos-status-chip-${st}`}
+                >
+                  {t(`inmobiliaria.ai.cobranza.pagos.status.${st}`)}
+                </Chip>
+              ))}
+            </span>
+          </fieldset>
 
-      {/* Sort selector */}
-      <div className="flex items-center gap-2">
-        <label
-          htmlFor="pagos-sort"
-          className="text-xs font-medium text-fg-muted"
-        >
-          {t('inmobiliaria.ai.cobranza.pagos.sort.label')}:
-        </label>
-        <Select value={sort} onValueChange={(v) => setSort(v as PaymentsFunnelSort)}>
-          <SelectTrigger
-            id="pagos-sort"
-            data-testid="pagos-sort-select"
-            className="h-8 w-auto gap-1 text-xs"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="created_at">{t('inmobiliaria.ai.cobranza.pagos.sort.createdAt')}</SelectItem>
-            <SelectItem value="amount">{t('inmobiliaria.ai.cobranza.pagos.sort.amountDesc')}</SelectItem>
-            <SelectItem value="disbursement_pending_days">
-              {t('inmobiliaria.ai.cobranza.pagos.sort.disbursementPendingDays')}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+          {/* Sólo cuando hay algo que limpiar: un botón que no hace nada es ruido. */}
+          {hasActiveFilters && (
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
+              onClick={clearFilters}
+              className="ml-auto px-0 h-auto"
+            >
+              {t('inmobiliaria.ai.cobranza.pagos.filter.clear')}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Error banner */}

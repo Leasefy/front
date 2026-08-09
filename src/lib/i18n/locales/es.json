@@ -5443,7 +5443,8 @@
             "7d": "7 días",
             "30d": "30 días",
             "90d": "90 días",
-            "mtd": "Mes actual"
+            "mtd": "Mes actual",
+            "label": "Ventana de tiempo"
           },
           "filter": {
             "provider": "Proveedor",

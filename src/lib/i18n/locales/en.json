@@ -5442,7 +5442,8 @@
             "7d": "7 days",
             "30d": "30 days",
             "90d": "90 days",
-            "mtd": "Month-to-date"
+            "mtd": "Month-to-date",
+            "label": "Time window"
           },
           "filter": {
             "provider": "Provider",

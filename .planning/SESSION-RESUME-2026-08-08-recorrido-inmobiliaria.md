@@ -8,12 +8,12 @@ Todo en `~/rent/mvp-inmobiliaria`.
 
 ## 🟡 Estado
 
-**Rama `feat/recorrido-inmobiliaria` — 16 commits, pusheada, árbol limpio. SIN PR todavía.**
+**Rama `feat/recorrido-inmobiliaria` — 18 commits, pusheada, árbol limpio. SIN PR todavía.**
 
 | Compuerta | |
 |---|---|
 | `tsc --noEmit` · `next lint` · **`pnpm build`** | ✅ |
-| 227 archivos / **1837 tests** | ✅ |
+| 227 archivos / **1845 tests** | ✅ |
 
 Sale de `feat/experiencia-inmobiliaria` (PR #63). Cuando #63 mergee, el diff de esta se
 reduce a lo suyo. **Decidir la base del PR en ese momento.**
@@ -79,8 +79,18 @@ lanzador igual decía lo contrario. **Leer los nombres no alcanza: mirar el orde
 - **`RecorridoHilo`** — tira compacta montada en la cola de estudio (8), candidatos (9/10) y
   contrato nuevo (11). Aditiva: ninguna pantalla se movió.
 - **`RecorridoMapa`** — los 11 con el corte «ACÁ CAMBIA DE MANOS» entre el 6 y el 7.
-- **`/panel/inmobiliaria/recorrido`** — la casa del paso 7, que no existía. Cola por
-  antigüedad; con la bandeja vacía el mapa ocupa el lugar del vacío.
+
+⚠️ **Hubo una pantalla `/recorrido` y era un error de estructura.** Mostraba *las
+postulaciones de la gente con su estado* — o sea `/postulaciones`, la fila de abajo en el mismo
+menú. Dos rutas y dos filas para una cosa, el mismo defecto que los dos «Documentos». La
+distinción que yo había escrito ("lee otro embudo") era del BACKEND, no de quien opera.
+
+**El recorrido no es un destino, es el contexto de esa lista**: el mapa se mudó adentro de
+`/postulaciones` —ocupa el vacío cuando no hay nada, plegado cuando hay trabajo—, la fila se
+fue del sidebar y `/recorrido` redirige. De paso murieron los seis KPI en cero sobre el vacío.
+
+Quedan **huérfanos**: `use-recorrido-postulaciones.ts` y `funnel-applications.service.ts` (ya
+nadie los monta). No se borraron; el funnel del agente sigue sin desplegar.
 
 ### El lanzador «Nuevo» (debajo del buscador)
 

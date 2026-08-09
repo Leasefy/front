@@ -5390,8 +5390,8 @@
             "error": "Failed to load transcript",
             "errorRetry": "Retry",
             "speakerOperador": "Operator",
-            "speakerDeudor": "Debtor",
-            "speakerBot": "Bot",
+            "speakerDeudor": "Tenant",
+            "speakerBot": "Agent",
             "seekAria": "Jump to {{time}}"
           },
           "qa": {

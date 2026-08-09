@@ -5391,8 +5391,8 @@
             "error": "Error cargando la transcripción",
             "errorRetry": "Reintentar",
             "speakerOperador": "Operador",
-            "speakerDeudor": "Deudor",
-            "speakerBot": "Bot",
+            "speakerDeudor": "Inquilino",
+            "speakerBot": "Agente",
             "seekAria": "Saltar a {{time}}"
           },
           "qa": {

@@ -118,21 +118,42 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
       const resp = await agentFetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}/transcript?redacted=true`)
       if (!resp.ok) throw new Error(`transcript fetch failed: ${resp.status}`)
+      // Forma REAL del endpoint. Antes se esperaba `debtorNameRedacted` y
+      // `timestamp`, que no existen: el PDF salía con «undefined» donde va el
+      // nombre del deudor y sin hora en cada turno. En un documento que sirve
+      // de evidencia ante una queja, eso lo invalida.
       const json = (await resp.json()) as {
-        turns: Array<{ speaker: 'agent' | 'debtor'; text: string; timestamp: string }>
-        debtorNameRedacted: string
+        turns: Array<{ index: number; speaker: string; text: string; startedAt: string }>
+        totalTurns: number
         generatedAt: string
       }
       const [{ pdf }, { TranscriptPdf }] = await Promise.all([
         import('@react-pdf/renderer'),
         import('@/lib/cobranza/transcript-pdf-document'),
       ])
+      // El endpoint manda `startedAt` absoluto por turno; el PDF quiere el
+      // minuto relativo al inicio de la llamada, igual que el panel.
+      const base =
+        json.turns.length > 0 ? new Date(json.turns[0].startedAt).getTime() : 0
+      const turns = json.turns.map((t) => {
+        const seg = Math.max(0, Math.round((new Date(t.startedAt).getTime() - base) / 1000))
+        const mm = String(Math.floor(seg / 60)).padStart(2, '0')
+        const ss = String(seg % 60).padStart(2, '0')
+        return {
+          speaker: (t.speaker === 'customer' ? 'debtor' : 'agent') as 'agent' | 'debtor',
+          text: t.text,
+          timestamp: `${mm}:${ss}`,
+        }
+      })
+
       const element = (
         <TranscriptPdf
           callId={callId}
-          debtorNameRedacted={json.debtorNameRedacted}
+          // El nombre enmascarado ya lo trae el detalle de la llamada; el
+          // endpoint de transcript no devuelve ninguno.
+          debtorNameRedacted={data.debtorNameMasked}
           generatedAt={json.generatedAt}
-          turns={json.turns}
+          turns={turns}
         />
       )
       const blob = await pdf(element).toBlob()
@@ -286,8 +307,14 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
       <div className="grid grid-cols-1 md:grid-cols-[1fr_22rem] gap-6">
         {/* LEFT COLUMN: audio (sticky) + transcript */}
         <div className="space-y-4">
-          {/* Audio player — sticky on both layouts. */}
-          <div className="sticky top-0 z-20 md:top-20 bg-surface -mx-6 px-6 md:mx-0 md:px-0 py-2">
+          {/*
+            Reproductor sticky. El envoltorio NO lleva fondo ni padding propio:
+            el reproductor ya es una tarjeta con `bg-surface` y esquinas
+            redondeadas, así que un `bg-surface` acá dibujaba un rectángulo
+            recto por detrás — se veía como un marco cuadrado alrededor de la
+            tarjeta redondeada.
+          */}
+          <div className="sticky top-0 z-20 md:top-20">
             {data.hasRecording ? (
               <CallAudioPlayer
                 callId={callId}

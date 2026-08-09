@@ -34,22 +34,33 @@ function formatSec(total: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
+/**
+ * Los tokens son los que emite `normalizeSpeaker` del agente:
+ * `operator` (persona de la inmobiliaria), `agent` (el asistente) y
+ * `customer` (el inquilino).
+ *
+ * Antes este switch esperaba `operador` / `bot` / `deudor`, que no existen en
+ * ningún lado. Como ninguno casaba, TODOS los turnos caían al `default` y el
+ * transcript rotulaba como «deudor» lo que en realidad dijo el agente — o sea
+ * que atribuía al inquilino frases que nunca dijo, en la pantalla que sirve de
+ * evidencia ante una queja.
+ */
 function speakerTone(speaker: TranscriptSpeaker): {
   label: 'speakerOperador' | 'speakerDeudor' | 'speakerBot'
   cls: string
 } {
   switch (speaker) {
-    case 'operador':
+    case 'operator':
       return {
         label: 'speakerOperador',
         cls: 'bg-surface-muted text-fg-muted',
       }
-    case 'bot':
+    case 'agent':
       return {
         label: 'speakerBot',
         cls: 'bg-warning-soft text-warning',
       }
-    case 'deudor':
+    case 'customer':
     default:
       return {
         label: 'speakerDeudor',

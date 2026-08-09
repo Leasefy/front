@@ -22,14 +22,16 @@
  *   cp ~/rent/mvp/claudedocs/seed-llamadas-demo.mjs ~/rent/agent-develop/.seed.tmp.mjs
  *   cd ~/rent/agent-develop && node .seed.tmp.mjs && rm .seed.tmp.mjs
  *
- * ROLLBACK: las llamadas siguen siendo las mismas filas; para dejarlas como
- * estaban no hay vuelta atrás automática. Para borrarlas del todo:
- *   DELETE FROM agent.calls WHERE tenant_id='f1849975-2cdc-49a4-8983-ee5de56127f5';
+ * ROLLBACK: el script reescribe las mismas filas de `calls`, así que no hay
+ * vuelta atrás automática para ellas. Los turnos sí se borran limpio:
+ *   DELETE FROM agent.call_turns WHERE tenant_id='f1849975-…';
+ *   DELETE FROM agent.calls      WHERE tenant_id='f1849975-…';  -- todo
  */
 
 import pg from 'pg'
 import fs from 'node:fs'
 import os from 'node:os'
+import crypto from 'node:crypto'
 
 const TENANT = 'f1849975-2cdc-49a4-8983-ee5de56127f5'
 
@@ -48,6 +50,378 @@ if (!url) throw new Error('DIRECT_URL no encontrado en ~/rent/agent-develop/.env
  * columna); `summary.outcome` es el juicio del summarizer (los 11). Que no
  * coincidan es lo normal y es justamente lo que la pantalla ahora distingue.
  */
+/**
+ * Turnos de cada llamada, coherentes con su resumen. Se guardan en
+ * `agent.call_turns`, que es de donde el endpoint de transcripción los lee —
+ * NO de `transcript_url`. Sin turnos, el panel de transcripción sale vacío
+ * aunque la llamada tenga resumen.
+ */
+const TURNOS_POR_RESULTADO = {
+  "plan_agreed": [
+    [
+      "agent",
+      "GREETING",
+      "Buenos días, hablo con Gloria. Le llamo de parte de la administración del inmueble. ¿Tiene un minuto?"
+    ],
+    [
+      "debtor",
+      "GREETING",
+      "Sí, dígame."
+    ],
+    [
+      "agent",
+      "DISCLOSURE_AI",
+      "Antes de seguir le cuento que soy un asistente automatizado y esta llamada queda grabada."
+    ],
+    [
+      "debtor",
+      "DISCLOSURE_AI",
+      "Está bien."
+    ],
+    [
+      "agent",
+      "DEBT_PRESENTATION",
+      "El canon de agosto está pendiente por un millón cuatrocientos cincuenta mil pesos. ¿Lo tiene presente?"
+    ],
+    [
+      "debtor",
+      "DEBT_PRESENTATION",
+      "Sí, sé que me atrasé. Se me juntó con otros gastos este mes."
+    ],
+    [
+      "agent",
+      "DISCOVERY",
+      "Entiendo. ¿Le sirve que lo dividamos en cuotas para que no se le acumule?"
+    ],
+    [
+      "debtor",
+      "NEGOTIATION_PLAN",
+      "¿En cuántas se podría?"
+    ],
+    [
+      "agent",
+      "NEGOTIATION_PLAN",
+      "Podemos hacerlo en tres cuotas, la primera el veinte de agosto."
+    ],
+    [
+      "debtor",
+      "NEGOTIATION_PLAN",
+      "Listo, así sí me sirve. La primera la pago el veinte."
+    ],
+    [
+      "agent",
+      "CLOSING",
+      "Perfecto. Le envío el link de pago al WhatsApp para la primera cuota."
+    ],
+    [
+      "debtor",
+      "CLOSING",
+      "Sí, al WhatsApp está bien. Gracias."
+    ]
+  ],
+  "hardship_extension": [
+    [
+      "agent",
+      "GREETING",
+      "Buenas tardes, ¿hablo con Nicolás?"
+    ],
+    [
+      "debtor",
+      "GREETING",
+      "Sí, con él."
+    ],
+    [
+      "agent",
+      "DISCLOSURE_AI",
+      "Le comento que soy un asistente automatizado y la llamada queda grabada."
+    ],
+    [
+      "agent",
+      "DEBT_PRESENTATION",
+      "Le llamo por el canon pendiente. ¿Cómo va el tema?"
+    ],
+    [
+      "debtor",
+      "DISCOVERY",
+      "La verdad estoy complicado. Perdí el empleo hace seis semanas y estoy esperando la liquidación."
+    ],
+    [
+      "agent",
+      "NEGOTIATION_HARDSHIP",
+      "Lamento escuchar eso. ¿Tiene una fecha aproximada para esa liquidación?"
+    ],
+    [
+      "debtor",
+      "NEGOTIATION_HARDSHIP",
+      "Debería entrar a principios de septiembre. Yo podría abonar seiscientos mil apenas entre."
+    ],
+    [
+      "agent",
+      "NEGOTIATION_HARDSHIP",
+      "Registro el abono parcial para el cinco de septiembre y pido la prórroga."
+    ],
+    [
+      "debtor",
+      "NEGOTIATION_HARDSHIP",
+      "Otra cosa: la administración a mí no me corresponde, eso lo tiene que ver el dueño."
+    ],
+    [
+      "agent",
+      "CLOSING",
+      "Dejo anotada esa observación para que la revisen. Le confirmo por escrito."
+    ]
+  ],
+  "dispute": [
+    [
+      "agent",
+      "GREETING",
+      "Buenos días, ¿hablo con Andrés?"
+    ],
+    [
+      "debtor",
+      "GREETING",
+      "Sí. ¿De qué se trata?"
+    ],
+    [
+      "agent",
+      "DISCLOSURE_AI",
+      "Soy un asistente automatizado de la administración y la llamada queda grabada."
+    ],
+    [
+      "agent",
+      "DEBT_PRESENTATION",
+      "Le llamo por un saldo pendiente del inmueble."
+    ],
+    [
+      "debtor",
+      "NEGOTIATION_DISPUTE",
+      "Un momento, yo ya pagué ese mes. Consigné y tengo el comprobante."
+    ],
+    [
+      "agent",
+      "NEGOTIATION_DISPUTE",
+      "Entiendo. ¿Recuerda por qué medio y en qué fecha lo hizo?"
+    ],
+    [
+      "debtor",
+      "NEGOTIATION_DISPUTE",
+      "Por consignación en el banco. Yo no voy a seguir hablando de esto hasta que lo verifiquen."
+    ],
+    [
+      "debtor",
+      "NEGOTIATION_DISPUTE",
+      "Y quiero hablar con una persona, no con una grabadora."
+    ],
+    [
+      "agent",
+      "ESCALATE_HUMAN",
+      "Con gusto. Escalo el caso para que una persona lo revise y lo contacte."
+    ]
+  ],
+  "paid_partial": [
+    [
+      "agent",
+      "GREETING",
+      "Buenas, ¿hablo con Daniela?"
+    ],
+    [
+      "debtor",
+      "GREETING",
+      "Sí, señor."
+    ],
+    [
+      "agent",
+      "DISCLOSURE_AI",
+      "Soy un asistente automatizado y esta llamada queda grabada."
+    ],
+    [
+      "agent",
+      "DEBT_PRESENTATION",
+      "Le llamo por el saldo pendiente del canon."
+    ],
+    [
+      "debtor",
+      "NEGOTIATION_IMMEDIATE",
+      "Puedo pagar la mitad ya mismo y el resto el catorce."
+    ],
+    [
+      "agent",
+      "NEGOTIATION_IMMEDIATE",
+      "Perfecto, con eso avanzamos. ¿Le envío el link para el abono de ahora?"
+    ],
+    [
+      "debtor",
+      "NEGOTIATION_IMMEDIATE",
+      "Sí. Una pregunta: ¿ese abono frena el reporte a centrales?"
+    ],
+    [
+      "agent",
+      "CLOSING",
+      "El abono deja constancia de la voluntad de pago; el reporte lo revisa el área correspondiente con el saldo al día."
+    ],
+    [
+      "debtor",
+      "CLOSING",
+      "Listo, entonces pago ya y el resto el catorce."
+    ]
+  ],
+  "callback_later": [
+    [
+      "agent",
+      "GREETING",
+      "Buenas tardes, ¿hablo con Jorge?"
+    ],
+    [
+      "debtor",
+      "GREETING",
+      "Sí, pero estoy en el trabajo, no puedo hablar ahora."
+    ],
+    [
+      "agent",
+      "GREETING",
+      "Sin problema. ¿A qué hora le queda mejor que lo llamemos?"
+    ],
+    [
+      "debtor",
+      "GREETING",
+      "Después de las seis de la tarde."
+    ],
+    [
+      "agent",
+      "CLOSING",
+      "Perfecto, lo llamamos después de las seis. Que siga bien."
+    ]
+  ],
+  "no_resolution": [
+    [
+      "agent",
+      "GREETING",
+      "Buenos días, ¿hablo con Luz Marina?"
+    ],
+    [
+      "debtor",
+      "IDENTITY_VERIFICATION",
+      "No, ella no vive aquí. ¿Quién la busca?"
+    ],
+    [
+      "agent",
+      "IDENTITY_VERIFICATION",
+      "Gracias, entonces marqué un número equivocado. Que tenga buen día."
+    ]
+  ],
+  "opt_out": [
+    [
+      "agent",
+      "GREETING",
+      "Buenas tardes, ¿hablo con Nicolás?"
+    ],
+    [
+      "debtor",
+      "GREETING",
+      "Sí, y ya les dije que no me llamen más."
+    ],
+    [
+      "agent",
+      "OPT_OUT",
+      "Entendido. Registro su solicitud de no ser contactado y no lo volvemos a llamar."
+    ],
+    [
+      "debtor",
+      "OPT_OUT",
+      "Eso espero."
+    ]
+  ],
+  "escalated": [
+    [
+      "agent",
+      "GREETING",
+      "Buenas tardes, ¿hablo con María Fernanda?"
+    ],
+    [
+      "debtor",
+      "GREETING",
+      "¿Otra vez ustedes?"
+    ],
+    [
+      "agent",
+      "DEBT_PRESENTATION",
+      "Le llamo por el canon pendiente del inmueble."
+    ],
+    [
+      "debtor",
+      "NEGOTIATION_DISPUTE",
+      "El canon que me cobran no es el que acordamos. Ustedes están cobrando de más."
+    ],
+    [
+      "agent",
+      "NEGOTIATION_DISPUTE",
+      "Puedo revisar el valor registrado. ¿Recuerda cuál era el acordado?"
+    ],
+    [
+      "debtor",
+      "NEGOTIATION_DISPUTE",
+      "Si me siguen molestando, esto lo veo con un abogado."
+    ],
+    [
+      "agent",
+      "ESCALATE_HUMAN",
+      "Entiendo su molestia. Paso el caso a una persona del equipo para que lo revise con usted."
+    ]
+  ],
+  "paid_full": [
+    [
+      "agent",
+      "GREETING",
+      "Buenos días, ¿hablo con Camilo?"
+    ],
+    [
+      "debtor",
+      "GREETING",
+      "Sí, buenos días."
+    ],
+    [
+      "agent",
+      "DISCLOSURE_AI",
+      "Soy un asistente automatizado y la llamada queda grabada."
+    ],
+    [
+      "agent",
+      "DEBT_PRESENTATION",
+      "Le llamo por el saldo pendiente de dos millones cien mil pesos."
+    ],
+    [
+      "debtor",
+      "NEGOTIATION_IMMEDIATE",
+      "Lo pago ya. Mándeme el link y lo hago ahora mismo."
+    ],
+    [
+      "agent",
+      "NEGOTIATION_IMMEDIATE",
+      "Se lo envío en este momento."
+    ],
+    [
+      "debtor",
+      "CLOSING",
+      "Listo, ya quedó pago. ¿Me pueden mandar el paz y salvo?"
+    ],
+    [
+      "agent",
+      "CLOSING",
+      "Claro, se lo enviamos por correo."
+    ],
+    [
+      "debtor",
+      "CLOSING",
+      "¿Y en cuánto se actualiza el reporte en centrales?"
+    ],
+    [
+      "agent",
+      "CLOSING",
+      "El área correspondiente lo actualiza con el saldo al día; le confirmamos por escrito."
+    ]
+  ]
+}
+
 const GUIONES = [
   {
     outcome: 'completed',
@@ -239,7 +613,12 @@ if (llamadas.length === 0) {
 
 console.log(`${llamadas.length} llamadas a reescribir…`)
 
+// Los turnos se reescriben enteros: el script es idempotente.
+await c.query(`delete from agent.call_turns where tenant_id = $1`, [TENANT])
+
 let conResumen = 0
+let conTurnos = 0
+let totalTurnos = 0
 
 for (const [i, { id }] of llamadas.entries()) {
   const g = GUIONES[i % GUIONES.length]
@@ -259,10 +638,16 @@ for (const [i, { id }] of llamadas.entries()) {
             qa_compliance     = $6,
             compliance_flags  = $7::text[],
             summary_json      = $8::jsonb,
-            recording_url     = case when $3::int is null then null
-                                     else 'demo://recording/' || id end,
-            transcript_url    = case when $8::jsonb is null then null
-                                     else 'demo://transcript/' || id end
+            -- recording_url / transcript_url quedan en NULL A PROPÓSITO.
+            -- La versión anterior de este script les ponía 'demo://…', y eso
+            -- hacía que la pantalla creyera que había grabación: montaba el
+            -- reproductor, el proxy le pedía el audio a Vapi, y como estas
+            -- llamadas no existen en Vapi terminaba en «No se pudo cargar la
+            -- grabación». Un mock que promete algo que no hay es peor que no
+            -- tener nada: la pantalla ahora dice que no hay grabación, que es
+            -- la verdad.
+            recording_url     = null,
+            transcript_url    = null
       where id = $1 and tenant_id = $9`,
     [
       id,
@@ -278,6 +663,30 @@ for (const [i, { id }] of llamadas.entries()) {
   )
 
   if (g.summary) conResumen++
+
+  // Turnos de la conversación → `agent.call_turns`, que es de donde el
+  // endpoint de transcripción los lee. Esto SÍ es dato real recorriendo el
+  // camino real: tabla → endpoint → panel.
+  const turnos = g.summary ? (TURNOS_POR_RESULTADO[g.summary.outcome] ?? []) : []
+  if (turnos.length === 0) continue
+
+  // Los turnos se reparten a lo largo de la llamada, desde `connected_at`
+  // hasta el final: un transcript con todos los turnos en el mismo segundo
+  // rompe el «saltar al minuto» del reproductor.
+  const paso = Math.max(1, Math.floor((g.duration ?? turnos.length * 8) / turnos.length))
+
+  for (const [n, [speaker, estado, texto]] of turnos.entries()) {
+    await c.query(
+      `insert into agent.call_turns
+         (id, tenant_id, call_id, turn_number, speaker, text, state_at_turn, timestamp)
+       select $1, $2, $3, $4, $5, $6, $7,
+              coalesce(connected_at, initiated_at) + ($8::int || ' seconds')::interval
+         from agent.calls where id = $3`,
+      [crypto.randomUUID(), TENANT, id, n + 1, speaker, texto, estado, n * paso],
+    )
+    totalTurnos++
+  }
+  conTurnos++
 }
 
 const { rows: resumen } = await c.query(
@@ -285,7 +694,13 @@ const { rows: resumen } = await c.query(
   [TENANT],
 )
 
-console.log(`\n✓ ${llamadas.length} llamadas actualizadas — ${conResumen} con resumen del agente`)
+console.log(
+  `\n✓ ${llamadas.length} llamadas · ${conResumen} con resumen · ` +
+    `${conTurnos} con transcripción (${totalTurnos} turnos)`,
+)
+console.log(
+  '  Sin grabación a propósito: no existen en Vapi, así que no hay audio que reproducir.',
+)
 console.table(resumen)
 
 await c.end()

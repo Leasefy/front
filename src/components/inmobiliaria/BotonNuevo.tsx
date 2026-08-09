@@ -24,16 +24,22 @@
  * 3. **Es un `SplitButton`, no un botón con menú.** La primera versión ponía un
  *    `+` y un chevron en el mismo botón, y decía dos cosas contradictorias: el
  *    `+` promete crear de una, el chevron promete elegir. El DS ya resuelve esa
- *    tensión partiéndolo en dos segmentos — el izquierdo abre el flujo más
- *    frecuente de un clic, el del chevron despliega el resto. Cuál va a la
- *    izquierda se decide en `FLUJO_PRINCIPAL`.
+ *    tensión partiéndolo en dos segmentos — el izquierdo abre un flujo de un
+ *    clic, el del chevron despliega el resto.
+ *
+ * 4. **El segmento izquierdo muestra lo último que esa persona abrió.** No una
+ *    preferencia elegida por nosotros: todos los flujos ya tienen su propio
+ *    botón donde viven, así que fijar uno duplicaba algo que está a un clic, y
+ *    cuál es "el más usado" no lo sabíamos. Quien capta inmuebles todo el día
+ *    ve consignación; quien evalúa candidatos ve evaluación. Ver `FLUJO_INICIAL`
+ *    para el arranque.
  *
  * Todo el vestido sale del DS: `SplitButton` y `Button` de `@leasefy/cadence`,
  * y el Dialog y el DropdownMenu por sus adaptadores de `@/components/ui`, que
  * envuelven ese mismo DS con el contrato de layout de este panel.
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, ArrowSquareOut, Check } from '@phosphor-icons/react'
 // SplitButton del DS: separa la acción principal del menú en dos segmentos,
@@ -66,14 +72,17 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { AVALUO_WIZARD_URL } from '@/lib/avaluo/wizard-url'
 import {
   FLUJOS,
-  FLUJO_PRINCIPAL,
+  FLUJO_INICIAL,
   GRUPOS,
   flujoDescKey,
   flujoIntro,
   flujoLabelKey,
   grupoLabelKey,
   marcarFlujoVisto,
+  recordarUltimoFlujo,
+  ultimoFlujoUsado,
   yaVioElFlujo,
+  type FlujoKey,
   type FlujoNuevo,
 } from '@/lib/inmobiliaria/flujos'
 
@@ -88,6 +97,14 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
   const router = useRouter()
   const { canAccess } = usePermissionsContext()
   const [porExplicar, setPorExplicar] = useState<FlujoNuevo | null>(null)
+  /**
+   * El último flujo abierto, para el segmento principal. Arranca en `null` y se
+   * lee después del montaje a propósito: leer `localStorage` durante el render
+   * hace que el servidor y el cliente pinten etiquetas distintas (hydration
+   * mismatch). El primer pintado usa `FLUJO_INICIAL`, igual para todos.
+   */
+  const [ultimo, setUltimo] = useState<FlujoKey | null>(null)
+  useEffect(() => setUltimo(ultimoFlujoUsado()), [])
 
   /**
    * Se ofrece solo lo que la persona puede abrir de verdad, con el mismo gate
@@ -108,6 +125,10 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
     (flujo: FlujoNuevo) => {
       const destino = flujo.key === 'avaluo' ? AVALUO_WIZARD_URL : flujo.href
       if (!destino) return
+      // Se recuerda para que el segmento principal muestre lo último que esta
+      // persona abrió, en vez de una preferencia adivinada por nosotros.
+      recordarUltimoFlujo(flujo.key)
+      setUltimo(flujo.key)
       if (flujo.externo) {
         // Pestaña nueva a propósito: el panel queda vivo detrás.
         window.open(destino, '_blank', 'noopener,noreferrer')
@@ -139,10 +160,13 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
   // Sin nada que ofrecer no se muestra un botón que abre un menú vacío.
   if (disponibles.length === 0) return null
 
-  // El segmento principal nunca queda muerto: si no tiene permiso sobre el
-  // flujo elegido, cae al primero que sí pueda abrir.
+  // Lo último que abrió esta persona; si nunca abrió nada, el de arranque. El
+  // último `?? disponibles[0]` cubre el caso de no tener permiso sobre ninguno
+  // de los dos: el segmento principal nunca queda muerto.
   const principal =
-    disponibles.find((f) => f.key === FLUJO_PRINCIPAL) ?? disponibles[0]
+    (ultimo && disponibles.find((f) => f.key === ultimo)) ??
+    disponibles.find((f) => f.key === FLUJO_INICIAL) ??
+    disponibles[0]
 
   return (
     <>

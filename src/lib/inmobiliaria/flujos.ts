@@ -23,7 +23,6 @@ import {
   Scales,
   ShieldCheck,
   FileText,
-  FilePlus,
   type Icon,
 } from '@phosphor-icons/react'
 
@@ -33,10 +32,16 @@ export type FlujoKey =
   | 'avaluo'
   | 'evaluacion'
   | 'asegurabilidad'
-  | 'contrato'
 
-/** Los tres momentos del negocio, en el orden en que ocurren. */
-export type GrupoFlujo = 'captar' | 'evaluar' | 'cerrar'
+/**
+ * Los momentos del negocio, en el orden en que ocurren.
+ *
+ * No hay "cerrar": preparar un contrato **no se puede empezar en frío**.
+ * `/contratos/nuevo` exige un `?applicationId=` y sin él muestra un error —
+ * se llega desde un candidato ya aceptado, nunca desde este botón. Ofrecerlo
+ * acá mandaba a una pantalla rota, y se vio al probarlo.
+ */
+export type GrupoFlujo = 'captar' | 'evaluar'
 
 export interface FlujoNuevo {
   key: FlujoKey
@@ -102,34 +107,58 @@ export const FLUJOS: readonly FlujoNuevo[] = [
     href: '/panel/inmobiliaria/ai/asegurabilidad/nueva',
     module: 'cotizador',
   },
-
-  // ── Cerrar ────────────────────────────────────────────────────────────
-  {
-    key: 'contrato',
-    grupo: 'cerrar',
-    icon: FilePlus,
-    href: '/panel/inmobiliaria/contratos/nuevo',
-    module: 'contratos',
-  },
 ] satisfies readonly Definicion[]
 
 /** Los grupos, en orden. El menú los muestra así. */
-export const GRUPOS: readonly GrupoFlujo[] = ['captar', 'evaluar', 'cerrar']
+export const GRUPOS: readonly GrupoFlujo[] = ['captar', 'evaluar']
 
 /**
- * El flujo que queda en el segmento principal del `SplitButton`: se abre con un
- * clic, sin pasar por el menú.
+ * Con qué arranca el segmento principal del `SplitButton` **la primera vez**,
+ * antes de que la persona haya usado ninguno.
  *
- * Es **una decisión de producto, no una restricción técnica** — cambiar esta
- * línea mueve el botón. Va la consignación porque es la boca del embudo: sin
- * inventario no hay nada que arrendar, y es el flujo que más veces al día
- * arranca una inmobiliaria que está creciendo. Si la operación real dice otra
- * cosa, se cambia acá y nada más.
+ * De ahí en adelante manda `ultimoFlujoUsado()`: el botón muestra lo último que
+ * esa persona abrió. Se hizo así porque elegir un principal fijo era una
+ * apuesta que no teníamos cómo ganar:
  *
- * Si la persona no tiene permiso sobre este flujo, el botón cae al primero que
- * sí pueda abrir (ver `BotonNuevo`): el segmento principal nunca queda muerto.
+ *  · **Todos los flujos ya tienen su botón donde viven** — `/portafolio` tiene
+ *    "Nueva consignación", `/propiedades` "Nueva propiedad", `/contratos`
+ *    "Nuevo contrato". Un principal fijo duplica algo que está a un clic.
+ *  · **Por frecuencia gana evaluación, no consignación**: una consignación se
+ *    firma una vez por inmueble y dura un año; los candidatos se evalúan cada
+ *    vez que el inmueble rota.
+ *  · **El costo del error no es simétrico**: el wizard de consignación tiene
+ *    seis pasos, así que un clic equivocado en la barra lateral se paga caro.
+ *
+ * La consignación queda de arranque porque es lo único que se hace **en frío**,
+ * sin venir de ningún contexto previo: llama un propietario y se abre de cero.
+ * Las evaluaciones casi siempre salen de una postulación que ya se está viendo.
  */
-export const FLUJO_PRINCIPAL: FlujoKey = 'consignacion'
+export const FLUJO_INICIAL: FlujoKey = 'consignacion'
+
+/** Dónde se recuerda el último flujo abierto. Mismo prefijo legacy. */
+export const CLAVE_ULTIMO = 'arriendo-facil-flujo-ultimo'
+
+/** El último flujo que esta persona abrió, si sigue existiendo. */
+export function ultimoFlujoUsado(): FlujoKey | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const v = window.localStorage.getItem(CLAVE_ULTIMO)
+    // Se valida contra FLUJOS: una clave vieja de un flujo que ya no existe
+    // dejaría el botón principal sin destino.
+    return FLUJOS.some((f) => f.key === v) ? (v as FlujoKey) : null
+  } catch {
+    return null
+  }
+}
+
+export function recordarUltimoFlujo(k: FlujoKey): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(CLAVE_ULTIMO, k)
+  } catch {
+    // Que no se pueda recordar no debe impedir abrir el flujo.
+  }
+}
 
 export const flujoLabelKey = (k: FlujoKey) => `${I18N}.${k}.label`
 export const flujoDescKey = (k: FlujoKey) => `${I18N}.${k}.desc`

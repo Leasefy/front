@@ -12,8 +12,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import es from '../i18n/locales/es.json'
 import en from '../i18n/locales/en.json'
 import {
+  CLAVE_ULTIMO,
   FLUJOS,
-  FLUJO_PRINCIPAL,
+  FLUJO_INICIAL,
   GRUPOS,
   claveVisto,
   flujoDescKey,
@@ -21,6 +22,8 @@ import {
   flujoLabelKey,
   grupoLabelKey,
   marcarFlujoVisto,
+  recordarUltimoFlujo,
+  ultimoFlujoUsado,
   yaVioElFlujo,
 } from './flujos'
 
@@ -54,14 +57,14 @@ describe('FLUJOS', () => {
     }
   })
 
-  it('el flujo principal existe y es interno', () => {
-    // Va en el segmento izquierdo del SplitButton: se abre de un clic. Si
-    // apuntara a una clave inexistente el botón quedaría sin acción, y si fuera
-    // el externo abriría una pestaña al tocar el botón principal del sidebar.
-    const principal = FLUJOS.find((f) => f.key === FLUJO_PRINCIPAL)
-    expect(principal).toBeDefined()
-    expect(principal?.externo).toBeFalsy()
-    expect(principal?.href).toBeTruthy()
+  it('el flujo de arranque existe y es interno', () => {
+    // Va en el segmento izquierdo del SplitButton la primera vez: se abre de un
+    // clic. Si apuntara a una clave inexistente el botón quedaría sin acción, y
+    // si fuera el externo abriría una pestaña al tocar el botón del sidebar.
+    const inicial = FLUJOS.find((f) => f.key === FLUJO_INICIAL)
+    expect(inicial).toBeDefined()
+    expect(inicial?.externo).toBeFalsy()
+    expect(inicial?.href).toBeTruthy()
   })
 
   it('el único flujo sin href propio es el externo', () => {
@@ -76,6 +79,19 @@ describe('FLUJOS', () => {
     for (const f of FLUJOS) {
       if (f.externo) expect(f.href).toBe('')
     }
+  })
+
+  it('ninguna ruta necesita un parámetro de consulta', () => {
+    // El lanzador solo ofrece lo que se puede empezar EN FRÍO. Una ruta con
+    // `?algo=` no se puede abrir desde acá: no hay de dónde sacar el valor.
+    for (const f of FLUJOS) expect(f.href).not.toContain('?')
+  })
+
+  it('no ofrece preparar contrato: exige una postulación previa', () => {
+    // Estuvo un rato y llevaba a una pantalla de error. `/contratos/nuevo` lee
+    // `?applicationId=` y sin él muestra "Falta el parámetro applicationId".
+    // Se llega desde un candidato aceptado (paso 10 → 11), no desde el sidebar.
+    expect(FLUJOS.map((f) => f.href)).not.toContain('/panel/inmobiliaria/contratos/nuevo')
   })
 })
 
@@ -151,17 +167,17 @@ describe('recordar que ya se explicó', () => {
 
   it('usa el prefijo legacy — renombrarlo perdería lo guardado', () => {
     // `arriendo-facil-` es anterior al rebrand y hay datos reales con él.
-    expect(claveVisto('contrato')).toBe('arriendo-facil-flujo-visto-contrato')
+    expect(claveVisto('asegurabilidad')).toBe('arriendo-facil-flujo-visto-asegurabilidad')
   })
 
   it('la primera vez no está visto; después sí', () => {
-    expect(yaVioElFlujo('contrato')).toBe(false)
-    marcarFlujoVisto('contrato')
-    expect(yaVioElFlujo('contrato')).toBe(true)
+    expect(yaVioElFlujo('asegurabilidad')).toBe(false)
+    marcarFlujoVisto('asegurabilidad')
+    expect(yaVioElFlujo('asegurabilidad')).toBe(true)
   })
 
   it('marcar uno no marca los demás', () => {
-    marcarFlujoVisto('contrato')
+    marcarFlujoVisto('asegurabilidad')
     expect(yaVioElFlujo('inmueble')).toBe(false)
   })
 
@@ -170,14 +186,52 @@ describe('recordar que ya se explicó', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('denegado')
     })
-    expect(() => yaVioElFlujo('contrato')).not.toThrow()
-    expect(yaVioElFlujo('contrato')).toBe(false)
+    expect(() => yaVioElFlujo('asegurabilidad')).not.toThrow()
+    expect(yaVioElFlujo('asegurabilidad')).toBe(false)
   })
 
   it('si no deja escribir, tampoco se rompe el arranque del flujo', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('denegado')
     })
-    expect(() => marcarFlujoVisto('contrato')).not.toThrow()
+    expect(() => marcarFlujoVisto('asegurabilidad')).not.toThrow()
+  })
+})
+
+describe('el segmento principal recuerda el último flujo', () => {
+  beforeEach(() => window.localStorage.clear())
+  afterEach(() => {
+    vi.restoreAllMocks()
+    window.localStorage.clear()
+  })
+
+  it('sin historia devuelve null y el botón cae al de arranque', () => {
+    expect(ultimoFlujoUsado()).toBeNull()
+  })
+
+  it('devuelve lo último abierto', () => {
+    recordarUltimoFlujo('asegurabilidad')
+    expect(ultimoFlujoUsado()).toBe('asegurabilidad')
+    recordarUltimoFlujo('inmueble')
+    expect(ultimoFlujoUsado()).toBe('inmueble')
+  })
+
+  it('ignora una clave de un flujo que ya no existe', () => {
+    // Si se borra un flujo, el valor guardado queda huérfano y el segmento
+    // principal se quedaría sin destino.
+    window.localStorage.setItem(CLAVE_ULTIMO, 'flujo-que-se-borro')
+    expect(ultimoFlujoUsado()).toBeNull()
+  })
+
+  it('usa el prefijo legacy, como el resto', () => {
+    expect(CLAVE_ULTIMO).toMatch(/^arriendo-facil-/)
+  })
+
+  it('si el navegador no deja leer, cae al de arranque sin romperse', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('denegado')
+    })
+    expect(() => ultimoFlujoUsado()).not.toThrow()
+    expect(ultimoFlujoUsado()).toBeNull()
   })
 })

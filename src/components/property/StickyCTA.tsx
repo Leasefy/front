@@ -15,6 +15,8 @@ import { visitsApi } from '@/lib/api/visits.service';
 import { ApiError } from '@/lib/api/client';
 import type { VisitSlot } from '@/lib/api/visits.types';
 import { PostularButton } from '@/components/tenant/PostularButton';
+import { useAprobacion } from '@/lib/hooks/use-aprobacion';
+import { seLePuedePrometerSinCodeudor } from '@/lib/api/aprobacion.service';
 
 interface StickyCTAProps {
   propertyId: string;
@@ -101,6 +103,17 @@ export function StickyCTA({
 }: StickyCTAProps) {
   const { user, isAuthenticated, hasActiveAgencyMembership } = useAuth();
   const router = useRouter();
+
+  /*
+   * ¿Podemos decirle que se postula sin codeudor?
+   *
+   * `null` = no sabemos, y entonces no se afirma nada. Sin aprobación resuelta
+   * no hay forma de saber si la aseguradora le va a pedir codeudor, y una
+   * promesa sobre el trato es de las peores cosas que se pueden inventar: la
+   * descubre cuando ya se ilusionó.
+   */
+  const { aprobacion } = useAprobacion();
+  const sinCodeudor = seLePuedePrometerSinCodeudor(aprobacion);
   const pathname = usePathname();
 
   // An inmobiliaria/agent viewing a property is NOT a prospective tenant: they
@@ -352,12 +365,37 @@ export function StickyCTA({
             /* ── Apply tab ── */
             <div>
               <div className="space-y-2.5 mb-6">
-                <div className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-[hsl(var(--success-500))] flex-shrink-0" strokeWidth={3} />
-                  <p className="text-[13px] text-muted-foreground">
-                    <span className="font-semibold text-foreground">Sin codeudor</span> — aplica solo con tu información
-                  </p>
-                </div>
+                {/*
+                  «Sin codeudor» estaba fijo en toda propiedad, y es una promesa
+                  sobre el trato que el propio producto desmiente: una aprobación
+                  condicionada «normalmente pide un codeudor o un depósito
+                  adicional» (ResultadoAprobacion). Se lo prometíamos justo a
+                  quien iba a tener que conseguirlo.
+
+                  Ahora sale de SU aprobación, la misma que usa la puerta de
+                  postularse, y con `null` no se afirma nada: no saber no es
+                  poder prometer. Y se dice "te postulas", no "aplicas"
+                  (docs/VOCABULARIO.md).
+                */}
+                {sinCodeudor !== null && (
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-[hsl(var(--success-500))] flex-shrink-0" strokeWidth={3} />
+                    <p className="text-[13px] text-muted-foreground">
+                      {sinCodeudor ? (
+                        <>
+                          <span className="font-semibold text-foreground">Sin codeudor</span> — te
+                          postulas solo con tu información
+                        </>
+                      ) : (
+                        <>
+                          Tu aprobación quedó{' '}
+                          <span className="font-semibold text-foreground">con condiciones</span> — la
+                          aseguradora puede pedirte codeudor
+                        </>
+                      )}
+                    </p>
+                  </div>
+                )}
                 <div className="flex items-center gap-2.5">
                   <Clock className="w-4 h-4 text-muted-foreground/60 flex-shrink-0" />
                   <p className="text-[13px] text-muted-foreground">
@@ -549,13 +587,15 @@ export function StickyCTA({
           )}
         </div>
 
-        {/* Activity footer */}
-        <div className="px-6 py-3.5 bg-surface-muted border-t border-border">
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <span className="w-2 h-2 rounded-full bg-[hsl(var(--success-500))] animate-pulse" />
-            <span>Última postulación hace <span className="font-semibold text-foreground">12 minutos</span></span>
-          </div>
-        </div>
+        {/*
+          Acá iba «Última postulación hace 12 minutos», con un punto verde
+          pulsando para que pareciera un dato en vivo. Estaba escrito a mano:
+          los mismos 12 minutos en TODAS las propiedades, para siempre, incluso
+          en una que nadie tocó nunca. Urgencia inventada.
+
+          No se reemplaza por otro número: el back no expone la actividad de una
+          propiedad. Cuando la exponga, este es el lugar.
+        */}
       </Card>
     </div>
   );

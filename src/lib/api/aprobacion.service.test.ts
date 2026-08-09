@@ -5,6 +5,7 @@ import {
   diasParaVencer,
   estadoVigencia,
   DIAS_POR_VENCER,
+  seLePuedePrometerSinCodeudor,
 } from './aprobacion.service'
 
 function mockFetch(status: number, body: unknown) {
@@ -175,5 +176,39 @@ describe('vigencia', () => {
     expect(estadoVigencia(0)).toBe('por_vencer')
     expect(estadoVigencia(-1)).toBe('vencida')
     expect(estadoVigencia(null)).toBeNull()
+  })
+})
+
+describe('seLePuedePrometerSinCodeudor', () => {
+  /*
+   * La ficha de propiedad decía «Sin codeudor — aplica solo con tu información»
+   * escrito a mano, en TODAS. Se lo prometía también a quien tenía la
+   * aprobación condicionada, que es justo a quien la aseguradora sí le pide
+   * uno: la promesa la descubría rota cuando ya se había ilusionado.
+   */
+  const aprobada = {
+    estado: 'aprobado' as const,
+    topeAprobadoCop: 2_400_000,
+    aseguradoras: [],
+    vigenteHasta: null,
+    resueltoEn: null,
+    condicionada: false,
+    canonConsultadoCop: null,
+  }
+
+  it('aprobada y sin condiciones: sí se le puede prometer', () => {
+    expect(seLePuedePrometerSinCodeudor(aprobada)).toBe(true)
+  })
+
+  it('aprobada CON condiciones: no', () => {
+    expect(seLePuedePrometerSinCodeudor({ ...aprobada, condicionada: true })).toBe(false)
+  })
+
+  it('sin aprobación resuelta no se afirma nada — ni que sí ni que no', () => {
+    // `null` no es un `false` disfrazado: no saber no es poder prometer.
+    expect(seLePuedePrometerSinCodeudor(null)).toBeNull()
+    expect(seLePuedePrometerSinCodeudor({ ...aprobada, estado: 'sin_estudio' })).toBeNull()
+    expect(seLePuedePrometerSinCodeudor({ ...aprobada, estado: 'en_proceso' })).toBeNull()
+    expect(seLePuedePrometerSinCodeudor({ ...aprobada, estado: 'rechazado' })).toBeNull()
   })
 })

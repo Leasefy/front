@@ -203,6 +203,21 @@ export function cabeEnTope(canonCop: number, tope: number | null): boolean | nul
   return canonCop <= tope
 }
 
+/**
+ * ¿Se le puede decir que se postula **sin codeudor**?
+ *
+ * `null` = no se puede saber, y entonces no se afirma nada — ni que sí ni que
+ * no. Como en `cabeEnTope`: no saber no es poder prometer.
+ *
+ * Existe porque la ficha de propiedad tenía «Sin codeudor» escrito a mano en
+ * todas: se lo prometíamos también a quien tenía la aprobación condicionada,
+ * que es exactamente a quien la aseguradora sí le va a pedir uno.
+ */
+export function seLePuedePrometerSinCodeudor(a: Aprobacion | null): boolean | null {
+  if (!a || a.estado !== 'aprobado') return null
+  return a.condicionada !== true
+}
+
 /** De dónde salió el número con el que se personaliza el catálogo. */
 export type TipoReferencia = 'tope' | 'consultado'
 

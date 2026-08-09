@@ -119,7 +119,15 @@ describe('RecorridoMapa', () => {
     const hrefs = [...el.querySelectorAll('a')].map((a) => a.getAttribute('href'))
     expect(hrefs).toContain('/panel/inmobiliaria/recorrido')
     expect(hrefs).toContain('/panel/inmobiliaria/ai/estudio/cola')
-    expect(hrefs).toContain('/panel/inmobiliaria/contratos/nuevo')
+    expect(hrefs).toContain('/panel/inmobiliaria/contratos')
+  })
+
+  it('ningún paso lleva a una pantalla que exige un parámetro', () => {
+    // `/contratos/nuevo` lee `?applicationId=` y sin él muestra "Falta el
+    // parámetro applicationId". Desde un mapa no hay de dónde sacar ese id.
+    const el = montar(<RecorridoMapa />)
+    const hrefs = [...el.querySelectorAll('a')].map((a) => a.getAttribute('href'))
+    expect(hrefs).not.toContain('/panel/inmobiliaria/contratos/nuevo')
   })
 
   it('los pasos suyos sin pantalla lo dicen en vez de fingir un enlace', () => {

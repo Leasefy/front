@@ -75,7 +75,11 @@ const DEFINICIONES: readonly DefinicionPaso[] = [
   { key: 'evaluacion',     actor: 'inmobiliaria',  href: '/panel/inmobiliaria/ai/estudio/cola' },
   { key: 'comparacion',    actor: 'inmobiliaria',  href: null },
   { key: 'decision',       actor: 'inmobiliaria',  href: null },
-  { key: 'contrato',       actor: 'inmobiliaria',  href: '/panel/inmobiliaria/contratos/nuevo' },
+  // Va al listado, NO a `/contratos/nuevo`: esa pantalla lee `?applicationId=`
+  // y sin él muestra "Falta el parámetro applicationId". Desde el mapa no hay
+  // de dónde sacar ese id —es un mapa, no una postulación—, así que se lleva al
+  // listado, donde el botón «Nuevo contrato» pregunta sobre cuál se arma.
+  { key: 'contrato',       actor: 'inmobiliaria',  href: '/panel/inmobiliaria/contratos' },
 ]
 
 export const PASOS_RECORRIDO: readonly PasoRecorrido[] = DEFINICIONES.map((paso, i) => ({

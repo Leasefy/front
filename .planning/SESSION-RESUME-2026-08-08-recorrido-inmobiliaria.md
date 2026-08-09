@@ -8,12 +8,12 @@ Todo en `~/rent/mvp-inmobiliaria`.
 
 ## 🟡 Estado
 
-**Rama `feat/recorrido-inmobiliaria` — 18 commits, pusheada, árbol limpio. SIN PR todavía.**
+**Rama `feat/recorrido-inmobiliaria` — 26 commits, pusheada, árbol limpio. SIN PR todavía.**
 
 | Compuerta | |
 |---|---|
 | `tsc --noEmit` · `next lint` · **`pnpm build`** | ✅ |
-| 227 archivos / **1845 tests** | ✅ |
+| 227 archivos / **1846 tests** | ✅ |
 
 Sale de `feat/experiencia-inmobiliaria` (PR #63). Cuando #63 mergee, el diff de esta se
 reduce a lo suyo. **Decidir la base del PR en ese momento.**
@@ -158,12 +158,74 @@ tienen de dónde sacar el id llevan al listado, donde el botón sí pregunta.
 
 ---
 
-## ▶️ Sigue
 
-1. Pasos **9** (comparar lado a lado), **10** (los no elegidos quedan sin estado — y al
-   inquilino le prometimos avisarle) y **11** (no registra qué aseguradora aprobó ni su número).
-2. Abrir el PR cuando #63 mergee.
+### Contraste y color (2026-08-09)
 
-**Anotado sin tocar:** la pantalla de Soportes muestra cinco KPI en cero encima del estado
-vacío (andamiaje sobre vacío). Y quedan **~12 operaciones simuladas** en el panel de
-inmobiliaria — PR aparte.
+Tres defectos distintos, todos encontrados **midiendo**, no mirando:
+
+1. **`neutral-*` ya es sensible al tema.** `dark:text-neutral-100` invierte dos veces y en
+   oscuro da `hsl(40 8% 14%)` —casi negro—. El título de `EmptyState` era invisible en
+   **51 pantallas**. Migrado a tokens semánticos.
+2. **`bg-ink/NN` no genera CSS.** `bg-ink` solo sí (`rgb(20,19,15)`). Con `bg-white/60
+   dark:bg-ink/60` ganaba el blanco: panel BLANCO en cajón oscuro. Barridos los 34.
+3. **`bg-fg-muted` es token de TEXTO usado como fondo** — disco gris con el icono del mismo
+   color exacto, invisible.
+
+Medición final del cajón de candidato: 28 textos, **peor ratio 4.94**, ninguno bajo AA.
+
+### Tocar una postulación abre a ESA persona
+
+`/postulaciones` llevaba a la lista de candidatos del inmueble sin abrir a nadie — parecía que
+el clic no hacía nada. Ahora navega con `?candidato=<id>` y la pantalla destino abre el cajón.
+La fila además **no existía para el teclado** (`<tr>` con `onClick`): lleva `role="button"`,
+`tabIndex`, `aria-label` y Enter/Espacio.
+
+⚠️ El mock de la tabla en el test **reenviaba solo `onClick`** y descartaba el resto: habría
+dado verde con la fila igual de inalcanzable. Arreglado y verificado contra el DOM real.
+
+## ▶️ Sigue — en este orden
+
+### 1. Qué falta para el recorrido completo (pregunta de Nico, 2026-08-09)
+
+| # | Paso | Estado | Falta |
+|---|---|---|---|
+| 1 | Catálogo | ✅ | — |
+| 2 | Asegurabilidad | ✅ real | wizard 3 pasos que sí llama al agente |
+| 3 | **Paga el estudio** | 🔴 **no existe** | pasarela + ciclo formulario → pago → vuelve → procesa |
+| 4 | Contra TODAS las aseguradoras | 🟡 **sin verificar** | ¿consulta a todas? ¿devuelve binario + máximo afianzable? |
+| 5 | Habilitar compatibles | 🟡 **sin verificar** | ¿filtra de verdad por el tope? |
+| 6 | Postularse a varias | ✅ | — |
+| 7 | Alerta a la agencia | 🟡 | vive en `/postulaciones`; **el funnel no está pusheado** |
+| 8 | Estudio A/B/C/D | 🟡 | `/ai/estudio/nuevo` **no guarda** ("Próximamente"); el disparo automático es del agente |
+| 9 | **Comparar candidatos** | 🔴 **no existe** | hay lista, no comparación lado a lado |
+| 10 | Aceptar candidato | 🟡 | a los no elegidos **no se les avisa**, y se les prometió |
+| 11 | Contrato | 🟡 | **no registra qué aseguradora aprobó ni su ID** |
+
+**Front acotado:** 3, 9, 10, 11. **Lo demás depende del back/agente** (ver §🔴).
+**Primero verificar 4 y 5** contra el agente corriendo — no se probaron nunca.
+
+### 2. Barrido de clases con opacidad muertas
+
+📌 **`docs/CLASES-OPACIDAD-MUERTAS.md`** — 166 formas, **944 usos**, lista verificada contra
+los 7 CSS del build. **NO es un `sed`**: `bg-danger/20` hoy pinta nada y `bg-danger` daría un
+bloque rojo sólido; iba `bg-danger-soft`. Varios se apoyan hoy en el fondo del padre y se ven
+bien — darles color sería la regresión. Mapa por familia dentro del documento.
+
+### 3. Auditoría de estados de carga (pedido de Nico)
+
+*"TODO, absolutamente todo, tenga carga previa para mostrar lo real que hay ahí."*
+
+Caso testigo verificado: `/propiedades/{id-inexistente}/candidatos` responde
+**«Algo salió mal · `Property with ID … not found`»** — inglés crudo del backend, y encima
+ofrece «Intentar de nuevo» sobre un 404, que es una promesa falsa.
+
+Hoy se colapsan **cuatro** estados en uno. Hay que separarlos ruta por ruta:
+
+| Situación | Debe decir |
+|---|---|
+| Cargando | skeleton (donde aplique) o spinner |
+| No existe (404) | «Esa propiedad ya no está» + volver, **sin** reintentar |
+| Falló la red | «No pudimos cargar» + reintentar |
+| Existe y está vacío | el estado vacío |
+
+### 4. Abrir el PR cuando #63 mergee.

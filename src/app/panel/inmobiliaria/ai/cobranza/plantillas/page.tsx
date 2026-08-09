@@ -34,7 +34,7 @@ import { useTemplates, type TemplateRow } from '@/lib/hooks/cobranza/use-templat
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button, Badge } from '@/components/ui'
+import { Button, Badge, type BadgeProps } from '@/components/ui'
 import {
   Tabs,
   TabsList,
@@ -53,14 +53,11 @@ const TOKEN_AMBER_THRESHOLD = 0.8 * TOKEN_BUDGET // 1600
 // Token badge helper
 // =============================================================================
 
-function tokenBadgeClass(count: number): string {
-  if (count >= TOKEN_BUDGET) {
-    return 'bg-danger-soft text-danger'
-  }
-  if (count >= TOKEN_AMBER_THRESHOLD) {
-    return 'bg-warning-soft text-warning'
-  }
-  return 'bg-muted text-muted-foreground'
+/** El pill se armaba a mano; el conteo va en un Badge del DS. */
+function tokenBadgeVariant(count: number): NonNullable<BadgeProps['variant']> {
+  if (count >= TOKEN_BUDGET) return 'destructive'
+  if (count >= TOKEN_AMBER_THRESHOLD) return 'warning'
+  return 'secondary'
 }
 
 function tokenBadgeLevel(count: number): 'normal' | 'amber' | 'rose' {
@@ -161,12 +158,13 @@ function TemplateCard({
       {/* Footer: token badge + timestamp + Edit button */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <span
+          <Badge
             data-token-badge={level}
-            className={`inline-flex items-center text-xs rounded-full px-2 py-0.5 tabular-nums ${tokenBadgeClass(tpl.tokenCount)}`}
+            variant={tokenBadgeVariant(tpl.tokenCount)}
+            className="tabular-nums"
           >
             {tpl.tokenCount} tokens
-          </span>
+          </Badge>
           <span className="text-xs text-fg-subtle tabular-nums">
             {t('inmobiliaria.ai.templates.card.lastEdited')}:{' '}
             {new Date(tpl.updatedAt).toLocaleDateString()}

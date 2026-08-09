@@ -3,12 +3,15 @@
 // Phase 31 plan 31-10 — reusable compliance flag pill.
 // Severity-based color + Radix tooltip showing the flag code.
 
+import * as React from 'react'
+
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { StatusBadge } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import type { CallComplianceEvent } from '@/lib/hooks/cobranza/use-call-detail'
 
@@ -16,18 +19,25 @@ interface CompliancePillProps {
   flag: Pick<CallComplianceEvent, 'id' | 'code' | 'severity' | 'label'>
 }
 
-function severityTone(severity: string): string {
+type StatusTone = NonNullable<React.ComponentProps<typeof StatusBadge>['tone']>
+
+/**
+ * El pill se armaba a mano con bg/text/ring. `StatusBadge` es exactamente la
+ * voz que corresponde acá: el DS reserva el registro mono/MAYÚSCULAS para
+ * señales técnicas, y una marca de cumplimiento lo es.
+ */
+function severityTone(severity: string): StatusTone {
   switch (severity) {
     case 'critical':
       // Ocurrió algo que no debía.
-      return 'bg-danger-soft text-danger ring-danger'
+      return 'critical'
     case 'prevented':
       // El sistema lo IMPIDIÓ. No es una falta: es la defensa funcionando, y
       // pintarla de rojo haría leer como infracción lo contrario.
-      return 'bg-warning-soft text-warning ring-warning'
+      return 'warning'
     case 'info':
     default:
-      return 'bg-surface-muted text-fg-muted ring-border'
+      return 'neutral'
   }
 }
 
@@ -38,15 +48,16 @@ export function CompliancePill({ flag }: CompliancePillProps) {
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span
+          <StatusBadge
             role="img"
+            tone={tone}
             aria-label={t('inmobiliaria.ai.cobranza.call.compliance.pillAria', {
               label: flag.label,
             })}
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 cursor-help ${tone}`}
+            className="cursor-help"
           >
             {flag.label}
-          </span>
+          </StatusBadge>
         </TooltipTrigger>
         <TooltipContent>
           <span className="font-mono text-xs">{flag.code}</span>

@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * DisputaCard — tarjeta de UNA controversia (disputa) de cobranza (visión #12).
+ * DisputaCard — tarjeta de UNA disputa de cobranza (visión #12).
  *
  * Expone, por cada disputa: {deudor (id enmascarado), motivo, monto disputado,
  * estado open/in_review/resolved con tono token, acción}. La acción de resolver
@@ -31,35 +31,26 @@ import {
 
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui'
+import { Badge } from '@leasefy/cadence'
 import type {
   CobranzaDispute,
   DisputeStatus,
 } from '@/lib/hooks/cobranza/use-disputes'
 
-// ── Tono por estado — tokens DS (sin hex inline) ─────────────────────────────
+// ── Estado → Badge de Cadence ────────────────────────────────────────────────
+// El pill se armaba a mano (`rounded-full px-2 … ring-1` + bg/text/ring). Eso
+// es un badge paralelo al del DS: se desincroniza en tamaño, radio y modo
+// oscuro. El estado vive ahora en un `variant` del Badge de Cadence.
+
+type BadgeVariant = NonNullable<React.ComponentProps<typeof Badge>['variant']>
 
 export const DISPUTE_ESTADO_TOKEN: Record<
   DisputeStatus,
-  { bg: string; text: string; ring: string; label: string }
+  { variant: BadgeVariant; label: string }
 > = {
-  open: {
-    bg: 'bg-warning-soft',
-    text: 'text-warning',
-    ring: 'ring-warning/30',
-    label: 'Abierta',
-  },
-  in_review: {
-    bg: 'bg-primary-soft',
-    text: 'text-primary',
-    ring: 'ring-primary/30',
-    label: 'En revisión',
-  },
-  resolved: {
-    bg: 'bg-success-soft',
-    text: 'text-success',
-    ring: 'ring-success/30',
-    label: 'Resuelta',
-  },
+  open: { variant: 'warning', label: 'Abierta' },
+  in_review: { variant: 'info', label: 'En revisión' },
+  resolved: { variant: 'success', label: 'Resuelta' },
 }
 
 /** Etiqueta legible por outcome de resolución. */
@@ -135,11 +126,9 @@ export function DisputaCard({ dispute, onResolve }: DisputaCardProps) {
           <span className="text-sm font-semibold text-fg truncate">
             {debtorLabel(dispute)}
           </span>
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 shrink-0 ${token.bg} ${token.text} ${token.ring}`}
-          >
+          <Badge variant={token.variant} size="sm" className="shrink-0">
             {token.label}
-          </span>
+          </Badge>
         </div>
         <span className="inline-flex items-center gap-1 text-xs text-fg-muted tabular-nums shrink-0">
           <ClockCounterClockwise className="w-3.5 h-3.5" aria-hidden="true" />
@@ -147,7 +136,7 @@ export function DisputaCard({ dispute, onResolve }: DisputaCardProps) {
         </span>
       </div>
 
-      {/* Motivo de la controversia */}
+      {/* Motivo de la disputa */}
       <div className="flex items-start gap-2">
         <ShieldWarning
           className="w-4 h-4 mt-0.5 shrink-0 text-fg-muted"

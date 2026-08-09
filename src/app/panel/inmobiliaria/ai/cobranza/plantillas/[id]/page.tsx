@@ -45,7 +45,7 @@ import {
 } from '@/lib/hooks/cobranza/use-templates'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Textarea } from '@/components/ui/textarea'
-import { Spinner, Badge } from '@/components/ui'
+import { Spinner, Badge, type BadgeProps } from '@/components/ui'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -152,14 +152,11 @@ const SAMPLE_VALUES: Record<string, string> = {
 // Token badge helpers
 // =============================================================================
 
-function tokenBadgeClass(count: number): string {
-  if (count >= TOKEN_BUDGET) {
-    return 'bg-danger-soft text-danger'
-  }
-  if (count >= TOKEN_AMBER_THRESHOLD) {
-    return 'bg-warning-soft text-warning'
-  }
-  return 'bg-surface-muted text-fg-muted'
+/** El pill se armaba a mano; el conteo va en un Badge del DS. */
+function tokenBadgeVariant(count: number): NonNullable<BadgeProps['variant']> {
+  if (count >= TOKEN_BUDGET) return 'destructive'
+  if (count >= TOKEN_AMBER_THRESHOLD) return 'warning'
+  return 'secondary'
 }
 
 function estimateTokenCount(text: string): number {
@@ -481,11 +478,12 @@ function TemplateEditorContent({
         {/* Right: token badge + Guardar borrador + Publicar */}
         <div className="flex items-center gap-2 flex-shrink-0">
           {/* Token count badge */}
-          <span
-            className={`inline-flex items-center text-xs rounded-full px-2 py-0.5 font-mono ${tokenBadgeClass(tokenCount)}`}
+          <Badge
+            variant={tokenBadgeVariant(tokenCount)}
+            className="font-mono tabular-nums"
           >
             {tokenCount} tokens
-          </span>
+          </Badge>
 
           {/* Guardar borrador */}
           <Button

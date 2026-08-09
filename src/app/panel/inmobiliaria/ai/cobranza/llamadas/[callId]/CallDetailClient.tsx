@@ -4,6 +4,7 @@
 // Renders header + responsive grid: sticky-top audio on sm, side-by-side on md+.
 // Audio player, transcript, and side panels wired in Tasks 2-4.
 
+import * as React from 'react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useI18n } from '@/lib/i18n'
@@ -12,6 +13,7 @@ import { agentFetch } from '@/lib/api/agent-fetch'
 import { useCallDetail } from '@/lib/hooks/cobranza/use-call-detail'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button } from '@/components/ui'
+import { Badge } from '@leasefy/cadence'
 import CallAudioPlayer from '@/components/inmobiliaria/cobranza/call/CallAudioPlayer'
 import CallTranscript from '@/components/inmobiliaria/cobranza/call/CallTranscript'
 import CallQAPanel from '@/components/inmobiliaria/cobranza/call/CallQAPanel'
@@ -35,38 +37,18 @@ function formatSec(total: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-function qaTone(score: number | null | undefined): {
-  bg: string
-  text: string
-  ring: string
-} {
-  // Matches days-in-stage badge color rule from 31-08 for visual consistency.
-  if (score == null) {
-    return {
-      bg: 'bg-surface-muted',
-      text: 'text-fg-muted',
-      ring: 'ring-border',
-    }
-  }
-  if (score >= 80) {
-    return {
-      bg: 'bg-success-soft',
-      text: 'text-success',
-      ring: 'ring-success/30',
-    }
-  }
-  if (score >= 60) {
-    return {
-      bg: 'bg-warning-soft',
-      text: 'text-warning',
-      ring: 'ring-warning/30',
-    }
-  }
-  return {
-    bg: 'bg-danger-soft',
-    text: 'text-danger',
-    ring: 'ring-danger/30',
-  }
+type BadgeVariant = NonNullable<React.ComponentProps<typeof Badge>['variant']>
+
+/**
+ * Los dos pills de la cabecera se armaban a mano (`rounded-full px-2.5 …
+ * ring-1` + bg/text/ring), en paralelo al Badge del DS. Ahora el puntaje se
+ * expresa como `variant` de Cadence — mismos cortes de siempre.
+ */
+function qaVariant(score: number | null | undefined): BadgeVariant {
+  if (score == null) return 'neutral'
+  if (score >= 80) return 'success'
+  if (score >= 60) return 'warning'
+  return 'danger'
 }
 
 export default function CallDetailClient({ callId }: CallDetailClientProps) {
@@ -219,7 +201,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
   // Escala 0-100 (la garantiza `calls_qa_score_decimal_range`). El código
   // viejo comparaba contra 0,8 / 0,6 y multiplicaba por 100, así que toda
   // llamada salía roja con un número de cuatro cifras.
-  const qa = qaTone(data.qa.overall)
+  const qa = qaVariant(data.qa.overall)
   const overallPct = data.qa.overall == null ? null : Math.round(data.qa.overall)
 
   return (
@@ -269,19 +251,21 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
             </dl>
           </div>
           <div className="flex items-center gap-2">
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${qa.bg} ${qa.text} ${qa.ring}`}
+            <Badge
+              variant={qa}
+              className="tabular-nums"
               aria-label={t('inmobiliaria.ai.cobranza.call.header.qaOverall')}
             >
               QA {overallPct == null ? '—' : `${overallPct}/100`}
-            </span>
-            <span
-              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-surface-muted text-fg-muted ring-1 ring-border"
+            </Badge>
+            <Badge
+              variant="neutral"
+              className="tabular-nums"
               aria-label={t('inmobiliaria.ai.cobranza.call.header.complianceCount')}
             >
               {data.complianceEvents.length}{' '}
               {t('inmobiliaria.ai.cobranza.call.header.complianceCount')}
-            </span>
+            </Badge>
             {/* Phase 38-07 (D-38-11): export transcript PDF button. Backend
                 returns PII-redacted JSON; @react-pdf/renderer builds the PDF
                 client-side and triggers browser download. */}

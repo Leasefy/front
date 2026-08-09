@@ -7,6 +7,12 @@
  *   3. menos de 4 dígitos no dispara búsqueda (mismo umbral que Deudores),
  *   4. elegir un deudor entrega su id — que es justamente lo que antes se le
  *      pedía escribir a una persona.
+ *
+ * Se mockea `useDebtorList` y se afirma sobre el FILTRO que recibe, no sobre
+ * URLs de fetch. Antes el test salía a la red y fallaba sólo dentro de la suite
+ * completa: `NEXT_PUBLIC_AGENT_URL` se inlinea en compilación, así que el valor
+ * que dejó otro archivo (`agent.test`) le ganaba a `vi.stubEnv`. Afirmar sobre
+ * el filtro es además más preciso: la invariante es qué payload se manda.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -14,48 +20,36 @@ import * as React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
-import { DebtorPicker, type PickedDebtor } from './DebtorPicker'
-
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true
 
-vi.mock('@/lib/auth', () => ({
-  useAuth: () => ({
-    agency: { id: 'AGY-TEST' },
-    user: null,
-    isAuthenticated: true,
-    isLoading: false,
-  }),
+/** Cada llamada a `useDebtorList` deja acá el filtro con el que se la invocó. */
+const filtrosVistos: Array<{ search?: string }> = []
+let paginas: Array<{ id: string; fullName: string; cedulaMasked: string }> = []
+
+vi.mock('@/lib/hooks/cobranza/use-debtor-list', () => ({
+  useDebtorList: (filters: { search?: string }) => {
+    filtrosVistos.push(filters)
+    return {
+      pages: paginas,
+      isLoading: false,
+      isLoadingMore: false,
+      error: null,
+      hasMore: false,
+      loadMore: async () => {},
+      refetch: async () => {},
+      generatedAt: null,
+    }
+  },
 }))
 
-const AGENT_URL = 'http://localhost:4000'
-
-function makePage(names: string[]) {
-  return {
-    items: names.map((fullName, i) => ({
-      id: `D-${i}`,
-      fullName,
-      currentStage: 'S1' as const,
-      daysInStage: 3,
-      lastActivityAt: '2026-08-01T00:00:00Z',
-      cedulaMasked: '12•••678',
-      phoneMasked: '300•••5678',
-      emailMasked: null,
-      channel: 'voice' as const,
-      isPaused: false as const,
-      carteraPausedUntil: null,
-      attempts: { total: 0, lastAttemptAt: null },
-    })),
-    nextCursor: null,
-    generatedAt: '2026-08-01T00:00:00Z',
-  }
-}
+import { DebtorPicker, type PickedDebtor } from './DebtorPicker'
 
 let root: Root | null = null
 let container: HTMLDivElement | null = null
 
-function mount(onChange: (d: PickedDebtor | null) => void) {
+function montar(onChange: (d: PickedDebtor | null) => void) {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -65,41 +59,40 @@ function mount(onChange: (d: PickedDebtor | null) => void) {
   return container
 }
 
-function typeSearch(el: HTMLDivElement, text: string) {
+function escribir(el: HTMLDivElement, texto: string) {
   const input = el.querySelector('input') as HTMLInputElement
   const setter = Object.getOwnPropertyDescriptor(
     globalThis.HTMLInputElement.prototype,
     'value',
   )!.set!
   act(() => {
-    setter.call(input, text)
+    setter.call(input, texto)
     input.dispatchEvent(new Event('input', { bubbles: true }))
   })
 }
 
-/** Corre el debounce y deja que resuelvan el hash y el fetch. */
-async function settle() {
+/** Corre el debounce y deja que resuelva el hash (que es asíncrono). */
+async function asentar() {
   await act(async () => {
     vi.advanceTimersByTime(300)
   })
   await act(async () => {
-    await Promise.resolve()
-    await Promise.resolve()
-    await Promise.resolve()
-    await Promise.resolve()
+    for (let i = 0; i < 6; i++) await Promise.resolve()
   })
 }
 
-/** Todas las URLs que se pidieron al agente. */
-function urlsPedidas(fetchMock: ReturnType<typeof vi.fn>): string[] {
-  return fetchMock.mock.calls.map((c) => String(c[0]))
+/** Todos los `search` distintos de undefined que llegaron al hook. */
+function busquedas(): string[] {
+  return filtrosVistos
+    .map((f) => f.search)
+    .filter((s): s is string => s !== undefined)
 }
 
 beforeEach(() => {
-  // `stubEnv` y no asignación directa: otro archivo de tests deja
-  // `NEXT_PUBLIC_AGENT_URL=agent.test` con `vi.stubEnv`, y una asignación
-  // cruda pierde contra eso — el hook salía a la red de verdad.
-  vi.stubEnv('NEXT_PUBLIC_AGENT_URL', AGENT_URL)
+  filtrosVistos.length = 0
+  paginas = [
+    { id: 'D-0', fullName: 'Adriana María Vásquez', cedulaMasked: '12•••678' },
+  ]
   vi.useFakeTimers()
 })
 
@@ -110,79 +103,42 @@ afterEach(() => {
   container = null
   vi.useRealTimers()
   vi.restoreAllMocks()
-  vi.unstubAllGlobals()
-  vi.unstubAllEnvs()
 })
 
 describe('DebtorPicker', () => {
   it('manda la cédula HASHEADA, nunca los dígitos en claro', async () => {
-    const fetchMock = vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => makePage(['Adriana María Vásquez']),
-    }))
-    vi.stubGlobal('fetch', fetchMock)
+    const el = montar(() => {})
+    escribir(el, '1037896541')
+    await asentar()
 
-    const el = mount(() => {})
-    await settle()
-    typeSearch(el, '1037896541')
-    await settle()
-
-    const urls = urlsPedidas(fetchMock)
-    const conBusqueda = urls.filter((u) => u.includes('search='))
-    expect(conBusqueda.length).toBeGreaterThan(0)
-    // La invariante: los dígitos no aparecen en NINGUNA petición.
-    expect(urls.some((u) => u.includes('1037896541'))).toBe(false)
-    expect(conBusqueda.some((u) => u.includes('HEX%3A'))).toBe(true)
+    const enviadas = busquedas()
+    expect(enviadas.length).toBeGreaterThan(0)
+    // La invariante: los dígitos no aparecen en NINGÚN payload.
+    expect(enviadas.some((s) => s.includes('1037896541'))).toBe(false)
+    expect(enviadas.some((s) => s.startsWith('HEX:'))).toBe(true)
   })
 
   it('un nombre viaja tal cual', async () => {
-    const fetchMock = vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => makePage(['Adriana María Vásquez']),
-    }))
-    vi.stubGlobal('fetch', fetchMock)
+    const el = montar(() => {})
+    escribir(el, 'Adriana')
+    await asentar()
 
-    const el = mount(() => {})
-    await settle()
-    typeSearch(el, 'Adriana')
-    await settle()
-
-    expect(
-      urlsPedidas(fetchMock).some((u) => u.includes('search=Adriana')),
-    ).toBe(true)
+    expect(busquedas()).toContain('Adriana')
   })
 
   it('menos de 4 dígitos no dispara búsqueda', async () => {
-    const fetchMock = vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => makePage([]),
-    }))
-    vi.stubGlobal('fetch', fetchMock)
+    const el = montar(() => {})
+    escribir(el, '103')
+    await asentar()
 
-    const el = mount(() => {})
-    await settle()
-    const antes = fetchMock.mock.calls.length
-    typeSearch(el, '103')
-    await settle()
-
-    expect(fetchMock.mock.calls.length).toBe(antes)
+    expect(busquedas()).toHaveLength(0)
     expect(el.textContent).toContain('al menos 4 dígitos')
   })
 
   it('elegir un deudor entrega su id — lo que antes se escribía a mano', async () => {
-    const fetchMock = vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => makePage(['Adriana María Vásquez']),
-    }))
-    vi.stubGlobal('fetch', fetchMock)
-
     const elegido: (PickedDebtor | null)[] = []
-    const el = mount((d) => elegido.push(d))
-    await settle()
+    const el = montar((d) => elegido.push(d))
+    await asentar()
 
     const opcion = el.querySelector('ul button') as HTMLButtonElement
     expect(opcion).not.toBeNull()

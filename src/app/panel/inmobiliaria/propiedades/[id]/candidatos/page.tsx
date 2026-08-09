@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { User, Sparkle, ArrowUpRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
-import { Button, Textarea, EmptyState, Badge, Spinner, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
-import { ErrorState } from '@/components/ui/error-state';
+import { Button, Textarea, EmptyState, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { BackButton } from '@leasefy/cadence';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { propertiesApi } from '@/lib/api/properties.service';
@@ -125,6 +126,8 @@ function ActionModal({
   const cfg = ACTION_CONFIG[type];
   const [text, setText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Error de una ACCIÓN, no de carga: acá el mensaje sí se muestra tal cual,
+  // porque describe lo que la persona acaba de intentar hacer.
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -325,7 +328,7 @@ function CandidatosContent() {
   const [property, setProperty] = useState<Property | null>(null);
   const [candidates, setCandidates] = useState<LandlordCandidate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [actionModal, setActionModal] = useState<{
     type: ActionType;
     candidate: LandlordCandidate;
@@ -352,8 +355,12 @@ function CandidatosContent() {
       setCandidates(candidatesData);
       hasLoadedRef.current = true;
     } catch (err) {
+      // Sólo el primer intento pinta la pantalla de fallo: un refresco de
+      // fondo que falla no debe borrar lo que ya se está viendo.
       if (!hasLoadedRef.current) {
-        setError(err instanceof Error ? err.message : 'Error al cargar los datos');
+        // Se guarda el error ENTERO, no su mensaje: el status es lo que
+        // distingue «no existe» de «no pudimos cargar».
+        setError(err);
       }
     } finally {
       setIsLoading(false);
@@ -423,8 +430,8 @@ function CandidatosContent() {
   // Solo bloquea la vista en el primer load — los auto-refresh son silenciosos.
   if (isLoading && !property) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Spinner size="md" />
+      <div className="p-4 md:p-6">
+        <EsqueletoTabla columnas={4} filas={5} />
       </div>
     );
   }
@@ -432,7 +439,12 @@ function CandidatosContent() {
   if (error) {
     return (
       <div className="p-4 md:p-6">
-        <ErrorState description={error} onRetry={fetchData} />
+        <FalloDeCarga
+          error={error}
+          queEs="esa propiedad"
+          onReintentar={fetchData}
+          volverA={{ label: 'Volver a inmuebles', href: '/panel/inmobiliaria/propiedades' }}
+        />
       </div>
     );
   }

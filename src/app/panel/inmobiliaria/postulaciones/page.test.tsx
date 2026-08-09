@@ -12,6 +12,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 import type { AllCandidatesResponse } from '@/lib/api/applications.types'
+import { ApiError } from '@/lib/api/client'
 
 void React // jsx-preserve
 
@@ -76,6 +77,10 @@ vi.mock('@/components/ui/error-state', () => ({
 }))
 
 vi.mock('@leasefy/cadence', () => ({
+  // Reenvía TODAS las props, no sólo onClick: un mock que las filtra deja
+  // pasar por bueno un botón sin data-testid ni aria-label reales.
+  Button: ({ children, ...props }: { children?: React.ReactNode }) =>
+    React.createElement('button', props, children),
   IconButton: ({ onClick, 'aria-label': ariaLabel }: { onClick?: () => void; 'aria-label'?: string }) =>
     React.createElement('button', { onClick, 'aria-label': ariaLabel }),
   SegmentedControl: ({
@@ -357,13 +362,37 @@ describe('PostulacionesPage', () => {
     expect(container.querySelector('table')).not.toBeNull()
   })
 
-  it('renders the error state when the service rejects', async () => {
-    getAllCandidatesMock.mockRejectedValue(new Error('boom'))
+  it('cuando falla la red ofrece reintentar', async () => {
+    getAllCandidatesMock.mockRejectedValue(new ApiError(0, 'Network request failed'))
 
     await renderPage()
 
-    const error = container.querySelector('[data-testid="error-state"]')
-    expect(error).not.toBeNull()
-    expect(error?.textContent).toContain('No se pudieron cargar las postulaciones')
+    const fallo = container.querySelector('[data-testid="fallo-de-carga"]')
+    expect(fallo).not.toBeNull()
+    expect(fallo?.getAttribute('data-tipo')).toBe('red')
+    expect(container.querySelector('[data-testid="reintentar"]')).not.toBeNull()
+  })
+
+  it('cuando no existe NO ofrece reintentar, porque no va a aparecer', async () => {
+    getAllCandidatesMock.mockRejectedValue(new ApiError(404, 'Agency not found'))
+
+    await renderPage()
+
+    const fallo = container.querySelector('[data-testid="fallo-de-carga"]')
+    expect(fallo?.getAttribute('data-tipo')).toBe('noExiste')
+    expect(container.querySelector('[data-testid="reintentar"]')).toBeNull()
+  })
+
+  it('nunca muestra el mensaje crudo del backend', async () => {
+    getAllCandidatesMock.mockRejectedValue(new ApiError(500, 'Property with ID abc not found'))
+
+    await renderPage()
+
+    // El detalle técnico queda en el DOM para diagnosticar, pero fuera de la
+    // pantalla: lo que se lee es una frase nuestra, en español.
+    const visible = container.querySelector('[data-testid="fallo-de-carga"] p')
+    expect(visible?.textContent).not.toContain('Property with ID')
+    expect(container.querySelector('[data-testid="fallo-detalle-tecnico"]')?.className)
+      .toContain('sr-only')
   })
 })

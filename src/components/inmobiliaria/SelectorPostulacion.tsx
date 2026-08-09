@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { EmptyState } from '@/components/ui/empty-state'
-import { ErrorState } from '@/components/ui/error-state'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import {
   Dialog,
   DialogContent,
@@ -80,7 +80,7 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
   const [candidatos, setCandidatos] = useState<AllCandidatesItem[] | null>(null)
   const [contratos, setContratos] = useState<Contract[]>([])
   const [cargando, setCargando] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const [busqueda, setBusqueda] = useState('')
 
   const cargar = useCallback(async () => {
@@ -97,7 +97,7 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
       setContratos(contrs)
     } catch (err) {
       // Un fallo se dice como fallo: "no pudimos cargar" nunca es "no hay".
-      setError(err instanceof Error ? err.message : 'No pudimos cargar las postulaciones.')
+      setError(err)
     } finally {
       setCargando(false)
     }
@@ -141,10 +141,10 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
             <Spinner size="md" variant="muted" />
           </div>
         ) : error ? (
-          <ErrorState
-            title="No pudimos cargar las postulaciones"
-            description={error}
-            onRetry={() => void cargar()}
+          <FalloDeCarga
+            error={error}
+            queEs="las postulaciones"
+            onReintentar={() => void cargar()}
           />
         ) : !hayAlgunaElegible ? (
           <EmptyState

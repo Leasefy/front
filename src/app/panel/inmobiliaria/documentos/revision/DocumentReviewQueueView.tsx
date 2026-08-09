@@ -10,7 +10,8 @@ import {
   User,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
-import { Badge, Button, Spinner, EmptyState, ErrorState } from '@/components/ui';
+import { Badge, Button, Spinner, EmptyState } from '@/components/ui';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { getReviewStatusLabel, reviewStatusBadgeVariant } from '@/lib/documents/review-status';
 import type {
   ReviewQueueCounts,
@@ -125,10 +126,10 @@ export function DocumentReviewQueueView({
           <Spinner size="lg" />
         </div>
       ) : error ? (
-        <ErrorState
-          title="No pudimos cargar la cola de revisión"
-          description={error}
-          onRetry={onRetry}
+        <FalloDeCarga
+          error={error}
+          queEs="la cola de revisión"
+          onReintentar={onRetry}
         />
       ) : items.length === 0 ? (
         <EmptyState

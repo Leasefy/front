@@ -15,8 +15,9 @@ import {
 import { cn } from '@/lib/utils'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { ErrorState } from '@/components/ui/error-state'
-import { Spinner, Input } from '@/components/ui'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
+import { Input } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { IconButton, SegmentedControl } from '@leasefy/cadence'
 import { RecorridoMapa } from '@/components/inmobiliaria/recorrido/RecorridoMapa'
@@ -136,7 +137,9 @@ export default function PostulacionesPage() {
   const [filter, setFilter] = useState<FilterKey>('ALL')
   const [search, setSearch] = useState('')
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // El error ENTERO, no su mensaje: el status distingue «no existe» de
+  // «no pudimos cargar», y sólo uno de los dos se puede reintentar.
+  const [error, setError] = useState<unknown>(null)
 
   const load = useCallback(async () => {
     setError(null)
@@ -144,7 +147,7 @@ export default function PostulacionesPage() {
       const res = await landlordApplicationsApi.getAllCandidates()
       setItems(res.candidates)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar las postulaciones.')
+      setError(err)
     } finally {
       setIsLoading(false)
     }
@@ -205,14 +208,15 @@ export default function PostulacionesPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-24">
-          <Spinner size="md" variant="muted" label="Cargando postulaciones" />
-        </div>
+        /* Esqueleto con las 5 columnas reales de la tabla, no un spinner: la
+           forma de lo que viene ya se conoce, así que la pantalla no tiene que
+           saltar cuando lleguen los datos. */
+        <EsqueletoTabla columnas={5} filas={6} />
       ) : error ? (
-        <ErrorState
-          title="No se pudieron cargar las postulaciones"
-          description={error}
-          onRetry={() => void load()}
+        <FalloDeCarga
+          error={error}
+          queEs="las postulaciones"
+          onReintentar={() => void load()}
         />
       ) : items.length === 0 ? (
         /* Sin nada que atender, lo útil no son seis tiles en cero ni una tabla

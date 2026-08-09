@@ -30,6 +30,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui'
+import { Card } from '@leasefy/cadence'
 import {
   normalizeAttempts,
   nextCursorOf,
@@ -110,7 +111,7 @@ function Ley2300Content() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div>
-        <h1 className="text-h2 font-heading text-foreground mt-2">
+        <h1 className="text-h2 font-heading text-fg mt-2">
           {t('inmobiliaria.ai.cobranza.compliance.subPages.ley2300Title')}
         </h1>
       </div>
@@ -122,9 +123,13 @@ function Ley2300Content() {
       )}
 
       {items.length > 0 && (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <Card className="overflow-hidden">
+          {/* Forma canónica: `Card` del DS + scroll horizontal propio. El
+              `TableHeader` NO lleva tinte a mano — el del DS ya trae uno
+              adaptativo y `bg-muted/30` fijo rompe el modo oscuro. */}
+          <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-muted/30 border-b border-border">
+            <TableHeader>
               <TableRow>
                 <TableHead>
                   {locale.startsWith('es') ? 'Fecha' : 'Timestamp'}
@@ -142,8 +147,8 @@ function Ley2300Content() {
             </TableHeader>
             <TableBody>
               {items.map((row) => (
-                <TableRow key={row.eventId} className="border-b border-border last:border-0">
-                  <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-foreground">
+                <TableRow key={row.eventId}>
+                  <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-fg">
                     {new Date(row.timestamp).toLocaleString(locale)}
                   </TableCell>
                   {/* Referencia, no cédula: `<Mask>` espera un valor ya
@@ -151,7 +156,7 @@ function Ley2300Content() {
                   <TableCell className="px-3 py-2 font-mono text-xs text-fg-muted">
                     {row.debtorRef}
                   </TableCell>
-                  <TableCell className="px-3 py-2 text-foreground">{row.channel ?? '—'}</TableCell>
+                  <TableCell className="px-3 py-2 text-fg">{row.channel ?? '—'}</TableCell>
                   <TableCell className="px-3 py-2">
                     <Badge
                       variant={row.direction === 'inbound' ? 'default' : 'warning'}
@@ -164,8 +169,9 @@ function Ley2300Content() {
               ))}
             </TableBody>
           </Table>
+          </div>
           {nextCursor && (
-            <div className="p-3 border-t border-border bg-muted/20 text-center">
+            <div className="p-3 border-t border-border text-center">
               <Button
                 variant="outline"
                 size="sm"
@@ -179,7 +185,7 @@ function Ley2300Content() {
               </Button>
             </div>
           )}
-        </div>
+        </Card>
       )}
     </div>
   )

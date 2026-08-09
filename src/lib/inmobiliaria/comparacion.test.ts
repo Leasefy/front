@@ -58,6 +58,23 @@ describe('construirComparacion', () => {
     expect(nivel?.mejores).toEqual([])
   })
 
+  it('un análisis EN CURSO no se lee como un resultado bueno', () => {
+    // El objeto llega con los campos vacíos mientras corre. Leer un `undefined`
+    // como «No necesita revisión» le daba la mejor marca de la fila a quien ni
+    // siquiera fue analizado — lo vi en pantalla, no en un test.
+    const filas = construirComparacion([
+      entrada({ id: 'a' }, { level: 'B', requires_manual_review: true, integrity_flags: [] }),
+      entrada({ id: 'b' }, { status: 'running' }, true),
+    ])
+    const revision = buscar(filas, 'revisionManual')
+    expect(revision?.celdas[1].texto).toBe('Analizando…')
+    expect(revision?.celdas[1].valor).toBeNull()
+    expect(revision?.mejores).toEqual([])
+
+    const señales = buscar(filas, 'integridad')
+    expect(señales?.celdas[1].texto).toBe('Analizando…')
+  })
+
   it('una señal grave pesa más que tres leves', () => {
     const filas = construirComparacion([
       entrada({ id: 'a' }, {

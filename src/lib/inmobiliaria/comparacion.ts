@@ -179,8 +179,11 @@ export function construirComparacion(entradas: CandidatoComparado[]): FilaCompar
       'recomendacion',
       'Qué recomienda el análisis',
       'sinOrden',
-      entradas.map(({ evaluacion }) => ({
-        texto: evaluacion?.recommendation ? RECOMENDACION[evaluacion.recommendation] ?? null : null,
+      entradas.map(({ evaluacion, evaluacionEnCurso }) => ({
+        texto:
+          !evaluacionEnCurso && evaluacion?.recommendation
+            ? RECOMENDACION[evaluacion.recommendation] ?? null
+            : null,
         valor: null,
         detalle:
           evaluacion?.confidence !== undefined
@@ -196,8 +199,13 @@ export function construirComparacion(entradas: CandidatoComparado[]): FilaCompar
       'revisionManual',
       'Necesita revisión manual',
       'menosEsMejor',
-      entradas.map(({ evaluacion }) => {
-        if (!evaluacion) return { texto: null, valor: null }
+      entradas.map(({ evaluacion, evaluacionEnCurso }) => {
+        // Un análisis en curso trae el objeto con los campos todavía vacíos.
+        // Leer un `undefined` como «No» convierte «no sabemos» en «está bien»,
+        // y le da la mejor marca a quien ni siquiera fue analizado.
+        if (!evaluacion || evaluacionEnCurso) {
+          return { texto: evaluacionEnCurso ? 'Analizando…' : null, valor: null }
+        }
         const requiere = evaluacion.requires_manual_review === true
         return {
           texto: requiere ? 'Sí, no se puede aprobar todavía' : 'No',
@@ -215,8 +223,10 @@ export function construirComparacion(entradas: CandidatoComparado[]): FilaCompar
       'integridad',
       'Señales en los documentos',
       'menosEsMejor',
-      entradas.map(({ evaluacion }) => {
-        if (!evaluacion) return { texto: null, valor: null }
+      entradas.map(({ evaluacion, evaluacionEnCurso }) => {
+        if (!evaluacion || evaluacionEnCurso) {
+          return { texto: evaluacionEnCurso ? 'Analizando…' : null, valor: null }
+        }
         const p = pesos(evaluacion.integrity_flags)
         if (p.total === 0) return { texto: 'Ninguna', valor: 0 }
         const partes = [
@@ -242,8 +252,8 @@ export function construirComparacion(entradas: CandidatoComparado[]): FilaCompar
       'credito',
       'Estudio de crédito',
       'másEsMejor',
-      entradas.map(({ evaluacion }) => {
-        const c = evaluacion?.credit_check
+      entradas.map(({ evaluacion, evaluacionEnCurso }) => {
+        const c = evaluacionEnCurso ? undefined : evaluacion?.credit_check
         if (!c) return { texto: null, valor: null }
         return {
           texto: ESTADO_CREDITO[c.status] ?? c.status,
@@ -296,8 +306,8 @@ export function construirComparacion(entradas: CandidatoComparado[]): FilaCompar
       'documentos',
       'Documentos analizados',
       'másEsMejor',
-      entradas.map(({ evaluacion }) => {
-        const docs = evaluacion?.documentsAnalyzed
+      entradas.map(({ evaluacion, evaluacionEnCurso }) => {
+        const docs = evaluacionEnCurso ? undefined : evaluacion?.documentsAnalyzed
         if (!docs) return { texto: null, valor: null }
         return { texto: `${docs.length}`, valor: docs.length }
       }),

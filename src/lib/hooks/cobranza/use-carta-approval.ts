@@ -32,6 +32,7 @@ import { useCallback, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import type { components } from '@/lib/api/generated/agent'
 
 import type { RejectReasonSlug } from '@/components/inmobiliaria/cobranza/approval/RechazarForm'
@@ -67,12 +68,18 @@ export interface UseCartaApprovalResult {
   ) => Promise<void>
 }
 
+/**
+ * Va por `agentFetch`, NO por `fetch` a secas: si el token venció mientras la
+ * pestaña estaba en segundo plano, el 401 se reintenta una vez con sesión
+ * fresca. Con `fetch` crudo la pantalla queda clavada en «Error: 401» sobre
+ * datos que sí existen.
+ */
 async function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
   const headers = agentAuthHeaders(init.headers)
   if (init.body && !headers.has('content-type')) {
     headers.set('content-type', 'application/json')
   }
-  return globalThis.fetch(input, { ...init, headers })
+  return agentFetch(input, { ...init, headers })
 }
 
 export function useCartaApproval(): UseCartaApprovalResult {

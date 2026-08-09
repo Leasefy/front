@@ -71,9 +71,9 @@ describe('RecorridoHilo', () => {
   })
 
   it('el paso siguiente es enlace solo cuando hay a dónde ir', () => {
-    // El 6 (postulación) precede al 7, que sí tiene ruta propia.
+    // El 6 (postulación) precede al 7, que se atiende en `/postulaciones`.
     const conRuta = montar(<RecorridoHilo paso="postulacion" />)
-    expect(conRuta.querySelector('a[href="/panel/inmobiliaria/recorrido"]')).not.toBeNull()
+    expect(conRuta.querySelector('a[href="/panel/inmobiliaria/postulaciones"]')).not.toBeNull()
   })
 
   it('sin ruta declarada, el paso siguiente es texto y no un enlace muerto', () => {

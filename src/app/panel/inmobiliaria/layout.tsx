@@ -210,11 +210,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       dataTourTarget: 'sidebar-cotizador',
       // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
-    // El recorrido del inquilino (paso 7): lo que llega por el embudo que
-    // inicia el propio inquilino, con su evaluación ya hecha. Va ANTES de
-    // Postulaciones porque es lo que la enciende, y es una lista distinta:
-    // Postulaciones lee `GET /landlord/candidates`, otro embudo.
-    { label: t('inmobiliaria.nav.recorrido'), href: '/panel/inmobiliaria/recorrido', scope: 'comercial', icon: Path, module: null, ai: true },
+    // Acá hubo un rato una fila «Recorrido» encima de esta, y era la misma
+    // lista con otro nombre: las postulaciones de la gente con su estado. Dos
+    // filas para una cosa es el mismo defecto que tenían los dos «Documentos»
+    // (`docs/VOCABULARIO.md`, regla madre). El recorrido **no es un destino**:
+    // es el contexto de esta lista, y por eso vive dentro de ella —abierto
+    // cuando no hay nada, plegado cuando hay trabajo—.
     { label: t('inmobiliaria.nav.postulaciones'), href: '/panel/inmobiliaria/postulaciones', scope: 'comercial', icon: ClipboardText, module: null, ai: true },
     {
       // F8: Matching complete workspace. Gated by the agent module 'matching'

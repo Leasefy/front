@@ -71,7 +71,10 @@ const DEFINICIONES: readonly DefinicionPaso[] = [
   { key: 'aseguradoras',   actor: 'inquilino',     href: null },
   { key: 'compatibles',    actor: 'inquilino',     href: null },
   { key: 'postulacion',    actor: 'inquilino',     href: null },
-  { key: 'alerta',         actor: 'inmobiliaria',  href: '/panel/inmobiliaria/recorrido' },
+  // Las postulaciones que llegan viven en `/postulaciones` y en ningún otro
+  // lado. Hubo una pantalla «Recorrido» que mostraba la misma lista con otro
+  // nombre; el mapa se mudó adentro de esta y la ruta redirige.
+  { key: 'alerta',         actor: 'inmobiliaria',  href: '/panel/inmobiliaria/postulaciones' },
   { key: 'evaluacion',     actor: 'inmobiliaria',  href: '/panel/inmobiliaria/ai/estudio/cola' },
   { key: 'comparacion',    actor: 'inmobiliaria',  href: null },
   { key: 'decision',       actor: 'inmobiliaria',  href: null },

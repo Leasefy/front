@@ -25,6 +25,14 @@ const { getAllCandidatesMock, pushMock } = vi.hoisted(() => ({
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: pushMock, replace: vi.fn() }),
+  // El mapa del recorrido lo usa para no enlazar a la pantalla actual.
+  usePathname: () => '/panel/inmobiliaria/postulaciones',
+}))
+
+// El mapa de los 11 pasos tiene su propio test; acá solo importa que esta
+// pantalla lo monte — abierto sin postulaciones, plegado cuando hay trabajo.
+vi.mock('@/components/inmobiliaria/recorrido/RecorridoMapa', () => ({
+  RecorridoMapa: () => React.createElement('div', { 'data-testid': 'recorrido-mapa' }),
 }))
 
 vi.mock('@/lib/api/applications.service', () => ({
@@ -282,6 +290,35 @@ describe('PostulacionesPage', () => {
     await renderPage()
 
     expect(container.querySelector('[data-testid="empty-state"]')).not.toBeNull()
+  })
+
+  it('sin postulaciones muestra el recorrido, no seis KPI en cero', async () => {
+    // Con la bandeja vacía lo útil es explicar qué va a llegar y de dónde
+    // viene, no una tabla vacía con filtros ni tiles en cero. El mapa vivía en
+    // una pantalla aparte llamada «Recorrido» que mostraba ESTA misma lista:
+    // dos rutas para una cosa.
+    getAllCandidatesMock.mockResolvedValue({
+      candidates: [],
+      total: 0,
+      stats: { total: 0, pending: 0, approved: 0, rejected: 0 },
+    })
+
+    await renderPage()
+
+    expect(container.querySelector('[data-testid="recorrido-mapa"]')).not.toBeNull()
+    expect(container.querySelector('table')).toBeNull()
+    expect(tiles().length).toBe(0)
+  })
+
+  it('con postulaciones el recorrido queda plegado, sin robarle espacio', async () => {
+    getAllCandidatesMock.mockResolvedValue(RESPONSE)
+
+    await renderPage()
+
+    const detalles = container.querySelector('details')
+    expect(detalles).not.toBeNull()
+    expect(detalles?.hasAttribute('open')).toBe(false)
+    expect(container.querySelector('table')).not.toBeNull()
   })
 
   it('renders the error state when the service rejects', async () => {

@@ -19,6 +19,7 @@ import { ErrorState } from '@/components/ui/error-state'
 import { Spinner, Input } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { IconButton, SegmentedControl } from '@leasefy/cadence'
+import { RecorridoMapa } from '@/components/inmobiliaria/recorrido/RecorridoMapa'
 import { landlordApplicationsApi } from '@/lib/api/applications.service'
 import type { AllCandidatesItem, LandlordApplicationStatus } from '@/lib/api/applications.types'
 
@@ -198,6 +199,19 @@ export default function PostulacionesPage() {
           description={error}
           onRetry={() => void load()}
         />
+      ) : items.length === 0 ? (
+        /* Sin nada que atender, lo útil no son seis tiles en cero ni una tabla
+           vacía con filtros: es explicar qué va a llegar acá y de dónde viene.
+           El mapa vivía en una pantalla aparte llamada «Recorrido» y ese era el
+           error — el recorrido no es un destino, es el contexto de ESTA lista. */
+        <div className="space-y-8">
+          <EmptyState
+            icon={ClipboardText}
+            title="Todavía no te ha llegado ninguna postulación"
+            description="Cuando alguien con asegurabilidad vigente se postule a una de tus propiedades, aparece acá con su nivel y su estado. Así es el recorrido completo:"
+          />
+          <RecorridoMapa />
+        </div>
       ) : (
         <>
           {/* Stats — clickable, they filter the table */}
@@ -326,6 +340,18 @@ export default function PostulacionesPage() {
               </Table>
             )}
           </div>
+
+          {/* Con trabajo encima, el recorrido se pliega: sigue disponible para
+              quien no sepa de dónde salió esta lista, sin robarle espacio a
+              quien vino a atenderla. */}
+          <details className="group border-t border-border pt-6">
+            <summary className="cursor-pointer list-none text-sm font-medium text-primary hover:underline">
+              Cómo funciona el recorrido
+            </summary>
+            <div className="pt-6">
+              <RecorridoMapa />
+            </div>
+          </details>
         </>
       )}
     </div>

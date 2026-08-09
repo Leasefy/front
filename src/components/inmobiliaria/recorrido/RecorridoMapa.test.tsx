@@ -97,7 +97,7 @@ describe('RecorridoMapa', () => {
   })
 
   it('no ofrece "Ver" hacia la pantalla en la que ya estás', () => {
-    pathnameMock.mockReturnValue('/panel/inmobiliaria/recorrido')
+    pathnameMock.mockReturnValue('/panel/inmobiliaria/postulaciones')
     const el = montar(<RecorridoMapa />)
     const items = [...el.querySelectorAll('li')]
     expect(items[6].querySelector('a')).toBeNull()
@@ -117,7 +117,7 @@ describe('RecorridoMapa', () => {
   it('los pasos con pantalla son navegables', () => {
     const el = montar(<RecorridoMapa />)
     const hrefs = [...el.querySelectorAll('a')].map((a) => a.getAttribute('href'))
-    expect(hrefs).toContain('/panel/inmobiliaria/recorrido')
+    expect(hrefs).toContain('/panel/inmobiliaria/postulaciones')
     expect(hrefs).toContain('/panel/inmobiliaria/ai/estudio/cola')
     expect(hrefs).toContain('/panel/inmobiliaria/contratos')
   })

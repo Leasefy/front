@@ -32,8 +32,23 @@ import { useCallback, useEffect, useState } from 'react'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { useAuth } from '@/lib/auth'
+import type { paths } from '@/lib/api/generated/agent'
 
-// ── Shapes (espejo del contrato del backend) ─────────────────────────────────
+// ── Shapes — DERIVADAS del contrato generado, nunca escritas a mano ──────────
+//
+// Estas interfaces existían copiadas a mano y por eso la pantalla podía quedar
+// desalineada del agente con un 200 OK (mismo patrón que reventó Playbooks).
+// Ahora salen de `api/generated/agent.ts`; si el contrato cambia, rompe `tsc`.
+
+type DisputesListOp = paths['/api/agency/{agencyId}/cobranza/disputes']['get']
+type DisputeOpenOp = paths['/api/agency/{agencyId}/cobranza/disputes']['post']
+type DisputeResolveOp =
+  paths['/api/agency/{agencyId}/cobranza/disputes/{id}/resolve']['post']
+
+type DisputesListResponse =
+  DisputesListOp['responses']['200']['content']['application/json']
+
+export type CobranzaDispute = DisputesListResponse['disputes'][number]
 
 /** Estados de una disputa — mirror del disputes_status_check del backend. */
 export type DisputeStatus = 'open' | 'in_review' | 'resolved'
@@ -41,59 +56,21 @@ export type DisputeStatus = 'open' | 'in_review' | 'resolved'
 /** Outcomes de resolución — mirror del disputes_outcome_check del backend. */
 export type DisputeOutcome = 'procedente' | 'improcedente' | 'parcial'
 
-export interface CobranzaDispute {
-  id: string
-  debtor_id: string
-  payment_id: string | null
-  reason: string
-  disputed_amount: number | null
-  evidence_url: string | null
-  status: string
-  outcome: string | null
-  opened_by_user_id: string | null
-  opened_at: string
-  resolved_by_user_id: string | null
-  resolved_at: string | null
-  resolution_note: string | null
-  created_at: string
-}
-
-interface DisputesListResponse {
-  disputes: CobranzaDispute[]
-  generatedAt: string
-}
-
 /** Cuerpo para abrir una disputa (POST /disputes). */
-export interface OpenDisputeBody {
-  debtorId: string
-  reason: string
-  disputedAmount?: number
-  evidenceUrl?: string
-  paymentId?: string
-}
+export type OpenDisputeBody = NonNullable<
+  DisputeOpenOp['requestBody']
+>['content']['application/json']
 
-interface OpenDisputeResponse {
-  dispute: CobranzaDispute | null
-  escalationCreated: boolean
-  persisted: boolean
-}
+type OpenDisputeResponse =
+  DisputeOpenOp['responses']['200']['content']['application/json']
 
 /** Cuerpo para resolver una disputa (POST /disputes/:id/resolve). */
-export interface ResolveDisputeBody {
-  outcome: DisputeOutcome
-  resolutionNote: string
-  resolvedByUserId: string
-}
+export type ResolveDisputeBody = NonNullable<
+  DisputeResolveOp['requestBody']
+>['content']['application/json']
 
-interface ResolveDisputeResponse {
-  id: string
-  status: string
-  outcome: string
-  resolved_at: string
-  resolved_by_user_id: string
-  recommendation: string
-  persisted: boolean
-}
+type ResolveDisputeResponse =
+  DisputeResolveOp['responses']['200']['content']['application/json']
 
 /** Resultado de una mutación — la UI muestra errores inline sin romper. */
 export interface DisputeMutationResult<T> {

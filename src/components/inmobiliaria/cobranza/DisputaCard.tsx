@@ -8,10 +8,15 @@
  * es HUMANO-only (T-323): abre el modal de resolución; el card no resuelve nada
  * por sí mismo. Las disputas ya resueltas muestran su outcome en lugar de acción.
  *
- * FUENTE: GET /api/agency/:id/cobranza/disputes (useDisputes). El backend devuelve
- * `debtor_id` (UUID) — NO el nombre del deudor — así que se enmascara a un
- * identificador corto en vez de inventar un nombre. Los campos que el endpoint no
- * trae (nombre legible) se omiten; nunca se inventan.
+ * FUENTE: GET /api/agency/:id/cobranza/disputes (useDisputes). El endpoint une el
+ * nombre del deudor dentro del tenant scope (`debtor_name`). Cuando falta —deudor
+ * borrado, join sin resolver— se cae a un identificador corto enmascarado; NUNCA
+ * se inventa un nombre.
+ *
+ * Antes esta tarjeta sólo tenía el UUID y mostraba «Deudor ••A3F2C1»: honesto,
+ * pero ilegible para un operador que necesita saber QUIÉN disputa. El nombre no es
+ * exposición extra — la lista de deudores ya lo devuelve en claro a los mismos
+ * roles.
  *
  * Estilo: contrato DS 2026-06-16 — rounded-xl border-border bg-card, tonos
  * semánticos por token (warning/primary/success + *-soft), sin hex.
@@ -73,13 +78,19 @@ function asStatus(raw: string): DisputeStatus {
 
 /**
  * Enmascara un debtor_id (UUID) a un identificador corto y legible: las últimas
- * 6 posiciones tras un prefijo de candado. El backend no expone el nombre del
- * deudor en esta superficie, así que NO se inventa uno.
+ * 6 posiciones tras un prefijo de candado. Sólo se usa como CAÍDA cuando el
+ * endpoint no pudo unir el nombre; nunca se inventa uno.
  */
 function maskDebtorId(debtorId: string): string {
   const clean = debtorId.replace(/-/g, '')
   const tail = clean.slice(-6).toUpperCase()
   return tail ? `Deudor ••${tail}` : 'Deudor'
+}
+
+/** Nombre del deudor, con caída explícita al id enmascarado. */
+function debtorLabel(d: CobranzaDispute): string {
+  const name = d.debtor_name?.trim()
+  return name && name.length > 0 ? name : maskDebtorId(d.debtor_id)
 }
 
 function truncate(s: string, n: number): string {
@@ -122,7 +133,7 @@ export function DisputaCard({ dispute, onResolve }: DisputaCardProps) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm font-semibold text-fg truncate">
-            {maskDebtorId(dispute.debtor_id)}
+            {debtorLabel(dispute)}
           </span>
           <span
             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 shrink-0 ${token.bg} ${token.text} ${token.ring}`}

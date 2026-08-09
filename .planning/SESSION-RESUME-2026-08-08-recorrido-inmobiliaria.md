@@ -8,40 +8,42 @@ Todo en `~/rent/mvp-inmobiliaria`.
 
 ## 🟡 Estado
 
-**Rama `feat/recorrido-inmobiliaria` — 11 commits, pusheada, árbol limpio. SIN PR todavía.**
+**Rama `feat/recorrido-inmobiliaria` — 14 commits, pusheada, árbol limpio. SIN PR todavía.**
 
 | Compuerta | |
 |---|---|
 | `tsc --noEmit` · `next lint` · **`pnpm build`** | ✅ |
-| 227 archivos / **1838 tests** | ✅ |
+| 227 archivos / **1836 tests** | ✅ |
 
 Sale de `feat/experiencia-inmobiliaria` (PR #63). Cuando #63 mergee, el diff de esta se
 reduce a lo suyo. **Decidir la base del PR en ese momento.**
 
 ---
 
-## ⚠️ PREGUNTA ABIERTA — es lo primero al retomar
+## ✅ RESUELTO — entrar un inmueble es siempre una consignación
 
-**¿Una inmobiliaria publica alguna vez un inmueble que NO administra?**
+Nico, 2026-08-08: *"una inmobiliaria nunca va a tener un inmueble que no tiene propietario,
+por eso siempre es una nueva consignación"*. Es una **regla de negocio**, no una preferencia
+de UI: vale en todo el panel de agencia.
 
-De la respuesta depende un cambio de dos líneas en `src/lib/inmobiliaria/flujos.ts`:
+Había **cuatro** formas de crear un inmueble sin dueño, todas con el mismo origen —formularios
+del panel del PROPIETARIO (que es dueño de lo suyo y no tiene a quién declarar) reutilizados
+en el de agencia—:
 
-En el lanzador «Nuevo» conviven **«Nueva consignación»** y **«Nuevo inmueble»**, y las dos
-llaman a `propertiesApi.create()`. La diferencia real, leída del código:
-
-| | Nueva consignación (`/portafolio/nuevo`) | Nuevo inmueble (`/propiedades/nueva`) |
+| Dónde | Iba a | Ahora |
 |---|---|---|
-| Propietario | **Sí, es el paso 1** | **No lo pide — cero menciones en el archivo** |
-| Comisión · agente · inventario | Sí | No |
-| Publica al catálogo | No | **Sí** |
+| Lanzador «Nuevo» → «Nuevo inmueble» | `/propiedades/nueva` | **eliminado** |
+| Inmuebles · catálogo → «Nueva propiedad» | `/publicar` | «Nueva consignación» |
+| Paleta de comandos → «Crear propiedad» | `/publicar` | «Nueva consignación» |
+| Captura con IA falla → «Crear manual» | `/propiedades/nueva` | consignación |
 
-O sea: **«Nuevo inmueble» crea una propiedad sin propietario.** Para una agencia es una ficha
-a medias. Ese formulario parece hecho para el **propietario** (dueño de lo suyo) y reutilizado
-en el panel de agencia.
+También cambió **el segmento principal del SplitButton**: era el último flujo abierto y quedó
+mostrando «Nuevo contrato» —justo el que NO arranca en frío—. Ahora es **fijo: la
+consignación**. Un botón que dice algo distinto cada vez que se mira es un historial, no un
+punto de partida.
 
-- Si la respuesta es **NO** → sacar `inmueble` de `FLUJOS`.
-- Si es **SÍ** → se queda, pero renombrado para que la diferencia se vea
-  (*«Publicar sin consignar»*) y avisando que queda sin propietario.
+⚠️ `/panel/inmobiliaria/propiedades/nueva` quedó **huérfana**: ya nadie la enlaza. No se borró
+(borrar rutas es aparte); si se confirma que no la usa nadie más, es candidata a irse.
 
 ---
 
@@ -63,9 +65,9 @@ en el panel de agencia.
 
 1. **Es un `SplitButton` del DS**, no un botón con menú: `+` y chevron juntos prometían dos
    cosas contradictorias.
-2. **El segmento izquierdo muestra el ÚLTIMO flujo que esa persona usó**, no una preferencia
-   fija nuestra. Todos los flujos ya tienen su botón donde viven, así que fijar uno duplicaba
-   algo a un clic. Arranque: `FLUJO_INICIAL = 'consignacion'`.
+2. **El segmento izquierdo es siempre la consignación** (`FLUJO_PRINCIPAL`). Hubo una versión
+   que mostraba el último flujo abierto: se cambió porque quedó ofreciendo «Nuevo contrato»,
+   el único que no arranca en frío. Ver el bloque ✅ de arriba.
 3. **La explicación aparece una sola vez por flujo** (`arriendo-facil-flujo-visto-*`).
 4. **`selector?: 'postulacion'`** — un flujo que no arranca en frío abre su paso previo en vez
    de navegar. Lo usa contrato.
@@ -75,8 +77,12 @@ en el panel de agencia.
 
 `SelectorPostulacion.tsx`. Arregla que **«Nuevo contrato» llevaba a un error** —
 `/contratos/nuevo` lee `?applicationId=` y sin él muestra *"Falta el parámetro applicationId"*.
-Pasaba desde `/contratos` (defecto anterior a esta sesión) y desde el lanzador.
 Ofrece solo `APPROVED` sin contrato previo. Se pide sus datos al abrir.
+
+**Eran cuatro puertas al mismo error**, no una: `/contratos` (defecto anterior a esta sesión),
+el lanzador, el **paso 11 del mapa del recorrido** y **«Nuevo contrato» en el buscador**. Las
+dos últimas aparecieron recién al mirar los `href` en pantalla. Las cuatro cerradas: las que no
+tienen de dónde sacar el id llevan al listado, donde el botón sí pregunta.
 
 ### El sidebar
 
@@ -121,10 +127,9 @@ Ofrece solo `APPROVED` sin contrato previo. Se pide sus datos al abrir.
 
 ## ▶️ Sigue
 
-1. Resolver la pregunta abierta de arriba (consignación vs inmueble).
-2. Pasos **9** (comparar lado a lado), **10** (los no elegidos quedan sin estado — y al
+1. Pasos **9** (comparar lado a lado), **10** (los no elegidos quedan sin estado — y al
    inquilino le prometimos avisarle) y **11** (no registra qué aseguradora aprobó ni su número).
-3. Abrir el PR cuando #63 mergee.
+2. Abrir el PR cuando #63 mergee.
 
 **Anotado sin tocar:** la pantalla de Soportes muestra cinco KPI en cero encima del estado
 vacío (andamiaje sobre vacío). Y quedan **~12 operaciones simuladas** en el panel de

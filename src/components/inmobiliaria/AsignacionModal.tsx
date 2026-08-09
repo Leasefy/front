@@ -119,7 +119,7 @@ export function AsignacionModal({
 
         <div className="py-6 space-y-6">
           {/* Property Info */}
-          <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface-muted dark:bg-ink/50">
+          <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface-muted">
             <div className="flex gap-4">
               {/* Thumbnail */}
               {consignacion.propertyThumbnail ? (
@@ -177,7 +177,7 @@ export function AsignacionModal({
                 </div>
               </div>
             ) : (
-              <div className="p-3 rounded-xl border border-border dark:border-strong bg-surface-muted dark:bg-ink/50 text-sm text-fg-muted dark:text-fg-subtle">
+              <div className="p-3 rounded-xl border border-border dark:border-strong bg-surface-muted text-sm text-fg-muted dark:text-fg-subtle">
                 {t('inmobiliaria.agente.noAgentAssigned')}
               </div>
             )}

@@ -174,7 +174,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
               ? 'border-primary/30 bg-primary-soft'
               : hasFile
                 ? 'border-success/30 bg-success-soft'
-                : 'border-border dark:border-strong hover:border-primary/30 dark:hover:border-primary/30 hover:bg-surface-muted dark:hover:bg-ink/50'
+                : 'border-border dark:border-strong hover:border-primary/30 dark:hover:border-primary/30 hover:bg-surface-muted dark:hover:bg-ink'
         )}
       >
         {/* allowlist: react-dropzone hidden file input (canonical dropzone mechanism) */}

@@ -154,7 +154,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
       {/* Leaderboard Table */}
       <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
         {/* Table Header */}
-        <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-surface-muted dark:bg-ink/50 border-b border-border dark:border-strong text-xs font-medium text-fg-muted dark:text-fg-subtle uppercase tracking-wide">
+        <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-surface-muted border-b border-border dark:border-strong text-xs font-medium text-fg-muted dark:text-fg-subtle uppercase tracking-wide">
           <div className="col-span-1 text-center">#</div>
           <div className="col-span-4">{t('inmobiliaria.agente.agentLabel')}</div>
           <div className="col-span-2 text-center">
@@ -198,7 +198,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                   className={cn(
                     'grid grid-cols-12 gap-4 px-4 py-3 border-b border-faint dark:border-strong cursor-pointer transition-all duration-200',
                     isFirst && 'bg-warning-soft/50 dark:bg-warning/10',
-                    !isFirst && 'hover:bg-surface-muted dark:hover:bg-ink/50'
+                    !isFirst && 'hover:bg-surface-muted dark:hover:bg-ink'
                   )}
                 >
                   {/* Rank */}

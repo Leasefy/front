@@ -239,7 +239,7 @@ function TableView({ data, locale, t }: { data: FlujoCajaMonth[]; locale: string
           ))}
         </TableBody>
         <TableFooter>
-          <TableRow className="bg-surface-muted dark:bg-ink/50 border-t-2 border-border dark:border-strong">
+          <TableRow className="bg-surface-muted border-t-2 border-border dark:border-strong">
             <TableCell className="p-3">
               <span className="font-semibold text-fg dark:text-white">{t('inmobiliaria.finance.cashFlow.total')}</span>
             </TableCell>

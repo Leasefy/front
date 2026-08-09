@@ -273,7 +273,7 @@ export default function NotificacionesPage() {
                     className={cn(
                       'text-xs px-1.5 py-0.5 rounded-full',
                       filter === f.id
-                        ? 'bg-surface/20 dark:bg-ink/20'
+                        ? 'bg-surface'
                         : 'bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF]'
                     )}
                   >
@@ -472,7 +472,7 @@ export default function NotificacionesPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="mt-6 p-4 rounded-xl bg-surface-muted dark:bg-ink/50 border border-border-faint dark:border-white/5"
+            className="mt-6 p-4 rounded-xl bg-surface-muted border border-border-faint dark:border-white/5"
           >
             <div className="flex items-center justify-between text-sm">
               <span className="text-fg-muted dark:text-fg-subtle">

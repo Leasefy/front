@@ -147,7 +147,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                       'border-b border-faint dark:border-strong/50 transition-colors',
                       isTop
                         ? 'bg-warning-soft/50 dark:bg-warning/10 hover:bg-warning-soft'
-                        : 'hover:bg-surface-muted dark:hover:bg-ink/30'
+                        : 'hover:bg-surface-muted dark:hover:bg-ink'
                     )}
                   >
                     {/* Rank */}

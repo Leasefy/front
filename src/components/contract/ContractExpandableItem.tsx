@@ -109,14 +109,14 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
     <div
       className={cn(
         'border-b border-border-faint dark:border-border-strong last:border-0',
-        isExpanded && 'bg-surface-muted dark:bg-ink/30'
+        isExpanded && 'bg-surface-muted'
       )}
     >
       {/* Main row - clickable */}
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full text-left px-6 py-5 hover:bg-surface-muted dark:hover:bg-ink/50 transition-colors"
+        className="w-full text-left px-6 py-5 hover:bg-surface-muted dark:hover:bg-ink transition-colors"
       >
         <div className="flex items-center gap-4">
           {/* Document icon */}

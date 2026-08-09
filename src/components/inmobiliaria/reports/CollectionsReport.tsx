@@ -190,7 +190,7 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
               {topDelinquents.map((d, i) => (
                 <TableRow
                   key={i}
-                  className="border-b border-faint dark:border-strong/50 hover:bg-surface-muted dark:hover:bg-ink/30 transition-colors"
+                  className="border-b border-faint dark:border-strong/50 hover:bg-surface-muted dark:hover:bg-ink transition-colors"
                 >
                   <TableCell className="py-2.5 px-4">
                     <div className="flex items-center gap-2">

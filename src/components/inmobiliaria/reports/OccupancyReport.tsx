@@ -171,7 +171,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
               {byProperty.map((prop) => (
                 <TableRow
                   key={prop.id}
-                  className="border-b border-faint dark:border-strong/50 hover:bg-surface-muted dark:hover:bg-ink/30 transition-colors"
+                  className="border-b border-faint dark:border-strong/50 hover:bg-surface-muted dark:hover:bg-ink transition-colors"
                 >
                   <TableCell className="py-2.5 px-4 font-medium text-foreground">{prop.title}</TableCell>
                   <TableCell className="py-2.5 px-4 text-muted-foreground">{prop.zone}</TableCell>

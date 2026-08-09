@@ -81,7 +81,7 @@ function SuggestionRow({
         suggestion.accepted === true
           ? 'bg-success-soft'
           : suggestion.accepted === false
-            ? 'bg-surface-muted dark:bg-ink/50 opacity-60'
+            ? 'bg-surface-muted opacity-60'
             : 'bg-surface dark:bg-ink'
       )}
     >

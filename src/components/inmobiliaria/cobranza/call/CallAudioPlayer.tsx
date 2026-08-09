@@ -155,7 +155,7 @@ export default function CallAudioPlayer({
               : t('inmobiliaria.ai.cobranza.call.player.play')
           }
           aria-pressed={isPlaying}
-          className="min-h-11 min-w-11 rounded-full bg-ink hover:bg-ink/90 text-primary-fg"
+          className="min-h-11 min-w-11 rounded-full bg-ink hover:bg-ink text-primary-fg"
           icon={
             isPlaying ? (
               <svg

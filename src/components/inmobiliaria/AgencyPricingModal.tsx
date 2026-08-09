@@ -137,8 +137,8 @@ export function AgencyPricingModal({
                     selectedPlan === plan.id
                       ? 'ring-2 ring-primary bg-primary-soft/50 dark:bg-primary/20'
                       : plan.isFlex
-                        ? 'bg-surface-muted dark:bg-ink/50 hover:bg-surface-muted dark:hover:bg-ink'
-                        : 'bg-surface-muted dark:bg-ink/50 hover:bg-surface-muted dark:hover:bg-ink',
+                        ? 'bg-surface-muted hover:bg-surface-muted dark:hover:bg-ink'
+                        : 'bg-surface-muted hover:bg-surface-muted dark:hover:bg-ink',
                     'border',
                     plan.isFlex ? 'border-warning/30' : 'border-border dark:border-strong'
                   )}

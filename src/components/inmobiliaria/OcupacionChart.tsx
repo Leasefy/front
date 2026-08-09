@@ -330,7 +330,7 @@ export function OcupacionChart({ data, variant = 'chart', className }: Ocupacion
             <p className="text-sm text-primary">{t('inmobiliaria.finance.occupancy.inProcess')}</p>
           </div>
 
-          <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface-muted dark:bg-ink/50">
+          <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface-muted">
             <div className="w-10 h-10 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center mb-3">
               <Buildings className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
             </div>

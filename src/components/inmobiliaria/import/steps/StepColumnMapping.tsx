@@ -162,7 +162,7 @@ export function StepColumnMapping({ state, updateState }: ImportStepProps) {
               className={cn(
                 'animate-content-reveal flex items-center gap-4 p-3 rounded-md',
                 index % 2 === 0
-                  ? 'bg-surface-muted/50 dark:bg-ink/30'
+                  ? 'bg-surface-muted'
                   : 'bg-transparent'
               )}
               style={{ animationDelay: `${index * 40}ms` }}

@@ -557,7 +557,7 @@ function ForecastDetailsTable({ data, unit }: { data: ForecastDataPoint[]; unit:
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="border-b border-faint dark:border-strong/50 hover:bg-surface-muted dark:hover:bg-ink/30"
+                className="border-b border-faint dark:border-strong/50 hover:bg-surface-muted dark:hover:bg-ink"
               >
                 <TableCell className="p-2 text-sm font-medium text-fg dark:text-white">
                   {new Date(point.date).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {

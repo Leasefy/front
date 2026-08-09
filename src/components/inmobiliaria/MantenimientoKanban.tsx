@@ -147,7 +147,7 @@ function KanbanCard({ solicitud, onClick, t }: KanbanCardProps) {
       exit={{ opacity: 0, scale: 0.95 }}
       onClick={onClick}
       className={cn(
-        'w-full text-left p-3 rounded-md border-l-4 bg-surface dark:bg-ink/80',
+        'w-full text-left p-3 rounded-md border-l-4 bg-surface',
         'border border-border dark:border-strong',
         'hover: hover:border-border dark:hover:border-strong',
         'transition-all cursor-pointer group',
@@ -272,7 +272,7 @@ function KanbanColumnComponent({ column, items, onViewDetails, t }: KanbanColumn
         className={cn(
           'flex-1 p-2 space-y-2 rounded-b-xl border overflow-y-auto',
           'border-border dark:border-strong',
-          'bg-surface-muted/50 dark:bg-ink/30',
+          'bg-surface-muted',
           'min-h-[200px] max-h-[calc(100vh-400px)]'
         )}
       >

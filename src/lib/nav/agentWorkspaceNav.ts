@@ -90,7 +90,8 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.cobranzaResumen', href: `${AI}/cobranza`, icon: SquaresFour, exact: true, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaCasos', href: `${AI}/cobranza/deudores`, icon: Users, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaPendientes', href: `${AI}/cobranza/pendientes`, icon: ListChecks, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaInbox', href: `${AI}/cobranza/inbox`, icon: ChatCircleText, module: 'cobranza' },
+      // OCULTO — «Inbox de conversaciones» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaInbox', href: `${AI}/cobranza/inbox`, icon: ChatCircleText, module: 'cobranza' },
       // FUSIONADO en «Acuerdos de pago» — «Promesas de pago» (ver nota al pie).
       // { labelKey: 'inmobiliaria.ai.nav.cobranzaPromesas', href: `${AI}/cobranza/promesas`, icon: BellRinging, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaAcuerdos', href: `${AI}/cobranza/acuerdos`, icon: Handshake, module: 'cobranza' },
@@ -351,6 +352,34 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
  *
  * Los tres KPI del reporte no subieron a propósito: «llamadas fuera de horario»
  * ya vive en Cumplimiento, y morosidad/recuperación en «Cómo va el agente».
+ */
+
+/**
+ * NOTA — «Inbox de conversaciones» oculto (2026-08-09, decisión de Nico).
+ *
+ * ⚠️ NO es la pantalla de Llamadas con otro nombre. Son canales distintos:
+ * Llamadas es voz (Vapi, con grabación y transcripción); el Inbox es texto de
+ * WhatsApp. En la base: 8 hilos, 7 de `channel = 'whatsapp'` y CERO de voz.
+ * No se solapan.
+ *
+ * ⚠️ QUÉ SE PIERDE MIENTRAS ESTÉ OCULTO
+ *
+ * El Inbox es hoy la ÚNICA superficie que muestra los hilos que el agente se
+ * negó a contestar solo. Verificado en la base del tenant de demostración:
+ *
+ *   5 hilos con `requires_action = true`  (requiere_humano, sin_entender,
+ *   disputa, solicitud_acuerdo, pago_reportado)
+ *   0 de ellos tiene una fila en `agent.escalations`
+ *
+ * Y `use-pendientes.ts` NO lee `conversation_threads`: agrupa escalaciones,
+ * cartas, siniestros, planes y reporte diario. Así que un «requiere humano» de
+ * WhatsApp no aparece en Pendientes ni en ningún otro lado — se queda esperando
+ * a alguien que ya no tiene dónde verlo.
+ *
+ * Para que ocultarlo salga gratis hay que enganchar los hilos con
+ * `requires_action` a Pendientes. Mientras tanto, la ruta y su i18n se quedan
+ * (sólo alcanzable escribiendo la URL) y el hook sigue cableado a los tres
+ * endpoints reales del agente.
  */
 
 /** Find the agent workspace whose basePath contains `pathname` (or null). */

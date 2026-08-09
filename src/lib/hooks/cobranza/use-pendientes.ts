@@ -95,8 +95,17 @@ const PRIORIDAD_RANK: Record<PendientePrioridad, number> = {
   baja: 2,
 }
 
-/** Estable entre renders — usePaymentsFunnel serializa filtros para sus deps. */
-const PLANES_FILTERS: UsePaymentsFunnelFilters = { status: 'pending' }
+/**
+ * Estable entre renders — usePaymentsFunnel serializa filtros para sus deps.
+ *
+ * `en_proceso`, no `pending`: bajo `pending` viajan también las obligaciones
+ * importadas de la cartera, que acá se descartan igual (no tienen
+ * `paymentPlanId`). El endpoint devuelve 50 filas por página y esto sólo lee
+ * la primera, así que con una cartera grande las obligaciones podían llenarla
+ * entera y dejar los planes por revisar fuera de Pendientes —sin error, sin
+ * vacío, simplemente ausentes.
+ */
+const PLANES_FILTERS: UsePaymentsFunnelFilters = { status: 'en_proceso' }
 
 /** Estados de promesa que aún requieren seguimiento. */
 const PTP_OPEN_STATUSES = new Set(['open', 'partially_kept'])

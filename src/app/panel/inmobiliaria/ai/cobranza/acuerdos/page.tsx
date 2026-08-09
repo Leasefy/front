@@ -995,7 +995,7 @@ function AcuerdosContent() {
               </p>
             </div>
             <Button asChild variant="outline" size="sm" hideArrow className="shrink-0">
-              <Link href={`${BASE}/configuracion#heading-negociacion`}>
+              <Link href={`${BASE}/configuracion?volver=acuerdos#heading-negociacion`}>
                 Crear acuerdo general
                 <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
               </Link>

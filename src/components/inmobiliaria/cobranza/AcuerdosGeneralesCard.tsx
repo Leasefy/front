@@ -24,7 +24,7 @@ import { useI18n } from '@/lib/i18n'
 import { useAgencyPolicy } from '@/lib/hooks/cobranza/use-agency-policy'
 
 const CONFIG_HREF =
-  '/panel/inmobiliaria/ai/cobranza/configuracion#heading-negociacion'
+  '/panel/inmobiliaria/ai/cobranza/configuracion?volver=acuerdos#heading-negociacion'
 
 function Dato({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (
@@ -63,18 +63,18 @@ export function AcuerdosGeneralesCard() {
           </span>
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-fg">
-              Acuerdos que el agente puede cerrar solo
+              Acuerdo general
             </h2>
             <p className="text-xs text-fg-muted max-w-xl leading-relaxed">
-              Si el deudor cabe en estas condiciones, el agente cierra el
-              acuerdo sin preguntarte. Fuera de este marco, escala a una
-              persona.
+              Las condiciones que el agente puede aceptar por su cuenta, sin
+              preguntarte. Si el deudor pide algo que cabe acá dentro, cierra el
+              acuerdo; si se pasa, te lo escala.
             </p>
           </div>
         </div>
         <Button asChild variant="outline" size="sm" hideArrow className="shrink-0">
           <Link href={CONFIG_HREF}>
-            Ajustar
+            Editar acuerdo general
             <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
           </Link>
         </Button>

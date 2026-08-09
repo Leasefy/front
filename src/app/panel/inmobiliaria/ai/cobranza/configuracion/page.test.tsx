@@ -103,6 +103,13 @@ const refetchAutonomy = vi.fn().mockResolvedValue(undefined)
 // Mocks (before imports of the module under test)
 // ---------------------------------------------------------------------------
 
+// La pantalla lee `?volver=` para ofrecer la vuelta a Acuerdos de pago.
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+  usePathname: () => '/panel/inmobiliaria/ai/cobranza/configuracion',
+}))
+
 vi.mock('@/lib/context/PermissionsContext', () => ({
   usePermissionsContext: () => ({
     permissions: null,

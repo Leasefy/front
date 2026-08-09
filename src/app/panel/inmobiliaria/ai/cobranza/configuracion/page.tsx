@@ -28,7 +28,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Trash, Warning, FloppyDisk } from '@phosphor-icons/react'
+import { useSearchParams } from 'next/navigation'
+import { ArrowLeft, Plus, Trash, Warning, FloppyDisk } from '@phosphor-icons/react'
 import { RadioCardGroup, RadioCard } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -203,7 +204,11 @@ function SectionErrorBanner({ testId, onRetry }: { testId: string; onRetry: () =
 
 // ─── Main content ───────────────────────────────────────────────────────────
 
+const COBRANZA_BASE = '/panel/inmobiliaria/ai/cobranza'
+
 function CobranzaConfiguracionContent() {
+  // De dónde vino la persona, para poder devolverla.
+  const volverA = useSearchParams().get('volver')
   const { canAccess } = usePermissionsContext()
   const canEdit = canAccess('cobranza', 'configure')
 
@@ -365,6 +370,19 @@ function CobranzaConfiguracionContent() {
   return (
     <main className="p-4 md:p-6 space-y-6 pb-24">
       <div>
+        {/* Vuelta al origen. Se llega acá desde «Ajustar» en Acuerdos de pago y
+            no había cómo volver: el flujo quedaba cortado en una pantalla de
+            configuración larga. El enlace sólo aparece si de verdad venís de
+            ahí (`?volver=acuerdos`), para no inventar una vuelta que no existe
+            cuando entraste por el menú. */}
+        {volverA === 'acuerdos' && (
+          <Button asChild variant="ghost" size="sm" hideArrow className="-ml-2 mb-2">
+            <Link href={`${COBRANZA_BASE}/acuerdos`}>
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+              Volver a Acuerdos de pago
+            </Link>
+          </Button>
+        )}
         <h1 className="text-3xl font-semibold font-heading text-foreground">
           Configuración de cobranza
         </h1>

@@ -220,13 +220,17 @@ export default function RecorridoPage() {
               {t(`${NS}.bandeja.comoFunciona`)}
             </summary>
             <div className="pt-6">
-              <RecorridoMapa pasoActual="alerta" />
+              {/* Sin `pasoActual` a propósito: acá el mapa explica el recorrido,
+                  no narra el de nadie. Pasarle "alerta" marcaba los seis
+                  primeros pasos con ✓ de hecho sin que exista un candidato
+                  que los hubiera hecho. */}
+              <RecorridoMapa />
             </div>
           </details>
         ) : (
           <>
             <h2 className="text-lg font-medium text-fg">{t(`${NS}.bandeja.comoFunciona`)}</h2>
-            <RecorridoMapa pasoActual="alerta" />
+            <RecorridoMapa />
           </>
         )}
       </section>

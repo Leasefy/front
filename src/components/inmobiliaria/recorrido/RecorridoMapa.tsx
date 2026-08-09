@@ -16,6 +16,7 @@
  */
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { ArrowRight, Check } from '@phosphor-icons/react'
 
 import { cn } from '@/lib/utils'
@@ -51,13 +52,19 @@ const MARCA: Record<Estado, string> = {
 
 export function RecorridoMapa({ pasoActual, hrefs, className }: RecorridoMapaProps) {
   const { t } = useI18n()
+  const pathname = usePathname()
   const actual = pasoActual ? PASOS_RECORRIDO.find((p) => p.key === pasoActual) : undefined
 
   return (
     <ol className={cn('space-y-0', className)}>
       {PASOS_RECORRIDO.map((paso, i) => {
         const estado = estadoDe(paso, actual)
-        const href = hrefs?.[paso.key] ?? paso.href
+        const declarado = hrefs?.[paso.key] ?? paso.href
+        // Un "Ver →" que lleva a la pantalla en la que ya estás es ruido; se
+        // oculta. Pero ese paso SÍ tiene pantalla —estás en ella—, así que no
+        // debe caer en el "todavía sin pantalla" de abajo.
+        const esLaPantallaActual = declarado != null && declarado === pathname
+        const href = esLaPantallaActual ? null : declarado
         const esUltimo = i === PASOS_RECORRIDO.length - 1
         // El corte: este paso abre el tramo de la inmobiliaria.
         const cambiaDeManos = i > 0 && PASOS_RECORRIDO[i - 1].actor !== paso.actor
@@ -78,6 +85,7 @@ export function RecorridoMapa({ pasoActual, hrefs, className }: RecorridoMapaPro
               {/* Riel: marca + línea de continuidad */}
               <div className="flex flex-col items-center">
                 <span
+                  data-paso={paso.numero}
                   className={cn(
                     'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border',
                     'font-mono text-xs tabular-nums',
@@ -129,7 +137,8 @@ export function RecorridoMapa({ pasoActual, hrefs, className }: RecorridoMapaPro
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
                 ) : (
-                  paso.actor === 'inmobiliaria' && (
+                  paso.actor === 'inmobiliaria' &&
+                  !esLaPantallaActual && (
                     // Honestidad: es un paso suyo y todavía no tiene pantalla propia.
                     <p className="mt-2 text-xs text-fg-subtle">
                       {t('inmobiliaria.recorrido.sinPantalla')}

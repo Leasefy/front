@@ -100,6 +100,35 @@ usuario, o que exista una ruta que lo destrabe. Hoy un 401 de configuración
 
 ---
 
+## 🔴 2b. Una inmobiliaria recién registrada recibe 401 de TODO el agente
+
+Encontrado después de arreglar lo anterior y entrar de verdad al panel con una
+agencia nueva.
+
+Todas las llamadas al agente responden `401 {"error":"Unauthorized — invalid
+token"}` — no solo el funnel: también `my-permissions`. Verificado **directo
+contra `:4100`**, sin pasar por el proxy del front, con un token recién emitido
+y válido.
+
+La causa está en `agency-jwt.ts:25-28`: en el camino ES256 (los tokens nuevos
+de Supabase), el agente **no confía en un `agencyId` del token** — lo resuelve
+buscando al usuario en `agency_members(tenantId, email)`.
+
+`POST /internal/agencies/provision` crea el tenant *mínimo* pero **no deja al
+usuario como miembro**. La membresía la crea el segundo paso,
+`POST /onboarding/start`, que manda un magic link por correo.
+
+O sea: entre que la inmobiliaria termina de registrarse y que alguien abre ese
+correo, **el panel le muestra todos los módulos de IA y todos le fallan**. No
+hay nada en pantalla que explique por qué.
+
+**Preguntas:** ¿el magic link es obligatorio para dejar la membresía, o
+`provision` debería crearla? Y si es obligatorio, ¿el panel debería saber que
+la agencia todavía no está anclada, para decirlo en vez de dar 401 en cada
+tarjeta?
+
+---
+
 ## 🟠 3. ¿`applicationId` del funnel == `id` de `/landlord/candidates`?
 
 El agente devuelve, por postulación:

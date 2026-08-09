@@ -17,6 +17,10 @@ void React // jsx-preserve
 
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'))
 
+// El mapa oculta el enlace del paso en cuya pantalla ya estás.
+const pathnameMock = vi.fn(() => '/panel/inmobiliaria/otra-cosa')
+vi.mock('next/navigation', () => ({ usePathname: () => pathnameMock() }))
+
 // Sin esto React avisa en cada render que el entorno no soporta act(). No
 // cambia el resultado, pero llena la salida de ruido y tapa avisos reales.
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -69,11 +73,37 @@ describe('RecorridoMapa', () => {
     expect(items[10].textContent).toContain('Tú')
   })
 
-  it('sin paso actual no marca nada como hecho', () => {
+  it('sin paso actual NO da ningún paso por hecho', () => {
+    // Regresión de un defecto que solo se vio en pantalla: la página del paso 7
+    // pasaba `pasoActual="alerta"` siempre, así que con la bandeja vacía —sin
+    // un solo candidato— el mapa mostraba los seis primeros pasos con ✓, como
+    // si alguien los hubiera cumplido. Sin paso actual, todas las marcas
+    // conservan su número.
     const el = montar(<RecorridoMapa />)
-    // El check solo aparece en los pasos ya cumplidos.
-    expect(el.querySelectorAll('svg[data-hecho]')).toHaveLength(0)
+    const marcas = [...el.querySelectorAll('[data-paso]')].map((s) => s.textContent)
+    expect(marcas).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'])
     expect(el.textContent).toContain('Explora el catálogo')
+  })
+
+  it('con paso actual sí marca como cumplidos los anteriores', () => {
+    const el = montar(<RecorridoMapa pasoActual="alerta" />)
+    const marcas = [...el.querySelectorAll('[data-paso]')].map((s) => s.textContent)
+    // Los seis del inquilino quedaron atrás: el número deja lugar al ✓.
+    expect(marcas.slice(0, 6)).toEqual(['', '', '', '', '', ''])
+    // El 7 es el actual y conserva el suyo.
+    expect(marcas[6]).toBe('7')
+    // Y los que faltan siguen numerados.
+    expect(marcas.slice(7)).toEqual(['8', '9', '10', '11'])
+  })
+
+  it('no ofrece "Ver" hacia la pantalla en la que ya estás', () => {
+    pathnameMock.mockReturnValue('/panel/inmobiliaria/recorrido')
+    const el = montar(<RecorridoMapa />)
+    const items = [...el.querySelectorAll('li')]
+    expect(items[6].querySelector('a')).toBeNull()
+    // …y ese paso NO cae en "todavía sin pantalla": la pantalla es esta.
+    expect(items[6].textContent).not.toContain('Todavía sin pantalla')
+    pathnameMock.mockReturnValue('/panel/inmobiliaria/otra-cosa')
   })
 
   it('con paso actual, los anteriores quedan atrás y el actual se destaca', () => {

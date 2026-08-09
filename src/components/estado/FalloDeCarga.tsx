@@ -54,6 +54,9 @@ export function FalloDeCarga({
 }: FalloDeCargaProps) {
   const fallo = clasificarFallo(error, { queEs })
   const Icono = ICONO[fallo.tipo]
+  // Para volver a donde estaba después de entrar de nuevo.
+  const rutaActual =
+    typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/'
 
   // El botón de reintentar aparece SÓLO si volver a pedirlo puede dar otro
   // resultado. Sobre un 404 o un 403 sería mentir.
@@ -95,7 +98,12 @@ export function FalloDeCarga({
           )}
           {fallo.tipo === 'sinSesion' && (
             <Button asChild>
-              <Link href="/auth/login">Volver a entrar</Link>
+              {/* `/auth`, no `/auth/login` — esa ruta no existe y el botón caía
+                  en el 404. Con returnUrl para volver donde estaba, igual que
+                  ProtectedRoute. */}
+              <Link href={`/auth?returnUrl=${encodeURIComponent(rutaActual)}`}>
+                Volver a entrar
+              </Link>
             </Button>
           )}
           {volverA && (

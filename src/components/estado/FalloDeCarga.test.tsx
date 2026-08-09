@@ -5,7 +5,7 @@ import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
-import { ApiError } from '@/lib/api/client'
+import { ApiError, setAccessToken } from '@/lib/api/client'
 
 vi.mock('next/link', () => ({
   default: ({ children, href }: { children?: React.ReactNode; href: string }) =>
@@ -90,9 +90,22 @@ describe('<FalloDeCarga>', () => {
     expect(container.querySelector('[role="alert"]')).not.toBeNull()
   })
 
-  it('un 401 manda a entrar de nuevo, no a reintentar', () => {
+  it('un 401 SIN sesión manda a entrar de nuevo, a una ruta que existe', () => {
+    // `/auth/login` no existe en este repo: el botón caía en el 404. La ruta
+    // real es `/auth`, y lleva returnUrl como hace ProtectedRoute.
+    setAccessToken(null)
     render(<FalloDeCarga error={new ApiError(401, 'Unauthorized')} onReintentar={vi.fn()} />)
     expect(container.querySelector('[data-testid="reintentar"]')).toBeNull()
-    expect(container.querySelector('a[href="/auth/login"]')).not.toBeNull()
+    const salida = container.querySelector('a[href^="/auth?returnUrl="]')
+    expect(salida).not.toBeNull()
+    expect(container.querySelector('a[href="/auth/login"]')).toBeNull()
+  })
+
+  it('un 401 CON sesión viva ofrece reintentar y no habla de la sesión', () => {
+    setAccessToken('token-vivo')
+    render(<FalloDeCarga error={new ApiError(401, 'Unauthorized')} onReintentar={vi.fn()} />)
+    expect(container.querySelector('[data-testid="reintentar"]')).not.toBeNull()
+    expect(container.textContent).not.toContain('se venció')
+    setAccessToken(null)
   })
 })

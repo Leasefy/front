@@ -558,7 +558,20 @@ const GUIONES = [
     outcome: 'escalated',
     duration: 187,
     qa: { rapport: 66, compliance: 78, resolution: 35, sentiment: 30 },
-    complianceFlags: ['tono_elevado', 'mencion_de_reporte_sin_advertencia'],
+    // SIN marcas de cumplimiento — a propósito.
+    //
+    // Acá había `['tono_elevado', 'mencion_de_reporte_sin_advertencia']`,
+    // inventado por mí. Dos problemas: (1) ese vocabulario NO existe en el
+    // agente, que maneja el cumplimiento como un objeto de booleanos
+    // (`aiDisclosed`, `consentToRecord`, `optOutRequested`, `habeasDataNoticed`,
+    // `rneChecked`); (2) son acusaciones —tono elevado, mención de reporte a
+    // centrales sin advertir— colgadas de una llamada, sin ningún rótulo que
+    // diga que son de mentira, en la pantalla que sirve de evidencia ante una
+    // queja de la SIC.
+    //
+    // Además `agent.calls.compliance_flags` hoy no la escribe NADIE en el
+    // agente, así que sembrarla también fingía que la función está cableada.
+    complianceFlags: [],
     summary: {
       outcome: 'escalated',
       paymentPromised: null,

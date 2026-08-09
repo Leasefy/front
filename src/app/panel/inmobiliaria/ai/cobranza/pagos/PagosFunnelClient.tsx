@@ -15,7 +15,7 @@
  */
 
 import * as React from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { CurrencyCircleDollar } from '@phosphor-icons/react'
@@ -42,6 +42,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, Chip, SegmentedControl } from '@leasefy/cadence'
+import { TablePagination } from '@/components/ui/pagination'
+import {
+  PAGE_SIZE_OPTIONS,
+  useTablePagination,
+} from '@/lib/hooks/use-table-pagination'
 import {
   usePaymentsFunnel,
   type UsePaymentsFunnelFilters,
@@ -145,25 +150,33 @@ export default function PagosFunnelClient() {
   const { rows, kpis, isLoading, isLoadingMore, error, hasMore, loadMore, refetch } =
     usePaymentsFunnel(filters)
 
-  // ── Infinite scroll sentinel ──────────────────────────────────────────────
-  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  // ── Paginación ────────────────────────────────────────────────────────────
+  //
+  // Páginas numeradas, igual que Llamadas y Cartas, en vez del scroll infinito
+  // que había: un paginador dice cuántos pagos hay y deja volver a una página,
+  // dos cosas que el scroll infinito no permite.
+  //
+  // El endpoint pagina por cursor del lado del servidor, así que se recorta en
+  // memoria lo YA cargado y se pide el siguiente tramo al llegar a la última
+  // página. Las dos mecánicas conviven sin pelearse.
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(rows, {
+    resetKey: `${providers.join(',')}|${statuses.join(',')}|${dateWindow}|${sort}`,
+  })
+
+  const lastPage = Math.max(1, Math.ceil(total / pageSize))
   useEffect(() => {
-    const el = sentinelRef.current
-    if (!el) return
-    if (!hasMore) return
-    const obs = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            void loadMore()
-          }
-        }
-      },
-      { rootMargin: '300px' },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [hasMore, loadMore, rows.length])
+    if (page >= lastPage && hasMore && !isLoadingMore) {
+      void loadMore()
+    }
+  }, [page, lastPage, hasMore, isLoadingMore, loadMore])
 
   // Phase 38-05a: hasActiveFilters discriminates between "no payments yet"
   // (page-level EmptyState with CTA) and "no payments match these filters"
@@ -287,8 +300,16 @@ export default function PagosFunnelClient() {
       {/* KPI strip */}
       {renderKpis(kpis)}
 
+      {/*
+        Una sola tarjeta: barra de herramientas, tabla y pie de paginación.
+        Antes el selector de fechas, los filtros y el orden flotaban sueltos
+        ENCIMA de la tarjeta, así que la pantalla se leía como tres bloques sin
+        relación en vez de una tabla con sus controles.
+      */}
+      <Card className="overflow-hidden">
+      <div className="border-b border-border px-4 py-3 space-y-3">
       {/* Date-window selector — excluyente → SegmentedControl (contrato §3) */}
-      <div className="flex flex-wrap items-center gap-2 mb-3">
+      <div className="flex flex-wrap items-center gap-2">
         <SegmentedControl<DateWindow>
           value={dateWindow}
           onChange={setDateWindow}
@@ -301,7 +322,7 @@ export default function PagosFunnelClient() {
       </div>
 
       {/* Filters row */}
-      <div className="flex flex-col md:flex-row md:items-center md:flex-wrap gap-3 mb-4">
+      <div className="flex flex-col md:flex-row md:items-center md:flex-wrap gap-3">
         <fieldset>
           <legend className="text-xs font-medium text-fg-muted mr-2 inline">
             {t('inmobiliaria.ai.cobranza.pagos.filter.provider')}:
@@ -352,7 +373,7 @@ export default function PagosFunnelClient() {
       </div>
 
       {/* Sort selector */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2">
         <label
           htmlFor="pagos-sort"
           className="text-xs font-medium text-fg-muted"
@@ -376,10 +397,11 @@ export default function PagosFunnelClient() {
           </SelectContent>
         </Select>
       </div>
+      </div>
 
       {/* Error banner */}
       {error && (
-        <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-3">
+        <div className="border-b border-border bg-danger-soft px-4 py-3 flex items-center justify-between gap-3">
           <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.pagos.error')}: {error}
           </p>
@@ -396,7 +418,6 @@ export default function PagosFunnelClient() {
       )}
 
       {/* Table */}
-      <Card className="overflow-hidden">
         <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -457,7 +478,7 @@ export default function PagosFunnelClient() {
                 </TableCell>
               </TableRow>
             )}
-            {rows.map((row) => {
+            {pageItems.map((row) => {
               const isPending = row.disbursementPendingDays >= 3
               return (
                 <TableRow
@@ -545,18 +566,21 @@ export default function PagosFunnelClient() {
           </TableBody>
         </Table>
         </div>
-      </Card>
 
-      {/* Sentinel + loadingMore spinner */}
-      {hasMore && (
-        <div ref={sentinelRef} className="py-6 flex items-center justify-center">
-          {isLoadingMore && (
-            <span className="text-xs text-fg-muted">
-              {t('inmobiliaria.ai.cobranza.pagos.loadingMore')}
-            </span>
-          )}
-        </div>
-      )}
+        {/* Pie: sólo si hay más de una página — un paginador que no pagina es ruido. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
+      </Card>
     </main>
   )
 }

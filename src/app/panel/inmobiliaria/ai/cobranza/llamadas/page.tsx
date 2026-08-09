@@ -339,8 +339,14 @@ function LlamadasContent() {
         </p>
       </div>
 
+      {/*
+        Contenedor canónico del panel: UNA tarjeta con su barra de filtros, la
+        tabla y el pie de paginación. Los filtros vivían sueltos por encima de
+        la tarjeta y la pantalla se leía como dos bloques sin relación.
+      */}
+      <Card className="overflow-hidden">
       {/* Filtros */}
-      <div className="flex flex-wrap gap-3 mb-4">
+      <div className="flex flex-wrap gap-3 border-b border-border px-4 py-3">
         <fieldset>
           <legend className="sr-only">
             {t('inmobiliaria.ai.cobranza.llamadas.list.filters.outcome')}
@@ -415,7 +421,7 @@ function LlamadasContent() {
       {error && calls.length > 0 && (
         <div
           role="status"
-          className="rounded-xl border border-warning/30 bg-warning-soft p-3 text-sm text-warning flex items-center gap-2 mb-4"
+          className="border-b border-border bg-warning-soft px-4 py-3 text-sm text-warning flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>
@@ -431,9 +437,6 @@ function LlamadasContent() {
         </div>
       )}
 
-      {/* Contenedor canónico de tabla del panel: Card del DS + scroll horizontal
-          + pie de paginación (mismo patrón que Habeas Data y Contratos). */}
-      <Card className="overflow-hidden">
         <div className="overflow-x-auto">
         <Table>
           <TableHeader>

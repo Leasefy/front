@@ -14,6 +14,7 @@ import {
 } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
+import { useLenis } from "@/components/providers/SmoothScroll"
 
 /**
  * ADAPTER fino sobre el Sheet de @leasefy/cadence que preserva la API local del mvp:
@@ -71,7 +72,16 @@ interface SheetContentProps extends Omit<DSSheetContentProps, "hideClose"> {
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof DSSheetContent>,
   SheetContentProps
->(({ side = "right", className, overlayClassName, children, hideCloseButton = false, ...props }, ref) => (
+>(({ side = "right", className, overlayClassName, children, hideCloseButton = false, ...props }, ref) => {
+  // Lenis escucha la rueda en `window`, así que el scroll-lock de Radix no lo
+  // frena: con un cajón abierto, la rueda movía el fondo. El Content sólo está
+  // montado mientras el cajón está abierto, así que montar/desmontar alcanza.
+  const lenis = useLenis()
+  React.useEffect(() => {
+    lenis.stop()
+    return () => lenis.start()
+  }, [lenis])
+  return (
   <DSSheetContent
     ref={ref}
     side={side}
@@ -91,7 +101,8 @@ const SheetContent = React.forwardRef<
   >
     {children}
   </DSSheetContent>
-))
+  )
+})
 SheetContent.displayName = "SheetContent"
 
 const SheetHeader = ({

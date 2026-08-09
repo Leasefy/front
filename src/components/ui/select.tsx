@@ -58,6 +58,12 @@ const SelectContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DSSelectContent
     ref={ref}
+    // Lenis escucha la rueda en `window`: sin esto, la lista larga NO scrollea
+    // con el mouse (sólo con las flechitas de Radix o el teclado) y se lee como
+    // que el select está cortado. Va acá y no en cada call site porque le pasa
+    // a TODOS los selects. `onWheel + stopPropagation` no sirve: Lenis ya lo
+    // escuchó en window. Ver docs/DESIGN.md §Lenis.
+    data-lenis-prevent
     className={cn("z-[400] max-h-96", className)}
     {...props}
   />

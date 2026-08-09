@@ -14,6 +14,7 @@ import {
 } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
+import { useLenis } from "@/components/providers/SmoothScroll"
 
 /**
  * ADAPTER fino sobre el Dialog de @leasefy/cadence que preserva la API local del mvp:
@@ -56,10 +57,32 @@ const DialogOverlay = React.forwardRef<
 ))
 DialogOverlay.displayName = "DialogOverlay"
 
+/**
+ * Frena Lenis mientras hay un modal abierto.
+ *
+ * El bloqueo de scroll de Radix (react-remove-scroll) tapa el scroll NATIVO del
+ * body, pero Lenis no scrollea por ahí: escucha la rueda en `window` y mueve la
+ * página por su cuenta. Resultado: con el modal abierto, la rueda scrolleaba el
+ * fondo. Va en el adaptador y no en cada pantalla porque le pasa a los 21
+ * diálogos del panel.
+ *
+ * Vive en el Content y no en el Root porque el Content sólo está montado
+ * mientras el modal está abierto — así funciona igual controlado que no.
+ */
+function useFrenarLenisMientrasAbierto() {
+  const lenis = useLenis()
+  React.useEffect(() => {
+    lenis.stop()
+    return () => lenis.start()
+  }, [lenis])
+}
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DSDialogContent>,
   DSDialogContentProps
->(({ className, overlayClassName, children, ...props }, ref) => (
+>(({ className, overlayClassName, children, ...props }, ref) => {
+  useFrenarLenisMientrasAbierto()
+  return (
   <DSDialogContent
     ref={ref}
     overlayClassName={cn(dialogOverlayClasses, overlayClassName)}
@@ -77,7 +100,8 @@ const DialogContent = React.forwardRef<
   >
     {children}
   </DSDialogContent>
-))
+  )
+})
 DialogContent.displayName = "DialogContent"
 
 const DialogHeader = ({

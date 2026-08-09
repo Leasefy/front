@@ -89,6 +89,13 @@ const CRM_PROVIDERS = ['wasi', 'domus', 'webprop', 'sinco'] as const
 const ERP_PROVIDERS = ['alegra', 'alegra_full', 'siigo_full', 'world_office'] as const
 const BILLING_MODELS = ['performance', 'subscription', 'hybrid'] as const
 
+/** El `<select>` mostraba el slug crudo: «performance», «hybrid». */
+const BILLING_MODEL_LABELS: Record<(typeof BILLING_MODELS)[number], string> = {
+  performance: 'Por resultado',
+  subscription: 'Suscripción',
+  hybrid: 'Mixto',
+}
+
 interface NegotiationDraft {
   maxDiscountPct: number
   maxPlanMonths: number
@@ -131,6 +138,113 @@ function toDraft(policy: AgencyPolicy): NegotiationDraft {
   }
 }
 
+/**
+ * Los campos de `NegotiationDraft` viajan en UN solo PATCH, pero NO son una
+ * sola cosa. Antes vivían los tres grupos apilados dentro de «Negociación»,
+ * así que el CRM y el modelo de facturación quedaban bajo el título «Límites
+ * que el agente puede ofrecer al negociar con un deudor».
+ */
+
+/** El acuerdo general: lo que el agente puede cerrar sin preguntar. */
+const CLAVES_ACUERDO = [
+  'maxDiscountPct',
+  'maxPlanMonths',
+  'minPaymentCop',
+  'negotiationMaxAttempts',
+  'allowedPaymentPlans',
+  'allowHardshipPath',
+  'autoEscalateAfterDays',
+  'siniestroCanonesThreshold',
+] as const satisfies readonly (keyof NegotiationDraft)[]
+
+/** Cómo nos paga la inmobiliaria y con qué sistemas se habla. */
+const CLAVES_COMERCIAL = [
+  'billingModel',
+  'successFeePct',
+  'hybridPct',
+  'monthlyMinCop',
+  'perDeudorCop',
+  'baseFeeCop',
+  'crmProvider',
+  'erpProvider',
+] as const satisfies readonly (keyof NegotiationDraft)[]
+
+function difieren(
+  saved: NegotiationDraft | null,
+  draft: NegotiationDraft | null,
+  keys: readonly (keyof NegotiationDraft)[],
+): boolean {
+  if (!saved || !draft) return false
+  return keys.some((k) => JSON.stringify(saved[k]) !== JSON.stringify(draft[k]))
+}
+
+const pesos = new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
+  maximumFractionDigits: 0,
+})
+
+/**
+ * El acuerdo, dicho en una frase.
+ *
+ * Es la parte que hacía falta: con once campos sueltos nadie sabe qué acordó.
+ * Leer «hasta 20% de descuento, en 3, 6 o 12 cuotas» es la única forma de
+ * revisar de un vistazo si el acuerdo dice lo que uno cree.
+ */
+function resumenAcuerdo(d: NegotiationDraft): string {
+  const partes: string[] = []
+  partes.push(
+    d.maxDiscountPct > 0
+      ? `hasta ${Math.round(d.maxDiscountPct * 100)}% de descuento`
+      : 'sin descuento',
+  )
+  const planes = [...d.allowedPaymentPlans].sort((a, b) => a - b)
+  if (planes.length > 0) {
+    const enMeses = planes.map(String)
+    const ultimo = enMeses.pop()
+    partes.push(
+      `en ${enMeses.length > 0 ? `${enMeses.join(', ')} o ${ultimo}` : ultimo} ${
+        planes.length === 1 && planes[0] === 1 ? 'cuota' : 'cuotas'
+      }`,
+    )
+  } else {
+    partes.push('sin plazos a cuotas')
+  }
+  if (d.minPaymentCop > 0) partes.push(`con un pago mínimo de ${pesos.format(d.minPaymentCop)}`)
+  partes.push(`y hasta ${d.negotiationMaxAttempts} ${d.negotiationMaxAttempts === 1 ? 'intento' : 'intentos'}`)
+  return `El agente puede cerrar solo: ${partes.join(', ')}.`
+}
+
+/**
+ * Incoherencias que hacen que el acuerdo no diga lo que aparenta.
+ *
+ * `maxPlanMonths` y `allowedPaymentPlans` NO son el mismo campo: el primero es
+ * el tope que usa `calculatePaymentPlan` para armar el cronograma; el segundo
+ * es la lista blanca que decide si la oferta se cierra sola o se escala. Se
+ * pueden contradecir, y hoy en todos los tenants se contradicen.
+ */
+function avisosDelAcuerdo(d: NegotiationDraft): string[] {
+  const avisos: string[] = []
+  const planes = [...d.allowedPaymentPlans].sort((a, b) => a - b)
+  const mayor = planes[planes.length - 1]
+
+  if (d.maxPlanMonths < 1 && planes.length > 0) {
+    avisos.push(
+      `El plazo máximo está en ${d.maxPlanMonths}, así que el agente no puede armar ningún cronograma —aunque abajo estén marcados ${planes.join(', ')} meses. Subilo a ${mayor} para que los plazos marcados sirvan.`,
+    )
+  } else if (mayor !== undefined && d.maxPlanMonths > 0 && mayor > d.maxPlanMonths) {
+    avisos.push(
+      `Están marcados ${mayor} meses, pero el plazo máximo es ${d.maxPlanMonths}: un deudor que pida ${mayor} cuotas te lo va a escalar en vez de cerrarlo.`,
+    )
+  }
+
+  if (d.maxDiscountPct === 0 && planes.length === 0) {
+    avisos.push('Sin descuento y sin plazos, el agente no tiene nada que ofrecer: todo termina escalado.')
+  }
+
+  return avisos
+}
+
 /** Partial diff — only keys that actually changed travel to the network. */
 function diffPatch(saved: NegotiationDraft, draft: NegotiationDraft): AgencyPolicyPatchBody {
   const patch: Record<string, unknown> = {}
@@ -170,6 +284,54 @@ const AUTONOMY_OPTIONS: { value: AutonomyLevel; label: string; description: stri
 ]
 
 // ─── Shared small components ────────────────────────────────────────────────
+
+/**
+ * Campo de porcentaje.
+ *
+ * El valor viaja como fracción (0.08) porque así lo guarda la política, pero
+ * se escribe en % — antes la etiqueta decía «% éxito» y el campo mostraba
+ * `0,08`, que se lee como «0,08 %» y es cien veces menos.
+ */
+function PorcentajeField({
+  id,
+  testId,
+  label,
+  value,
+  disabled,
+  onChange,
+}: {
+  id: string
+  testId?: string
+  label: string
+  value: number
+  disabled: boolean
+  onChange: (fraccion: number) => void
+}) {
+  return (
+    <div className="space-y-1">
+      <Label htmlFor={id} className="text-sm">
+        {label}
+      </Label>
+      <div className="relative">
+        <Input
+          id={id}
+          data-testid={testId ?? `field-${id}`}
+          type="number"
+          min={0}
+          max={50}
+          step={1}
+          className="min-h-[44px] pr-8"
+          disabled={disabled}
+          value={Math.round(value * 100)}
+          onChange={(e) => onChange(Math.min(50, Math.max(0, Number(e.target.value))) / 100)}
+        />
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-fg-muted">
+          %
+        </span>
+      </div>
+    </div>
+  )
+}
 
 function NotProvisionedBanner({ testId }: { testId: string }) {
   return (
@@ -232,6 +394,13 @@ function CobranzaConfiguracionContent() {
 
   const negDirty =
     !!negDraft && !!negSavedRef.current && JSON.stringify(negDraft) !== JSON.stringify(negSavedRef.current)
+
+  // Cada bloque se guarda por su cuenta. El PATCH sigue siendo uno solo (viaja
+  // el diff de TODO lo cambiado), pero un botón que se enciende porque tocaste
+  // algo de otra tarjeta no se entiende.
+  const acuerdoDirty = difieren(negSavedRef.current, negDraft, CLAVES_ACUERDO)
+  const comercialDirty = difieren(negSavedRef.current, negDraft, CLAVES_COMERCIAL)
+  const avisoDirty = difieren(negSavedRef.current, negDraft, ['dailyReportWhatsappEnabled'])
 
   const updateNeg = useCallback(
     <K extends keyof NegotiationDraft>(key: K, value: NegotiationDraft[K]) => {
@@ -393,21 +562,26 @@ function CobranzaConfiguracionContent() {
         )}
       </div>
 
-      {/* ① Negociación ──────────────────────────────────────────────────── */}
+      {/* ① Acuerdo general ──────────────────────────────────────────────────
+          Antes se llamaba «Negociación» y metía en la misma tarjeta tres cosas
+          sin relación: lo que el agente puede ofrecer, cómo nos paga la
+          inmobiliaria (facturación, CRM, ERP) y un switch del reporte diario.
+          El enlace que trae hasta acá dice «Editar acuerdo general», así que
+          el título ahora dice lo mismo. */}
       <section
         data-testid="section-negociacion"
-        className="rounded-xl border border-border bg-card p-6 space-y-4"
+        className="rounded-xl border border-border bg-card p-6 space-y-5"
         aria-labelledby="heading-negociacion"
       >
         <div>
           <h2 id="heading-negociacion" className="text-xl font-semibold text-foreground">
-            Negociación
+            Acuerdo general
           </h2>
           <p className="text-sm text-fg-muted mt-1">
-            Límites que el agente puede ofrecer al negociar con un deudor.
+            Las condiciones que el agente puede aceptar por su cuenta. Si el deudor
+            pide algo que cabe acá dentro, cierra el acuerdo; si se pasa, te lo escala.
           </p>
         </div>
-        <div className="border-t border-border-faint" />
 
         {policy.notProvisioned && <NotProvisionedBanner testId="negociacion-not-provisioned" />}
 
@@ -417,340 +591,222 @@ function CobranzaConfiguracionContent() {
 
         {!policy.notProvisioned && negDraft && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="maxDiscountPct" className="text-sm">
-                  Descuento máximo (0 a 0.5)
-                </Label>
-                <Input
-                  id="maxDiscountPct"
-                  data-testid="field-maxDiscountPct"
-                  type="number"
-                  min={0}
-                  max={0.5}
-                  step={0.01}
-                  className="min-h-[44px]"
-                  disabled={!canEdit}
-                  value={negDraft.maxDiscountPct}
-                  onChange={(e) => updateNeg('maxDiscountPct', Number(e.target.value))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="maxPlanMonths" className="text-sm">
-                  Plan de pago máximo (meses)
-                </Label>
-                <Input
-                  id="maxPlanMonths"
-                  data-testid="field-maxPlanMonths"
-                  type="number"
-                  min={1}
-                  max={24}
-                  className="min-h-[44px]"
-                  disabled={!canEdit}
-                  value={negDraft.maxPlanMonths}
-                  onChange={(e) => updateNeg('maxPlanMonths', Number(e.target.value))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="minPaymentCop" className="text-sm">
-                  Pago mínimo (COP)
-                </Label>
-                <Input
-                  id="minPaymentCop"
-                  data-testid="field-minPaymentCop"
-                  type="number"
-                  min={0}
-                  className="min-h-[44px]"
-                  disabled={!canEdit}
-                  value={negDraft.minPaymentCop}
-                  onChange={(e) => updateNeg('minPaymentCop', Number(e.target.value))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="autoEscalateAfterDays" className="text-sm">
-                  Días antes de escalar
-                </Label>
-                <Input
-                  id="autoEscalateAfterDays"
-                  data-testid="field-autoEscalateAfterDays"
-                  type="number"
-                  min={1}
-                  max={365}
-                  className="min-h-[44px]"
-                  disabled={!canEdit}
-                  value={negDraft.autoEscalateAfterDays}
-                  onChange={(e) => updateNeg('autoEscalateAfterDays', Number(e.target.value))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="negotiationMaxAttempts" className="text-sm">
-                  Intentos de negociación
-                </Label>
-                <Input
-                  id="negotiationMaxAttempts"
-                  data-testid="field-negotiationMaxAttempts"
-                  type="number"
-                  min={1}
-                  max={10}
-                  className="min-h-[44px]"
-                  disabled={!canEdit}
-                  value={negDraft.negotiationMaxAttempts}
-                  onChange={(e) => updateNeg('negotiationMaxAttempts', Number(e.target.value))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="siniestroCanonesThreshold" className="text-sm">
-                  Cánones para siniestro (opcional)
-                </Label>
-                <Input
-                  id="siniestroCanonesThreshold"
-                  data-testid="field-siniestroCanonesThreshold"
-                  type="number"
-                  min={1}
-                  max={12}
-                  className="min-h-[44px]"
-                  disabled={!canEdit}
-                  value={negDraft.siniestroCanonesThreshold ?? ''}
-                  onChange={(e) =>
-                    updateNeg(
-                      'siniestroCanonesThreshold',
-                      e.target.value === '' ? null : Number(e.target.value),
-                    )
-                  }
-                />
-              </div>
-            </div>
+            {/* El acuerdo dicho en una frase — lo que se está editando, leído de
+                corrido. Con once campos sueltos nadie sabe qué quedó acordado. */}
+            <p
+              data-testid="acuerdo-resumen"
+              className="rounded-lg bg-surface-muted px-4 py-3 text-sm text-fg"
+            >
+              {resumenAcuerdo(negDraft)}
+            </p>
 
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-foreground">Planes de pago permitidos (meses)</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {PAYMENT_PLAN_OPTIONS.map((months) => (
-                  <div key={months} className="flex items-center gap-2 min-h-[44px]">
-                    <Checkbox
-                      id={`allowedPlan-${months}`}
-                      data-testid={`field-allowedPaymentPlans-${months}`}
-                      checked={negDraft.allowedPaymentPlans.includes(months)}
+            {avisosDelAcuerdo(negDraft).map((aviso) => (
+              <p
+                key={aviso}
+                data-testid="acuerdo-aviso"
+                className="rounded-lg border border-warning bg-warning-soft px-4 py-3 text-sm text-warning"
+              >
+                {aviso}
+              </p>
+            ))}
+
+            {/* ── Qué puede ofrecer ─────────────────────────────────────── */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-fg">Qué puede ofrecer</h3>
+
+              <div className="space-y-2">
+                <Label className="text-sm">Plazos que puede aceptar</Label>
+                <p className="text-xs text-fg-muted">
+                  Si el deudor pide uno de estos, el agente lo cierra. Cualquier otro
+                  número de cuotas te lo escala.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {PAYMENT_PLAN_OPTIONS.map((months) => (
+                    <div key={months} className="flex items-center gap-2 min-h-[44px]">
+                      <Checkbox
+                        id={`allowedPlan-${months}`}
+                        data-testid={`field-allowedPaymentPlans-${months}`}
+                        checked={negDraft.allowedPaymentPlans.includes(months)}
+                        disabled={!canEdit}
+                        onCheckedChange={(checked) => toggleAllowedPlan(months, !!checked)}
+                      />
+                      <Label htmlFor={`allowedPlan-${months}`} className="text-sm cursor-pointer">
+                        {months} {months === 1 ? 'mes' : 'meses'}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="maxDiscountPct" className="text-sm">
+                    Descuento máximo
+                  </Label>
+                  {/*
+                    Se escribe en %, no en fracción. El campo guardaba 0 a 0.5 y
+                    la etiqueta decía «(0 a 0.5)»: nadie piensa un descuento en
+                    centésimos. La conversión vive acá, en el borde.
+                  */}
+                  <div className="relative">
+                    <Input
+                      id="maxDiscountPct"
+                      data-testid="field-maxDiscountPct"
+                      type="number"
+                      min={0}
+                      max={50}
+                      step={1}
+                      className="min-h-[44px] pr-8"
                       disabled={!canEdit}
-                      onCheckedChange={(checked) => toggleAllowedPlan(months, !!checked)}
+                      value={Math.round(negDraft.maxDiscountPct * 100)}
+                      onChange={(e) =>
+                        updateNeg('maxDiscountPct', Math.min(50, Math.max(0, Number(e.target.value))) / 100)
+                      }
                     />
-                    <Label htmlFor={`allowedPlan-${months}`} className="text-sm cursor-pointer">
-                      {months} {months === 1 ? 'mes' : 'meses'}
-                    </Label>
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-fg-muted">
+                      %
+                    </span>
                   </div>
-                ))}
+                  <p className="text-xs text-fg-muted">Sobre el saldo. Máximo 50%.</p>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="maxPlanMonths" className="text-sm">
+                    Plazo máximo del cronograma (meses)
+                  </Label>
+                  <Input
+                    id="maxPlanMonths"
+                    data-testid="field-maxPlanMonths"
+                    type="number"
+                    min={1}
+                    max={24}
+                    className="min-h-[44px]"
+                    disabled={!canEdit}
+                    value={negDraft.maxPlanMonths}
+                    onChange={(e) => updateNeg('maxPlanMonths', Number(e.target.value))}
+                  />
+                  <p className="text-xs text-fg-muted">
+                    Tope con el que el agente arma las cuotas. Tiene que llegar al plazo
+                    más largo que marcaste arriba.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="minPaymentCop" className="text-sm">
+                    Pago mínimo
+                  </Label>
+                  <Input
+                    id="minPaymentCop"
+                    data-testid="field-minPaymentCop"
+                    type="number"
+                    min={0}
+                    step={10000}
+                    className="min-h-[44px]"
+                    disabled={!canEdit}
+                    value={negDraft.minPaymentCop}
+                    onChange={(e) => updateNeg('minPaymentCop', Number(e.target.value))}
+                  />
+                  <p className="text-xs text-fg-muted">
+                    {negDraft.minPaymentCop > 0
+                      ? `No acepta abonos por debajo de ${pesos.format(negDraft.minPaymentCop)}.`
+                      : 'En 0 acepta cualquier abono, por chico que sea.'}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="negotiationMaxAttempts" className="text-sm">
+                    Intentos de negociación
+                  </Label>
+                  <Input
+                    id="negotiationMaxAttempts"
+                    data-testid="field-negotiationMaxAttempts"
+                    type="number"
+                    min={1}
+                    max={10}
+                    className="min-h-[44px]"
+                    disabled={!canEdit}
+                    value={negDraft.negotiationMaxAttempts}
+                    onChange={(e) => updateNeg('negotiationMaxAttempts', Number(e.target.value))}
+                  />
+                  <p className="text-xs text-fg-muted">
+                    Cuántas contraofertas hace antes de escalarte el caso.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start justify-between gap-4 rounded-lg border border-border px-4 py-3">
+                <div>
+                  <Label htmlFor="allowHardshipPath" className="text-sm cursor-pointer">
+                    Permitir ruta de dificultad económica
+                  </Label>
+                  <p className="text-xs text-fg-muted mt-0.5">
+                    Habilita condiciones más blandas cuando el deudor declara una
+                    situación puntual (desempleo, salud).
+                  </p>
+                </div>
+                <Switch
+                  id="allowHardshipPath"
+                  data-testid="field-allowHardshipPath"
+                  checked={negDraft.allowHardshipPath}
+                  disabled={!canEdit}
+                  onCheckedChange={(checked) => updateNeg('allowHardshipPath', checked)}
+                  className="shrink-0 mt-0.5"
+                />
               </div>
             </div>
 
-            <div className="flex items-center justify-between min-h-[44px]">
-              <Label htmlFor="allowHardshipPath" className="text-sm cursor-pointer">
-                Permitir ruta de dificultad económica
-              </Label>
-              <Switch
-                id="allowHardshipPath"
-                data-testid="field-allowHardshipPath"
-                checked={negDraft.allowHardshipPath}
-                disabled={!canEdit}
-                onCheckedChange={(checked) => updateNeg('allowHardshipPath', checked)}
-              />
-            </div>
+            <div className="border-t border-border-faint" />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="billingModel" className="text-sm">
-                  Modelo de facturación
-                </Label>
-                <select
-                  id="billingModel"
-                  data-testid="field-billingModel"
-                  className="w-full rounded-md border border-border bg-card px-3 min-h-[44px] text-sm"
-                  disabled={!canEdit}
-                  value={negDraft.billingModel}
-                  onChange={(e) => updateNeg('billingModel', e.target.value as NegotiationDraft['billingModel'])}
-                >
-                  {BILLING_MODELS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="crmProvider" className="text-sm">
-                  CRM
-                </Label>
-                <select
-                  id="crmProvider"
-                  data-testid="field-crmProvider"
-                  className="w-full rounded-md border border-border bg-card px-3 min-h-[44px] text-sm"
-                  disabled={!canEdit}
-                  value={negDraft.crmProvider}
-                  onChange={(e) => updateNeg('crmProvider', e.target.value as NegotiationDraft['crmProvider'])}
-                >
-                  {CRM_PROVIDERS.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="erpProvider" className="text-sm">
-                  ERP
-                </Label>
-                <select
-                  id="erpProvider"
-                  data-testid="field-erpProvider"
-                  className="w-full rounded-md border border-border bg-card px-3 min-h-[44px] text-sm"
-                  disabled={!canEdit}
-                  value={negDraft.erpProvider}
-                  onChange={(e) => updateNeg('erpProvider', e.target.value as NegotiationDraft['erpProvider'])}
-                >
-                  {ERP_PROVIDERS.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {negDraft.billingModel === 'performance' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* ── Cuándo deja de intentar ───────────────────────────────── */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-fg">Cuándo deja de intentar</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label htmlFor="successFeePct" className="text-sm">
-                    % éxito
+                  <Label htmlFor="autoEscalateAfterDays" className="text-sm">
+                    Días de mora antes de escalar
                   </Label>
                   <Input
-                    id="successFeePct"
-                    data-testid="field-successFeePct"
+                    id="autoEscalateAfterDays"
+                    data-testid="field-autoEscalateAfterDays"
                     type="number"
-                    step={0.01}
-                    min={0}
-                    max={0.5}
+                    min={1}
+                    max={365}
                     className="min-h-[44px]"
                     disabled={!canEdit}
-                    value={negDraft.successFeePct}
-                    onChange={(e) => updateNeg('successFeePct', Number(e.target.value))}
+                    value={negDraft.autoEscalateAfterDays}
+                    onChange={(e) => updateNeg('autoEscalateAfterDays', Number(e.target.value))}
                   />
+                  <p className="text-xs text-fg-muted">
+                    Pasado ese punto el caso deja de negociarse solo y pasa a cobro humano.
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="siniestroCanonesThreshold" className="text-sm">
+                    Cánones para reclamar el siniestro
+                  </Label>
+                  <Input
+                    id="siniestroCanonesThreshold"
+                    data-testid="field-siniestroCanonesThreshold"
+                    type="number"
+                    min={1}
+                    max={12}
+                    placeholder="Sin definir"
+                    className="min-h-[44px]"
+                    disabled={!canEdit}
+                    value={negDraft.siniestroCanonesThreshold ?? ''}
+                    onChange={(e) =>
+                      updateNeg(
+                        'siniestroCanonesThreshold',
+                        e.target.value === '' ? null : Number(e.target.value),
+                      )
+                    }
+                  />
+                  <p className="text-xs text-fg-muted">
+                    Cuántos cánones vencidos hacen falta para radicar ante la aseguradora.
+                    Vacío = lo decidís caso por caso.
+                  </p>
                 </div>
               </div>
-            )}
-
-            {negDraft.billingModel === 'subscription' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="monthlyMinCop" className="text-sm">
-                    Mínimo mensual (COP)
-                  </Label>
-                  <Input
-                    id="monthlyMinCop"
-                    data-testid="field-monthlyMinCop"
-                    type="number"
-                    min={0}
-                    className="min-h-[44px]"
-                    disabled={!canEdit}
-                    value={negDraft.monthlyMinCop}
-                    onChange={(e) => updateNeg('monthlyMinCop', Number(e.target.value))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="perDeudorCop" className="text-sm">
-                    Por deudor (COP)
-                  </Label>
-                  <Input
-                    id="perDeudorCop"
-                    data-testid="field-perDeudorCop"
-                    type="number"
-                    min={0}
-                    className="min-h-[44px]"
-                    disabled={!canEdit}
-                    value={negDraft.perDeudorCop}
-                    onChange={(e) => updateNeg('perDeudorCop', Number(e.target.value))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="baseFeeCop" className="text-sm">
-                    Tarifa base (COP)
-                  </Label>
-                  <Input
-                    id="baseFeeCop"
-                    data-testid="field-baseFeeCop"
-                    type="number"
-                    min={0}
-                    className="min-h-[44px]"
-                    disabled={!canEdit}
-                    value={negDraft.baseFeeCop}
-                    onChange={(e) => updateNeg('baseFeeCop', Number(e.target.value))}
-                  />
-                </div>
-              </div>
-            )}
-
-            {negDraft.billingModel === 'hybrid' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="successFeePctHybrid" className="text-sm">
-                    % éxito
-                  </Label>
-                  <Input
-                    id="successFeePctHybrid"
-                    data-testid="field-successFeePct"
-                    type="number"
-                    step={0.01}
-                    min={0}
-                    max={0.5}
-                    className="min-h-[44px]"
-                    disabled={!canEdit}
-                    value={negDraft.successFeePct}
-                    onChange={(e) => updateNeg('successFeePct', Number(e.target.value))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="hybridPct" className="text-sm">
-                    % híbrido
-                  </Label>
-                  <Input
-                    id="hybridPct"
-                    data-testid="field-hybridPct"
-                    type="number"
-                    step={0.01}
-                    min={0}
-                    max={0.5}
-                    className="min-h-[44px]"
-                    disabled={!canEdit}
-                    value={negDraft.hybridPct}
-                    onChange={(e) => updateNeg('hybridPct', Number(e.target.value))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="baseFeeCopHybrid" className="text-sm">
-                    Tarifa base (COP)
-                  </Label>
-                  <Input
-                    id="baseFeeCopHybrid"
-                    data-testid="field-baseFeeCop"
-                    type="number"
-                    min={0}
-                    className="min-h-[44px]"
-                    disabled={!canEdit}
-                    value={negDraft.baseFeeCop}
-                    onChange={(e) => updateNeg('baseFeeCop', Number(e.target.value))}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center justify-between min-h-[44px]">
-              <Label htmlFor="dailyReportWhatsappEnabled" className="text-sm cursor-pointer">
-                Enviar reporte diario por WhatsApp
-              </Label>
-              <Switch
-                id="dailyReportWhatsappEnabled"
-                data-testid="field-dailyReportWhatsappEnabled"
-                checked={negDraft.dailyReportWhatsappEnabled}
-                disabled={!canEdit}
-                onCheckedChange={(checked) => updateNeg('dailyReportWhatsappEnabled', checked)}
-              />
             </div>
 
             {negError && (
@@ -760,8 +816,8 @@ function CobranzaConfiguracionContent() {
             )}
 
             {canEdit && (
-              <div className="flex items-center justify-end gap-2 pt-2">
-                {negDirty && (
+              <div className="flex items-center justify-end gap-2 pt-1">
+                {acuerdoDirty && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -776,7 +832,7 @@ function CobranzaConfiguracionContent() {
                   size="sm"
                   className="min-h-[44px]"
                   data-testid="save-negociacion"
-                  disabled={!negDirty || negSaving}
+                  disabled={!acuerdoDirty || negSaving}
                   onClick={() => void handleSaveNegotiation()}
                 >
                   {negSaving ? (
@@ -784,13 +840,223 @@ function CobranzaConfiguracionContent() {
                   ) : (
                     <FloppyDisk className="h-4 w-4 mr-1" />
                   )}
-                  Guardar negociación
+                  Guardar acuerdo
                 </Button>
               </div>
             )}
           </>
         )}
       </section>
+
+      {/* ①b Facturación e integraciones ──────────────────────────────────────
+          Vivían dentro de «Negociación», bajo el subtítulo «Límites que el
+          agente puede ofrecer al negociar con un deudor». No son eso: son cómo
+          nos paga la inmobiliaria y con qué sistemas hablamos. Comparten el
+          mismo PATCH de policy, no la misma pregunta. */}
+      {!policy.notProvisioned && negDraft && (
+        <section
+          data-testid="section-comercial"
+          className="rounded-xl border border-border bg-card p-6 space-y-4"
+          aria-labelledby="heading-comercial"
+        >
+          <div>
+            <h2 id="heading-comercial" className="text-xl font-semibold text-foreground">
+              Facturación e integraciones
+            </h2>
+            <p className="text-sm text-fg-muted mt-1">
+              Cómo se cobra el servicio y con qué sistemas de la inmobiliaria se sincroniza.
+            </p>
+          </div>
+          <div className="border-t border-border-faint" />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="billingModel" className="text-sm">
+                Modelo de facturación
+              </Label>
+              <select
+                id="billingModel"
+                data-testid="field-billingModel"
+                className="w-full rounded-md border border-border bg-card px-3 min-h-[44px] text-sm"
+                disabled={!canEdit}
+                value={negDraft.billingModel}
+                onChange={(e) => updateNeg('billingModel', e.target.value as NegotiationDraft['billingModel'])}
+              >
+                {BILLING_MODELS.map((m) => (
+                  <option key={m} value={m}>
+                    {BILLING_MODEL_LABELS[m]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="crmProvider" className="text-sm">
+                CRM
+              </Label>
+              <select
+                id="crmProvider"
+                data-testid="field-crmProvider"
+                className="w-full rounded-md border border-border bg-card px-3 min-h-[44px] text-sm"
+                disabled={!canEdit}
+                value={negDraft.crmProvider}
+                onChange={(e) => updateNeg('crmProvider', e.target.value as NegotiationDraft['crmProvider'])}
+              >
+                {CRM_PROVIDERS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="erpProvider" className="text-sm">
+                ERP
+              </Label>
+              <select
+                id="erpProvider"
+                data-testid="field-erpProvider"
+                className="w-full rounded-md border border-border bg-card px-3 min-h-[44px] text-sm"
+                disabled={!canEdit}
+                value={negDraft.erpProvider}
+                onChange={(e) => updateNeg('erpProvider', e.target.value as NegotiationDraft['erpProvider'])}
+              >
+                {ERP_PROVIDERS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {negDraft.billingModel === 'performance' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <PorcentajeField
+                id="successFeePct"
+                label="Comisión de éxito"
+                value={negDraft.successFeePct}
+                disabled={!canEdit}
+                onChange={(v) => updateNeg('successFeePct', v)}
+              />
+            </div>
+          )}
+
+          {negDraft.billingModel === 'subscription' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="monthlyMinCop" className="text-sm">
+                  Mínimo mensual (COP)
+                </Label>
+                <Input
+                  id="monthlyMinCop"
+                  data-testid="field-monthlyMinCop"
+                  type="number"
+                  min={0}
+                  className="min-h-[44px]"
+                  disabled={!canEdit}
+                  value={negDraft.monthlyMinCop}
+                  onChange={(e) => updateNeg('monthlyMinCop', Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="perDeudorCop" className="text-sm">
+                  Por deudor (COP)
+                </Label>
+                <Input
+                  id="perDeudorCop"
+                  data-testid="field-perDeudorCop"
+                  type="number"
+                  min={0}
+                  className="min-h-[44px]"
+                  disabled={!canEdit}
+                  value={negDraft.perDeudorCop}
+                  onChange={(e) => updateNeg('perDeudorCop', Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="baseFeeCop" className="text-sm">
+                  Tarifa base (COP)
+                </Label>
+                <Input
+                  id="baseFeeCop"
+                  data-testid="field-baseFeeCop"
+                  type="number"
+                  min={0}
+                  className="min-h-[44px]"
+                  disabled={!canEdit}
+                  value={negDraft.baseFeeCop}
+                  onChange={(e) => updateNeg('baseFeeCop', Number(e.target.value))}
+                />
+              </div>
+            </div>
+          )}
+
+          {negDraft.billingModel === 'hybrid' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <PorcentajeField
+                id="successFeePctHybrid"
+                testId="field-successFeePct"
+                label="Comisión de éxito"
+                value={negDraft.successFeePct}
+                disabled={!canEdit}
+                onChange={(v) => updateNeg('successFeePct', v)}
+              />
+              <PorcentajeField
+                id="hybridPct"
+                label="Porcentaje híbrido"
+                value={negDraft.hybridPct}
+                disabled={!canEdit}
+                onChange={(v) => updateNeg('hybridPct', v)}
+              />
+              <div className="space-y-1">
+                <Label htmlFor="baseFeeCopHybrid" className="text-sm">
+                  Tarifa base (COP)
+                </Label>
+                <Input
+                  id="baseFeeCopHybrid"
+                  data-testid="field-baseFeeCop"
+                  type="number"
+                  min={0}
+                  className="min-h-[44px]"
+                  disabled={!canEdit}
+                  value={negDraft.baseFeeCop}
+                  onChange={(e) => updateNeg('baseFeeCop', Number(e.target.value))}
+                />
+              </div>
+            </div>
+          )}
+
+          {canEdit && (
+            <div className="flex items-center justify-end gap-2 pt-1">
+              {comercialDirty && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="min-h-[44px]"
+                  onClick={handleCancelNegotiation}
+                  data-testid="cancel-comercial"
+                >
+                  Descartar
+                </Button>
+              )}
+              <Button
+                size="sm"
+                className="min-h-[44px]"
+                data-testid="save-comercial"
+                disabled={!comercialDirty || negSaving}
+                onClick={() => void handleSaveNegotiation()}
+              >
+                {negSaving ? (
+                  <Spinner size="sm" variant="current" className="mr-1" />
+                ) : (
+                  <FloppyDisk className="h-4 w-4 mr-1" />
+                )}
+                Guardar facturación
+              </Button>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ② Autonomía ────────────────────────────────────────────────────── */}
       <section
@@ -1060,6 +1326,39 @@ function CobranzaConfiguracionContent() {
           </p>
         </div>
         <div className="border-t border-border-faint" />
+
+        {/* Este switch vivía dentro de «Negociación», entre el CRM y el ERP.
+            Es del reporte diario: vive acá. Guarda en el mismo PATCH de policy,
+            por eso tiene su propio botón en vez de compartir el del acuerdo. */}
+        {!policy.notProvisioned && negDraft && (
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3">
+            <Label htmlFor="dailyReportWhatsappEnabled" className="text-sm cursor-pointer">
+              Enviar el reporte diario por WhatsApp
+            </Label>
+            <div className="flex items-center gap-3 shrink-0">
+              {canEdit && avisoDirty && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  hideArrow
+                  data-testid="save-aviso"
+                  disabled={negSaving}
+                  onClick={() => void handleSaveNegotiation()}
+                >
+                  Guardar
+                </Button>
+              )}
+              <Switch
+                id="dailyReportWhatsappEnabled"
+                data-testid="field-dailyReportWhatsappEnabled"
+                checked={negDraft.dailyReportWhatsappEnabled}
+                disabled={!canEdit}
+                onCheckedChange={(checked) => updateNeg('dailyReportWhatsappEnabled', checked)}
+              />
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="secondary" size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/ai/cobranza/reporte/thresholds">

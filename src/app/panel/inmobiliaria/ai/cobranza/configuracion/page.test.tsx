@@ -313,9 +313,11 @@ describe('<CobranzaConfiguracionPage> — negotiation save (PATCH /policy, parti
   it('calls patchPolicy with ONLY the changed fields', async () => {
     render()
 
+    // El campo se escribe en PORCENTAJE (25), la política guarda la fracción
+    // (0.25). Antes la etiqueta decía «(0 a 0.5)» y había que escribir 0.25.
     const discountInput = byTestId('field-maxDiscountPct') as HTMLInputElement
     await act(async () => {
-      setValue(discountInput, '0.25')
+      setValue(discountInput, '25')
       await Promise.resolve()
     })
 
@@ -328,6 +330,27 @@ describe('<CobranzaConfiguracionPage> — negotiation save (PATCH /policy, parti
 
     expect(patchPolicy).toHaveBeenCalledTimes(1)
     expect(patchPolicy).toHaveBeenCalledWith({ maxDiscountPct: 0.25 })
+  })
+
+  it('el porcentaje se muestra como porcentaje, no como fracción', () => {
+    render()
+    // La política del mock trae 0.1; el campo tiene que decir 10, no 0.1.
+    const discountInput = byTestId('field-maxDiscountPct') as HTMLInputElement
+    expect(discountInput.value).toBe('10')
+  })
+
+  it('guardar el acuerdo NO se enciende por tocar la facturación', async () => {
+    render()
+    const crm = byTestId('field-crmProvider') as HTMLSelectElement
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set
+      setter?.call(crm, 'domus')
+      crm.dispatchEvent(new Event('change', { bubbles: true }))
+      await Promise.resolve()
+    })
+    // Dos bloques, dos botones: uno se enciende y el otro no.
+    expect((byTestId('save-comercial') as HTMLButtonElement).disabled).toBe(false)
+    expect((byTestId('save-negociacion') as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('disables the save button when there is nothing dirty', () => {

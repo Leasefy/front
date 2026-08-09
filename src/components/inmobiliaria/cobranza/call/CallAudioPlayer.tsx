@@ -4,22 +4,31 @@
 // Native <audio> consuming the range-byte proxy from Plan 31-05.
 // Browser handles Range/206 negotiation automatically; DO NOT add MediaSource.
 
-import { useEffect, useState, type KeyboardEvent } from 'react'
+import { useEffect, type KeyboardEvent } from 'react'
 import { IconButton, SegmentedControl } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
-import { agentFetch } from '@/lib/api/agent-fetch'
 import {
   ALLOWED_SPEEDS,
   useAudioPlayer,
   type PlaybackSpeed,
 } from '@/lib/hooks/cobranza/use-audio-player'
+import { useCallRecording } from '@/lib/hooks/cobranza/use-call-recording'
 
 interface CallAudioPlayerProps {
   callId: string
   agencyId: string
-  hasRecording: boolean
   /** Shared ref so transcript click-to-seek drives the same element. */
   audioRef: React.RefObject<HTMLAudioElement>
+}
+
+/** Marco común: el hueco del reproductor mantiene la misma forma haya audio o
+ *  no, para que la ausencia no se lea como una pantalla rota. */
+function PlayerSlot({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border bg-surface px-4 py-3">
+      {children}
+    </div>
+  )
 }
 
 function formatSec(total: number): string {
@@ -32,12 +41,17 @@ function formatSec(total: number): string {
 export default function CallAudioPlayer({
   callId,
   agencyId,
-  hasRecording,
   audioRef,
 }: CallAudioPlayerProps) {
   const { t } = useI18n()
   const { currentTime, duration, isPlaying, speed, setSpeed, seekTo, togglePlay } =
     useAudioPlayer(audioRef)
+
+  // El endpoint de audio es Bearer-only: un `<audio src>` nativo no puede
+  // mandar el header Authorization, así que se piden los bytes y se alimenta un
+  // object URL. El hook además pregunta si existe en vez de creerle a la
+  // columna en base — ver `use-call-recording.ts`.
+  const { state, retry } = useCallRecording(agencyId, callId)
 
   // Reset transient state when callId changes.
   useEffect(() => {
@@ -46,44 +60,53 @@ export default function CallAudioPlayer({
     }
   }, [callId, audioRef])
 
-  // The audio endpoint is Bearer-only — a native <audio src> (or crossOrigin
-  // "use-credentials") cannot attach the Authorization header, so it 401'd.
-  // Fetch the bytes with the bearer header and feed an object URL instead.
-  const [objectUrl, setObjectUrl] = useState<string>('')
-  const [audioError, setAudioError] = useState(false)
-
-  useEffect(() => {
-    if (!hasRecording) return
-    const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
-    if (!agentUrl || !agencyId || !callId) return
-    let cancelled = false
-    let createdUrl = ''
-    setAudioError(false)
-    setObjectUrl('')
-    const url = `${agentUrl}/api/agency/${agencyId}/cobranza/calls/${callId}/audio`
-    void agentFetch(url)
-      .then((r) => {
-        if (!r.ok) throw new Error(`audio ${r.status}`)
-        return r.blob()
-      })
-      .then((blob) => {
-        if (cancelled) return
-        createdUrl = URL.createObjectURL(blob)
-        setObjectUrl(createdUrl)
-      })
-      .catch(() => {
-        if (!cancelled) setAudioError(true)
-      })
-    return () => {
-      cancelled = true
-      if (createdUrl) URL.revokeObjectURL(createdUrl)
-    }
-  }, [hasRecording, agencyId, callId])
-
-  if (!hasRecording) {
-    // Parent handles the empty-state copy.
-    return null
+  if (state.status === 'probing') {
+    return (
+      <PlayerSlot>
+        <p className="text-sm text-fg-muted" role="status">
+          {t('inmobiliaria.ai.cobranza.call.player.probing')}
+        </p>
+      </PlayerSlot>
+    )
   }
+
+  if (state.status === 'absent') {
+    // No es un error: hay llamadas sin audio (grabación deshabilitada, purgada
+    // por retención, o canal sin voz). Se dice por qué la transcripción sí está.
+    return (
+      <PlayerSlot>
+        <p className="text-sm text-fg">
+          {t('inmobiliaria.ai.cobranza.call.player.absent')}
+        </p>
+        <p className="mt-1 text-xs text-fg-muted">
+          {t('inmobiliaria.ai.cobranza.call.player.absentHint')}
+        </p>
+      </PlayerSlot>
+    )
+  }
+
+  if (state.status === 'failed') {
+    // Falló traerla ≠ no existe. Decir «no hay grabación» acá sería mentir
+    // sobre la evidencia de una llamada.
+    return (
+      <PlayerSlot>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-danger" role="status">
+            {t('inmobiliaria.ai.cobranza.call.player.failed')}
+          </p>
+          <button
+            type="button"
+            onClick={retry}
+            className="rounded-full border border-border px-3 py-1 text-xs text-fg hover:bg-surface-muted"
+          >
+            {t('inmobiliaria.ai.cobranza.call.player.retry')}
+          </button>
+        </div>
+      </PlayerSlot>
+    )
+  }
+
+  const objectUrl = state.objectUrl
 
   // Keyboard map (Phase 38 plan 38-04c / XR-06 / WCAG 2.1 AA 1.3.1 + 2.1.1):
   // - Space → togglePlay (pre-existing behavior, unchanged)
@@ -129,19 +152,13 @@ export default function CallAudioPlayer({
       aria-describedby="audio-seek-help"
       onKeyDown={onContainerKey}
       tabIndex={0}
-      className="rounded-xl border border-border bg-surface p-3 focus:outline-none focus:ring-2 focus:ring-primary"
+      className="rounded-xl border border-border bg-surface px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
     >
       {/* Visually-hidden keyboard help for screen-reader users (XR-06) */}
       <span id="audio-seek-help" className="sr-only">
         {t('inmobiliaria.ai.cobranza.call.player.seekHelp')}
       </span>
       <audio ref={audioRef} src={objectUrl} preload="metadata" />
-
-      {audioError && (
-        <p className="mb-2 text-xs text-danger" role="status">
-          {t('inmobiliaria.ai.cobranza.call.player.audioError')}
-        </p>
-      )}
 
       <div className="flex items-center gap-3">
         {/* Play / Pause */}

@@ -5372,8 +5372,7 @@
             "duration": "Duration",
             "outcome": "Outcome",
             "qaOverall": "QA overall",
-            "complianceCount": "flags",
-            "noRecording": "This call has no recording available."
+            "complianceCount": "flags"
           },
           "player": {
             "play": "Play",
@@ -5381,7 +5380,11 @@
             "speed": "Speed",
             "speedLabel": "Speed {{speed}}x",
             "seekHelp": "Use ArrowLeft or ArrowRight to seek ±5 seconds, or press a digit 0-9 to jump to that percentage of the audio.",
-            "audioError": "Could not load the recording."
+            "probing": "Looking for the recording…",
+            "absent": "This call has no recording.",
+            "absentHint": "The conversation is fully preserved in the transcript.",
+            "failed": "We couldn't load the recording. It exists, but we couldn't fetch it.",
+            "retry": "Retry"
           },
           "transcript": {
             "title": "Transcript",

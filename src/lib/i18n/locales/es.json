@@ -5373,8 +5373,7 @@
             "duration": "Duración",
             "outcome": "Resultado",
             "qaOverall": "QA general",
-            "complianceCount": "marcas",
-            "noRecording": "Esta llamada no tiene grabación disponible."
+            "complianceCount": "marcas"
           },
           "player": {
             "play": "Reproducir",
@@ -5382,7 +5381,11 @@
             "speed": "Velocidad",
             "speedLabel": "Velocidad {{speed}}x",
             "seekHelp": "Usa ArrowLeft o ArrowRight para avanzar ±5 segundos, o presiona un dígito 0-9 para saltar a ese porcentaje del audio.",
-            "audioError": "No se pudo cargar la grabación."
+            "probing": "Buscando la grabación…",
+            "absent": "Esta llamada no tiene grabación.",
+            "absentHint": "La conversación quedó registrada completa en la transcripción.",
+            "failed": "No pudimos cargar la grabación. Existe, pero no logramos traerla.",
+            "retry": "Reintentar"
           },
           "transcript": {
             "title": "Transcripción",

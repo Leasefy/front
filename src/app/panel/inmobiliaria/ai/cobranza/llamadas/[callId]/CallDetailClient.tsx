@@ -314,19 +314,18 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
             recto por detrás — se veía como un marco cuadrado alrededor de la
             tarjeta redondeada.
           */}
+          {/*
+            El reproductor decide solo si hay audio: le pregunta al proxy, que
+            a su vez le pregunta a Vapi. NO se usa `data.hasRecording` acá — esa
+            bandera sale de una columna que sólo se llena si llegó el
+            `end-of-call-report`, y se desincroniza (ver `use-call-recording.ts`).
+          */}
           <div className="sticky top-0 z-20 md:top-20">
-            {data.hasRecording ? (
-              <CallAudioPlayer
-                callId={callId}
-                agencyId={agencyId}
-                hasRecording={data.hasRecording}
-                audioRef={audioRef}
-              />
-            ) : (
-              <div className="rounded-xl border border-dashed border-border p-6 text-sm text-fg-muted text-center">
-                {t('inmobiliaria.ai.cobranza.call.header.noRecording')}
-              </div>
-            )}
+            <CallAudioPlayer
+              callId={callId}
+              agencyId={agencyId}
+              audioRef={audioRef}
+            />
           </div>
 
           {/* Transcript */}

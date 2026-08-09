@@ -30,6 +30,7 @@ export function WorkspaceNav() {
   const { canAccess, isAdmin, agencyRole } = usePermissionsContext();
 
   const scrollRef = useRef<HTMLElement | null>(null);
+  const barRef = useRef<HTMLDivElement | null>(null);
   const [overflow, setOverflow] = useState({ start: false, end: false });
 
   // Reflect scroll position → which edge fades/arrows are actionable.
@@ -79,6 +80,38 @@ export function WorkspaceNav() {
     el.scrollBy({ left: dir * Math.round(el.clientWidth * 0.7), behavior: 'smooth' });
   };
 
+  /**
+   * Publica la altura de la barra en `--workspace-nav-h`.
+   *
+   * Cualquier cosa que quiera quedar pegada DEBAJO de estas pestañas necesita
+   * saber dónde terminan, y ese número no estaba en ningún lado: el reproductor
+   * de Llamadas usaba un `top-20` a ojo y se montaba encima de las pestañas.
+   * Medirlo evita ir repartiendo números mágicos que se desincronizan solos
+   * cuando cambia el alto de la barra.
+   *
+   * Se usa así:  top-[calc(4rem+var(--workspace-nav-h,3rem))]
+   *                        └ los 64px del PlanHeader, que es el `top-16` de acá
+   */
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const publicar = () => {
+      document.documentElement.style.setProperty(
+        '--workspace-nav-h',
+        `${el.offsetHeight}px`
+      );
+    };
+    publicar();
+    const ro = new ResizeObserver(publicar);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      // La barra se desmonta fuera de los workspaces: dejar el valor viejo
+      // haría que otra pantalla reserve un espacio que ya no existe.
+      document.documentElement.style.removeProperty('--workspace-nav-h');
+    };
+  }, []);
+
   const workspace = findAgentWorkspace(pathname ?? '');
   if (!workspace) return null;
 
@@ -99,7 +132,10 @@ export function WorkspaceNav() {
     pathname === item.href || (!item.exact && (pathname ?? '').startsWith(`${item.href}/`));
 
   return (
-    <div className="sticky top-16 z-20 border-b border-border bg-bg/85 backdrop-blur-md">
+    <div
+      ref={barRef}
+      className="sticky top-16 z-20 border-b border-border bg-bg/85 backdrop-blur-md"
+    >
       <div className="relative">
         {/* left edge fade + arrow — only actionable once scrolled */}
         <div

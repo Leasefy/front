@@ -320,7 +320,19 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
             bandera sale de una columna que sólo se llena si llegó el
             `end-of-call-report`, y se desincroniza (ver `use-call-recording.ts`).
           */}
-          <div className="sticky top-0 z-20 md:top-20">
+          {/*
+            Se pega DEBAJO de las pestañas del workspace, no encima.
+
+            El `md:top-20` anterior (80px) caía dentro de la franja de las
+            pestañas —que arrancan a los 64px— así que el reproductor se montaba
+            sobre ellas. La altura de la barra no era un número disponible en
+            ningún lado; ahora `WorkspaceNav` la publica en `--workspace-nav-h`
+            y acá se suma a los 64px del header.
+
+            `z-10` y no `z-20`: empatado con las pestañas ganaba el reproductor
+            por orden en el DOM, que es justo lo que se veía mal.
+          */}
+          <div className="sticky top-[calc(4rem+var(--workspace-nav-h,3rem))] z-10">
             <CallAudioPlayer
               callId={callId}
               agencyId={agencyId}

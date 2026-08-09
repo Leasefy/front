@@ -70,6 +70,7 @@ import {
 import { usePromises } from '@/lib/hooks/cobranza/use-promises'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -83,6 +84,7 @@ import {
   type AcuerdoRow,
 } from '@/lib/cobranza/acuerdo-vocab'
 import { AcuerdoDetalleSheet } from '@/components/inmobiliaria/cobranza/AcuerdoDetalleSheet'
+import { AcuerdosGeneralesCard } from '@/components/inmobiliaria/cobranza/AcuerdosGeneralesCard'
 
 // Etapas donde NO hay superficie de negociación (espejo del backend:
 // agency-cobranza-promises.ts NEGOTIATION_UNAVAILABLE_STAGES). En esas etapas el
@@ -946,6 +948,11 @@ function AcuerdosContent() {
         </div>
       )}
 
+      {/* El marco general: lo que el agente cierra sin preguntar. Vive en la
+          política de la agencia y se edita en Configuración §Negociación; acá
+          sólo se muestra, para que no haya dos lugares donde editarlo. */}
+      <AcuerdosGeneralesCard />
+
       {cargando && acuerdos.length === 0 && !error ? (
         <div className="flex items-center justify-center py-16">
           <Spinner size="md" />
@@ -970,12 +977,15 @@ function AcuerdosContent() {
           <DialogHeader>
             <DialogTitle>Nuevo acuerdo de pago</DialogTitle>
           </DialogHeader>
-          <div
+          {/* `DialogBody` y no un div propio: el `DialogContent` del DS NO trae
+              padding —lo aportan Header/Body/Footer—, así que un contenedor a
+              mano deja el contenido pegado a los dos bordes. */}
+          <DialogBody
             data-lenis-prevent
-            className="max-h-[75vh] overflow-y-auto pr-1"
+            className="max-h-[75vh] overflow-y-auto"
           >
             <CrearAcuerdoForm />
-          </div>
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </main>

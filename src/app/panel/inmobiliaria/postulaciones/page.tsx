@@ -203,14 +203,22 @@ export default function PostulacionesPage() {
         /* Sin nada que atender, lo útil no son seis tiles en cero ni una tabla
            vacía con filtros: es explicar qué va a llegar acá y de dónde viene.
            El mapa vivía en una pantalla aparte llamada «Recorrido» y ese era el
-           error — el recorrido no es un destino, es el contexto de ESTA lista. */
-        <div className="space-y-8">
+           error — el recorrido no es un destino, es el contexto de ESTA lista.
+
+           Va DENTRO de la misma tarjeta que hospeda la tabla: el contenedor de
+           la lista es el que dice que la lista está vacía. Suelto sobre la
+           página el mensaje flota y el mapa parece otra sección. */
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          {/* Sin envoltorio con padding: `EmptyState` ya trae el suyo (py-16) y
+              sumarle otro abría un hueco de media pantalla antes del mapa. */}
           <EmptyState
             icon={ClipboardText}
             title="Todavía no te ha llegado ninguna postulación"
             description="Cuando alguien con asegurabilidad vigente se postule a una de tus propiedades, aparece acá con su nivel y su estado. Así es el recorrido completo:"
           />
-          <RecorridoMapa />
+          <div className="border-t border-border px-6 py-8">
+            <RecorridoMapa />
+          </div>
         </div>
       ) : (
         <>

@@ -5419,7 +5419,8 @@
             "voice": "Voz",
             "whatsapp": "WhatsApp",
             "total": "Total",
-            "empty": "Sin costo registrado."
+            "empty": "Sin costo registrado.",
+            "platform": "Plataforma"
           },
           "compliance": {
             "pillAria": "Marca de cumplimiento: {{label}}"

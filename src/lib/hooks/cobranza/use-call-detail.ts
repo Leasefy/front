@@ -37,6 +37,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import {
+  complianceEventLabel,
+  complianceEventSeverity,
+  type ComplianceSeverity,
+} from '@/lib/cobranza/compliance-vocab'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { paths } from '@/lib/api/generated/agent'
 
@@ -60,18 +65,23 @@ export interface CallQAScores {
 }
 
 /**
- * El agente manda `complianceFlags` como slugs sueltos: no hay id, ni
- * severidad, ni segundo del audio donde ocurrió. Se conserva la forma que
- * consumen los paneles pero con los campos que NO existen marcados como
- * opcionales — inventarles un `atSec: 0` haría que el transcript resaltara
- * el segundo cero de toda llamada con una alerta.
+ * Evento de cumplimiento ocurrido durante la llamada.
+ *
+ * Sale de `agent.compliance_events`, que es donde el agente los escribe de
+ * verdad. Antes esto leía `calls.compliance_flags` —columna que nadie escribe,
+ * vacía en las 129 llamadas— así que el panel no mostró nunca nada.
+ *
+ * `at` es la hora absoluta del evento: con eso el transcript puede ubicarlo en
+ * el turno que estaba ocurriendo, sin inventar un `atSec: 0` que resaltaría el
+ * segundo cero de toda llamada.
  */
-export interface CallComplianceFlag {
+export interface CallComplianceEvent {
   id: string
   code: string
   label: string
-  severity?: 'info' | 'warning' | 'critical'
-  atSec?: number
+  severity: ComplianceSeverity
+  at: string
+  channel: string | null
 }
 
 export interface CallStateTraceRow {
@@ -83,12 +93,14 @@ export interface CallStateTraceRow {
   at: string
 }
 
-export interface CallCostBreakdown {
-  llmUsd: number
-  voiceUsd: number
-  whatsappUsd: number
-  totalUsd: number
-}
+/**
+ * Desglose de costo, tipado DESDE el contrato — no a mano.
+ *
+ * `platformUsd` (la tarifa del proveedor de voz) suele ser el componente más
+ * grande; en la llamada real que verifiqué, 0.0812 de 0.1405. Repartirlo entre
+ * las otras categorías haría que las partes no sumen el total.
+ */
+export type CallCostBreakdown = CallDetailApiResponse['costBreakdown']
 
 export interface CallDetail {
   id: string
@@ -104,7 +116,7 @@ export interface CallDetail {
   endedAt: string | null
   durationSeconds: number | null
   qa: CallQAScores
-  complianceFlags: CallComplianceFlag[]
+  complianceEvents: CallComplianceEvent[]
   summary: CallAiSummaryDetail
   hasRecording: boolean
   hasTranscript: boolean
@@ -147,12 +159,13 @@ export function normalizeCallDetail(raw: CallDetailApiResponse): CallDetail {
     endedAt: raw.endedAt,
     durationSeconds: raw.durationSeconds,
     qa,
-    complianceFlags: (raw.complianceFlags ?? []).map((code, i) => ({
-      // El slug es lo único que hay: sirve de id porque no se repite dentro
-      // de una llamada, y el índice desempata si algún día se repitiera.
-      id: `${code}-${i}`,
-      code,
-      label: code,
+    complianceEvents: (raw.complianceEvents ?? []).map((e) => ({
+      id: e.id,
+      code: e.code,
+      label: complianceEventLabel(e.code),
+      severity: complianceEventSeverity(e.code),
+      at: e.at,
+      channel: e.channel,
     })),
     summary: raw.summary,
     hasRecording: raw.hasRecording,

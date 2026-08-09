@@ -7435,6 +7435,12 @@ export interface components {
             resolution: number | null;
             sentiment: number | null;
         };
+        CallComplianceEvent: {
+            id: string;
+            code: string;
+            at: string;
+            channel: string | null;
+        };
         CobranzaCallSummaryDetail: {
             outcome: string | null;
             digest: string | null;
@@ -7462,6 +7468,7 @@ export interface components {
         CallCostBreakdown: {
             llmUsd: number;
             voiceUsd: number;
+            platformUsd: number;
             whatsappUsd: number;
             totalUsd: number;
         };
@@ -7482,7 +7489,7 @@ export interface components {
             endedAt: string | null;
             durationSeconds: number | null;
             qaDimensions: components["schemas"]["CallQaDimensions"];
-            complianceFlags: string[];
+            complianceEvents: components["schemas"]["CallComplianceEvent"][];
             summary: components["schemas"]["CobranzaCallSummaryDetail"];
             hasRecording: boolean;
             hasTranscript: boolean;

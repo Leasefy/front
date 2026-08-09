@@ -34,12 +34,18 @@ function apiResponse(over: Partial<CallDetailApiResponse> = {}): CallDetailApiRe
     endedAt: '2026-08-07T10:09:11.549Z',
     durationSeconds: 214,
     qaDimensions: { rapport: 88, compliance: 96, resolution: 90, sentiment: 82 },
-    complianceFlags: [],
+    complianceEvents: [],
     summary: null,
     hasRecording: true,
     hasTranscript: true,
     stateTrace: [],
-    costBreakdown: { llmUsd: 0, voiceUsd: 0, whatsappUsd: 0, totalUsd: 0 },
+    costBreakdown: {
+      llmUsd: 0,
+      voiceUsd: 0,
+      platformUsd: 0,
+      whatsappUsd: 0,
+      totalUsd: 0,
+    },
     generatedAt: '2026-08-08T20:00:00.000Z',
     ...over,
   }
@@ -81,16 +87,43 @@ describe('normalizeCallDetail', () => {
     expect(Number.isNaN(out.qa.overall as unknown as number)).toBe(false)
   })
 
-  it('convierte los flags de cumplimiento (slugs) a la forma del panel', () => {
+  it('traduce los eventos de cumplimiento y les asigna gravedad', () => {
     const out = normalizeCallDetail(
-      apiResponse({ complianceFlags: ['tono_elevado', 'fuera_de_horario'] }),
+      apiResponse({
+        complianceEvents: [
+          {
+            id: 'e1',
+            code: 'schedule_violation',
+            at: '2026-08-08T19:00:05.000Z',
+            channel: 'voice',
+          },
+          {
+            id: 'e2',
+            code: 'sms_schedule_blocked',
+            at: '2026-08-08T19:00:09.000Z',
+            channel: 'sms',
+          },
+        ],
+      }),
     )
-    expect(out.complianceFlags).toEqual([
-      { id: 'tono_elevado-0', code: 'tono_elevado', label: 'tono_elevado' },
-      { id: 'fuera_de_horario-1', code: 'fuera_de_horario', label: 'fuera_de_horario' },
-    ])
-    // Sin severidad ni segundo: el agente no los manda y no se inventan.
-    expect(out.complianceFlags[0]).not.toHaveProperty('atSec')
+    expect(out.complianceEvents[0].label).toBe('Contacto fuera de horario')
+    // Ocurrió → grave.
+    expect(out.complianceEvents[0].severity).toBe('critical')
+    // El sistema lo IMPIDIÓ → no es una falta. Pintarlo igual haría leer como
+    // infracción lo contrario de una infracción.
+    expect(out.complianceEvents[1].severity).toBe('prevented')
+  })
+
+  it('un código desconocido no se pinta crudo ni se marca como grave', () => {
+    const out = normalizeCallDetail(
+      apiResponse({
+        complianceEvents: [
+          { id: 'e9', code: 'algo_nuevo', at: '2026-08-08T19:00:05.000Z', channel: null },
+        ],
+      }),
+    )
+    expect(out.complianceEvents[0].label).toBe('Otro (algo_nuevo)')
+    expect(out.complianceEvents[0].severity).toBe('info')
   })
 
   it('renombra actorType/createdAt en la traza de estados', () => {

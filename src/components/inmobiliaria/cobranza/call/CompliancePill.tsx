@@ -10,17 +10,20 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useI18n } from '@/lib/i18n'
-import type { CallComplianceFlag } from '@/lib/hooks/cobranza/use-call-detail'
+import type { CallComplianceEvent } from '@/lib/hooks/cobranza/use-call-detail'
 
 interface CompliancePillProps {
-  flag: Pick<CallComplianceFlag, 'id' | 'code' | 'severity' | 'label'>
+  flag: Pick<CallComplianceEvent, 'id' | 'code' | 'severity' | 'label'>
 }
 
 function severityTone(severity: string): string {
   switch (severity) {
     case 'critical':
+      // Ocurrió algo que no debía.
       return 'bg-danger-soft text-danger ring-danger'
-    case 'warning':
+    case 'prevented':
+      // El sistema lo IMPIDIÓ. No es una falta: es la defensa funcionando, y
+      // pintarla de rojo haría leer como infracción lo contrario.
       return 'bg-warning-soft text-warning ring-warning'
     case 'info':
     default:
@@ -30,10 +33,7 @@ function severityTone(severity: string): string {
 
 export function CompliancePill({ flag }: CompliancePillProps) {
   const { t } = useI18n()
-  // El agente manda los flags como slugs sueltos, sin severidad. Sin dato,
-  // el tono neutro — pintar de rojo lo que no sabemos si es grave convierte
-  // cualquier marca en alarma.
-  const tone = severityTone(flag.severity ?? 'info')
+  const tone = severityTone(flag.severity)
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip>

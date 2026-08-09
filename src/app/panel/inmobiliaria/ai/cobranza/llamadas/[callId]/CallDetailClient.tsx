@@ -279,7 +279,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
               className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-surface-muted text-fg-muted ring-1 ring-border"
               aria-label={t('inmobiliaria.ai.cobranza.call.header.complianceCount')}
             >
-              {data.complianceFlags.length}{' '}
+              {data.complianceEvents.length}{' '}
               {t('inmobiliaria.ai.cobranza.call.header.complianceCount')}
             </span>
             {/* Phase 38-07 (D-38-11): export transcript PDF button. Backend
@@ -344,7 +344,8 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
           <CallTranscript
             callId={callId}
             onSeek={seekTo}
-            complianceFlags={data.complianceFlags}
+            complianceEvents={data.complianceEvents}
+            callStartedAt={data.startedAt ?? data.initiatedAt}
           />
         </div>
 

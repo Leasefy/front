@@ -5418,7 +5418,8 @@
             "voice": "Voice",
             "whatsapp": "WhatsApp",
             "total": "Total",
-            "empty": "No cost recorded."
+            "empty": "No cost recorded.",
+            "platform": "Platform"
           },
           "compliance": {
             "pillAria": "Compliance flag: {{label}}"

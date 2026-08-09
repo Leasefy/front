@@ -5385,7 +5385,8 @@
             "absent": "Esta llamada no tiene grabación.",
             "absentHint": "La conversación quedó registrada completa en la transcripción.",
             "failed": "No pudimos cargar la grabación. Existe, pero no logramos traerla.",
-            "retry": "Reintentar"
+            "retry": "Reintentar",
+            "syntheticNotice": "Audio de demostración · voz sintetizada, no es una grabación real"
           },
           "transcript": {
             "title": "Transcripción",

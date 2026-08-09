@@ -107,6 +107,7 @@ export default function CallAudioPlayer({
   }
 
   const objectUrl = state.objectUrl
+  const esDemo = state.kind === 'demo'
 
   // Keyboard map (Phase 38 plan 38-04c / XR-06 / WCAG 2.1 AA 1.3.1 + 2.1.1):
   // - Space → togglePlay (pre-existing behavior, unchanged)
@@ -159,6 +160,18 @@ export default function CallAudioPlayer({
         {t('inmobiliaria.ai.cobranza.call.player.seekHelp')}
       </span>
       <audio ref={audioRef} src={objectUrl} preload="metadata" />
+
+      {/*
+        Este audio NO es una grabación: es una lectura sintética de un guion,
+        para que las llamadas sembradas no queden con transcripción y sin audio.
+        Se rotula siempre — un artefacto con forma de evidencia que no se
+        anuncia como sintético es exactamente el problema que evitamos.
+      */}
+      {esDemo && (
+        <p className="mb-2 text-xs text-fg-muted">
+          {t('inmobiliaria.ai.cobranza.call.player.syntheticNotice')}
+        </p>
+      )}
 
       <div className="flex items-center gap-3">
         {/* Play / Pause */}

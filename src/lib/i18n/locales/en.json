@@ -5384,7 +5384,8 @@
             "absent": "This call has no recording.",
             "absentHint": "The conversation is fully preserved in the transcript.",
             "failed": "We couldn't load the recording. It exists, but we couldn't fetch it.",
-            "retry": "Retry"
+            "retry": "Retry",
+            "syntheticNotice": "Demo audio · synthesized voice, not a real recording"
           },
           "transcript": {
             "title": "Transcript",

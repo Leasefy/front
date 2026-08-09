@@ -25,9 +25,17 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { agentFetch } from '@/lib/api/agent-fetch'
 
+/**
+ * De dónde salieron los bytes. `demo` es voz sintetizada de un guion escrito a
+ * mano para las llamadas sembradas — NO es una grabación, y la pantalla lo
+ * rotula para que no pueda confundirse con evidencia. Lo dice el proxy en la
+ * cabecera `X-Recording-Kind`, o sea que la etiqueta viaja con el audio mismo.
+ */
+export type RecordingKind = 'vapi' | 'demo'
+
 export type RecordingState =
   | { status: 'probing' }
-  | { status: 'ready'; objectUrl: string }
+  | { status: 'ready'; objectUrl: string; kind: RecordingKind }
   | { status: 'absent' }
   | { status: 'failed' }
 
@@ -77,6 +85,11 @@ export function useCallRecording(
           setState({ status: classifyRecordingStatus(r.status) })
           return
         }
+        // Se lee ANTES del blob: después de consumir el cuerpo las cabeceras
+        // siguen ahí, pero leerlas acá deja explícito que la etiqueta viene con
+        // la respuesta y no de una consulta aparte que podría desincronizarse.
+        const kind: RecordingKind =
+          r.headers.get('X-Recording-Kind') === 'demo' ? 'demo' : 'vapi'
         const blob = await r.blob()
         if (!vigente()) return
         // Un cuerpo vacío no es una grabación: sonaría como un audio de 0s.
@@ -85,7 +98,7 @@ export function useCallRecording(
           return
         }
         createdUrl = URL.createObjectURL(blob)
-        setState({ status: 'ready', objectUrl: createdUrl })
+        setState({ status: 'ready', objectUrl: createdUrl, kind })
       })
       .catch(() => {
         if (!vigente()) return

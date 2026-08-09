@@ -53,8 +53,13 @@ afterEach(() => {
   container.remove()
 })
 
-const respuesta = (status: number, size = 4096) =>
-  ({ ok: status >= 200 && status < 300, status, blob: async () => ({ size }) }) as never
+const respuesta = (status: number, size = 4096, kind: string | null = null) =>
+  ({
+    ok: status >= 200 && status < 300,
+    status,
+    headers: { get: (h: string) => (h === 'X-Recording-Kind' ? kind : null) },
+    blob: async () => ({ size }),
+  }) as never
 
 async function montar(): Promise<{ current: RecordingState }> {
   const out = { current: { status: 'probing' } as RecordingState }
@@ -92,7 +97,26 @@ describe('useCallRecording', () => {
   it('con bytes queda listo para reproducir', async () => {
     agentFetch.mockResolvedValue(respuesta(200))
     const out = await montar()
-    expect(out.current).toEqual({ status: 'ready', objectUrl: 'blob:audio-1' })
+    expect(out.current).toEqual({
+      status: 'ready',
+      objectUrl: 'blob:audio-1',
+      kind: 'vapi',
+    })
+  })
+
+  it('marca como sintético el audio que el proxy rotula «demo»', async () => {
+    // Sin esto la pantalla presentaría una voz sintetizada como si fuera la
+    // grabación de la llamada, en la pantalla que sirve de evidencia.
+    agentFetch.mockResolvedValue(respuesta(200, 4096, 'demo'))
+    const out = await montar()
+    expect(out.current).toMatchObject({ status: 'ready', kind: 'demo' })
+  })
+
+  it('sin la cabecera se asume grabación real, nunca demo', async () => {
+    // El default seguro es el que NO agrega una etiqueta falsa a algo real.
+    agentFetch.mockResolvedValue(respuesta(200, 4096, null))
+    const out = await montar()
+    expect(out.current).toMatchObject({ kind: 'vapi' })
   })
 
   it('404 dice que no hay grabación', async () => {

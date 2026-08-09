@@ -8,12 +8,12 @@ Todo en `~/rent/mvp-inmobiliaria`.
 
 ## 🟡 Estado
 
-**Rama `feat/recorrido-inmobiliaria` — 14 commits, pusheada, árbol limpio. SIN PR todavía.**
+**Rama `feat/recorrido-inmobiliaria` — 16 commits, pusheada, árbol limpio. SIN PR todavía.**
 
 | Compuerta | |
 |---|---|
 | `tsc --noEmit` · `next lint` · **`pnpm build`** | ✅ |
-| 227 archivos / **1836 tests** | ✅ |
+| 227 archivos / **1837 tests** | ✅ |
 
 Sale de `feat/experiencia-inmobiliaria` (PR #63). Cuando #63 mergee, el diff de esta se
 reduce a lo suyo. **Decidir la base del PR en ese momento.**
@@ -44,6 +44,29 @@ punto de partida.
 
 ⚠️ `/panel/inmobiliaria/propiedades/nueva` quedó **huérfana**: ya nadie la enlaza. No se borró
 (borrar rutas es aparte); si se confirma que no la usa nadie más, es candidata a irse.
+
+---
+
+## ✅ RESUELTO — el orden: asegurabilidad primero, A/B/C/D después y solo
+
+Nico, 2026-08-08: *"la nueva evaluación de inquilino no es para ABCD, es para literal ver si lo
+aseguran o no; y ya si lo aseguran, y luego de que postule el usuario, ya ahí sí entramos con
+su información a hacer la validación del inquilino, que se inicia de manera automática pero
+también se podría hacer a demanda."*
+
+| | Asegurabilidad | Evaluación A/B/C/D |
+|---|---|---|
+| Pregunta | **¿lo respaldan o no?** (+ máximo afianzable) | ¿cuál de estos candidatos? |
+| Cuándo | **primero**, sin propiedad | después de la **postulación** |
+| Quién la dispara | una persona, **en frío** | **sola**; a demanda se re-corre |
+
+El lanzador ofrecía «Nueva evaluación de candidato» como algo que se empieza en frío —invertía
+el orden— y encima llevaba a `/ai/estudio/nuevo`, que **no guarda nada**: su botón responde
+*"Próximamente: esto creará el estudio…"*. Se sacó. Queda la asegurabilidad, con copy que
+lleva la pregunta binaria adelante y que dice dónde quedó el A/B/C/D.
+
+⚠️ Ya estaba escrito en `docs/VOCABULARIO.md` §Evaluación y en `pasos.ts` (2 vs 8), y el
+lanzador igual decía lo contrario. **Leer los nombres no alcanza: mirar el orden.**
 
 ---
 

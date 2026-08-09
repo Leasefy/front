@@ -6,10 +6,15 @@
  * Wires the 3 sections that map to REAL endpoints the agent runtime reads,
  * plus a 4th purely informative section:
  *
- *   ① Negociación  → GET/PATCH /api/agency/:id/policy            (useAgencyPolicy)
+ *   ① Facturación e integraciones → GET/PATCH /api/agency/:id/policy (useAgencyPolicy)
  *   ② Autonomía    → GET/PUT   /api/agency/:id/cobranza/autonomy  (useAutonomy)
- *   ③ Cadencia     → GET/PUT   /api/agency/:id/cobranza/cadence   (useCadence)
- *   ④ Horario y frecuencia → informativo fijo (Ley 2300), sin inputs.
+ *   ③ Horario y frecuencia → informativo fijo (Ley 2300), sin inputs.
+ *   ④ Reporte diario → enlaces + el switch de WhatsApp (mismo PATCH de policy).
+ *
+ * Lo que YA NO vive acá (2026-08-09, decisión de Nico):
+ *   · El acuerdo general se edita en /cobranza/acuerdos — es el acuerdo más
+ *     importante de la inmobiliaria, no un ajuste del sistema. Queda un puntero.
+ *   · La cadencia de contacto salió del panel (ver nota al pie).
  *
  * Replaces the previous `/policies` (plural, decorative journal) wiring — see
  * docs/front-cobranza-config.md for the bug root cause. `usePoliciesConfig`,
@@ -29,7 +34,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { ArrowLeft, Plus, Trash, Warning, FloppyDisk } from '@phosphor-icons/react'
+import { ArrowLeft, Warning, FloppyDisk } from '@phosphor-icons/react'
 import { RadioCardGroup, RadioCard } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -39,7 +44,6 @@ import {
   type AgencyPolicy,
   type AgencyPolicyPatchBody,
 } from '@/lib/hooks/cobranza/use-agency-policy'
-import { useCadence, type CadenceConfig } from '@/lib/hooks/cobranza/use-cadence'
 import { useAutonomy, type AutonomyLevel } from '@/lib/hooks/cobranza/use-autonomy'
 import { CobranzaConfiguracionSkeleton } from '@/components/skeleton/panel/CobranzaConfiguracionSkeleton'
 import { Button } from '@/components/ui/button'
@@ -49,38 +53,6 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from '@/components/ui/accordion'
-
-// ─── Cadence stages ─────────────────────────────────────────────────────────
-
-const CADENCE_STAGES = ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'SX'] as const
-type CadenceStage = (typeof CADENCE_STAGES)[number]
-type CadenceEntry = CadenceConfig[CadenceStage][number]
-
-const STAGE_LABELS: Record<CadenceStage, string> = {
-  S0: 'S0 · Recordatorio previo al vencimiento',
-  S1: 'S1 · Vencido reciente',
-  S2: 'S2 · Mora temprana',
-  S3: 'S3 · Mora media',
-  S4: 'S4 · Mora avanzada',
-  S5: 'S5 · Mora crítica',
-  SX: 'SX · Excepción / vía legal',
-}
-
-const CHANNEL_LABELS: Record<CadenceEntry['channel'], string> = {
-  voice: 'Llamada',
-  whatsapp: 'WhatsApp',
-  email: 'Correo',
-}
-
-function emptyCadence(): CadenceConfig {
-  return { S0: [], S1: [], S2: [], S3: [], S4: [], S5: [], SX: [] }
-}
 
 // ─── Negotiation draft ──────────────────────────────────────────────────────
 
@@ -375,7 +347,6 @@ function CobranzaConfiguracionContent() {
   const canEdit = canAccess('cobranza', 'configure')
 
   const policy = useAgencyPolicy()
-  const cadence = useCadence()
   const autonomy = useAutonomy()
 
   // ── Negotiation local draft ────────────────────────────────────────────
@@ -459,80 +430,11 @@ function CobranzaConfiguracionContent() {
     [autonomy, canEdit],
   )
 
-  // ── Cadence ─────────────────────────────────────────────────────────────
-  const [cadenceDraft, setCadenceDraft] = useState<CadenceConfig | null>(null)
-  const cadenceSavedRef = useRef<CadenceConfig | null>(null)
-  const [cadenceSaving, setCadenceSaving] = useState(false)
-  const [cadenceError, setCadenceError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (cadence.effectiveConfig) {
-      setCadenceDraft(cadence.effectiveConfig)
-      cadenceSavedRef.current = cadence.effectiveConfig
-    }
-  }, [cadence.effectiveConfig])
-
-  const cadenceDirty =
-    !!cadenceDraft &&
-    !!cadenceSavedRef.current &&
-    JSON.stringify(cadenceDraft) !== JSON.stringify(cadenceSavedRef.current)
-
-  const addCadenceEntry = useCallback((stage: CadenceStage) => {
-    setCadenceDraft((prev) => {
-      const base = prev ?? emptyCadence()
-      return {
-        ...base,
-        [stage]: [
-          ...base[stage],
-          { dayOffset: 0, channel: 'whatsapp', reason: '', retryUntilConnect: false },
-        ],
-      }
-    })
-  }, [])
-
-  const removeCadenceEntry = useCallback((stage: CadenceStage, idx: number) => {
-    setCadenceDraft((prev) => {
-      if (!prev) return prev
-      return { ...prev, [stage]: prev[stage].filter((_, i) => i !== idx) }
-    })
-  }, [])
-
-  const updateCadenceEntry = useCallback(
-    (stage: CadenceStage, idx: number, patch: Partial<CadenceEntry>) => {
-      setCadenceDraft((prev) => {
-        if (!prev) return prev
-        return {
-          ...prev,
-          [stage]: prev[stage].map((entry, i) => (i === idx ? { ...entry, ...patch } : entry)),
-        }
-      })
-    },
-    [],
-  )
-
-  const handleSaveCadence = useCallback(async () => {
-    if (!cadenceDraft) return
-    setCadenceSaving(true)
-    setCadenceError(null)
-    try {
-      await cadence.saveCadence(cadenceDraft)
-    } catch {
-      setCadenceError('No pudimos guardar la cadencia. Intenta de nuevo.')
-    } finally {
-      setCadenceSaving(false)
-    }
-  }, [cadenceDraft, cadence])
-
-  const handleCancelCadence = useCallback(() => {
-    if (cadenceSavedRef.current) setCadenceDraft(cadenceSavedRef.current)
-  }, [])
-
-  // ── Full-page skeleton while the 3 resources settle ────────────────────
+  // ── Full-page skeleton while the 2 resources settle ────────────────────
   const policySettled = !policy.isLoading || !!policy.data || policy.notProvisioned
-  const cadenceSettled = !cadence.isLoading || !!cadence.effectiveConfig || cadence.notProvisioned
   const autonomySettled = !autonomy.isLoading || !!autonomy.data || autonomy.notProvisioned
 
-  if (!policySettled || !cadenceSettled || !autonomySettled) {
+  if (!policySettled || !autonomySettled) {
     return <CobranzaConfiguracionSkeleton />
   }
 
@@ -562,290 +464,32 @@ function CobranzaConfiguracionContent() {
         )}
       </div>
 
-      {/* ① Acuerdo general ──────────────────────────────────────────────────
-          Antes se llamaba «Negociación» y metía en la misma tarjeta tres cosas
-          sin relación: lo que el agente puede ofrecer, cómo nos paga la
-          inmobiliaria (facturación, CRM, ERP) y un switch del reporte diario.
-          El enlace que trae hasta acá dice «Editar acuerdo general», así que
-          el título ahora dice lo mismo. */}
+      {/* ① El acuerdo general se MUDÓ a «Acuerdos de pago» ────────────────
+          Vivía acá y el enlace desde Acuerdos traía hasta esta pantalla. Pero
+          el marco general de los acuerdos no es un ajuste del sistema: es el
+          acuerdo más importante que tiene la inmobiliaria, y se arma junto a
+          los acuerdos puntuales. Ahora se edita en `AcuerdosGeneralesCard`,
+          dentro de /cobranza/acuerdos. */}
       <section
-        data-testid="section-negociacion"
-        className="rounded-xl border border-border bg-card p-6 space-y-5"
-        aria-labelledby="heading-negociacion"
+        data-testid="section-acuerdo-puntero"
+        className="rounded-xl border border-border bg-card p-6 space-y-3"
+        aria-labelledby="heading-acuerdo-puntero"
       >
         <div>
-          <h2 id="heading-negociacion" className="text-xl font-semibold text-foreground">
+          <h2 id="heading-acuerdo-puntero" className="text-xl font-semibold text-foreground">
             Acuerdo general
           </h2>
           <p className="text-sm text-fg-muted mt-1">
-            Las condiciones que el agente puede aceptar por su cuenta. Si el deudor
-            pide algo que cabe acá dentro, cierra el acuerdo; si se pasa, te lo escala.
+            Lo que el agente puede aceptar por su cuenta al negociar se define junto
+            a los acuerdos, no acá.
           </p>
         </div>
-
-        {policy.notProvisioned && <NotProvisionedBanner testId="negociacion-not-provisioned" />}
-
-        {!policy.notProvisioned && policy.error && !policy.data && (
-          <SectionErrorBanner testId="negociacion-error" onRetry={() => void policy.refetch()} />
-        )}
-
-        {!policy.notProvisioned && negDraft && (
-          <>
-            {/* El acuerdo dicho en una frase — lo que se está editando, leído de
-                corrido. Con once campos sueltos nadie sabe qué quedó acordado. */}
-            <p
-              data-testid="acuerdo-resumen"
-              className="rounded-lg bg-surface-muted px-4 py-3 text-sm text-fg"
-            >
-              {resumenAcuerdo(negDraft)}
-            </p>
-
-            {avisosDelAcuerdo(negDraft).map((aviso) => (
-              <p
-                key={aviso}
-                data-testid="acuerdo-aviso"
-                className="rounded-lg border border-warning bg-warning-soft px-4 py-3 text-sm text-warning"
-              >
-                {aviso}
-              </p>
-            ))}
-
-            {/* ── Qué puede ofrecer ─────────────────────────────────────── */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-fg">Qué puede ofrecer</h3>
-
-              <div className="space-y-2">
-                <Label className="text-sm">Plazos que puede aceptar</Label>
-                <p className="text-xs text-fg-muted">
-                  Si el deudor pide uno de estos, el agente lo cierra. Cualquier otro
-                  número de cuotas te lo escala.
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {PAYMENT_PLAN_OPTIONS.map((months) => (
-                    <div key={months} className="flex items-center gap-2 min-h-[44px]">
-                      <Checkbox
-                        id={`allowedPlan-${months}`}
-                        data-testid={`field-allowedPaymentPlans-${months}`}
-                        checked={negDraft.allowedPaymentPlans.includes(months)}
-                        disabled={!canEdit}
-                        onCheckedChange={(checked) => toggleAllowedPlan(months, !!checked)}
-                      />
-                      <Label htmlFor={`allowedPlan-${months}`} className="text-sm cursor-pointer">
-                        {months} {months === 1 ? 'mes' : 'meses'}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="maxDiscountPct" className="text-sm">
-                    Descuento máximo
-                  </Label>
-                  {/*
-                    Se escribe en %, no en fracción. El campo guardaba 0 a 0.5 y
-                    la etiqueta decía «(0 a 0.5)»: nadie piensa un descuento en
-                    centésimos. La conversión vive acá, en el borde.
-                  */}
-                  <div className="relative">
-                    <Input
-                      id="maxDiscountPct"
-                      data-testid="field-maxDiscountPct"
-                      type="number"
-                      min={0}
-                      max={50}
-                      step={1}
-                      className="min-h-[44px] pr-8"
-                      disabled={!canEdit}
-                      value={Math.round(negDraft.maxDiscountPct * 100)}
-                      onChange={(e) =>
-                        updateNeg('maxDiscountPct', Math.min(50, Math.max(0, Number(e.target.value))) / 100)
-                      }
-                    />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-fg-muted">
-                      %
-                    </span>
-                  </div>
-                  <p className="text-xs text-fg-muted">Sobre el saldo. Máximo 50%.</p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="maxPlanMonths" className="text-sm">
-                    Plazo máximo del cronograma (meses)
-                  </Label>
-                  <Input
-                    id="maxPlanMonths"
-                    data-testid="field-maxPlanMonths"
-                    type="number"
-                    min={1}
-                    max={24}
-                    className="min-h-[44px]"
-                    disabled={!canEdit}
-                    value={negDraft.maxPlanMonths}
-                    onChange={(e) => updateNeg('maxPlanMonths', Number(e.target.value))}
-                  />
-                  <p className="text-xs text-fg-muted">
-                    Tope con el que el agente arma las cuotas. Tiene que llegar al plazo
-                    más largo que marcaste arriba.
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="minPaymentCop" className="text-sm">
-                    Pago mínimo
-                  </Label>
-                  <Input
-                    id="minPaymentCop"
-                    data-testid="field-minPaymentCop"
-                    type="number"
-                    min={0}
-                    step={10000}
-                    className="min-h-[44px]"
-                    disabled={!canEdit}
-                    value={negDraft.minPaymentCop}
-                    onChange={(e) => updateNeg('minPaymentCop', Number(e.target.value))}
-                  />
-                  <p className="text-xs text-fg-muted">
-                    {negDraft.minPaymentCop > 0
-                      ? `No acepta abonos por debajo de ${pesos.format(negDraft.minPaymentCop)}.`
-                      : 'En 0 acepta cualquier abono, por chico que sea.'}
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="negotiationMaxAttempts" className="text-sm">
-                    Intentos de negociación
-                  </Label>
-                  <Input
-                    id="negotiationMaxAttempts"
-                    data-testid="field-negotiationMaxAttempts"
-                    type="number"
-                    min={1}
-                    max={10}
-                    className="min-h-[44px]"
-                    disabled={!canEdit}
-                    value={negDraft.negotiationMaxAttempts}
-                    onChange={(e) => updateNeg('negotiationMaxAttempts', Number(e.target.value))}
-                  />
-                  <p className="text-xs text-fg-muted">
-                    Cuántas contraofertas hace antes de escalarte el caso.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start justify-between gap-4 rounded-lg border border-border px-4 py-3">
-                <div>
-                  <Label htmlFor="allowHardshipPath" className="text-sm cursor-pointer">
-                    Permitir ruta de dificultad económica
-                  </Label>
-                  <p className="text-xs text-fg-muted mt-0.5">
-                    Habilita condiciones más blandas cuando el deudor declara una
-                    situación puntual (desempleo, salud).
-                  </p>
-                </div>
-                <Switch
-                  id="allowHardshipPath"
-                  data-testid="field-allowHardshipPath"
-                  checked={negDraft.allowHardshipPath}
-                  disabled={!canEdit}
-                  onCheckedChange={(checked) => updateNeg('allowHardshipPath', checked)}
-                  className="shrink-0 mt-0.5"
-                />
-              </div>
-            </div>
-
-            <div className="border-t border-border-faint" />
-
-            {/* ── Cuándo deja de intentar ───────────────────────────────── */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-fg">Cuándo deja de intentar</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="autoEscalateAfterDays" className="text-sm">
-                    Días de mora antes de escalar
-                  </Label>
-                  <Input
-                    id="autoEscalateAfterDays"
-                    data-testid="field-autoEscalateAfterDays"
-                    type="number"
-                    min={1}
-                    max={365}
-                    className="min-h-[44px]"
-                    disabled={!canEdit}
-                    value={negDraft.autoEscalateAfterDays}
-                    onChange={(e) => updateNeg('autoEscalateAfterDays', Number(e.target.value))}
-                  />
-                  <p className="text-xs text-fg-muted">
-                    Pasado ese punto el caso deja de negociarse solo y pasa a cobro humano.
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="siniestroCanonesThreshold" className="text-sm">
-                    Cánones para reclamar el siniestro
-                  </Label>
-                  <Input
-                    id="siniestroCanonesThreshold"
-                    data-testid="field-siniestroCanonesThreshold"
-                    type="number"
-                    min={1}
-                    max={12}
-                    placeholder="Sin definir"
-                    className="min-h-[44px]"
-                    disabled={!canEdit}
-                    value={negDraft.siniestroCanonesThreshold ?? ''}
-                    onChange={(e) =>
-                      updateNeg(
-                        'siniestroCanonesThreshold',
-                        e.target.value === '' ? null : Number(e.target.value),
-                      )
-                    }
-                  />
-                  <p className="text-xs text-fg-muted">
-                    Cuántos cánones vencidos hacen falta para radicar ante la aseguradora.
-                    Vacío = lo decidís caso por caso.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {negError && (
-              <p className="text-sm text-danger" data-testid="negociacion-save-error">
-                {negError}
-              </p>
-            )}
-
-            {canEdit && (
-              <div className="flex items-center justify-end gap-2 pt-1">
-                {acuerdoDirty && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="min-h-[44px]"
-                    onClick={handleCancelNegotiation}
-                    data-testid="cancel-negociacion"
-                  >
-                    Descartar
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  className="min-h-[44px]"
-                  data-testid="save-negociacion"
-                  disabled={!acuerdoDirty || negSaving}
-                  onClick={() => void handleSaveNegotiation()}
-                >
-                  {negSaving ? (
-                    <Spinner size="sm" variant="current" className="mr-1" />
-                  ) : (
-                    <FloppyDisk className="h-4 w-4 mr-1" />
-                  )}
-                  Guardar acuerdo
-                </Button>
-              </div>
-            )}
-          </>
-        )}
+        <div className="border-t border-border-faint" />
+        <Button asChild variant="secondary" size="sm" hideArrow>
+          <Link href="/panel/inmobiliaria/ai/cobranza/acuerdos">
+            Ir a Acuerdos de pago
+          </Link>
+        </Button>
       </section>
 
       {/* ①b Facturación e integraciones ──────────────────────────────────────
@@ -1118,167 +762,10 @@ function CobranzaConfiguracionContent() {
         )}
       </section>
 
-      {/* ③ Cadencia ─────────────────────────────────────────────────────── */}
-      <section
-        data-testid="section-cadencia"
-        className="rounded-xl border border-border bg-card p-6 space-y-4"
-        aria-labelledby="heading-cadencia"
-      >
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <h2 id="heading-cadencia" className="text-xl font-semibold text-foreground">
-              Cadencia de contacto
-            </h2>
-            <p className="text-sm text-fg-muted mt-1">
-              Toques por etapa de cartera — día, canal y motivo de cada contacto.
-            </p>
-          </div>
-          <Badge variant="secondary" data-testid="cadence-source-chip">
-            {cadence.source === 'agency' ? 'Configuración de la agencia' : 'Configuración por defecto'}
-          </Badge>
-        </div>
-        <div className="border-t border-border-faint" />
-
-        {cadence.notProvisioned && <NotProvisionedBanner testId="cadencia-not-provisioned" />}
-
-        {!cadence.notProvisioned && cadence.error && !cadence.effectiveConfig && (
-          <SectionErrorBanner testId="cadencia-error" onRetry={() => void cadence.refetch()} />
-        )}
-
-        {!cadence.notProvisioned && cadenceDraft && (
-          <>
-            <Accordion type="multiple" defaultValue={[...CADENCE_STAGES]} className="w-full">
-              {CADENCE_STAGES.map((stage) => (
-                <AccordionItem key={stage} value={stage}>
-                  <AccordionTrigger data-testid={`cadence-stage-trigger-${stage}`}>
-                    {STAGE_LABELS[stage]}{' '}
-                    <span className="ml-2 text-xs text-fg-muted font-mono tabular-nums">
-                      ({cadenceDraft[stage].length})
-                    </span>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-3">
-                      {cadenceDraft[stage].map((entry, idx) => (
-                        <div
-                          key={idx}
-                          className="grid grid-cols-1 md:grid-cols-[100px_140px_1fr_auto_auto] gap-2 items-center rounded-md border border-border-faint p-2"
-                        >
-                          <Input
-                            type="number"
-                            aria-label={`Día — ${STAGE_LABELS[stage]} #${idx + 1}`}
-                            data-testid={`cadence-entry-${stage}-${idx}-dayOffset`}
-                            disabled={!canEdit}
-                            value={entry.dayOffset}
-                            onChange={(e) =>
-                              updateCadenceEntry(stage, idx, { dayOffset: Number(e.target.value) })
-                            }
-                          />
-                          <select
-                            aria-label={`Canal — ${STAGE_LABELS[stage]} #${idx + 1}`}
-                            data-testid={`cadence-entry-${stage}-${idx}-channel`}
-                            className="w-full rounded-md border border-border bg-card px-3 min-h-[44px] text-sm"
-                            disabled={!canEdit}
-                            value={entry.channel}
-                            onChange={(e) =>
-                              updateCadenceEntry(stage, idx, {
-                                channel: e.target.value as CadenceEntry['channel'],
-                              })
-                            }
-                          >
-                            {(Object.keys(CHANNEL_LABELS) as CadenceEntry['channel'][]).map((ch) => (
-                              <option key={ch} value={ch}>
-                                {CHANNEL_LABELS[ch]}
-                              </option>
-                            ))}
-                          </select>
-                          <Input
-                            aria-label={`Motivo — ${STAGE_LABELS[stage]} #${idx + 1}`}
-                            data-testid={`cadence-entry-${stage}-${idx}-reason`}
-                            disabled={!canEdit}
-                            maxLength={120}
-                            value={entry.reason}
-                            onChange={(e) => updateCadenceEntry(stage, idx, { reason: e.target.value })}
-                          />
-                          <div className="flex items-center gap-1.5 min-h-[44px]">
-                            <Checkbox
-                              data-testid={`cadence-entry-${stage}-${idx}-retry`}
-                              disabled={!canEdit}
-                              checked={!!entry.retryUntilConnect}
-                              onCheckedChange={(checked) =>
-                                updateCadenceEntry(stage, idx, { retryUntilConnect: !!checked })
-                              }
-                            />
-                            <span className="text-xs text-fg-muted">Reintentar</span>
-                          </div>
-                          {canEdit && (
-                            <button
-                              type="button"
-                              aria-label={`Quitar toque — ${STAGE_LABELS[stage]} #${idx + 1}`}
-                              data-testid={`cadence-entry-${stage}-${idx}-remove`}
-                              className="p-2 text-fg-muted hover:text-danger"
-                              onClick={() => removeCadenceEntry(stage, idx)}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      {canEdit && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="min-h-[44px]"
-                          data-testid={`cadence-add-${stage}`}
-                          onClick={() => addCadenceEntry(stage)}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Agregar toque
-                        </Button>
-                      )}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-
-            {cadenceError && (
-              <p className="text-sm text-danger" data-testid="cadencia-save-error">
-                {cadenceError}
-              </p>
-            )}
-
-            {canEdit && (
-              <div className="flex items-center justify-end gap-2 pt-2">
-                {cadenceDirty && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="min-h-[44px]"
-                    onClick={handleCancelCadence}
-                    data-testid="cancel-cadencia"
-                  >
-                    Descartar
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  className="min-h-[44px]"
-                  data-testid="save-cadencia"
-                  disabled={!cadenceDirty || cadenceSaving}
-                  onClick={() => void handleSaveCadence()}
-                >
-                  {cadenceSaving ? (
-                    <Spinner size="sm" variant="current" className="mr-1" />
-                  ) : (
-                    <FloppyDisk className="h-4 w-4 mr-1" />
-                  )}
-                  Guardar cadencia
-                </Button>
-              </div>
-            )}
-          </>
-        )}
-      </section>
+      {/* ③ Cadencia de contacto — SACADA del panel (ver nota al pie).
+          Cuándo y por qué canal contacta el agente lo afinamos nosotros, no la
+          inmobiliaria: misma decisión que sacó a Playbooks. Lo que a ella sí le
+          toca de horarios (Ley 2300) es la sección de abajo, informativa. */}
 
       {/* ④ Horario y frecuencia — informativo, Ley 2300, sin inputs ──────── */}
       <section
@@ -1380,6 +867,38 @@ function CobranzaConfiguracionContent() {
     </main>
   )
 }
+
+/**
+ * NOTA — «Cadencia de contacto» fuera del panel (2026-08-09, decisión de Nico).
+ *
+ * Era un editor por etapa de cartera (S0…SX) para elegir día, canal y motivo de
+ * cada toque. Cuándo y por qué canal contacta el agente lo afinamos nosotros,
+ * no la inmobiliaria — la misma decisión que sacó a Playbooks del panel: qué
+ * dice y cuándo habla el agente lo define Leasefy.
+ *
+ * Lo que a la inmobiliaria SÍ le toca de horarios es la Ley 2300, y eso sigue
+ * en «Horario y frecuencia», que es informativo y no se edita.
+ *
+ * Se quitó el JSX y TODA su maquinaria (hook `useCadence`, borrador, handlers,
+ * `STAGE_LABELS`, `CHANNEL_LABELS`). Dejar el hook habría seguido pidiendo
+ * `GET /cobranza/cadence` en cada carga para una UI que ya no existe.
+ * El endpoint y `use-cadence.ts` quedan intactos: el agente los sigue leyendo.
+ */
+
+/**
+ * NOTA — «Acuerdo general» mudado a Acuerdos de pago (2026-08-09).
+ *
+ * Vivía acá como §Negociación y el enlace desde Acuerdos traía hasta esta
+ * pantalla. Pero el marco general —«si el deudor cabe en estas condiciones,
+ * cerralo»— no es un ajuste del sistema: es el acuerdo más importante que tiene
+ * la inmobiliaria, y se arma junto a los acuerdos puntuales. Ahora se edita en
+ * `AcuerdosGeneralesCard`, plegado hasta que hace falta, con el acuerdo dicho
+ * en una frase arriba. Acá queda un puntero para quien lo busque en el lugar
+ * viejo.
+ *
+ * Lo que se quedó son los campos que de verdad son configuración: facturación,
+ * CRM/ERP, autonomía, horario y reporte diario.
+ */
 
 export default function CobranzaConfiguracionPage() {
   return (

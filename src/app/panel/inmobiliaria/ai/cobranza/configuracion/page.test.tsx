@@ -1,9 +1,10 @@
 /**
  * CobranzaConfiguracionPage — Phase 2 rewrite (docs/front-cobranza-config.md).
  *
- * Wires the 3 REAL config resources (useAgencyPolicy /policy, useCadence
- * /cobranza/cadence, useAutonomy /cobranza/autonomy) instead of the decorative
- * /policies (plural) journal. Uses createRoot + act (repo convention, no RTL).
+ * Wires the config resources que quedaron: useAgencyPolicy (/policy) y
+ * useAutonomy (/cobranza/autonomy). El acuerdo general se mudó a
+ * /cobranza/acuerdos y la cadencia salió del panel.
+ * Uses createRoot + act (repo convention, no RTL).
  */
 
 import * as React from 'react'
@@ -52,16 +53,6 @@ const BASE_POLICY = {
   updatedAt: '2026-01-01T00:00:00Z',
 }
 
-const BASE_CADENCE = {
-  S0: [{ dayOffset: -7, channel: 'whatsapp' as const, reason: 'pre_due_t_minus_7', retryUntilConnect: false }],
-  S1: [],
-  S2: [],
-  S3: [],
-  S4: [],
-  S5: [],
-  SX: [],
-}
-
 const BASE_AUTONOMY = {
   agencyId: 'agency-001',
   autonomyLevel: 'automatico_completo' as const,
@@ -77,14 +68,6 @@ const mockPolicyState = {
   error: null as string | null,
   notProvisioned: false,
 }
-const mockCadenceState = {
-  cadenceConfig: null as typeof BASE_CADENCE | null,
-  effectiveConfig: BASE_CADENCE as typeof BASE_CADENCE | null,
-  source: 'agency' as 'agency' | 'default',
-  isLoading: false,
-  error: null as string | null,
-  notProvisioned: false,
-}
 const mockAutonomyState = {
   data: BASE_AUTONOMY as typeof BASE_AUTONOMY | null,
   isLoading: false,
@@ -94,8 +77,6 @@ const mockAutonomyState = {
 
 const patchPolicy = vi.fn().mockResolvedValue(undefined)
 const refetchPolicy = vi.fn().mockResolvedValue(undefined)
-const saveCadence = vi.fn().mockResolvedValue(undefined)
-const refetchCadence = vi.fn().mockResolvedValue(undefined)
 const saveAutonomy = vi.fn().mockResolvedValue(undefined)
 const refetchAutonomy = vi.fn().mockResolvedValue(undefined)
 
@@ -137,19 +118,6 @@ vi.mock('@/lib/hooks/cobranza/use-agency-policy', () => ({
   }),
 }))
 
-vi.mock('@/lib/hooks/cobranza/use-cadence', () => ({
-  useCadence: () => ({
-    cadenceConfig: mockCadenceState.cadenceConfig,
-    effectiveConfig: mockCadenceState.effectiveConfig,
-    source: mockCadenceState.source,
-    isLoading: mockCadenceState.isLoading,
-    error: mockCadenceState.error,
-    notProvisioned: mockCadenceState.notProvisioned,
-    refetch: refetchCadence,
-    saveCadence,
-  }),
-}))
-
 vi.mock('@/lib/hooks/cobranza/use-autonomy', () => ({
   useAutonomy: () => ({
     data: mockAutonomyState.data,
@@ -181,21 +149,6 @@ beforeEach(() => {
   mockPolicyState.error = null
   mockPolicyState.notProvisioned = false
 
-  mockCadenceState.cadenceConfig = null
-  mockCadenceState.effectiveConfig = {
-    S0: BASE_CADENCE.S0.map((e) => ({ ...e })),
-    S1: [],
-    S2: [],
-    S3: [],
-    S4: [],
-    S5: [],
-    SX: [],
-  }
-  mockCadenceState.source = 'agency'
-  mockCadenceState.isLoading = false
-  mockCadenceState.error = null
-  mockCadenceState.notProvisioned = false
-
   mockAutonomyState.data = { ...BASE_AUTONOMY }
   mockAutonomyState.isLoading = false
   mockAutonomyState.error = null
@@ -203,8 +156,6 @@ beforeEach(() => {
 
   patchPolicy.mockClear().mockResolvedValue(undefined)
   refetchPolicy.mockClear()
-  saveCadence.mockClear().mockResolvedValue(undefined)
-  refetchCadence.mockClear()
   saveAutonomy.mockClear().mockResolvedValue(undefined)
   refetchAutonomy.mockClear()
 })
@@ -227,23 +178,34 @@ function byTestId(testId: string) {
   return container.querySelector(`[data-testid="${testId}"]`)
 }
 
-function setValue(el: HTMLInputElement, value: string) {
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
-  setter?.call(el, value)
-  el.dispatchEvent(new Event('input', { bubbles: true }))
-}
-
 // ---------------------------------------------------------------------------
-// (a) 4 sections render
+// (a) sections render
 // ---------------------------------------------------------------------------
-
 describe('<CobranzaConfiguracionPage> — layout', () => {
-  it('renders all 4 config sections', () => {
+  it('renders the config sections that survived', () => {
     render()
-    expect(byTestId('section-negociacion')).toBeTruthy()
+    // El acuerdo general se mudó a /cobranza/acuerdos; queda un puntero.
+    expect(byTestId('section-acuerdo-puntero')).toBeTruthy()
+    expect(byTestId('section-comercial')).toBeTruthy()
     expect(byTestId('section-autonomia')).toBeTruthy()
-    expect(byTestId('section-cadencia')).toBeTruthy()
     expect(byTestId('section-horario')).toBeTruthy()
+  })
+
+  it('ya no monta la cadencia de contacto', () => {
+    render()
+    // Se sacó del panel: cuándo y por qué canal contacta el agente lo
+    // afinamos nosotros. La maquinaria se fue con ella.
+    expect(byTestId('section-cadencia')).toBeFalsy()
+    expect(byTestId('save-cadencia')).toBeFalsy()
+  })
+
+  it('el acuerdo general ya no se edita acá', () => {
+    render()
+    expect(byTestId('field-maxDiscountPct')).toBeFalsy()
+    expect(byTestId('save-negociacion')).toBeFalsy()
+    // …pero deja cómo llegar a donde sí se edita.
+    const puntero = byTestId('section-acuerdo-puntero') as HTMLElement
+    expect(puntero.querySelector('a[href*="/cobranza/acuerdos"]')).toBeTruthy()
   })
 
   it('renders the fixed Ley 2300 schedule with no editable inputs', () => {
@@ -263,20 +225,19 @@ describe('<CobranzaConfiguracionPage> — layout', () => {
 describe('<CobranzaConfiguracionPage> — role gate', () => {
   it('renders editable inputs and a save button when canAccess(cobranza, configure) is true', () => {
     render()
-    const discountInput = byTestId('field-maxDiscountPct') as HTMLInputElement
-    expect(discountInput).toBeTruthy()
-    expect(discountInput.disabled).toBe(false)
-    expect(byTestId('save-negociacion')).toBeTruthy()
+    const crm = byTestId('field-crmProvider') as HTMLSelectElement
+    expect(crm).toBeTruthy()
+    expect(crm.disabled).toBe(false)
+    expect(byTestId('save-comercial')).toBeTruthy()
   })
 
   it('renders read-only inputs and no save actions when canAccess(cobranza, configure) is false', () => {
     canConfigure = false
     render()
-    const discountInput = byTestId('field-maxDiscountPct') as HTMLInputElement
-    expect(discountInput).toBeTruthy()
-    expect(discountInput.disabled).toBe(true)
-    expect(byTestId('save-negociacion')).toBeFalsy()
-    expect(byTestId('save-cadencia')).toBeFalsy()
+    const crm = byTestId('field-crmProvider') as HTMLSelectElement
+    expect(crm).toBeTruthy()
+    expect(crm.disabled).toBe(true)
+    expect(byTestId('save-comercial')).toBeFalsy()
   })
 })
 
@@ -288,19 +249,15 @@ describe('<CobranzaConfiguracionPage> — onboarding incompleto (404)', () => {
   it('shows a dedicated banner per section when notProvisioned, not a generic error', () => {
     mockPolicyState.data = null
     mockPolicyState.notProvisioned = true
-    mockCadenceState.effectiveConfig = null
-    mockCadenceState.notProvisioned = true
     mockAutonomyState.data = null
     mockAutonomyState.notProvisioned = true
 
     render()
 
-    expect(byTestId('negociacion-not-provisioned')).toBeTruthy()
-    expect(byTestId('cadencia-not-provisioned')).toBeTruthy()
     expect(byTestId('autonomia-not-provisioned')).toBeTruthy()
-    // Fields for the not-provisioned section must not render.
-    expect(byTestId('field-maxDiscountPct')).toBeFalsy()
-    // The static, law-mandated section is unaffected by onboarding status.
+    // Sin política no se monta la tarjeta comercial.
+    expect(byTestId('field-crmProvider')).toBeFalsy()
+    // La sección informativa de la ley no depende del onboarding.
     expect(byTestId('section-horario')).toBeTruthy()
   })
 })
@@ -309,38 +266,10 @@ describe('<CobranzaConfiguracionPage> — onboarding incompleto (404)', () => {
 // (d) Save wiring per section
 // ---------------------------------------------------------------------------
 
-describe('<CobranzaConfiguracionPage> — negotiation save (PATCH /policy, partial)', () => {
-  it('calls patchPolicy with ONLY the changed fields', async () => {
+describe('<CobranzaConfiguracionPage> — facturación (PATCH /policy, partial)', () => {
+  it('manda SÓLO lo que cambió', async () => {
     render()
 
-    // El campo se escribe en PORCENTAJE (25), la política guarda la fracción
-    // (0.25). Antes la etiqueta decía «(0 a 0.5)» y había que escribir 0.25.
-    const discountInput = byTestId('field-maxDiscountPct') as HTMLInputElement
-    await act(async () => {
-      setValue(discountInput, '25')
-      await Promise.resolve()
-    })
-
-    const saveBtn = byTestId('save-negociacion') as HTMLButtonElement
-    expect(saveBtn.disabled).toBe(false)
-    await act(async () => {
-      saveBtn.click()
-      await new Promise((r) => setTimeout(r, 0))
-    })
-
-    expect(patchPolicy).toHaveBeenCalledTimes(1)
-    expect(patchPolicy).toHaveBeenCalledWith({ maxDiscountPct: 0.25 })
-  })
-
-  it('el porcentaje se muestra como porcentaje, no como fracción', () => {
-    render()
-    // La política del mock trae 0.1; el campo tiene que decir 10, no 0.1.
-    const discountInput = byTestId('field-maxDiscountPct') as HTMLInputElement
-    expect(discountInput.value).toBe('10')
-  })
-
-  it('guardar el acuerdo NO se enciende por tocar la facturación', async () => {
-    render()
     const crm = byTestId('field-crmProvider') as HTMLSelectElement
     await act(async () => {
       const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set
@@ -348,14 +277,29 @@ describe('<CobranzaConfiguracionPage> — negotiation save (PATCH /policy, parti
       crm.dispatchEvent(new Event('change', { bubbles: true }))
       await Promise.resolve()
     })
-    // Dos bloques, dos botones: uno se enciende y el otro no.
-    expect((byTestId('save-comercial') as HTMLButtonElement).disabled).toBe(false)
-    expect((byTestId('save-negociacion') as HTMLButtonElement).disabled).toBe(true)
+
+    const saveBtn = byTestId('save-comercial') as HTMLButtonElement
+    expect(saveBtn.disabled).toBe(false)
+    await act(async () => {
+      saveBtn.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(patchPolicy).toHaveBeenCalledTimes(1)
+    expect(patchPolicy).toHaveBeenCalledWith({ crmProvider: 'domus' })
+  })
+
+  it('la comisión se escribe en %, no en fracción', () => {
+    render()
+    // La política del mock trae 0.08; el campo tiene que decir 8, no 0,08 —
+    // que se leería como 0,08 %, cien veces menos.
+    const fee = byTestId('field-successFeePct') as HTMLInputElement
+    expect(fee.value).toBe('8')
   })
 
   it('disables the save button when there is nothing dirty', () => {
     render()
-    const saveBtn = byTestId('save-negociacion') as HTMLButtonElement
+    const saveBtn = byTestId('save-comercial') as HTMLButtonElement
     expect(saveBtn.disabled).toBe(true)
   })
 })
@@ -363,45 +307,15 @@ describe('<CobranzaConfiguracionPage> — negotiation save (PATCH /policy, parti
 describe('<CobranzaConfiguracionPage> — autonomy save (PUT /cobranza/autonomy)', () => {
   it('calls saveAutonomy with the selected level', async () => {
     render()
-
-    const option = byTestId('autonomy-option-aprobar') as HTMLElement
-    expect(option).toBeTruthy()
+    const radios = Array.from(
+      document.querySelectorAll('input[type="radio"], [role="radio"]'),
+    ) as HTMLElement[]
+    const target = radios.find((r) => r.getAttribute('value') === 'aprobar')
+    expect(target).toBeTruthy()
     await act(async () => {
-      option.click()
+      target!.click()
       await new Promise((r) => setTimeout(r, 0))
     })
-
-    expect(saveAutonomy).toHaveBeenCalledTimes(1)
     expect(saveAutonomy).toHaveBeenCalledWith('aprobar')
-  })
-})
-
-describe('<CobranzaConfiguracionPage> — cadence save (PUT /cobranza/cadence)', () => {
-  it('calls saveCadence with the updated effectiveConfig after adding a touch to S0', async () => {
-    render()
-
-    const addBtn = byTestId('cadence-add-S0') as HTMLButtonElement
-    await act(async () => {
-      addBtn.click()
-      await new Promise((r) => setTimeout(r, 0))
-    })
-
-    const saveBtn = byTestId('save-cadencia') as HTMLButtonElement
-    expect(saveBtn.disabled).toBe(false)
-    await act(async () => {
-      saveBtn.click()
-      await new Promise((r) => setTimeout(r, 0))
-    })
-
-    expect(saveCadence).toHaveBeenCalledTimes(1)
-    const sentConfig = saveCadence.mock.calls[0][0]
-    expect(sentConfig.S0).toHaveLength(2)
-    expect(sentConfig.S1).toEqual([])
-  })
-
-  it('renders the source chip reflecting the hook source', () => {
-    mockCadenceState.source = 'default'
-    render()
-    expect(byTestId('cadence-source-chip')?.textContent).toMatch(/defecto/i)
   })
 })

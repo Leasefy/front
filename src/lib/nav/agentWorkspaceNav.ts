@@ -89,7 +89,8 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
     items: [
       { labelKey: 'inmobiliaria.ai.nav.cobranzaResumen', href: `${AI}/cobranza`, icon: SquaresFour, exact: true, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaCasos', href: `${AI}/cobranza/deudores`, icon: Users, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaPendientes', href: `${AI}/cobranza/pendientes`, icon: ListChecks, module: 'cobranza' },
+      // FUSIONADO en el Resumen — «Pendientes» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPendientes', href: `${AI}/cobranza/pendientes`, icon: ListChecks, module: 'cobranza' },
       // OCULTO — «Inbox de conversaciones» (ver nota al pie del archivo).
       // { labelKey: 'inmobiliaria.ai.nav.cobranzaInbox', href: `${AI}/cobranza/inbox`, icon: ChatCircleText, module: 'cobranza' },
       // FUSIONADO en «Acuerdos de pago» — «Promesas de pago» (ver nota al pie).
@@ -352,6 +353,27 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
  *
  * Los tres KPI del reporte no subieron a propósito: «llamadas fuera de horario»
  * ya vive en Cumplimiento, y morosidad/recuperación en «Cómo va el agente».
+ */
+
+/**
+ * NOTA — «Pendientes» fusionado en el Resumen (2026-08-09, decisión de Nico).
+ *
+ * El Resumen ya monta `CobranzaAtencionPreview`, que lee de `usePendientes()`
+ * —LA MISMA fuente que la página— muestra el top 5 por prioridad y cruza a la
+ * lista completa con «Ver todo» y «Ver N pendientes más». No es un resumen
+ * paralelo: es la misma lista, recortada.
+ *
+ * A diferencia del Inbox, ocultar esto NO deja trabajo huérfano. La ruta sigue
+ * viva y el Resumen tiene TRES caminos hacia ella:
+ *   · `CobranzaWowBanner` — el CTA del banner
+ *   · `CobranzaWowBanner` — la tarjeta «Esperan tu aprobación»
+ *   · `CobranzaAtencionPreview` — «Ver todo» / «Ver N pendientes más»
+ *
+ * ⚠️ Lo que queda por resolver es al revés: el Resumen dice lo mismo VARIAS
+ * veces. Los siniestros que esperan aprobación salen en «Qué mirar hoy» (como
+ * banner, vía `useInsuranceClaims`) Y otra vez como filas en «Qué necesita tu
+ * atención hoy» (vía `usePendientes`, que lee el mismo hook). Con la pestaña
+ * afuera esa repetición queda más a la vista, no menos.
  */
 
 /**

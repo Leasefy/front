@@ -68,13 +68,15 @@ import {
   type CarteraStage,
 } from '@/lib/hooks/cobranza/use-agreement-propose'
 import { usePromises } from '@/lib/hooks/cobranza/use-promises'
+// El Dialog del ADAPTADOR local (`@/components/ui/dialog`), no el de Cadence
+// crudo: es el que usan los otros 21 modales del panel, trae su padding `p-6` y
+// frena Lenis mientras está abierto.
 import {
   Dialog,
-  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@leasefy/cadence'
+} from '@/components/ui/dialog'
 import {
   AcuerdosTabla,
   type AcuerdoFiltro,
@@ -973,19 +975,32 @@ function AcuerdosContent() {
       {/* Crear — en modal: la pantalla es para MIRAR los acuerdos; armar uno es
           una tarea puntual que no tiene por qué ocupar media pantalla siempre. */}
       <Dialog open={crearAbierto} onOpenChange={setCrearAbierto}>
-        <DialogContent className="md:max-w-5xl">
+        <DialogContent className="sm:max-w-5xl">
           <DialogHeader>
             <DialogTitle>Nuevo acuerdo de pago</DialogTitle>
           </DialogHeader>
-          {/* `DialogBody` y no un div propio: el `DialogContent` del DS NO trae
-              padding —lo aportan Header/Body/Footer—, así que un contenedor a
-              mano deja el contenido pegado a los dos bordes. */}
-          <DialogBody
-            data-lenis-prevent
-            className="max-h-[75vh] overflow-y-auto"
-          >
-            <CrearAcuerdoForm />
-          </DialogBody>
+          <CrearAcuerdoForm />
+
+          {/* El otro camino: en vez de armar un acuerdo para UNA persona,
+              ampliar el marco que el agente cierra solo. Es un enlace, no un
+              segundo editor — la política se edita en un único lugar. */}
+          <div className="flex items-start justify-between gap-3 flex-wrap border-t border-border pt-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-fg">
+                ¿Querés que el agente cierre acuerdos así sin preguntarte?
+              </p>
+              <p className="text-xs text-fg-muted max-w-md leading-relaxed">
+                Un acuerdo general define las condiciones que el agente puede
+                aceptar por su cuenta: plazos, descuento máximo y pago mínimo.
+              </p>
+            </div>
+            <Button asChild variant="outline" size="sm" hideArrow className="shrink-0">
+              <Link href={`${BASE}/configuracion#heading-negociacion`}>
+                Crear acuerdo general
+                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+              </Link>
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </main>

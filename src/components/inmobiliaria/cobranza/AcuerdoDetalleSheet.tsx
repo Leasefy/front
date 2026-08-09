@@ -14,12 +14,12 @@
  *     que es donde vive la aprobación. No se duplica esa pantalla acá.
  *   · «Ver deudor» siempre: es donde están las acciones (llamar, memo, pausar).
  *
- * Sigue el patrón canónico de cajón de `docs/DESIGN.md` §Drawers, en su forma
- * actual: el `Sheet` del DS (portal, scroll-lock y Escape los maneja Radix) +
- * `lenis.stop()` mientras está abierto + `data-lenis-prevent` en el cuerpo.
+ * Es el MISMO cajón que el resto del panel: `Sheet` de `@/components/ui/sheet`
+ * —el adaptador local, el que usa `CandidateDrawer`, la referencia de
+ * `docs/DESIGN.md` §Drawers—. El freno de Lenis vive ahora en el adaptador, no
+ * acá: le pasaba a todos los cajones.
  */
 
-import { useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowRight, PhoneCall } from '@phosphor-icons/react'
 import { Badge } from '@leasefy/cadence'
@@ -27,7 +27,6 @@ import { Badge } from '@leasefy/cadence'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui'
 import { useI18n } from '@/lib/i18n'
-import { useLenis } from '@/components/providers/SmoothScroll'
 import { channelLabel } from '@/lib/cobranza/call-vocab'
 import {
   ACUERDO_ESTADO,
@@ -72,15 +71,6 @@ export function AcuerdoDetalleSheet({
   onClose,
 }: AcuerdoDetalleSheetProps) {
   const { formatCurrency, formatDate, formatRelativeDate } = useI18n()
-  const lenis = useLenis()
-
-  // Lenis escucha la rueda en `window`: sin pausarlo, el cuerpo del cajón no
-  // scrollea. `docs/DESIGN.md` §Lenis.
-  useEffect(() => {
-    if (acuerdo) lenis.stop()
-    else lenis.start()
-    return () => lenis.start()
-  }, [acuerdo, lenis])
 
   if (!acuerdo) return null
 
@@ -102,7 +92,7 @@ export function AcuerdoDetalleSheet({
     >
       <SheetContent
         side="right"
-        className="w-full sm:max-w-lg p-0 flex flex-col"
+        className="w-full sm:max-w-lg !p-0 flex flex-col gap-0"
       >
         <SheetTitle className="sr-only">
           Acuerdo de pago de {acuerdo.deudor}

@@ -82,7 +82,7 @@ export function FormularioPSE({
     <div className="space-y-6" data-testid="formulario-pse">
       <Fieldset
         as="fieldset"
-        title="Con qué cuenta pagás"
+        title="Con qué cuenta pagas"
         description="Tiene que ser una cuenta a tu nombre: el banco valida que el documento coincida."
         eyebrow="PSE"
       >
@@ -124,9 +124,9 @@ export function FormularioPSE({
                     ? 'Trayendo los bancos…'
                     : opcionesDeBanco.length === 0
                       ? 'No pudimos traer los bancos'
-                      : 'Buscá o elegí tu banco'
+                      : 'Busca o elige tu banco'
                 }
-                searchPlaceholder="Escribí el nombre — Bancolombia, Nequi…"
+                searchPlaceholder="Escribe el nombre — Bancolombia, Nequi…"
                 disabled={deshabilitado || cargandoBancos || opcionesDeBanco.length === 0}
                 invalid={Boolean(errores.banco)}
               />
@@ -239,12 +239,13 @@ export function FormularioPSE({
 
       <Callout icon={<Bank weight="duotone" />} title="Qué pasa cuando le des a pagar">
         Te llevamos al portal de tu banco para que autorices el débito. Cuando
-        termines volvés acá y el estudio arranca solo — no tenés que avisarnos.
+        termines vuelves aquí y la consulta a las aseguradoras arranca sola — no
+        tienes que avisarnos.
       </Callout>
 
       <p className="flex items-start gap-2 text-caption text-fg-subtle">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" weight="duotone" aria-hidden="true" />
-        Los datos de tu cuenta los pedís y los ves sólo en tu banco. Nosotros no
+        Los datos de tu cuenta los pides y los ves sólo en tu banco. Nosotros no
         los recibimos ni los guardamos.
       </p>
     </div>

@@ -18,6 +18,9 @@
 
 # next.js
 /.next/
+# Build de producción con NEXT_DIST_DIR, para validar sin matar el `next dev`
+# que está usando /.next (ver .planning/SESSION-RESUME-2026-08-09-front-completo.md).
+/.next-build/
 /out/
 
 # production

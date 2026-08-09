@@ -20,6 +20,7 @@
 import { useCallback } from 'react'
 
 import { useAprobacion } from '@/lib/hooks/use-aprobacion'
+import { useCobroAprobacion } from '@/lib/hooks/use-cobro-aprobacion'
 import Link from 'next/link'
 import {
   ArrowsClockwise,
@@ -67,6 +68,14 @@ export default function AprobacionPage() {
    */
   const { aprobacion: data, cargando: loading, error, recargar: load } = useAprobacion()
 
+  /*
+   * La pantalla de pago no tenía **entrada**: nada en la app enlazaba a ella.
+   * Ésta es su entrada natural, pero el enlace sólo puede aparecer cuando hay
+   * algo que pagar de verdad — hoy el backend no tiene la ruta de cobro, y un
+   * botón que lleva a "todavía no se puede" es peor que ningún botón.
+   */
+  const { hayQuePagar } = useCobroAprobacion()
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -107,8 +116,8 @@ export default function AprobacionPage() {
 
       {data.estado === 'aprobado' && <AprobadoView data={data} tf={tf} locale={locale} />}
       {data.estado === 'rechazado' && <RechazadoView data={data} tf={tf} />}
-      {data.estado === 'en_proceso' && <EnProcesoView tf={tf} />}
-      {data.estado === 'sin_estudio' && <SinEstudioView tf={tf} />}
+      {data.estado === 'en_proceso' && <EnProcesoView tf={tf} hayQuePagar={hayQuePagar} />}
+      {data.estado === 'sin_estudio' && <SinEstudioView tf={tf} hayQuePagar={hayQuePagar} />}
     </div>
   )
 }
@@ -339,15 +348,22 @@ function RechazadoView({ data, tf }: { data: Aprobacion; tf: (k: string, f: stri
 // En proceso — tranquilizar y liberar
 // ─────────────────────────────────────────────────────────────────────────────
 
-function EnProcesoView({ tf }: { tf: (k: string, f: string) => string }) {
+function EnProcesoView({
+  tf,
+  hayQuePagar,
+}: {
+  tf: (k: string, f: string) => string
+  hayQuePagar: boolean
+}) {
   return (
     <section className="rounded-xl border border-border bg-surface p-8 shadow-sm space-y-3">
       <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
         <ArrowsClockwise className="w-6 h-6 text-primary animate-spin" aria-hidden="true" />
       </div>
-      <h1 className="text-2xl font-semibold text-fg">
+      {/* h2 y no h1: el h1 de la página es "Mi tope de arriendo". */}
+      <h2 className="text-2xl font-semibold text-fg">
         {tf('inquilino.aprobacion.proceso.title', 'Estamos consultando a las aseguradoras')}
-      </h1>
+      </h2>
       <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
         {tf(
           'inquilino.aprobacion.proceso.desc',
@@ -361,6 +377,24 @@ function EnProcesoView({ tf }: { tf: (k: string, f: string) => string }) {
           'Te avisamos por correo apenas tengamos respuesta — puedes cerrar esta página tranquilo.',
         )}
       </p>
+
+      {/* Si quedó un pago pendiente, la consulta no avanza hasta que se haga.
+          Decirlo acá es la diferencia entre esperar y esperar en vano. */}
+      {hayQuePagar && (
+        <div className="pt-2">
+          <p className="text-sm text-fg mb-3">
+            {tf(
+              'inquilino.aprobacion.proceso.faltaPagar',
+              'Nos falta tu pago para poder consultarlas.',
+            )}
+          </p>
+          <Button asChild>
+            <Link href="/inquilino/aprobacion/pago">
+              {tf('inquilino.aprobacion.proceso.pagar', 'Pagar y conocer mi tope')}
+            </Link>
+          </Button>
+        </div>
+      )}
     </section>
   )
 }
@@ -369,7 +403,13 @@ function EnProcesoView({ tf }: { tf: (k: string, f: string) => string }) {
 // Sin estudio — mostrar el camino antes de pedir el primer dato
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
+function SinEstudioView({
+  tf,
+  hayQuePagar,
+}: {
+  tf: (k: string, f: string) => string
+  hayQuePagar: boolean
+}) {
   const pasos = [
     {
       n: '01',
@@ -400,9 +440,10 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-border bg-surface p-8 shadow-sm space-y-3">
-        <h1 className="text-2xl font-semibold text-fg">
+        {/* h2 y no h1: el h1 de la página es "Mi tope de arriendo". */}
+        <h2 className="text-2xl font-semibold text-fg">
           {tf('inquilino.aprobacion.vacio.title', 'Todavía no tienes una aprobación')}
-        </h1>
+        </h2>
         <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
           {tf(
             'inquilino.aprobacion.vacio.desc',
@@ -410,9 +451,13 @@ function SinEstudioView({ tf }: { tf: (k: string, f: string) => string }) {
           )}
         </p>
         <div className="pt-2">
+          {/* Con un cobro pendiente, el siguiente paso es pagar y no volver a
+              empezar el formulario: mandarlo al wizard le haría repetir todo. */}
           <Button asChild size="lg">
-            <Link href="/aprobacion">
-              {tf('inquilino.aprobacion.vacio.cta', 'Conoce hasta cuánto te arrendamos')}
+            <Link href={hayQuePagar ? '/inquilino/aprobacion/pago' : '/aprobacion'}>
+              {hayQuePagar
+                ? tf('inquilino.aprobacion.vacio.ctaPagar', 'Pagar y conocer mi tope')
+                : tf('inquilino.aprobacion.vacio.cta', 'Conoce hasta cuánto te arrendamos')}
             </Link>
           </Button>
         </div>

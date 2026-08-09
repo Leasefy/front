@@ -70,7 +70,7 @@ const DEFINICIONES: readonly DefinicionPaso[] = [
   // El costo del estudio lo asume el inquilino. La pantalla existe; el cobro
   // del lado del backend todavía no, y la pantalla lo dice en vez de fingirlo
   // (ver src/lib/api/estudio-pago.service.ts).
-  { key: 'pago',           actor: 'inquilino',     href: '/inquilino/estudio/pago' },
+  { key: 'pago',           actor: 'inquilino',     href: '/inquilino/aprobacion/pago' },
   { key: 'aseguradoras',   actor: 'inquilino',     href: null },
   { key: 'compatibles',    actor: 'inquilino',     href: null },
   { key: 'postulacion',    actor: 'inquilino',     href: null },

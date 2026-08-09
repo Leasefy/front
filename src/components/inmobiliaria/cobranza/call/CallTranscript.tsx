@@ -12,7 +12,6 @@
 
 import { useMemo } from 'react'
 import { Button } from '@/components/ui'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { useI18n } from '@/lib/i18n'
 import {
   useCallTranscript,
@@ -135,54 +134,67 @@ export default function CallTranscript({
         </p>
       )}
 
+      {/*
+        SIN scroll anidado a propósito.
+
+        Antes esto vivía dentro de un `ScrollArea` con `max-h-[70vh]` que no
+        scrolleaba: el `max-h` iba en la RAÍZ y el viewport de Radix es
+        `h-full`. Un `height:100%` contra un padre que sólo tiene `max-height`
+        no resuelve, así que el viewport crecía con el contenido y la raíz
+        —que es `overflow-hidden`— lo recortaba. La transcripción quedaba
+        cortada y no había forma de llegar al final.
+
+        Además un scroll dentro de una página que ya scrollea obliga a adivinar
+        qué contenedor tiene el foco, y choca con Lenis (ver `docs/DESIGN.md`).
+        Como el reproductor es sticky, los controles quedan a la vista mientras
+        la página scrollea normal.
+      */}
       {data && data.turns.length > 0 && (
-        <ScrollArea className="max-h-[70vh] md:max-h-[calc(100vh-16rem)]">
-          <ul className="divide-y divide-border-faint">
-            {data.turns.map((turn) => {
-              const sp = speakerTone(turn.speaker)
-              const flags = turn.complianceFlagIds
-                .map((id) => flagIndex.get(id))
-                .filter((f): f is CallComplianceFlag => Boolean(f))
-              return (
-                <li key={turn.id} className="px-4 py-3 flex flex-col gap-1.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${sp.cls}`}
-                    >
-                      {t(`inmobiliaria.ai.cobranza.call.transcript.${sp.label}`)}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      hideArrow
-                      onClick={() => onSeek(turn.startSec)}
-                      aria-label={t(
-                        'inmobiliaria.ai.cobranza.call.transcript.seekAria',
-                        { time: formatSec(turn.startSec) },
-                      )}
-                      className="min-h-11 min-w-11 tabular-nums text-fg-muted"
-                    >
-                      {formatSec(turn.startSec)}
-                    </Button>
+        <ul className="divide-y divide-border-faint">
+          {data.turns.map((turn) => {
+            const sp = speakerTone(turn.speaker)
+            const flags = turn.complianceFlagIds
+              .map((id) => flagIndex.get(id))
+              .filter((f): f is CallComplianceFlag => Boolean(f))
+            return (
+              <li key={turn.id} className="px-4 py-3 flex flex-col gap-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${sp.cls}`}
+                  >
+                    {t(`inmobiliaria.ai.cobranza.call.transcript.${sp.label}`)}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    hideArrow
+                    onClick={() => onSeek(turn.startSec)}
+                    aria-label={t(
+                      'inmobiliaria.ai.cobranza.call.transcript.seekAria',
+                      { time: formatSec(turn.startSec) },
+                    )}
+                    className="min-h-11 min-w-11 tabular-nums text-fg-muted"
+                  >
+                    {formatSec(turn.startSec)}
+                  </Button>
+                </div>
+                <p className="text-sm text-fg leading-relaxed">
+                  {/* turn.text is pre-redacted server-side per T-31-PII;
+                      rendered verbatim. Do NOT pass into analytics or loggers. */}
+                  {turn.text}
+                </p>
+                {flags.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {flags.map((flag) => (
+                      <CompliancePill key={flag.id} flag={flag} />
+                    ))}
                   </div>
-                  <p className="text-sm text-fg leading-relaxed">
-                    {/* turn.text is pre-redacted server-side per T-31-PII;
-                        rendered verbatim. Do NOT pass into analytics or loggers. */}
-                    {turn.text}
-                  </p>
-                  {flags.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {flags.map((flag) => (
-                        <CompliancePill key={flag.id} flag={flag} />
-                      ))}
-                    </div>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
-        </ScrollArea>
+                )}
+              </li>
+            )
+          })}
+        </ul>
       )}
     </section>
   )

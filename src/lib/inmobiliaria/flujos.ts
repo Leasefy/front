@@ -17,21 +17,9 @@
  * y cada opción se nombra completa.
  */
 
-import {
-  Buildings,
-  Scales,
-  ShieldCheck,
-  FileText,
-  FilePlus,
-  type Icon,
-} from '@phosphor-icons/react'
+import { Buildings, Scales, ShieldCheck, FilePlus, type Icon } from '@phosphor-icons/react'
 
-export type FlujoKey =
-  | 'consignacion'
-  | 'avaluo'
-  | 'evaluacion'
-  | 'asegurabilidad'
-  | 'contrato'
+export type FlujoKey = 'consignacion' | 'avaluo' | 'asegurabilidad' | 'contrato'
 
 /** Los momentos del negocio, en el orden en que ocurren. */
 export type GrupoFlujo = 'captar' | 'evaluar' | 'cerrar'
@@ -96,17 +84,21 @@ export const FLUJOS: readonly FlujoNuevo[] = [
   },
 
   // ── Evaluar: decidir sobre una persona ────────────────────────────────
-  {
-    key: 'evaluacion',
-    grupo: 'evaluar',
-    icon: ShieldCheck,
-    href: '/panel/inmobiliaria/ai/estudio/nuevo',
-    module: 'estudio',
-  },
+  //
+  // Hay UNA sola cosa que se le hace a una persona en frío, y es preguntarle a
+  // las aseguradoras si la respaldan. **La evaluación A/B/C/D no va acá**: es
+  // posterior a la postulación y arranca sola cuando la postulación entra (paso
+  // 8 de `lib/recorrido/pasos.ts`; `docs/VOCABULARIO.md` §Evaluación). A demanda
+  // se puede volver a correr, pero sobre una postulación que ya existe — no es
+  // algo que se empiece desde cero.
+  //
+  // Había un ítem «Nueva evaluación de candidato» → `/ai/estudio/nuevo`, y esa
+  // pantalla ni siquiera guarda: su botón responde "Próximamente: esto creará
+  // el estudio…". Prometía un flujo que no existe, en un orden que tampoco es.
   {
     key: 'asegurabilidad',
     grupo: 'evaluar',
-    icon: FileText,
+    icon: ShieldCheck,
     href: '/panel/inmobiliaria/ai/asegurabilidad/nueva',
     module: 'cotizador',
   },

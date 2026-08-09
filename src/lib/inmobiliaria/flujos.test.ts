@@ -77,6 +77,17 @@ describe('FLUJOS', () => {
     expect(FLUJO_PRINCIPAL).toBe('consignacion')
   })
 
+  it('no se ofrece empezar la evaluación A/B/C/D en frío', () => {
+    // La asegurabilidad ("¿lo aseguran o no?") es lo que se consulta desde
+    // cero. La evaluación A/B/C/D es POSTERIOR a la postulación y arranca sola
+    // cuando la postulación entra; a demanda se vuelve a correr, pero sobre una
+    // que ya existe. Ofrecerla acá invierte el orden del negocio — y la
+    // pantalla a la que llevaba (`/ai/estudio/nuevo`) ni siquiera guarda: su
+    // botón responde "Próximamente: esto creará el estudio…".
+    expect(FLUJOS.map((f) => f.href)).not.toContain('/panel/inmobiliaria/ai/estudio/nuevo')
+    expect(FLUJOS.map((f) => f.key)).toContain('asegurabilidad')
+  })
+
   it('nadie entra un inmueble sin propietario', () => {
     // Regla de negocio: una inmobiliaria nunca administra un inmueble que no
     // tiene propietario, así que para ella entrar uno es SIEMPRE una

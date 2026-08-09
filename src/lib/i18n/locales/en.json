@@ -8064,8 +8064,8 @@
           "desc": "It lands in your inbox with the assessment already done."
         },
         "evaluacion": {
-          "label": "You assess the candidate",
-          "desc": "Level A, B, C or D. Whatever the agent can't settle goes to review."
+          "label": "The candidate gets assessed",
+          "desc": "Starts on its own when the application lands: level A, B, C or D. Whatever the agent can't settle goes to your review, and you can re-run it any time."
         },
         "comparacion": {
           "label": "You compare candidates",
@@ -8122,28 +8122,16 @@
             "necesitas": "Have the property's registry number handy."
           }
         },
-        "evaluacion": {
-          "label": "New candidate assessment",
-          "desc": "Score a candidate's risk: level A, B, C or D",
-          "intro": {
-            "titulo": "You're assessing a candidate",
-            "resumen": "This is our own scoring — the one that helps you choose between several candidates for the same property. It is not insurability: that one tells you how much an insurer will back them for.",
-            "paso1": "Enter the candidate's details.",
-            "paso2": "Attach their income documents.",
-            "paso3": "The agent returns a level and a score, with the evidence behind each.",
-            "necesitas": "Have the candidate's documents as PDFs."
-          }
-        },
         "asegurabilidad": {
           "label": "New insurability check",
-          "desc": "Check how much insurers will back them for",
+          "desc": "Tells you whether insurers back them, and up to how much",
           "intro": {
             "titulo": "You're checking insurability",
-            "resumen": "Every enabled insurer is asked, and the resulting coverage cap is recorded. That number tells you which properties you can offer them.",
+            "resumen": "It's the first question, and the one that decides whether there's anything to pursue: will insurers back this person? If so, you also get the maximum guaranteed amount, which tells you which properties you can offer them. Checked once, with no property attached. The A/B/C/D evaluation is a different thing and comes later: it starts on its own once the candidate applies.",
             "paso1": "Identify the candidate.",
-            "paso2": "Choose which insurers to ask.",
+            "paso2": "Pick which insurers to query.",
             "paso3": "Compare the answers and keep the best one.",
-            "necesitas": "You'll need the candidate's ID number and their consent to run the check."
+            "necesitas": "You need the candidate's ID number and their authorization to run the check."
           }
         },
         "contrato": {

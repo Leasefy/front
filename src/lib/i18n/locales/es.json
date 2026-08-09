@@ -8065,8 +8065,8 @@
           "desc": "Entra a tu bandeja con la evaluación ya hecha."
         },
         "evaluacion": {
-          "label": "Evalúas al candidato",
-          "desc": "Nivel A, B, C o D. Lo que el agente no resuelve solo pasa a revisión."
+          "label": "Se evalúa al candidato",
+          "desc": "Arranca sola cuando entra la postulación: nivel A, B, C o D. Lo que el agente no resuelve pasa a tu revisión, y puedes volver a correrla cuando quieras."
         },
         "comparacion": {
           "label": "Comparas los candidatos",
@@ -8123,24 +8123,12 @@
             "necesitas": "Ten a mano la matrícula inmobiliaria."
           }
         },
-        "evaluacion": {
-          "label": "Nueva evaluación de candidato",
-          "desc": "Mide el riesgo de un candidato: nivel A, B, C o D",
-          "intro": {
-            "titulo": "Vas a evaluar a un candidato",
-            "resumen": "Es el scoring propio, el que sirve para elegir entre varios candidatos de un mismo inmueble. No es lo mismo que la asegurabilidad: esa dice hasta cuánto lo respalda una aseguradora.",
-            "paso1": "Cargas los datos del candidato.",
-            "paso2": "Adjuntas sus documentos de ingresos.",
-            "paso3": "El agente devuelve nivel y puntaje, con la evidencia de cada uno.",
-            "necesitas": "Ten los documentos del candidato en PDF."
-          }
-        },
         "asegurabilidad": {
           "label": "Nueva asegurabilidad",
-          "desc": "Consulta hasta cuánto lo respaldan las aseguradoras",
+          "desc": "Dice si las aseguradoras lo respaldan, y hasta cuánto",
           "intro": {
             "titulo": "Vas a consultar la asegurabilidad",
-            "resumen": "Se les pregunta a las aseguradoras habilitadas y queda registrado el máximo afianzable. Con ese número sabes qué inmuebles puedes ofrecerle.",
+            "resumen": "Es la primera pregunta y la que decide si hay algo que seguir: ¿las aseguradoras respaldan a esta persona? Si la respuesta es sí, queda además el máximo afianzable, que te dice qué inmuebles puedes ofrecerle. Se consulta una sola vez y sin propiedad. La evaluación A, B, C o D es otra cosa y viene después: arranca sola cuando el candidato se postula.",
             "paso1": "Identificas al candidato.",
             "paso2": "Eliges a qué aseguradoras consultar.",
             "paso3": "Comparas las respuestas y te quedas con la mejor.",

@@ -60,6 +60,10 @@ import {
   type DisputeStatus,
 } from '@/lib/hooks/cobranza/use-disputes'
 import { DisputaCard } from '@/components/inmobiliaria/cobranza/DisputaCard'
+import {
+  DebtorPicker,
+  type PickedDebtor,
+} from '@/components/inmobiliaria/cobranza/DebtorPicker'
 
 const BASE = '/panel/inmobiliaria/ai/cobranza'
 const DEUDORES_HREF = `${BASE}/deudores`
@@ -99,16 +103,14 @@ interface AbrirDisputaModalProps {
 }
 
 function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps) {
-  const [debtorId, setDebtorId] = useState('')
+  const [debtor, setDebtor] = useState<PickedDebtor | null>(null)
   const [reason, setReason] = useState('')
   const [monto, setMonto] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  // UUID v4-ish — el backend exige z.string().uuid() para debtorId.
-  const debtorIdOk = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
-    debtorId.trim(),
-  )
+  // El deudor se ELIGE de la cartera; el UUID nunca lo escribe una persona.
+  const debtorIdOk = debtor !== null
   const reasonLen = reason.trim().length
   const reasonOk = reasonLen >= REASON_MIN && reasonLen <= REASON_MAX
   const montoTrim = monto.trim()
@@ -118,17 +120,17 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
   const canSubmit = debtorIdOk && reasonOk && montoOk && !submitting
 
   const handleSubmit = useCallback(async () => {
-    if (!canSubmit) return
+    if (!canSubmit || !debtor) return
     setSubmitting(true)
     setSubmitError(null)
     const res = await onSubmit({
-      debtorId: debtorId.trim(),
+      debtorId: debtor.id,
       reason: reason.trim(),
       ...(montoNum !== undefined ? { disputedAmount: montoNum } : {}),
     })
     setSubmitting(false)
     if (res.ok) {
-      setDebtorId('')
+      setDebtor(null)
       setReason('')
       setMonto('')
       onClose()
@@ -143,7 +145,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
     } else {
       setSubmitError(`No se pudo registrar la controversia (error ${res.status}).`)
     }
-  }, [canSubmit, onSubmit, debtorId, reason, montoNum, onClose])
+  }, [canSubmit, onSubmit, debtor, reason, montoNum, onClose])
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => { if (!o) onClose() }}>
@@ -158,28 +160,19 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             revisión humana. No pausa la cobranza automáticamente.
           </p>
 
-          {/* Identificador del deudor */}
+          {/* Deudor — se elige de la cartera, nunca se escribe un UUID */}
           <div className="space-y-1.5">
             <label
               htmlFor="disputa-debtor"
               className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
             >
-              Identificador del deudor <span className="text-danger">*</span>
+              Deudor <span className="text-danger">*</span>
             </label>
-            <Input
-              id="disputa-debtor"
-              value={debtorId}
-              onChange={(e) => setDebtorId(e.target.value)}
-              placeholder="UUID del deudor"
+            <DebtorPicker
+              inputId="disputa-debtor"
+              value={debtor}
+              onChange={setDebtor}
             />
-            {debtorId.trim() !== '' && !debtorIdOk && (
-              <p className="text-xs text-danger">
-                El identificador del deudor debe ser un UUID válido.
-              </p>
-            )}
-            <p className="text-xs text-fg-muted">
-              Lo encuentras en el detalle de cada deudor.
-            </p>
           </div>
 
           {/* Motivo */}
@@ -409,6 +402,9 @@ function DisputasContent() {
 
   useAutoRefresh(refetch)
 
+  /** Falló la carga y no tenemos nada que mostrar: no sabemos si hay o no. */
+  const hayError = error !== null && disputes.length === 0
+
   const [abrirOpen, setAbrirOpen] = useState(false)
   const [resolviendo, setResolviendo] = useState<CobranzaDispute | null>(null)
 
@@ -500,18 +496,32 @@ function DisputasContent() {
     <main className="p-6 lg:p-8 space-y-6">
       {header}
 
-      {/* Error de carga (no destructivo — la pantalla sigue usable) */}
-      {error && disputes.length === 0 && (
+      {/* Error de carga (no destructivo — la pantalla sigue usable).
+          Cuando falla, ABAJO no puede decirse «no hay controversias»: no
+          sabemos si hay o no. Se dice que no pudimos cargarlas y se ofrece
+          reintentar. */}
+      {hayError && (
         <div
           role="alert"
-          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
+          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center justify-between gap-3 flex-wrap"
         >
-          <ShieldWarning
-            className="w-4 h-4 shrink-0"
-            weight="fill"
-            aria-hidden="true"
-          />
-          <span>No se pudo cargar las controversias. {error}</span>
+          <span className="flex items-center gap-2">
+            <ShieldWarning
+              className="w-4 h-4 shrink-0"
+              weight="fill"
+              aria-hidden="true"
+            />
+            No pudimos cargar las controversias. {error}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
+            onClick={() => void refetch()}
+            className="shrink-0"
+          >
+            Reintentar
+          </Button>
         </div>
       )}
 
@@ -531,8 +541,9 @@ function DisputasContent() {
         )}
       </div>
 
-      {/* Lista o EmptyState (fallback fail-soft) */}
-      {disputes.length === 0 ? (
+      {/* Lista o EmptyState. El vacío SÓLO se afirma cuando la carga salió
+          bien; si falló, arriba ya se dijo que no pudimos cargarlas. */}
+      {disputes.length === 0 && hayError ? null : disputes.length === 0 ? (
         <EmptyState
           icon={Scales}
           title={

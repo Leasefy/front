@@ -5460,7 +5460,8 @@
           "sort": {
             "createdAt": "Most recent",
             "amountDesc": "Highest amount",
-            "disbursementPendingDays": "Disbursement pending"
+            "disbursementPendingDays": "Disbursement pending",
+            "label": "Sort"
           },
           "columns": {
             "nombre": "Name",
@@ -5468,7 +5469,8 @@
             "fee": "Fee",
             "provider": "Provider",
             "status": "Status",
-            "fecha": "Date"
+            "fecha": "Date",
+            "disbursement": "Disbursement"
           },
           "pill": {
             "disbursementPending": "Disbursement pending"
@@ -5495,6 +5497,14 @@
             "cta": {
               "label": "View debtors"
             }
+          },
+          "provider": {
+            "none": "Not processed"
+          },
+          "disbursement": {
+            "settled": "Disbursed",
+            "pending": "Not disbursed",
+            "days": "{{days}} d"
           }
         },
         "planes": {

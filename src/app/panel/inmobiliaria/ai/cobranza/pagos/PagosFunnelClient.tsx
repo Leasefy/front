@@ -41,7 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Chip, SegmentedControl } from '@leasefy/cadence'
+import { Card, Chip, SegmentedControl } from '@leasefy/cadence'
 import {
   usePaymentsFunnel,
   type UsePaymentsFunnelFilters,
@@ -104,19 +104,20 @@ function KpiCard({
   isLoading: boolean
 }) {
   return (
-    <div
-      data-testid={testId}
-      className="rounded-lg border border-border bg-card px-4 py-3"
-    >
+    <Card data-testid={testId} className="px-4 py-3">
       <p className="text-xs font-medium text-fg-muted uppercase tracking-wider">
         {label}
       </p>
       {isLoading ? (
         <div className="mt-1 h-5 w-24 animate-pulse rounded bg-surface-muted" />
       ) : (
-        <p className="mt-1 text-lg font-semibold text-fg">{value}</p>
+        // Los números van monoespaciados y tabulares para que las columnas de
+        // cifras se alineen entre tarjetas.
+        <p className="mt-1 text-lg font-semibold text-fg font-mono tabular-nums">
+          {value}
+        </p>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -258,10 +259,15 @@ export default function PagosFunnelClient() {
         value={formatCop(k?.totalDisbursedCop)}
         isLoading={isLoading && !k}
       />
+      {/*
+        Promedio sobre CERO pagos aprobados no es $0: es indefinido. Mostrar
+        «$ 0» afirma que la comisión promedio es cero, que es distinto de «no
+        hay nada sobre qué promediar».
+      */}
       <KpiCard
         testId="pagos-kpi-avg-fee"
         label={t('inmobiliaria.ai.cobranza.pagos.kpi.avgFee')}
-        value={formatCop(k?.avgFeeCop)}
+        value={k && k.approvedCount > 0 ? formatCop(k.avgFeeCop) : '—'}
         isLoading={isLoading && !k}
       />
     </div>
@@ -351,7 +357,7 @@ export default function PagosFunnelClient() {
           htmlFor="pagos-sort"
           className="text-xs font-medium text-fg-muted"
         >
-          Sort:
+          {t('inmobiliaria.ai.cobranza.pagos.sort.label')}:
         </label>
         <Select value={sort} onValueChange={(v) => setSort(v as PaymentsFunnelSort)}>
           <SelectTrigger
@@ -390,7 +396,8 @@ export default function PagosFunnelClient() {
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-[20px] border border-border bg-surface">
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -398,7 +405,7 @@ export default function PagosFunnelClient() {
                 {t('inmobiliaria.ai.cobranza.pagos.columns.nombre')}
               </TableHead>
               <TableHead
-                className="cursor-pointer hover:text-foreground"
+                className="cursor-pointer hover:text-fg"
                 onClick={() => setSort('amount')}
                 data-testid="pagos-th-monto"
               >
@@ -414,8 +421,13 @@ export default function PagosFunnelClient() {
               <TableHead>
                 {t('inmobiliaria.ai.cobranza.pagos.columns.status')}
               </TableHead>
+              {/* El endpoint ya mandaba `disbursementState` y nadie lo mostraba,
+                  en la pantalla que se llama «funnel de pagos y desembolsos». */}
+              <TableHead>
+                {t('inmobiliaria.ai.cobranza.pagos.columns.disbursement')}
+              </TableHead>
               <TableHead
-                className="cursor-pointer hover:text-foreground"
+                className="cursor-pointer hover:text-fg"
                 onClick={() => setSort('created_at')}
                 data-testid="pagos-th-fecha"
               >
@@ -428,7 +440,7 @@ export default function PagosFunnelClient() {
             {isLoading && rows.length === 0 && (
               Array.from({ length: 5 }, (_, i) => (
                 <TableRow key={`pagos-skel-${i}`} className="animate-pulse">
-                  {Array.from({ length: 6 }, (_, j) => (
+                  {Array.from({ length: 7 }, (_, j) => (
                     <TableCell key={j} className="px-3 py-3">
                       <div className="h-3 w-full bg-surface-muted rounded" />
                     </TableCell>
@@ -438,7 +450,7 @@ export default function PagosFunnelClient() {
             )}
             {!isLoading && rows.length === 0 && !error && (
               <TableRow>
-                <TableCell colSpan={6} className="px-3 py-12 text-center">
+                <TableCell colSpan={7} className="px-3 py-12 text-center">
                   <p className="text-sm text-fg-muted">
                     {t('inmobiliaria.ai.cobranza.pagos.emptyFiltered')}
                   </p>
@@ -459,8 +471,11 @@ export default function PagosFunnelClient() {
                   }}
                   className=" cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <TableCell className="px-3 py-2 whitespace-nowrap text-fg">
-                    <Mask field="cedula" value={row.debtor.fullName} />
+                  <TableCell className="px-3 py-2 whitespace-nowrap">
+                    <span className="text-fg">{row.debtor.fullName}</span>
+                    <span className="block text-xs text-fg-subtle">
+                      <Mask field="cedula" value={row.debtor.cedulaMasked} />
+                    </span>
                   </TableCell>
                   <TableCell className="px-3 py-2 tabular-nums text-xs text-fg">
                     {formatCop(row.amount)}
@@ -469,9 +484,17 @@ export default function PagosFunnelClient() {
                     {formatCop(row.feeCop)}
                   </TableCell>
                   <TableCell className="px-3 py-2">
-                    <Badge variant={providerBadgeVariant(row.provider)}>
-                      {t(`inmobiliaria.ai.cobranza.pagos.filter.${row.provider}`)}
-                    </Badge>
+                    {row.provider ? (
+                      <Badge variant={providerBadgeVariant(row.provider)}>
+                        {t(`inmobiliaria.ai.cobranza.pagos.filter.${row.provider}`)}
+                      </Badge>
+                    ) : (
+                      // Sin pasarela todavía. Antes esto interpolaba `null` en
+                      // la clave y pintaba `…pagos.filter.null` en cada fila.
+                      <span className="text-xs text-fg-subtle">
+                        {t('inmobiliaria.ai.cobranza.pagos.provider.none')}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="px-3 py-2">
                     <div className="flex items-center gap-2">
@@ -490,6 +513,25 @@ export default function PagosFunnelClient() {
                       )}
                     </div>
                   </TableCell>
+                  <TableCell className="px-3 py-2 whitespace-nowrap">
+                    {row.disbursementState === 'settled' ? (
+                      <Badge variant="success">
+                        {t('inmobiliaria.ai.cobranza.pagos.disbursement.settled')}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-fg-muted">
+                        {t('inmobiliaria.ai.cobranza.pagos.disbursement.pending')}
+                        {row.disbursementPendingDays > 0 && (
+                          <span className="text-fg-subtle">
+                            {' · '}
+                            {t('inmobiliaria.ai.cobranza.pagos.disbursement.days', {
+                              days: row.disbursementPendingDays,
+                            })}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell className="px-3 py-2 text-xs text-fg-muted whitespace-nowrap">
                     {new Date(row.createdAt).toLocaleDateString('es-CO', {
                       day: '2-digit',
@@ -502,7 +544,8 @@ export default function PagosFunnelClient() {
             })}
           </TableBody>
         </Table>
-      </div>
+        </div>
+      </Card>
 
       {/* Sentinel + loadingMore spinner */}
       {hasMore && (

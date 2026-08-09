@@ -7868,8 +7868,8 @@ export interface components {
             feeCop: number | null;
             /** @enum {string} */
             status: "approved" | "pending" | "declined" | "disbursed";
-            /** @enum {string} */
-            provider: "wompi" | "bold";
+            /** @enum {string|null} */
+            provider: "wompi" | "bold" | null;
             /** @enum {string} */
             disbursementState: "pending" | "settled";
             disbursementPendingDays: number;

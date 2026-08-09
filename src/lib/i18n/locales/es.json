@@ -5461,7 +5461,8 @@
           "sort": {
             "createdAt": "Más recientes",
             "amountDesc": "Mayor monto",
-            "disbursementPendingDays": "Desembolso pendiente"
+            "disbursementPendingDays": "Desembolso pendiente",
+            "label": "Ordenar"
           },
           "columns": {
             "nombre": "Nombre",
@@ -5469,7 +5470,8 @@
             "fee": "Comisión",
             "provider": "Proveedor",
             "status": "Estado",
-            "fecha": "Fecha"
+            "fecha": "Fecha",
+            "disbursement": "Desembolso"
           },
           "pill": {
             "disbursementPending": "Desembolso pendiente"
@@ -5496,6 +5498,14 @@
             "cta": {
               "label": "Ver deudores"
             }
+          },
+          "provider": {
+            "none": "Sin procesar"
+          },
+          "disbursement": {
+            "settled": "Desembolsado",
+            "pending": "Sin desembolsar",
+            "days": "{{days}} d"
           }
         },
         "planes": {

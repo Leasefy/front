@@ -144,7 +144,7 @@ function TemplateCard({
     <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3">
       {/* Top row: name + pills */}
       <div className="flex items-center flex-wrap gap-2">
-        <span className="font-medium text-sm text-neutral-900 dark:text-white flex-1 min-w-0 truncate">
+        <span className="font-medium text-sm text-fg flex-1 min-w-0 truncate">
           {tpl.name}
         </span>
         <StatusPill status={tpl.status} t={t} />
@@ -154,7 +154,7 @@ function TemplateCard({
       </div>
 
       {/* Body preview */}
-      <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-3 bg-neutral-50 dark:bg-neutral-800/50 rounded p-2">
+      <p className="text-xs text-fg-muted line-clamp-3 bg-surface-muted rounded p-2">
         {preview || '—'}
       </p>
 
@@ -167,7 +167,7 @@ function TemplateCard({
           >
             {tpl.tokenCount} tokens
           </span>
-          <span className="text-xs text-neutral-400 dark:text-neutral-500 tabular-nums">
+          <span className="text-xs text-fg-subtle tabular-nums">
             {t('inmobiliaria.ai.templates.card.lastEdited')}:{' '}
             {new Date(tpl.updatedAt).toLocaleDateString()}
           </span>
@@ -266,7 +266,7 @@ export default function PlantillasPage() {
     return (
       <main className="p-6 lg:p-8 space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
+          <h1 className="text-2xl font-semibold tracking-tight text-fg" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
             {t('inmobiliaria.ai.templates.title')}
           </h1>
         </header>
@@ -291,7 +291,7 @@ export default function PlantillasPage() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
+          <h1 className="text-2xl font-semibold tracking-tight text-fg" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
             {t('inmobiliaria.ai.templates.title')}
           </h1>
         </div>

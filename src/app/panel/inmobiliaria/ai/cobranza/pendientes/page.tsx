@@ -243,10 +243,10 @@ function PendientesContent() {
     return (
       <main className="p-6 lg:p-8 space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {t(`${NS}.pageTitle`)}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">
+          <p className="text-fg-muted mt-0.5 text-sm">
             {t(`${NS}.desc`)}
           </p>
         </header>
@@ -263,10 +263,10 @@ function PendientesContent() {
     <main className="p-6 lg:p-8 space-y-6">
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {t(`${NS}.pageTitle`)}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">
+          <p className="text-fg-muted mt-0.5 text-sm">
             {t(`${NS}.desc`)}
           </p>
         </div>

@@ -20,10 +20,10 @@ export default function CobranzaLayout({ children }: { children: React.ReactNode
   if (!canAccess('cobranza', 'view')) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3 px-6 text-center">
-        <p className="text-lg font-semibold text-neutral-900 dark:text-white">
+        <p className="text-lg font-semibold text-fg">
           {t('inmobiliaria.ai.access.noAccessCobranza')}
         </p>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm">
+        <p className="text-sm text-fg-muted max-w-sm">
           {t('inmobiliaria.ai.access.contactAdmin')}
         </p>
       </div>

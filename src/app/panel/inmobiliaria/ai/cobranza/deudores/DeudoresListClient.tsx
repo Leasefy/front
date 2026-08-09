@@ -211,13 +211,13 @@ export default function DeudoresListClient() {
   // ── Sub-renderers ─────────────────────────────────────────────────────────
   const FiltersPanel = () => (
     <div className="space-y-5">
-      <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
+      <h2 className="text-sm font-semibold text-fg">
         {t('inmobiliaria.ai.cobranza.deudores.filters.title')}
       </h2>
 
       {/* Stage chips */}
       <fieldset>
-        <legend className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+        <legend className="text-xs font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.cobranza.deudores.filters.stage')}
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -237,7 +237,7 @@ export default function DeudoresListClient() {
 
       {/* Channel chips */}
       <fieldset>
-        <legend className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+        <legend className="text-xs font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.cobranza.deudores.filters.channel')}
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -256,11 +256,11 @@ export default function DeudoresListClient() {
 
       {/* Days-in-stage range */}
       <fieldset>
-        <legend className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
+        <legend className="text-xs font-medium text-fg-muted mb-2">
           {t('inmobiliaria.ai.cobranza.deudores.filters.daysInStage')}
         </legend>
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+          <div className="flex items-center gap-2 text-xs text-fg-muted">
             <span>{daysMin}</span>
             <span>—</span>
             <span>{daysMax}</span>
@@ -295,10 +295,10 @@ export default function DeudoresListClient() {
   return (
     <main className="p-4 lg:p-8 max-w-7xl mx-auto">
       <header className="mb-5">
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+        <h1 className="text-2xl font-semibold text-fg tracking-tight">
           {t('inmobiliaria.ai.cobranza.deudores.title')}
         </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+        <p className="text-sm text-fg-muted mt-0.5">
           {t('inmobiliaria.ai.cobranza.deudores.subtitle')}
         </p>
       </header>
@@ -312,7 +312,7 @@ export default function DeudoresListClient() {
         {/* Mobile filter toggle (sm) */}
         <div className="md:hidden flex items-center justify-between mb-2">
           <span
-            className="text-sm font-medium text-neutral-700 dark:text-neutral-300"
+            className="text-sm font-medium text-fg-muted"
             data-testid="sort-label-mobile"
           >
             {t('inmobiliaria.ai.cobranza.deudores.sort.daysInStageDesc')}
@@ -362,7 +362,7 @@ export default function DeudoresListClient() {
               )}
             </div>
             <span
-              className="hidden md:inline text-xs font-medium text-neutral-500 dark:text-neutral-400 whitespace-nowrap"
+              className="hidden md:inline text-xs font-medium text-fg-muted whitespace-nowrap"
               data-testid="sort-label"
             >
               {t('inmobiliaria.ai.cobranza.deudores.sort.daysInStageDesc')}
@@ -388,9 +388,9 @@ export default function DeudoresListClient() {
           )}
 
           {/* md+ table */}
-          <div className="hidden md:block overflow-x-auto overscroll-contain rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-            <Table stickyHeader className="min-w-full text-sm">
-              <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+          <div className="hidden md:block overflow-x-auto overscroll-contain rounded-[20px] border border-border bg-surface">
+            <Table stickyHeader>
+              <TableHeader>
                 <TableRow>
                   <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.name')}</TableHead>
                   <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.stage')}</TableHead>
@@ -407,7 +407,7 @@ export default function DeudoresListClient() {
                     <TableRow key={`skeleton-${i}`} className="animate-pulse">
                       {Array.from({ length: 7 }, (_, j) => (
                         <TableCell key={j} className="px-3 py-3">
-                          <div className="h-3 w-full bg-neutral-200 dark:bg-neutral-800 rounded" />
+                          <div className="h-3 w-full bg-surface-muted rounded" />
                         </TableCell>
                       ))}
                     </TableRow>
@@ -416,7 +416,7 @@ export default function DeudoresListClient() {
                 {!isLoading && pages.length === 0 && !error && (
                   <TableRow>
                     <TableCell colSpan={7} className="px-3 py-12 text-center">
-                      <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
+                      <p className="text-sm text-fg-muted mb-3">
                         {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
                       </p>
                       <Button
@@ -439,9 +439,9 @@ export default function DeudoresListClient() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') navigateToDebtor(d.id)
                     }}
-                    className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+                    className=" cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                   >
-                    <TableCell className="px-3 py-2.5 text-neutral-900 dark:text-white whitespace-nowrap">
+                    <TableCell className="px-3 py-2.5 text-fg whitespace-nowrap">
                       {d.fullName}
                     </TableCell>
                     <TableCell className="px-3 py-2.5">
@@ -463,7 +463,7 @@ export default function DeudoresListClient() {
                     <TableCell className="px-3 py-2.5">
                       <Mask field="email" value={d.emailMasked} />
                     </TableCell>
-                    <TableCell className="px-3 py-2.5 text-xs text-neutral-500 dark:text-neutral-400">
+                    <TableCell className="px-3 py-2.5 text-xs text-fg-muted">
                       {d.channel}
                     </TableCell>
                   </TableRow>
@@ -475,8 +475,8 @@ export default function DeudoresListClient() {
           {/* sm cards (mirrors LlamadasTab md+/sm pattern) */}
           <div className="md:hidden">
             {!isLoading && pages.length === 0 && !error ? (
-              <div className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-12 text-center">
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
+              <div className="rounded-md border border-border bg-surface px-3 py-12 text-center">
+                <p className="text-sm text-fg-muted mb-3">
                   {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
                 </p>
                 <Button
@@ -495,10 +495,10 @@ export default function DeudoresListClient() {
                     <button
                       type="button"
                       onClick={() => navigateToDebtor(d.id)}
-                      className="w-full min-h-11 text-left rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="w-full min-h-11 text-left rounded-md border border-border bg-surface px-3 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+                        <p className="text-sm font-medium text-fg truncate">
                           {d.fullName}
                         </p>
                         <span className="text-xs font-semibold text-foreground shrink-0">
@@ -511,7 +511,7 @@ export default function DeudoresListClient() {
                         </Badge>
                         <Mask field="cedula" value={d.cedulaMasked} />
                       </div>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1.5">
+                      <p className="text-xs text-fg-muted mt-1.5">
                         {d.channel}
                         {d.lastActivityAt
                           ? ` · ${new Date(d.lastActivityAt).toLocaleDateString(locale)}`
@@ -528,7 +528,7 @@ export default function DeudoresListClient() {
           {hasMore && (
             <div ref={sentinelRef} className="py-6 flex items-center justify-center">
               {isLoadingMore && (
-                <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                <span className="text-xs text-fg-muted">
                   {t('inmobiliaria.ai.cobranza.deudores.loadingMore')}
                 </span>
               )}

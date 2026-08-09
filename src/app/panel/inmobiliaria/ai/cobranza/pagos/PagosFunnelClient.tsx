@@ -108,13 +108,13 @@ function KpiCard({
       data-testid={testId}
       className="rounded-lg border border-border bg-card px-4 py-3"
     >
-      <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+      <p className="text-xs font-medium text-fg-muted uppercase tracking-wider">
         {label}
       </p>
       {isLoading ? (
-        <div className="mt-1 h-5 w-24 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+        <div className="mt-1 h-5 w-24 animate-pulse rounded bg-surface-muted" />
       ) : (
-        <p className="mt-1 text-lg font-semibold text-neutral-900 dark:text-white">{value}</p>
+        <p className="mt-1 text-lg font-semibold text-fg">{value}</p>
       )}
     </div>
   )
@@ -182,10 +182,10 @@ export default function PagosFunnelClient() {
     return (
       <main className="p-4 lg:p-8 max-w-7xl mx-auto">
         <header className="mb-5">
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {t('inmobiliaria.ai.cobranza.pagos.title')}
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+          <p className="text-sm text-fg-muted mt-0.5">
             {t('inmobiliaria.ai.cobranza.pagos.subtitle')}
           </p>
         </header>
@@ -270,10 +270,10 @@ export default function PagosFunnelClient() {
   return (
     <main className="p-4 lg:p-8 max-w-7xl mx-auto">
       <header className="mb-5">
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+        <h1 className="text-2xl font-semibold text-fg tracking-tight">
           {t('inmobiliaria.ai.cobranza.pagos.title')}
         </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+        <p className="text-sm text-fg-muted mt-0.5">
           {t('inmobiliaria.ai.cobranza.pagos.subtitle')}
         </p>
       </header>
@@ -297,7 +297,7 @@ export default function PagosFunnelClient() {
       {/* Filters row */}
       <div className="flex flex-col md:flex-row md:items-center md:flex-wrap gap-3 mb-4">
         <fieldset>
-          <legend className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mr-2 inline">
+          <legend className="text-xs font-medium text-fg-muted mr-2 inline">
             {t('inmobiliaria.ai.cobranza.pagos.filter.provider')}:
           </legend>
           <span className="inline-flex flex-wrap gap-2 align-middle">
@@ -316,7 +316,7 @@ export default function PagosFunnelClient() {
         </fieldset>
 
         <fieldset>
-          <legend className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mr-2 inline">
+          <legend className="text-xs font-medium text-fg-muted mr-2 inline">
             {t('inmobiliaria.ai.cobranza.pagos.filter.status')}:
           </legend>
           <span className="inline-flex flex-wrap gap-2 align-middle">
@@ -349,7 +349,7 @@ export default function PagosFunnelClient() {
       <div className="flex items-center gap-2 mb-4">
         <label
           htmlFor="pagos-sort"
-          className="text-xs font-medium text-neutral-500 dark:text-neutral-400"
+          className="text-xs font-medium text-fg-muted"
         >
           Sort:
         </label>
@@ -390,9 +390,9 @@ export default function PagosFunnelClient() {
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-          <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+      <div className="overflow-x-auto rounded-[20px] border border-border bg-surface">
+        <Table>
+          <TableHeader>
             <TableRow>
               <TableHead>
                 {t('inmobiliaria.ai.cobranza.pagos.columns.nombre')}
@@ -424,13 +424,13 @@ export default function PagosFunnelClient() {
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <TableBody>
             {isLoading && rows.length === 0 && (
               Array.from({ length: 5 }, (_, i) => (
                 <TableRow key={`pagos-skel-${i}`} className="animate-pulse">
                   {Array.from({ length: 6 }, (_, j) => (
                     <TableCell key={j} className="px-3 py-3">
-                      <div className="h-3 w-full bg-neutral-200 dark:bg-neutral-800 rounded" />
+                      <div className="h-3 w-full bg-surface-muted rounded" />
                     </TableCell>
                   ))}
                 </TableRow>
@@ -439,7 +439,7 @@ export default function PagosFunnelClient() {
             {!isLoading && rows.length === 0 && !error && (
               <TableRow>
                 <TableCell colSpan={6} className="px-3 py-12 text-center">
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  <p className="text-sm text-fg-muted">
                     {t('inmobiliaria.ai.cobranza.pagos.emptyFiltered')}
                   </p>
                 </TableCell>
@@ -457,15 +457,15 @@ export default function PagosFunnelClient() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleRowClick(row)
                   }}
-                  className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+                  className=" cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <TableCell className="px-3 py-2 whitespace-nowrap text-neutral-900 dark:text-white">
+                  <TableCell className="px-3 py-2 whitespace-nowrap text-fg">
                     <Mask field="cedula" value={row.debtor.fullName} />
                   </TableCell>
-                  <TableCell className="px-3 py-2 tabular-nums text-xs text-neutral-900 dark:text-white">
+                  <TableCell className="px-3 py-2 tabular-nums text-xs text-fg">
                     {formatCop(row.amount)}
                   </TableCell>
-                  <TableCell className="px-3 py-2 tabular-nums text-xs text-neutral-500 dark:text-neutral-400">
+                  <TableCell className="px-3 py-2 tabular-nums text-xs text-fg-muted">
                     {formatCop(row.feeCop)}
                   </TableCell>
                   <TableCell className="px-3 py-2">
@@ -490,7 +490,7 @@ export default function PagosFunnelClient() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
+                  <TableCell className="px-3 py-2 text-xs text-fg-muted whitespace-nowrap">
                     {new Date(row.createdAt).toLocaleDateString('es-CO', {
                       day: '2-digit',
                       month: 'short',
@@ -508,7 +508,7 @@ export default function PagosFunnelClient() {
       {hasMore && (
         <div ref={sentinelRef} className="py-6 flex items-center justify-center">
           {isLoadingMore && (
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">
+            <span className="text-xs text-fg-muted">
               {t('inmobiliaria.ai.cobranza.pagos.loadingMore')}
             </span>
           )}

@@ -43,9 +43,9 @@ function qaTone(score: number | null | undefined): {
   // Matches days-in-stage badge color rule from 31-08 for visual consistency.
   if (score == null) {
     return {
-      bg: 'bg-neutral-100 dark:bg-neutral-800',
-      text: 'text-neutral-600 dark:text-neutral-300',
-      ring: 'ring-neutral-200 dark:ring-neutral-700',
+      bg: 'bg-surface-muted',
+      text: 'text-fg-muted',
+      ring: 'ring-border',
     }
   }
   if (score >= 80) {
@@ -188,7 +188,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
   if (!data) {
     return (
       <main className="p-6 lg:p-8">
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="text-sm text-fg-muted">
           {t('inmobiliaria.ai.cobranza.call.empty')}
         </p>
       </main>
@@ -255,7 +255,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
               QA {overallPct == null ? '—' : `${overallPct}/100`}
             </span>
             <span
-              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 ring-1 ring-neutral-200 dark:ring-neutral-700"
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-surface-muted text-fg-muted ring-1 ring-border"
               aria-label={t('inmobiliaria.ai.cobranza.call.header.complianceCount')}
             >
               {data.complianceFlags.length}{' '}
@@ -287,7 +287,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
         {/* LEFT COLUMN: audio (sticky) + transcript */}
         <div className="space-y-4">
           {/* Audio player — sticky on both layouts. */}
-          <div className="sticky top-0 z-20 md:top-20 bg-white dark:bg-neutral-950 -mx-6 px-6 md:mx-0 md:px-0 py-2">
+          <div className="sticky top-0 z-20 md:top-20 bg-surface -mx-6 px-6 md:mx-0 md:px-0 py-2">
             {data.hasRecording ? (
               <CallAudioPlayer
                 callId={callId}
@@ -296,7 +296,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
                 audioRef={audioRef}
               />
             ) : (
-              <div className="rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 p-6 text-sm text-neutral-500 dark:text-neutral-400 text-center">
+              <div className="rounded-xl border border-dashed border-border p-6 text-sm text-fg-muted text-center">
                 {t('inmobiliaria.ai.cobranza.call.header.noRecording')}
               </div>
             )}

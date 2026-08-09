@@ -175,7 +175,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
         />
       </div>
       <header>
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+        <h1 className="text-2xl font-semibold text-fg">
           {t('inmobiliaria.ai.cobranza.siniestros.title')}
         </h1>
       </header>
@@ -185,7 +185,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
         aria-label={t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.title')}
         className="space-y-2"
       >
-        <h2 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+        <h2 className="text-sm font-medium text-fg-muted">
           {t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.title')}
         </h2>
         <iframe
@@ -193,7 +193,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           title={t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.title')}
           src={pdfBlobUrl ?? 'about:blank'}
           loading="lazy"
-          className="w-full h-96 rounded border border-neutral-200 dark:border-neutral-800"
+          className="w-full h-96 rounded border border-border"
         />
         {pdfError && (
           <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
@@ -204,7 +204,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
 
       {/* Insurer checkbox group */}
       <section className="space-y-2">
-        <h2 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+        <h2 className="text-sm font-medium text-fg-muted">
           {t('inmobiliaria.ai.cobranza.siniestros.insurers.title')}
         </h2>
         <div className="flex flex-wrap gap-3">
@@ -214,7 +214,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
               <label
                 key={ins}
                 htmlFor={`siniestro-insurer-${ins}`}
-                className="inline-flex items-center gap-2 rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+                className="inline-flex items-center gap-2 rounded-sm border border-border bg-white px-3 py-2 text-sm text-fg-muted border-border"
               >
                 <Checkbox
                   id={`siniestro-insurer-${ins}`}

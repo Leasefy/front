@@ -193,15 +193,15 @@ export default function CobranzaOverviewPage() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {t('inmobiliaria.ai.cobranza.overview.title')}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">
+          <p className="text-fg-muted mt-0.5 text-sm">
             {t(`${PAGES_NS}.salaDesc`)}
           </p>
         </div>
         {data?.generatedAt && (
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap mt-1 flex items-center gap-2">
+          <p className="text-xs text-fg-subtle whitespace-nowrap mt-1 flex items-center gap-2">
             {t('inmobiliaria.ai.cobranza.overview.lastUpdated')}{' '}
             {relativeTime(data.generatedAt, locale)}
             {isConnected && (
@@ -230,8 +230,8 @@ export default function CobranzaOverviewPage() {
         {/* Acción principal — revisar escalaciones pendientes */}
         <div className="rounded-xl border border-border bg-card p-5 max-w-3xl">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
-              <Warning className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" aria-hidden="true" />
+            <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center shrink-0">
+              <Warning className="w-5 h-5 text-fg-muted" weight="duotone" aria-hidden="true" />
             </div>
             <div className="flex-1 min-w-0 space-y-0.5">
               <h2 className="text-base font-semibold text-foreground">
@@ -308,7 +308,7 @@ export default function CobranzaOverviewPage() {
         aria-label={t('inmobiliaria.ai.cobranza.overview.stages.title')}
         aria-orientation="horizontal"
       >
-        <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-3">
+        <h2 className="text-base font-semibold text-fg mb-3">
           {t('inmobiliaria.ai.cobranza.overview.stages.title')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
@@ -345,7 +345,7 @@ export default function CobranzaOverviewPage() {
       >
         {/* Funnel chart */}
         <section aria-label={t('inmobiliaria.ai.cobranza.overview.funnel.title')}>
-          <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-3">
+          <h2 className="text-base font-semibold text-fg mb-3">
             {t('inmobiliaria.ai.cobranza.overview.funnel.title')}
           </h2>
           <CobranzaFunnelChart

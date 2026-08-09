@@ -41,7 +41,12 @@ import {
   TableCell,
 } from '@/components/ui'
 import { Button } from '@/components/ui'
-import { Chip, ErrorState } from '@leasefy/cadence'
+import { TablePagination } from '@/components/ui/pagination'
+import { Card, Chip, ErrorState } from '@leasefy/cadence'
+import {
+  useTablePagination,
+  PAGE_SIZE_OPTIONS,
+} from '@/lib/hooks/use-table-pagination'
 import {
   useCalls,
   type CallSummary,
@@ -224,8 +229,27 @@ function LlamadasContent() {
   }, [])
 
   /**
-   * Qué columnas opcionales tienen algo que decir. Se calcula sobre la página
-   * cargada: si ninguna llamada trae promesa, la columna no se monta.
+   * Paginado de presentación: el endpoint ya devuelve la página del cursor y
+   * acá se recorta para que la tabla no crezca sin fin. `resetKey` con los
+   * filtros — sin eso, filtrar estando en la página 3 deja la tabla vacía y se
+   * lee como «no hay llamadas».
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(calls, {
+    resetKey: `${outcomeFilter ?? ''}|${channelFilter ?? ''}|${directionFilter ?? ''}`,
+  })
+
+  /**
+   * Qué columnas opcionales tienen algo que decir. Se calcula sobre TODAS las
+   * llamadas cargadas, no sobre la página visible: si dependiera de la página,
+   * las columnas aparecerían y desaparecerían al pasar de una a otra.
    */
   const columnas = useMemo(
     () => ({
@@ -258,7 +282,7 @@ function LlamadasContent() {
           <div className="h-7 w-40 rounded bg-surface-muted animate-pulse" />
           <div className="h-4 w-64 rounded bg-surface-muted animate-pulse" />
         </header>
-        <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
+        <Card className="overflow-hidden">
           <Table>
             <TableBody className="animate-pulse">
               {Array.from({ length: 6 }, (_, i) => (
@@ -272,7 +296,7 @@ function LlamadasContent() {
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Card>
       </main>
     )
   }
@@ -407,7 +431,10 @@ function LlamadasContent() {
         </div>
       )}
 
-      <div className="rounded-[18px] border border-border bg-surface overflow-hidden">
+      {/* Contenedor canónico de tabla del panel: Card del DS + scroll horizontal
+          + pie de paginación (mismo patrón que Habeas Data y Contratos). */}
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -438,7 +465,7 @@ function LlamadasContent() {
               </TableRow>
             )}
 
-            {calls.map((call) => {
+            {pageItems.map((call) => {
               const outcome = displayOutcome(call)
               return (
                 <TableRow
@@ -539,7 +566,22 @@ function LlamadasContent() {
             })}
           </TableBody>
         </Table>
-      </div>
+        </div>
+
+        {/* Pie: sólo si hay más de una página — un paginador que no pagina es ruido. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
+      </Card>
     </main>
   )
 }

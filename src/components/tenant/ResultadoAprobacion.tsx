@@ -147,6 +147,7 @@ function Aprobado({
           tf={tf}
           maxAfianzableCop={result.maxAfianzableCop}
           canonConsultadoCop={canonConsultadoCop}
+          esDemo={result.stubMode}
         />
 
         <Aseguradoras tf={tf} result={result} />
@@ -156,9 +157,13 @@ function Aprobado({
           items={[
             tf(`${NS}.aprobado.sigue1`, 'Ya te puedes postular a las propiedades que te gusten.'),
             tf(`${NS}.aprobado.sigue2`, 'Tu aprobación sirve para varias: no vuelves a consultar ni a pagar.'),
-            conSesion
-              ? tf(`${NS}.aprobado.sigue3ConSesion`, 'En el catálogo te marcamos lo que va contigo.')
-              : tf(`${NS}.aprobado.sigue3SinSesion`, 'Crea tu cuenta para guardarla y postularte.'),
+            // Con una demo el catálogo no marca nada, porque no hay nada
+            // guardado que marcar. Prometerlo sería la misma mentira.
+            result.stubMode
+              ? tf(`${NS}.aprobado.sigue3Demo`, 'Cuando el resultado sea real, en el catálogo te marcamos lo que va contigo.')
+              : conSesion
+                ? tf(`${NS}.aprobado.sigue3ConSesion`, 'En el catálogo te marcamos lo que va contigo.')
+                : tf(`${NS}.aprobado.sigue3SinSesion`, 'Crea tu cuenta para guardarla y postularte.'),
           ]}
         />
 
@@ -167,6 +172,7 @@ function Aprobado({
           rutaCatalogo={rutaCatalogo}
           onEntrar={onEntrar}
           conSesion={conSesion}
+          esDemo={result.stubMode}
         />
       </CardContent>
     </Card>
@@ -206,6 +212,7 @@ function ConCondiciones({
           tf={tf}
           maxAfianzableCop={result.maxAfianzableCop}
           canonConsultadoCop={canonConsultadoCop}
+          esDemo={result.stubMode}
         />
 
         {/* La palabra "condicional" no le dice nada a nadie. Acá se explica en
@@ -240,6 +247,7 @@ function ConCondiciones({
           rutaCatalogo={rutaCatalogo}
           onEntrar={onEntrar}
           conSesion={conSesion}
+          esDemo={result.stubMode}
         />
       </CardContent>
     </Card>
@@ -312,18 +320,40 @@ function NoAprobado({ tf, rutaCatalogo }: { tf: Tf; rutaCatalogo: string | null 
  * ahí la persona vería el mismo listado que cualquier visitante, con un navbar
  * de "Registrarme", y su aprobación no pintaría nada. El camino correcto es
  * crear la cuenta y aterrizar adentro.
+ *
+ * ⚠️ Con `esDemo` no se ofrece "mi catálogo", y no es un detalle de copy: un
+ * resultado de demostración **no se guarda** a propósito (regla 2 de
+ * `aprobacion-local.ts`), así que el catálogo no puede personalizarse ni
+ * aunque quiera. Prometerlo mandaba a la persona —después de leer "estás
+ * aprobado hasta $2.800.000"— a una pantalla que le decía que no sabíamos
+ * nada de ella. La regla de no persistir la demo está bien; lo que estaba mal
+ * era el botón que la contradecía.
  */
 function EntrarAMiCatalogo({
   tf,
   rutaCatalogo,
   onEntrar,
   conSesion,
+  esDemo,
 }: {
   tf: Tf
   rutaCatalogo: string | null
   onEntrar: () => void
   conSesion: boolean
+  esDemo: boolean
 }) {
+  if (esDemo) {
+    // Se ofrece lo que sí es cierto: mirar propiedades. Sin "mi", sin promesa
+    // de filtro. El aviso de demo va debajo y explica por qué.
+    return (
+      <Button asChild variant="secondary" className="w-full">
+        <Link href={conSesion ? '/inquilino/explorar' : '/propiedades'}>
+          {tf(`${NS}.verPropiedades`, 'Ver propiedades')}
+        </Link>
+      </Button>
+    )
+  }
+
   if (conSesion && rutaCatalogo) {
     return (
       <Button asChild className="w-full">
@@ -381,10 +411,13 @@ function Cifra({
   tf,
   maxAfianzableCop,
   canonConsultadoCop,
+  esDemo,
 }: {
   tf: Tf
   maxAfianzableCop: number | null
   canonConsultadoCop: number | null
+  /** Con una demo el catálogo no filtra nada: el resultado no se guarda. */
+  esDemo: boolean
 }) {
   if (maxAfianzableCop !== null) {
     return (
@@ -394,8 +427,15 @@ function Cifra({
           {formatCurrency(maxAfianzableCop)}
           <span className="text-base font-sans font-normal text-fg-muted"> {tf(`${NS}.porMes`, '/mes')}</span>
         </p>
+        {/* La nota promete el catálogo filtrado. En demo eso no puede pasar,
+            porque el resultado no se guarda: la promesa se pone en futuro. */}
         <p className="text-xs text-fg-muted mt-2">
-          {tf(`${NS}.cifra.hastaNota`, 'Con este tope te mostramos las propiedades que van contigo.')}
+          {esDemo
+            ? tf(
+                `${NS}.cifra.hastaNotaDemo`,
+                'Con un tope real te mostraríamos las propiedades que van contigo.',
+              )
+            : tf(`${NS}.cifra.hastaNota`, 'Con este tope te mostramos las propiedades que van contigo.')}
         </p>
       </div>
     )

@@ -9311,7 +9311,8 @@
         "sigue1": "You can now apply to the properties you like.",
         "sigue2": "Your approval works for several: no checking again, no paying again.",
         "sigue3ConSesion": "In the catalog we mark what works for you.",
-        "sigue3SinSesion": "Create your account to save it and apply."
+        "sigue3SinSesion": "Create your account to save it and apply.",
+        "sigue3Demo": "When the result is real, we highlight what fits you in the catalog."
       },
       "condiciones": {
         "titulo": "You're approved, with conditions",
@@ -9346,7 +9347,8 @@
         "hastaNota": "With this cap we show you the properties that work for you.",
         "para": "Approved for a rent of",
         "paraNota": "That's the rent you asked about. If something pricier interests you, an advisor will review it.",
-        "calculando": "We're calculating how much we can back. We'll confirm shortly."
+        "calculando": "We're calculating how much we can back. We'll confirm shortly.",
+        "hastaNotaDemo": "With a real cap we would show you the properties that fit you."
       },
       "aseguradoras": {
         "una": "One insurer backs you",
@@ -9362,7 +9364,8 @@
         "texto": "The approval service isn't published yet, so this data isn't real and isn't saved."
       },
       "notaAgencia": "You're seeing the result as the candidate sees it. You can send this same link to anyone else.",
-      "porMes": "/mo"
+      "porMes": "/mo",
+      "verPropiedades": "View properties"
     },
     "crearCuenta": {
       "titulo": "Create your account to get in",

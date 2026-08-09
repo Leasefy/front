@@ -9312,7 +9312,8 @@
         "sigue1": "Ya te puedes postular a las propiedades que te gusten.",
         "sigue2": "Tu aprobación sirve para varias: no vuelves a consultar ni a pagar.",
         "sigue3ConSesion": "En el catálogo te marcamos lo que va contigo.",
-        "sigue3SinSesion": "Crea tu cuenta para guardarla y postularte."
+        "sigue3SinSesion": "Crea tu cuenta para guardarla y postularte.",
+        "sigue3Demo": "Cuando el resultado sea real, en el catálogo te marcamos lo que va contigo."
       },
       "condiciones": {
         "titulo": "Te aprueban, con condiciones",
@@ -9347,7 +9348,8 @@
         "hastaNota": "Con este tope te mostramos las propiedades que van contigo.",
         "para": "Aprobado para un canon de",
         "paraNota": "Es el canon que consultaste. Si te interesa algo más caro, un asesor lo revisa.",
-        "calculando": "Estamos calculando hasta cuánto te afianzamos. Te lo confirmamos en un momento."
+        "calculando": "Estamos calculando hasta cuánto te afianzamos. Te lo confirmamos en un momento.",
+        "hastaNotaDemo": "Con un tope real te mostraríamos las propiedades que van contigo."
       },
       "aseguradoras": {
         "una": "Una aseguradora te respalda",
@@ -9363,7 +9365,8 @@
         "texto": "El servicio de aprobación todavía no está publicado, así que estos datos no son reales y no se guardan."
       },
       "notaAgencia": "Estás viendo el resultado como lo ve el candidato. Puedes enviarle este mismo link a cualquier otra persona.",
-      "porMes": "/mes"
+      "porMes": "/mes",
+      "verPropiedades": "Ver propiedades"
     },
     "crearCuenta": {
       "titulo": "Crea tu cuenta para entrar",

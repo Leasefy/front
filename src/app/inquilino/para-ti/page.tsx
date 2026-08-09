@@ -183,7 +183,22 @@ export default function ParaTiPage() {
     return <CatalogoPorAprobacion aprobacion={aprobacion} />;
   }
 
-  // No profile state
+  /*
+   * Sin aprobación no hay con qué personalizar. Lo que se ofrece es **pedirla**,
+   * que es exactamente lo que desbloquea esta pantalla.
+   *
+   * Antes decía "Completa una aplicación o solicita una evaluación" y el botón
+   * secundario sacaba del panel a `/productos/inquilino`, una página de
+   * marketing. Tres cosas mal en dos líneas:
+   *
+   *  · "aplicación" está muerta en toda la UI en español (se lee como *app*)
+   *  · la "evaluación" es nuestro scoring A/B/C/D y NUNCA se le nombra al
+   *    inquilino: arranca sola cuando se postula, no se pide
+   *  · un inquilino con sesión no se manda a una landing de producto
+   *
+   * Ver `docs/VOCABULARIO.md` y el estado `sin_estudio` de /inquilino/aprobacion,
+   * que dice lo mismo con las mismas palabras.
+   */
   if (!hasVerifiedProfile || !profile) {
     return (
       <div className="min-h-screen bg-plan-page">
@@ -196,31 +211,33 @@ export default function ParaTiPage() {
             {locale === 'es' ? 'Volver a Inicio' : 'Back to Home'}
           </Link>
 
-          <div className="bg-surface border border-plan-border p-12 text-center">
+          <div className="rounded-xl bg-surface border border-border p-12 text-center">
             <div className="w-16 h-16 rounded-full bg-primary-soft flex items-center justify-center mx-auto mb-6">
               <Target className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="text-xl font-semibold text-plan-primary mb-3">
-              {locale === 'es' ? 'Recomendaciones personalizadas' : 'Personalized recommendations'}
-            </h1>
-            <p className="text-sm text-plan-secondary max-w-md mx-auto mb-6">
+            <h1 className="text-xl font-semibold text-fg mb-3">
               {locale === 'es'
-                ? 'Para mostrarte propiedades donde tienes alta probabilidad de ser aceptado, necesitamos conocer tu perfil. Completa una aplicación o solicita una evaluación.'
-                : 'To show you properties where you have a high probability of being accepted, we need to know your profile. Complete an application or request an evaluation.'}
+                ? 'Todavía no tenemos tu aprobación'
+                : 'We don\u2019t have your approval yet'}
+            </h1>
+            <p className="text-sm text-fg-muted max-w-md mx-auto mb-6 leading-relaxed">
+              {locale === 'es'
+                ? 'Con ella sabemos hasta cuánto te respaldan las aseguradoras, y acá te mostramos solo las propiedades que puedes tomar.'
+                : 'With it we know how much the insurers back you, and here we show you only the properties you can take.'}
             </p>
-            <div className="flex items-center justify-center gap-3">
-              <Link
-                href="/inquilino/explorar"
-                className="px-5 py-2 bg-primary text-white text-sm font-medium hover:opacity-90 transition-colors"
-              >
-                {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
-              </Link>
-              <Link
-                href="/productos/inquilino"
-                className="px-5 py-2 border border-plan-border text-plan-primary text-sm font-medium hover:bg-surface-muted transition-colors"
-              >
-                {locale === 'es' ? 'Solicitar evaluación' : 'Request evaluation'}
-              </Link>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button asChild>
+                <Link href="/aprobacion">
+                  {locale === 'es'
+                    ? 'Conoce hasta cuánto te arrendamos'
+                    : 'Find out how much you can rent'}
+                </Link>
+              </Button>
+              <Button asChild variant="secondary">
+                <Link href="/inquilino/explorar">
+                  {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
+                </Link>
+              </Button>
             </div>
           </div>
         </div>

@@ -179,3 +179,50 @@ describe('el aprobado entra a la plataforma, no a la calle', () => {
     expect(pintar(resultado(), { esAgencia: true })).toContain('como lo ve el candidato')
   })
 })
+
+describe('una demo no promete un catálogo que no puede dar', () => {
+  /*
+   * El caso real, reproducido: en local el funnel devuelve `stubMode: true` con
+   * un máximo afianzable de ejemplo de $2.800.000. La persona leía "estás
+   * aprobado hasta $2.800.000", tocaba "Ver mi catálogo" y aterrizaba en una
+   * pantalla que le decía que no sabíamos nada de ella.
+   *
+   * No era un bug del catálogo: un resultado de demo NO se guarda a propósito
+   * (regla 2 de `aprobacion-local.ts`), así que no había nada con qué
+   * personalizar. Lo que estaba mal era el botón que prometía lo contrario.
+   */
+  const demo = () =>
+    resultado({ stubMode: true, maxAfianzableCop: 2_800_000 })
+
+  it('con sesión no ofrece "mi catálogo"', () => {
+    const txt = pintar(demo(), { conSesion: true })
+    expect(txt).toContain('Ver propiedades')
+    expect(txt).not.toContain('Ver mi catálogo')
+  })
+
+  it('el botón lleva a explorar, no al catálogo personalizado', () => {
+    pintar(demo(), { conSesion: true })
+    const hrefs = [...contenedor!.querySelectorAll('a')].map((a) => a.getAttribute('href'))
+    expect(hrefs).toContain('/inquilino/explorar')
+    expect(hrefs).not.toContain('/inquilino/para-ti')
+  })
+
+  it('tampoco promete que el catálogo va a marcar nada', () => {
+    const txt = pintar(demo(), { conSesion: true })
+    expect(txt).not.toContain('En el catálogo te marcamos lo que va contigo.')
+    expect(txt).toContain('Cuando el resultado sea real')
+  })
+
+  it('la nota bajo el número tampoco promete el filtro', () => {
+    const txt = pintar(demo(), { conSesion: true })
+    expect(txt).toContain('Con un tope real te mostraríamos')
+    expect(txt).not.toContain('Con este tope te mostramos')
+  })
+
+  it('un resultado real sí ofrece su catálogo', () => {
+    const txt = pintar(resultado({ maxAfianzableCop: 2_800_000 }), { conSesion: true })
+    expect(txt).toContain('Ver mi catálogo')
+    const hrefs = [...contenedor!.querySelectorAll('a')].map((a) => a.getAttribute('href'))
+    expect(hrefs).toContain('/inquilino/para-ti')
+  })
+})

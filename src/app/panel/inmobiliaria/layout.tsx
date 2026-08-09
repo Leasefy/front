@@ -55,6 +55,7 @@ import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
 import { BotonNuevo } from '@/components/inmobiliaria/BotonNuevo';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
 import { useMySubscription } from '@/lib/hooks/useSubscription';
+import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { useAuth } from '@/lib/auth/use-auth';
 import { hexToHslTriplet } from '@/lib/utils/hex-to-hsl';
@@ -136,6 +137,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // All nav items with their corresponding permission module (null = always visible).
   // `NavItemWithModule` (imported) extends NavItem with an optional `module`
   // permission gate, an optional `roles` role gate, and `adminOnly`.
+  // Paso 7: cuánta gente está esperando gestión, con dato real.
+  const { pendientes: postulacionesPendientes } = usePostulacionesPendientes();
+
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ═══════════════════════════════════════════════════════════════════════
     // Agrupación por MÓDULO DE NEGOCIO — Comercial · Administración · Finanzas
@@ -216,7 +220,19 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // (`docs/VOCABULARIO.md`, regla madre). El recorrido **no es un destino**:
     // es el contexto de esta lista, y por eso vive dentro de ella —abierto
     // cuando no hay nada, plegado cuando hay trabajo—.
-    { label: t('inmobiliaria.nav.postulaciones'), href: '/panel/inmobiliaria/postulaciones', scope: 'comercial', icon: ClipboardText, module: null, ai: true },
+    {
+      label: t('inmobiliaria.nav.postulaciones'),
+      href: '/panel/inmobiliaria/postulaciones',
+      scope: 'comercial',
+      icon: ClipboardText,
+      module: null,
+      ai: true,
+      // Paso 7 del recorrido: que se vea que hay alguien esperando SIN tener
+      // que entrar. Sale de `stats.pending`, el mismo dato que después se ve
+      // en la lista. Si no se pudo traer queda `undefined` y no se dibuja
+      // nada — un cero afirmaría que no hay nadie, que es lo que no sabemos.
+      badge: postulacionesPendientes,
+    } as NavItemWithModule,
     {
       // F8: Matching complete workspace. Gated by the agent module 'matching'
       // with the same ABSENT-module = ALLOWED fallback as estudio (see
@@ -322,7 +338,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // Configuración → gated on 'configuracion': only ADMIN has it in the matrix
     // (AGENTE/CONTADOR/VIEWER all have configuracion:[]) ⇒ effectively admin-only.
     { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', scope: 'general', icon: Gear,         module: 'configuracion', dataTourTarget: 'sidebar-configuraciones' },
-  ], [t]);
+  ], [t, postulacionesPendientes]);
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {
     // Filter by permission/role via the shared, unit-tested helper. While

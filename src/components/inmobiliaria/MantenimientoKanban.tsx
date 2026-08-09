@@ -259,7 +259,7 @@ function KanbanColumnComponent({ column, items, onViewDetails, t }: KanbanColumn
         <span
           className={cn(
             'ml-auto px-2 py-0.5 rounded-full text-xs font-medium',
-            'bg-white/80 dark:bg-ink/80',
+            'bg-surface-muted',
             column.color
           )}
         >

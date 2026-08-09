@@ -341,7 +341,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
       const raw = err instanceof Error ? err.message : 'Error al disparar la re-evaluación';
       if (/cr[eé]ditos?\s+insuficient|saldo.*insuficient/i.test(raw)) {
         setCreditsExhausted(true);
-        setReevalError('No tenés créditos disponibles para ejecutar el agente.');
+        setReevalError('No tienes créditos disponibles para ejecutar el agente.');
       } else {
         setReevalError(raw);
       }
@@ -401,7 +401,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
               <h2 className="font-semibold text-foreground truncate">
                 {candidate.tenantName || 'Candidato'}
               </h2>
-              <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
+              <p className="text-xs text-fg-muted truncate flex items-center gap-1.5">
                 <Envelope className="w-3 h-3" />
                 {candidate.tenantEmail}
               </p>
@@ -425,11 +425,11 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
         >
           {/* Status */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Estado:</span>
+            <span className="text-sm text-fg-muted">Estado:</span>
             <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-foreground">
               {STATUS_LABELS[candidate.status]}
             </span>
-            <span className="text-sm text-muted-foreground ml-auto">
+            <span className="text-sm text-fg-muted ml-auto">
               Postulado el {new Date(candidate.submittedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
           </div>
@@ -445,10 +445,10 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                   <p className="font-semibold text-sm text-foreground">
                     {existingContract ? 'Contrato en curso' : 'Candidato aprobado'}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-fg-muted mt-0.5">
                     {existingContract
                       ? 'Ya hay un contrato creado para esta aplicación.'
-                      : 'Ya podés crear el contrato y enviarlo para firma.'}
+                      : 'Ya puedes crear el contrato y enviarlo para firma.'}
                   </p>
                 </div>
               </div>
@@ -481,7 +481,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-sm text-foreground">Proceso de contrato cerrado</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-fg-muted mt-0.5">
                     El contrato se canceló o fue rechazado definitivamente. Para reintentar con este candidato, necesitás una nueva aplicación.
                   </p>
                 </div>
@@ -510,7 +510,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm text-foreground">Análisis IA · Tenant Scoring</h3>
-                  <p className="text-xs text-muted-foreground">Generado por el agente de evaluación de riesgo</p>
+                  <p className="text-xs text-fg-muted">Generado por el agente de evaluación de riesgo</p>
                 </div>
               </div>
               <Button
@@ -533,20 +533,20 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
             {/* Credits balance chip */}
             {creditsBalance && (
               <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
+                <div className="flex items-center gap-1.5 text-fg-muted">
                   <Sparkle className="w-3.5 h-3.5" />
                   <span>
                     Saldo:{' '}
                     <span className="font-semibold text-foreground tabular-nums">
                       {creditsBalance.total}
                     </span>{' '}
-                    <span className="text-muted-foreground">
+                    <span className="text-fg-muted">
                       créditos (1 por evaluación)
                     </span>
                   </span>
                 </div>
                 {(creditsBalance.planBalance > 0 || creditsBalance.purchasedBalance > 0) && (
-                  <span className="text-muted-foreground">
+                  <span className="text-fg-muted">
                     {creditsBalance.planBalance} del plan
                     {creditsBalance.purchasedBalance > 0 && ` + ${creditsBalance.purchasedBalance} comprados`}
                   </span>
@@ -597,13 +597,13 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 <DSSpinner size="sm" variant="muted" />
               </div>
             ) : noEvaluationYet ? (
-              <div className="rounded-xl bg-white/60 dark:bg-ink/60 p-3 border border-border">
-                <p className="text-xs text-muted-foreground">
-                  Este candidato aún no tiene una evaluación del agente. Hacé clic en &ldquo;Re-evaluar&rdquo; para generar la primera.
+              <div className="rounded-xl bg-surface-muted p-3 border border-border">
+                <p className="text-xs text-fg-muted">
+                  Este candidato aún no tiene una evaluación del agente. Haz clic en &ldquo;Re-evaluar&rdquo; para generar la primera.
                 </p>
               </div>
             ) : aiError ? (
-              <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <div className="flex items-start gap-2 text-xs text-fg-muted">
                 <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>{aiError}</span>
               </div>
@@ -618,8 +618,8 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                       </span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-3xl font-bold text-foreground">{totalScore}<span className="text-sm font-normal text-muted-foreground">/100</span></p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{LEVEL_DESCRIPTIONS[level]}</p>
+                      <p className="text-3xl font-bold text-foreground">{totalScore}<span className="text-sm font-normal text-fg-muted">/100</span></p>
+                      <p className="text-xs text-fg-muted mt-0.5">{LEVEL_DESCRIPTIONS[level]}</p>
                     </div>
                   </div>
                 )}
@@ -674,13 +674,13 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
 
                 {/* Recommendation */}
                 {recommendation && (
-                  <div className="rounded-xl bg-white/60 dark:bg-ink/60 p-3 flex items-start gap-2 border border-border">
+                  <div className="rounded-xl bg-surface-muted p-3 flex items-start gap-2 border border-border">
                     <recommendation.icon className={cn('w-5 h-5 flex-shrink-0 mt-0.5', recommendation.color)} />
                     <div>
-                      <p className="text-xs text-muted-foreground">Recomendación del agente</p>
+                      <p className="text-xs text-fg-muted">Recomendación del agente</p>
                       <p className={cn('text-sm font-semibold', recommendation.color)}>{recommendation.label}</p>
                       {evaluation?.confidence !== undefined && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <p className="text-xs text-fg-muted mt-0.5">
                           Confianza: {Math.round(evaluation.confidence * 100)}%
                         </p>
                       )}
@@ -690,7 +690,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
 
                 {/* Summary */}
                 {evaluation?.summary && (
-                  <div className="rounded-xl bg-white/60 dark:bg-ink/60 p-3 border border-border">
+                  <div className="rounded-xl bg-surface-muted p-3 border border-border">
                     <p className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
                       <Sparkle className="w-3.5 h-3.5" />
                       Resumen
@@ -705,7 +705,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                     <p className="text-xs font-semibold text-foreground mb-2">Razonamiento</p>
                     <ul className="space-y-1.5">
                       {evaluation.reasoning.map((r, i) => (
-                        <li key={i} className="text-xs text-muted-foreground flex items-start gap-2">
+                        <li key={i} className="text-xs text-fg-muted flex items-start gap-2">
                           <span className="text-primary mt-0.5">•</span>
                           <span>{r}</span>
                         </li>
@@ -753,8 +753,8 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 )}
 
                 {!level && !evaluation && !aiError && (
-                  <p className="text-xs text-muted-foreground">
-                    Aún no hay análisis disponible. Hacé clic en &ldquo;Re-evaluar&rdquo; para generar uno.
+                  <p className="text-xs text-fg-muted">
+                    Aún no hay análisis disponible. Haz clic en &ldquo;Re-evaluar&rdquo; para generar uno.
                   </p>
                 )}
               </>
@@ -770,7 +770,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm text-foreground">Smart Matching</h3>
-                  <p className="text-xs text-muted-foreground">Otras propiedades de tu portafolio que le podrían calzar</p>
+                  <p className="text-xs text-fg-muted">Otras propiedades de tu portafolio que le podrían calzar</p>
                 </div>
               </div>
               <Button
@@ -799,11 +799,11 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 {matchingResults.candidateProfile && (
                   <div className="rounded-xl bg-muted p-3 text-xs space-y-1">
                     <p className="font-semibold text-foreground">Perfil detectado del candidato:</p>
-                    <p className="text-muted-foreground">
+                    <p className="text-fg-muted">
                       Ingresos: <span className="text-foreground">{formatCurrency(matchingResults.candidateProfile.monthlyIncome)}</span> · Presupuesto máx: <span className="text-foreground">{formatCurrency(matchingResults.candidateProfile.maxBudget)}</span>
                     </p>
                     {matchingResults.candidateProfile.preferredLocations.length > 0 && (
-                      <p className="text-muted-foreground">
+                      <p className="text-fg-muted">
                         Zonas preferidas: <span className="text-foreground">{matchingResults.candidateProfile.preferredLocations.join(', ')}</span>
                       </p>
                     )}
@@ -811,7 +811,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 )}
 
                 {matchingResults.results.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">
+                  <p className="text-xs text-fg-muted text-center py-4">
                     {matchingResults.message ?? 'No hay otras propiedades compatibles disponibles en tu portafolio.'}
                   </p>
                 ) : (
@@ -826,7 +826,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                           <p className="text-sm font-semibold text-foreground truncate group-hover:text-fg-muted dark:text-fg-subtle dark:group-hover:text-fg-muted dark:text-fg-subtle transition-colors">
                             {r.property.title}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-fg-muted">
                             {r.property.neighborhood}, {r.property.city} · {r.property.bedrooms} hab · {formatCurrency(r.property.monthlyRent)}/mes
                           </p>
                         </div>
@@ -834,9 +834,9 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                           <div className="px-2 py-0.5 rounded-full bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle text-xs font-bold">
                             {r.compatibilityScore}%
                           </div>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">match</p>
+                          <p className="text-[10px] text-fg-muted mt-0.5">match</p>
                         </div>
-                        <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-fg-muted dark:text-fg-subtle dark:group-hover:text-fg-muted dark:text-fg-subtle transition-colors" />
+                        <ArrowUpRight className="w-4 h-4 text-fg-muted group-hover:text-fg-muted dark:text-fg-subtle dark:group-hover:text-fg-muted dark:text-fg-subtle transition-colors" />
                       </Link>
                     ))}
                   </div>
@@ -845,8 +845,8 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
             )}
 
             {!matchingResults && !isMatching && !matchingError && (
-              <p className="text-xs text-muted-foreground">
-                Hacé clic en &ldquo;Buscar compatibles&rdquo; para que el agente analice tu portafolio y te sugiera propiedades que le podrían calzar mejor a este candidato.
+              <p className="text-xs text-fg-muted">
+                Haz clic en &ldquo;Buscar compatibles&rdquo; para que el agente analice tu portafolio y te sugiera propiedades que le podrían calzar mejor a este candidato.
               </p>
             )}
           </section>
@@ -854,12 +854,15 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
           {/* Documents section */}
           <section className="rounded-xl border border-border bg-card p-5 space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-md bg-fg-muted flex items-center justify-center">
-                <FileText className="w-4 h-4 text-fg-muted dark:text-fg-muted" />
+              {/* `bg-fg-muted` es un token de TEXTO usado como fondo: pintaba
+                  un disco gris claro, y encima el icono iba con ESE MISMO color
+                  — invisible. El chip va con superficie, el icono con texto. */}
+              <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center">
+                <FileText className="w-4 h-4 text-fg-muted" />
               </div>
               <div>
                 <h3 className="font-semibold text-sm text-foreground">Documentos adjuntos</h3>
-                <p className="text-xs text-muted-foreground">Archivos cargados por el candidato</p>
+                <p className="text-xs text-fg-muted">Archivos cargados por el candidato</p>
               </div>
             </div>
 
@@ -887,12 +890,12 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 <DSSpinner size="sm" variant="muted" />
               </div>
             ) : docsError ? (
-              <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <div className="flex items-start gap-2 text-xs text-fg-muted">
                 <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>No se pudieron cargar los documentos.</span>
               </div>
             ) : documents.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-3">
+              <p className="text-xs text-fg-muted text-center py-3">
                 Este candidato no tiene documentos adjuntos aún.
               </p>
             ) : (
@@ -949,7 +952,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 </Button>
               )}
               {!canPreapprove && !canApprove && !canReject && !canRequestInfo && (
-                <p className="col-span-2 text-xs text-muted-foreground text-center py-2">
+                <p className="col-span-2 text-xs text-fg-muted text-center py-2">
                   No hay acciones disponibles para este estado.
                 </p>
               )}
@@ -968,12 +971,12 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
 function SubscoreBar({ label, value, weight }: { label: string; value: number; weight?: number }) {
   const color = value >= 75 ? 'bg-success' : value >= 50 ? 'bg-warning' : 'bg-danger';
   return (
-    <div className="rounded-md bg-white/60 dark:bg-ink/60 p-2 border border-border">
+    <div className="rounded-md bg-surface-muted p-2 border border-border">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] text-muted-foreground truncate">{label}</span>
+        <span className="text-[10px] text-fg-muted truncate">{label}</span>
         <div className="flex items-center gap-1.5">
           {weight !== undefined && (
-            <span className="text-[10px] text-muted-foreground/60 tabular-nums">{weight}%</span>
+            <span className="text-[10px] text-fg-muted/60 tabular-nums">{weight}%</span>
           )}
           <span className="text-xs font-semibold text-foreground tabular-nums">{value}</span>
         </div>
@@ -1019,7 +1022,7 @@ function IntegrityFlagCard({ flag }: { flag: IntegrityFlag }) {
   }
   return (
     <div className="rounded-md bg-muted border border-border px-3 py-2">
-      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+      <p className="text-xs text-fg-muted flex items-center gap-1.5">
         <Info className="w-3.5 h-3.5 flex-shrink-0" />
         {message}
         {docLabel && <span className="ml-auto">— {docLabel}</span>}
@@ -1061,13 +1064,13 @@ function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId:
   }, [applicationId, doc.id]);
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-white/60 dark:bg-ink/60 hover:border-primary/30 dark:hover:border-primary/30 transition-colors group">
-      <div className="w-8 h-8 rounded-md bg-fg-muted flex items-center justify-center flex-shrink-0">
+    <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-surface-muted hover:border-primary/30 dark:hover:border-primary/30 transition-colors group">
+      <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
         <FileText className={cn('w-4 h-4', isPdf ? 'text-danger' : 'text-fg-muted')} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold text-foreground truncate">{label}</p>
-        <p className="text-[10px] text-muted-foreground truncate">
+        <p className="text-[10px] text-fg-muted truncate">
           {doc.fileName ?? 'archivo'}
           {sizeKb && ` · ${sizeKb}`}
         </p>
@@ -1094,7 +1097,7 @@ function ObservationCard({ observation }: { observation: Observation }) {
       'rounded-md px-3 py-2 border text-xs',
       isWarning
         ? 'bg-warning-soft text-warning'
-        : 'bg-muted border-border text-muted-foreground'
+        : 'bg-muted border-border text-fg-muted'
     )}>
       <p className="flex items-start gap-1.5">
         <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />

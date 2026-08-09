@@ -222,7 +222,7 @@ export function ConsignacionCard({
 
         {/* Property type indicator - bottom left */}
         <div className="absolute bottom-3 left-3">
-          <span className="px-2.5 py-1 rounded-full bg-white/90 dark:bg-ink/90 backdrop-blur-sm text-xs font-medium text-fg dark:text-fg-subtle flex items-center gap-1.5">
+          <span className="px-2.5 py-1 rounded-full bg-surface-muted backdrop-blur-sm text-xs font-medium text-fg dark:text-fg-subtle flex items-center gap-1.5">
             <PropertyIcon className="w-3.5 h-3.5" />
             {t(`inmobiliaria.portafolio.card.propertyType.${consignacion.propertyType}`)}
           </span>

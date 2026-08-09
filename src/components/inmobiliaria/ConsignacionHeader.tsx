@@ -142,7 +142,7 @@ export function ConsignacionHeader({
 
           {/* Property type badge */}
           <div className="absolute bottom-3 left-3">
-            <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-ink/90 backdrop-blur-sm text-sm font-medium text-fg dark:text-fg-subtle flex items-center gap-1.5">
+            <span className="px-3 py-1.5 rounded-full bg-surface-muted backdrop-blur-sm text-sm font-medium text-fg dark:text-fg-subtle flex items-center gap-1.5">
               <PropertyIcon className="w-4 h-4" />
               {t(`inmobiliaria.consignaciones.propertyType.${consignacion.propertyType}`)}
             </span>

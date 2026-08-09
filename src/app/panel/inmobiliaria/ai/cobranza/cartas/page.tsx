@@ -192,7 +192,13 @@ function CartasContent() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4">
+      {/*
+        Contenedor canónico del panel: UNA tarjeta con su barra de filtros, la
+        tabla y el pie de paginación. Los filtros y el aviso de error vivían
+        sueltos por encima y la pantalla se leía como bloques sin relación.
+      */}
+      <Card className="overflow-hidden">
+      <div className="flex flex-wrap gap-3 border-b border-border px-4 py-3">
         {/* Kind filter */}
         <fieldset>
           <legend className="sr-only">{isEs ? 'Tipo de carta' : 'Letter type'}</legend>
@@ -247,7 +253,7 @@ function CartasContent() {
       {error && (
         <div
           role="alert"
-          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2 mb-4"
+          className="border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
@@ -255,7 +261,6 @@ function CartasContent() {
       )}
 
       {/* Table */}
-      <Card className="overflow-hidden">
         <div className="overflow-x-auto">
         <Table>
           <TableHeader>

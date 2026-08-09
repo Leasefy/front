@@ -62,6 +62,24 @@ como *app* (*"no falta el que diga aplicaciones, aplicaciones web"* — Víctor)
 - Los identificadores de código (`applications.service`, `ApplicationStatus`) **no cambian**:
   son contrato con el backend
 
+### Soportes — los papeles que adjunta el candidato
+
+Cédula, comprobante de ingresos, carta laboral, extracto bancario, desprendible de nómina.
+**"Soportes"** es el término colombiano y no choca con el archivo de la agencia.
+
+| Dónde | Término | Notas |
+|---|---|---|
+| Agencia · el menú | **"Soportes de candidatos"** | Antes "Documentos · revisión". Cambiado 2026-08-08 |
+| Agencia · el archivo | **"Documentos"** | Documentos de propiedades, plantillas y actas de entrega |
+
+**Por qué se renombró.** El menú tenía **dos filas llamadas "Documentos"** —una en
+Administración y otra en General—, distinguidas solo por una nota al pie. Son dominios
+distintos: una es una cola de trabajo sobre los papeles de una persona, la otra es el archivo
+de la inmobiliaria. Se renombró la cola porque es la que tiene identidad propia; el archivo
+se queda con el nombre genérico, que le calza.
+
+⚠️ **No confundir con "soporte"** en singular, que es ayuda: eso es **"Solicitudes · PQRS"**.
+
 ### Apartaestudio — el tipo de inmueble
 
 `propertyType.studio` deja de ser "Estudio" y pasa a **"Apartaestudio"**, que además es el

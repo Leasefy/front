@@ -907,7 +907,8 @@
       "hintCatalogo": "catalog",
       "hintRevision": "review",
       "hintEgresos": "to owners",
-      "recorrido": "Journey"
+      "recorrido": "Journey",
+      "soportes": "Candidate documents"
     },
     "mobileNav": {
       "moreButton": "More",

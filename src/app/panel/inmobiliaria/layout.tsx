@@ -37,6 +37,7 @@ import {
   Path,
   Storefront,
   HandCoins,
+  Umbrella,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
@@ -151,7 +152,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     //   · Un ítem vive en UN solo módulo — nada se duplica.
     //   · Lo transversal (resúmenes, equipo, config) va a GENERAL, al final.
     //   · `ai: true` = asistido por agente · `tag` = estado ("Próximamente").
-    //   · `hint` desambigua sin engordar la etiqueta ("Documentos · revisión").
+    //   · `hint` matiza sin engordar la etiqueta ("Prospección · pipeline").
+    //     NO sirve para salvar un nombre repetido: dos filas con el mismo
+    //     nombre se renombran (regla madre de docs/VOCABULARIO.md). Lo cuida
+    //     `nav-sidebar.test.ts`, que también exige un icono distinto por fila.
     //
     // Los gates NO cambian: cada ítem conserva su `module`/`roles` exactos, así
     // que reordenar no le abre a nadie una pantalla que antes no veía.
@@ -200,7 +204,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       // lo que define qué catálogo se le puede ofrecer.
       label: t('inmobiliaria.ai.nav.cotizador'),
       href: '/panel/inmobiliaria/ai/asegurabilidad', scope: 'comercial',
-      icon: FileText,
+      icon: Umbrella,
       module: 'cotizador',
       ai: true,
       dataTourTarget: 'sidebar-cotizador',
@@ -237,7 +241,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // Sin `badge`: el 5 estaba escrito a mano, no contaba nada.
     { label: t('inmobiliaria.nav.mensajes'),     href: '/panel/inmobiliaria/mensajes', scope: 'administracion',     icon: Chat,          module: null },
     { label: t('inmobiliaria.nav.agenda'),       href: '/panel/inmobiliaria/agenda', scope: 'administracion',       icon: CalendarBlank, module: null },
-    { label: t('inmobiliaria.nav.documentos'),   href: '/panel/inmobiliaria/documentos/revision', scope: 'administracion', icon: ListChecks, module: 'documentos', hint: t('inmobiliaria.nav.hintRevision'), ai: true },
+    // "Soportes de candidatos", no "Documentos · revisión": había DOS filas
+    // llamadas Documentos —esta y la del archivo en General—, distinguidas solo
+    // por la nota al pie. Son dominios distintos y la regla madre de
+    // docs/VOCABULARIO.md pide renombrar uno. Se renombra esta, que es la que
+    // tiene identidad propia: la cola de papeles de una persona.
+    { label: t('inmobiliaria.nav.soportes'),     href: '/panel/inmobiliaria/documentos/revision', scope: 'administracion', icon: ListChecks, module: 'documentos', ai: true },
 
     // ── FINANZAS ──  Cobrar, conciliar, dispersar y facturar.
     { kind: 'section', label: t('inmobiliaria.nav.secFinanzas'), href: '#sec-finanzas', scope: 'finanzas', icon: Wallet, module: null },

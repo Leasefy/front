@@ -130,16 +130,19 @@ describe('RecorridoMapa', () => {
     expect(hrefs).not.toContain('/panel/inmobiliaria/contratos/nuevo')
   })
 
-  it('los pasos suyos sin pantalla lo dicen en vez de fingir un enlace', () => {
+  it('ya no hay pasos suyos sin pantalla', () => {
+    // Comparar (9) y decidir (10) eran pasos muertos en el mapa: no existía
+    // dónde hacerlos. Desde que la comparación vive en
+    // `/propiedades/:id/candidatos/comparar` y elegir abre el aviso a los no
+    // elegidos, los 11 pasos llevan a algún lado.
     const el = montar(<RecorridoMapa />)
+    expect(el.textContent).not.toContain('Todavía sin pantalla')
     const items = [...el.querySelectorAll('li')]
-    // 9 (comparación) y 10 (decisión) no tienen ruta estática.
-    expect(items[8].textContent).toContain('Todavía sin pantalla')
-    expect(items[9].textContent).toContain('Todavía sin pantalla')
-    expect(items[8].querySelector('a')).toBeNull()
+    expect(items[8].querySelector('a')).not.toBeNull()
+    expect(items[9].querySelector('a')).not.toBeNull()
   })
 
-  it('una ruta de contexto convierte esos pasos en navegables', () => {
+  it('una ruta de contexto manda esos pasos al inmueble concreto', () => {
     const el = montar(
       <RecorridoMapa
         hrefs={{
@@ -149,8 +152,8 @@ describe('RecorridoMapa', () => {
       />,
     )
     const items = [...el.querySelectorAll('li')]
-    expect(items[8].querySelector('a')).not.toBeNull()
-    expect(items[8].textContent).not.toContain('Todavía sin pantalla')
+    expect(items[8].querySelector('a')?.getAttribute('href'))
+      .toBe('/panel/inmobiliaria/propiedades/p-9/candidatos')
   })
 
   it('los pasos del inquilino nunca dicen "sin pantalla" — no son suyos', () => {

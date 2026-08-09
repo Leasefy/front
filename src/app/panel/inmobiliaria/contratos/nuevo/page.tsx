@@ -27,6 +27,7 @@ import {
 import { IconButton } from '@leasefy/cadence';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
+import { RespaldoDelArriendo } from '@/components/inmobiliaria/RespaldoDelArriendo';
 import { useContractActions } from '@/lib/hooks/useContracts';
 import { contractsApi } from '@/lib/api/contracts.service';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
@@ -34,6 +35,12 @@ import { propertiesApi } from '@/lib/api/properties.service';
 import type { LandlordApplicationDetail } from '@/lib/api/applications.types';
 import type { Property } from '@/lib/types/property';
 import type { InsuranceTier, ContractOrigin } from '@/lib/api/contracts.types';
+import {
+  validarRespaldo,
+  comoClausula,
+  type Respaldo,
+} from '@/lib/inmobiliaria/respaldo';
+import type { EvaluationResult } from '@/lib/api/applications.types';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -90,6 +97,11 @@ function NuevoContratoContent() {
 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  // Paso 11 del recorrido: qué aseguradora aprobó y con qué número. Antes no
+  // se registraba en ningún lado, así que meses después nadie sabía a quién
+  // reclamarle. Ver src/lib/inmobiliaria/respaldo.ts.
+  const [respaldo, setRespaldo] = useState<Partial<Respaldo>>({ tipo: 'seguro' });
+  const [evaluacion, setEvaluacion] = useState<EvaluationResult | null>(null);
 
   // Load application + property details
   useEffect(() => {
@@ -130,6 +142,14 @@ function NuevoContratoContent() {
         if (appRent) {
           setForm((f) => ({ ...f, monthlyRent: String(appRent) }));
         }
+
+        // Las aseguradoras que evaluaron a este inquilino, para no pedir que
+        // se escriban a mano. Aparte y tolerante: si el análisis no está o
+        // falla, el contrato se arma igual y la aseguradora se escribe.
+        void landlordApplicationsApi
+          .getEvaluationResult(applicationId!)
+          .then((r) => { if (!cancelled) setEvaluacion(r); })
+          .catch(() => { /* sin lista: el bloque de respaldo lo dice y ofrece escribirla */ });
 
         const propId = app.property?.id ?? '';
         if (propId) {
@@ -198,7 +218,19 @@ function NuevoContratoContent() {
     return errors;
   }, [form]);
 
-  const isValid = Object.keys(validation).length === 0;
+  // El respaldo es opcional —hay arriendos con codeudor y sin póliza— pero si
+  // se empieza a llenar tiene que quedar completo: una aseguradora sin número
+  // no sirve para reclamar.
+  const respaldoEmpezado = Boolean(
+    respaldo.aseguradora?.trim() || respaldo.identificador?.trim(),
+  );
+  const erroresRespaldo = useMemo(
+    () => (respaldoEmpezado ? validarRespaldo(respaldo) : {}),
+    [respaldo, respaldoEmpezado],
+  );
+  const respaldoValido = Object.keys(erroresRespaldo).length === 0;
+
+  const isValid = Object.keys(validation).length === 0 && respaldoValido;
 
   // Submit
   const handleSubmit = async (e: React.FormEvent) => {
@@ -228,6 +260,14 @@ function NuevoContratoContent() {
         deposit: Number(form.deposit),
         paymentDay: Number(form.paymentDay),
         insuranceTier: form.insuranceTier,
+        // El respaldo va como cláusula del contrato: es un campo real y
+        // persistido, y una póliza de respaldo pertenece al texto que firman
+        // las partes. Formato estable para poder migrarlo cuando el backend
+        // tenga un campo propio (ver src/lib/inmobiliaria/respaldo.ts).
+        customClauses:
+          respaldoEmpezado && respaldoValido
+            ? [comoClausula(respaldo as Respaldo)]
+            : undefined,
         contractOrigin,
         uploadedPdfPath,
       });
@@ -474,6 +514,16 @@ function NuevoContratoContent() {
                 </SelectContent>
               </Select>
             </Field>
+          </div>
+
+          {/* Paso 11 del recorrido */}
+          <div className="mt-6 border-t border-border pt-6">
+            <RespaldoDelArriendo
+              valor={respaldo}
+              onCambio={setRespaldo}
+              opciones={evaluacion?.protection_options}
+              errores={erroresRespaldo}
+            />
           </div>
         </section>
 

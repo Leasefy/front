@@ -12,6 +12,7 @@
 
 import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { leerRespaldo, etiquetaDeTipo } from '@/lib/inmobiliaria/respaldo';
 import Link from 'next/link';
 import {
   CaretLeft,
@@ -28,6 +29,7 @@ import {
   Bell,
   ChatCircle,
   XCircle,
+  ShieldCheck,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -69,6 +71,9 @@ function ContratoDetalleContent() {
   const id = params.id;
 
   const { contract, isLoading, error, refetch, setContract } = useContract(id);
+  // El respaldo vive en las cláusulas del contrato: es el campo real que
+  // el backend persiste hoy. Ver src/lib/inmobiliaria/respaldo.ts.
+  const respaldo = leerRespaldo(contract?.customClauses);
   const { preview, isLoading: isLoadingPreview } = useContractPreview(id);
   const { rejections } = useContractRejections(id);
   const actions = useContractActions();
@@ -282,6 +287,32 @@ function ContratoDetalleContent() {
             <InfoRow label="Canon" value={formatCurrency(contract.monthlyRent)} />
             <InfoRow label="Día de pago" value={contract.paymentDueDay ? `Día ${contract.paymentDueDay}` : null} />
           </InfoCard>
+
+          {/* Paso 11: quién respalda este arriendo. Si no está, se dice — un
+              contrato sin respaldo registrado no es un contrato sin respaldo,
+              pero tampoco se puede afirmar que lo tiene. */}
+          {respaldo ? (
+            <InfoCard title="Respaldo del arriendo" icon={ShieldCheck}>
+              <InfoRow label="Aseguradora" value={respaldo.aseguradora} />
+              <InfoRow label="Tipo" value={etiquetaDeTipo(respaldo.tipo)} />
+              <InfoRow label="Número" value={respaldo.identificador} />
+              {(respaldo.vigenciaDesde || respaldo.vigenciaHasta) && (
+                <InfoRow
+                  label="Vigencia"
+                  value={[respaldo.vigenciaDesde, respaldo.vigenciaHasta]
+                    .filter(Boolean)
+                    .join(' → ')}
+                />
+              )}
+            </InfoCard>
+          ) : (
+            <InfoCard title="Respaldo del arriendo" icon={ShieldCheck}>
+              <p className="text-sm text-muted-foreground">
+                Este contrato no tiene registrada la aseguradora que aprobó ni el
+                número de la póliza. Sin eso no hay a quién reclamarle si algo pasa.
+              </p>
+            </InfoCard>
+          )}
 
           {contract.auditTrail && contract.auditTrail.length > 0 && (
             <InfoCard title="Historial" icon={Clock}>

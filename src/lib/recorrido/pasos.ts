@@ -67,7 +67,10 @@ type DefinicionPaso = Pick<PasoRecorrido, 'key' | 'actor' | 'href'>
 const DEFINICIONES: readonly DefinicionPaso[] = [
   { key: 'catalogo',       actor: 'inquilino',     href: null },
   { key: 'asegurabilidad', actor: 'inquilino',     href: null },
-  { key: 'pago',           actor: 'inquilino',     href: null },
+  // El costo del estudio lo asume el inquilino. La pantalla existe; el cobro
+  // del lado del backend todavía no, y la pantalla lo dice en vez de fingirlo
+  // (ver src/lib/api/estudio-pago.service.ts).
+  { key: 'pago',           actor: 'inquilino',     href: '/inquilino/estudio/pago' },
   { key: 'aseguradoras',   actor: 'inquilino',     href: null },
   { key: 'compatibles',    actor: 'inquilino',     href: null },
   { key: 'postulacion',    actor: 'inquilino',     href: null },
@@ -76,8 +79,13 @@ const DEFINICIONES: readonly DefinicionPaso[] = [
   // nombre; el mapa se mudó adentro de esta y la ruta redirige.
   { key: 'alerta',         actor: 'inmobiliaria',  href: '/panel/inmobiliaria/postulaciones' },
   { key: 'evaluacion',     actor: 'inmobiliaria',  href: '/panel/inmobiliaria/ai/estudio/cola' },
-  { key: 'comparacion',    actor: 'inmobiliaria',  href: null },
-  { key: 'decision',       actor: 'inmobiliaria',  href: null },
+  // Comparar y decidir necesitan un inmueble, y un mapa no tiene ninguno: la
+  // comparación vive en `/propiedades/:id/candidatos/comparar?ids=…`. Desde
+  // acá se lleva a la lista de postulaciones, que es de donde se elige a
+  // quiénes comparar. Antes eran `null` —pasos muertos en el mapa— porque la
+  // pantalla de comparación no existía.
+  { key: 'comparacion',    actor: 'inmobiliaria',  href: '/panel/inmobiliaria/postulaciones' },
+  { key: 'decision',       actor: 'inmobiliaria',  href: '/panel/inmobiliaria/postulaciones' },
   // Va al listado, NO a `/contratos/nuevo`: esa pantalla lee `?applicationId=`
   // y sin él muestra "Falta el parámetro applicationId". Desde el mapa no hay
   // de dónde sacar ese id —es un mapa, no una postulación—, así que se lleva al

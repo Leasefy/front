@@ -6,6 +6,11 @@ import { LEGACY_PRODUCT_REDIRECTS_DATA } from "./src/lib/landing/legacy-redirect
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Permite validar el build de producción sin matar un `next dev` que esté
+  // corriendo: los dos escriben en `.next` y se pisan. Con
+  // `NEXT_DIST_DIR=.next-build pnpm build` cada uno usa el suyo.
+  // Por defecto no cambia nada.
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   // @leasefy/cadence is symlinked (file:../cadence) and resolves its own copy of
   // @radix-ui/react-accordion from ../cadence/node_modules, while this app's
   // accordion adapter (src/components/ui/accordion.tsx) uses the local copy.

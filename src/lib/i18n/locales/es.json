@@ -5429,14 +5429,16 @@
         },
         "pagos": {
           "title": "Pagos",
-          "subtitle": "Funnel de pagos y desembolsos",
+          "subtitle": "Lo que está por cobrarse y lo que ya entró. Una obligación importada de la cartera todavía no es un pago.",
           "kpi": {
+            "porCobrar": "Por cobrar",
+            "porCobrarHintOne": "1 obligación",
+            "porCobrarHint": "{{count}} obligaciones",
+            "enProceso": "En proceso",
             "approved": "Aprobados",
-            "pending": "Pendientes",
             "declined": "Rechazados",
             "recaudado": "Total recaudado",
-            "disbursed": "Total desembolsado",
-            "avgFee": "Comisión promedio"
+            "disbursed": "Total desembolsado"
           },
           "dateWindow": {
             "today": "Hoy",
@@ -5454,8 +5456,9 @@
             "bold": "Bold"
           },
           "status": {
+            "porCobrar": "Por cobrar",
+            "enProceso": "En proceso",
             "approved": "Aprobado",
-            "pending": "Pendiente",
             "declined": "Rechazado",
             "disbursed": "Desembolsado"
           },
@@ -5468,7 +5471,6 @@
           "columns": {
             "nombre": "Nombre",
             "monto": "Monto",
-            "fee": "Comisión",
             "provider": "Proveedor",
             "status": "Estado",
             "fecha": "Fecha",
@@ -5501,12 +5503,14 @@
             }
           },
           "provider": {
-            "none": "Sin procesar"
+            "none": "Sin procesar",
+            "noAplica": "No aplica"
           },
           "disbursement": {
             "settled": "Desembolsado",
             "pending": "Sin desembolsar",
-            "days": "{{days}} d"
+            "days": "{{days}} d",
+            "noAplica": "No aplica"
           }
         },
         "planes": {

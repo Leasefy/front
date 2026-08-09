@@ -7323,12 +7323,6 @@
           "amount": {
             "type": "number"
           },
-          "feeCop": {
-            "type": [
-              "number",
-              "null"
-            ]
-          },
           "status": {
             "type": "string",
             "enum": [
@@ -7336,6 +7330,13 @@
               "pending",
               "declined",
               "disbursed"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "obligacion",
+              "pago"
             ]
           },
           "provider": {
@@ -7401,8 +7402,8 @@
           "id",
           "createdAt",
           "amount",
-          "feeCop",
           "status",
+          "kind",
           "provider",
           "disbursementState",
           "disbursementPendingDays",
@@ -7417,12 +7418,20 @@
             "type": "integer",
             "minimum": 0
           },
-          "pendingCount": {
+          "enProcesoCount": {
             "type": "integer",
             "minimum": 0
           },
           "declinedCount": {
             "type": "integer",
+            "minimum": 0
+          },
+          "porCobrarCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "porCobrarCop": {
+            "type": "number",
             "minimum": 0
           },
           "totalRecaudadoCop": {
@@ -7432,19 +7441,16 @@
           "totalDisbursedCop": {
             "type": "number",
             "minimum": 0
-          },
-          "avgFeeCop": {
-            "type": "number",
-            "minimum": 0
           }
         },
         "required": [
           "approvedCount",
-          "pendingCount",
+          "enProcesoCount",
           "declinedCount",
+          "porCobrarCount",
+          "porCobrarCop",
           "totalRecaudadoCop",
-          "totalDisbursedCop",
-          "avgFeeCop"
+          "totalDisbursedCop"
         ]
       },
       "CobranzaPaymentFunnelResponse": {
@@ -23993,7 +23999,7 @@
           {
             "schema": {
               "type": "string",
-              "description": "Comma-separated status values (approved,pending,declined,disbursed)."
+              "description": "Comma-separated status values (approved,declined,disbursed,por_cobrar,en_proceso). `por_cobrar` y `en_proceso` parten los pendientes según `kind`; `pending` vale por las dos."
             },
             "required": false,
             "name": "status",

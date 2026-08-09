@@ -4,14 +4,19 @@
  * PagosFunnelClient — Phase 32 plan 32-07 (COBR-UI-05).
  *
  * Operator funnel for `cobranza/pagos`:
- *  - 5-KPI strip (approved / pending / declined / recaudado / disbursed / avg fee)
+ *  - Tira de 6 indicadores, en el orden del recorrido de la plata:
+ *    por cobrar → en proceso → aprobados → rechazados → recaudado → desembolsado
  *  - Date-window selector (today / 7d / 30d (default) / 90d / mtd)
- *  - Multi-select chip filters (provider, status)
+ *  - Multi-select chip filters (provider, estado)
  *  - Sortable table (created_at DESC default, amount DESC, disbursement_pending_days DESC)
- *  - ⚠ pill when disbursementPendingDays >= 3
+ *  - ⚠ pill when disbursementPendingDays >= 3 (nunca sobre una obligación:
+ *    no se demora el desembolso de una plata que no entró)
  *  - Row click → /pagos/planes/{planId} (pending + payment_plan) or /pagos/{paymentId}
  *  - <Mask> wraps every debtor name; no raw PII in DOM
- *  - IntersectionObserver sentinel for infinite scroll
+ *  - Paginación numerada (el scroll infinito se cambió por páginas)
+ *
+ * El vocabulario de estados vive en `@/lib/cobranza/pago-vocab` — ahí está
+ * explicado por qué una obligación importada no es un pago pendiente.
  */
 
 import * as React from 'react'
@@ -54,16 +59,28 @@ import {
   type PaymentsFunnelKpis,
   type PaymentsFunnelSort,
 } from '@/lib/hooks/cobranza/use-payments-funnel'
+import {
+  ESTADOS_VISIBLES,
+  ESTADO_A_FILTRO,
+  estadoBadgeVariant,
+  estadoVisible,
+  type EstadoVisible,
+} from '@/lib/cobranza/pago-vocab'
 
 void React
 
 type Provider = 'wompi' | 'bold'
-type Status = 'approved' | 'pending' | 'declined' | 'disbursed'
 type DateWindow = NonNullable<UsePaymentsFunnelFilters['dateWindow']>
 
 const PROVIDERS: Provider[] = ['wompi', 'bold']
-const STATUSES: Status[] = ['approved', 'pending', 'declined', 'disbursed']
 const DATE_WINDOWS: DateWindow[] = ['today', '7d', '30d', '90d', 'mtd']
+
+/**
+ * Columnas de la tabla: nombre · monto · proveedor · estado · desembolso · fecha.
+ * Lo usan el esqueleto y el `colSpan` del vacío; con un número suelto en cada
+ * lado, quitar una columna dejaba el esqueleto y el mensaje descuadrados.
+ */
+const COLUMNAS = 6
 
 const copFormat = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -76,23 +93,6 @@ function formatCop(value: number | null | undefined): string {
   return copFormat.format(value)
 }
 
-// Semantic status tints vía tokens del DS (contrato §8). Antes: bg/text del mismo
-// hex → texto invisible; ahora soft-bg + texto sólido para contraste real.
-function statusBadgeVariant(
-  status: Status,
-): 'default' | 'secondary' | 'success' | 'warning' | 'destructive' {
-  switch (status) {
-    case 'approved':
-      return 'success'
-    case 'pending':
-      return 'warning'
-    case 'declined':
-      return 'destructive'
-    case 'disbursed':
-      return 'secondary'
-  }
-}
-
 function providerBadgeVariant(provider: Provider): 'default' | 'secondary' {
   return provider === 'wompi' ? 'default' : 'secondary'
 }
@@ -101,11 +101,14 @@ function KpiCard({
   testId,
   label,
   value,
+  hint,
   isLoading,
 }: {
   testId: string
   label: string
   value: string
+  /** Línea de apoyo: un monto sin saber sobre cuántas filas se calcula dice a medias. */
+  hint?: string
   isLoading: boolean
 }) {
   return (
@@ -122,6 +125,9 @@ function KpiCard({
           {value}
         </p>
       )}
+      {!isLoading && hint && (
+        <p className="mt-0.5 text-xs text-fg-subtle">{hint}</p>
+      )}
     </Card>
   )
 }
@@ -133,14 +139,17 @@ export default function PagosFunnelClient() {
   // ── Filter state ──────────────────────────────────────────────────────────
   const [dateWindow, setDateWindow] = useState<DateWindow>('30d')
   const [providers, setProviders] = useState<Provider[]>([])
-  const [statuses, setStatuses] = useState<Status[]>([])
+  const [statuses, setStatuses] = useState<EstadoVisible[]>([])
   const [sort, setSort] = useState<PaymentsFunnelSort>('created_at')
 
   // ── Hook filters ──────────────────────────────────────────────────────────
   const filters = useMemo<UsePaymentsFunnelFilters>(
     () => ({
       provider: providers.length > 0 ? providers.join(',') : undefined,
-      status: statuses.length > 0 ? statuses.join(',') : undefined,
+      status:
+        statuses.length > 0
+          ? statuses.map((s) => ESTADO_A_FILTRO[s]).join(',')
+          : undefined,
       dateWindow,
       sort,
     }),
@@ -220,7 +229,7 @@ export default function PagosFunnelClient() {
   const toggleProvider = (p: Provider) => {
     setProviders((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]))
   }
-  const toggleStatus = (s: Status) => {
+  const toggleStatus = (s: EstadoVisible) => {
     setStatuses((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
   }
   const clearFilters = () => {
@@ -240,18 +249,42 @@ export default function PagosFunnelClient() {
   }
 
   // ── KPI strip render helper ───────────────────────────────────────────────
+  //
+  // El orden sigue el recorrido de la plata: lo que se debe → lo que está en
+  // camino → lo que se confirmó o se cayó → lo que entró → lo que se giró.
+  //
+  // Ya NO está «Comisión promedio»: lo calculaba sobre `payments.fee_amount`,
+  // una columna que no escribe ningún writer del agente (ni el webhook de la
+  // pasarela, que ni siquiera lee la comisión del payload). Un «—» fijo se
+  // leía como «no hubo comisión». Para reponerla hay que empezar por el
+  // writer, no por la tarjeta.
   const renderKpis = (k: PaymentsFunnelKpis | null) => (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+      <KpiCard
+        testId="pagos-kpi-por-cobrar"
+        label={t('inmobiliaria.ai.cobranza.pagos.kpi.porCobrar')}
+        value={formatCop(k?.porCobrarCop ?? 0)}
+        hint={
+          k
+            ? k.porCobrarCount === 1
+              ? t('inmobiliaria.ai.cobranza.pagos.kpi.porCobrarHintOne')
+              : t('inmobiliaria.ai.cobranza.pagos.kpi.porCobrarHint', {
+                  count: k.porCobrarCount,
+                })
+            : undefined
+        }
+        isLoading={isLoading && !k}
+      />
+      <KpiCard
+        testId="pagos-kpi-en-proceso"
+        label={t('inmobiliaria.ai.cobranza.pagos.kpi.enProceso')}
+        value={String(k?.enProcesoCount ?? 0)}
+        isLoading={isLoading && !k}
+      />
       <KpiCard
         testId="pagos-kpi-approved"
         label={t('inmobiliaria.ai.cobranza.pagos.kpi.approved')}
         value={String(k?.approvedCount ?? 0)}
-        isLoading={isLoading && !k}
-      />
-      <KpiCard
-        testId="pagos-kpi-pending"
-        label={t('inmobiliaria.ai.cobranza.pagos.kpi.pending')}
-        value={String(k?.pendingCount ?? 0)}
         isLoading={isLoading && !k}
       />
       <KpiCard
@@ -270,17 +303,6 @@ export default function PagosFunnelClient() {
         testId="pagos-kpi-disbursed"
         label={t('inmobiliaria.ai.cobranza.pagos.kpi.disbursed')}
         value={formatCop(k?.totalDisbursedCop)}
-        isLoading={isLoading && !k}
-      />
-      {/*
-        Promedio sobre CERO pagos aprobados no es $0: es indefinido. Mostrar
-        «$ 0» afirma que la comisión promedio es cero, que es distinto de «no
-        hay nada sobre qué promediar».
-      */}
-      <KpiCard
-        testId="pagos-kpi-avg-fee"
-        label={t('inmobiliaria.ai.cobranza.pagos.kpi.avgFee')}
-        value={k && k.approvedCount > 0 ? formatCop(k.avgFeeCop) : '—'}
         isLoading={isLoading && !k}
       />
     </div>
@@ -377,13 +399,13 @@ export default function PagosFunnelClient() {
               {t('inmobiliaria.ai.cobranza.pagos.filter.status')}:
             </legend>
             <span className="inline-flex flex-wrap gap-1.5 align-middle">
-              {STATUSES.map((st) => (
+              {ESTADOS_VISIBLES.map((st) => (
                 <Chip
                   key={st}
                   size="sm"
                   selected={statuses.includes(st)}
                   onClick={() => toggleStatus(st)}
-                  data-testid={`pagos-status-chip-${st}`}
+                  data-testid={`pagos-status-chip-${ESTADO_A_FILTRO[st]}`}
                 >
                   {t(`inmobiliaria.ai.cobranza.pagos.status.${st}`)}
                 </Chip>
@@ -441,9 +463,6 @@ export default function PagosFunnelClient() {
                 {sort === 'amount' && <span className="ml-1">↓</span>}
               </TableHead>
               <TableHead>
-                {t('inmobiliaria.ai.cobranza.pagos.columns.fee')}
-              </TableHead>
-              <TableHead>
                 {t('inmobiliaria.ai.cobranza.pagos.columns.provider')}
               </TableHead>
               <TableHead>
@@ -468,7 +487,7 @@ export default function PagosFunnelClient() {
             {isLoading && rows.length === 0 && (
               Array.from({ length: 5 }, (_, i) => (
                 <TableRow key={`pagos-skel-${i}`} className="animate-pulse">
-                  {Array.from({ length: 7 }, (_, j) => (
+                  {Array.from({ length: COLUMNAS }, (_, j) => (
                     <TableCell key={j} className="px-3 py-3">
                       <div className="h-3 w-full bg-surface-muted rounded" />
                     </TableCell>
@@ -478,7 +497,7 @@ export default function PagosFunnelClient() {
             )}
             {!isLoading && rows.length === 0 && !error && (
               <TableRow>
-                <TableCell colSpan={7} className="px-3 py-12 text-center">
+                <TableCell colSpan={COLUMNAS} className="px-3 py-12 text-center">
                   <p className="text-sm text-fg-muted">
                     {t('inmobiliaria.ai.cobranza.pagos.emptyFiltered')}
                   </p>
@@ -486,6 +505,8 @@ export default function PagosFunnelClient() {
               </TableRow>
             )}
             {pageItems.map((row) => {
+              const estado = estadoVisible(row)
+              const esObligacion = row.kind === 'obligacion'
               const isPending = row.disbursementPendingDays >= 3
               return (
                 <TableRow
@@ -508,9 +529,6 @@ export default function PagosFunnelClient() {
                   <TableCell className="px-3 py-2 tabular-nums text-xs text-fg">
                     {formatCop(row.amount)}
                   </TableCell>
-                  <TableCell className="px-3 py-2 tabular-nums text-xs text-fg-muted">
-                    {formatCop(row.feeCop)}
-                  </TableCell>
                   <TableCell className="px-3 py-2">
                     {row.provider ? (
                       <Badge variant={providerBadgeVariant(row.provider)}>
@@ -519,15 +537,22 @@ export default function PagosFunnelClient() {
                     ) : (
                       // Sin pasarela todavía. Antes esto interpolaba `null` en
                       // la clave y pintaba `…pagos.filter.null` en cada fila.
+                      //
+                      // Y para una obligación no es «todavía»: nadie intentó
+                      // pagarla, así que no hay pasarela pendiente de asignar.
                       <span className="text-xs text-fg-subtle">
-                        {t('inmobiliaria.ai.cobranza.pagos.provider.none')}
+                        {t(
+                          esObligacion
+                            ? 'inmobiliaria.ai.cobranza.pagos.provider.noAplica'
+                            : 'inmobiliaria.ai.cobranza.pagos.provider.none',
+                        )}
                       </span>
                     )}
                   </TableCell>
                   <TableCell className="px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <Badge variant={statusBadgeVariant(row.status)}>
-                        {t(`inmobiliaria.ai.cobranza.pagos.status.${row.status}`)}
+                      <Badge variant={estadoBadgeVariant(estado)}>
+                        {t(`inmobiliaria.ai.cobranza.pagos.status.${estado}`)}
                       </Badge>
                       {isPending && (
                         <Badge
@@ -542,7 +567,16 @@ export default function PagosFunnelClient() {
                     </div>
                   </TableCell>
                   <TableCell className="px-3 py-2 whitespace-nowrap">
-                    {row.disbursementState === 'settled' ? (
+                    {/*
+                      No se puede desembolsar una plata que nunca entró: para
+                      una obligación este paso no existe. «Sin desembolsar»
+                      insinuaba un giro atrasado sobre una deuda sin pagar.
+                    */}
+                    {esObligacion ? (
+                      <span className="text-xs text-fg-subtle">
+                        {t('inmobiliaria.ai.cobranza.pagos.disbursement.noAplica')}
+                      </span>
+                    ) : row.disbursementState === 'settled' ? (
                       <Badge variant="success">
                         {t('inmobiliaria.ai.cobranza.pagos.disbursement.settled')}
                       </Badge>

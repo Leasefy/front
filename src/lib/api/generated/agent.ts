@@ -8154,9 +8154,10 @@ export interface components {
             id: string;
             createdAt: string;
             amount: number;
-            feeCop: number | null;
             /** @enum {string} */
             status: "approved" | "pending" | "declined" | "disbursed";
+            /** @enum {string} */
+            kind: "obligacion" | "pago";
             /** @enum {string|null} */
             provider: "wompi" | "bold" | null;
             /** @enum {string} */
@@ -8174,11 +8175,12 @@ export interface components {
         };
         CobranzaPaymentFunnelKpis: {
             approvedCount: number;
-            pendingCount: number;
+            enProcesoCount: number;
             declinedCount: number;
+            porCobrarCount: number;
+            porCobrarCop: number;
             totalRecaudadoCop: number;
             totalDisbursedCop: number;
-            avgFeeCop: number;
         };
         CobranzaPaymentFunnelResponse: {
             items: components["schemas"]["CobranzaPaymentFunnelRow"][];

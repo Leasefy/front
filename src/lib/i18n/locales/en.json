@@ -5428,14 +5428,16 @@
         },
         "pagos": {
           "title": "Payments",
-          "subtitle": "Payments and disbursements funnel",
+          "subtitle": "What's still owed and what has come in. An obligation imported from the portfolio is not a payment yet.",
           "kpi": {
+            "porCobrar": "Outstanding",
+            "porCobrarHintOne": "1 obligation",
+            "porCobrarHint": "{{count}} obligations",
+            "enProceso": "In progress",
             "approved": "Approved",
-            "pending": "Pending",
             "declined": "Declined",
             "recaudado": "Total collected",
-            "disbursed": "Total disbursed",
-            "avgFee": "Average fee"
+            "disbursed": "Total disbursed"
           },
           "dateWindow": {
             "today": "Today",
@@ -5453,8 +5455,9 @@
             "bold": "Bold"
           },
           "status": {
+            "porCobrar": "Outstanding",
+            "enProceso": "In progress",
             "approved": "Approved",
-            "pending": "Pending",
             "declined": "Declined",
             "disbursed": "Disbursed"
           },
@@ -5467,7 +5470,6 @@
           "columns": {
             "nombre": "Name",
             "monto": "Amount",
-            "fee": "Fee",
             "provider": "Provider",
             "status": "Status",
             "fecha": "Date",
@@ -5500,12 +5502,14 @@
             }
           },
           "provider": {
-            "none": "Not processed"
+            "none": "Not processed",
+            "noAplica": "Not applicable"
           },
           "disbursement": {
             "settled": "Disbursed",
             "pending": "Not disbursed",
-            "days": "{{days}} d"
+            "days": "{{days}} d",
+            "noAplica": "Not applicable"
           }
         },
         "planes": {

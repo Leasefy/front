@@ -62,6 +62,20 @@ export interface AcuerdoRow {
   /** Cuándo se registró (para ordenar y para el «hace N días»). */
   registradoEn: string
   estado: AcuerdoEstado
+
+  // ── Lo que hace falta para el detalle ────────────────────────────────────
+  /** Llamada donde se tomó el compromiso. Habilita «Escuchar la llamada». */
+  callId: string | null
+  /** Plan de pago. Habilita «Revisar y aprobar» en su detalle real. */
+  planId: string | null
+  /** Canal por el que se tomó (voice/whatsapp/sms). */
+  canal: string | null
+  /** Condiciones pactadas, si el origen las guardó. */
+  condiciones: string | null
+  /** Cuándo se cerró (cumplida/incumplida). */
+  resueltoEn: string | null
+  cedulaMasked: string | null
+  telefonoMasked: string | null
 }
 
 /**
@@ -95,6 +109,13 @@ export function filaDePromesa(p: CobranzaPromiseItem): AcuerdoRow {
     venceEl: p.dueDate,
     registradoEn: p.createdAt,
     estado: estadoDePromesa(p.derivedStatus),
+    callId: p.callId,
+    planId: null,
+    canal: p.channel,
+    condiciones: p.conditions,
+    resueltoEn: p.resolvedAt,
+    cedulaMasked: p.cedulaMasked,
+    telefonoMasked: p.phoneMasked,
   }
 }
 
@@ -115,6 +136,13 @@ export function filaDePlan(r: PaymentsFunnelItem): AcuerdoRow {
     venceEl: null,
     registradoEn: r.createdAt,
     estado: 'por_aprobar',
+    callId: null,
+    planId: r.paymentPlanId,
+    canal: null,
+    condiciones: null,
+    resueltoEn: null,
+    cedulaMasked: r.debtor.cedulaMasked,
+    telefonoMasked: r.debtor.phoneMasked,
   }
 }
 

@@ -16,7 +16,7 @@
  */
 
 import { useMemo } from 'react'
-import { Handshake } from '@phosphor-icons/react'
+import { CaretRight, Handshake } from '@phosphor-icons/react'
 import { Badge, Card, SegmentedControl } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
@@ -56,6 +56,8 @@ export interface AcuerdosTablaProps {
   acuerdos: AcuerdoRow[]
   filtro: AcuerdoFiltro
   onFiltro: (f: AcuerdoFiltro) => void
+  /** Abre el detalle. Sin esto la tabla contesta «qué hay» y nada más. */
+  onAbrir: (a: AcuerdoRow) => void
   /** Se dibuja una banda de error arriba de la tabla, sin tapar lo cargado. */
   error?: string | null
   onReintentar?: () => void
@@ -65,6 +67,7 @@ export function AcuerdosTabla({
   acuerdos,
   filtro,
   onFiltro,
+  onAbrir,
   error,
   onReintentar,
 }: AcuerdosTablaProps) {
@@ -148,13 +151,33 @@ export function AcuerdosTabla({
                 <TableHead className="text-right">Monto</TableHead>
                 <TableHead>Vence</TableHead>
                 <TableHead>Estado</TableHead>
+                <TableHead>
+                  <span className="sr-only">Abrir detalle</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {pageItems.map((a) => {
                 const estado = ACUERDO_ESTADO[a.estado]
                 return (
-                  <TableRow key={a.key} data-testid={`acuerdo-${a.key}`}>
+                  <TableRow
+                    key={a.key}
+                    data-testid={`acuerdo-${a.key}`}
+                    onClick={() => onAbrir(a)}
+                    // La fila entera abre el detalle. El `tabIndex` + Enter/Espacio
+                    // están porque un `<tr>` clicable no es focusable por sí solo:
+                    // sin esto, con teclado la tabla no se puede abrir.
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Ver el acuerdo de ${a.deudor}`}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onAbrir(a)
+                      }
+                    }}
+                    className="cursor-pointer hover:bg-surface-muted/60 focus-visible:outline-none focus-visible:bg-surface-muted"
+                  >
                     <TableCell className="font-medium text-fg">{a.deudor}</TableCell>
                     <TableCell className="text-fg-muted">
                       {ACUERDO_TIPO_LABEL[a.tipo]}
@@ -169,6 +192,12 @@ export function AcuerdosTabla({
                       <Badge variant={estado.variant} size="sm">
                         {estado.label}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <CaretRight
+                        className="w-4 h-4 text-fg-muted inline-block"
+                        aria-hidden="true"
+                      />
                     </TableCell>
                   </TableRow>
                 )

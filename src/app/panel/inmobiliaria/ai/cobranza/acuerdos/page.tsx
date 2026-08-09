@@ -78,7 +78,11 @@ import {
   AcuerdosTabla,
   type AcuerdoFiltro,
 } from '@/components/inmobiliaria/cobranza/AcuerdosTabla'
-import { componerAcuerdos } from '@/lib/cobranza/acuerdo-vocab'
+import {
+  componerAcuerdos,
+  type AcuerdoRow,
+} from '@/lib/cobranza/acuerdo-vocab'
+import { AcuerdoDetalleSheet } from '@/components/inmobiliaria/cobranza/AcuerdoDetalleSheet'
 
 // Etapas donde NO hay superficie de negociación (espejo del backend:
 // agency-cobranza-promises.ts NEGOTIATION_UNAVAILABLE_STAGES). En esas etapas el
@@ -877,6 +881,7 @@ function AcuerdosContent() {
 
   const [filtro, setFiltro] = useState<AcuerdoFiltro>('todos')
   const [crearAbierto, setCrearAbierto] = useState(false)
+  const [detalle, setDetalle] = useState<AcuerdoRow | null>(null)
 
   // Los DOS orígenes del mismo concepto. Ver `acuerdo-vocab.ts`.
   const {
@@ -950,10 +955,13 @@ function AcuerdosContent() {
           acuerdos={acuerdos}
           filtro={filtro}
           onFiltro={setFiltro}
+          onAbrir={setDetalle}
           error={error}
           onReintentar={recargar}
         />
       )}
+
+      <AcuerdoDetalleSheet acuerdo={detalle} onClose={() => setDetalle(null)} />
 
       {/* Crear — en modal: la pantalla es para MIRAR los acuerdos; armar uno es
           una tarea puntual que no tiene por qué ocupar media pantalla siempre. */}

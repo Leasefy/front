@@ -11,7 +11,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { postulacionesElegibles } from './NuevoContratoBoton'
+import { postulacionesElegibles } from './SelectorPostulacion'
 import type { AllCandidatesItem, LandlordApplicationStatus } from '@/lib/api/applications.types'
 import type { Contract } from '@/lib/types/contract'
 

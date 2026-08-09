@@ -70,6 +70,7 @@ import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { AVALUO_WIZARD_URL } from '@/lib/avaluo/wizard-url'
+import { SelectorPostulacion } from '@/components/inmobiliaria/SelectorPostulacion'
 import {
   FLUJOS,
   FLUJO_INICIAL,
@@ -104,6 +105,7 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
    * mismatch). El primer pintado usa `FLUJO_INICIAL`, igual para todos.
    */
   const [ultimo, setUltimo] = useState<FlujoKey | null>(null)
+  const [selectorAbierto, setSelectorAbierto] = useState(false)
   useEffect(() => setUltimo(ultimoFlujoUsado()), [])
 
   /**
@@ -123,12 +125,21 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
 
   const abrir = useCallback(
     (flujo: FlujoNuevo) => {
-      const destino = flujo.key === 'avaluo' ? AVALUO_WIZARD_URL : flujo.href
-      if (!destino) return
       // Se recuerda para que el segmento principal muestre lo último que esta
       // persona abrió, en vez de una preferencia adivinada por nosotros.
       recordarUltimoFlujo(flujo.key)
       setUltimo(flujo.key)
+
+      // Algunos flujos no arrancan en frío: antes hay que elegir algo. Un
+      // contrato se arma sobre una postulación aprobada, así que se pregunta
+      // cuál en vez de navegar a una pantalla que pediría el parámetro.
+      if (flujo.selector === 'postulacion') {
+        setSelectorAbierto(true)
+        return
+      }
+
+      const destino = flujo.key === 'avaluo' ? AVALUO_WIZARD_URL : flujo.href
+      if (!destino) return
       if (flujo.externo) {
         // Pestaña nueva a propósito: el panel queda vivo detrás.
         window.open(destino, '_blank', 'noopener,noreferrer')
@@ -233,6 +244,9 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
         onCancelar={() => setPorExplicar(null)}
         onEmpezar={confirmar}
       />
+
+      {/* El paso previo del contrato: sobre qué postulación se arma. */}
+      <SelectorPostulacion abierto={selectorAbierto} onOpenChange={setSelectorAbierto} />
     </>
   )
 }

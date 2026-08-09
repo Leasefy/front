@@ -52,7 +52,8 @@ describe('FLUJOS', () => {
 
   it('las rutas internas cuelgan del panel de inmobiliaria', () => {
     for (const f of FLUJOS) {
-      if (f.externo) continue
+      // Sin href no hay ruta que validar: la resuelven el micro o el selector.
+      if (f.externo || f.selector) continue
       expect(f.href).toMatch(/^\/panel\/inmobiliaria\//)
     }
   })
@@ -67,12 +68,23 @@ describe('FLUJOS', () => {
     expect(inicial?.href).toBeTruthy()
   })
 
-  it('el único flujo sin href propio es el externo', () => {
-    // `avaluo` vive en el front del micro y su URL se resuelve en runtime; si
-    // algún otro quedara sin href, el ítem no llevaría a ningún lado.
-    const sinHref = FLUJOS.filter((f) => !f.href)
-    expect(sinHref.map((f) => f.key)).toEqual(['avaluo'])
-    expect(sinHref.every((f) => f.externo)).toBe(true)
+  it('un flujo sin href resuelve su destino de otra forma, nunca queda mudo', () => {
+    // Dos motivos válidos para no tener ruta fija: `avaluo` vive en el front
+    // del micro y la resuelve en runtime; `contrato` la arma con el
+    // applicationId que elija el selector. Cualquier otro sin href sería un
+    // ítem que no lleva a ningún lado.
+    for (const f of FLUJOS) {
+      if (f.href) continue
+      expect(Boolean(f.externo) || Boolean(f.selector)).toBe(true)
+    }
+  })
+
+  it('un flujo con selector no declara ruta fija', () => {
+    // Si tuviera href, `abrir()` podría navegar antes de preguntar y caer en la
+    // pantalla que pide el parámetro — el defecto original.
+    for (const f of FLUJOS) {
+      if (f.selector) expect(f.href).toBe('')
+    }
   })
 
   it('todo flujo externo se abre en pestaña nueva y no al revés', () => {
@@ -87,11 +99,17 @@ describe('FLUJOS', () => {
     for (const f of FLUJOS) expect(f.href).not.toContain('?')
   })
 
-  it('no ofrece preparar contrato: exige una postulación previa', () => {
-    // Estuvo un rato y llevaba a una pantalla de error. `/contratos/nuevo` lee
-    // `?applicationId=` y sin él muestra "Falta el parámetro applicationId".
-    // Se llega desde un candidato aceptado (paso 10 → 11), no desde el sidebar.
+  it('nadie apunta directo a /contratos/nuevo', () => {
+    // Esa pantalla lee `?applicationId=` y sin él muestra "Falta el parámetro
+    // applicationId". El contrato llega por el selector, que la arma con el id
+    // elegido; una ruta cruda acá reintroduce el defecto.
     expect(FLUJOS.map((f) => f.href)).not.toContain('/panel/inmobiliaria/contratos/nuevo')
+  })
+
+  it('preparar contrato se ofrece, y pasa por el selector', () => {
+    const contrato = FLUJOS.find((f) => f.key === 'contrato')
+    expect(contrato).toBeDefined()
+    expect(contrato?.selector).toBe('postulacion')
   })
 })
 

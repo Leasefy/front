@@ -31,7 +31,7 @@ import { Eyebrow } from '@leasefy/cadence';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useContracts } from '@/lib/hooks/useContracts';
-import { NuevoContratoBoton } from '@/components/inmobiliaria/NuevoContratoBoton';
+import { NuevoContratoBoton } from '@/components/inmobiliaria/SelectorPostulacion';
 import {
   CONTRACT_STATUS_LABELS,
   CONTRACT_STATUS_COLORS,
@@ -133,7 +133,7 @@ function ContratosContent() {
             `?applicationId=`: el botón principal de Contratos mostraba
             "Falta el parámetro applicationId" en vez de crear nada. Ahora
             pregunta sobre qué postulación aprobada se arma el contrato. */}
-        <NuevoContratoBoton contratos={contracts} />
+        <NuevoContratoBoton />
       </header>
 
       {/* Stats */}

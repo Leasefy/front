@@ -23,6 +23,7 @@ import {
   Scales,
   ShieldCheck,
   FileText,
+  FilePlus,
   type Icon,
 } from '@phosphor-icons/react'
 
@@ -32,16 +33,10 @@ export type FlujoKey =
   | 'avaluo'
   | 'evaluacion'
   | 'asegurabilidad'
+  | 'contrato'
 
-/**
- * Los momentos del negocio, en el orden en que ocurren.
- *
- * No hay "cerrar": preparar un contrato **no se puede empezar en frío**.
- * `/contratos/nuevo` exige un `?applicationId=` y sin él muestra un error —
- * se llega desde un candidato ya aceptado, nunca desde este botón. Ofrecerlo
- * acá mandaba a una pantalla rota, y se vio al probarlo.
- */
-export type GrupoFlujo = 'captar' | 'evaluar'
+/** Los momentos del negocio, en el orden en que ocurren. */
+export type GrupoFlujo = 'captar' | 'evaluar' | 'cerrar'
 
 export interface FlujoNuevo {
   key: FlujoKey
@@ -55,6 +50,14 @@ export interface FlujoNuevo {
   href: string
   /** Vive fuera de este front: se abre en pestaña nueva para no matar el panel. */
   externo?: boolean
+  /**
+   * En vez de navegar, abre un selector: el flujo necesita elegir algo antes de
+   * poder empezar. Preparar un contrato no arranca en frío —`/contratos/nuevo`
+   * lee `?applicationId=`—, así que primero se pregunta sobre qué postulación
+   * aprobada se arma. Sin esto el ítem llevaba a "Falta el parámetro
+   * applicationId", que es como estuvo un rato.
+   */
+  selector?: 'postulacion'
   /**
    * Módulo de `PermissionsContext.canAccess`. `null` = sin compuerta.
    * Mismos valores que usa el sidebar, para que el menú no ofrezca algo que la
@@ -107,10 +110,21 @@ export const FLUJOS: readonly FlujoNuevo[] = [
     href: '/panel/inmobiliaria/ai/asegurabilidad/nueva',
     module: 'cotizador',
   },
+
+  // ── Cerrar ────────────────────────────────────────────────────────────
+  {
+    key: 'contrato',
+    grupo: 'cerrar',
+    icon: FilePlus,
+    // Sin ruta directa: la resuelve el selector con el applicationId elegido.
+    href: '',
+    selector: 'postulacion',
+    module: 'contratos',
+  },
 ] satisfies readonly Definicion[]
 
 /** Los grupos, en orden. El menú los muestra así. */
-export const GRUPOS: readonly GrupoFlujo[] = ['captar', 'evaluar']
+export const GRUPOS: readonly GrupoFlujo[] = ['captar', 'evaluar', 'cerrar']
 
 /**
  * Con qué arranca el segmento principal del `SplitButton` **la primera vez**,

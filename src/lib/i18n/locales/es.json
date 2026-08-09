@@ -8087,7 +8087,8 @@
       "aria": "Empezar algo nuevo",
       "grupos": {
         "captar": "Captar",
-        "evaluar": "Evaluar"
+        "evaluar": "Evaluar",
+        "cerrar": "Cerrar"
       },
       "intro": {
         "queVasAHacer": "Qué vas a hacer",
@@ -8156,6 +8157,18 @@
             "paso2": "Eliges a qué aseguradoras consultar.",
             "paso3": "Comparas las respuestas y te quedas con la mejor.",
             "necesitas": "Necesitas la cédula del candidato y su autorización para consultarlo."
+          }
+        },
+        "contrato": {
+          "label": "Nuevo contrato",
+          "desc": "Prepara el contrato de arrendamiento",
+          "intro": {
+            "titulo": "Vas a preparar un contrato",
+            "resumen": "Se arma sobre una postulación ya aprobada: de ahí salen el inquilino, la propiedad y el canon. Primero eliges cuál.",
+            "paso1": "Eliges la postulación aprobada.",
+            "paso2": "Confirmas canon, fechas y garantía.",
+            "paso3": "Revisas las cláusulas y lo mandas a firmar.",
+            "necesitas": "Necesitas tener al candidato ya aprobado."
           }
         }
       }

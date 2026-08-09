@@ -8086,7 +8086,8 @@
       "aria": "Start something new",
       "grupos": {
         "captar": "Acquire",
-        "evaluar": "Assess"
+        "evaluar": "Assess",
+        "cerrar": "Close"
       },
       "intro": {
         "queVasAHacer": "What you'll do",
@@ -8155,6 +8156,18 @@
             "paso2": "Choose which insurers to ask.",
             "paso3": "Compare the answers and keep the best one.",
             "necesitas": "You'll need the candidate's ID number and their consent to run the check."
+          }
+        },
+        "contrato": {
+          "label": "New contract",
+          "desc": "Prepare the lease agreement",
+          "intro": {
+            "titulo": "You're preparing a contract",
+            "resumen": "It's built on an already-approved application: the tenant, the property and the rent all come from it. You pick which one first.",
+            "paso1": "Pick the approved application.",
+            "paso2": "Confirm rent, dates and guarantee.",
+            "paso3": "Review the clauses and send it for signature.",
+            "necesitas": "You'll need the candidate already approved."
           }
         }
       }

@@ -116,6 +116,21 @@ export const FLUJOS: readonly FlujoNuevo[] = [
 /** Los grupos, en orden. El menú los muestra así. */
 export const GRUPOS: readonly GrupoFlujo[] = ['captar', 'evaluar', 'cerrar']
 
+/**
+ * El flujo que queda en el segmento principal del `SplitButton`: se abre con un
+ * clic, sin pasar por el menú.
+ *
+ * Es **una decisión de producto, no una restricción técnica** — cambiar esta
+ * línea mueve el botón. Va la consignación porque es la boca del embudo: sin
+ * inventario no hay nada que arrendar, y es el flujo que más veces al día
+ * arranca una inmobiliaria que está creciendo. Si la operación real dice otra
+ * cosa, se cambia acá y nada más.
+ *
+ * Si la persona no tiene permiso sobre este flujo, el botón cae al primero que
+ * sí pueda abrir (ver `BotonNuevo`): el segmento principal nunca queda muerto.
+ */
+export const FLUJO_PRINCIPAL: FlujoKey = 'consignacion'
+
 export const flujoLabelKey = (k: FlujoKey) => `${I18N}.${k}.label`
 export const flujoDescKey = (k: FlujoKey) => `${I18N}.${k}.desc`
 export const grupoLabelKey = (g: GrupoFlujo) => `inmobiliaria.nuevo.grupos.${g}`

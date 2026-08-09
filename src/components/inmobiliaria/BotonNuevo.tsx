@@ -21,17 +21,24 @@
  *    pasos, y qué necesita tener a mano; de ahí en adelante entra directo. Un
  *    cartel que reaparece se vuelve un obstáculo, y se cierra sin leer.
  *
- * Todo el vestido sale del DS: el `Button` de `@leasefy/cadence` y el Dialog y
- * el DropdownMenu por sus adaptadores de `@/components/ui`, que envuelven ese
- * mismo DS con el contrato de layout de este panel (ver los imports).
+ * 3. **Es un `SplitButton`, no un botón con menú.** La primera versión ponía un
+ *    `+` y un chevron en el mismo botón, y decía dos cosas contradictorias: el
+ *    `+` promete crear de una, el chevron promete elegir. El DS ya resuelve esa
+ *    tensión partiéndolo en dos segmentos — el izquierdo abre el flujo más
+ *    frecuente de un clic, el del chevron despliega el resto. Cuál va a la
+ *    izquierda se decide en `FLUJO_PRINCIPAL`.
+ *
+ * Todo el vestido sale del DS: `SplitButton` y `Button` de `@leasefy/cadence`,
+ * y el Dialog y el DropdownMenu por sus adaptadores de `@/components/ui`, que
+ * envuelven ese mismo DS con el contrato de layout de este panel.
  */
 
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, CaretDown, ArrowSquareOut, Check } from '@phosphor-icons/react'
-// El Button sale del DS directo: `variant="primary"` es exactamente lo que se
-// quiere y sin la flecha automática que el adaptador local le pone a `default`.
-import { Button } from '@leasefy/cadence'
+import { Plus, ArrowSquareOut, Check } from '@phosphor-icons/react'
+// SplitButton del DS: separa la acción principal del menú en dos segmentos,
+// que es su respuesta a la tensión "+ o chevron, no los dos" (§SplitButton).
+import { Button, SplitButton } from '@leasefy/cadence'
 // Dialog y DropdownMenu salen de los ADAPTADORES de `@/components/ui`, que SON
 // Cadence (envuelven `@leasefy/cadence`) más el contrato de layout de este
 // panel. No es una alternativa al DS: usar los crudos rompe cosas reales que
@@ -40,12 +47,9 @@ import { Button } from '@leasefy/cadence'
 // scrollea) y le encoge los iconos a 3.5.
 // El adaptador los expone con los nombres legacy `DropdownList*`.
 import {
-  DropdownList,
-  DropdownListContent,
   DropdownListItem,
   DropdownListLabel,
   DropdownListSeparator,
-  DropdownListTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
   Dialog,
@@ -62,6 +66,7 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { AVALUO_WIZARD_URL } from '@/lib/avaluo/wizard-url'
 import {
   FLUJOS,
+  FLUJO_PRINCIPAL,
   GRUPOS,
   flujoDescKey,
   flujoIntro,
@@ -134,70 +139,70 @@ export function BotonNuevo({ className }: BotonNuevoProps) {
   // Sin nada que ofrecer no se muestra un botón que abre un menú vacío.
   if (disponibles.length === 0) return null
 
+  // El segmento principal nunca queda muerto: si no tiene permiso sobre el
+  // flujo elegido, cae al primero que sí pueda abrir.
+  const principal =
+    disponibles.find((f) => f.key === FLUJO_PRINCIPAL) ?? disponibles[0]
+
   return (
     <>
-      <DropdownList>
-        <DropdownListTrigger asChild>
-          <Button
-            variant="primary"
-            size="sm"
-            aria-label={t(`${NS}.aria`)}
-            className={cn('w-full justify-center gap-1.5', className)}
-          >
+      <SplitButton
+        variant="primary"
+        size="sm"
+        className={cn('w-full', className)}
+        label={
+          <span className="flex items-center gap-1.5">
             <Plus className="h-4 w-4" weight="bold" />
-            {t(`${NS}.boton`)}
-            <CaretDown className="h-3.5 w-3.5 opacity-70" />
-          </Button>
-        </DropdownListTrigger>
-
-        <DropdownListContent
-          align="start"
-          className="w-[264px]"
-          // El menú puede crecer más que la ventana; sin esto Lenis se queda
-          // con la rueda y no scrollea (docs/DESIGN.md §8).
-          data-lenis-prevent
-        >
-          {GRUPOS.map((grupo, i) => {
-            const delGrupo = disponibles.filter((f) => f.grupo === grupo)
-            if (delGrupo.length === 0) return null
-            return (
-              <div key={grupo}>
-                {i > 0 && <DropdownListSeparator />}
-                <DropdownListLabel>{t(grupoLabelKey(grupo))}</DropdownListLabel>
-                {delGrupo.map((flujo) => {
-                  const Icono = flujo.icon
-                  return (
-                    <DropdownListItem
-                      key={flujo.key}
-                      onSelect={() => elegir(flujo)}
-                      // items-start: el ítem del DS centra verticalmente, y con
-                      // una descripción de dos líneas el icono queda flotando
-                      // lejos del título al que pertenece.
-                      className="items-start gap-2.5 py-2"
-                    >
-                      <Icono className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-1 font-medium text-fg">
-                          {t(flujoLabelKey(flujo.key))}
-                          {flujo.externo && (
-                            <ArrowSquareOut
-                              className="h-3 w-3 text-fg-subtle"
-                              aria-label={t(`${NS}.intro.nuevaPestana`)}
-                            />
-                          )}
+            {t(flujoLabelKey(principal.key))}
+          </span>
+        }
+        onClick={() => elegir(principal)}
+        caretLabel={t(`${NS}.aria`)}
+        menuAlign="start"
+        menuContent={
+          <>
+            {GRUPOS.map((grupo, i) => {
+              const delGrupo = disponibles.filter((f) => f.grupo === grupo)
+              if (delGrupo.length === 0) return null
+              return (
+                <div key={grupo}>
+                  {i > 0 && <DropdownListSeparator />}
+                  <DropdownListLabel>{t(grupoLabelKey(grupo))}</DropdownListLabel>
+                  {delGrupo.map((flujo) => {
+                    const Icono = flujo.icon
+                    return (
+                      <DropdownListItem
+                        key={flujo.key}
+                        onSelect={() => elegir(flujo)}
+                        // items-start: el ítem del DS centra verticalmente, y
+                        // con una descripción de dos líneas el icono queda
+                        // flotando lejos del título al que pertenece.
+                        className="items-start gap-2.5 py-2"
+                      >
+                        <Icono className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1 font-medium text-fg">
+                            {t(flujoLabelKey(flujo.key))}
+                            {flujo.externo && (
+                              <ArrowSquareOut
+                                className="h-3 w-3 text-fg-subtle"
+                                aria-label={t(`${NS}.intro.nuevaPestana`)}
+                              />
+                            )}
+                          </span>
+                          <span className="block text-xs leading-snug text-fg-muted">
+                            {t(flujoDescKey(flujo.key))}
+                          </span>
                         </span>
-                        <span className="block text-xs leading-snug text-fg-muted">
-                          {t(flujoDescKey(flujo.key))}
-                        </span>
-                      </span>
-                    </DropdownListItem>
-                  )
-                })}
-              </div>
-            )
-          })}
-        </DropdownListContent>
-      </DropdownList>
+                      </DropdownListItem>
+                    )
+                  })}
+                </div>
+              )
+            })}
+          </>
+        }
+      />
 
       <IntroDelFlujo
         flujo={porExplicar}

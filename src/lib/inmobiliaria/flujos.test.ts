@@ -13,6 +13,7 @@ import es from '../i18n/locales/es.json'
 import en from '../i18n/locales/en.json'
 import {
   FLUJOS,
+  FLUJO_PRINCIPAL,
   GRUPOS,
   claveVisto,
   flujoDescKey,
@@ -51,6 +52,16 @@ describe('FLUJOS', () => {
       if (f.externo) continue
       expect(f.href).toMatch(/^\/panel\/inmobiliaria\//)
     }
+  })
+
+  it('el flujo principal existe y es interno', () => {
+    // Va en el segmento izquierdo del SplitButton: se abre de un clic. Si
+    // apuntara a una clave inexistente el botón quedaría sin acción, y si fuera
+    // el externo abriría una pestaña al tocar el botón principal del sidebar.
+    const principal = FLUJOS.find((f) => f.key === FLUJO_PRINCIPAL)
+    expect(principal).toBeDefined()
+    expect(principal?.externo).toBeFalsy()
+    expect(principal?.href).toBeTruthy()
   })
 
   it('el único flujo sin href propio es el externo', () => {

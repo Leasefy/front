@@ -44,14 +44,19 @@ export default function CallAudioPlayer({
   audioRef,
 }: CallAudioPlayerProps) {
   const { t } = useI18n()
-  const { currentTime, duration, isPlaying, speed, setSpeed, seekTo, togglePlay } =
-    useAudioPlayer(audioRef)
 
   // El endpoint de audio es Bearer-only: un `<audio src>` nativo no puede
   // mandar el header Authorization, así que se piden los bytes y se alimenta un
   // object URL. El hook además pregunta si existe en vez de creerle a la
   // columna en base — ver `use-call-recording.ts`.
   const { state, retry } = useCallRecording(agencyId, callId)
+
+  // Va DESPUÉS de resolver el audio: el `<audio>` sólo existe en el estado
+  // `ready`, y el object URL es el testigo que le avisa al hook que ya puede
+  // engancharse al elemento.
+  const objectUrl = state.status === 'ready' ? state.objectUrl : ''
+  const { currentTime, duration, isPlaying, speed, setSpeed, seekTo, togglePlay } =
+    useAudioPlayer(audioRef, objectUrl)
 
   // Reset transient state when callId changes.
   useEffect(() => {
@@ -106,7 +111,6 @@ export default function CallAudioPlayer({
     )
   }
 
-  const objectUrl = state.objectUrl
   const esDemo = state.kind === 'demo'
 
   // Keyboard map (Phase 38 plan 38-04c / XR-06 / WCAG 2.1 AA 1.3.1 + 2.1.1):

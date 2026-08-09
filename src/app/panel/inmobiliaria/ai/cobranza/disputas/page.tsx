@@ -1,9 +1,12 @@
 'use client'
 
 /**
- * /ai/cobranza/disputas — "Controversias / Disputas" (visión #12).
+ * /ai/cobranza/disputas — "Disputas" (visión #12).
  *
- * Lista las disputas (controversias) que un deudor levantó sobre su saldo/cargo:
+ * El nombre es UNO SOLO en toda la superficie: el nav decía «Disputas» y la
+ * pantalla «Controversias». Se unificó en «disputa» (2026-08-09).
+ *
+ * Lista las disputas que un deudor levantó sobre su saldo/cargo:
  * {deudor (id enmascarado), motivo, monto disputado, estado open/in_review/resolved
  * con tono token, acción}. Filtro por estado con SegmentedControl.
  *
@@ -13,7 +16,7 @@
  * 200 con lista vacía si la tabla no está migrada.
  *
  * Acciones (T-323 — confirmación HUMANA explícita, nunca auto-ejecuta):
- *   - "Abrir disputa": modal que registra una controversia (POST /disputes). NO
+ *   - "Abrir disputa": modal que registra una disputa (POST /disputes). NO
  *     pausa la cobranza automáticamente; solo deja constancia + escalación humana.
  *   - "Resolver": modal HUMANO-only (POST /disputes/:id/resolve) con outcome
  *     (procedente|improcedente|parcial) + nota obligatoria. NO reactiva cobranza
@@ -85,8 +88,8 @@ const FILTRO_OPCIONES: { value: EstadoFiltro; label: string }[] = [
 ]
 
 const OUTCOME_OPCIONES: { value: DisputeOutcome; label: string }[] = [
-  { value: 'procedente', label: 'Procedente — la controversia tiene fundamento' },
-  { value: 'improcedente', label: 'Improcedente — la controversia no procede' },
+  { value: 'procedente', label: 'Procedente — la disputa tiene fundamento' },
+  { value: 'improcedente', label: 'Improcedente — la disputa no procede' },
   { value: 'parcial', label: 'Parcial — procede en parte' },
 ]
 
@@ -135,15 +138,15 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
       setMonto('')
       onClose()
     } else if (res.status === 403) {
-      setSubmitError('No tienes permiso para abrir controversias.')
+      setSubmitError('No tienes permiso para abrir disputas.')
     } else if (res.status === 404) {
       setSubmitError('No se encontró el deudor con ese identificador.')
     } else if (res.status === 0) {
       setSubmitError(
-        'No se pudo registrar la controversia. El servicio aún no está disponible.',
+        'No se pudo registrar la disputa. El servicio aún no está disponible.',
       )
     } else {
-      setSubmitError(`No se pudo registrar la controversia (error ${res.status}).`)
+      setSubmitError(`No se pudo registrar la disputa (error ${res.status}).`)
     }
   }, [canSubmit, onSubmit, debtor, reason, montoNum, onClose])
 
@@ -151,12 +154,12 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
     <Dialog open={isOpen} onOpenChange={(o) => { if (!o) onClose() }}>
       <DialogContent className="md:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Abrir una controversia</DialogTitle>
+          <DialogTitle>Abrir una disputa</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <p className="text-xs text-fg-muted leading-relaxed">
-            Registrar una controversia deja constancia y la pone en la cola de
+            Registrar una disputa deja constancia y la pone en la cola de
             revisión humana. No pausa la cobranza automáticamente.
           </p>
 
@@ -181,7 +184,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
               htmlFor="disputa-reason"
               className="block text-xs font-medium uppercase tracking-wide text-fg-muted"
             >
-              Motivo de la controversia <span className="text-danger">*</span>
+              Motivo de la disputa <span className="text-danger">*</span>
             </label>
             <Textarea
               id="disputa-reason"
@@ -240,7 +243,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             disabled={!canSubmit}
             data-testid="disputa-abrir-submit"
           >
-            {submitting ? 'Registrando…' : 'Registrar controversia'}
+            {submitting ? 'Registrando…' : 'Registrar disputa'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -287,17 +290,17 @@ function ResolverDisputaModal({
       setNote('')
       onClose()
     } else if (res.status === 403) {
-      setSubmitError('No tienes permiso para resolver controversias.')
+      setSubmitError('No tienes permiso para resolver disputas.')
     } else if (res.status === 404) {
-      setSubmitError('La controversia ya no existe.')
+      setSubmitError('La disputa ya no existe.')
     } else if (res.status === 409) {
-      setSubmitError('La controversia ya fue resuelta.')
+      setSubmitError('La disputa ya fue resuelta.')
     } else if (res.status === 0) {
       setSubmitError(
-        'No se pudo resolver la controversia. El servicio aún no está disponible.',
+        'No se pudo resolver la disputa. El servicio aún no está disponible.',
       )
     } else {
-      setSubmitError(`No se pudo resolver la controversia (error ${res.status}).`)
+      setSubmitError(`No se pudo resolver la disputa (error ${res.status}).`)
     }
   }, [dispute, outcome, note, onResolve, onClose])
 
@@ -305,12 +308,12 @@ function ResolverDisputaModal({
     <Dialog open={dispute !== null} onOpenChange={(o) => { if (!o) onClose() }}>
       <DialogContent className="md:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Resolver controversia</DialogTitle>
+          <DialogTitle>Resolver disputa</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <p className="text-xs text-fg-muted leading-relaxed">
-            Resolver una controversia es una decisión humana. No reactiva la
+            Resolver una disputa es una decisión humana. No reactiva la
             cobranza automáticamente: el agente solo entregará una recomendación.
           </p>
 
@@ -382,7 +385,7 @@ function ResolverDisputaModal({
             data-testid="disputa-resolver-submit"
           >
             <CheckCircle className="w-4 h-4" aria-hidden="true" />
-            {submitting ? 'Resolviendo…' : 'Resolver controversia'}
+            {submitting ? 'Resolviendo…' : 'Resolver disputa'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -459,11 +462,11 @@ function DisputasContent() {
     <header className="flex items-start justify-between gap-4 flex-wrap">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight text-fg">
-          Controversias
+          Disputas
         </h1>
         <p className="text-sm text-fg-muted max-w-2xl">
           Las disputas que los deudores levantaron sobre su saldo o un cargo. Abrir
-          o resolver una controversia es una decisión humana: el agente nunca pausa
+          o resolver una disputa es una decisión humana: el agente nunca pausa
           ni reactiva la cobranza por su cuenta.
         </p>
       </div>
@@ -474,7 +477,7 @@ function DisputasContent() {
           onClick={() => setAbrirOpen(true)}
           data-testid="disputa-abrir"
         >
-          Abrir controversia
+          Abrir disputa
         </Button>
       </div>
     </header>
@@ -497,7 +500,7 @@ function DisputasContent() {
       {header}
 
       {/* Error de carga (no destructivo — la pantalla sigue usable).
-          Cuando falla, ABAJO no puede decirse «no hay controversias»: no
+          Cuando falla, ABAJO no puede decirse «no hay disputas»: no
           sabemos si hay o no. Se dice que no pudimos cargarlas y se ofrece
           reintentar. */}
       {hayError && (
@@ -511,7 +514,7 @@ function DisputasContent() {
               weight="fill"
               aria-hidden="true"
             />
-            No pudimos cargar las controversias. {error}
+            No pudimos cargar las disputas. {error}
           </span>
           <Button
             variant="outline"
@@ -531,7 +534,7 @@ function DisputasContent() {
           options={FILTRO_OPCIONES}
           value={filtro}
           onChange={setFiltro}
-          aria-label="Filtrar controversias por estado"
+          aria-label="Filtrar disputas por estado"
         />
         {disputes.length > 0 && (
           <span className="text-xs text-fg-muted tabular-nums">
@@ -548,13 +551,13 @@ function DisputasContent() {
           icon={Scales}
           title={
             filtro === 'todas'
-              ? 'No hay controversias registradas'
-              : 'Sin controversias en este estado'
+              ? 'No hay disputas registradas'
+              : 'Sin disputas en este estado'
           }
           description={
             filtro === 'todas'
-              ? 'Cuando un deudor dispute su saldo o un cargo, podrás abrir una controversia aquí y resolverla con un resultado y una nota. El detalle de cada deudor también muestra sus controversias.'
-              : 'Ajusta el filtro para ver otras controversias, o abre una nueva.'
+              ? 'Cuando un deudor dispute su saldo o un cargo, podrás abrir una disputa aquí y resolverla con un resultado y una nota. El detalle de cada deudor también muestra sus disputas.'
+              : 'Ajusta el filtro para ver otras disputas, o abre una nueva.'
           }
           primaryCta={
             filtro === 'todas'
@@ -563,7 +566,7 @@ function DisputasContent() {
           }
         />
       ) : (
-        <ul className="space-y-3 max-w-3xl" aria-label="Controversias">
+        <ul className="space-y-3 max-w-3xl" aria-label="Disputas">
           {disputes.map((dispute) => (
             <DisputaCard
               key={dispute.id}

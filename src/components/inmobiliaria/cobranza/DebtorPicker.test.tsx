@@ -96,7 +96,10 @@ function urlsPedidas(fetchMock: ReturnType<typeof vi.fn>): string[] {
 }
 
 beforeEach(() => {
-  process.env.NEXT_PUBLIC_AGENT_URL = AGENT_URL
+  // `stubEnv` y no asignación directa: otro archivo de tests deja
+  // `NEXT_PUBLIC_AGENT_URL=agent.test` con `vi.stubEnv`, y una asignación
+  // cruda pierde contra eso — el hook salía a la red de verdad.
+  vi.stubEnv('NEXT_PUBLIC_AGENT_URL', AGENT_URL)
   vi.useFakeTimers()
 })
 
@@ -107,7 +110,8 @@ afterEach(() => {
   container = null
   vi.useRealTimers()
   vi.restoreAllMocks()
-  delete process.env.NEXT_PUBLIC_AGENT_URL
+  vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
 })
 
 describe('DebtorPicker', () => {

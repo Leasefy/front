@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * use-disputes.ts — controversias (disputas) de cobranza, agency-wide.
+ * use-disputes.ts — disputas (disputas) de cobranza, agency-wide.
  *
  * Cablea la superficie de Disputas a los endpoints NUEVOS del agente:
  *
@@ -10,7 +10,7 @@
  *   POST /api/agency/:agencyId/cobranza/disputes            — abrir una disputa
  *   POST /api/agency/:agencyId/cobranza/disputes/:id/resolve — resolver (HUMANO, T-323)
  *
- * Una disputa registra una controversia del deudor sobre su saldo/cargo. Abrirla
+ * Una disputa registra una disputa del deudor sobre su saldo/cargo. Abrirla
  * NO pausa la cobranza automáticamente (T-323) — solo deja constancia y, fail-soft,
  * una escalación en la cola humana. Resolverla es HUMANO-only (requiere outcome +
  * nota + el userId del operador) y tampoco reactiva cobranza automáticamente; el

@@ -3,10 +3,10 @@
 /**
  * DebtorPicker — elegir un deudor por nombre o cédula.
  *
- * POR QUÉ EXISTE: el modal de «Abrir controversia» pedía el UUID del deudor
+ * POR QUÉ EXISTE: el modal de «Abrir disputa» pedía el UUID del deudor
  * escrito a mano, con la ayuda «Lo encuentras en el detalle de cada deudor».
  * Eso era literalmente imposible: el UUID sólo vive en la barra de direcciones,
- * no se muestra en ninguna pantalla. El CTA principal de Controversias no se
+ * no se muestra en ninguna pantalla. El CTA principal de Disputas no se
  * podía usar.
  *
  * Reusa el MISMO contrato y la MISMA mecánica de búsqueda que la lista de

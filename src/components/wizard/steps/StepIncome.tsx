@@ -216,7 +216,7 @@ export function StepIncome() {
               <span className="font-medium">- {formatCurrency(obligations)}</span>
             </div>
 
-            <div className="border-t border-current/10 pt-2 flex justify-between">
+            <div className="border-t border-border pt-2 flex justify-between">
               <span>Disponible:</span>
               <span className="font-semibold">{formatCurrency(availableForRent)}</span>
             </div>
@@ -224,7 +224,7 @@ export function StepIncome() {
 
           {/* Recommended Rent */}
           {availableForRent > 0 && (
-            <div className="mt-4 pt-4 border-t border-current/10">
+            <div className="mt-4 pt-4 border-t border-border">
               <p className="text-xs opacity-70 mb-2">
                 Regla del 30%: El arriendo no debería superar el 30% de tu
                 disponibilidad

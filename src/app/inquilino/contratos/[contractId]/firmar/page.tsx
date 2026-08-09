@@ -238,7 +238,7 @@ function ReadOnlyView({
           <p className={cn('text-sm font-medium', tone.text)}>{banner.message}</p>
         </div>
 
-        <div className="flex items-center gap-3 pt-2 border-t border-current/10 flex-wrap">
+        <div className="flex items-center gap-3 pt-2 border-t border-border flex-wrap">
           <DownloadContractPdfButton
             contractId={contract.id}
             contractStatus={contract.status}

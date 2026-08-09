@@ -199,7 +199,7 @@ export default function CobranzaOverviewPage() {
           </p>
         </div>
         {data?.generatedAt && (
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap mt-1 flex items-center gap-2">
+          <p className="text-xs text-fg-muted whitespace-nowrap mt-1 flex items-center gap-2">
             {t('inmobiliaria.ai.cobranza.overview.lastUpdated')}{' '}
             {relativeTime(data.generatedAt, locale)}
             {isConnected && (

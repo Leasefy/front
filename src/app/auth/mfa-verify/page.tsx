@@ -109,7 +109,7 @@ export default function MfaVerifyPage() {
         <div className="w-full max-w-sm space-y-8">
           {/* Icon */}
           <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-[16px] bg-accent-soft flex items-center justify-center">
+            <div className="w-16 h-16 rounded-[16px] bg-primary-soft flex items-center justify-center">
               <ShieldCheck className="w-8 h-8 text-primary" weight="fill" />
             </div>
           </div>

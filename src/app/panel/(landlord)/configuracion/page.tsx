@@ -631,7 +631,7 @@ export default function ConfiguracionPage() {
               t('landlordSettings.modals.downloadData.publishedProperties'),
               t('landlordSettings.modals.downloadData.signedContracts')
             ].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-200">
+              <div key={i} className="flex items-center gap-2 text-sm text-fg">
                 <div className="w-5 h-5 rounded-full bg-[#E8F3EC] dark:bg-[#2C7A53]/15 flex items-center justify-center">
                   <Check className="w-3 h-3 text-[#2C7A53] dark:text-[#3EAE70]" />
                 </div>

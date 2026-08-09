@@ -334,7 +334,7 @@ export default function PostulacionesPage() {
                       >
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
                               <span className="text-xs font-medium text-primary">{initials(c.tenantName)}</span>
                             </div>
                             <div className="min-w-0">

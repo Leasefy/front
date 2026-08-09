@@ -98,8 +98,8 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
       </div>
 
       {/* Agent Ranking Table */}
-      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
-        <div className="p-4 border-b border-border dark:border-strong">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
+        <div className="p-4 border-b border-border dark:border-border-strong">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Users className="w-4 h-4 text-fg-muted" />
             Ranking de agentes
@@ -108,7 +108,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader>
-              <TableRow className="border-b border-faint dark:border-strong">
+              <TableRow className="border-b border-border-faint dark:border-border-strong">
                 <TableHead className="text-left py-3 px-4 w-12">
                   #
                 </TableHead>
@@ -144,7 +144,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                   <TableRow
                     key={agent.id}
                     className={cn(
-                      'border-b border-faint dark:border-strong/50 transition-colors',
+                      'border-b border-border-faint dark:border-border-strong/50 transition-colors',
                       isTop
                         ? 'bg-warning-soft/50 dark:bg-warning/10 hover:bg-warning-soft'
                         : 'hover:bg-surface-muted dark:hover:bg-ink'
@@ -224,7 +224,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
       </div>
 
       {/* Performance Comparison - Horizontal Bars */}
-      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-5">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
           <ChartLineUp className="w-4 h-4 text-fg-muted" />
           Tasa de conversion por agente
@@ -283,7 +283,7 @@ function KPICard({
 }) {
   const colors = COLOR_MAP[color];
   return (
-    <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center gap-3">
         <div
           className={cn(

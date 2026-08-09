@@ -233,7 +233,7 @@ export function RecommendedProperties({
           className={cn(
             'flex-shrink-0 w-[200px] flex flex-col items-center justify-center',
             'bg-surface-muted/50 border border-dashed border-plan-border rounded-sm',
-            'hover:border-plan-border-hover hover:bg-surface-muted transition-colors',
+            'hover:border-border-strong hover:bg-surface-muted transition-colors',
             'min-h-[320px]'
           )}
         >

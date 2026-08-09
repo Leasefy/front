@@ -272,7 +272,7 @@ function BenefitCard({
         </p>
         {href && (
           <ArrowRight
-            className="ml-auto w-3.5 h-3.5 text-fg-subtle/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary motion-reduce:transition-none"
+            className="ml-auto w-3.5 h-3.5 text-fg-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary motion-reduce:transition-none"
             aria-hidden="true"
           />
         )}

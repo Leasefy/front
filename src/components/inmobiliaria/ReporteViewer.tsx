@@ -433,7 +433,7 @@ function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, 
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
-      <div className="p-4 rounded-xl bg-danger-soft text-white">
+      <div className="p-4 rounded-xl bg-danger-soft text-fg">
         <p className="text-sm font-medium text-danger">{t('inmobiliaria.reporte.totalOverduePortfolio')}</p>
         <p className="text-2xl font-bold">{formatCurrency(data.summary.totalPending)}</p>
         <p className="text-xs text-danger mt-1">{t('inmobiliaria.reporte.pendingCharges', { count: data.items.length })}</p>

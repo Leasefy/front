@@ -473,7 +473,7 @@ function QueSigue({ tf, items }: { tf: Tf; items: string[] }) {
       <ul className="space-y-1.5">
         {items.map((t) => (
           <li key={t} className="flex items-start gap-2 text-sm text-fg-muted">
-            <span className="mt-1.5 h-1 w-1 rounded-full bg-fg-muted shrink-0" aria-hidden />
+            <span className="mt-1.5 h-1 w-1 rounded-full bg-surface-muted shrink-0" aria-hidden />
             <span className="leading-relaxed">{t}</span>
           </li>
         ))}

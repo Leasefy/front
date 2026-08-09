@@ -126,7 +126,7 @@ export function ConsignacionCard({
           'w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left',
           selected
             ? 'border-primary/30 bg-primary-soft dark:border-primary/30'
-            : 'border-border dark:border-strong bg-surface dark:bg-[#14130F] hover:border-border dark:hover:border-strong'
+            : 'border-border dark:border-border-strong bg-surface dark:bg-[#14130F] hover:border-border dark:hover:border-border-strong'
         )}
       >
         {/* Thumbnail or Icon */}
@@ -186,7 +186,7 @@ export function ConsignacionCard({
         'w-full rounded-xl border bg-surface dark:bg-[#14130F] overflow-hidden transition-all duration-200 group',
         selected
           ? 'border-primary/30 ring-2 ring-primary/30'
-          : 'border-border dark:border-strong hover:border-border dark:hover:border-strong hover:',
+          : 'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:',
         onClick && 'cursor-pointer'
       )}
       onClick={onClick}
@@ -256,7 +256,7 @@ export function ConsignacionCard({
         </div>
 
         {/* Propietario and Agente */}
-        <div className="flex items-center justify-between gap-3 mb-4 pb-4 border-b border-faint dark:border-strong">
+        <div className="flex items-center justify-between gap-3 mb-4 pb-4 border-b border-border-faint dark:border-border-strong">
           {/* Propietario */}
           {propietarioName && (
             <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -282,7 +282,7 @@ export function ConsignacionCard({
                   className="w-7 h-7 rounded-full object-cover shrink-0"
                 />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
                   <span className="text-xs font-medium text-primary">
                     {agenteName.charAt(0)}
                   </span>

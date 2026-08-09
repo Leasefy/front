@@ -101,7 +101,7 @@ export function DebtorSidebar({
           aria-hidden="true"
           className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
         />
-        <MonoLabel className="text-neutral-400 dark:text-neutral-500">
+        <MonoLabel className="text-fg-muted">
           {t(`${NS}.detalle.contexto`)}
         </MonoLabel>
       </h2>
@@ -110,7 +110,7 @@ export function DebtorSidebar({
       {caseStateKey && (
         <span
           data-testid="case-state-badge"
-          className="inline-flex items-center px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-700 dark:text-neutral-200"
+          className="inline-flex items-center px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-fg"
         >
           {t(caseStateKey)}
         </span>

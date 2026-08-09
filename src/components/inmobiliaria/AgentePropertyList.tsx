@@ -85,7 +85,7 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
   return (
     <div
       className={cn(
-        'rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden',
+        'rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] overflow-hidden',
         className
       )}
     >
@@ -93,7 +93,7 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         aria-expanded={isExpanded}
-        className="w-full flex items-center justify-between px-5 py-4 border-b border-faint dark:border-strong hover:bg-surface-muted dark:hover:bg-ink transition-colors"
+        className="w-full flex items-center justify-between px-5 py-4 border-b border-border-faint dark:border-border-strong hover:bg-surface-muted dark:hover:bg-ink transition-colors"
       >
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-md bg-primary-soft flex items-center justify-center">

@@ -337,7 +337,7 @@ export function DispersionDetail({
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-surface-brand flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
                   <User className="w-6 h-6 text-primary" />
                 </div>
                 <div>

@@ -133,7 +133,7 @@ export function CobroCard({
       onClick={() => onClick?.(cobro)}
     >
       {/* Header Section */}
-      <div className="p-5 pb-4 border-b border-faint">
+      <div className="p-5 pb-4 border-b border-border-faint">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
@@ -153,9 +153,9 @@ export function CobroCard({
       </div>
 
       {/* Tenant Section */}
-      <div className="px-5 py-4 border-b border-faint">
+      <div className="px-5 py-4 border-b border-border-faint">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
             <User className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
@@ -215,7 +215,7 @@ export function CobroCard({
                 <span>{t('inmobiliaria.cobros.card.paidLabel')}</span>
                 <span>- {formatCurrency(cobro.paidAmount)}</span>
               </div>
-              <div className="flex items-center justify-between font-semibold text-fg pt-1 border-t border-faint">
+              <div className="flex items-center justify-between font-semibold text-fg pt-1 border-t border-border-faint">
                 <span>{t('inmobiliaria.cobros.card.pendingLabel')}</span>
                 <span>{formatCurrency(cobro.pendingAmount)}</span>
               </div>
@@ -268,7 +268,7 @@ export function CobroCard({
       </div>
 
       {/* Actions */}
-      <div className="px-5 py-4 flex items-center justify-between border-t border-faint">
+      <div className="px-5 py-4 flex items-center justify-between border-t border-border-faint">
         {cobro.status !== 'paid' && onRegisterPayment && (
           <Button
             size="sm"

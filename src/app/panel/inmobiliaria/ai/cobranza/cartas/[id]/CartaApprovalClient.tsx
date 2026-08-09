@@ -197,7 +197,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
         </Button>
       </div>
       <header>
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+        <h1 className="text-2xl font-semibold text-fg">
           {t('inmobiliaria.ai.cobranza.cartas.title')}
         </h1>
       </header>
@@ -227,7 +227,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
       {/* Pre-approve form */}
       <section className="space-y-3 rounded-md border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
         <div className="space-y-1">
-          <span className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
+          <span className="block text-sm font-medium text-fg">
             {t('inmobiliaria.ai.cobranza.cartas.physicalSend.label')}
           </span>
           <Select
@@ -252,7 +252,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           </Select>
         </div>
 
-        <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
+        <label className="block text-sm font-medium text-fg">
           {t('inmobiliaria.ai.cobranza.cartas.sentToAddress.label')}
           <Input
             type="text"

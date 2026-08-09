@@ -110,7 +110,7 @@ export function AsignacionModal({
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
-        <SheetHeader className="pb-4 border-b border-border dark:border-strong">
+        <SheetHeader className="pb-4 border-b border-border dark:border-border-strong">
           <SheetTitle className="flex items-center gap-2 text-fg dark:text-white">
             <User className="w-5 h-5 text-primary" />
             {t('inmobiliaria.agente.reassignProperty')}
@@ -119,7 +119,7 @@ export function AsignacionModal({
 
         <div className="py-6 space-y-6">
           {/* Property Info */}
-          <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface-muted">
+          <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface-muted">
             <div className="flex gap-4">
               {/* Thumbnail */}
               {consignacion.propertyThumbnail ? (
@@ -155,7 +155,7 @@ export function AsignacionModal({
               {t('inmobiliaria.agente.currentAgent')}
             </label>
             {currentAgente ? (
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-fg-muted flex items-center justify-center text-white text-sm font-semibold shrink-0">
                   {currentAgente.avatar ? (
                     <img
@@ -177,7 +177,7 @@ export function AsignacionModal({
                 </div>
               </div>
             ) : (
-              <div className="p-3 rounded-xl border border-border dark:border-strong bg-surface-muted text-sm text-fg-muted dark:text-fg-subtle">
+              <div className="p-3 rounded-xl border border-border dark:border-border-strong bg-surface-muted text-sm text-fg-muted dark:text-fg-subtle">
                 {t('inmobiliaria.agente.noAgentAssigned')}
               </div>
             )}
@@ -185,7 +185,7 @@ export function AsignacionModal({
 
           {/* Arrow Divider */}
           <div className="flex items-center justify-center">
-            <div className="w-10 h-10 rounded-full bg-surface-brand flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center">
               <ArrowRight className="w-5 h-5 text-primary" />
             </div>
           </div>
@@ -259,7 +259,7 @@ export function AsignacionModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="sticky bottom-0 -mx-6 px-6 py-4 border-t border-border dark:border-strong bg-surface dark:bg-[#14130F] flex items-center gap-3">
+        <div className="sticky bottom-0 -mx-6 px-6 py-4 border-t border-border dark:border-border-strong bg-surface dark:bg-[#14130F] flex items-center gap-3">
           <Button
             variant="secondary"
             hideArrow

@@ -394,7 +394,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
         {/* Header — flex-none keeps it pinned to the top of the panel */}
         <div className="flex-none bg-background border-b border-border px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-surface-brand flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center flex-shrink-0">
               <User className="w-5 h-5 text-primary" />
             </div>
             <div className="min-w-0">
@@ -820,7 +820,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                       <Link
                         key={r.propertyId}
                         href={`/panel/inmobiliaria/portafolio/${r.propertyId}`}
-                        className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-border dark:border-strong dark:hover:border-border dark:border-strong hover:bg-muted/50 transition-all group"
+                        className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-border dark:border-border-strong dark:hover:border-border dark:border-border-strong hover:bg-muted/50 transition-all group"
                       >
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-foreground truncate group-hover:text-fg-muted dark:text-fg-subtle dark:group-hover:text-fg-muted dark:text-fg-subtle transition-colors">
@@ -854,7 +854,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
           {/* Documents section */}
           <section className="rounded-xl border border-border bg-card p-5 space-y-4">
             <div className="flex items-center gap-2">
-              {/* `bg-fg-muted` es un token de TEXTO usado como fondo: pintaba
+              {/* `bg-surface-muted` es un token de TEXTO usado como fondo: pintaba
                   un disco gris claro, y encima el icono iba con ESE MISMO color
                   — invisible. El chip va con superficie, el icono con texto. */}
               <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center">
@@ -976,7 +976,7 @@ function SubscoreBar({ label, value, weight }: { label: string; value: number; w
         <span className="text-[10px] text-fg-muted truncate">{label}</span>
         <div className="flex items-center gap-1.5">
           {weight !== undefined && (
-            <span className="text-[10px] text-fg-muted/60 tabular-nums">{weight}%</span>
+            <span className="text-[10px] text-fg-subtle tabular-nums">{weight}%</span>
           )}
           <span className="text-xs font-semibold text-foreground tabular-nums">{value}</span>
         </div>

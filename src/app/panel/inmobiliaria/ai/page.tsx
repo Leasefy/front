@@ -429,7 +429,7 @@ export default function AIAgentsPage() {
           <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
             {locale === 'es' ? 'Próximos Agentes' : 'Upcoming Agents'}
           </h2>
-          <span className="text-sm text-neutral-400 dark:text-neutral-500">
+          <span className="text-sm text-fg-muted">
             {locale === 'es' ? `${comingSoonAgents.length} en desarrollo` : `${comingSoonAgents.length} in development`}
           </span>
         </div>
@@ -438,7 +438,7 @@ export default function AIAgentsPage() {
           <div className="flex items-start gap-3">
             <Info weight="duotone" className="h-5 w-5 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
+              <p className="text-sm font-medium text-fg">
                 {locale === 'es'
                   ? 'Estos agentes se activarán automáticamente a medida que estén listos.'
                   : 'These agents will activate automatically as they become ready.'}

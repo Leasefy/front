@@ -360,7 +360,7 @@ function LlamadasContent() {
                   <div className="font-medium text-neutral-900 dark:text-white text-sm whitespace-nowrap">
                     {call.debtorNameMasked}
                   </div>
-                  <div className="text-xs text-neutral-400 dark:text-neutral-500 tabular-nums">
+                  <div className="text-xs text-fg-muted tabular-nums">
                     {call.debtorCedulaMasked}
                   </div>
                 </TableCell>
@@ -371,7 +371,7 @@ function LlamadasContent() {
                     <Badge variant={channelBadgeVariant(call.channel)}>
                       {CHANNEL_LABELS[call.channel]?.[isEs ? 'es' : 'en'] ?? call.channel}
                     </Badge>
-                    <span className="inline-flex items-center text-xs text-neutral-400 dark:text-neutral-500">
+                    <span className="inline-flex items-center text-xs text-fg-muted">
                       {DIRECTION_LABELS[call.direction]?.[isEs ? 'es' : 'en'] ?? call.direction}
                     </span>
                   </div>
@@ -385,7 +385,7 @@ function LlamadasContent() {
                         call.outcome}
                     </Badge>
                   ) : (
-                    <span className="text-xs text-neutral-400 dark:text-neutral-500">—</span>
+                    <span className="text-xs text-fg-muted">—</span>
                   )}
                 </TableCell>
 
@@ -414,7 +414,7 @@ function LlamadasContent() {
                       {call.qaScore}
                     </span>
                   ) : (
-                    <span className="text-neutral-400 dark:text-neutral-500">—</span>
+                    <span className="text-fg-muted">—</span>
                   )}
                 </TableCell>
 
@@ -426,7 +426,7 @@ function LlamadasContent() {
                       {call.complianceFlagsCount}
                     </span>
                   ) : (
-                    <span className="text-neutral-400 dark:text-neutral-500">0</span>
+                    <span className="text-fg-muted">0</span>
                   )}
                 </TableCell>
               </TableRow>

@@ -284,7 +284,7 @@ function NavItemComponent({ item, isActive, isCollapsed, onClick, depth = 0 }: N
         className={cn(
           'flex items-center justify-center px-2.5 py-2.5 rounded-full transition-colors',
           isActive
-            ? 'text-primary bg-accent-soft'
+            ? 'text-primary bg-primary-soft'
             : 'text-fg-muted hover:text-fg hover:bg-surface-muted'
         )}
       >
@@ -616,7 +616,7 @@ function SidebarContent({
               {/* Next step - highlighted */}
               {nextStep && (
                 <div className="flex items-center gap-2 p-2 bg-surface rounded-lg border border-border group-hover:border-border-strong transition-colors">
-                  <div className="w-5 h-5 rounded-full border-2 border-primary bg-accent-soft flex items-center justify-center flex-shrink-0">
+                  <div className="w-5 h-5 rounded-full border-2 border-primary bg-primary-soft flex items-center justify-center flex-shrink-0">
                     <span className="font-mono text-[9px] font-bold text-primary">{completedCount + 1}</span>
                   </div>
                   <div className="flex-1 min-w-0">

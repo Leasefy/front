@@ -80,7 +80,7 @@ function MembersInviteLinksScreen({
   return (
     <div
       data-testid="members-invite-links"
-      className="rounded-lg border border-border bg-surface-raised p-6 space-y-4 shadow-sm"
+      className="rounded-lg border border-border bg-surface p-6 space-y-4 shadow-sm"
     >
       <div>
         <h2 className="text-h2">Invitaciones generadas</h2>
@@ -98,7 +98,7 @@ function MembersInviteLinksScreen({
           <p className="text-sm font-medium text-warning">
             Guardá estos links ahora — no se vuelven a mostrar.
           </p>
-          <p className="text-body-sm text-fg-secondary mt-0.5">
+          <p className="text-body-sm text-fg-muted mt-0.5">
             Por seguridad no podemos volver a generarlos. Copiá y enviá cada link antes de continuar.
           </p>
         </div>

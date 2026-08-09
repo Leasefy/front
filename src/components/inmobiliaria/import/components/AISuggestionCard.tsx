@@ -195,7 +195,7 @@ export function AISuggestionCard({
 
   return (
     <div
-      className="animate-stagger-in rounded-xl border border-border dark:border-strong overflow-hidden bg-surface dark:bg-[#14130F]"
+      className="animate-stagger-in rounded-xl border border-border dark:border-border-strong overflow-hidden bg-surface dark:bg-[#14130F]"
       style={{ animationDelay: `${Math.min(index, 20) * 50}ms` }}
     >
       {/* Header row */}
@@ -243,7 +243,7 @@ export function AISuggestionCard({
 
       {/* Expanded content */}
       {isExpanded && (
-        <div className="border-t border-faint dark:border-strong px-4 pb-4 pt-3 space-y-3">
+        <div className="border-t border-border-faint dark:border-border-strong px-4 pb-4 pt-3 space-y-3">
           {/* Property summary pills */}
           <div className="flex flex-wrap gap-2">
             {property.propertyType && (
@@ -271,7 +271,7 @@ export function AISuggestionCard({
           {/* Suggestions list */}
           {hasSuggestions && (
             <>
-              <div className="border-t border-faint dark:border-strong pt-3">
+              <div className="border-t border-border-faint dark:border-border-strong pt-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkle className="w-3.5 h-3.5 text-primary" />
                   <span className="text-xs font-semibold text-fg dark:text-fg-subtle uppercase tracking-wide">
@@ -312,7 +312,7 @@ export function AISuggestionCard({
 
           {/* Error messages */}
           {property.hasErrors && property.errorMessages.length > 0 && (
-            <div className="border-t border-faint dark:border-strong pt-3 space-y-1.5">
+            <div className="border-t border-border-faint dark:border-border-strong pt-3 space-y-1.5">
               {property.errorMessages.map((msg, i) => (
                 <div
                   key={i}

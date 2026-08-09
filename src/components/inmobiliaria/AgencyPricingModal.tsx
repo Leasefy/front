@@ -108,7 +108,7 @@ export function AgencyPricingModal({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-faint dark:border-white/10">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint dark:border-white/10">
             <div>
               <h2 className="text-lg font-semibold text-fg dark:text-white">
                 Planes para inmobiliarias
@@ -140,7 +140,7 @@ export function AgencyPricingModal({
                         ? 'bg-surface-muted hover:bg-surface-muted dark:hover:bg-ink'
                         : 'bg-surface-muted hover:bg-surface-muted dark:hover:bg-ink',
                     'border',
-                    plan.isFlex ? 'border-warning/30' : 'border-border dark:border-strong'
+                    plan.isFlex ? 'border-warning/30' : 'border-border dark:border-border-strong'
                   )}
                   onClick={() => setSelectedPlan(plan.id)}
                 >

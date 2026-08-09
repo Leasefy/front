@@ -131,7 +131,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
                 }}
                 className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                <TableCell className="px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200">
+                <TableCell className="px-3 py-2 text-xs text-fg">
                   {new Date(c.started_at).toLocaleString(locale)}
                 </TableCell>
                 <TableCell className="px-3 py-2 font-mono text-xs">

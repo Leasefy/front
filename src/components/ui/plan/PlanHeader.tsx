@@ -884,14 +884,14 @@ export function PlanHeader({
                           {teamMembers.slice(0, 5).map((member) => (
                             <div
                               key={member.id}
-                              className="w-8 h-8 rounded-full bg-muted border-2 border-surface-raised flex items-center justify-center text-[11px] font-medium text-plan-secondary"
+                              className="w-8 h-8 rounded-full bg-muted border-2 border-surface flex items-center justify-center text-[11px] font-medium text-plan-secondary"
                               title={member.name || member.email}
                             >
                               {(member.name || member.email).charAt(0).toUpperCase()}
                             </div>
                           ))}
                           {teamMembers.length > 5 && (
-                            <div className="w-8 h-8 rounded-full bg-[#1A40FF] border-2 border-surface-raised flex items-center justify-center text-[10px] font-medium text-white uppercase tracking-wide font-mono">
+                            <div className="w-8 h-8 rounded-full bg-[#1A40FF] border-2 border-surface flex items-center justify-center text-[10px] font-medium text-white uppercase tracking-wide font-mono">
                               +{teamMembers.length - 5}
                             </div>
                           )}

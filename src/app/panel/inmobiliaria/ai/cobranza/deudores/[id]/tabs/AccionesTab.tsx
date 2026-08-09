@@ -138,7 +138,7 @@ export function AccionesTab({
                 key={e.id}
                 className="flex items-center justify-between text-xs px-2 py-1 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
               >
-                <span className="font-mono text-neutral-700 dark:text-neutral-200">
+                <span className="font-mono text-fg">
                   {e.action}
                 </span>
                 <span className="text-neutral-500 dark:text-neutral-400">

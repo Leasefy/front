@@ -15,9 +15,9 @@ export function WizardStepPlaceholder({ label }: WizardStepPlaceholderProps) {
   return (
     <div
       data-testid="wizard-step-placeholder"
-      className="rounded-lg border border-border bg-surface-raised p-8 text-center space-y-3 shadow-sm"
+      className="rounded-lg border border-border bg-surface p-8 text-center space-y-3 shadow-sm"
     >
-      <div className="w-12 h-12 mx-auto rounded-md bg-surface-brand flex items-center justify-center">
+      <div className="w-12 h-12 mx-auto rounded-md bg-primary-soft flex items-center justify-center">
         <Wrench className="w-6 h-6 text-primary" />
       </div>
       <h2 className="text-h2">{label}</h2>

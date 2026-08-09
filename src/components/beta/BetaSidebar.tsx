@@ -129,7 +129,7 @@ export function BetaSidebar({ basePath, activeTab = 'conversations', onTabChange
             'w-full justify-start gap-2.5 px-3 py-2 h-auto rounded-full text-[13px]',
             '[@media(pointer:coarse)]:min-h-11',
             activeTab === 'settings'
-              ? 'text-primary font-medium bg-accent-soft hover:bg-accent-soft'
+              ? 'text-primary font-medium bg-primary-soft hover:bg-primary-soft'
               : 'text-fg-muted hover:text-fg hover:bg-surface-muted'
           )}
         >

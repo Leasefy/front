@@ -90,7 +90,7 @@ export default function KillSwitchPage() {
         migration SQL · copy-paste a Supabase Studio
       </div>
       <div className="card p-0 mb-6 overflow-hidden">
-        <pre className="bg-bg-dim p-4 font-mono text-[11px] leading-relaxed text-fg overflow-x-auto">
+        <pre className="bg-surface-muted p-4 font-mono text-[11px] leading-relaxed text-fg overflow-x-auto">
           {MIGRATION_SQL}
         </pre>
       </div>

@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 import leasefyBridge from "./tailwind.leasefy";
+import { coloresConAlpha } from "./tailwind.alpha";
 
 const config: Config = {
     darkMode: ["class"],
@@ -179,7 +180,10 @@ const config: Config = {
   			'panel-out': 'panel-out 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards',
   			'backdrop-out': 'backdrop-out 0.3s ease-in forwards'
   		},
-  		colors: {
+  		// coloresConAlpha: los tokens escritos como `var(--x)` pelado (bg, fg,
+  		// plan-*) no aceptaban modificador de opacidad — Tailwind no emitía la
+  		// regla. Ver tailwind.alpha.ts. Los `hsl(var(--x))` pasan intactos.
+  		colors: coloresConAlpha({
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
@@ -491,7 +495,7 @@ const config: Config = {
   					}
   				}
   			}
-  		}
+  		})
   	}
   },
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],

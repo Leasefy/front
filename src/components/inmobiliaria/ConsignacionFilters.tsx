@@ -188,7 +188,7 @@ export function ConsignacionFilters({
                   {agente.avatar ? (
                     <img src={agente.avatar} alt={agente.name} className="w-6 h-6 rounded-full" />
                   ) : (
-                    <span className="w-6 h-6 rounded-full bg-surface-brand text-primary flex items-center justify-center text-xs">
+                    <span className="w-6 h-6 rounded-full bg-primary-soft text-primary flex items-center justify-center text-xs">
                       {agente.name.charAt(0)}
                     </span>
                   )}

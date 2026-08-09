@@ -74,7 +74,7 @@ function statusTokens(status: Status): { text: string; dot: string; chip: string
     default:
       return {
         text: 'text-fg-muted',
-        dot: 'bg-fg-muted',
+        dot: 'bg-surface-muted',
         chip: 'bg-surface-muted text-fg-muted',
       }
   }

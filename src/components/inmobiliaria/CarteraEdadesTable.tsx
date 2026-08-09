@@ -340,10 +340,10 @@ export function CarteraEdadesTable({
       </div>
 
       {/* Data Table */}
-      <div className="overflow-x-auto rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+      <div className="overflow-x-auto rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
         <table className="w-full min-w-[1100px]">
           <thead>
-            <tr className="border-b border-faint dark:border-strong">
+            <tr className="border-b border-border-faint dark:border-border-strong">
               <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.aging.property')}</SortableHeader>
               <SortableHeader field="tenantName">{t('inmobiliaria.finance.aging.tenant')}</SortableHeader>
               <SortableHeader field="propietarioName">{t('inmobiliaria.finance.aging.owner')}</SortableHeader>
@@ -364,7 +364,7 @@ export function CarteraEdadesTable({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.02 }}
-                  className="border-b border-faint dark:border-strong hover:bg-surface-muted dark:hover:bg-[#14130F] transition-colors"
+                  className="border-b border-border-faint dark:border-border-strong hover:bg-surface-muted dark:hover:bg-[#14130F] transition-colors"
                 >
                   {/* Property */}
                   <td className="p-4">

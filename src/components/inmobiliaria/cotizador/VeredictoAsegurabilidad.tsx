@@ -159,7 +159,7 @@ export function VeredictoAsegurabilidad({
           </span>
           {/* Badge de honestidad — neutro, sin azul de relleno */}
           <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-1 text-xs font-medium uppercase tracking-wide text-fg-muted">
-            <span aria-hidden="true" className="w-1.5 h-1.5 rounded-[2px] bg-fg-muted" />
+            <span aria-hidden="true" className="w-1.5 h-1.5 rounded-[2px] bg-surface-muted" />
             {provenanceLabel}
           </span>
         </div>

@@ -168,7 +168,7 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
           {currentAgent && (
             <div className="flex items-center justify-between p-3 rounded-xl bg-surface-muted border border-border">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
                   <span className="text-xs font-medium text-primary">
                     {agentInitials(currentAgent)}
                   </span>
@@ -560,7 +560,7 @@ function PropiedadesContent() {
                       <TableCell className="p-4">
                         {agent ? (
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
                               <span className="text-xs font-medium text-primary">
                                 {agentInitials(agent)}
                               </span>

@@ -81,7 +81,7 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
     titleKey: 'inmobiliaria.mantenimiento.colReported',
     icon: ListBullets,
     color: 'text-fg-muted dark:text-fg-muted',
-    bgColor: 'bg-fg-muted dark:bg-fg-muted/50',
+    bgColor: 'bg-surface-muted dark:bg-surface-muted',
   },
   {
     id: 'quoted',
@@ -148,8 +148,8 @@ function KanbanCard({ solicitud, onClick, t }: KanbanCardProps) {
       onClick={onClick}
       className={cn(
         'w-full text-left p-3 rounded-md border-l-4 bg-surface',
-        'border border-border dark:border-strong',
-        'hover: hover:border-border dark:hover:border-strong',
+        'border border-border dark:border-border-strong',
+        'hover: hover:border-border dark:hover:border-border-strong',
         'transition-all cursor-pointer group',
         PRIORITY_COLORS[solicitud.priority]
       )}
@@ -250,7 +250,7 @@ function KanbanColumnComponent({ column, items, onViewDetails, t }: KanbanColumn
       <div
         className={cn(
           'flex items-center gap-2 px-3 py-2.5 rounded-t-xl border border-b-0',
-          'border-border dark:border-strong',
+          'border-border dark:border-border-strong',
           column.bgColor
         )}
       >
@@ -271,7 +271,7 @@ function KanbanColumnComponent({ column, items, onViewDetails, t }: KanbanColumn
       <div
         className={cn(
           'flex-1 p-2 space-y-2 rounded-b-xl border overflow-y-auto',
-          'border-border dark:border-strong',
+          'border-border dark:border-border-strong',
           'bg-surface-muted',
           'min-h-[200px] max-h-[calc(100vh-400px)]'
         )}

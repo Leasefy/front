@@ -188,7 +188,7 @@ const BADGE_COLORS = {
   green: 'bg-success-soft text-success border-success/30',
   amber: 'bg-warning-soft text-warning border-warning/30',
   red: 'bg-danger-soft text-danger border-danger/30',
-  violet: 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle border-border dark:border-strong',
+  violet: 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle border-border dark:border-border-strong',
   neutral: 'bg-muted text-muted-foreground border-border',
 };
 
@@ -468,7 +468,7 @@ function PropiedadPreview({ data }: { data: Record<string, unknown> }) {
         {STATUS_LABELS_ES[status] ?? status}
       </span>
       {monthlyRent > 0 && (
-        <div className="bg-surface-muted dark:bg-ink border border-border dark:border-strong rounded-md p-2.5">
+        <div className="bg-surface-muted dark:bg-ink border border-border dark:border-border-strong rounded-md p-2.5">
           <p className="text-[10px] text-fg-muted dark:text-fg-subtle font-medium">
             {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
           </p>
@@ -524,7 +524,7 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
 
   const STATUS_COLORS_PILL: Record<string, string> = {
     ACTIVE: 'bg-success-soft text-success border-success/30',
-    SIGNED: 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle border-border dark:border-strong',
+    SIGNED: 'bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle border-border dark:border-border-strong',
     PENDING_TENANT: 'bg-warning-soft text-warning border-warning/30',
     PENDING_TENANT_SIGNATURE: 'bg-warning-soft text-warning border-warning/30',
     PENDING_LANDLORD: 'bg-warning-soft text-warning border-warning/30',
@@ -582,7 +582,7 @@ function ContratoPreview({ data }: { data: Record<string, unknown> }) {
         {STATUS_LABELS_ES[status] ?? status}
       </span>
       {monthlyRent > 0 && (
-        <div className="bg-surface-muted dark:bg-ink border border-border dark:border-strong rounded-md p-2.5">
+        <div className="bg-surface-muted dark:bg-ink border border-border dark:border-border-strong rounded-md p-2.5">
           <p className="text-[10px] text-fg-muted dark:text-fg-subtle font-medium">
             {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
           </p>

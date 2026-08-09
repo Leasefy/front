@@ -44,8 +44,8 @@ const TIPO_DOT: Record<EventoTipo, string> = {
 /** Badge classes per event status. */
 const ESTADO_BADGE: Record<EventoEstado, string> = {
   pendiente: 'bg-primary/10 text-primary',
-  completado: 'bg-success-500/10 text-success-600 dark:text-success-400',
-  vencido: 'bg-error-500/10 text-error-600 dark:text-error-400',
+  completado: 'bg-success-500/10 text-success',
+  vencido: 'bg-error-500/10 text-danger',
   cancelado: 'bg-neutral-400/10 text-muted-foreground',
 };
 
@@ -236,7 +236,7 @@ function AgendaContent() {
                               type="button"
                               disabled={actingId === visitIdOf(e.id)}
                               onClick={() => runCitaAction(visitIdOf(e.id), () => agendaApi.aceptarCita(visitIdOf(e.id)))}
-                              className="text-caption font-medium text-success-600 dark:text-success-400 hover:underline disabled:opacity-50"
+                              className="text-caption font-medium text-success hover:underline disabled:opacity-50"
                             >
                               {t(k('citaConfirmar'))}
                             </button>
@@ -245,7 +245,7 @@ function AgendaContent() {
                               type="button"
                               disabled={actingId === visitIdOf(e.id)}
                               onClick={() => runCitaAction(visitIdOf(e.id), () => agendaApi.rechazarCita(visitIdOf(e.id)))}
-                              className="text-caption font-medium text-error-600 dark:text-error-400 hover:underline disabled:opacity-50"
+                              className="text-caption font-medium text-danger hover:underline disabled:opacity-50"
                             >
                               {t(k('citaRechazar'))}
                             </button>

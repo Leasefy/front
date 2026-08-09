@@ -152,9 +152,9 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
       </div>
 
       {/* Leaderboard Table */}
-      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
         {/* Table Header */}
-        <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-surface-muted border-b border-border dark:border-strong text-xs font-medium text-fg-muted dark:text-fg-subtle uppercase tracking-wide">
+        <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-surface-muted border-b border-border dark:border-border-strong text-xs font-medium text-fg-muted dark:text-fg-subtle uppercase tracking-wide">
           <div className="col-span-1 text-center">#</div>
           <div className="col-span-4">{t('inmobiliaria.agente.agentLabel')}</div>
           <div className="col-span-2 text-center">
@@ -196,7 +196,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                   variants={rowVariants}
                   onClick={() => handleRowClick(agente.id)}
                   className={cn(
-                    'grid grid-cols-12 gap-4 px-4 py-3 border-b border-faint dark:border-strong cursor-pointer transition-all duration-200',
+                    'grid grid-cols-12 gap-4 px-4 py-3 border-b border-border-faint dark:border-border-strong cursor-pointer transition-all duration-200',
                     isFirst && 'bg-warning-soft/50 dark:bg-warning/10',
                     !isFirst && 'hover:bg-surface-muted dark:hover:bg-ink'
                   )}
@@ -318,7 +318,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
       {/* Summary Stats */}
       {rankedAgentes.length > 0 && (
         <div className="grid grid-cols-3 gap-4">
-          <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+          <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
             <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
               {t('inmobiliaria.agente.totalClosings')} {timeRange === 'month' ? t('inmobiliaria.agente.monthLabel') : t('inmobiliaria.agente.yearLabel')}
             </p>
@@ -330,7 +330,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
               )}
             </p>
           </div>
-          <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+          <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
             <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
               {t('inmobiliaria.agente.totalCommissions')}
             </p>
@@ -344,7 +344,7 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
               )}
             </p>
           </div>
-          <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+          <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
             <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
               {t('inmobiliaria.agente.avgConversion')}
             </p>

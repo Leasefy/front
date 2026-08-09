@@ -175,7 +175,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
         />
       </div>
       <header>
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+        <h1 className="text-2xl font-semibold text-fg">
           {t('inmobiliaria.ai.cobranza.siniestros.title')}
         </h1>
       </header>
@@ -214,7 +214,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
               <label
                 key={ins}
                 htmlFor={`siniestro-insurer-${ins}`}
-                className="inline-flex items-center gap-2 rounded-sm border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+                className="inline-flex items-center gap-2 rounded-sm border border-border bg-surface px-3 py-2 text-sm text-fg"
               >
                 <Checkbox
                   id={`siniestro-insurer-${ins}`}

@@ -513,7 +513,7 @@ function CandidatosContent() {
                       {/* Tenant */}
                       <TableCell className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
                             <span className="text-sm font-medium text-primary">
                               {initials}
                             </span>

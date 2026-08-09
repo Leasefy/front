@@ -52,7 +52,7 @@ export function SettingsModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">
-          <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
+          <h3 className="text-lg font-semibold text-fg">{title}</h3>
           <IconButton
             variant="ghost"
             aria-label="Cerrar"

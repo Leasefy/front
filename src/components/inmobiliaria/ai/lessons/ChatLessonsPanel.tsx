@@ -110,7 +110,7 @@ export function ChatLessonsPanel() {
         <div className="flex items-start gap-3">
           <Info weight="duotone" className="h-5 w-5 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
+            <p className="text-sm font-medium text-fg">
               El servicio del asistente no está conectado en este entorno.
             </p>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
@@ -195,7 +195,7 @@ export function ChatLessonsPanel() {
                 className="font-heading text-sm font-semibold text-neutral-900 dark:text-white"
               >
                 {GROUP_TITLE[status]}
-                <span className="ml-1.5 text-xs font-normal text-neutral-400 dark:text-neutral-500 tabular-nums">
+                <span className="ml-1.5 text-xs font-normal text-fg-muted tabular-nums">
                   {items.length}
                 </span>
               </h2>
@@ -221,7 +221,7 @@ export function ChatLessonsPanel() {
       {/* agency context guard — keeps the unused warning honest in builds where
           agency may be momentarily null without breaking the panel. */}
       {!agency && (
-        <p className="text-xs text-neutral-400 dark:text-neutral-500">
+        <p className="text-xs text-fg-muted">
           Selecciona una inmobiliaria para ver sus lecciones.
         </p>
       )}

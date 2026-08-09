@@ -165,7 +165,7 @@ function TemplateCard({
           >
             {tpl.tokenCount} tokens
           </span>
-          <span className="text-xs text-neutral-400 dark:text-neutral-500 tabular-nums">
+          <span className="text-xs text-fg-muted tabular-nums">
             {t('inmobiliaria.ai.templates.card.lastEdited')}:{' '}
             {new Date(tpl.updatedAt).toLocaleDateString()}
           </span>

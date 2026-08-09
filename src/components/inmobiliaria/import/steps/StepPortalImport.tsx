@@ -72,7 +72,7 @@ export function StepPortalImport({ state, updateState }: ImportStepProps) {
         {PORTALS.map((portal, index) => (
           <div
             key={portal.id}
-            className="animate-stagger-in rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-6 relative overflow-hidden"
+            className="animate-stagger-in rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] p-6 relative overflow-hidden"
             style={{ animationDelay: `${index * 80}ms` }}
           >
             {/* Próximamente badge */}
@@ -117,7 +117,7 @@ export function StepPortalImport({ state, updateState }: ImportStepProps) {
       {/* Email capture */}
       <div className="rounded-xl border border-primary/30 bg-primary-soft p-6">
         <div className="flex items-start gap-4 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-surface-brand flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
             <Envelope className="w-5 h-5 text-primary" />
           </div>
           <div>

@@ -183,7 +183,7 @@ export function TenantDashboardEmpty() {
                 {nextIncompleteStep && (
                   <Link
                     href={nextIncompleteStep.href}
-                    className="hidden sm:inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface dark:bg-ink text-fg dark:text-neutral-100 border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-all duration-150"
+                    className="hidden sm:inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-surface dark:bg-ink text-fg border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-all duration-150"
                   >
                     {locale === 'es' ? 'Continuar' : 'Continue'}
                     <ArrowRight className="w-4 h-4" />
@@ -215,7 +215,7 @@ export function TenantDashboardEmpty() {
               {nextIncompleteStep && (
                 <Link
                   href={nextIncompleteStep.href}
-                  className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-full text-[13px] font-medium bg-surface dark:bg-ink text-fg dark:text-neutral-100 border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-all duration-150"
+                  className="sm:hidden mt-6 w-full inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-full text-[13px] font-medium bg-surface dark:bg-ink text-fg border border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:shadow-sm active:scale-[0.98] transition-all duration-150"
                 >
                   {locale === 'es' ? 'Continuar' : 'Continue'}
                   <ArrowRight className="w-4 h-4" />

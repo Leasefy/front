@@ -287,7 +287,7 @@ export function ActaEntregaForm({
                     className={cn(
                       'w-12 h-12 rounded-full flex items-center justify-center transition-all',
                       status === 'completed'
-                        ? 'bg-success-fg text-white'
+                        ? 'bg-success text-white'
                         : status === 'current'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-surface-muted text-fg-muted'
@@ -319,7 +319,7 @@ export function ActaEntregaForm({
                     className={cn(
                       'flex-1 h-0.5 mx-2',
                       step.id < currentStep
-                        ? 'bg-success-fg'
+                        ? 'bg-success'
                         : 'bg-border'
                     )}
                   />

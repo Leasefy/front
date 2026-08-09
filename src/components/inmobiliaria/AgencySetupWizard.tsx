@@ -96,7 +96,7 @@ function StepIndicator({
                     ? 'border-primary/30 bg-primary'
                     : isCurrent
                     ? 'border-primary/30 bg-surface dark:bg-ink'
-                    : 'border-border dark:border-strong bg-surface dark:bg-ink'
+                    : 'border-border dark:border-border-strong bg-surface dark:bg-ink'
                 )}
               >
                 {isCompleted ? (

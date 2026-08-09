@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { User, Sparkle, ArrowUpRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -365,6 +365,28 @@ function CandidatosContent() {
   }, [fetchData]);
 
   useAutoRefresh(fetchData);
+
+  /**
+   * Llegar directo a una persona: `?candidato=<id>` abre su cajón apenas
+   * cargan los candidatos.
+   *
+   * Sin esto, tocar a alguien en `/postulaciones` te dejaba en la lista de la
+   * propiedad y tenías que volver a buscarlo — la pantalla decía "haz clic en
+   * una para revisarla" y el clic no revisaba nada. Si el id no está en la
+   * lista no se fuerza nada: queda la lista, que es un destino honesto.
+   *
+   * `abiertoPorUrl` evita reabrir el cajón cuando el auto-refresh vuelve a
+   * traer los candidatos después de que la persona lo cerró.
+   */
+  const candidatoDeLaUrl = useSearchParams().get('candidato');
+  const abiertoPorUrl = useRef(false);
+  useEffect(() => {
+    if (!candidatoDeLaUrl || abiertoPorUrl.current || candidates.length === 0) return;
+    const encontrado = candidates.find((c) => c.id === candidatoDeLaUrl);
+    if (!encontrado) return;
+    abiertoPorUrl.current = true;
+    setSelectedCandidate(encontrado);
+  }, [candidatoDeLaUrl, candidates]);
 
   const handleAction = useCallback((type: ActionType, candidate: LandlordCandidate) => {
     setActionModal({ type, candidate });

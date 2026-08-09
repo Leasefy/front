@@ -162,6 +162,21 @@ export default function PostulacionesPage() {
     [items],
   )
 
+  /**
+   * Abre la postulación de esa persona, no la lista de su propiedad.
+   *
+   * El destino es la pantalla de candidatos del inmueble —ahí vive el cajón con
+   * el detalle, el scoring y las acciones— y `?candidato=` le dice a cuál abrir.
+   */
+  const abrirCandidato = useCallback(
+    (c: AllCandidatesItem) => {
+      router.push(
+        `/panel/inmobiliaria/propiedades/${c.propertyId}/candidatos?candidato=${encodeURIComponent(c.id)}`,
+      )
+    },
+    [router],
+  )
+
   const visibleItems = useMemo(() => {
     const activeFilter = FILTERS.find((f) => f.key === filter)
     let result = activeFilter?.statuses
@@ -300,8 +315,22 @@ export default function PostulacionesPage() {
                     return (
                       <TableRow
                         key={c.id}
-                        className="cursor-pointer"
-                        onClick={() => router.push(`/panel/inmobiliaria/propiedades/${c.propertyId}/candidatos`)}
+                        className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                        // `?candidato=` abre el cajón de ESA persona al llegar.
+                        // Sin el parámetro caías en la lista de la propiedad y
+                        // tenías que volver a buscarla: el encabezado promete
+                        // "haz clic en una para revisarla" y el clic no revisaba.
+                        onClick={() => abrirCandidato(c)}
+                        // La fila era un `tr` con onClick: no se podía alcanzar
+                        // con teclado ni se anunciaba como accionable.
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Revisar la postulación de ${c.tenantName}`}
+                        onKeyDown={(e) => {
+                          if (e.key !== 'Enter' && e.key !== ' ') return
+                          e.preventDefault()
+                          abrirCandidato(c)
+                        }}
                       >
                         <TableCell>
                           <div className="flex items-center gap-3">

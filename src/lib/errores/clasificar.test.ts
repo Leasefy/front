@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest'
-import { ApiError } from '@/lib/api/client'
+import { describe, it, expect, afterEach } from 'vitest'
+import { ApiError, setAccessToken } from '@/lib/api/client'
 import { clasificarFallo, esNoExiste } from './clasificar'
 
 describe('clasificarFallo', () => {
+  afterEach(() => setAccessToken(null))
+
   it('un 404 no se puede reintentar: por más que insistas no va a aparecer', () => {
     const fallo = clasificarFallo(new ApiError(404, 'Property with ID abc not found'))
     expect(fallo.tipo).toBe('noExiste')
@@ -27,7 +29,19 @@ describe('clasificarFallo', () => {
     expect(fallo.sePuedeReintentar).toBe(false)
   })
 
-  it('un 401 manda a entrar de nuevo, no a reintentar', () => {
+  it('un 401 CON sesión viva no dice que la sesión se venció', () => {
+    // Lo cazó Nico mirando la pantalla: el panel entero renderizado alrededor
+    // de un cartel que decía «tu sesión se venció». `/users/me` daba 200 y la
+    // lista 401 en la misma carga — era la carrera del token, no la sesión.
+    setAccessToken('token-vivo')
+    const fallo = clasificarFallo(new ApiError(401, 'Unauthorized'))
+    expect(fallo.tipo).not.toBe('sinSesion')
+    expect(fallo.titulo).not.toContain('sesión se venció')
+    expect(fallo.sePuedeReintentar).toBe(true)
+  })
+
+  it('un 401 SIN sesión sí manda a entrar de nuevo, y no a reintentar', () => {
+    setAccessToken(null)
     const fallo = clasificarFallo(new ApiError(401, 'Unauthorized'))
     expect(fallo.tipo).toBe('sinSesion')
     expect(fallo.sePuedeReintentar).toBe(false)

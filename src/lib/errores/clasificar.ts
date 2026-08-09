@@ -20,7 +20,7 @@
  * correcta con cero elementos. Va con <EmptyState>.
  */
 
-import { ApiError } from '@/lib/api/client'
+import { ApiError, getAccessToken } from '@/lib/api/client'
 
 export type TipoDeFallo = 'noExiste' | 'sinPermiso' | 'sinSesion' | 'red' | 'servidor'
 
@@ -40,6 +40,11 @@ export interface FalloDeCarga {
 export interface Contexto {
   /** «la propiedad», «el contrato», «la postulación»… con artículo. */
   queEs?: string
+}
+
+/** ¿Hay sesión viva? El token en memoria es la única prueba que tenemos acá. */
+function hayToken(): boolean {
+  return Boolean(getAccessToken())
 }
 
 function statusDe(error: unknown): number | null {
@@ -82,6 +87,24 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
   }
 
   if (status === 401) {
+    // Un 401 en UNA llamada no prueba que la sesión murió, y decirlo cuando no
+    // es cierto queda absurdo: el panel entero está renderizado alrededor del
+    // cartel. Pasó en /postulaciones — `/users/me` daba 200 y la lista 401 en
+    // la misma carga, por la carrera del token (ver src/lib/api/client.ts).
+    //
+    // Lo único que prueba que no hay sesión es que NO HAYA sesión. Y ese caso
+    // ya lo maneja ProtectedRoute mandando al login: no llega hasta acá.
+    if (hayToken()) {
+      return {
+        tipo: 'servidor',
+        titulo: 'No pudimos cargar esto',
+        descripcion:
+          'Tu sesión sigue abierta; fue esta consulta la que no pasó. Probá de nuevo.',
+        sePuedeReintentar: true,
+        status,
+        mensajeOriginal,
+      }
+    }
     return {
       tipo: 'sinSesion',
       titulo: 'Tu sesión se venció',

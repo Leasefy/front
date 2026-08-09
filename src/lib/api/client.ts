@@ -8,14 +8,54 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:300
 
 let _accessToken: string | null = null
 
+/**
+ * ¿Ya sabemos si hay sesión o no?
+ *
+ * Es distinto de «no hay token»: al montar la app todavía nadie contestó, y una
+ * pantalla que pide datos en ese instante sale SIN Authorization, el backend
+ * responde 401 y la pantalla dice «tu sesión se venció» estando la sesión
+ * perfecta. Eso es lo que se veía en /postulaciones: `/users/me` daba 200 y la
+ * lista 401, en la misma carga.
+ *
+ * `setAccessToken` es lo que resuelve la pregunta — la llama el AuthProvider
+ * tanto cuando hay sesión como cuando confirma que no la hay.
+ */
+let _sesionResuelta = false
+let _avisarResuelta: (() => void) | null = null
+const _esperaDeSesion = new Promise<void>((resolve) => {
+  _avisarResuelta = resolve
+})
+
 /** Called by AuthProvider whenever the session changes */
 export function setAccessToken(token: string | null) {
   _accessToken = token
+  _sesionResuelta = true
+  _avisarResuelta?.()
 }
 
 /** Get the current stored token (for external use) */
 export function getAccessToken(): string | null {
   return _accessToken
+}
+
+/** ¿El AuthProvider ya dijo si hay sesión? `false` = todavía está resolviendo. */
+export function hayRespuestaDeSesion(): boolean {
+  return _sesionResuelta
+}
+
+/**
+ * Espera a que el AuthProvider conteste, con tope. El tope existe para que un
+ * provider que nunca contesta no cuelgue la app: pasado ese tiempo se sale sin
+ * token y el 401 se maneja como cualquier otro fallo.
+ */
+const TOPE_DE_ESPERA_MS = 3000
+
+async function esperarRespuestaDeSesion(): Promise<void> {
+  if (_sesionResuelta) return
+  await Promise.race([
+    _esperaDeSesion,
+    new Promise<void>((resolve) => setTimeout(resolve, TOPE_DE_ESPERA_MS)),
+  ])
 }
 
 export class ApiError extends Error {
@@ -42,6 +82,11 @@ function getAuthHeaders(): Record<string, string> {
 
 async function request<T>(method: string, path: string, body?: unknown, token?: string): Promise<T> {
   const url = `${BACKEND_URL}${path}`
+
+  // Si el AuthProvider todavía no contestó, esperamos acá en vez de salir sin
+  // Authorization y comerse un 401 que no significa nada. Cuando ya contestó
+  // —haya sesión o no— esto no cuesta nada.
+  if (!token) await esperarRespuestaDeSesion()
 
   const headers: Record<string, string> = token
     ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }

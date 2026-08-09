@@ -35,6 +35,8 @@ import {
   ListChecks,
   Brain,
   Path,
+  Storefront,
+  HandCoins,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
@@ -178,7 +180,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       ai: true,
       // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
-    { label: t('inmobiliaria.nav.propiedades'),  href: '/panel/inmobiliaria/propiedades', scope: 'comercial',  icon: House,         module: 'portafolio', hint: t('inmobiliaria.nav.hintCatalogo') },
+    { label: t('inmobiliaria.nav.propiedades'),  href: '/panel/inmobiliaria/propiedades', scope: 'comercial',  icon: Storefront,    module: 'portafolio', hint: t('inmobiliaria.nav.hintCatalogo') },
     {
       // F7: Estudio del inquilino complete workspace. Gated by the agent
       // module 'estudio' (my-permissions payload, agent-repo pair PR) with
@@ -252,7 +254,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       // alimentadas por src/lib/nav/agentWorkspaceNav.ts. El sidebar muestra el
       // agente como un único ítem para no abrumar.
     } as NavItemWithModule,
-    { label: t('inmobiliaria.nav.cobros'),       href: '/panel/inmobiliaria/cobros', scope: 'finanzas',       icon: CurrencyDollar, module: 'cobros' },
+    { label: t('inmobiliaria.nav.cobros'),       href: '/panel/inmobiliaria/cobros', scope: 'finanzas',       icon: HandCoins,     module: 'cobros' },
     {
       // F6: Conciliación is the first complete agent workspace — the parent
       // now points at the Sala (/ai/conciliacion); the legacy /conciliacion

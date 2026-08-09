@@ -27,7 +27,7 @@
  * bg-card/surface-muted, border-border).
  */
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -67,6 +67,18 @@ import {
   type AgreementProposalDraft,
   type CarteraStage,
 } from '@/lib/hooks/cobranza/use-agreement-propose'
+import { usePromises } from '@/lib/hooks/cobranza/use-promises'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@leasefy/cadence'
+import {
+  AcuerdosTabla,
+  type AcuerdoFiltro,
+} from '@/components/inmobiliaria/cobranza/AcuerdosTabla'
+import { componerAcuerdos } from '@/lib/cobranza/acuerdo-vocab'
 
 // Etapas donde NO hay superficie de negociación (espejo del backend:
 // agency-cobranza-promises.ts NEGOTIATION_UNAVAILABLE_STAGES). En esas etapas el
@@ -863,23 +875,59 @@ function AcuerdosContent() {
   const { canAccess } = usePermissionsContext()
   const canApprove = canAccess('cobranza', 'approve')
 
+  const [filtro, setFiltro] = useState<AcuerdoFiltro>('todos')
+  const [crearAbierto, setCrearAbierto] = useState(false)
+
+  // Los DOS orígenes del mismo concepto. Ver `acuerdo-vocab.ts`.
+  const {
+    promises,
+    isLoading: cargandoPromesas,
+    error: errorPromesas,
+    refetch: recargarPromesas,
+  } = usePromises({ limit: 200 })
+  const {
+    rows,
+    isLoading: cargandoPlanes,
+    error: errorPlanes,
+    refetch: recargarPlanes,
+  } = usePaymentsFunnel({ status: 'pending', sort: 'created_at' })
+
+  const planes = useMemo(() => rows.filter((r) => r.paymentPlanId != null), [rows])
+  const acuerdos = useMemo(
+    () => componerAcuerdos(promises, planes),
+    [promises, planes],
+  )
+
+  const cargando = cargandoPromesas || cargandoPlanes
+  // Un origen caído no puede tapar lo que el otro sí trajo.
+  const error = errorPromesas ?? errorPlanes ?? null
+
+  const recargar = useCallback(() => {
+    void recargarPromesas()
+    void recargarPlanes()
+  }, [recargarPromesas, recargarPlanes])
+
   return (
-    <main className="p-6 lg:p-8 space-y-8">
-      <header>
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-fg">
-              Acuerdos de pago
-            </h1>
-            <p className="text-sm text-fg-muted max-w-2xl">
-              Estructura un plan de pago con cuota inicial, cuotas y consecuencias.
-              Más formal que una promesa de pago — y siempre con aprobación humana.
-            </p>
-          </div>
-          <Button asChild variant="secondary" hideArrow className="shrink-0">
-            <Link href={`${BASE}/pendientes`}>Ver pendientes</Link>
-          </Button>
+    <main className="p-6 lg:p-8 space-y-6">
+      <header className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+            Acuerdos de pago
+          </h1>
+          <p className="text-sm text-fg-muted max-w-2xl">
+            Lo que cada deudor se comprometió a pagar: los compromisos que el
+            agente toma en una llamada y los planes de cuotas que armes acá.
+            Ningún plan se activa sin que una persona lo apruebe.
+          </p>
         </div>
+        <Button
+          hideArrow
+          onClick={() => setCrearAbierto(true)}
+          className="shrink-0"
+          data-testid="acuerdo-nuevo"
+        >
+          Nuevo acuerdo
+        </Button>
       </header>
 
       {/* Aviso si el usuario no puede aprobar (la aprobación vive en el detalle real) */}
@@ -893,19 +941,35 @@ function AcuerdosContent() {
         </div>
       )}
 
-      {/* Parte 1 — Lista de acuerdos activos/pendientes */}
-      <AcuerdosLista />
-
-      {/* Parte 2 — Crear acuerdo */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-base font-semibold text-fg">Crear acuerdo</h2>
-          <p className="text-sm text-fg-muted">
-            Arma una propuesta de plan de pago para un inquilino en mora.
-          </p>
+      {cargando && acuerdos.length === 0 && !error ? (
+        <div className="flex items-center justify-center py-16">
+          <Spinner size="md" />
         </div>
-        <CrearAcuerdoForm />
-      </section>
+      ) : (
+        <AcuerdosTabla
+          acuerdos={acuerdos}
+          filtro={filtro}
+          onFiltro={setFiltro}
+          error={error}
+          onReintentar={recargar}
+        />
+      )}
+
+      {/* Crear — en modal: la pantalla es para MIRAR los acuerdos; armar uno es
+          una tarea puntual que no tiene por qué ocupar media pantalla siempre. */}
+      <Dialog open={crearAbierto} onOpenChange={setCrearAbierto}>
+        <DialogContent className="md:max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>Nuevo acuerdo de pago</DialogTitle>
+          </DialogHeader>
+          <div
+            data-lenis-prevent
+            className="max-h-[75vh] overflow-y-auto pr-1"
+          >
+            <CrearAcuerdoForm />
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }

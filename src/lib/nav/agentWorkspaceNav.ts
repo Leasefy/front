@@ -91,9 +91,9 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.cobranzaCasos', href: `${AI}/cobranza/deudores`, icon: Users, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaPendientes', href: `${AI}/cobranza/pendientes`, icon: ListChecks, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaInbox', href: `${AI}/cobranza/inbox`, icon: ChatCircleText, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaPromesas', href: `${AI}/cobranza/promesas`, icon: BellRinging, module: 'cobranza' },
-      // OCULTO — «Acuerdos de pago» (ver nota al pie del archivo).
-      // { labelKey: 'inmobiliaria.ai.nav.cobranzaAcuerdos', href: `${AI}/cobranza/acuerdos`, icon: Handshake, module: 'cobranza' },
+      // FUSIONADO en «Acuerdos de pago» — «Promesas de pago» (ver nota al pie).
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPromesas', href: `${AI}/cobranza/promesas`, icon: BellRinging, module: 'cobranza' },
+      { labelKey: 'inmobiliaria.ai.nav.cobranzaAcuerdos', href: `${AI}/cobranza/acuerdos`, icon: Handshake, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaDisputas', href: `${AI}/cobranza/disputas`, icon: Scales, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.pagos', href: `${AI}/cobranza/pagos`, icon: CreditCard, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.llamadas', href: `${AI}/cobranza/llamadas`, icon: PhoneCall, module: 'cobranza' },
@@ -242,33 +242,34 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
  */
 
 /**
- * NOTA — «Acuerdos de pago» oculto (2026-08-09, decisión de Nico).
+ * NOTA — «Promesas de pago» fusionado en «Acuerdos de pago» (2026-08-09,
+ * decisión de Nico).
  *
- * La pantalla prometía una superficie que el sistema todavía no tiene. Lo que
- * se verificó en código y en datos:
+ * Eran dos pestañas para la misma pregunta: *¿qué se comprometió a pagar este
+ * deudor?* La diferencia era técnica, no de negocio:
  *
- * - `agent.payment_plans` está **vacía en los tres tenants**, y TODOS los que la
- *   escriben son rutas del panel o del backend. **Ningún agente puede crear un
- *   acuerdo**: el Closer sólo tiene `recordPromise`, `generatePaymentLink`,
- *   `scheduleFollowUp` y `sendWhatsAppTemplate`.
- * - El agente SÍ negocia cuotas (`calculatePaymentPlan` en
- *   `negotiation-strategist` y `hardship-counselor`), pero lo que persiste es
- *   una PROMESA: `recordPromise` sólo acepta `amountCop` + `dueDate`. El
- *   cronograma que acaba de calcular se pierde — ni siquiera hay campo para
- *   guardarlo como texto.
- * - `persistOfferedPlan` (`agent/src/cartera/payment-plans/wompi-link.ts`) es la
- *   pieza que crearía el plan CON su link de pago, y hoy nadie la invoca: en
- *   `cartera-payment-plans.ts` aparece como `void persistOfferedPlan` sólo para
- *   callar al linter.
+ * - `/promesas` → `agent.payment_promises` (49 filas). Lo que el agente
+ *   registra en la llamada: un monto y una fecha.
+ * - `/acuerdos` → `agent.payment_plans` (**0 filas en los tres tenants**).
+ *   Planes con cuota inicial, N cuotas y link de pago, que arma una persona.
  *
- * O sea: el negocio hace acuerdos y el sistema los guarda como promesas. Hasta
- * que exista el camino real —darle al Closer una herramienta que persista el
- * plan, o un paso «convertir en acuerdo» desde Promesas— una pestaña de
- * Acuerdos sólo puede mostrar un estado vacío permanente y un formulario que no
- * desemboca en nada.
+ * Para el negocio las dos son «acuerdos de pago», así que ahora hay UNA sola
+ * pestaña con una tabla que muestra los dos orígenes; la columna «Tipo»
+ * conserva la diferencia sin obligar a nadie a adivinar en cuál de dos
+ * pantallas buscar a un deudor.
  *
- * Se deja la ruta, la pantalla y su i18n intactos (sólo alcanzable escribiendo
- * la URL). Cuando el camino exista, descomentar la línea y listo.
+ * Lo que sigue abierto (verificado en código, no supuesto): **ningún agente
+ * puede crear un plan**. El Closer sólo tiene `recordPromise`,
+ * `generatePaymentLink`, `scheduleFollowUp` y `sendWhatsAppTemplate`. Sí
+ * negocia cuotas (`calculatePaymentPlan`), pero lo que persiste es una promesa
+ * —`recordPromise` sólo acepta `amountCop` + `dueDate`— así que el cronograma
+ * recién calculado se pierde. `persistOfferedPlan`
+ * (`agent/src/cartera/payment-plans/wompi-link.ts`) crearía el plan con su link
+ * de pago y hoy nadie la invoca: aparece como `void persistOfferedPlan` para
+ * callar al linter.
+ *
+ * La ruta `/promesas`, su pantalla y su i18n quedan intactas (sólo alcanzable
+ * escribiendo la URL) por si hay que volver atrás.
  */
 
 /**

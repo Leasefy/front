@@ -6,11 +6,11 @@
  * comparten la lista y el panel de detalle.
  */
 
-import type { Badge } from '@leasefy/cadence'
-import type * as React from 'react'
+import type { BadgeProps } from '@/components/ui'
 import type { CobranzaDispute, DisputeStatus } from '@/lib/hooks/cobranza/use-disputes'
 
-type BadgeVariant = NonNullable<React.ComponentProps<typeof Badge>['variant']>
+/** Variantes del adaptador local — ver la nota en `acuerdo-vocab.ts`. */
+type BadgeVariant = NonNullable<BadgeProps['variant']>
 
 /** Estado → variant del Badge de Cadence + etiqueta legible. */
 export const DISPUTE_ESTADO: Record<
@@ -18,7 +18,7 @@ export const DISPUTE_ESTADO: Record<
   { variant: BadgeVariant; label: string }
 > = {
   open: { variant: 'warning', label: 'Abierta' },
-  in_review: { variant: 'info', label: 'En revisión' },
+  in_review: { variant: 'default', label: 'En revisión' },
   resolved: { variant: 'success', label: 'Resuelta' },
 }
 

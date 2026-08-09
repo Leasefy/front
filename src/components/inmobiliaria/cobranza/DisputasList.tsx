@@ -12,8 +12,8 @@
  * pantalla quedaba vacía.
  */
 
-import { Badge } from '@leasefy/cadence'
 
+import { Badge } from '@/components/ui'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { CobranzaDispute } from '@/lib/hooks/cobranza/use-disputes'
@@ -62,7 +62,7 @@ export function DisputasList({
                 <span className="text-sm font-medium text-fg truncate min-w-0">
                   {debtorLabel(d)}
                 </span>
-                <Badge variant={estado.variant} size="sm" className="shrink-0">
+                <Badge variant={estado.variant} className="shrink-0">
                   {estado.label}
                 </Badge>
               </div>

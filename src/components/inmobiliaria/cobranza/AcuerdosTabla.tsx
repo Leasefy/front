@@ -17,7 +17,8 @@
 
 import { useMemo } from 'react'
 import { CaretRight, Handshake } from '@phosphor-icons/react'
-import { Badge, Card, SegmentedControl } from '@leasefy/cadence'
+import { Card, SegmentedControl } from '@leasefy/cadence'
+import { Badge } from '@/components/ui'
 
 import { useI18n } from '@/lib/i18n'
 import {
@@ -189,7 +190,7 @@ export function AcuerdosTabla({
                       {fecha(a.venceEl)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={estado.variant} size="sm">
+                      <Badge variant={estado.variant}>
                         {estado.label}
                       </Badge>
                     </TableCell>

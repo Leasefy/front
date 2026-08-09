@@ -16,12 +16,19 @@
  * nunca un slug crudo.
  */
 
-import type { Badge } from '@leasefy/cadence'
-import type * as React from 'react'
+import type { BadgeProps } from '@/components/ui'
 import type { CobranzaPromiseItem } from '@/lib/hooks/cobranza/use-promises'
 import type { PaymentsFunnelItem } from '@/lib/hooks/cobranza/use-payments-funnel'
 
-type BadgeVariant = NonNullable<React.ComponentProps<typeof Badge>['variant']>
+/**
+ * Variantes del ADAPTADOR local (`@/components/ui`), no las de Cadence crudo.
+ * Es lo que usan las demás tablas del panel (Pagos): `size` fijo en `md`
+ * —h-6, 13px— mientras que el Badge crudo con `size="sm"` da h-5/11px y se ve
+ * más chico que el resto. Además el variant `info` del DS está escrito con hex
+ * crudo (`bg-[#E6F0FA]`), así que NO sigue el modo oscuro; `default` sí, porque
+ * mapea a `primary` con tokens.
+ */
+type BadgeVariant = NonNullable<BadgeProps['variant']>
 
 /** De dónde salió el compromiso. */
 export type AcuerdoTipo = 'llamada' | 'plan'
@@ -38,10 +45,10 @@ export const ACUERDO_ESTADO: Record<
   AcuerdoEstado,
   { variant: BadgeVariant; label: string }
 > = {
-  vigente: { variant: 'info', label: 'Vigente' },
+  vigente: { variant: 'default', label: 'Vigente' },
   por_aprobar: { variant: 'warning', label: 'Por aprobar' },
   parcial: { variant: 'warning', label: 'Parcial' },
-  incumplido: { variant: 'danger', label: 'Incumplido' },
+  incumplido: { variant: 'destructive', label: 'Incumplido' },
   cumplido: { variant: 'success', label: 'Cumplido' },
 }
 

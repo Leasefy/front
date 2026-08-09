@@ -22,10 +22,9 @@
 
 import Link from 'next/link'
 import { ArrowRight, PhoneCall } from '@phosphor-icons/react'
-import { Badge } from '@leasefy/cadence'
 
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { Button } from '@/components/ui'
+import { Badge, Button } from '@/components/ui'
 import { useI18n } from '@/lib/i18n'
 import { channelLabel } from '@/lib/cobranza/call-vocab'
 import {
@@ -104,7 +103,7 @@ export function AcuerdoDetalleSheet({
         <div className="flex-none border-b border-border p-5 pr-12 space-y-2">
           <div className="flex items-start justify-between gap-3">
             <h2 className="text-lg font-semibold text-fg">{acuerdo.deudor}</h2>
-            <Badge variant={estado.variant} size="sm" className="shrink-0 mt-0.5">
+            <Badge variant={estado.variant} className="shrink-0 mt-0.5">
               {estado.label}
             </Badge>
           </div>

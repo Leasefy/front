@@ -15,10 +15,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { CheckCircle, Info, Scales } from '@phosphor-icons/react'
-import { Badge } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
-import { Button } from '@/components/ui'
+import { Badge, Button } from '@/components/ui'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -139,7 +138,7 @@ export function DisputaDetailPanel({
       <header className="space-y-2">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <h2 className="text-lg font-semibold text-fg">{debtorLabel(dispute)}</h2>
-          <Badge variant={estado.variant} size="sm" className="shrink-0">
+          <Badge variant={estado.variant} className="shrink-0">
             {estado.label}
           </Badge>
         </div>

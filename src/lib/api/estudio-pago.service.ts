@@ -25,7 +25,7 @@
  */
 
 import { apiClient, ApiError } from '@/lib/api/client'
-import type { PSEPaymentData } from '@/lib/api/subscriptions.types'
+import type { DatosDePagoPSE } from '@/lib/pago/pse'
 
 export interface EstadoDePagoDelEstudio {
   /** ¿Ya está pagado? */
@@ -72,10 +72,18 @@ export const estudioPagoApi = {
     }
   },
 
-  async iniciarPago(datos: PSEPaymentData): Promise<InicioDePago> {
+  async iniciarPago(datos: DatosDePagoPSE): Promise<InicioDePago> {
     try {
+      // Las claves van como las nombra PSE, no como las nombramos acá.
       return await apiClient.post<InicioDePago>('/tenant/estudio/pago/checkout', {
-        psePaymentData: datos,
+        psePaymentData: {
+          personType: datos.tipoDePersona === 'juridica' ? 'JURIDICA' : 'NATURAL',
+          documentType: datos.tipoDeDocumento,
+          documentNumber: datos.numeroDeDocumento.trim(),
+          holderName: datos.titular.trim(),
+          email: datos.correo.trim(),
+          bankCode: datos.banco,
+        },
       })
     } catch (e) {
       if (esRutaInexistente(e)) throw new CobroNoDisponible()

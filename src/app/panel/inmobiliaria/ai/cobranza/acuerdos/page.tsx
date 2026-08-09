@@ -36,6 +36,7 @@ import {
   FileText,
   Handshake,
   Info,
+  Lock,
   Warning,
 } from '@phosphor-icons/react'
 
@@ -301,8 +302,8 @@ function CrearAcuerdoForm() {
   const [primerPago, setPrimerPago] = useState<string>('')
   const [metodoPago, setMetodoPago] = useState<string>('wompi')
   const [consecuencia, setConsecuencia] = useState<string>('reactivar_cobranza')
-  // T-323: un acuerdo SIEMPRE requiere aprobación humana → fijo en Sí, no editable.
-  const requiereAprobacion = true
+  // T-323: un acuerdo SIEMPRE requiere aprobación humana. No es un ajuste, es
+  // una invariante — por eso se enuncia, no se ofrece como interruptor.
   const [notificarPropietario, setNotificarPropietario] = useState<boolean>(true)
 
   // POST de la propuesta + borrador devuelto por el motor de planes.
@@ -520,20 +521,26 @@ function CrearAcuerdoForm() {
 
         {/* Switches */}
         <div className="space-y-3 border-t border-border pt-4">
+          {/*
+            Esto NO es un interruptor: no hay nada que elegir (T-323, la
+            aprobación humana es obligatoria). Y como interruptor mentía: un
+            Switch `checked` + `disabled` se pinta GRIS —igual que uno apagado—
+            mientras el de al lado, encendido y habilitado, se pinta azul. Medido
+            en pantalla: gris rgb(213,209,202) vs azul rgb(26,64,255), ambos con
+            aria-checked="true". Justo en el control de seguridad de la pantalla,
+            leerlo como «apagado» es el peor error posible.
+          */}
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-0.5 min-w-0">
               <p className="text-sm font-medium text-fg">Requiere aprobación humana</p>
               <p className="text-xs text-fg-muted">
-                Obligatorio: ningún acuerdo se activa sin la aprobación explícita de una persona.
+                Ningún acuerdo se activa sin la aprobación explícita de una persona.
               </p>
             </div>
-            <Switch
-              checked={requiereAprobacion}
-              disabled
-              aria-label="Requiere aprobación humana"
-              aria-readonly="true"
-              className="shrink-0 mt-0.5"
-            />
+            <Badge variant="success" className="shrink-0 mt-0.5">
+              <Lock className="w-3 h-3" weight="fill" aria-hidden="true" />
+              Siempre
+            </Badge>
           </div>
 
           <div className="flex items-start justify-between gap-4">

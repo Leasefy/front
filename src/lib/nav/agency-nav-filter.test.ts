@@ -162,3 +162,42 @@ describe('filterAgencyNav — fail-closed while permissions load', () => {
     expect(result.map((i) => i.label)).toEqual(['inicio']);
   });
 })
+
+describe('filterAgencyNav — el agente no contestó ≠ no tenés permiso', () => {
+  // `cobranza` y `cotizador` fallan cerrado a propósito. Distinguimos las dos
+  // razones por las que `canAccess` devuelve false: «el agente dijo que no»
+  // (se oculta) y «no pudimos preguntar» (se muestra, y la pantalla explica).
+  // Mismo armado que NAV arriba: href/icon son obligatorios en NavItem y no
+  // aportan nada al gate, así que se rellenan igual para todas las filas.
+  const NAV_AGENTE: NavItemWithModule[] = [
+    { label: 'inicio', module: null },
+    { label: 'cobranza', module: 'cobranza' },
+    { label: 'cotizador', module: 'cotizador' },
+    { label: 'contratos', module: 'contratos' },
+  ].map((r) => ({ href: '/x', icon: House, ...r }))
+  const todoNegado = {
+    canAccess: () => false,
+    isAdmin: false,
+    agencyRole: 'ADMIN' as const,
+  }
+
+  it('sin respuesta del agente, sus módulos SIGUEN en el menú', () => {
+    const v = filterAgencyNav(NAV_AGENTE, { ...todoNegado, agentUnverified: true })
+      .map((i) => i.label)
+    expect(v).toContain('cobranza')
+    expect(v).toContain('cotizador')
+  })
+
+  it('pero NO abre módulos del monolito: eso sigue siendo permiso', () => {
+    const v = filterAgencyNav(NAV_AGENTE, { ...todoNegado, agentUnverified: true })
+      .map((i) => i.label)
+    expect(v).not.toContain('contratos')
+  })
+
+  it('con el agente resuelto y negando, se ocultan como siempre', () => {
+    const v = filterAgencyNav(NAV_AGENTE, { ...todoNegado, agentUnverified: false })
+      .map((i) => i.label)
+    expect(v).not.toContain('cobranza')
+    expect(v).not.toContain('cotizador')
+  })
+})

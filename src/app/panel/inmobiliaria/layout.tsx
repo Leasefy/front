@@ -100,7 +100,7 @@ interface InmobiliariaLayoutProps {
 function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { locale, t } = useI18n();
-  const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole } = usePermissionsContext();
+  const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole, agentAccessStatus } = usePermissionsContext();
   const { open: openCommandPalette } = useCommandPalette();
   const router = useRouter();
   // Upgrade CTA only for the base (starter) tier — paid plans (pro/flex)
@@ -274,7 +274,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       icon: ChatCircleText,
       module: 'cobranza',
       ai: true,
-      tag: t('inmobiliaria.nav.proximamente'),
+      // SIN «Próximamente»: el módulo está entero y conectado — 12 pestañas
+      // contra 33 endpoints del agente que responden con datos reales
+      // (QA 2026-08-10). El cartel estaba escrito a mano y sobrevivió al
+      // cableado; decía que no existe algo que la inmobiliaria ya paga.
       dataTourTarget: 'sidebar-cobranza',
       // Las funciones del agente (Casos/Pendientes/Inbox/Pagos/Cartas/…) ya NO
       // viven aquí: se renderizan como tabs DENTRO del workspace (WorkspaceNav),
@@ -347,8 +350,16 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // isAdmin/agencyRole are null), so only ungated items survive — gated tabs
     // never flash in then disappear. The desktop sidebar shows a skeleton during
     // this window instead (PlanSidebar `loading` prop below).
-    return filterAgencyNav(ALL_NAV_ITEMS, { canAccess, isAdmin, agencyRole });
-  }, [ALL_NAV_ITEMS, agencyRole, canAccess, isAdmin]);
+    return filterAgencyNav(ALL_NAV_ITEMS, {
+      canAccess,
+      isAdmin,
+      agencyRole,
+      // Sin respuesta del agente, sus módulos NO se borran del menú: se llega a
+      // la pantalla, que dice «No pudimos verificar tu acceso» y ofrece
+      // reintentar. Borrarlos se lee como «esto no existe».
+      agentUnverified: agentAccessStatus === 'sin-verificar',
+    });
+  }, [ALL_NAV_ITEMS, agencyRole, canAccess, isAdmin, agentAccessStatus]);
 
   return (
     <div className="min-h-screen bg-plan-page">

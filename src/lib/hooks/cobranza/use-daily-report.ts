@@ -37,6 +37,12 @@ export interface DailyReportSummary {
 
 export interface DailyReportDebtor {
   debtor_id: string
+  /**
+   * Nombre del deudor. Opcional porque un payload cacheado antes de que el
+   * agente hiciera el JOIN no lo trae — la tabla cae a la referencia en ese
+   * caso, no a un nombre inventado.
+   */
+  debtor_name?: string | null
   debtor_id_masked?: string
   dpd: number
   balance_cop: number

@@ -145,6 +145,14 @@ export function DebtorSidebar({
               <p className="mt-0.5 text-sm font-semibold text-fg tabular-nums">
                 {kpis.paymentsCount}
               </p>
+              {/* Cuánto entró, no sólo cuántas veces. «Saldo pendiente» y esto
+                  eran el MISMO número —los pagos aprobados— con dos títulos
+                  distintos; ahora cada uno responde su propia pregunta. */}
+              {kpis.totalCollected != null && kpis.totalCollected > 0 && (
+                <p className="text-xs text-fg-muted tabular-nums">
+                  {formatCurrency(kpis.totalCollected)}
+                </p>
+              )}
             </div>
             <div>
               <p className="text-xs font-medium text-fg-muted">

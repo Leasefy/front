@@ -71,6 +71,7 @@ const PRIORIDAD_TOKEN: Record<
 
 const GRUPOS: PendienteGrupo[] = [
   'escalaciones',
+  'conversaciones',
   'cartas',
   'siniestros',
   'planes',
@@ -83,6 +84,7 @@ const GRUPO_KEY: Record<PendienteGrupo, string> = {
   siniestros: `${NS}.grupoSiniestros`,
   planes: `${NS}.grupoPlanes`,
   promesas: `${NS}.grupoPromesas`,
+  conversaciones: `${NS}.grupoConversaciones`,
 }
 
 const CTA_KEY: Record<PendienteCta, string> = {
@@ -90,6 +92,7 @@ const CTA_KEY: Record<PendienteCta, string> = {
   aprobar: `${NS}.aprobar`,
   revisar: `${NS}.revisar`,
   seguimiento: `${NS}.seguimiento`,
+  responder: `${NS}.responder`,
 }
 
 // Cartas: label por kind — patrón inline es/en de cartas/page.tsx (KIND_LABELS).

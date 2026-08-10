@@ -3,7 +3,7 @@
 /**
  * use-pendientes.ts — "Qué necesita tu atención" (visión #5).
  *
- * Compone 5 fuentes EXISTENTES en UNA lista priorizada (sin endpoints nuevos):
+ * Compone 6 fuentes EXISTENTES en UNA lista priorizada (sin endpoints nuevos):
  *
  *   1. useEscalations            → escalaciones abiertas/asignadas
  *                                   (live/high → alta, medium → media, low → baja)
@@ -15,6 +15,14 @@
  *                                   que liste planes `offered` agency-wide (media)
  *   5. useDailyReport            → promesas de pago de HOY
  *                                   (payment_promises_today, status open/parcial) (media)
+ *   6. useCobranzaInbox          → hilos de WhatsApp que el agente NO contestó
+ *                                   solo (`requiresAction`) — alta
+ *
+ * ⚠️ La 6.ª entró tarde y por una razón concreta: al ocultar la pestaña «Inbox
+ * de conversaciones» quedaron cinco hilos marcados «requiere humano» sin
+ * ninguna superficie donde verlos. El agente se plantó y pidió una persona, y
+ * la persona no tenía dónde enterarse. Un trabajo que nadie puede ver no está
+ * pendiente: está perdido.
  *
  * El hook devuelve DATOS puros (sin copy): la página compone los textos i18n.
  * Fail-soft: si una fuente falla, las demás siguen rindiendo ítems.
@@ -33,6 +41,7 @@ import {
   useDailyReport,
   type DailyReportResponse,
 } from '@/lib/hooks/cobranza/use-daily-report'
+import { useCobranzaInbox } from '@/lib/hooks/cobranza/use-inbox'
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -44,9 +53,15 @@ export type PendienteGrupo =
   | 'siniestros'
   | 'planes'
   | 'promesas'
+  | 'conversaciones'
 
 /** Verbo del CTA — mapea 1:1 a las keys del contrato i18n `pendientes.*`. */
-export type PendienteCta = 'resolver' | 'aprobar' | 'revisar' | 'seguimiento'
+export type PendienteCta =
+  | 'resolver'
+  | 'aprobar'
+  | 'revisar'
+  | 'seguimiento'
+  | 'responder'
 
 export interface PendienteItem {
   /** Key única para React (`esc-…`, `carta-…`, …). */
@@ -142,6 +157,7 @@ export function usePendientes(): UsePendientesResult {
   const siniestros = useInsuranceClaims({ status: 'pending_human_review' })
   const planes = usePaymentsFunnel(PLANES_FILTERS)
   const reporte = useDailyReport()
+  const conversaciones = useCobranzaInbox()
 
   const items = useMemo<PendienteItem[]>(() => {
     const out: PendienteItem[] = []
@@ -168,12 +184,17 @@ export function usePendientes(): UsePendientesResult {
     }
 
     // 2. Cartas prejurídicas esperando revisión humana
+    //
+    // El título es el deudor. Iba vacío por creer que el resumen del endpoint
+    // no lo traía: cuatro filas decían «Carta prejurídica» y nada más, sin
+    // forma de saber a quién ibas a mandarle una carta prejurídica. `debtorName`
+    // estaba en la respuesta desde siempre.
     for (const carta of cartas.data?.artifacts ?? []) {
       out.push({
         key: `carta-${carta.id}`,
         grupo: 'cartas',
         prioridad: 'alta',
-        titulo: '',
+        titulo: carta.debtorName?.trim() ?? '',
         reason: null,
         kind: carta.kind,
         montoCop: null,
@@ -190,9 +211,14 @@ export function usePendientes(): UsePendientesResult {
         key: `sin-${claim.id}`,
         grupo: 'siniestros',
         prioridad: 'alta',
-        titulo: claim.aseguradora
-          ? claim.aseguradora.charAt(0).toUpperCase() + claim.aseguradora.slice(1)
-          : '',
+        // El deudor, no la aseguradora: lo que hay que decidir es sobre el
+        // caso de una persona. La aseguradora está en el detalle, y con dos
+        // siniestros de la misma compañía el título no distinguía cuál era cuál.
+        titulo:
+          claim.debtorName?.trim() ||
+          (claim.aseguradora
+            ? claim.aseguradora.charAt(0).toUpperCase() + claim.aseguradora.slice(1)
+            : ''),
         reason: null,
         kind: null,
         montoCop: null,
@@ -246,13 +272,43 @@ export function usePendientes(): UsePendientesResult {
       })
     }
 
+    // 6. Hilos de WhatsApp que el agente se negó a contestar solo.
+    //
+    //    `requiresAction` es el agente diciendo «esto no lo resuelvo yo». No
+    //    genera escalación —no hay fila en `agent.escalations`— así que sin
+    //    esto no aparecía en ningún lado desde que se ocultó el Inbox.
+    for (const hilo of conversaciones.threads) {
+      if (!hilo.requiresAction) continue
+      out.push({
+        key: `hilo-${hilo.id}`,
+        grupo: 'conversaciones',
+        prioridad: 'alta',
+        titulo: hilo.debtorName?.trim() ?? '',
+        // Lo último que escribió el deudor: es el motivo, textual.
+        reason: hilo.lastMessagePreview,
+        kind: hilo.label,
+        montoCop: null,
+        dueDate: null,
+        fecha: hilo.lastMessageAt,
+        href: `${BASE}/inbox?thread=${hilo.id}`,
+        cta: 'responder',
+      })
+    }
+
     // Orden: alta → media → baja; dentro de cada prioridad, fecha DESC.
     return out.sort((a, b) => {
       const rankDelta = PRIORIDAD_RANK[a.prioridad] - PRIORIDAD_RANK[b.prioridad]
       if (rankDelta !== 0) return rankDelta
       return new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
     })
-  }, [escalaciones.data, cartas.data, siniestros.data, planes.rows, reporte.data])
+  }, [
+    escalaciones.data,
+    cartas.data,
+    siniestros.data,
+    planes.rows,
+    reporte.data,
+    conversaciones.threads,
+  ])
 
   const counts = useMemo<Record<PendienteGrupo, number>>(() => {
     const c: Record<PendienteGrupo, number> = {
@@ -261,6 +317,7 @@ export function usePendientes(): UsePendientesResult {
       siniestros: 0,
       planes: 0,
       promesas: 0,
+      conversaciones: 0,
     }
     for (const item of items) c[item.grupo] += 1
     return c
@@ -271,7 +328,8 @@ export function usePendientes(): UsePendientesResult {
     cartas.isLoading ||
     siniestros.isLoading ||
     planes.isLoading ||
-    reporte.isLoading
+    reporte.isLoading ||
+    conversaciones.isLoading
 
   const error =
     escalaciones.error ??
@@ -279,6 +337,7 @@ export function usePendientes(): UsePendientesResult {
     siniestros.error ??
     planes.error ??
     reporte.error ??
+    conversaciones.error ??
     null
 
   const refetch = useCallback(async () => {
@@ -288,8 +347,16 @@ export function usePendientes(): UsePendientesResult {
       siniestros.refetch(),
       planes.refetch(),
       reporte.refetch(),
+      conversaciones.refetch(),
     ])
-  }, [escalaciones.mutate, cartas.refetch, siniestros.refetch, planes.refetch, reporte.refetch])
+  }, [
+    escalaciones.mutate,
+    cartas.refetch,
+    siniestros.refetch,
+    planes.refetch,
+    reporte.refetch,
+    conversaciones.refetch,
+  ])
 
   return { items, counts, isLoading, error, refetch }
 }

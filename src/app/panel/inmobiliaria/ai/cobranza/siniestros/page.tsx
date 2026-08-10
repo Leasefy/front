@@ -307,7 +307,14 @@ function SiniestrosContent() {
                       se lee como un error de cálculo, no como información. */}
                   {c.delinquencyDays != null && c.delinquencyDays > 0 && (
                     <span className="block text-xs text-fg-muted font-mono tabular-nums">
-                      {c.delinquencyDays} {isEs ? 'días de mora' : 'days overdue'}
+                      {c.delinquencyDays}{' '}
+                      {isEs
+                        ? c.delinquencyDays === 1
+                          ? 'día de mora'
+                          : 'días de mora'
+                        : c.delinquencyDays === 1
+                          ? 'day overdue'
+                          : 'days overdue'}
                     </span>
                   )}
                 </TableCell>

@@ -158,8 +158,17 @@ function ComplianceOverviewContent() {
               >
                 {data.ley_2300.weekly_outside_hours_count}
               </span>
+              {/*
+                Decía «4 / 0», que se lee como una fracción rota — «cuatro de
+                cero». No es un progreso hacia una meta: es un CONTEO de
+                infracciones contra un objetivo que sólo puede ser cero. Se
+                escribe con palabras.
+              */}
               <span className="text-sm text-muted-foreground">
-                / {data.ley_2300.target}
+                {data.ley_2300.weekly_outside_hours_count === 1
+                  ? 'intento'
+                  : 'intentos'}{' '}
+                · el objetivo es {data.ley_2300.target}
               </span>
             </div>
           </section>

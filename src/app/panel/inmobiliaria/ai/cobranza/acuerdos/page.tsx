@@ -121,10 +121,15 @@ function cuotaMonto(saldo: number, n: number): number {
 
 // ── Card de acuerdo de la lista (cross-link al detalle real) ────────────────────
 
+/**
+ * `row` siempre trae `paymentPlanId`: la lista se filtra por eso antes de
+ * llegar acá. La rama sin plan pintaba un botón «Próximamente» deshabilitado
+ * que nadie podía ver nunca — código muerto que prometía una función pendiente
+ * donde no había ninguna.
+ */
 function AcuerdoListaCard({ row }: { row: PaymentsFunnelItem }) {
   const { formatCurrency, formatDate } = useI18n()
-  const planId = row.paymentPlanId
-  const href = planId ? `${PLANES_BASE}/${planId}` : null
+  const href = `${PLANES_BASE}/${row.paymentPlanId}`
 
   return (
     <li className="rounded-xl border border-border bg-card p-4 space-y-3">
@@ -151,18 +156,12 @@ function AcuerdoListaCard({ row }: { row: PaymentsFunnelItem }) {
             {copFormat(row.amount, formatCurrency)}
           </p>
         </div>
-        {href ? (
-          <Button asChild size="sm" hideArrow>
-            <Link href={href}>
-              Revisar y aprobar
-              <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-            </Link>
-          </Button>
-        ) : (
-          <Button size="sm" variant="outline" hideArrow disabled title="Próximamente">
-            Próximamente
-          </Button>
-        )}
+        <Button asChild size="sm" hideArrow>
+          <Link href={href}>
+            Revisar y aprobar
+            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+          </Link>
+        </Button>
       </div>
     </li>
   )

@@ -5090,6 +5090,7 @@
           "grupoSiniestros": "Siniestros por aprobar",
           "grupoPlanes": "Acuerdos de pago por aprobar",
           "grupoPromesas": "Promesas de pago de hoy",
+          "grupoConversaciones": "Conversaciones que el agente te pasó",
           "prioridadAlta": "Alta",
           "prioridadMedia": "Media",
           "prioridadBaja": "Baja",
@@ -5098,7 +5099,8 @@
           "resolver": "Resolver",
           "aprobar": "Aprobar",
           "revisar": "Revisar",
-          "seguimiento": "Dar seguimiento"
+          "seguimiento": "Dar seguimiento",
+          "responder": "Responder"
         },
         "estados": {
           "alDia": "Al día",

@@ -25,6 +25,11 @@ export type HabeasDataColor = 'green' | 'yellow' | 'red' | 'red-pulse'
 export interface HabeasDataOpenRequest {
   id: string
   debtor_id: string
+  /**
+   * Nombre de quien reclama. null sólo si el deudor ya no existe; opcional
+   * para que una respuesta cacheada anterior al JOIN siga tipando.
+   */
+  debtor_name?: string | null
   /** ISO timestamp when the Habeas Data request was anchored (D-34-RES-A1). */
   timestamp: string
   /** Días HÁBILES restantes del término legal. Negativo = vencido. */

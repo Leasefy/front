@@ -131,18 +131,24 @@ export function HabeasDataSlaCard({ request }: HabeasDataSlaCardProps) {
       {/* Header: masked cedula + countdown text */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          {/* El comentario de antes decía «server-masked» y el propio código
-              admitía debajo que es el UUID pelado del deudor. `<Mask>` espera un
-              valor YA enmascarado, así que pintaba 36 caracteres de UUID
-              presentados como si fueran una cédula: ni es una cédula, ni está
-              enmascarado. Se muestra una referencia corta, que es lo único que
-              sirve — casar la tarjeta con su fila en la bitácora. */}
-          <span
-            className="block font-mono text-body-sm text-fg"
-            title={t('inmobiliaria.ai.cobranza.compliance.overview.debtorRefHint')}
-          >
-            {toDebtorRef(debtor_id)}
-          </span>
+          {/* El nombre de quien reclama. Antes acá iba una referencia corta
+              (`ABC17944`) porque el endpoint sólo mandaba el UUID: un plazo de
+              la Ley 1581 corriendo —«VENCIDO HACE 3D»— sobre alguien a quien no
+              se podía identificar, y por lo tanto no se podía atender. Si el
+              deudor ya no existe se cae a la referencia, que al menos casa la
+              tarjeta con su fila en la bitácora. */}
+          {request.debtor_name ? (
+            <span className="block text-body-sm font-medium text-fg truncate">
+              {request.debtor_name}
+            </span>
+          ) : (
+            <span
+              className="block font-mono text-body-sm text-fg"
+              title={t('inmobiliaria.ai.cobranza.compliance.overview.debtorRefHint')}
+            >
+              {toDebtorRef(debtor_id)}
+            </span>
+          )}
           <p className="mt-1 text-xs text-muted-foreground tabular-nums font-mono">
             {relativeFromIso(timestamp, locale)}
           </p>

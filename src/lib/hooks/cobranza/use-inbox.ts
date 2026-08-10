@@ -52,6 +52,8 @@ export interface InboxThreadSummary {
   channel: string
   label: string | null
   status: string
+  /** Nombre del deudor; null sólo si el deudor ya no existe. */
+  debtorName?: string | null
   unread: boolean
   requiresAction: boolean
   lastMessageAt: string

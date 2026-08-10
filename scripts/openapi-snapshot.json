@@ -4538,6 +4538,10 @@
             "type": "number",
             "minimum": 0
           },
+          "totalCollected": {
+            "type": "number",
+            "minimum": 0
+          },
           "paymentsCount": {
             "type": "integer",
             "minimum": 0
@@ -4549,6 +4553,7 @@
         },
         "required": [
           "totalOwed",
+          "totalCollected",
           "paymentsCount",
           "callsCount"
         ]
@@ -6399,6 +6404,12 @@
                     "debtor_id": {
                       "type": "string"
                     },
+                    "debtor_name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "timestamp": {
                       "type": "string"
                     },
@@ -6418,6 +6429,7 @@
                   "required": [
                     "id",
                     "debtor_id",
+                    "debtor_name",
                     "timestamp",
                     "remaining_days",
                     "color"
@@ -6911,6 +6923,28 @@
         "required": [
           "email_enabled",
           "whatsapp_enabled"
+        ]
+      },
+      "CobranzaDailyReportSubscriptionStats": {
+        "type": "object",
+        "properties": {
+          "email_subscribed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "whatsapp_subscribed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_members": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "email_subscribed",
+          "whatsapp_subscribed",
+          "total_members"
         ]
       },
       "CobranzaDailyReportSubscriptionPatch": {
@@ -7504,6 +7538,12 @@
             "type": "string",
             "format": "uuid"
           },
+          "debtorName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "channel": {
             "type": "string"
           },
@@ -7538,6 +7578,7 @@
         "required": [
           "id",
           "debtorId",
+          "debtorName",
           "channel",
           "label",
           "status",
@@ -23669,6 +23710,66 @@
           },
           "500": {
             "description": "Upsert failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaDailyReportError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaDailyReportError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/cobranza/daily-report/subscription-stats": {
+      "get": {
+        "operationId": "getCobranzaDailyReportSubscriptionStats",
+        "summary": "Aggregate subscriber counts (admin) — counts only, never names",
+        "tags": [
+          "agency",
+          "cobranza",
+          "daily-report"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscriber counts for the agency",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaDailyReportSubscriptionStats"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {

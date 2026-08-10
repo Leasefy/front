@@ -58,6 +58,8 @@ const GRUPO_ES: Record<string, string> = {
   cartas: 'Carta prejurídica',
   siniestros: 'Siniestro',
   planes: 'Plan de pago',
+  promesas: 'Promesa de pago',
+  conversaciones: 'WhatsApp — el agente te lo pasó',
 }
 
 /** Días enteros transcurridos desde una fecha ISO. */
@@ -78,9 +80,9 @@ function haceCuanto(iso: string): string {
 function Fila({ item }: { item: PendienteItem }) {
   const token = PRIORIDAD_TOKEN[item.prioridad]
   const grupo = GRUPO_ES[item.grupo] ?? item.grupo
-  // Las cartas no traen deudor en el resumen del endpoint, así que `titulo`
-  // viene vacío. Antes eso pintaba «Carta prejurídica» dos veces, una encima de
-  // la otra: sin nombre no hay segunda línea que escribir.
+  // El título es la persona; el grupo, la segunda línea. Cuando el dato no
+  // trae nombre —un deudor borrado— el grupo sube y no se repite abajo: sin
+  // nombre no hay segunda línea que escribir.
   const titulo = item.titulo || grupo
   const subtitulo = item.titulo ? grupo : null
 
@@ -138,8 +140,14 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
   const restantes = Math.max(0, restoDePendientes.length - TOPE)
   const totalQueEspera = porRadicar.length + restoDePendientes.length
 
-  const frase =
-    totalQueEspera === 0
+  // Mientras todavía se está contando NO se afirma nada. «Nada espera tu
+  // aprobación» sobre una lista que aún no llegó es una afirmación falsa
+  // durante los segundos que tarda —y en frío tarda varios—: quien la lee
+  // cierra la pantalla creyendo que está al día.
+  const contando = isLoading && items.length === 0 && !error
+  const frase = contando
+    ? 'Contando lo que espera tu aprobación…'
+    : totalQueEspera === 0
       ? 'Nada espera tu aprobación.'
       : `${totalQueEspera} ${totalQueEspera === 1 ? 'decisión espera' : 'decisiones esperan'} tu aprobación.`
 

@@ -3873,6 +3873,23 @@ export interface paths {
         patch: operations["patchCobranzaDailyReportSubscription"];
         trace?: never;
     };
+    "/api/agency/{agencyId}/cobranza/daily-report/subscription-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Aggregate subscriber counts (admin) — counts only, never names */
+        get: operations["getCobranzaDailyReportSubscriptionStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cobranza/analytics/agency-gate": {
         parameters: {
             query?: never;
@@ -7583,6 +7600,7 @@ export interface components {
         };
         CobranzaDebtorDetailKpis: {
             totalOwed: number;
+            totalCollected: number;
             paymentsCount: number;
             callsCount: number;
         };
@@ -7985,6 +8003,7 @@ export interface components {
                 open_requests: {
                     id: string;
                     debtor_id: string;
+                    debtor_name: string | null;
                     timestamp: string;
                     remaining_days: number;
                     /** @enum {string} */
@@ -8097,6 +8116,11 @@ export interface components {
             email_enabled: boolean;
             whatsapp_enabled: boolean;
             updated_at?: string | null;
+        };
+        CobranzaDailyReportSubscriptionStats: {
+            email_subscribed: number;
+            whatsapp_subscribed: number;
+            total_members: number;
         };
         CobranzaDailyReportSubscriptionPatch: {
             email_enabled?: boolean;
@@ -8244,6 +8268,7 @@ export interface components {
             id: string;
             /** Format: uuid */
             debtorId: string;
+            debtorName: string | null;
             channel: string;
             label: string | null;
             status: string;
@@ -13609,6 +13634,46 @@ export interface operations {
             };
             /** @description Upsert failed */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+        };
+    };
+    getCobranzaDailyReportSubscriptionStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subscriber counts for the agency */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportSubscriptionStats"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

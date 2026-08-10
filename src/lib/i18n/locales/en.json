@@ -5089,6 +5089,7 @@
           "grupoSiniestros": "Claims to approve",
           "grupoPlanes": "Payment agreements to approve",
           "grupoPromesas": "Today's payment promises",
+          "grupoConversaciones": "Conversations the agent handed you",
           "prioridadAlta": "High",
           "prioridadMedia": "Medium",
           "prioridadBaja": "Low",
@@ -5097,7 +5098,8 @@
           "resolver": "Resolve",
           "aprobar": "Approve",
           "revisar": "Review",
-          "seguimiento": "Follow up"
+          "seguimiento": "Follow up",
+          "responder": "Reply"
         },
         "estados": {
           "alDia": "On track",

@@ -51,9 +51,27 @@ export function CobranzaDeudoresQuePesan() {
           <tbody>
             {deudores.map((d) => (
               <tr key={d.debtor_id} className="border-b border-border last:border-0">
-                <td className="px-4 py-2 font-mono text-xs text-fg">
-                  {toDebtorRef(d.debtor_id_masked ?? d.debtor_id)}
-                </td>
+                {/*
+                  El nombre, y sólo si no viene, la referencia. Esta columna
+                  mostraba `A9820375` —los primeros ocho caracteres del UUID—
+                  bajo el encabezado «Deudor»: un código que no identifica a
+                  nadie y sobre el que no se puede actuar. El nombre lo trae el
+                  reporte desde que `top_debtors` hace el JOIN.
+                */}
+                {d.debtor_name ? (
+                  <td className="px-4 py-2 text-fg">
+                    <Link
+                      href={`${CASOS_HREF}/${d.debtor_id}`}
+                      className="hover:underline underline-offset-2"
+                    >
+                      {d.debtor_name}
+                    </Link>
+                  </td>
+                ) : (
+                  <td className="px-4 py-2 font-mono text-xs text-fg-muted">
+                    {toDebtorRef(d.debtor_id_masked ?? d.debtor_id)}
+                  </td>
+                )}
                 <td className="px-4 py-2 text-right font-mono tabular-nums text-fg">{d.dpd}</td>
                 <td className="px-4 py-2 text-right font-mono tabular-nums text-fg">
                   {formatCurrency(d.balance_cop)}

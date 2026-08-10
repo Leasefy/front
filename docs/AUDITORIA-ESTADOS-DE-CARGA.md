@@ -52,6 +52,51 @@ grep -rn "length === 0" src/app --include="page.tsx" | grep -v test
 Cada resultado hay que mirarlo: si el arreglo puede estar vacío **porque falló
 la carga**, la conclusión es falsa.
 
+## Lo que se hizo el 2026-08-09 (segunda pasada)
+
+**El primer clasificador sobrecontaba, dos veces.** Decía «25 rutas no manejan
+el error» y eran **11**; de esas, la mayoría atrapa errores de **acción**
+(borrar, exportar, mover) donde un toast es lo correcto, no de carga. Y
+`arco/verify/[token]` se traga el error **a propósito**: defensa contra
+enumeración, siempre muestra éxito.
+
+Detectar «no usa la primitiva» no es detectar «está mal». Cada regla nueva hay
+que verificarla contra un archivo real antes de creerle el número.
+
+### La causa raíz: el status HTTP se destruía en el hook
+
+104 sitios en 74 hooks hacían `setError(err.message)`. Ahí se pierde el status,
+y sin status `clasificarFallo` **no puede** distinguir un 404 de un fallo de
+red: los cuatro estados colapsan a uno. Medido en pantalla: un 404 salía como
+«problema nuestro, prueba de nuevo», mandando a reintentar algo que no existe.
+
+Corregido de forma aditiva en los cuatro hooks que sostienen el recorrido
+(`useApiData`, `useLeases`, `useApplications`, `useProperties`): se agrega
+`errorCrudo: unknown` junto a `error: string`. Los 77 consumidores que pintan
+`error` como texto siguen igual.
+
+Verificado abortando y falseando la red:
+
+| | tipo | ¿reintentar? |
+|---|---|---|
+| Red caída | `red` — «Revisa tu conexión» | sí |
+| 404 real | `noExiste` — «No encontramos tu arriendo» | **no** |
+
+### Ocho pantallas confundían «no existe» con «falló»
+
+`if (!property || error)` → «Propiedad no encontrada». Le decía a alguien con
+mala conexión que el inmueble fue eliminado, y sin reintentar — porque sobre
+algo inexistente reintentar no sirve. **Las dos señales ya estaban por
+separado**; se juntaban a mano. Separadas en 7 rutas (contratos, postulación,
+propiedad, escalación).
+
+### Lo que falta
+
+Las rutas restantes del inventario usan su `error` de alguna forma (ErrorState
+propio, toast). Migrarlas a las primitivas es **consistencia, no corrección**.
+Lo que sí queda es propagar `errorCrudo` a los otros 70 hooks: sin eso, esas
+pantallas siguen sin poder distinguir un 404 de un 500.
+
 ## Inventario
 
 | Ruta | ¿maneja error? | ¿tiene estado vacío? |

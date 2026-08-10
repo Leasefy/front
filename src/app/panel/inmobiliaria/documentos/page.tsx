@@ -43,6 +43,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 // ============================================================================
 // Types
@@ -175,8 +176,8 @@ function DocumentosContent() {
   const { t, locale } = useI18n();
 
   // API Hooks
-  const { documents, isLoading: isLoadingDocuments } = usePropertyDocuments();
-  const { templates, isLoading: isLoadingTemplates } = useDocumentTemplates();
+  const { documents, isLoading: isLoadingDocuments, errorCrudo: errorDocuments, refetch: recargarDocuments } = usePropertyDocuments();
+  const { templates, isLoading: isLoadingTemplates, errorCrudo: errorTemplates, refetch: recargarTemplates } = useDocumentTemplates();
   const { actas, isLoading: isLoadingActas, setData: setActas } = useActasEntrega();
   const { consignaciones, isLoading: isLoadingConsignaciones } = useConsignaciones({ status: 'active' });
 
@@ -458,10 +459,19 @@ function DocumentosContent() {
             {/* Documentos Tab */}
             {activeTab === 'documentos' && (
               <>
+                {/* Sin esto, un fallo de carga se veía igual que «no hay
+                    documentos» — y sobre eso nadie reintenta. El error ya
+                    venía del hook; la pantalla lo dejaba caer. */}
                 {isLoadingDocuments ? (
                   <div className="flex items-center justify-center py-12">
                     <Spinner size="lg" />
                   </div>
+                ) : errorDocuments ? (
+                  <FalloDeCarga
+                    error={errorDocuments}
+                    queEs="los documentos"
+                    onReintentar={() => void recargarDocuments()}
+                  />
                 ) : (
                   <DocumentoManager
                     documents={documents}
@@ -484,6 +494,12 @@ function DocumentosContent() {
                   <div className="flex items-center justify-center py-12">
                     <Spinner size="lg" />
                   </div>
+                ) : errorTemplates ? (
+                  <FalloDeCarga
+                    error={errorTemplates}
+                    queEs="las plantillas"
+                    onReintentar={() => void recargarTemplates()}
+                  />
                 ) : (
                   <DocumentoTemplates
                     templates={templates}

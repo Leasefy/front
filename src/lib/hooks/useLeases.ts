@@ -7,6 +7,19 @@ import type { Lease, Payment, LeaseSummaryStats } from '@/lib/types/lease';
 import type { BackendPaymentInfo } from '@/lib/api/leases.types';
 import type { BackendTenantPaymentRequest } from '@/lib/api/tenant-payment-requests.types';
 
+/*
+ * `errorCrudo` guarda el error TAL CUAL, además del mensaje.
+ *
+ * `error` se aplasta a string con `err.message`, y ahí se pierde el status
+ * HTTP. Sin status, `clasificarFallo` no puede distinguir un 404 —«esto no
+ * existe», sin reintentar— de un 500 o un fallo de red —«probá de nuevo»—, así
+ * que las cuatro estados colapsan a uno. Medido: un 404 salía como «problema
+ * nuestro, probá de nuevo», mandando a reintentar algo que nunca va a existir.
+ *
+ * Se agrega en vez de cambiar el tipo de `error`: 77 consumidores lo pintan
+ * como string y seguirían funcionando igual.
+ */
+
 // ============================================================================
 // useLeases — list leases for the authenticated user with stats & helpers
 // ============================================================================
@@ -15,14 +28,17 @@ export function useLeases() {
   const [leases, setLeases] = useState<Lease[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const fetchLeases = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const result = await leasesApi.getMine();
       setLeases(result);
     } catch (err) {
+      setErrorCrudo(err);
       const message = err instanceof Error ? err.message : 'Error cargando arriendos';
       setError(message);
       setLeases([]);
@@ -59,7 +75,7 @@ export function useLeases() {
   return {
     leases,
     isLoading,
-    error,
+    error, errorCrudo,
     refetch: fetchLeases,
     getActive,
     stats,
@@ -74,6 +90,7 @@ export function useLease(id: string | null) {
   const [lease, setLease] = useState<Lease | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const fetchLease = useCallback(async () => {
     if (!id) {
@@ -83,10 +100,12 @@ export function useLease(id: string | null) {
     }
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const result = await leasesApi.getById(id);
       setLease(result);
     } catch (err) {
+      setErrorCrudo(err);
       const message = err instanceof Error ? err.message : 'Error cargando arriendo';
       setError(message);
       setLease(null);
@@ -99,7 +118,7 @@ export function useLease(id: string | null) {
     fetchLease();
   }, [fetchLease]);
 
-  return { lease, isLoading, error, refetch: fetchLease };
+  return { lease, isLoading, error, errorCrudo, refetch: fetchLease };
 }
 
 // ============================================================================
@@ -110,6 +129,7 @@ export function useLeasePayments(leaseId: string | null) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const fetchPayments = useCallback(async () => {
     if (!leaseId) {
@@ -119,6 +139,7 @@ export function useLeasePayments(leaseId: string | null) {
     }
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const result = await leasesApi.getPayments(leaseId);
       setPayments(
@@ -128,6 +149,7 @@ export function useLeasePayments(leaseId: string | null) {
         )
       );
     } catch (err) {
+      setErrorCrudo(err);
       const message = err instanceof Error ? err.message : 'Error cargando pagos';
       setError(message);
       setPayments([]);
@@ -155,7 +177,7 @@ export function useLeasePayments(leaseId: string | null) {
   return {
     payments,
     isLoading,
-    error,
+    error, errorCrudo,
     refetch: fetchPayments,
     getNextPayment,
     getPaid,
@@ -171,10 +193,12 @@ export function useMyPayments() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const fetchPayments = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const result = await leasesApi.getMyPayments();
       setPayments(
@@ -184,6 +208,7 @@ export function useMyPayments() {
         )
       );
     } catch (err) {
+      setErrorCrudo(err);
       const message = err instanceof Error ? err.message : 'Error cargando pagos';
       setError(message);
       setPayments([]);
@@ -216,7 +241,7 @@ export function useMyPayments() {
   return {
     payments,
     isLoading,
-    error,
+    error, errorCrudo,
     refetch: fetchPayments,
     getForLease,
     getNextPayment,
@@ -232,14 +257,17 @@ export function useMyPaymentRequests() {
   const [requests, setRequests] = useState<BackendTenantPaymentRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const fetchRequests = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const result = await tenantPaymentRequestsApi.getMine();
       setRequests(result);
     } catch (err) {
+      setErrorCrudo(err);
       const message = err instanceof Error ? err.message : 'Error cargando pagos';
       setError(message);
       setRequests([]);
@@ -260,7 +288,7 @@ export function useMyPaymentRequests() {
   return {
     requests,
     isLoading,
-    error,
+    error, errorCrudo,
     refetch: fetchRequests,
     getForLease,
   };
@@ -275,6 +303,7 @@ export function useLeasePaymentInfo(leaseId: string | null) {
   const [info, setInfo] = useState<BackendPaymentInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const fetchInfo = useCallback(async () => {
     if (!leaseId) {
@@ -284,10 +313,12 @@ export function useLeasePaymentInfo(leaseId: string | null) {
     }
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const result = await leasesApi.getPaymentInfo(leaseId);
       setInfo(result);
     } catch (err) {
+      setErrorCrudo(err);
       const message = err instanceof Error ? err.message : 'Error cargando info de pago';
       setError(message);
       setInfo(null);
@@ -300,5 +331,5 @@ export function useLeasePaymentInfo(leaseId: string | null) {
     fetchInfo();
   }, [fetchInfo]);
 
-  return { info, isLoading, error, refetch: fetchInfo };
+  return { info, isLoading, error, errorCrudo, refetch: fetchInfo };
 }

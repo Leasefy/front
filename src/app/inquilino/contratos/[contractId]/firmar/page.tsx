@@ -25,6 +25,7 @@ import { CONTRACT_STATUS_LABELS, getContractTypeLabel } from '@/lib/types/contra
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { Contract, RejectionType, ContractRejection } from '@/lib/types/contract';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 // ============================================================================
 // Types
@@ -385,7 +386,25 @@ export default function FirmarContractPage({ params }: FirmarContractPageProps) 
   }
 
   // Error or not found
-  if (error || !activeContract) {
+    /*
+   * «No existe» y «no se pudo cargar» eran la misma pantalla: `if (!x || error)`.
+   * Le decía a alguien con mala conexión que este contrato había sido eliminado, y sin
+   * ofrecer reintentar — porque sobre algo que no existe reintentar no tiene
+   * sentido. Las dos señales ya estaban por separado; se juntaban a mano.
+   */
+  if (error) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+        <FalloDeCarga
+          error={error}
+          queEs="este contrato"
+          volverA={{ label: 'Mis contratos', href: '/inquilino/contratos' }}
+        />
+      </div>
+    );
+  }
+
+  if (!activeContract) {
     return (
       <div className="min-h-screen bg-bg">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">

@@ -16,6 +16,7 @@ import { useMyApplications } from '@/lib/hooks/useApplications';
 import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
 import { deriveReviewCounts, getReviewStatusLabel } from '@/lib/documents/review-status';
 import type { DocumentReviewStatus } from '@/lib/api/applications.types';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 // Per-status visual config for the tenant-facing document badge.
 // Color is always paired with an icon + label (never color alone) per a11y rules.
@@ -56,7 +57,7 @@ const ITEMS_PER_PAGE = 6;
 export default function DocumentosPage() {
   const { t, locale } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
-  const { applications, isLoading: isLoadingApps } = useMyApplications();
+  const { applications, isLoading: isLoadingApps, errorCrudo: errorApps, refetch: recargarApps } = useMyApplications();
 
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -157,6 +158,23 @@ export default function DocumentosPage() {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
         <Spinner size="lg" variant="current" className="text-primary" />
+      </div>
+    );
+  }
+
+  /*
+   * Sin postulaciones no hay documentos que mostrar — pero si la carga falló,
+   * «no tienes documentos» es falso. Se dice, con reintento.
+   */
+  if (errorApps) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+        <FalloDeCarga
+          error={errorApps}
+          queEs="tus documentos"
+          onReintentar={() => void recargarApps()}
+          volverA={{ label: 'Volver a mi panel', href: '/inquilino' }}
+        />
       </div>
     );
   }

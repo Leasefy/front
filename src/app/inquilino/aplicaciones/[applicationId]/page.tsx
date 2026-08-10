@@ -27,6 +27,7 @@ import { applicationsApi } from '@/lib/api/applications.service';
 import { ChatThread } from '@/components/messages/ChatThread';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 /**
  * Generate a status-based timeline for display
@@ -150,7 +151,7 @@ export default function ApplicationDetailPage() {
   const [showChat, setShowChat] = useState(searchParams.get('chat') === '1');
 
   const applicationId = params.applicationId as string;
-  const { application, isLoading, error, refetch } = useTenantApplication(applicationId);
+  const { application, isLoading, error, errorCrudo, refetch } = useTenantApplication(applicationId);
   const responseSubmitted = false; // will be true after navigating to /completar and coming back
   const { contract: linkedContract } = useContractByApplication(applicationId);
 
@@ -183,7 +184,26 @@ export default function ApplicationDetailPage() {
     );
   }
 
-  if (!application || error) {
+    /*
+   * «No existe» y «no se pudo cargar» eran la misma pantalla: `if (!x || error)`.
+   * Le decía a alguien con mala conexión que tu postulación había sido eliminada, y sin
+   * ofrecer reintentar — porque sobre algo que no existe reintentar no tiene
+   * sentido. Las dos señales ya estaban por separado; se juntaban a mano.
+   */
+  if (error) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+        <FalloDeCarga
+          error={errorCrudo ?? error}
+          queEs="tu postulación"
+            onReintentar={() => void refetch()}
+          volverA={{ label: 'Mis postulaciones', href: '/inquilino/aplicaciones' }}
+        />
+      </div>
+    );
+  }
+
+  if (!application) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
         <motion.div

@@ -8,6 +8,19 @@ import type { Application } from '@/lib/types/application';
 import type { Contract } from '@/lib/types/contract';
 import type { TenantApplicationStatus } from '@/lib/types/tenant-application';
 
+/*
+ * `errorCrudo` guarda el error TAL CUAL, además del mensaje.
+ *
+ * `error` se aplasta a string con `err.message`, y ahí se pierde el status
+ * HTTP. Sin status, `clasificarFallo` no puede distinguir un 404 —«esto no
+ * existe», sin reintentar— de un 500 o un fallo de red —«probá de nuevo»—, así
+ * que las cuatro estados colapsan a uno. Medido: un 404 salía como «problema
+ * nuestro, probá de nuevo», mandando a reintentar algo que nunca va a existir.
+ *
+ * Se agrega en vez de cambiar el tipo de `error`: 77 consumidores lo pintan
+ * como string y seguirían funcionando igual.
+ */
+
 // ============================================================================
 // useMyApplications - tenant's own applications
 // ============================================================================
@@ -16,14 +29,17 @@ export function useMyApplications() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const fetchMine = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const result = await applicationsApi.getMine();
       setApplications(result);
     } catch (err) {
+      setErrorCrudo(err);
       const message = err instanceof Error ? err.message : 'Error cargando aplicaciones';
       setError(message);
       setApplications([]);
@@ -36,6 +52,7 @@ export function useMyApplications() {
     let cancelled = false;
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
 
     applicationsApi
       .getMine()
@@ -47,6 +64,7 @@ export function useMyApplications() {
       })
       .catch((err) => {
         if (!cancelled) {
+          setErrorCrudo(err);
           setError(err instanceof Error ? err.message : 'Error cargando aplicaciones');
           setApplications([]);
           setIsLoading(false);
@@ -58,7 +76,7 @@ export function useMyApplications() {
     };
   }, []);
 
-  return { applications, isLoading, error, refetch: fetchMine };
+  return { applications, isLoading, error, errorCrudo, refetch: fetchMine };
 }
 
 // ============================================================================
@@ -92,10 +110,12 @@ export function useTenantApplications() {
   const [contractsByApp, setContractsByApp] = useState<Record<string, Contract>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const fetchMine = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       // Traemos apps y contratos en paralelo: el criterio active/completed para `approved`
       // depende del status del contrato asociado.
@@ -110,6 +130,7 @@ export function useTenantApplications() {
       }
       setContractsByApp(map);
     } catch (err) {
+      setErrorCrudo(err);
       const message = err instanceof Error ? err.message : 'Error cargando aplicaciones';
       setError(message);
       setApplications([]);
@@ -133,7 +154,7 @@ export function useTenantApplications() {
     [applications, contractsByApp],
   );
 
-  return { applications, active, completed, contractsByApp, isLoading, error, refetch: fetchMine };
+  return { applications, active, completed, contractsByApp, isLoading, error, errorCrudo, refetch: fetchMine };
 }
 
 // ============================================================================
@@ -144,6 +165,7 @@ export function useTenantApplication(id: string | null | undefined) {
   const [application, setApplication] = useState<TenantApplicationView | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const refetch = useCallback(async () => {
     if (!id) {
@@ -153,10 +175,12 @@ export function useTenantApplication(id: string | null | undefined) {
     }
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const app = await applicationsApi.getByIdForDisplay(id);
       setApplication(app);
     } catch (err) {
+      setErrorCrudo(err);
       setError(err instanceof Error ? err.message : 'Error cargando aplicación');
       setApplication(null);
     } finally {
@@ -174,6 +198,7 @@ export function useTenantApplication(id: string | null | undefined) {
     let cancelled = false;
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
 
     applicationsApi
       .getByIdForDisplay(id)
@@ -185,6 +210,7 @@ export function useTenantApplication(id: string | null | undefined) {
       })
       .catch((err) => {
         if (!cancelled) {
+          setErrorCrudo(err);
           setError(err instanceof Error ? err.message : 'Error cargando aplicación');
           setApplication(null);
           setIsLoading(false);
@@ -196,7 +222,7 @@ export function useTenantApplication(id: string | null | undefined) {
     };
   }, [id]);
 
-  return { application, isLoading, error, refetch };
+  return { application, isLoading, error, errorCrudo, refetch };
 }
 
 // ============================================================================
@@ -207,6 +233,7 @@ export function useApplication(id: string | null | undefined) {
   const [application, setApplication] = useState<Application | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   useEffect(() => {
     if (!id) {
@@ -218,6 +245,7 @@ export function useApplication(id: string | null | undefined) {
     let cancelled = false;
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
 
     applicationsApi
       .getById(id)
@@ -229,6 +257,7 @@ export function useApplication(id: string | null | undefined) {
       })
       .catch((err) => {
         if (!cancelled) {
+          setErrorCrudo(err);
           setError(err instanceof Error ? err.message : 'Error cargando aplicación');
           setApplication(null);
           setIsLoading(false);
@@ -240,7 +269,7 @@ export function useApplication(id: string | null | undefined) {
     };
   }, [id]);
 
-  return { application, isLoading, error };
+  return { application, isLoading, error, errorCrudo };
 }
 
 // ============================================================================
@@ -251,6 +280,7 @@ export function usePropertyApplications(propertyId: string | null | undefined) {
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const fetch = useCallback(async () => {
     if (!propertyId) {
@@ -260,10 +290,12 @@ export function usePropertyApplications(propertyId: string | null | undefined) {
     }
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const result = await applicationsApi.getByProperty(propertyId);
       setApplications(result);
     } catch (err) {
+      setErrorCrudo(err);
       const message = err instanceof Error ? err.message : 'Error cargando aplicaciones';
       setError(message);
       setApplications([]);
@@ -282,6 +314,7 @@ export function usePropertyApplications(propertyId: string | null | undefined) {
     let cancelled = false;
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
 
     applicationsApi
       .getByProperty(propertyId)
@@ -293,6 +326,7 @@ export function usePropertyApplications(propertyId: string | null | undefined) {
       })
       .catch((err) => {
         if (!cancelled) {
+          setErrorCrudo(err);
           setError(err instanceof Error ? err.message : 'Error cargando aplicaciones');
           setApplications([]);
           setIsLoading(false);
@@ -304,5 +338,5 @@ export function usePropertyApplications(propertyId: string | null | undefined) {
     };
   }, [propertyId]);
 
-  return { applications, isLoading, error, refetch: fetch };
+  return { applications, isLoading, error, errorCrudo, refetch: fetch };
 }

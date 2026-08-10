@@ -193,10 +193,15 @@ function OptOutContent() {
                     <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-fg">
                       {new Date(row.requestedAt).toLocaleString(locale)}
                     </TableCell>
-                    {/* Referencia, no cédula: `<Mask>` espera un valor ya
-                        enmascarado y acá recibía el UUID crudo de la fila. */}
-                    <TableCell className="px-3 py-2 font-mono text-xs text-fg-muted">
-                      {row.debtorRef}
+                  {/* El nombre; la referencia sólo si el dato no lo trae.
+                        La columna mostraba `A0F5DCC3` bajo el encabezado
+                        «Deudor»: un código sobre el que no se puede actuar. */}
+                    <TableCell className="px-3 py-2 text-fg">
+                      {row.debtorName ?? (
+                        <span className="font-mono text-xs text-fg-muted">
+                          {row.debtorRef}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="px-3 py-2 text-fg">{row.source ?? '—'}</TableCell>
                     <TableCell className="px-3 py-2 font-mono tabular-nums text-xs">

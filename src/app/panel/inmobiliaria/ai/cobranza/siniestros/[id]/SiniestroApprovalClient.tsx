@@ -31,6 +31,7 @@ import {
   useSiniestroApproval,
   type SiniestroInsurer,
 } from '@/lib/hooks/cobranza/use-siniestro-approval'
+import { useInsuranceClaims } from '@/lib/hooks/cobranza/use-insurance-claims'
 import {
   RechazarForm,
   type RejectReasonSlug,
@@ -38,7 +39,21 @@ import {
 
 void React
 
+/**
+ * A quién se puede notificar hoy. Es una lista FIJA y el agente la valida con
+ * el mismo enum, así que un siniestro de una aseguradora que no esté acá no se
+ * puede radicar desde el panel. En la base hay pólizas de Chubb y Liberty
+ * Seguros: la pantalla las mostraba igual, con cuatro casillas de otras
+ * compañías y sin decir de cuál era el siniestro. Ampliarla es una decisión de
+ * producto (hay que saber a qué correo se radica: `agent.insurer_contacts`
+ * está vacía); mientras tanto la pantalla al menos LO DICE.
+ */
 const INSURERS: ReadonlyArray<SiniestroInsurer> = ['sura', 'mapfre', 'solidaria', 'accion']
+
+/** «SURA» → «sura»; para casar la aseguradora del siniestro con el enum. */
+function normalizarAseguradora(nombre: string | null | undefined): string {
+  return (nombre ?? '').trim().toLowerCase().replace(/\s+/g, '_')
+}
 
 interface Props {
   claimId: string
@@ -66,6 +81,20 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
     approve,
     reject,
   } = useSiniestroApproval()
+
+  // El siniestro sale de la MISMA lista que alimenta la tabla — el agente no
+  // expone un detalle por id. Sólo hacen falta el deudor y la aseguradora.
+  const { data: claims } = useInsuranceClaims()
+  const siniestro = useMemo(
+    () => (claims?.claims ?? []).find((c) => c.id === claimId) ?? null,
+    [claims, claimId],
+  )
+  const aseguradoraNotificable = useMemo(() => {
+    if (!siniestro?.aseguradora) return true
+    return INSURERS.some(
+      (i) => i === normalizarAseguradora(siniestro.aseguradora),
+    )
+  }, [siniestro])
 
   const [selectedInsurers, setSelectedInsurers] = useState<SiniestroInsurer[]>([
     'sura',
@@ -174,11 +203,27 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           label={t('inmobiliaria.ai.cobranza.siniestros.back')}
         />
       </div>
-      <header>
+      <header className="space-y-1">
         <h1 className="text-2xl font-semibold text-fg">
           {t('inmobiliaria.ai.cobranza.siniestros.title')}
         </h1>
+        {/* De quién y con qué aseguradora. La pantalla no lo decía: se aprobaba
+            la radicación de un siniestro sin saber sobre qué póliza. */}
+        {siniestro && (
+          <p className="text-sm text-fg-muted">
+            {siniestro.debtorName ?? 'Deudor sin nombre'}
+            {siniestro.aseguradora ? ` · ${siniestro.aseguradora}` : ''}
+          </p>
+        )}
       </header>
+
+      {siniestro && !aseguradoraNotificable && (
+        <div className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
+          Este siniestro es de <strong>{siniestro.aseguradora}</strong>, y hoy
+          sólo se puede radicar ante Sura, Mapfre, Solidaria o Acción. Radicarlo
+          ante otra compañía no lo presenta ante la que tiene la póliza.
+        </div>
+      )}
 
       {/* PDF preview iframe */}
       <section
@@ -214,7 +259,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
               <label
                 key={ins}
                 htmlFor={`siniestro-insurer-${ins}`}
-                className="inline-flex items-center gap-2 rounded-sm border border-border bg-white px-3 py-2 text-sm text-fg-muted border-border"
+                className="inline-flex items-center gap-2 rounded-sm border border-border bg-card px-3 py-2 text-sm text-fg-muted"
               >
                 <Checkbox
                   id={`siniestro-insurer-${ins}`}

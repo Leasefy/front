@@ -129,7 +129,20 @@ export function AcuerdoGeneralForm({
   const [error, setError] = useState<string | null>(null)
 
   const set = useCallback(<K extends keyof Borrador>(k: K, v: Borrador[K]) => {
-    setB((prev) => ({ ...prev, [k]: v }))
+    setB((prev) => {
+      const siguiente = { ...prev, [k]: v }
+      // El porcentaje y el «sobre qué» son la MISMA decisión escrita en dos
+      // campos: se guardaba «15% de descuento» junto a «sin descuento», y
+      // después nadie podía decir qué se le ofrecía al deudor. Se mueven
+      // juntos, así que la contradicción no llega ni a existir.
+      if (k === 'discountPct' && siguiente.discountPct > 0 && siguiente.discountKind === 'none') {
+        siguiente.discountKind = 'intereses_parcial'
+      }
+      if (k === 'discountKind' && siguiente.discountKind === 'none') {
+        siguiente.discountPct = 0
+      }
+      return siguiente
+    })
   }, [])
 
   const alternarEtapa = useCallback((etapa: EtapaCartera, marcada: boolean) => {

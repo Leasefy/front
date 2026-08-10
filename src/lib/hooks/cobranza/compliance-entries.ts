@@ -27,6 +27,7 @@ export interface ComplianceLogResponse<T> {
 export interface RawAttempt {
   id: string
   debtor_id: string
+  debtor_name?: string | null
   event_type: string
   channel: string | null
   timestamp: string
@@ -36,6 +37,7 @@ export interface RawAttempt {
 export interface RawOptOut {
   id: string
   debtor_id: string
+  debtor_name?: string | null
   timestamp: string
   source: string | null
   acknowledged_at: string | null
@@ -43,6 +45,8 @@ export interface RawOptOut {
 
 export interface Attempt {
   eventId: string
+  /** Nombre del deudor; null si el dato viene de un agente anterior al JOIN. */
+  debtorName: string | null
   debtorRef: string
   channel: string | null
   timestamp: string
@@ -52,6 +56,8 @@ export interface Attempt {
 
 export interface OptOutEntry {
   eventId: string
+  /** Nombre del deudor; null si el dato viene de un agente anterior al JOIN. */
+  debtorName: string | null
   debtorRef: string
   requestedAt: string
   source: string | null
@@ -61,7 +67,8 @@ export interface OptOutEntry {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
- * Referencia corta y estable del deudor.
+ * Referencia corta y estable del deudor. **Es el respaldo, no la identidad**:
+ * cuando el dato trae `debtor_name` la tabla muestra el nombre.
  *
  * Las dos tablas pasaban el UUID crudo a `<Mask field="cedula">`, que espera un
  * valor YA enmascarado: el resultado era un UUID de 36 caracteres presentado
@@ -78,6 +85,7 @@ export function toDebtorRef(id: string | null | undefined): string {
 export function normalizeAttempts(payload: ComplianceLogResponse<RawAttempt>): Attempt[] {
   return (payload.entries ?? []).map((e) => ({
     eventId: e.id,
+    debtorName: e.debtor_name?.trim() || null,
     debtorRef: toDebtorRef(e.debtor_id),
     channel: e.channel,
     timestamp: e.timestamp,
@@ -91,6 +99,7 @@ export function normalizeAttempts(payload: ComplianceLogResponse<RawAttempt>): A
 export function normalizeOptOuts(payload: ComplianceLogResponse<RawOptOut>): OptOutEntry[] {
   return (payload.entries ?? []).map((e) => ({
     eventId: e.id,
+    debtorName: e.debtor_name?.trim() || null,
     debtorRef: toDebtorRef(e.debtor_id),
     requestedAt: e.timestamp,
     source: e.source ?? null,

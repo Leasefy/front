@@ -6530,6 +6530,12 @@
                 "debtor_id": {
                   "type": "string"
                 },
+                "debtor_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
                 "event_type": {
                   "type": "string"
                 },
@@ -6546,6 +6552,7 @@
               "required": [
                 "id",
                 "debtor_id",
+                "debtor_name",
                 "event_type",
                 "channel",
                 "timestamp"
@@ -6582,6 +6589,12 @@
                 "debtor_id": {
                   "type": "string"
                 },
+                "debtor_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
                 "timestamp": {
                   "type": "string"
                 },
@@ -6595,6 +6608,7 @@
               "required": [
                 "id",
                 "debtor_id",
+                "debtor_name",
                 "timestamp",
                 "acknowledged_at"
               ]
@@ -11276,6 +11290,19 @@
             "enum": [
               "yes"
             ]
+          },
+          "physicalSendMethod": {
+            "type": "string",
+            "enum": [
+              "servicio_472",
+              "email_only",
+              "operator_manual"
+            ]
+          },
+          "sentToAddress": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
           }
         },
         "required": [

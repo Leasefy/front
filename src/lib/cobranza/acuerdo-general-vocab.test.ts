@@ -143,6 +143,24 @@ describe('resumenAcuerdoGeneral', () => {
   it('sin condiciones arranca por «A cualquier deudor»', () => {
     expect(resumenAcuerdoGeneral(acuerdo())).toMatch(/^A cualquier deudor/)
   })
+
+  /**
+   * Decía «A quien esté en de 16 a 45 días de mora». La preposición sólo casaba
+   * con la etapa; con el rango de días o de monto quedaba «en de» y «en desde».
+   */
+  it('no encadena preposiciones con ninguna condición', () => {
+    const casos = [
+      acuerdo({ stages: [], minDaysOverdue: 16, maxDaysOverdue: 45 }),
+      acuerdo({ stages: [], minAmountCop: 500_000, maxAmountCop: null }),
+      acuerdo({ stages: ['S2'], minDaysOverdue: 16, maxDaysOverdue: 45 }),
+    ]
+    for (const a of casos) {
+      // Sólo la mitad de «a quién»: «en hasta 3 cuotas» del ofrecimiento es
+      // español correcto y no tiene nada que ver con esto.
+      const alcance = resumenAcuerdoGeneral(a).split(', el agente')[0]!
+      expect(alcance).not.toMatch(/\ben (de|desde|hasta|entre)\b/)
+    }
+  })
 })
 
 describe('avisosDelAcuerdoGeneral', () => {

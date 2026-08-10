@@ -103,7 +103,14 @@ export function queOfrece(a: AcuerdoGeneral): string {
  */
 export function resumenAcuerdoGeneral(a: AcuerdoGeneral): string {
   const cuando = condicionesDe(a)
-  const alcance = cuando.length === 0 ? 'A cualquier deudor' : `A quien esté en ${cuando.join(' · ')}`
+  // Sin preposición: las condiciones ya son frases completas y cada una pide
+  // la suya. «A quien esté en» funcionaba con la etapa («en Mora
+  // administrativa») y rompía con todo lo demás — «A quien esté en de 16 a 45
+  // días de mora», «A quien esté en desde $500.000».
+  const alcance =
+    cuando.length === 0
+      ? 'A cualquier deudor'
+      : `Al deudor que cumpla — ${cuando.join(' · ')} —`
   return `${alcance}, el agente le puede ofrecer ${queOfrece(a)} — sin preguntarte.`
 }
 

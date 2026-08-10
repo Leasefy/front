@@ -8031,6 +8031,7 @@ export interface components {
             entries: {
                 id: string;
                 debtor_id: string;
+                debtor_name: string | null;
                 event_type: string;
                 channel: string | null;
                 timestamp: string;
@@ -8042,6 +8043,7 @@ export interface components {
             entries: {
                 id: string;
                 debtor_id: string;
+                debtor_name: string | null;
                 timestamp: string;
                 acknowledged_at: string | null;
             }[];
@@ -9200,6 +9202,9 @@ export interface components {
         CarteraPreJudicialApproveRequest: {
             /** @enum {string} */
             confirmation: "yes";
+            /** @enum {string} */
+            physicalSendMethod?: "servicio_472" | "email_only" | "operator_manual";
+            sentToAddress?: string;
         };
         CarteraPreJudicialRejectResponse: {
             /** Format: uuid */

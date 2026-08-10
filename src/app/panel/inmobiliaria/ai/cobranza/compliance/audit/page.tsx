@@ -72,6 +72,13 @@ const ACTION_OPTIONS = [
   'subscription_update',
 ] as const
 
+/** Quién actuó cuando no hay una persona detrás. */
+const ACTOR_SISTEMA: Record<string, string> = {
+  saas_orchestrator: 'Agente (automático)',
+  system: 'Sistema',
+  cron: 'Tarea programada',
+}
+
 function ymd(d: Date): string {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -413,16 +420,24 @@ function AuditContent() {
                       {new Date(row.occurred_at).toLocaleString(locale)}
                     </TableCell>
                     <TableCell className="px-3 py-2 font-mono text-xs text-foreground whitespace-nowrap">
-                      {row.actor_id}
+                      {/* Sin `actor_id` la celda quedaba en blanco bajo el
+                          encabezado «Actor». No actuó nadie: actuó el sistema,
+                          y `actor_type` lo dice. */}
+                      {row.actor_id ?? ACTOR_SISTEMA[row.actor_type] ?? row.actor_type}
                     </TableCell>
                     <TableCell className="px-3 py-2">
                       <Badge variant="primary">{row.action}</Badge>
                     </TableCell>
                     <TableCell className="px-3 py-2 font-mono text-xs text-muted-foreground whitespace-nowrap">
-                      <div>{row.entity_type}</div>
-                      <div className="text-[11px] opacity-70">
-                        {row.entity_id.slice(0, 8)}…
-                      </div>
+                      <div>{row.entity_type ?? '—'}</div>
+                      {/* `entity_id` es nullable en el contrato: hay acciones
+                          que no apuntan a una entidad. El tipo escrito a mano
+                          lo declaraba `string` y esto reventaba. */}
+                      {row.entity_id && (
+                        <div className="text-[11px] opacity-70">
+                          {row.entity_id.slice(0, 8)}…
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="px-3 py-2 max-w-md">
                       {cedulaMasked && (

@@ -531,7 +531,11 @@ export function PlanHeader({
               {/* Subscription Popover — admin-only in inmobiliaria context */}
               {canShowAdminActions && <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
                 <PopoverTrigger asChild>
-                  <button className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors">
+                  <button
+                    type="button"
+                    aria-label={locale === 'es' ? 'Tu suscripción' : 'Your subscription'}
+                    className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
+                  >
                     <Lightning className="w-5 h-5 stroke-[1.5px]" />
                     {isBaseTier && (
                       <span className="absolute top-1 right-1 w-2 h-2 bg-[#1A40FF] rounded-full" />
@@ -655,7 +659,11 @@ export function PlanHeader({
                 }
               }}>
                 <PopoverTrigger asChild>
-                  <button className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors">
+                  <button
+                    type="button"
+                    aria-label={locale === 'es' ? 'Invitar a tu equipo' : 'Invite your team'}
+                    className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
+                  >
                     <UserPlus className="w-5 h-5 stroke-[1.5px]" />
                     {pendingInvites.length > 0 && (
                       <span className="absolute top-0 right-0 w-4 h-4 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[9px] font-medium flex items-center justify-center rounded-full">
@@ -902,7 +910,11 @@ export function PlanHeader({
             }}
           >
             <PopoverTrigger asChild>
-              <button className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors">
+              <button
+                    type="button"
+                    aria-label={locale === 'es' ? 'Notificaciones' : 'Notifications'}
+                    className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
+                  >
                 <Bell className="w-5 h-5 stroke-[1.5px]" />
                 {/* Un plazo ARCO vencido pinta el punto en rojo: es la única
                     condición del panel con consecuencia legal, así que gana

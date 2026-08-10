@@ -167,12 +167,14 @@ describe('filterAgencyNav — el agente no contestó ≠ no tenés permiso', () 
   // `cobranza` y `cotizador` fallan cerrado a propósito. Distinguimos las dos
   // razones por las que `canAccess` devuelve false: «el agente dijo que no»
   // (se oculta) y «no pudimos preguntar» (se muestra, y la pantalla explica).
-  const NAV_AGENTE = [
+  // Mismo armado que NAV arriba: href/icon son obligatorios en NavItem y no
+  // aportan nada al gate, así que se rellenan igual para todas las filas.
+  const NAV_AGENTE: NavItemWithModule[] = [
     { label: 'inicio', module: null },
     { label: 'cobranza', module: 'cobranza' },
     { label: 'cotizador', module: 'cotizador' },
     { label: 'contratos', module: 'contratos' },
-  ]
+  ].map((r) => ({ href: '/x', icon: House, ...r }))
   const todoNegado = {
     canAccess: () => false,
     isAdmin: false,

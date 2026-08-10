@@ -9307,6 +9307,328 @@
           "cadenceConfig"
         ]
       },
+      "CobranzaAcuerdoGeneral": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "S0",
+                "S1",
+                "S2",
+                "S3",
+                "S4",
+                "S5",
+                "SX"
+              ]
+            }
+          },
+          "minDaysOverdue": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "maxDaysOverdue": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "minAmountCop": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "maxAmountCop": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "discountPct": {
+            "type": "integer"
+          },
+          "discountKind": {
+            "type": "string",
+            "enum": [
+              "none",
+              "intereses_parcial",
+              "intereses_total"
+            ]
+          },
+          "maxInstallments": {
+            "type": "integer"
+          },
+          "minInitialPct": {
+            "type": "integer"
+          },
+          "conditionEs": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "priority",
+          "active",
+          "stages",
+          "minDaysOverdue",
+          "maxDaysOverdue",
+          "minAmountCop",
+          "maxAmountCop",
+          "discountPct",
+          "discountKind",
+          "maxInstallments",
+          "minInitialPct",
+          "conditionEs",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CobranzaAcuerdosGeneralesResponse": {
+        "type": "object",
+        "properties": {
+          "acuerdos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CobranzaAcuerdoGeneral"
+            }
+          },
+          "generatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "acuerdos",
+          "generatedAt"
+        ]
+      },
+      "CobranzaAcuerdoGeneralCreate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "conditionEs": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 280
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "default": 0
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "S0",
+                "S1",
+                "S2",
+                "S3",
+                "S4",
+                "S5",
+                "SX"
+              ]
+            },
+            "maxItems": 7,
+            "default": []
+          },
+          "minDaysOverdue": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 3650,
+            "default": null
+          },
+          "maxDaysOverdue": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 3650,
+            "default": null
+          },
+          "minAmountCop": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000000000000,
+            "default": null
+          },
+          "maxAmountCop": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000000000000,
+            "default": null
+          },
+          "discountPct": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 0
+          },
+          "discountKind": {
+            "type": "string",
+            "enum": [
+              "none",
+              "intereses_parcial",
+              "intereses_total"
+            ],
+            "default": "none"
+          },
+          "maxInstallments": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 36,
+            "default": 0
+          },
+          "minInitialPct": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 100
+          }
+        },
+        "required": [
+          "name",
+          "conditionEs"
+        ]
+      },
+      "CobranzaAcuerdoGeneralPatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "conditionEs": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 280
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "S0",
+                "S1",
+                "S2",
+                "S3",
+                "S4",
+                "S5",
+                "SX"
+              ]
+            },
+            "maxItems": 7
+          },
+          "minDaysOverdue": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 3650
+          },
+          "maxDaysOverdue": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 3650
+          },
+          "minAmountCop": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "maxAmountCop": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "discountPct": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "discountKind": {
+            "type": "string",
+            "enum": [
+              "none",
+              "intereses_parcial",
+              "intereses_total"
+            ]
+          },
+          "maxInstallments": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 36
+          },
+          "minInitialPct": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      },
       "CarteraImportErrorEntry": {
         "type": "object",
         "properties": {
@@ -26858,6 +27180,506 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CobranzaCadenceError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/cobranza/acuerdos-generales": {
+      "get": {
+        "operationId": "listCobranzaAcuerdosGenerales",
+        "summary": "Acuerdos generales de la inmobiliaria",
+        "description": "Lista los acuerdos que el agente puede cerrar solo, ordenados como los evalúa el motor: mayor prioridad primero, y a igual prioridad el más nuevo. Requiere cobranza:view.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Acuerdos generales del tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaAcuerdosGeneralesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible (stub mode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCobranzaAcuerdoGeneral",
+        "summary": "Crear un acuerdo general (OWNER/ADMIN)",
+        "description": "Crea un acuerdo que el agente puede cerrar sin preguntar, siempre recortado por el techo de la política al momento de negociar. Requiere cobranza:configure.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CobranzaAcuerdoGeneralCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Acuerdo creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaAcuerdoGeneral"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cuerpo malformado, fuera de rango o incoherente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible (stub mode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/cobranza/acuerdos-generales/{acuerdoId}": {
+      "patch": {
+        "operationId": "updateCobranzaAcuerdoGeneral",
+        "summary": "Editar un acuerdo general (OWNER/ADMIN)",
+        "description": "Actualización parcial. La coherencia de los rangos se valida sobre el estado RESULTANTE, no sobre el parche: mover sólo el mínimo también puede invertir un rango. Requiere cobranza:configure.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+            },
+            "required": true,
+            "name": "acuerdoId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CobranzaAcuerdoGeneralPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acuerdo actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaAcuerdoGeneral"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cuerpo malformado, fuera de rango o incoherente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El acuerdo no existe en este tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible (stub mode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCobranzaAcuerdoGeneral",
+        "summary": "Borrar un acuerdo general (OWNER/ADMIN)",
+        "description": "Borra el acuerdo. Para dejar de aplicarlo sin perderlo está `active: false`. El estado completo queda en audit_log. Requiere cobranza:configure.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+            },
+            "required": true,
+            "name": "acuerdoId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Acuerdo borrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "deleted": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "deleted"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el bearer JWT o es inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "agencyId cruzado / sin membresía / permiso insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El acuerdo no existe en este tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible (stub mode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }

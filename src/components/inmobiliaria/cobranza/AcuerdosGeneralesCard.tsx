@@ -119,11 +119,11 @@ export function AcuerdosGeneralesCard() {
             <Robot className="w-5 h-5 text-fg-muted" weight="duotone" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-fg">Acuerdo general</h2>
+            <h2 className="text-sm font-semibold text-fg">Límites del agente</h2>
             <p className="text-xs text-fg-muted max-w-xl leading-relaxed">
-              Las condiciones que el agente puede aceptar por su cuenta, sin
-              preguntarte. Si el deudor pide algo que cabe acá dentro, cierra el
-              acuerdo; si se pasa, te lo escala.
+              El máximo que el agente puede ofrecer, pase lo que pase. Ningún
+              acuerdo general se sale de acá: si uno dice 50% y este límite dice
+              20%, el deudor recibe 20%.
             </p>
           </div>
         </div>

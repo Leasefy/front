@@ -4498,6 +4498,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cobranza/acuerdos-generales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Acuerdos generales de la inmobiliaria
+         * @description Lista los acuerdos que el agente puede cerrar solo, ordenados como los evalúa el motor: mayor prioridad primero, y a igual prioridad el más nuevo. Requiere cobranza:view.
+         */
+        get: operations["listCobranzaAcuerdosGenerales"];
+        put?: never;
+        /**
+         * Crear un acuerdo general (OWNER/ADMIN)
+         * @description Crea un acuerdo que el agente puede cerrar sin preguntar, siempre recortado por el techo de la política al momento de negociar. Requiere cobranza:configure.
+         */
+        post: operations["createCobranzaAcuerdoGeneral"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/acuerdos-generales/{acuerdoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Borrar un acuerdo general (OWNER/ADMIN)
+         * @description Borra el acuerdo. Para dejar de aplicarlo sin perderlo está `active: false`. El estado completo queda en audit_log. Requiere cobranza:configure.
+         */
+        delete: operations["deleteCobranzaAcuerdoGeneral"];
+        options?: never;
+        head?: never;
+        /**
+         * Editar un acuerdo general (OWNER/ADMIN)
+         * @description Actualización parcial. La coherencia de los rangos se valida sobre el estado RESULTANTE, no sobre el parche: mover sólo el mínimo también puede invertir un rango. Requiere cobranza:configure.
+         */
+        patch: operations["updateCobranzaAcuerdoGeneral"];
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cartera/import": {
         parameters: {
             query?: never;
@@ -8665,6 +8713,75 @@ export interface components {
         };
         CobranzaCadencePutBody: {
             cadenceConfig: components["schemas"]["CobranzaCadenceConfig"];
+        };
+        CobranzaAcuerdoGeneral: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            priority: number;
+            active: boolean;
+            stages: ("S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX")[];
+            minDaysOverdue: number | null;
+            maxDaysOverdue: number | null;
+            minAmountCop: number | null;
+            maxAmountCop: number | null;
+            discountPct: number;
+            /** @enum {string} */
+            discountKind: "none" | "intereses_parcial" | "intereses_total";
+            maxInstallments: number;
+            minInitialPct: number;
+            conditionEs: string;
+            createdAt: string;
+            updatedAt: string;
+        };
+        CobranzaAcuerdosGeneralesResponse: {
+            acuerdos: components["schemas"]["CobranzaAcuerdoGeneral"][];
+            generatedAt: string;
+        };
+        CobranzaAcuerdoGeneralCreate: {
+            name: string;
+            conditionEs: string;
+            /** @default 0 */
+            priority: number;
+            /** @default true */
+            active: boolean;
+            /** @default [] */
+            stages: ("S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX")[];
+            /** @default null */
+            minDaysOverdue: number | null;
+            /** @default null */
+            maxDaysOverdue: number | null;
+            /** @default null */
+            minAmountCop: number | null;
+            /** @default null */
+            maxAmountCop: number | null;
+            /** @default 0 */
+            discountPct: number;
+            /**
+             * @default none
+             * @enum {string}
+             */
+            discountKind: "none" | "intereses_parcial" | "intereses_total";
+            /** @default 0 */
+            maxInstallments: number;
+            /** @default 100 */
+            minInitialPct: number;
+        };
+        CobranzaAcuerdoGeneralPatch: {
+            name?: string;
+            conditionEs?: string;
+            priority?: number;
+            active?: boolean;
+            stages?: ("S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX")[];
+            minDaysOverdue?: number | null;
+            maxDaysOverdue?: number | null;
+            minAmountCop?: number | null;
+            maxAmountCop?: number | null;
+            discountPct?: number;
+            /** @enum {string} */
+            discountKind?: "none" | "intereses_parcial" | "intereses_total";
+            maxInstallments?: number;
+            minInitialPct?: number;
         };
         CarteraImportErrorEntry: {
             /** @description 0-based index of the failing row within the submitted batch. */
@@ -15653,6 +15770,285 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CobranzaCadenceError"];
+                };
+            };
+        };
+    };
+    listCobranzaAcuerdosGenerales: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Acuerdos generales del tenant */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAcuerdosGeneralesResponse"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    createCobranzaAcuerdoGeneral: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaAcuerdoGeneralCreate"];
+            };
+        };
+        responses: {
+            /** @description Acuerdo creado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAcuerdoGeneral"];
+                };
+            };
+            /** @description Cuerpo malformado, fuera de rango o incoherente */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    deleteCobranzaAcuerdoGeneral: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                acuerdoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Acuerdo borrado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** @enum {boolean} */
+                        deleted: true;
+                    };
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El acuerdo no existe en este tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    updateCobranzaAcuerdoGeneral: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                acuerdoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaAcuerdoGeneralPatch"];
+            };
+        };
+        responses: {
+            /** @description Acuerdo actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAcuerdoGeneral"];
+                };
+            };
+            /** @description Cuerpo malformado, fuera de rango o incoherente */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El acuerdo no existe en este tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
                 };
             };
         };

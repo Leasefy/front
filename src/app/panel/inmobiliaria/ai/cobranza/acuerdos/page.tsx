@@ -87,6 +87,7 @@ import {
 } from '@/lib/cobranza/acuerdo-vocab'
 import { AcuerdoDetalleSheet } from '@/components/inmobiliaria/cobranza/AcuerdoDetalleSheet'
 import { AcuerdosGeneralesCard } from '@/components/inmobiliaria/cobranza/AcuerdosGeneralesCard'
+import { AcuerdosGeneralesTabla } from '@/components/inmobiliaria/cobranza/AcuerdosGeneralesTabla'
 
 // Etapas donde NO hay superficie de negociación (espejo del backend:
 // agency-cobranza-promises.ts NEGOTIATION_UNAVAILABLE_STAGES). En esas etapas el
@@ -950,10 +951,13 @@ function AcuerdosContent() {
         </div>
       )}
 
-      {/* El marco general: lo que el agente cierra sin preguntar. Vive en la
-          política de la agencia y se edita en Configuración §Negociación; acá
-          sólo se muestra, para que no haya dos lugares donde editarlo. */}
+      {/* Dos cosas distintas, en este orden a propósito:
+          1. Los LÍMITES — el techo que el agente no puede pasar nunca.
+          2. Los ACUERDOS GENERALES — las reglas que la inmobiliaria escribe y
+             que el agente cierra solo, siempre recortadas por (1).
+          Antes las dos se llamaban «acuerdo general» y (2) ni existía. */}
       <AcuerdosGeneralesCard />
+      <AcuerdosGeneralesTabla />
 
       {cargando && acuerdos.length === 0 && !error ? (
         <div className="flex items-center justify-center py-16">
@@ -981,26 +985,15 @@ function AcuerdosContent() {
           </DialogHeader>
           <CrearAcuerdoForm />
 
-          {/* El otro camino: en vez de armar un acuerdo para UNA persona,
-              ampliar el marco que el agente cierra solo. Es un enlace, no un
-              segundo editor — la política se edita en un único lugar. */}
-          <div className="flex items-start justify-between gap-3 flex-wrap border-t border-border pt-4">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-fg">
-                ¿Querés que el agente cierre acuerdos así sin preguntarte?
-              </p>
-              <p className="text-xs text-fg-muted max-w-md leading-relaxed">
-                Un acuerdo general define las condiciones que el agente puede
-                aceptar por su cuenta: plazos, descuento máximo y pago mínimo.
-              </p>
-            </div>
-            <Button asChild variant="outline" size="sm" hideArrow className="shrink-0">
-              <Link href={`${BASE}/configuracion?volver=acuerdos#heading-negociacion`}>
-                Crear acuerdo general
-                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-              </Link>
-            </Button>
-          </div>
+          {/* Acá vivía un enlace a Configuración §Negociación para «crear un
+              acuerdo general». Se sacó: armar el marco de los acuerdos no es un
+              ajuste del sistema, y mandaba fuera de Acuerdos justo cuando el
+              usuario estaba armando uno. Ahora se hace en la sección «Acuerdos
+              generales» de esta misma pantalla, con su propia tabla y su nivel
+              interno de navegación (`acuerdos/generales/nuevo`).
+
+              El ancla `#heading-negociacion` que apuntaba ya ni existía: esa
+              sección de Configuración se desarmó en `fcc3ec92`. */}
         </DialogContent>
       </Dialog>
     </main>

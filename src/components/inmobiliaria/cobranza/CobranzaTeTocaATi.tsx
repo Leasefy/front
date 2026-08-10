@@ -220,13 +220,26 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
       )}
 
       {/* Cargando, falló y «no hay» son tres cosas distintas. Sobre un fallo no
-          se dice «todo al día»: no lo sabemos. */}
+          se dice «todo al día»: no lo sabemos.
+
+          Y un fallo PARCIAL tampoco es un fallo total: `usePendientes` junta
+          cinco fuentes y sigue rindiendo las que sí respondieron. Decir «no
+          pudimos cargar tus pendientes» encima de cuatro pendientes cargados
+          es falso de las dos maneras — ni cargó todo, ni falló todo. */}
       {error && !isLoading && (
         <div
           role="alert"
-          className="rounded-xl border border-danger/30 bg-danger-soft p-3 text-sm text-danger"
+          className={[
+            'rounded-xl border p-3 text-sm',
+            totalQueEspera > 0
+              ? 'border-warning/30 bg-warning-soft text-warning'
+              : 'border-danger/30 bg-danger-soft text-danger',
+          ].join(' ')}
         >
-          No pudimos cargar tus pendientes. {error}
+          {totalQueEspera > 0
+            ? 'Puede que falte algo en esta lista: una de las fuentes no respondió.'
+            : 'No pudimos cargar tus pendientes.'}{' '}
+          <span className="opacity-80">{error}</span>
         </div>
       )}
 

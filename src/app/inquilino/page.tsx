@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -119,8 +120,18 @@ export default function InquilinoPage() {
   };
 
   // Real data: applications, leases and next payment come from the backend.
-  const { active: activeApplications, isLoading: applicationsLoading } = useTenantApplications();
-  const { getActive: getActiveLeases, isLoading: leasesLoading } = useLeases();
+  const {
+    active: activeApplications,
+    isLoading: applicationsLoading,
+    error: errorPostulaciones,
+    refetch: recargarPostulaciones,
+  } = useTenantApplications();
+  const {
+    getActive: getActiveLeases,
+    isLoading: leasesLoading,
+    error: errorArriendos,
+    refetch: recargarArriendos,
+  } = useLeases();
   const { getNextPayment } = useMyPayments();
 
   const activeLeases = getActiveLeases();
@@ -166,7 +177,37 @@ export default function InquilinoPage() {
     return <TenantDashboardEmpty />;
   }
 
-  // Check if user is "new" (no leases, no applications)
+  /*
+   * No se puede armar el inicio sin saber si tiene arriendo o postulaciones:
+   * cualquier cosa que se pinte acá sería una afirmación sobre datos que no
+   * llegaron. Se dice, con reintento, en vez de inventar un panel vacío.
+   */
+  if (errorPostulaciones || errorArriendos) {
+    return (
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+        <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
+          <FalloDeCarga
+            error={errorPostulaciones ?? errorArriendos}
+            queEs="tu panel"
+            onReintentar={() => {
+              if (errorPostulaciones) void recargarPostulaciones();
+              if (errorArriendos) void recargarArriendos();
+            }}
+            volverA={{ label: 'Explorar propiedades', href: '/inquilino/explorar' }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  /*
+   * Si la carga FALLÓ, las dos listas quedan vacías y esta pantalla concluía
+   * que la persona es nueva: a alguien con un arriendo activo lo saludaba como
+   * si acabara de llegar y le escondía sus postulaciones.
+   *
+   * Un fallo no es una ausencia. Los hooks siempre expusieron `error`; la
+   * pantalla lo ignoraba.
+   */
   const isNewUser = activeLeases.length === 0 && activeApplications.length === 0;
 
   return (

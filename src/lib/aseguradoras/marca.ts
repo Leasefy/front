@@ -66,11 +66,21 @@ export function inicialesDe(nombre: string): string {
  * que hay que hacer si deja de ser aliada. Ver `PROCEDENCIA.md` para la
  * licencia de cada archivo y por qué faltan las otras.
  */
+/**
+ * Claves **normalizadas** (ver `claveDe`): minúsculas, sin tildes, sin
+ * «Seguros»/«La». Una sola entrada por aseguradora.
+ */
 const LOGOS: Record<string, string> = {
+  // De Wikimedia Commons, dominio público (PD-textlogo).
   sura: '/aseguradoras/sura.svg',
   mapfre: '/aseguradoras/mapfre.svg',
   zurich: '/aseguradoras/zurich.svg',
-  'la equidad': '/aseguradoras/equidad.svg',
+  equidad: '/aseguradoras/equidad.svg',
+  // Del sitio oficial de cada compañía. Ver PROCEDENCIA.md: el estatus de
+  // copyright NO está verificado, a diferencia de los de arriba.
+  bolivar: '/aseguradoras/bolivar.png',
+  previsora: '/aseguradoras/previsora.png',
+  solidaria: '/aseguradoras/solidaria.svg',
 }
 
 export interface MarcaAseguradora {
@@ -80,9 +90,25 @@ export interface MarcaAseguradora {
   logo?: string
 }
 
+/**
+ * La clave del logo, normalizada: minúsculas, sin tildes y sin el relleno
+ * («Seguros», «La»). Así «Bolívar», «Seguros Bolívar» y «seguros bolivar» son
+ * la misma — el agente manda una forma, el respaldo local otra, y los fixtures
+ * una tercera.
+ */
+function claveDe(nombre: string): string {
+  return nombre
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .split(/\s+/)
+    .filter((p) => !RELLENO.has(p))
+    .join(' ')
+}
+
 export function marcaDe(nombre: string): MarcaAseguradora {
-  const clave = nombre.trim().toLowerCase()
-  return { nombre, iniciales: inicialesDe(nombre), logo: LOGOS[clave] }
+  return { nombre, iniciales: inicialesDe(nombre), logo: LOGOS[claveDe(nombre)] }
 }
 
 /**

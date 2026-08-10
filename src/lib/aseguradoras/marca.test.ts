@@ -59,11 +59,26 @@ describe('marcaDe', () => {
     expect(marcaDe('la equidad').logo).toBe('/aseguradoras/equidad.svg')
   })
 
+  it('reconoce a Bolívar escriba como escriba el agente', () => {
+    // `CARRIER_DISPLAY` manda 'Bolívar', pero el respaldo local y los fixtures
+    // dicen 'Seguros Bolívar'. Las dos formas tienen que dar el mismo logo.
+    for (const n of ['Bolívar', 'Seguros Bolívar', 'seguros bolivar']) {
+      expect(marcaDe(n).logo, n).toBe('/aseguradoras/bolivar.png')
+    }
+  })
+
+  it('«La Previsora» y «Previsora» son la misma', () => {
+    expect(marcaDe('La Previsora').logo).toBe('/aseguradoras/previsora.png')
+    expect(marcaDe('Previsora').logo).toBe('/aseguradoras/previsora.png')
+  })
+
   it('las que no lo tienen caen al monograma, no a un logo inventado', () => {
     // Aproximar el logo de una empresa real es peor que un monograma limpio.
-    expect(marcaDe('Seguros Bolívar').logo).toBeUndefined()
-    expect(marcaDe('Seguros Bolívar').iniciales).toBe('BO')
-    expect(marcaDe('La Previsora').logo).toBeUndefined()
+    // Mundial quedó afuera por su licencia CC BY-SA; Sekure ni siquiera
+    // aparece como aseguradora colombiana (ver PROCEDENCIA.md).
+    expect(marcaDe('Mundial').logo).toBeUndefined()
+    expect(marcaDe('Mundial').iniciales).toBe('MU')
+    expect(marcaDe('Sekure').logo).toBeUndefined()
   })
 
   it('siempre trae iniciales, tenga logo o no', () => {

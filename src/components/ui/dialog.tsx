@@ -14,7 +14,6 @@ import {
 } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
-import { useLenis } from "@/components/providers/SmoothScroll"
 
 /**
  * ADAPTER fino sobre el Dialog de @leasefy/cadence que preserva la API local del mvp:
@@ -70,11 +69,13 @@ DialogOverlay.displayName = "DialogOverlay"
  * mientras el modal está abierto — así funciona igual controlado que no.
  */
 function useFrenarLenisMientrasAbierto() {
-  const lenis = useLenis()
-  React.useEffect(() => {
-    lenis.stop()
-    return () => lenis.start()
-  }, [lenis])
+  // Ya no hace nada acá: frenar Lenis al MONTARSE era falso. En el panel de
+  // inmobiliaria este Content se monta cerrado al cargar la pantalla, llamaba
+  // `stop()` y nadie llamaba `start()` — la página quedaba con
+  // `overflow: hidden` para siempre, sin modal a la vista y sin ningún error.
+  //
+  // Ahora lo decide `SmoothScroll` observando `data-state="open"` en el DOM,
+  // que es el estado REAL del modal y no una suposición sobre el montaje.
 }
 
 const DialogContent = React.forwardRef<

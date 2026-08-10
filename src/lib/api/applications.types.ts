@@ -507,7 +507,9 @@ export interface SmartMatchingResponse {
     monthlyIncome: number;
     employmentMonths: number;
     maxBudget: number;
-    preferredLocations: string[];
+    // The backend can omit this when it has no location signal for the
+    // candidate — treat it as optional and guard before reading `.length`.
+    preferredLocations?: string[];
   };
   results: SmartMatchResult[];
   message?: string;

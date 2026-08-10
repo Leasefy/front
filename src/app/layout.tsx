@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { WishlistProvider } from "@/lib/stores/wishlist";
 import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 import { PushNotificationHandler } from "@/components/notifications/PushNotificationHandler";
+import { SessionRevocationHandler } from "@/components/auth/SessionRevocationHandler";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 
 // Cadence: Schibsted Grotesk — Regular (cuerpo) + Semibold (títulos).
@@ -126,6 +127,7 @@ export default function RootLayout({
             <WishlistProvider>
               <RouteAnnouncer />
               <PushNotificationHandler />
+              <SessionRevocationHandler />
               <SmoothScroll>{children}</SmoothScroll>
             </WishlistProvider>
           </AuthProvider>

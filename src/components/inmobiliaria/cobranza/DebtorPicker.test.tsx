@@ -71,14 +71,42 @@ function escribir(el: HTMLDivElement, texto: string) {
   })
 }
 
-/** Corre el debounce y deja que resuelva el hash (que es asíncrono). */
+/**
+ * Corre el debounce y cede el turno hasta que el componente se estabiliza.
+ *
+ * ⚠️ NO alcanza con drenar N microtareas. Después del debounce, la ruta
+ * numérica llama a `crypto.subtle.digest`, que es una operación REAL de la
+ * plataforma —no una microtarea— y resuelve cuando el motor quiere. Con la
+ * suite completa y varios workers compitiendo por CPU, seis `Promise.resolve()`
+ * a veces no alcanzaban y el test fallaba 1 de cada ~6 corridas.
+ *
+ * Por eso se espera la CONDICIÓN, no una cantidad de turnos. Los timers están
+ * falseados sólo para `setTimeout`/`clearTimeout` (el debounce), así que
+ * `setImmediate` sigue siendo real y sirve para ceder al event loop de verdad.
+ */
+async function cederTurno() {
+  await act(async () => {
+    await new Promise((resolve) => setImmediate(resolve))
+  })
+}
+
 async function asentar() {
   await act(async () => {
-    vi.advanceTimersByTime(300)
+    vi.advanceTimersByTime(DEBOUNCE_MS)
   })
+  await cederTurno()
+}
+
+/** Corre el debounce y espera hasta que `cond` se cumpla (o falla diciendo qué esperaba). */
+async function asentarHasta(cond: () => boolean, queEsperaba: string) {
   await act(async () => {
-    for (let i = 0; i < 6; i++) await Promise.resolve()
+    vi.advanceTimersByTime(DEBOUNCE_MS)
   })
+  for (let i = 0; i < 200; i++) {
+    if (cond()) return
+    await cederTurno()
+  }
+  throw new Error(`El componente nunca ${queEsperaba} (200 turnos del event loop).`)
 }
 
 /** Todos los `search` distintos de undefined que llegaron al hook. */
@@ -88,12 +116,17 @@ function busquedas(): string[] {
     .filter((s): s is string => s !== undefined)
 }
 
+/** El mismo valor que usa el componente para su debounce. */
+const DEBOUNCE_MS = 300
+
 beforeEach(() => {
   filtrosVistos.length = 0
   paginas = [
     { id: 'D-0', fullName: 'Adriana María Vásquez', cedulaMasked: '12•••678' },
   ]
-  vi.useFakeTimers()
+  // Sólo el debounce va falseado. Falsear TODO se lleva puesto `setImmediate`,
+  // que es lo que deja ceder al event loop real mientras resuelve el hash.
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
 })
 
 afterEach(() => {
@@ -109,7 +142,8 @@ describe('DebtorPicker', () => {
   it('manda la cédula HASHEADA, nunca los dígitos en claro', async () => {
     const el = montar(() => {})
     escribir(el, '1037896541')
-    await asentar()
+    // El hash es asíncrono de verdad: se espera a que llegue algo, no N ticks.
+    await asentarHasta(() => busquedas().length > 0, 'mandó una búsqueda')
 
     const enviadas = busquedas()
     expect(enviadas.length).toBeGreaterThan(0)
@@ -121,7 +155,7 @@ describe('DebtorPicker', () => {
   it('un nombre viaja tal cual', async () => {
     const el = montar(() => {})
     escribir(el, 'Adriana')
-    await asentar()
+    await asentarHasta(() => busquedas().includes('Adriana'), 'mandó el nombre')
 
     expect(busquedas()).toContain('Adriana')
   })
@@ -138,7 +172,10 @@ describe('DebtorPicker', () => {
   it('elegir un deudor entrega su id — lo que antes se escribía a mano', async () => {
     const elegido: (PickedDebtor | null)[] = []
     const el = montar((d) => elegido.push(d))
-    await asentar()
+    await asentarHasta(
+      () => el.querySelector('ul button') !== null,
+      'pintó la lista de deudores',
+    )
 
     const opcion = el.querySelector('ul button') as HTMLButtonElement
     expect(opcion).not.toBeNull()

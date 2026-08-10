@@ -217,7 +217,12 @@ export default function GuardadosPage() {
                         {property.bedrooms} {locale === 'es' ? 'hab' : 'bed'}
                       </span>
                       <span className="px-2.5 py-1 bg-surface-muted rounded-md text-xs text-fg-muted font-medium">
-                        {property.bathrooms} {locale === 'es' ? 'baños' : 'bath'}
+                        {property.bathrooms}{' '}
+                        {locale === 'es'
+                          ? property.bathrooms === 1
+                            ? 'baño'
+                            : 'baños'
+                          : 'bath'}
                       </span>
                       <span className="px-2.5 py-1 bg-surface-muted rounded-md text-xs text-fg-muted font-medium">
                         {property.area} m²

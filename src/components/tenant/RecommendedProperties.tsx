@@ -246,7 +246,11 @@ export function RecommendedProperties({
       {/* Footer */}
       <div className="px-5 py-3 border-t border-border flex items-center justify-between bg-surface-muted/30">
         <p className="text-xs text-plan-muted">
-          {recommendations.length} propiedades recomendadas para tu perfil
+          {recommendations.length}{' '}
+          {recommendations.length === 1
+            ? 'propiedad recomendada'
+            : 'propiedades recomendadas'}{' '}
+          para tu perfil
         </p>
         <Link
           href="/inquilino/para-ti"

@@ -83,7 +83,10 @@ const DECLARADO: Record<PasoKey, Declaracion | null> = {
   aseguradoras: {
     turno: 'nuestro',
     label: 'Consultamos a las aseguradoras',
-    desc: 'A todas con las que trabajamos, no solo a una. Te avisamos por correo.',
+    // NO decir «te avisamos por correo»: la asegurabilidad es inmediata
+    // (decisión 2026-08-09). El correo sí aplica a que se acredite el pago
+    // —eso lo dice la pantalla de pago— y a la respuesta a una postulación.
+    desc: 'A todas con las que trabajamos, no solo a una. La respuesta sale al momento.',
     href: '/inquilino/aprobacion',
   },
   compatibles: {

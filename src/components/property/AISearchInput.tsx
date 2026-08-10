@@ -243,7 +243,11 @@ export function AISearchInput({
                   </div>
                   <div>
                     <p className="text-[13px] font-medium text-foreground">
-                      Encontré <span className="text-success font-mono tabular-nums">{results.length} propiedades</span>
+                      Encontré{' '}
+                      <span className="text-success font-mono tabular-nums">
+                        {results.length}{' '}
+                        {results.length === 1 ? 'propiedad' : 'propiedades'}
+                      </span>
                     </p>
                     <p className="text-[11px] text-muted-foreground">
                       Basado en: &ldquo;{value}&rdquo;

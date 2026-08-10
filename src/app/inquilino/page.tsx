@@ -448,7 +448,12 @@ export default function InquilinoPage() {
                           {property.bedrooms} {locale === 'es' ? 'hab' : 'bed'}
                         </span>
                         <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
-                          {property.bathrooms} {locale === 'es' ? 'baños' : 'bath'}
+                          {property.bathrooms}{' '}
+                          {locale === 'es'
+                            ? property.bathrooms === 1
+                              ? 'baño'
+                              : 'baños'
+                            : 'bath'}
                         </span>
                         <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
                           {property.area} m²

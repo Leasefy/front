@@ -6,17 +6,20 @@
  * Implements:
  *  - D-31-13 multi-select stage + channel chips, days-in-stage range, search
  *  - D-31-14 default sort label "Más estancados primero" (server enforces)
- *  - D-31-15 cursor-based infinite scroll via IntersectionObserver
+ *  - D-31-15 paginado con cursor del backend, presentado con el paginador
+ *    canónico del panel (`TablePagination`): era la única lista con scroll
+ *    infinito, y se leía distinto a todas las demás.
  *  - D-31-08 mask rendering for all PII at list level
  *  - ?stage=S3 / ?stage=S2,S3 querystring prefill
- *  - sm: filters in bottom drawer; md+: filters in left sidebar
+ *  - Filtros en UNA sola barra dentro de la Card, que envuelve en pantallas
+ *    angostas (antes había una copia en un cajón para móvil).
  *
  * Does NOT wire the PIIRevealModal — that lands in 31-10.
  * Does NOT render raw cédula / phone / email anywhere.
  */
 
 import * as React from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Users } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
@@ -34,6 +37,11 @@ import { Button, Input, Badge } from '@/components/ui'
 import { Card } from '@leasefy/cadence'
 import { Chip, RangeSlider } from '@leasefy/cadence'
 import { ETAPAS_ES } from '@/lib/cobranza/acuerdo-general-vocab'
+import { TablePagination } from '@/components/ui/pagination'
+import {
+  PAGE_SIZE_OPTIONS,
+  useTablePagination,
+} from '@/lib/hooks/use-table-pagination'
 import {
   Table,
   TableHeader,
@@ -160,25 +168,35 @@ export default function DeudoresListClient() {
     daysMax !== DAYS_MAX_DEFAULT ||
     searchPayload.length > 0
 
-  // ── Infinite scroll sentinel — hooks MUST run before any early return (Rules of Hooks) ──
-  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  // ── Paginado ──────────────────────────────────────────────────────────────
+  //
+  // Esta lista era la única del panel con scroll infinito. La fuente sigue
+  // siendo un cursor del backend, así que el paginador recorta lo que YA está
+  // cargado y pide la página siguiente cuando el usuario se acerca al final de
+  // lo traído. Así se ve igual que las demás tablas sin mentir sobre el total:
+  // el pie dice lo que hay, y `hasMore` avisa que puede haber más.
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(pages, {
+    resetKey: `${stages.join(',')}|${channels.join(',')}|${daysMin}-${daysMax}|${searchPayload}`,
+  })
+
+  // Al pararse en la última página cargada, se trae la siguiente. Sin esto el
+  // paginador se quedaría clavado en lo que vino en la primera respuesta.
   useEffect(() => {
-    const el = sentinelRef.current
-    if (!el) return
-    if (!hasMore) return
-    const obs = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            void loadMore()
-          }
-        }
-      },
-      { rootMargin: '300px' },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [hasMore, loadMore, pages.length])
+    if (!hasMore || isLoadingMore) return
+    if (page * pageSize >= pages.length) void loadMore()
+  }, [page, pageSize, pages.length, hasMore, isLoadingMore, loadMore])
+
+  // El centinela de scroll infinito se fue con el paginador: quien pide la
+  // página siguiente ahora es el propio paginador, al llegar al final de lo
+  // cargado. Dejarlo habría disparado `loadMore()` dos veces por la misma fila.
 
   if (isLoading && pages.length === 0) return <CobranzaDeudoresListSkeleton />
 
@@ -236,7 +254,7 @@ export default function DeudoresListClient() {
   // Antes los filtros vivían en una columna suelta a la izquierda, fuera de
   // toda tarjeta, y la tabla flotaba al lado. Era la única pantalla del panel
   // armada así.
-  const contador = `${pages.length}${hasMore ? '+' : ''} ${pages.length === 1 ? 'caso' : 'casos'}`
+  const contador = `${total}${hasMore ? '+' : ''} ${total === 1 ? 'caso' : 'casos'}`
 
   return (
     <main className="p-6 lg:p-8 space-y-6">
@@ -417,7 +435,7 @@ export default function DeudoresListClient() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pages.map((d) => (
+                  {pageItems.map((d) => (
                     <TableRow
                       key={d.id}
                       data-testid={`caso-${d.id}`}
@@ -463,7 +481,7 @@ export default function DeudoresListClient() {
 
             {/* ── Tarjetas (sm) ─────────────────────────────────────────── */}
             <ul className="md:hidden divide-y divide-border">
-              {pages.map((d) => (
+              {pageItems.map((d) => (
                 <li key={d.id}>
                   <button
                     type="button"
@@ -495,15 +513,25 @@ export default function DeudoresListClient() {
           </>
         )}
 
-        {/* ── Pie: el resto de la cartera se carga al llegar acá ────────── */}
-        {hasMore && (
-          <div
-            ref={sentinelRef}
-            className="flex items-center justify-center border-t border-border px-4 py-3 text-xs text-fg-muted"
-          >
-            {isLoadingMore
-              ? t('inmobiliaria.ai.cobranza.deudores.loadingMore')
-              : `Mostrando ${pages.length} casos`}
+        {/* ── Pie: el paginador del design system, igual que las demás ──── */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
+
+        {/* Trayendo la página siguiente del cursor. No es un estado vacío ni un
+            error: son filas que todavía no llegaron. */}
+        {isLoadingMore && (
+          <div className="border-t border-border px-4 py-2 text-center text-xs text-fg-muted">
+            {t('inmobiliaria.ai.cobranza.deudores.loadingMore')}
           </div>
         )}
       </Card>

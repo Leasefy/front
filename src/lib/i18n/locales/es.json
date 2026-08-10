@@ -5179,8 +5179,8 @@
           }
         },
         "deudores": {
-          "title": "Deudores",
-          "subtitle": "Lista de cartera — todos los deudores activos",
+          "title": "Casos",
+          "subtitle": "Cada caso es un deudor con cartera en curso. Arriba, los más estancados.",
           "filters": {
             "title": "Filtros",
             "stage": "Etapa",

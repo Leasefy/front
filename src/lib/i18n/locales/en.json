@@ -5178,8 +5178,8 @@
           }
         },
         "deudores": {
-          "title": "Debtors",
-          "subtitle": "Portfolio list — all active debtors",
+          "title": "Cases",
+          "subtitle": "Each case is a debtor with an open balance. Most stalled first.",
           "filters": {
             "title": "Filters",
             "stage": "Stage",

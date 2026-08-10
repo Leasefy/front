@@ -27,16 +27,13 @@ import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaImportCard'
 import { CobranzaDeudoresListSkeleton } from '@/components/skeleton/panel/CobranzaDeudoresListSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button, Input } from '@/components/ui'
-import {
-  Chip,
-  Badge,
-  RangeSlider,
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@leasefy/cadence'
+// `Badge` sale del ADAPTADOR local, no de Cadence crudo: el crudo es h-5/11px
+// y su variante `info` es hex fijo que no sigue el modo oscuro. Es el mismo
+// Badge que usan las otras tablas del panel.
+import { Button, Input, Badge } from '@/components/ui'
+import { Card } from '@leasefy/cadence'
+import { Chip, RangeSlider } from '@leasefy/cadence'
+import { ETAPAS_ES } from '@/lib/cobranza/acuerdo-general-vocab'
 import {
   Table,
   TableHeader,
@@ -56,10 +53,26 @@ const DAYS_MAX_DEFAULT = 90
 
 // Tailwind tokens for days-in-stage badge — D-31 spec: green ≤3, amber 4-7, red ≥8
 // (semantic status tints vía tokens del DS — contrato §8)
-function daysBadgeVariant(days: number): 'success' | 'warning' | 'danger' {
+// `destructive` es el nombre del adaptador local para el `danger` del DS.
+function daysBadgeVariant(days: number): 'success' | 'warning' | 'destructive' {
   if (days <= 3) return 'success'
   if (days <= 7) return 'warning'
-  return 'danger'
+  return 'destructive'
+}
+
+/**
+ * El canal en español. El back devuelve además `mixed` —más de un canal en
+ * juego— que no está en la lista de filtros y salía crudo en la tabla: la
+ * columna decía «mixed» en las 45 filas.
+ */
+function etiquetaDeCanal(
+  canal: string,
+  t: (k: never) => string,
+): string {
+  if (canal === 'mixed') return 'Varios'
+  const conocido = (CHANNELS as string[]).includes(canal)
+  if (!conocido) return canal
+  return t(`inmobiliaria.ai.cobranza.deudores.channels.${canal}` as never)
 }
 
 export default function DeudoresListClient() {
@@ -83,7 +96,9 @@ export default function DeudoresListClient() {
   const [daysMin, setDaysMin] = useState<number>(DAYS_MIN_DEFAULT)
   const [daysMax, setDaysMax] = useState<number>(DAYS_MAX_DEFAULT)
   const [searchInput, setSearchInput] = useState<string>('')
-  const [filtersDrawerOpen, setFiltersDrawerOpen] = useState<boolean>(false)
+  // Ya no hay `filtersDrawerOpen`: los filtros son UNA sola barra que envuelve.
+  // Antes había una copia en un cajón para móvil, con dos definiciones de los
+  // mismos chips que podían separarse con cualquier cambio.
 
   // ── Debounced + hash-aware search value sent to the hook ──────────────────
   const [searchPayload, setSearchPayload] = useState<string>('')
@@ -208,334 +223,290 @@ export default function DeudoresListClient() {
     router.push(`/panel/inmobiliaria/ai/cobranza/deudores/${id}`)
   }
 
-  // ── Sub-renderers ─────────────────────────────────────────────────────────
-  const FiltersPanel = () => (
-    <div className="space-y-5">
-      <h2 className="text-sm font-semibold text-fg">
-        {t('inmobiliaria.ai.cobranza.deudores.filters.title')}
-      </h2>
-
-      {/* Stage chips */}
-      <fieldset>
-        <legend className="text-xs font-medium text-fg-muted mb-2">
-          {t('inmobiliaria.ai.cobranza.deudores.filters.stage')}
-        </legend>
-        <div className="flex flex-wrap gap-2">
-          {CARTERA_STAGES.map((s) => (
-            <Chip
-              key={s}
-              size="sm"
-              selected={stages.includes(s)}
-              onClick={() => toggleStage(s)}
-              data-testid={`stage-chip-${s}`}
-            >
-              {s}
-            </Chip>
-          ))}
-        </div>
-      </fieldset>
-
-      {/* Channel chips */}
-      <fieldset>
-        <legend className="text-xs font-medium text-fg-muted mb-2">
-          {t('inmobiliaria.ai.cobranza.deudores.filters.channel')}
-        </legend>
-        <div className="flex flex-wrap gap-2">
-          {CHANNELS.map((c) => (
-            <Chip
-              key={c}
-              size="sm"
-              selected={channels.includes(c)}
-              onClick={() => toggleChannel(c)}
-            >
-              {t(`inmobiliaria.ai.cobranza.deudores.channels.${c}` as Parameters<typeof t>[0])}
-            </Chip>
-          ))}
-        </div>
-      </fieldset>
-
-      {/* Days-in-stage range */}
-      <fieldset>
-        <legend className="text-xs font-medium text-fg-muted mb-2">
-          {t('inmobiliaria.ai.cobranza.deudores.filters.daysInStage')}
-        </legend>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs text-fg-muted">
-            <span>{daysMin}</span>
-            <span>—</span>
-            <span>{daysMax}</span>
-          </div>
-          <RangeSlider
-            min={DAYS_MIN_DEFAULT}
-            max={DAYS_MAX_DEFAULT}
-            value={[daysMin, daysMax]}
-            onValueChange={([lo, hi]) => {
-              setDaysMin(lo)
-              setDaysMax(hi)
-            }}
-            showLabels={false}
-            aria-label="days-in-stage"
-          />
-        </div>
-      </fieldset>
-
-      <Button
-        variant="link"
-        size="sm"
-        onClick={clearFilters}
-        hideArrow
-        className="px-0 h-auto"
-      >
-        {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
-      </Button>
-    </div>
-  )
-
   // ── Render ────────────────────────────────────────────────────────────────
+  //
+  // Anatomía canónica del panel (la misma de Acuerdos, Pagos, Llamadas, Cartas
+  // y Siniestros):
+  //
+  //   Card
+  //    ├─ barra de filtros   (border-b)
+  //    ├─ tabla              (overflow-x-auto)
+  //    └─ pie                (border-t)
+  //
+  // Antes los filtros vivían en una columna suelta a la izquierda, fuera de
+  // toda tarjeta, y la tabla flotaba al lado. Era la única pantalla del panel
+  // armada así.
+  const contador = `${pages.length}${hasMore ? '+' : ''} ${pages.length === 1 ? 'caso' : 'casos'}`
+
   return (
-    <main className="p-4 lg:p-8 max-w-7xl mx-auto">
-      <header className="mb-5">
+    <main className="p-6 lg:p-8 space-y-6">
+      <header className="space-y-1">
         <h1 className="text-2xl font-semibold text-fg tracking-tight">
           {t('inmobiliaria.ai.cobranza.deudores.title')}
         </h1>
-        <p className="text-sm text-fg-muted mt-0.5">
+        <p className="text-sm text-fg-muted max-w-2xl">
           {t('inmobiliaria.ai.cobranza.deudores.subtitle')}
         </p>
       </header>
 
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Sidebar (md+) */}
-        <aside className="hidden md:block md:w-64 md:sticky md:top-4 md:self-start">
-          <FiltersPanel />
-        </aside>
-
-        {/* Mobile filter toggle (sm) */}
-        <div className="md:hidden flex items-center justify-between mb-2">
-          <span
-            className="text-sm font-medium text-fg-muted"
-            data-testid="sort-label-mobile"
-          >
-            {t('inmobiliaria.ai.cobranza.deudores.sort.daysInStageDesc')}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            hideArrow
-            onClick={() => setFiltersDrawerOpen(true)}
-          >
-            {t('inmobiliaria.ai.cobranza.deudores.openFilters')}
-          </Button>
-        </div>
-
-        {/* Mobile drawer → Cadence Sheet (bottom) */}
-        <Sheet open={filtersDrawerOpen} onOpenChange={setFiltersDrawerOpen}>
-          <SheetContent
-            side="bottom"
-            className="md:hidden max-h-[80vh] overflow-y-auto overscroll-contain rounded-t-xl"
-          >
-            <SheetHeader>
-              <SheetTitle>{t('inmobiliaria.ai.cobranza.deudores.filters.title')}</SheetTitle>
-            </SheetHeader>
-            <div className="mt-4">
-              <FiltersPanel />
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        {/* Main content */}
-        <section className="flex-1 min-w-0">
-          {/* Search + sort label */}
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div className="flex-1 max-w-md">
+      <Card>
+        {/* ── Barra de filtros ──────────────────────────────────────────── */}
+        <div className="border-b border-border px-4 py-3 space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="min-w-0 flex-1 max-w-sm">
               <label htmlFor="debtor-search" className="sr-only">
                 {t('inmobiliaria.ai.cobranza.deudores.filters.search.label')}
               </label>
               <Input
                 id="debtor-search"
-                type="text"
+                type="search"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t('inmobiliaria.ai.cobranza.deudores.filters.search.placeholder')}
               />
-              {searchHint && (
-                <p className="text-xs text-warning mt-1">{searchHint}</p>
-              )}
+              {searchHint && <p className="text-xs text-warning mt-1">{searchHint}</p>}
             </div>
-            <span
-              className="hidden md:inline text-xs font-medium text-fg-muted whitespace-nowrap"
-              data-testid="sort-label"
-            >
-              {t('inmobiliaria.ai.cobranza.deudores.sort.daysInStageDesc')}
-            </span>
-          </div>
-
-          {/* Error */}
-          {error && (
-            <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-3">
-              <p className="text-sm text-danger">
-                {t('inmobiliaria.ai.cobranza.deudores.error')}: {error}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                hideArrow
-                onClick={() => void refetch()}
-                className="shrink-0"
+            <div className="flex items-center gap-3 shrink-0">
+              <span
+                className="text-xs font-medium text-fg-muted whitespace-nowrap"
+                data-testid="sort-label"
               >
-                {t('inmobiliaria.ai.cobranza.deudores.errorRetry')}
-              </Button>
+                {t('inmobiliaria.ai.cobranza.deudores.sort.daysInStageDesc')}
+              </span>
+              <span className="text-xs text-fg-muted tabular-nums">{contador}</span>
             </div>
-          )}
-
-          {/* md+ table */}
-          <div className="hidden md:block overflow-x-auto overscroll-contain rounded-[20px] border border-border bg-surface">
-            <Table stickyHeader>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.name')}</TableHead>
-                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.stage')}</TableHead>
-                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.daysInStage')}</TableHead>
-                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.cedula')}</TableHead>
-                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.phone')}</TableHead>
-                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.email')}</TableHead>
-                  <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.channel')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading && pages.length === 0 && (
-                  Array.from({ length: 5 }, (_, i) => (
-                    <TableRow key={`skeleton-${i}`} className="animate-pulse">
-                      {Array.from({ length: 7 }, (_, j) => (
-                        <TableCell key={j} className="px-3 py-3">
-                          <div className="h-3 w-full bg-surface-muted rounded" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                )}
-                {!isLoading && pages.length === 0 && !error && (
-                  <TableRow>
-                    <TableCell colSpan={7} className="px-3 py-12 text-center">
-                      <p className="text-sm text-fg-muted mb-3">
-                        {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        hideArrow
-                        onClick={clearFilters}
-                      >
-                        {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                )}
-                {pages.map((d) => (
-                  <TableRow
-                    key={d.id}
-                    onClick={() => navigateToDebtor(d.id)}
-                    role="link"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') navigateToDebtor(d.id)
-                    }}
-                    className=" cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <TableCell className="px-3 py-2.5 text-fg whitespace-nowrap">
-                      {d.fullName}
-                    </TableCell>
-                    <TableCell className="px-3 py-2.5">
-                      <span className="text-xs font-semibold text-foreground">
-                        {d.currentStage}
-                      </span>
-                    </TableCell>
-                    <TableCell className="px-3 py-2.5">
-                      <Badge variant={daysBadgeVariant(d.daysInStage)}>
-                        {d.daysInStage}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="px-3 py-2.5">
-                      <Mask field="cedula" value={d.cedulaMasked} />
-                    </TableCell>
-                    <TableCell className="px-3 py-2.5">
-                      <Mask field="phone" value={d.phoneMasked} />
-                    </TableCell>
-                    <TableCell className="px-3 py-2.5">
-                      <Mask field="email" value={d.emailMasked} />
-                    </TableCell>
-                    <TableCell className="px-3 py-2.5 text-xs text-fg-muted">
-                      {d.channel}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
           </div>
 
-          {/* sm cards (mirrors LlamadasTab md+/sm pattern) */}
-          <div className="md:hidden">
-            {!isLoading && pages.length === 0 && !error ? (
-              <div className="rounded-md border border-border bg-surface px-3 py-12 text-center">
-                <p className="text-sm text-fg-muted mb-3">
-                  {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
-                </p>
-                <Button
-                  variant="outline"
+          {/* Los filtros son los mismos en toda anchura: una sola definición,
+              que envuelve. Antes había una copia en un cajón para móvil, con el
+              riesgo de que las dos se separaran. */}
+          <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
+            <fieldset className="flex items-center gap-2 flex-wrap">
+              <legend className="sr-only">
+                {t('inmobiliaria.ai.cobranza.deudores.filters.stage')}
+              </legend>
+              <span className="text-xs font-medium text-fg-muted">
+                {t('inmobiliaria.ai.cobranza.deudores.filters.stage')}
+              </span>
+              {CARTERA_STAGES.map((s) => (
+                <Chip
+                  key={s}
                   size="sm"
-                  hideArrow
-                  onClick={clearFilters}
+                  selected={stages.includes(s)}
+                  onClick={() => toggleStage(s)}
+                  data-testid={`stage-chip-${s}`}
+                  // El código no dice nada solo: el nombre va en el título para
+                  // quien no se sabe la taxonomía de memoria.
+                  title={ETAPAS_ES[s]}
                 >
-                  {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
-                </Button>
+                  {s}
+                </Chip>
+              ))}
+            </fieldset>
+
+            <fieldset className="flex items-center gap-2 flex-wrap">
+              <legend className="sr-only">
+                {t('inmobiliaria.ai.cobranza.deudores.filters.channel')}
+              </legend>
+              <span className="text-xs font-medium text-fg-muted">
+                {t('inmobiliaria.ai.cobranza.deudores.filters.channel')}
+              </span>
+              {CHANNELS.map((c) => (
+                <Chip
+                  key={c}
+                  size="sm"
+                  selected={channels.includes(c)}
+                  onClick={() => toggleChannel(c)}
+                >
+                  {t(`inmobiliaria.ai.cobranza.deudores.channels.${c}` as Parameters<typeof t>[0])}
+                </Chip>
+              ))}
+            </fieldset>
+
+            <fieldset className="flex items-center gap-2">
+              <legend className="sr-only">
+                {t('inmobiliaria.ai.cobranza.deudores.filters.daysInStage')}
+              </legend>
+              <span className="text-xs font-medium text-fg-muted whitespace-nowrap">
+                {t('inmobiliaria.ai.cobranza.deudores.filters.daysInStage')}
+              </span>
+              <span className="text-xs text-fg-muted tabular-nums whitespace-nowrap">
+                {daysMin}–{daysMax}
+              </span>
+              <div className="w-32">
+                <RangeSlider
+                  min={DAYS_MIN_DEFAULT}
+                  max={DAYS_MAX_DEFAULT}
+                  value={[daysMin, daysMax]}
+                  onValueChange={([lo, hi]) => {
+                    setDaysMin(lo)
+                    setDaysMax(hi)
+                  }}
+                  showLabels={false}
+                  aria-label={t('inmobiliaria.ai.cobranza.deudores.filters.daysInStage')}
+                />
               </div>
-            ) : (
-              <ul className="space-y-2">
-                {pages.map((d) => (
-                  <li key={d.id}>
-                    <button
-                      type="button"
-                      onClick={() => navigateToDebtor(d.id)}
-                      className="w-full min-h-11 text-left rounded-md border border-border bg-surface px-3 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-fg truncate">
-                          {d.fullName}
-                        </p>
-                        <span className="text-xs font-semibold text-foreground shrink-0">
-                          {d.currentStage}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <Badge variant={daysBadgeVariant(d.daysInStage)}>
-                          {d.daysInStage} {t('inmobiliaria.ai.cobranza.deudores.columns.daysInStage')}
-                        </Badge>
-                        <Mask field="cedula" value={d.cedulaMasked} />
-                      </div>
-                      <p className="text-xs text-fg-muted mt-1.5">
-                        {d.channel}
-                        {d.lastActivityAt
-                          ? ` · ${new Date(d.lastActivityAt).toLocaleDateString(locale)}`
-                          : ''}
-                      </p>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+            </fieldset>
+
+            {/* Sólo aparece cuando hay algo que limpiar: un botón que no hace
+                nada enseña a ignorar los botones. */}
+            {hasActiveFilters && (
+              <Button
+                variant="link"
+                size="sm"
+                onClick={clearFilters}
+                hideArrow
+                className="px-0 h-auto"
+              >
+                {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
+              </Button>
             )}
           </div>
+        </div>
 
-          {/* Sentinel + loadingMore spinner */}
-          {hasMore && (
-            <div ref={sentinelRef} className="py-6 flex items-center justify-center">
-              {isLoadingMore && (
-                <span className="text-xs text-fg-muted">
-                  {t('inmobiliaria.ai.cobranza.deudores.loadingMore')}
-                </span>
-              )}
+        {/* ── Error ─────────────────────────────────────────────────────── */}
+        {error && (
+          <div
+            role="alert"
+            className="flex items-center justify-between gap-3 flex-wrap border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger"
+          >
+            <span>
+              {t('inmobiliaria.ai.cobranza.deudores.error')}: {error}
+            </span>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="shrink-0 underline underline-offset-2 hover:no-underline"
+            >
+              {t('inmobiliaria.ai.cobranza.deudores.errorRetry')}
+            </button>
+          </div>
+        )}
+
+        {/* ── Vacío filtrado — DENTRO de la tarjeta, no flotando ────────── */}
+        {!isLoading && pages.length === 0 && !error ? (
+          <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
+            <Users className="w-7 h-7 text-fg-muted" weight="duotone" aria-hidden="true" />
+            <p className="text-sm font-medium text-fg">
+              {t('inmobiliaria.ai.cobranza.deudores.emptyFiltered')}
+            </p>
+            <p className="text-xs text-fg-muted max-w-sm">
+              Ningún caso cumple con los filtros puestos. Quitá alguno para ver
+              el resto de la cartera.
+            </p>
+            <Button variant="outline" size="sm" hideArrow className="mt-2" onClick={clearFilters}>
+              {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
+            </Button>
+          </div>
+        ) : (
+          <>
+            {/* ── Tabla (md+) ───────────────────────────────────────────── */}
+            <div className="hidden md:block overflow-x-auto overscroll-contain">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.name')}</TableHead>
+                    <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.stage')}</TableHead>
+                    <TableHead className="text-right">
+                      {t('inmobiliaria.ai.cobranza.deudores.columns.daysInStage')}
+                    </TableHead>
+                    <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.cedula')}</TableHead>
+                    <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.phone')}</TableHead>
+                    <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.email')}</TableHead>
+                    <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.channel')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pages.map((d) => (
+                    <TableRow
+                      key={d.id}
+                      data-testid={`caso-${d.id}`}
+                      onClick={() => navigateToDebtor(d.id)}
+                      role="link"
+                      tabIndex={0}
+                      aria-label={`Ver el caso de ${d.fullName}`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') navigateToDebtor(d.id)
+                      }}
+                      className="cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <TableCell className="text-fg whitespace-nowrap font-medium">
+                        {d.fullName}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" title={ETAPAS_ES[d.currentStage]}>
+                          {d.currentStage}
+                        </Badge>
+                      </TableCell>
+                      {/* Números a la derecha y tabulares: es la columna por la
+                          que está ordenada la tabla, se compara de un vistazo. */}
+                      <TableCell className="text-right">
+                        <Badge variant={daysBadgeVariant(d.daysInStage)}>{d.daysInStage}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Mask field="cedula" value={d.cedulaMasked} />
+                      </TableCell>
+                      <TableCell>
+                        <Mask field="phone" value={d.phoneMasked} />
+                      </TableCell>
+                      <TableCell>
+                        <Mask field="email" value={d.emailMasked} />
+                      </TableCell>
+                      <TableCell className="text-xs text-fg-muted">
+                        {etiquetaDeCanal(d.channel, t)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-          )}
-        </section>
-      </div>
+
+            {/* ── Tarjetas (sm) ─────────────────────────────────────────── */}
+            <ul className="md:hidden divide-y divide-border">
+              {pages.map((d) => (
+                <li key={d.id}>
+                  <button
+                    type="button"
+                    onClick={() => navigateToDebtor(d.id)}
+                    className="w-full min-h-11 text-left px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-fg truncate">{d.fullName}</p>
+                      <Badge variant="outline" title={ETAPAS_ES[d.currentStage]}>
+                        {d.currentStage}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <Badge variant={daysBadgeVariant(d.daysInStage)}>
+                        {d.daysInStage} {t('inmobiliaria.ai.cobranza.deudores.columns.daysInStage')}
+                      </Badge>
+                      <Mask field="cedula" value={d.cedulaMasked} />
+                    </div>
+                    <p className="text-xs text-fg-muted mt-1.5">
+                      {etiquetaDeCanal(d.channel, t)}
+                      {d.lastActivityAt
+                        ? ` · ${new Date(d.lastActivityAt).toLocaleDateString(locale)}`
+                        : ''}
+                    </p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {/* ── Pie: el resto de la cartera se carga al llegar acá ────────── */}
+        {hasMore && (
+          <div
+            ref={sentinelRef}
+            className="flex items-center justify-center border-t border-border px-4 py-3 text-xs text-fg-muted"
+          >
+            {isLoadingMore
+              ? t('inmobiliaria.ai.cobranza.deudores.loadingMore')
+              : `Mostrando ${pages.length} casos`}
+          </div>
+        )}
+      </Card>
     </main>
   )
 }

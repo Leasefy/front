@@ -21,6 +21,7 @@ import { StepIncome } from '@/components/wizard/steps/StepIncome';
 import { StepReferences } from '@/components/wizard/steps/StepReferences';
 import { StepDocuments } from '@/components/wizard/steps/StepDocuments';
 import { StepReview } from '@/components/wizard/steps/StepReview';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 // ============================================================================
 // Page props
@@ -42,7 +43,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   // Handle both Promise and direct params (Next.js version compatibility)
   const resolvedParams = params instanceof Promise ? use(params) : params;
   const searchParams = useSearchParams();
-  const { property, isLoading, error } = useProperty(resolvedParams.propertyId);
+  const { property, isLoading, error, errorCrudo } = useProperty(resolvedParams.propertyId);
 
   // Get pre-filled name and email from URL params (lead capture)
   const initialName = searchParams.get('name') || '';
@@ -112,7 +113,25 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   }
 
   // 404 handling
-  if (!property || error) {
+    /*
+   * «No existe» y «no se pudo cargar» eran la misma pantalla: `if (!x || error)`.
+   * Le decía a alguien con mala conexión que esta propiedad había sido eliminada, y sin
+   * ofrecer reintentar — porque sobre algo que no existe reintentar no tiene
+   * sentido. Las dos señales ya estaban por separado; se juntaban a mano.
+   */
+  if (error) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+        <FalloDeCarga
+          error={errorCrudo ?? error}
+          queEs="esta propiedad"
+          volverA={{ label: 'Ver propiedades disponibles', href: '/propiedades' }}
+        />
+      </div>
+    );
+  }
+
+  if (!property) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="text-center px-4">

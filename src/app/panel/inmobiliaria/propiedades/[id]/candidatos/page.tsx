@@ -1,18 +1,23 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { User, Sparkle, ArrowUpRight } from '@phosphor-icons/react';
+import { User, Sparkle, ArrowUpRight, Scales, X as XIcon } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
-import { Button, Textarea, EmptyState, Badge, Spinner, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
-import { ErrorState } from '@/components/ui/error-state';
+import { Button, Textarea, EmptyState, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
+import { Checkbox } from '@/components/ui/checkbox';
+import { MAXIMO_A_COMPARAR, MINIMO_A_COMPARAR } from '@/lib/inmobiliaria/comparacion';
 import { BackButton } from '@leasefy/cadence';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { CandidateDrawer } from '@/components/inmobiliaria/CandidateDrawer';
+import { ModalAvisarNoElegidos } from '@/components/inmobiliaria/ModalAvisarNoElegidos';
+import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
 import { useContracts } from '@/lib/hooks/useContracts';
 import type { LandlordCandidate, LandlordApplicationStatus } from '@/lib/api/applications.types';
 import type { Property } from '@/lib/types/property';
@@ -27,7 +32,9 @@ const STATUS_CONFIG: Record<
   DRAFT:           { label: 'Borrador',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
   SUBMITTED:       { label: 'Postulado',         bg: 'bg-primary-soft',   text: 'text-primary' },
   UNDER_REVIEW:    { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
-  PREAPPROVED:     { label: 'Pre-aprobado',      bg: 'bg-surface-muted',  text: 'text-fg-muted' },
+  // "Pre-aprobado" no significa nada para quien lo lee (ver docs/VOCABULARIO.md):
+  // mientras el backend siga emitiendo PREAPPROVED, se muestra como "En revisión".
+  PREAPPROVED:     { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
   APPROVED:        { label: 'Aprobado',          bg: 'bg-success-soft',   text: 'text-success' },
   REJECTED:        { label: 'Rechazado',         bg: 'bg-danger-soft',    text: 'text-danger' },
   NEEDS_INFO:      { label: 'Pide info',         bg: 'bg-warning-soft',   text: 'text-warning' },
@@ -70,12 +77,16 @@ const ACTION_CONFIG: Record<
   ActionType,
   { title: string; label: string; placeholder: string; required: boolean; confirmLabel: string; confirmVariant: ConfirmVariant }
 > = {
+  // "Pre-aprobar" es palabra muerta (docs/VOCABULARIO.md): *"pero preaprobar
+  // qué"*. El estado que produce ya se muestra como "En revisión" — la acción
+  // que lo produce ahora dice lo mismo, así el par acción/estado concuerda.
+  // El identificador `preapprove` no cambia: es contrato con el backend.
   preapprove: {
-    title: 'Pre-aprobar candidato',
+    title: 'Pasar candidato a revisión',
     label: 'Mensaje al candidato (opcional)',
     placeholder: 'Mensaje que verá el candidato...',
     required: false,
-    confirmLabel: 'Pre-aprobar',
+    confirmLabel: 'Pasar a revisión',
     confirmVariant: 'default',
   },
   approve: {
@@ -89,7 +100,7 @@ const ACTION_CONFIG: Record<
   reject: {
     title: 'Rechazar postulación',
     label: 'Motivo del rechazo',
-    placeholder: 'Explicá el motivo del rechazo al candidato...',
+    placeholder: 'Explica el motivo del rechazo al candidato...',
     required: true,
     confirmLabel: 'Rechazar',
     confirmVariant: 'destructive',
@@ -97,7 +108,7 @@ const ACTION_CONFIG: Record<
   'request-info': {
     title: 'Solicitar información',
     label: 'Mensaje al candidato',
-    placeholder: '¿Qué información adicional necesitás?',
+    placeholder: '¿Qué información adicional necesitas?',
     required: true,
     confirmLabel: 'Enviar solicitud',
     confirmVariant: 'default',
@@ -118,6 +129,8 @@ function ActionModal({
   const cfg = ACTION_CONFIG[type];
   const [text, setText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Error de una ACCIÓN, no de carga: acá el mensaje sí se muestra tal cual,
+  // porque describe lo que la persona acaba de intentar hacer.
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -214,7 +227,7 @@ function CandidateActions({
           onClick={() => onAction('preapprove', candidate)}
           className={cn(COARSE_HIT_AREA, 'bg-primary-soft text-primary hover:bg-primary-soft/80 whitespace-nowrap')}
         >
-          Pre-aprobar
+          Pasar a revisión
         </Button>
         <Button
           variant="ghost"
@@ -318,12 +331,17 @@ function CandidatosContent() {
   const [property, setProperty] = useState<Property | null>(null);
   const [candidates, setCandidates] = useState<LandlordCandidate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [actionModal, setActionModal] = useState<{
     type: ActionType;
     candidate: LandlordCandidate;
   } | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<LandlordCandidate | null>(null);
+  // Paso 9 del recorrido: comparar. Se limita a 4 porque más no entra sin
+  // scroll horizontal, y comparar con scroll no es comparar.
+  const [paraComparar, setParaComparar] = useState<Set<string>>(() => new Set());
+  // Paso 10: a quién elegimos, y a quiénes hay que avisarles.
+  const [eligiendo, setEligiendo] = useState<LandlordCandidate | null>(null);
 
   // Cargamos contratos del landlord/agencia para saber cuáles aplicaciones ya tienen contrato.
   // Permite mostrar "Ver contrato" en vez de "Crear contrato" en la fila correspondiente.
@@ -345,8 +363,12 @@ function CandidatosContent() {
       setCandidates(candidatesData);
       hasLoadedRef.current = true;
     } catch (err) {
+      // Sólo el primer intento pinta la pantalla de fallo: un refresco de
+      // fondo que falla no debe borrar lo que ya se está viendo.
       if (!hasLoadedRef.current) {
-        setError(err instanceof Error ? err.message : 'Error al cargar los datos');
+        // Se guarda el error ENTERO, no su mensaje: el status es lo que
+        // distingue «no existe» de «no pudimos cargar».
+        setError(err);
       }
     } finally {
       setIsLoading(false);
@@ -359,9 +381,48 @@ function CandidatosContent() {
 
   useAutoRefresh(fetchData);
 
+  /**
+   * Llegar directo a una persona: `?candidato=<id>` abre su cajón apenas
+   * cargan los candidatos.
+   *
+   * Sin esto, tocar a alguien en `/postulaciones` te dejaba en la lista de la
+   * propiedad y tenías que volver a buscarlo — la pantalla decía "haz clic en
+   * una para revisarla" y el clic no revisaba nada. Si el id no está en la
+   * lista no se fuerza nada: queda la lista, que es un destino honesto.
+   *
+   * `abiertoPorUrl` evita reabrir el cajón cuando el auto-refresh vuelve a
+   * traer los candidatos después de que la persona lo cerró.
+   */
+  const candidatoDeLaUrl = useSearchParams().get('candidato');
+  const abiertoPorUrl = useRef(false);
+  useEffect(() => {
+    if (!candidatoDeLaUrl || abiertoPorUrl.current || candidates.length === 0) return;
+    const encontrado = candidates.find((c) => c.id === candidatoDeLaUrl);
+    if (!encontrado) return;
+    abiertoPorUrl.current = true;
+    setSelectedCandidate(encontrado);
+  }, [candidatoDeLaUrl, candidates]);
+
   const handleAction = useCallback((type: ActionType, candidate: LandlordCandidate) => {
+    // Aprobar a uno tiene una consecuencia sobre los demás: quedan esperando
+    // una respuesta que se les prometió. Cuando hay más gente en juego, la
+    // aprobación pasa por el modal que se hace cargo de eso (paso 10) en vez
+    // del formulario suelto. Con un solo candidato no hay nada que decidir.
+    if (type === 'approve') {
+      const hayOtrosEsperando = candidates.some(
+        (c) =>
+          c.id !== candidate.id &&
+          c.status !== 'REJECTED' &&
+          c.status !== 'WITHDRAWN' &&
+          c.status !== 'APPROVED',
+      );
+      if (hayOtrosEsperando) {
+        setEligiendo(candidate);
+        return;
+      }
+    }
     setActionModal({ type, candidate });
-  }, []);
+  }, [candidates]);
 
   const handleConfirmAction = useCallback(async (text: string) => {
     if (!actionModal) return;
@@ -384,16 +445,27 @@ function CandidatosContent() {
     await fetchData();
   }, [actionModal, fetchData]);
 
-  // Stats
-  const activeCount     = candidates.filter((c) => c.status === 'SUBMITTED' || c.status === 'UNDER_REVIEW').length;
-  const preapprovedCount = candidates.filter((c) => c.status === 'PREAPPROVED').length;
-  const approvedCount   = candidates.filter((c) => c.status === 'APPROVED').length;
+  // Stats — solo dos destinos posibles: en revisión o aprobado (docs/VOCABULARIO.md).
+  // PREAPPROVED cuenta como "en revisión": no es un estado que el usuario deba distinguir.
+  const activeCount   = candidates.filter(
+    (c) => c.status === 'SUBMITTED' || c.status === 'UNDER_REVIEW' || c.status === 'PREAPPROVED',
+  ).length;
+  const approvedCount = candidates.filter((c) => c.status === 'APPROVED').length;
 
   // Solo bloquea la vista en el primer load — los auto-refresh son silenciosos.
+  const alternarComparar = useCallback((id: string) => {
+    setParaComparar((prev) => {
+      const siguiente = new Set(prev);
+      if (siguiente.has(id)) siguiente.delete(id);
+      else if (siguiente.size < MAXIMO_A_COMPARAR) siguiente.add(id);
+      return siguiente;
+    });
+  }, []);
+
   if (isLoading && !property) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Spinner size="md" />
+      <div className="p-4 md:p-6">
+        <EsqueletoTabla columnas={4} filas={5} />
       </div>
     );
   }
@@ -401,7 +473,12 @@ function CandidatosContent() {
   if (error) {
     return (
       <div className="p-4 md:p-6">
-        <ErrorState description={error} onRetry={fetchData} />
+        <FalloDeCarga
+          error={error}
+          queEs="esa propiedad"
+          onReintentar={fetchData}
+          volverA={{ label: 'Volver a inmuebles', href: '/panel/inmobiliaria/propiedades' }}
+        />
       </div>
     );
   }
@@ -427,11 +504,23 @@ function CandidatosContent() {
         </div>
       </div>
 
+      {/* Recorrido del inquilino: acá se comparan (paso 9) y se decide (10).
+          Las dos rutas cuelgan de esta misma pantalla, así que se pasan por
+          `hrefs` — `pasos.ts` no puede hardcodear una ruta con [id]. */}
+      <RecorridoHilo
+        paso="comparacion"
+        hrefs={{
+          // Comparar arranca acá: hay que marcar a quiénes antes de poder
+          // compararlos, así que el paso apunta a esta misma lista.
+          comparacion: `/panel/inmobiliaria/propiedades/${propertyId}/candidatos`,
+          decision: `/panel/inmobiliaria/propiedades/${propertyId}/candidatos`,
+        }}
+      />
+
       {/* Stats */}
       {candidates.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <CandidateStatTile value={activeCount} label="En revisión" tone="info" />
-          <CandidateStatTile value={preapprovedCount} label="Pre-aprobados" tone="info" />
           <CandidateStatTile value={approvedCount} label="Aprobados" tone="ok" />
         </div>
       )}
@@ -449,6 +538,9 @@ function CandidatosContent() {
             <Table className="w-full min-w-[580px] [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-card">
               <TableHeader>
                 <TableRow className="border-b border-border bg-surface-muted">
+                  <TableHead className="w-10 pl-4">
+                    <span className="sr-only">Comparar</span>
+                  </TableHead>
                   <TableHead>Candidato</TableHead>
                   <TableHead>Score</TableHead>
                   <TableHead>Estado</TableHead>
@@ -469,10 +561,24 @@ function CandidatosContent() {
                       onClick={() => setSelectedCandidate(candidate)}
                       className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
                     >
+                      {/* Comparar — el clic acá NO abre la ficha */}
+                      <TableCell className="w-10 pl-4" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={paraComparar.has(candidate.id)}
+                          onCheckedChange={() => alternarComparar(candidate.id)}
+                          disabled={
+                            !paraComparar.has(candidate.id) &&
+                            paraComparar.size >= MAXIMO_A_COMPARAR
+                          }
+                          aria-label={`Comparar a ${candidate.tenantName || 'este candidato'}`}
+                          data-testid={`comparar-${candidate.id}`}
+                        />
+                      </TableCell>
+
                       {/* Tenant */}
                       <TableCell className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
                             <span className="text-sm font-medium text-primary">
                               {initials}
                             </span>
@@ -546,6 +652,69 @@ function CandidatosContent() {
           </div>
         )}
       </div>
+
+      {/* Barra de comparación — sólo existe cuando hay algo que comparar.
+          Fija abajo porque la decisión se toma después de recorrer la lista,
+          y para entonces el encabezado ya no está en pantalla. */}
+      {paraComparar.size > 0 && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card px-4 py-3 shadow-overlay md:px-6"
+          role="region"
+          aria-label="Comparar candidatos"
+          data-testid="barra-comparar"
+        >
+          <div className="mx-auto flex max-w-5xl items-center gap-4">
+            <p className="min-w-0 flex-1 text-sm text-fg">
+              <span className="font-medium tabular-nums">{paraComparar.size}</span>{' '}
+              {paraComparar.size === 1 ? 'seleccionado' : 'seleccionados'}
+              {paraComparar.size < MINIMO_A_COMPARAR && (
+                <span className="text-fg-muted"> · elegí al menos {MINIMO_A_COMPARAR}</span>
+              )}
+              {paraComparar.size >= MAXIMO_A_COMPARAR && (
+                <span className="text-fg-muted"> · es el máximo</span>
+              )}
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              hideArrow
+              onClick={() => setParaComparar(new Set())}
+              className="gap-1.5"
+            >
+              <XIcon className="h-3.5 w-3.5" />
+              Quitar
+            </Button>
+            <Button
+              size="sm"
+              hideArrow
+              disabled={paraComparar.size < MINIMO_A_COMPARAR}
+              onClick={() =>
+                router.push(
+                  `/panel/inmobiliaria/propiedades/${propertyId}/candidatos/comparar?ids=${Array.from(paraComparar).join(',')}`,
+                )
+              }
+              className="gap-1.5"
+              data-testid="ir-a-comparar"
+            >
+              <Scales className="h-4 w-4" />
+              Comparar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Paso 10 — elegir a uno y avisarle a los demás */}
+      {eligiendo && (
+        <ModalAvisarNoElegidos
+          elegido={eligiendo}
+          otros={candidates.filter((c) => c.id !== eligiendo.id)}
+          onCerrar={() => setEligiendo(null)}
+          onListo={() => {
+            setEligiendo(null);
+            void fetchData();
+          }}
+        />
+      )}
 
       {/* Action modal */}
       {actionModal && (

@@ -16,8 +16,8 @@ const CATEGORY_BADGE: Record<string, string> = {
   emerald: 'bg-success-soft text-success',
   blue: 'bg-primary-soft text-primary',
   amber: 'bg-warning-soft text-warning',
-  purple: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:bg-neutral-100 dark:bg-neutral-800/15 dark:text-neutral-600',
-  pink: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:bg-neutral-100 dark:bg-neutral-800/15 dark:text-neutral-600',
+  purple: 'bg-surface-muted text-fg-muted',
+  pink: 'bg-surface-muted text-fg-muted',
   indigo: 'bg-primary-soft text-primary',
 };
 

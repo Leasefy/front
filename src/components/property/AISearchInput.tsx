@@ -237,13 +237,17 @@ export function AISearchInput({
                 {/* AI Response Header */}
                 <div className="mb-4 flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-success-50 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-success-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="w-4 h-4 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
                   <div>
                     <p className="text-[13px] font-medium text-foreground">
-                      Encontré <span className="text-success-600 font-mono tabular-nums">{results.length} propiedades</span>
+                      Encontré{' '}
+                      <span className="text-success font-mono tabular-nums">
+                        {results.length}{' '}
+                        {results.length === 1 ? 'propiedad' : 'propiedades'}
+                      </span>
                     </p>
                     <p className="text-[11px] text-muted-foreground">
                       Basado en: &ldquo;{value}&rdquo;

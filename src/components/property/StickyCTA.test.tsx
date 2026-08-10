@@ -55,14 +55,29 @@ function q(sel: string) {
 }
 
 describe('<StickyCTA> — tenant / anonymous viewer', () => {
-  it('shows the apply CTA linking to /aplicar and the apply/visit tabs', () => {
+  /*
+   * El CTA de postularse **sigue estando** — nunca se esconde ni se
+   * deshabilita. Lo que cambió es a dónde lleva: sin aprobación ya no salta
+   * directo al wizard, abre el camino que falta recorrer (ver PostularButton
+   * y docs/VOCABULARIO.md). Un muro convertido en escalón.
+   */
+  it('muestra el CTA de postularse, visible y con su texto', () => {
     render()
 
-    const applyLink = q('a[href="/aplicar/p1"]')
-    expect(applyLink).toBeTruthy()
     expect(container.textContent).toContain('Postularme a esta propiedad')
+    const cta = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Postularme a esta propiedad'),
+    )
+    expect(cta).toBeTruthy()
+    expect(cta?.hasAttribute('disabled')).toBe(false)
     // No agency share panel for a tenant/anonymous viewer.
     expect(q('[data-testid="agency-share-panel"]')).toBeFalsy()
+  })
+
+  it('sin aprobación NO salta directo al wizard: primero explica qué falta', () => {
+    render()
+    // Sin sesión no hay aprobación posible → el gate intercepta el clic.
+    expect(q('a[href="/aplicar/p1"]')).toBeFalsy()
   })
 })
 

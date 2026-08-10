@@ -37,11 +37,15 @@ import {
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
-import { useTemplates, type TemplateRow } from '@/lib/hooks/cobranza/use-templates'
+import { agentFetch } from '@/lib/api/agent-fetch'
+import {
+  useTemplates,
+  type TemplateApiItem,
+  type TemplateRow,
+} from '@/lib/hooks/cobranza/use-templates'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Textarea } from '@/components/ui/textarea'
-import { Spinner, Badge } from '@/components/ui'
+import { Spinner, Badge, type BadgeProps } from '@/components/ui'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -148,14 +152,11 @@ const SAMPLE_VALUES: Record<string, string> = {
 // Token badge helpers
 // =============================================================================
 
-function tokenBadgeClass(count: number): string {
-  if (count >= TOKEN_BUDGET) {
-    return 'bg-danger-soft text-danger'
-  }
-  if (count >= TOKEN_AMBER_THRESHOLD) {
-    return 'bg-warning-soft text-warning'
-  }
-  return 'bg-surface-muted text-fg-muted'
+/** El pill se armaba a mano; el conteo va en un Badge del DS. */
+function tokenBadgeVariant(count: number): NonNullable<BadgeProps['variant']> {
+  if (count >= TOKEN_BUDGET) return 'destructive'
+  if (count >= TOKEN_AMBER_THRESHOLD) return 'warning'
+  return 'secondary'
 }
 
 function estimateTokenCount(text: string): number {
@@ -277,10 +278,11 @@ function TemplateEditorContent({
   const { t } = useI18n()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Local draft state — seeded from template data once
-  const [localDraft, setLocalDraft] = useState(
-    template.bodyDraft ?? template.bodyPublished ?? '',
-  )
+  // Local draft state — seeded from template data once.
+  // `editableBody` = el borrador si existe, si no el texto vivo. Antes caía a ''
+  // cuando la plantilla no se había editado nunca: el editor abría en blanco
+  // sobre una plantilla que sí tenía cuerpo.
+  const [localDraft, setLocalDraft] = useState(template.editableBody)
   const [localStatus, setLocalStatus] = useState<'draft' | 'published' | 'wa_pending'>(
     template.status,
   )
@@ -338,12 +340,14 @@ function TemplateEditorContent({
     setIsSaving(true)
     try {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL ?? ''
-      const res = await fetch(
+      const res = await agentFetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/draft`,
         {
           method: 'PUT',
-          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({ bodyDraft: localDraft }),
+          headers: { 'Content-Type': 'application/json' },
+          // El agente valida `{ body }` (draftBodySchema). Mandábamos
+          // `{ bodyDraft }`, así que «Guardar borrador» siempre daba 400.
+          body: JSON.stringify({ body: localDraft }),
         },
       )
       if (!res.ok) throw new Error(`${res.status}`)
@@ -365,11 +369,11 @@ function TemplateEditorContent({
     setIsPublishing(true)
     try {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL ?? ''
-      const res = await fetch(
+      const res = await agentFetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/publish`,
         {
           method: 'POST',
-          headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
+          headers: { 'Content-Type': 'application/json' },
         },
       )
       if (!res.ok) {
@@ -382,8 +386,11 @@ function TemplateEditorContent({
         }
         return
       }
-      const json = (await res.json()) as { status: string }
-      if (json.status === 'wa_pending') {
+      // El agente devuelve la plantilla completa, no un `{ status }`: ese campo
+      // no existe del lado servidor. El estado se deduce de wa_submission_status.
+      const json = (await res.json()) as TemplateApiItem
+      const waStatus = json.wa_submission_status
+      if (template.category === 'whatsapp' && waStatus === 'pending') {
         setLocalStatus('wa_pending')
         setLocalWaStatus('pending')
       } else {
@@ -404,19 +411,25 @@ function TemplateEditorContent({
     setIsRefreshingWa(true)
     try {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL ?? ''
-      const res = await fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/wa-status`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/cobranza/templates/${template.id}/wa-status`)
       if (!res.ok) throw new Error(`${res.status}`)
+      // Contrato real del agente: `{ status, rejection_reason }` en snake_case.
+      // Leíamos `waSubmissionStatus`/`waRejectionReason`, que nunca llegan: la
+      // píldora se apagaba y el motivo del rechazo no se mostraba jamás.
       const json = (await res.json()) as {
-        waSubmissionStatus: 'pending' | 'approved' | 'rejected'
-        waRejectionReason?: string | null
-        waLastCheckedAt?: string | null
+        status: 'pending' | 'approved' | 'rejected' | null
+        rejection_reason: string | null
+        checked: boolean
       }
-      setLocalWaStatus(json.waSubmissionStatus)
-      setLocalWaRejectionReason(json.waRejectionReason ?? null)
-      setLocalWaLastChecked(json.waLastCheckedAt ?? null)
+      setLocalWaStatus(json.status)
+      // `checked: false` = el agente no pudo confirmar con Meta y nos devolvió
+      // lo último guardado. Se muestra el estado, pero NO se sella una hora de
+      // revisión que no ocurrió, ni se borra el motivo de rechazo anterior.
+      if (json.checked) {
+        setLocalWaRejectionReason(json.rejection_reason ?? null)
+        setLocalWaLastChecked(new Date().toISOString())
+      }
     } catch (err) {
       showErrorToast(
         err instanceof Error ? err.message : t('inmobiliaria.ai.templates.error.waStatus'),
@@ -465,11 +478,12 @@ function TemplateEditorContent({
         {/* Right: token badge + Guardar borrador + Publicar */}
         <div className="flex items-center gap-2 flex-shrink-0">
           {/* Token count badge */}
-          <span
-            className={`inline-flex items-center text-xs rounded-full px-2 py-0.5 font-mono ${tokenBadgeClass(tokenCount)}`}
+          <Badge
+            variant={tokenBadgeVariant(tokenCount)}
+            className="font-mono tabular-nums"
           >
             {tokenCount} tokens
-          </span>
+          </Badge>
 
           {/* Guardar borrador */}
           <Button
@@ -664,9 +678,12 @@ export default function TemplatePage({
   }
 
   if (!template) {
+    // Clave propia: antes reusaba `templates.empty.body` («configura plantillas
+    // para que el agente las use»), que acá no viene al caso — el caso es que
+    // ESTA plantilla no está en el catálogo.
     return (
       <div className="p-6 text-sm text-fg-muted">
-        {t('inmobiliaria.ai.templates.empty.body')}
+        {t('inmobiliaria.ai.templates.notFound')}
       </div>
     )
   }

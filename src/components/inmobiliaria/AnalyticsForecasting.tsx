@@ -177,7 +177,7 @@ function ForecastChart({
   const isPercentMetric = forecast.unit === '%';
 
   return (
-    <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
           {t('inmobiliaria.analytics.forecastComp.projectionMonths', { count: horizon })}
@@ -463,7 +463,7 @@ function ScenarioCard({
         'p-4 rounded-xl border-2 cursor-pointer transition-all',
         isActive
           ? `border-${color}-500 dark:border-${color}-400 bg-${color}-50 dark:bg-${color}-900/20`
-          : 'border-border dark:border-strong bg-surface dark:bg-[#14130F] opacity-60 hover:opacity-100'
+          : 'border-border dark:border-border-strong bg-surface dark:bg-[#14130F] opacity-60 hover:opacity-100'
       )}
       onClick={onToggle}
     >
@@ -525,14 +525,14 @@ function ScenarioCard({
 function ForecastDetailsTable({ data, unit }: { data: ForecastDataPoint[]; unit: string }) {
   const { t, locale } = useI18n();
   return (
-    <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
       <h3 className="text-sm font-medium text-fg dark:text-white mb-4">
         {t('inmobiliaria.analytics.forecastComp.projectionDetails')}
       </h3>
       <div className="overflow-x-auto">
         <Table className="w-full">
           <TableHeader>
-            <TableRow className="border-b border-faint dark:border-strong">
+            <TableRow className="border-b border-border-faint dark:border-border-strong">
               <TableHead className="text-left p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
                 {t('inmobiliaria.analytics.forecastComp.month')}
               </TableHead>
@@ -557,7 +557,7 @@ function ForecastDetailsTable({ data, unit }: { data: ForecastDataPoint[]; unit:
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="border-b border-faint dark:border-strong/50 hover:bg-surface-muted dark:hover:bg-ink/30"
+                className="border-b border-border-faint dark:border-border-strong/50 hover:bg-surface-muted dark:hover:bg-ink"
               >
                 <TableCell className="p-2 text-sm font-medium text-fg dark:text-white">
                   {new Date(point.date).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
@@ -615,7 +615,7 @@ function FactorsPanel({
 }) {
   const { t } = useI18n();
   return (
-    <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center gap-2 mb-4">
         <Funnel className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
         <h3 className="text-sm font-medium text-fg dark:text-white">

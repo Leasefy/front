@@ -27,7 +27,7 @@
  * bg-card/surface-muted, border-border).
  */
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -36,10 +36,8 @@ import {
   FileText,
   Handshake,
   Info,
-  PencilSimple,
-  PaperPlaneTilt,
+  Lock,
   Warning,
-  X,
 } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -69,6 +67,27 @@ import {
   type AgreementProposalDraft,
   type CarteraStage,
 } from '@/lib/hooks/cobranza/use-agreement-propose'
+import { usePromises } from '@/lib/hooks/cobranza/use-promises'
+// El Dialog del ADAPTADOR local (`@/components/ui/dialog`), no el de Cadence
+// crudo: es el que usan los otros 21 modales del panel, trae su padding `p-6` y
+// frena Lenis mientras está abierto.
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  AcuerdosTabla,
+  type AcuerdoFiltro,
+} from '@/components/inmobiliaria/cobranza/AcuerdosTabla'
+import {
+  componerAcuerdos,
+  type AcuerdoRow,
+} from '@/lib/cobranza/acuerdo-vocab'
+import { AcuerdoDetalleSheet } from '@/components/inmobiliaria/cobranza/AcuerdoDetalleSheet'
+import { AcuerdosGeneralesCard } from '@/components/inmobiliaria/cobranza/AcuerdosGeneralesCard'
+import { AcuerdosGeneralesTabla } from '@/components/inmobiliaria/cobranza/AcuerdosGeneralesTabla'
 
 // Etapas donde NO hay superficie de negociación (espejo del backend:
 // agency-cobranza-promises.ts NEGOTIATION_UNAVAILABLE_STAGES). En esas etapas el
@@ -102,10 +121,15 @@ function cuotaMonto(saldo: number, n: number): number {
 
 // ── Card de acuerdo de la lista (cross-link al detalle real) ────────────────────
 
+/**
+ * `row` siempre trae `paymentPlanId`: la lista se filtra por eso antes de
+ * llegar acá. La rama sin plan pintaba un botón «Próximamente» deshabilitado
+ * que nadie podía ver nunca — código muerto que prometía una función pendiente
+ * donde no había ninguna.
+ */
 function AcuerdoListaCard({ row }: { row: PaymentsFunnelItem }) {
   const { formatCurrency, formatDate } = useI18n()
-  const planId = row.paymentPlanId
-  const href = planId ? `${PLANES_BASE}/${planId}` : null
+  const href = `${PLANES_BASE}/${row.paymentPlanId}`
 
   return (
     <li className="rounded-xl border border-border bg-card p-4 space-y-3">
@@ -132,18 +156,12 @@ function AcuerdoListaCard({ row }: { row: PaymentsFunnelItem }) {
             {copFormat(row.amount, formatCurrency)}
           </p>
         </div>
-        {href ? (
-          <Button asChild size="sm" hideArrow>
-            <Link href={href}>
-              Revisar y aprobar
-              <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-            </Link>
-          </Button>
-        ) : (
-          <Button size="sm" variant="outline" hideArrow disabled title="Próximamente">
-            Próximamente
-          </Button>
-        )}
+        <Button asChild size="sm" hideArrow>
+          <Link href={href}>
+            Revisar y aprobar
+            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+          </Link>
+        </Button>
       </div>
     </li>
   )
@@ -237,33 +255,31 @@ function AcuerdoPropuestoCard({
         )}
       </div>
 
-      {/* Acciones — sin endpoint de persistencia/aprobación desde esta superficie.
-          T-323: aprobar/escalar requieren aprobación humana en el detalle real;
-          desde aquí son placeholders honestos deshabilitados. */}
-      <div className="flex flex-wrap items-center gap-2 px-5 py-4 border-t border-border bg-surface-muted">
-        <Button size="sm" hideArrow disabled title="Próximamente">
-          <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
-          Aprobar
-        </Button>
-        <Button size="sm" variant="secondary" hideArrow disabled title="Próximamente">
-          <PencilSimple className="w-3.5 h-3.5" aria-hidden="true" />
-          Editar condiciones
-        </Button>
-        <Button size="sm" variant="outline" hideArrow disabled title="Próximamente">
-          <PaperPlaneTilt className="w-3.5 h-3.5" aria-hidden="true" />
-          Enviar al inquilino
-        </Button>
-        <Button size="sm" variant="ghost" hideArrow disabled title="Próximamente">
-          <Warning className="w-3.5 h-3.5" aria-hidden="true" />
-          Escalar
-        </Button>
-        <Button size="sm" variant="ghost" hideArrow disabled title="Próximamente" className="text-danger hover:text-danger">
-          <X className="w-3.5 h-3.5" aria-hidden="true" />
-          Rechazar
-        </Button>
-        <span className="ml-auto inline-flex items-center px-2.5 py-1 rounded-full bg-surface-muted text-fg-muted text-xs font-medium ring-1 ring-border">
-          Próximamente
-        </span>
+      {/*
+        Acá vivían cinco botones deshabilitados —Aprobar, Editar condiciones,
+        Enviar al inquilino, Escalar, Rechazar— con la etiqueta «Próximamente».
+        Se quitaron porque no eran una función pendiente: **esto todavía no es
+        un acuerdo**. `agreements/propose` calcula un borrador y no persiste
+        nada, así que no hay qué aprobar, ni qué rechazar, ni qué enviar. Un
+        botón «Aprobar» sobre algo que no existe promete un estado que la base
+        no tiene.
+
+        El siguiente paso real es ofrecerlo (POST /cartera/payment-plans/offer,
+        que sí crea el plan y su link de pago) y aprobarlo en el detalle del
+        plan. Ese botón no se agregó acá todavía: crea un plan vivo y genera un
+        link de cobro, y es una decisión de producto, no de cableado.
+      */}
+      <div className="px-5 py-4 border-t border-border bg-surface-muted">
+        <p className="text-xs text-fg-muted leading-relaxed">
+          Esto es un <span className="font-medium text-fg">borrador calculado</span>: sirve
+          para ver las condiciones antes de comprometerlas. Todavía no existe como acuerdo,
+          no se le envió nada al inquilino y no genera cobro. Los acuerdos vivos se aprueban
+          uno por uno en{' '}
+          <Link href={PLANES_BASE} className="text-primary underline underline-offset-2">
+            Pagos › Planes
+          </Link>
+          .
+        </p>
       </div>
     </div>
   )
@@ -306,8 +322,8 @@ function CrearAcuerdoForm() {
   const [primerPago, setPrimerPago] = useState<string>('')
   const [metodoPago, setMetodoPago] = useState<string>('wompi')
   const [consecuencia, setConsecuencia] = useState<string>('reactivar_cobranza')
-  // T-323: un acuerdo SIEMPRE requiere aprobación humana → fijo en Sí, no editable.
-  const requiereAprobacion = true
+  // T-323: un acuerdo SIEMPRE requiere aprobación humana. No es un ajuste, es
+  // una invariante — por eso se enuncia, no se ofrece como interruptor.
   const [notificarPropietario, setNotificarPropietario] = useState<boolean>(true)
 
   // POST de la propuesta + borrador devuelto por el motor de planes.
@@ -525,20 +541,26 @@ function CrearAcuerdoForm() {
 
         {/* Switches */}
         <div className="space-y-3 border-t border-border pt-4">
+          {/*
+            Esto NO es un interruptor: no hay nada que elegir (T-323, la
+            aprobación humana es obligatoria). Y como interruptor mentía: un
+            Switch `checked` + `disabled` se pinta GRIS —igual que uno apagado—
+            mientras el de al lado, encendido y habilitado, se pinta azul. Medido
+            en pantalla: gris rgb(213,209,202) vs azul rgb(26,64,255), ambos con
+            aria-checked="true". Justo en el control de seguridad de la pantalla,
+            leerlo como «apagado» es el peor error posible.
+          */}
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-0.5 min-w-0">
               <p className="text-sm font-medium text-fg">Requiere aprobación humana</p>
               <p className="text-xs text-fg-muted">
-                Obligatorio: ningún acuerdo se activa sin la aprobación explícita de una persona.
+                Ningún acuerdo se activa sin la aprobación explícita de una persona.
               </p>
             </div>
-            <Switch
-              checked={requiereAprobacion}
-              disabled
-              aria-label="Requiere aprobación humana"
-              aria-readonly="true"
-              className="shrink-0 mt-0.5"
-            />
+            <Badge variant="success" className="shrink-0 mt-0.5">
+              <Lock className="w-3 h-3" weight="fill" aria-hidden="true" />
+              Siempre
+            </Badge>
           </div>
 
           <div className="flex items-start justify-between gap-4">
@@ -861,23 +883,60 @@ function AcuerdosContent() {
   const { canAccess } = usePermissionsContext()
   const canApprove = canAccess('cobranza', 'approve')
 
+  const [filtro, setFiltro] = useState<AcuerdoFiltro>('todos')
+  const [crearAbierto, setCrearAbierto] = useState(false)
+  const [detalle, setDetalle] = useState<AcuerdoRow | null>(null)
+
+  // Los DOS orígenes del mismo concepto. Ver `acuerdo-vocab.ts`.
+  const {
+    promises,
+    isLoading: cargandoPromesas,
+    error: errorPromesas,
+    refetch: recargarPromesas,
+  } = usePromises({ limit: 200 })
+  const {
+    rows,
+    isLoading: cargandoPlanes,
+    error: errorPlanes,
+    refetch: recargarPlanes,
+  } = usePaymentsFunnel({ status: 'pending', sort: 'created_at' })
+
+  const planes = useMemo(() => rows.filter((r) => r.paymentPlanId != null), [rows])
+  const acuerdos = useMemo(
+    () => componerAcuerdos(promises, planes),
+    [promises, planes],
+  )
+
+  const cargando = cargandoPromesas || cargandoPlanes
+  // Un origen caído no puede tapar lo que el otro sí trajo.
+  const error = errorPromesas ?? errorPlanes ?? null
+
+  const recargar = useCallback(() => {
+    void recargarPromesas()
+    void recargarPlanes()
+  }, [recargarPromesas, recargarPlanes])
+
   return (
-    <main className="p-6 lg:p-8 space-y-8">
-      <header>
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-fg">
-              Acuerdos de pago
-            </h1>
-            <p className="text-sm text-fg-muted max-w-2xl">
-              Estructura un plan de pago con cuota inicial, cuotas y consecuencias.
-              Más formal que una promesa de pago — y siempre con aprobación humana.
-            </p>
-          </div>
-          <Button asChild variant="secondary" hideArrow className="shrink-0">
-            <Link href={`${BASE}/pendientes`}>Ver pendientes</Link>
-          </Button>
+    <main className="p-6 lg:p-8 space-y-6">
+      <header className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+            Acuerdos de pago
+          </h1>
+          <p className="text-sm text-fg-muted max-w-2xl">
+            Lo que cada deudor se comprometió a pagar: los compromisos que el
+            agente toma en una llamada y los planes de cuotas que armes acá.
+            Ningún plan se activa sin que una persona lo apruebe.
+          </p>
         </div>
+        <Button
+          hideArrow
+          onClick={() => setCrearAbierto(true)}
+          className="shrink-0"
+          data-testid="acuerdo-nuevo"
+        >
+          Nuevo acuerdo
+        </Button>
       </header>
 
       {/* Aviso si el usuario no puede aprobar (la aprobación vive en el detalle real) */}
@@ -891,19 +950,51 @@ function AcuerdosContent() {
         </div>
       )}
 
-      {/* Parte 1 — Lista de acuerdos activos/pendientes */}
-      <AcuerdosLista />
+      {/* Dos cosas distintas, en este orden a propósito:
+          1. Los LÍMITES — el techo que el agente no puede pasar nunca.
+          2. Los ACUERDOS GENERALES — las reglas que la inmobiliaria escribe y
+             que el agente cierra solo, siempre recortadas por (1).
+          Antes las dos se llamaban «acuerdo general» y (2) ni existía. */}
+      <AcuerdosGeneralesCard />
+      <AcuerdosGeneralesTabla />
 
-      {/* Parte 2 — Crear acuerdo */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-base font-semibold text-fg">Crear acuerdo</h2>
-          <p className="text-sm text-fg-muted">
-            Arma una propuesta de plan de pago para un inquilino en mora.
-          </p>
+      {cargando && acuerdos.length === 0 && !error ? (
+        <div className="flex items-center justify-center py-16">
+          <Spinner size="md" />
         </div>
-        <CrearAcuerdoForm />
-      </section>
+      ) : (
+        <AcuerdosTabla
+          acuerdos={acuerdos}
+          filtro={filtro}
+          onFiltro={setFiltro}
+          onAbrir={setDetalle}
+          error={error}
+          onReintentar={recargar}
+        />
+      )}
+
+      <AcuerdoDetalleSheet acuerdo={detalle} onClose={() => setDetalle(null)} />
+
+      {/* Crear — en modal: la pantalla es para MIRAR los acuerdos; armar uno es
+          una tarea puntual que no tiene por qué ocupar media pantalla siempre. */}
+      <Dialog open={crearAbierto} onOpenChange={setCrearAbierto}>
+        <DialogContent className="sm:max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>Nuevo acuerdo de pago</DialogTitle>
+          </DialogHeader>
+          <CrearAcuerdoForm />
+
+          {/* Acá vivía un enlace a Configuración §Negociación para «crear un
+              acuerdo general». Se sacó: armar el marco de los acuerdos no es un
+              ajuste del sistema, y mandaba fuera de Acuerdos justo cuando el
+              usuario estaba armando uno. Ahora se hace en la sección «Acuerdos
+              generales» de esta misma pantalla, con su propia tabla y su nivel
+              interno de navegación (`acuerdos/generales/nuevo`).
+
+              El ancla `#heading-negociacion` que apuntaba ya ni existía: esa
+              sección de Configuración se desarmó en `fcc3ec92`. */}
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }

@@ -530,7 +530,7 @@ export function DispersionWizard({
                   className="p-4 rounded-xl border border-border bg-card"
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-surface-brand flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center">
                       <User className="w-5 h-5 text-primary" />
                     </div>
                     <div className="flex-1">
@@ -688,7 +688,7 @@ export function DispersionWizard({
                   className="p-5 rounded-xl border border-border bg-card"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-surface-brand flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center">
                       <User className="w-6 h-6 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -979,7 +979,7 @@ export function DispersionWizard({
       </div>
 
       {/* Step Content */}
-      <div className="bg-surface dark:bg-card rounded-xl border border-border dark:border-strong overflow-hidden">
+      <div className="bg-surface dark:bg-card rounded-xl border border-border dark:border-border-strong overflow-hidden">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -995,7 +995,7 @@ export function DispersionWizard({
         </div>
 
         {/* Footer Navigation */}
-        <div className="px-6 py-4 border-t border-faint dark:border-strong bg-surface-muted dark:bg-muted/20 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-muted/20 flex items-center justify-between">
           <Button
             type="button"
             variant="ghost"
@@ -1080,7 +1080,7 @@ export function DispersionWizard({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-xl bg-surface dark:bg-card border border-border dark:border-strong"
+              className="w-full max-w-md p-6 rounded-xl bg-surface dark:bg-card border border-border dark:border-border-strong"
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">

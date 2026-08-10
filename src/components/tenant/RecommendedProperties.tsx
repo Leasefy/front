@@ -233,7 +233,7 @@ export function RecommendedProperties({
           className={cn(
             'flex-shrink-0 w-[200px] flex flex-col items-center justify-center',
             'bg-surface-muted/50 border border-dashed border-plan-border rounded-sm',
-            'hover:border-plan-border-hover hover:bg-surface-muted transition-colors',
+            'hover:border-border-strong hover:bg-surface-muted transition-colors',
             'min-h-[320px]'
           )}
         >
@@ -246,7 +246,11 @@ export function RecommendedProperties({
       {/* Footer */}
       <div className="px-5 py-3 border-t border-border flex items-center justify-between bg-surface-muted/30">
         <p className="text-xs text-plan-muted">
-          {recommendations.length} propiedades recomendadas para tu perfil
+          {recommendations.length}{' '}
+          {recommendations.length === 1
+            ? 'propiedad recomendada'
+            : 'propiedades recomendadas'}{' '}
+          para tu perfil
         </p>
         <Link
           href="/inquilino/para-ti"

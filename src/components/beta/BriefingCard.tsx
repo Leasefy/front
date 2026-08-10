@@ -160,7 +160,7 @@ function BriefingSectionCard({ section, isExpanded, onToggle, onAction }: Briefi
             <ul className="space-y-1.5">
               {section.details.map((detail, idx) => (
                 <li key={idx} className="flex gap-2 text-xs text-fg-muted leading-relaxed">
-                  <span className="text-fg-muted/50 mt-0.5 flex-shrink-0">-</span>
+                  <span className="text-fg-subtle mt-0.5 flex-shrink-0">-</span>
                   <span>{detail}</span>
                 </li>
               ))}

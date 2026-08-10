@@ -352,7 +352,7 @@ export function ActaEntregaViewer({
                       {roomItems.map((item) => (
                         <TableRow
                           key={item.id}
-                          className="border-b border-faint dark:border-strong/50 last:border-0"
+                          className="border-b border-border-faint dark:border-border-strong/50 last:border-0"
                         >
                           <TableCell className="py-3 px-4">
                             <span className="font-medium text-foreground text-sm">

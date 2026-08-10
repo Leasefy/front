@@ -6,6 +6,19 @@ import type { PropertyFiltersParams } from '@/lib/api/properties.types';
 import type { Property } from '@/lib/types/property';
 import type { PaginationMeta } from '@/lib/api/properties.types';
 
+/*
+ * `errorCrudo` guarda el error TAL CUAL, además del mensaje.
+ *
+ * `error` se aplasta a string con `err.message`, y ahí se pierde el status
+ * HTTP. Sin status, `clasificarFallo` no puede distinguir un 404 —«esto no
+ * existe», sin reintentar— de un 500 o un fallo de red —«probá de nuevo»—, así
+ * que las cuatro estados colapsan a uno. Medido: un 404 salía como «problema
+ * nuestro, probá de nuevo», mandando a reintentar algo que nunca va a existir.
+ *
+ * Se agrega en vez de cambiar el tipo de `error`: 77 consumidores lo pintan
+ * como string y seguirían funcionando igual.
+ */
+
 // ============================================================================
 // useProperties - list with filters & pagination
 // ============================================================================
@@ -15,6 +28,7 @@ export function useProperties(filters: PropertyFiltersParams = {}) {
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   // Serialize filters to detect changes
   const filtersKey = JSON.stringify(filters);
@@ -23,11 +37,13 @@ export function useProperties(filters: PropertyFiltersParams = {}) {
   const fetchProperties = useCallback(async (params: PropertyFiltersParams) => {
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const result = await propertiesApi.list(params);
       setProperties(result.data);
       setMeta(result.meta);
     } catch (err) {
+      setErrorCrudo(err);
       const message = err instanceof Error ? err.message : 'Error cargando propiedades';
       setError(message);
       setProperties([]);
@@ -48,7 +64,7 @@ export function useProperties(filters: PropertyFiltersParams = {}) {
     fetchProperties(parsed);
   }, [filtersKey, fetchProperties]);
 
-  return { properties, meta, isLoading, error, refetch };
+  return { properties, meta, isLoading, error, errorCrudo, refetch };
 }
 
 // ============================================================================
@@ -59,6 +75,7 @@ export function useProperty(id: string | null | undefined) {
   const [property, setProperty] = useState<Property | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   useEffect(() => {
     if (!id) {
@@ -70,6 +87,7 @@ export function useProperty(id: string | null | undefined) {
     let cancelled = false;
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
 
     propertiesApi
       .getById(id)
@@ -81,6 +99,7 @@ export function useProperty(id: string | null | undefined) {
       })
       .catch((err) => {
         if (!cancelled) {
+          setErrorCrudo(err);
           setError(err instanceof Error ? err.message : 'Error cargando propiedad');
           setProperty(null);
           setIsLoading(false);
@@ -92,7 +111,7 @@ export function useProperty(id: string | null | undefined) {
     };
   }, [id]);
 
-  return { property, isLoading, error };
+  return { property, isLoading, error, errorCrudo };
 }
 
 // ============================================================================
@@ -103,14 +122,17 @@ export function useMyProperties() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const fetchMine = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const result = await propertiesApi.getMine();
       setProperties(result);
     } catch (err) {
+      setErrorCrudo(err);
       const message = err instanceof Error ? err.message : 'Error cargando propiedades';
       setError(message);
       setProperties([]);
@@ -123,7 +145,7 @@ export function useMyProperties() {
     fetchMine();
   }, [fetchMine]);
 
-  return { properties, isLoading, error, refetch: fetchMine };
+  return { properties, isLoading, error, errorCrudo, refetch: fetchMine };
 }
 
 // ============================================================================
@@ -143,6 +165,7 @@ export function useWishlistedProperties(ids: string[]) {
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   // Serialize ids to a stable key so the effect only re-runs on real changes.
   const idsKey = ids.join(',');
@@ -154,12 +177,14 @@ export function useWishlistedProperties(ids: string[]) {
       setProperties([]);
       setIsLoading(false);
       setError(null);
+      setErrorCrudo(null);
       return;
     }
 
     let cancelled = false;
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
 
     Promise.all(
       idList.map((id) =>
@@ -175,6 +200,7 @@ export function useWishlistedProperties(ids: string[]) {
       })
       .catch((err) => {
         if (!cancelled) {
+          setErrorCrudo(err);
           setError(err instanceof Error ? err.message : 'Error cargando propiedades');
           setProperties([]);
           setIsLoading(false);
@@ -186,7 +212,7 @@ export function useWishlistedProperties(ids: string[]) {
     };
   }, [idsKey]);
 
-  return { properties, isLoading, error };
+  return { properties, isLoading, error, errorCrudo };
 }
 
 // ============================================================================
@@ -197,11 +223,13 @@ export function useFeaturedProperties(limit: number = 6) {
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
 
     propertiesApi
       .list({ limit, page: 1 })
@@ -213,6 +241,7 @@ export function useFeaturedProperties(limit: number = 6) {
       })
       .catch((err) => {
         if (!cancelled) {
+          setErrorCrudo(err);
           setError(err instanceof Error ? err.message : 'Error cargando propiedades');
           setProperties([]);
           setIsLoading(false);
@@ -224,5 +253,5 @@ export function useFeaturedProperties(limit: number = 6) {
     };
   }, [limit]);
 
-  return { properties, isLoading, error };
+  return { properties, isLoading, error, errorCrudo };
 }

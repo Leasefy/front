@@ -33,11 +33,18 @@ export interface FunnelApplicationsResponse {
  *     backend, so local dev gets mock data out of the box; OR
  *  2. NEXT_PUBLIC_USE_MOCK_API === 'true' — explicit dev override
  *     (matches .env.example), even with the agent URL set.
- * With the URL configured and no override, the REAL fetch always runs, so
- * production can never serve mock data. Both env vars are read at call time
- * so tests can toggle them with vi.stubEnv.
+ * Both env vars are read at call time so tests can toggle them with vi.stubEnv.
+ *
+ * **Producción nunca entra a modo mock, ni siquiera sin `NEXT_PUBLIC_AGENT_URL`.**
+ * El comentario que estaba acá afirmaba exactamente eso y era falso: bastaba
+ * una env sin poner en el deploy para que una inmobiliaria real viera cuatro
+ * postulaciones inventadas —con nivel y puntaje— y las trabajara como si
+ * fueran personas. Es el mismo defecto que ya se cerró en
+ * `aprobacion.service.ts` y `funnel.service.ts`; este quedó afuera porque
+ * ninguna pantalla lo consumía todavía. Ahora sí la hay.
  */
 function isMockMode(): boolean {
+  if (process.env.NODE_ENV === 'production') return false
   if (process.env.NEXT_PUBLIC_USE_MOCK_API === 'true') return true
   return !process.env.NEXT_PUBLIC_AGENT_URL
 }
@@ -114,15 +121,30 @@ export async function fetchFunnelApplications(
   }
 }
 
-/** Verdict → presentation (label + Tailwind pill classes). */
-export const VERDICT_CONFIG: Record<Verdict, { label: string; className: string }> = {
+/**
+ * Verdict → presentación (clave i18n + clases de token).
+ *
+ * Dos arreglos respecto de la versión anterior:
+ *
+ * 1. `approved` decía **"Pre-aprobada"**, palabra muerta en
+ *    `docs/VOCABULARIO.md` (*"pero preaprobar qué"* —Juan). Lo que el verdict
+ *    dice de verdad es si el agente resolvió la evaluación solo o si necesita
+ *    ojos humanos, así que las etiquetas ahora son esas.
+ * 2. Los colores eran hex crudos (`bg-[#E8F3EC]`), anti-patrón de
+ *    `DESIGN.md` §9. Van por token, que además resuelve el modo oscuro solo.
+ *
+ * La etiqueta es una clave i18n y no un literal: el copy vive en
+ * `locales/{es,en}.json` (VOCABULARIO §Cómo se aplica), y un servicio no puede
+ * llamar a `t()`.
+ */
+export const VERDICT_CONFIG: Record<Verdict, { labelKey: string; className: string }> = {
   approved: {
-    label: 'Pre-aprobada',
-    className: 'bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70]',
+    labelKey: 'inmobiliaria.recorrido.verdict.evaluada',
+    className: 'bg-success-soft text-success',
   },
   review: {
-    label: 'En revisión',
-    className: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
+    labelKey: 'inmobiliaria.recorrido.verdict.revision',
+    className: 'bg-warning-soft text-warning',
   },
 }
 

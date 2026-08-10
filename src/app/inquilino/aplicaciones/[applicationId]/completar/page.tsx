@@ -68,7 +68,7 @@ function mapDocumentsToDocumentInfo(docs: BackendDocument[]): Partial<DocumentIn
 
 function buildProperty(p: NonNullable<BackendApplication['property']>): Property {
   const images = p.images ?? [];
-  const thumbnail = images[0]?.url ?? '/placeholder-property.jpg';
+  const thumbnail = images[0]?.url ?? '/placeholder-property.svg';
   return {
     id: p.id,
     title: p.title,
@@ -143,7 +143,7 @@ export default function CompletarPage({ params }: CompletarPageProps) {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Error cargando la aplicación');
+          setError(err instanceof Error ? err.message : 'Error cargando la postulación');
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -166,7 +166,7 @@ export default function CompletarPage({ params }: CompletarPageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface-muted px-4">
         <div className="text-center">
-          <p className="text-fg-muted mb-4">{error ?? 'No se pudo cargar la aplicación.'}</p>
+          <p className="text-fg-muted mb-4">{error ?? 'No se pudo cargar la postulación.'}</p>
           <a
             href={`/inquilino/aplicaciones/${applicationId}`}
             className="text-primary hover:underline text-sm"

@@ -103,7 +103,7 @@ function BarChart({ data, locale, t }: { data: FlujoCajaMonth[]; locale: string;
         {/* Grid lines */}
         <div className="absolute left-16 right-0 top-0 bottom-8 flex flex-col justify-between pointer-events-none">
           {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="border-t border-faint dark:border-strong" />
+            <div key={i} className="border-t border-border-faint dark:border-border-strong" />
           ))}
         </div>
 
@@ -176,7 +176,7 @@ function TableView({ data, locale, t }: { data: FlujoCajaMonth[]; locale: string
     <div className="overflow-x-auto">
       <Table className="w-full">
         <TableHeader>
-          <TableRow className="border-b border-faint dark:border-strong">
+          <TableRow className="border-b border-border-faint dark:border-border-strong">
             <TableHead className="text-left p-3 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
               {t('inmobiliaria.finance.cashFlow.month')}
             </TableHead>
@@ -201,7 +201,7 @@ function TableView({ data, locale, t }: { data: FlujoCajaMonth[]; locale: string
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="border-b border-faint dark:border-strong hover:bg-surface-muted dark:hover:bg-muted/20 transition-colors"
+              className="border-b border-border-faint dark:border-border-strong hover:bg-surface-muted dark:hover:bg-muted/20 transition-colors"
             >
               <TableCell className="p-3">
                 <span className="font-medium text-fg dark:text-white capitalize">
@@ -239,7 +239,7 @@ function TableView({ data, locale, t }: { data: FlujoCajaMonth[]; locale: string
           ))}
         </TableBody>
         <TableFooter>
-          <TableRow className="bg-surface-muted dark:bg-ink/50 border-t-2 border-border dark:border-strong">
+          <TableRow className="bg-surface-muted border-t-2 border-border dark:border-border-strong">
             <TableCell className="p-3">
               <span className="font-semibold text-fg dark:text-white">{t('inmobiliaria.finance.cashFlow.total')}</span>
             </TableCell>
@@ -356,7 +356,7 @@ export function FlujoCajaChart({
         </div>
 
         {/* Total Dispersiones */}
-        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface-muted dark:bg-ink">
+        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface-muted dark:bg-ink">
           <div className="flex items-center gap-2 mb-2">
             <ArrowsOutSimple className="w-5 h-5 text-fg dark:text-fg-subtle" />
             <span className="text-sm font-medium text-fg dark:text-fg-subtle">
@@ -437,7 +437,7 @@ export function FlujoCajaChart({
       </div>
 
       {/* Chart or Table */}
-      <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-card">
+      <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-card">
         {viewVariant === 'chart' ? (
           <BarChart data={data.months} locale={locale} t={t} />
         ) : (

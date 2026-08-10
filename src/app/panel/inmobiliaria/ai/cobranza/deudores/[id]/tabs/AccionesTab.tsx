@@ -66,7 +66,7 @@ export function AccionesTab({
   return (
     <div className="space-y-5">
       <section>
-        <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">
+        <h2 className="text-sm font-semibold text-fg mb-3">
           {t('inmobiliaria.ai.cobranza.detail.acciones.title')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -115,7 +115,7 @@ export function AccionesTab({
 
       {/* Audit ribbon */}
       <section>
-        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-2">
+        <h3 className="text-sm font-semibold text-fg mb-2">
           {t('inmobiliaria.ai.cobranza.detail.acciones.auditTitle')}
         </h3>
         {audit.isLoading && !audit.data ? (
@@ -123,12 +123,12 @@ export function AccionesTab({
             {Array.from({ length: 3 }, (_, i) => (
               <div
                 key={i}
-                className="h-8 bg-neutral-100 dark:bg-neutral-800 rounded animate-pulse"
+                className="h-8 bg-surface-muted rounded animate-pulse"
               />
             ))}
           </div>
         ) : auditEntries.length === 0 ? (
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs text-fg-muted">
             {t('inmobiliaria.ai.cobranza.detail.acciones.auditEmpty')}
           </p>
         ) : (
@@ -136,12 +136,12 @@ export function AccionesTab({
             {auditEntries.map((e) => (
               <li
                 key={e.id}
-                className="flex items-center justify-between text-xs px-2 py-1 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
+                className="flex items-center justify-between text-xs px-2 py-1 rounded bg-surface-muted border border-border"
               >
-                <span className="font-mono text-neutral-700 dark:text-neutral-200">
+                <span className="font-mono text-fg-muted">
                   {e.action}
                 </span>
-                <span className="text-neutral-500 dark:text-neutral-400">
+                <span className="text-fg-muted">
                   {e.actor_type} · {new Date(e.occurred_at).toLocaleString(locale)}
                 </span>
               </li>
@@ -216,12 +216,12 @@ function CTACard({
       title={disabled ? disabledTooltip : undefined}
       data-testid={testId}
       className={
-        'group text-left rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ' +
+        'group text-left rounded-md border border-border bg-surface px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ' +
         accentClass
       }
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-neutral-900 dark:text-white">
+        <span className="text-sm font-medium text-fg">
           {label}
         </span>
         {badge && (

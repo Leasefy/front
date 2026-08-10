@@ -109,7 +109,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
   const whatsappNumber = agente.phone.replace(/[\s+\-]/g, '');
 
   return (
-    <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
+    <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
       <div className="p-5 lg:p-6">
         {/* Header Row */}
         <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-6">
@@ -264,7 +264,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
           </a>
           <a
             href={`tel:${agente.phone}`}
-            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] text-fg dark:text-fg-subtle font-medium hover:bg-surface-muted dark:hover:bg-ink transition-colors"
+            className="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] text-fg dark:text-fg-subtle font-medium hover:bg-surface-muted dark:hover:bg-ink transition-colors"
           >
             <Phone className="w-4 h-4" />
             {t('inmobiliaria.agente.call')}

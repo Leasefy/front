@@ -19,8 +19,16 @@
 // @ts-ignore — the preset ships as .ts; Tailwind loads it via jiti at build
 // time, TS has no declarations for it and doesn't need them here.
 import dsPreset from "@leasefy/cadence/tailwind-preset";
+import { coloresConAlpha } from "./tailwind.alpha";
 
 const preset = JSON.parse(JSON.stringify(dsPreset)) as Record<string, any>;
 delete preset.darkMode;
+
+// Los colores del DS son `var(--x)` con un hex adentro, y Tailwind no sabe
+// componerles alpha: `bg-surface/50` no generaba NINGUNA regla. Ver
+// tailwind.alpha.ts y docs/CLASES-OPACIDAD-MUERTAS.md.
+if (preset.theme?.extend?.colors) {
+  preset.theme.extend.colors = coloresConAlpha(preset.theme.extend.colors);
+}
 
 export default preset;

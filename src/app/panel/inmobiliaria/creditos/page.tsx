@@ -18,7 +18,7 @@ import { formatCurrency } from '@/lib/format';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { BackButton } from '@/components/ui/back-button';
 import { Button, Badge, Input, Spinner } from '@/components/ui';
-import { ErrorState } from '@/components/ui/error-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import {
   Select,
   SelectContent,
@@ -45,7 +45,7 @@ function CreditosContent() {
   const [balance, setBalance] = useState<AgentCreditsBalance | null>(null);
   const [packs, setPacks] = useState<AgentCreditPack[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [selectedPack, setSelectedPack] = useState<AgentCreditPack | null>(null);
 
   const loadData = useCallback(async () => {
@@ -59,7 +59,7 @@ function CreditosContent() {
       setBalance(b);
       setPacks(p);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar créditos');
+      setError(err);
     } finally {
       setIsLoading(false);
     }
@@ -104,10 +104,10 @@ function CreditosContent() {
             <Spinner size="md" variant="muted" />
           </div>
         ) : error ? (
-          <ErrorState
-            title="No pudimos cargar tus créditos"
-            description={error}
-            onRetry={() => loadData()}
+          <FalloDeCarga
+            error={error}
+            queEs="tus créditos"
+            onReintentar={() => loadData()}
             className="mb-8"
           />
         ) : balance ? (

@@ -131,7 +131,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
         <div className="h-5" />
       )}
       {href && (
-        <CaretRight className="absolute bottom-4 right-4 h-3.5 w-3.5 text-fg-muted/50 group-hover:text-primary transition-colors" weight="bold" />
+        <CaretRight className="absolute bottom-4 right-4 h-3.5 w-3.5 text-fg-subtle group-hover:text-primary transition-colors" weight="bold" />
       )}
     </div>
   );
@@ -184,7 +184,7 @@ function QuickAction({ title, description, href, icon: Icon }: QuickActionProps)
         <p className="text-sm font-medium text-fg">{title}</p>
         <p className="text-xs text-fg-muted">{description}</p>
       </div>
-      <CaretRight className="h-3.5 w-3.5 text-fg-muted/50 group-hover:text-primary transition-colors" weight="bold" />
+      <CaretRight className="h-3.5 w-3.5 text-fg-subtle group-hover:text-primary transition-colors" weight="bold" />
     </Link>
   );
 }

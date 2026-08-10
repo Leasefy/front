@@ -21,6 +21,7 @@ import { PAYMENT_METHODS } from '@/lib/constants/payment-methods';
 import { useI18n } from '@/lib/i18n';
 import { PayRentModal } from '@/components/tenant/PayRentModal';
 import type { TenantPaymentRequestStatus } from '@/lib/api/tenant-payment-requests.types';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 const MONTH_NAMES_ES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -36,7 +37,7 @@ export default function LeaseDetailPage() {
   const params = useParams();
   const leaseId = params.leaseId as string;
 
-  const { lease, isLoading: leaseLoading, refetch: refetchLease } = useLease(leaseId);
+  const { lease, isLoading: leaseLoading, errorCrudo: leaseError, refetch: refetchLease } = useLease(leaseId);
   const { getForLease, refetch: refetchRequests } = useMyPaymentRequests();
   const { info: paymentInfo, refetch: refetchPaymentInfo } = useLeasePaymentInfo(leaseId);
   const requests = getForLease(leaseId);
@@ -54,6 +55,24 @@ export default function LeaseDetailPage() {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
         <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  /*
+   * Si la carga falló, `lease` también queda en null — y esta pantalla decía
+   * «no encontramos tu arriendo». A alguien con un arriendo vigente y mala
+   * conexión le estábamos diciendo que no tiene contrato.
+   */
+  if (leaseError) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+        <FalloDeCarga
+          error={leaseError}
+          queEs="tu arriendo"
+          onReintentar={() => void refetchLease()}
+          volverA={{ label: 'Mi arriendo', href: '/inquilino/arriendo' }}
+        />
       </div>
     );
   }

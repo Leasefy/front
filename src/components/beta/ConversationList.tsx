@@ -174,7 +174,7 @@ export function ConversationList() {
           placeholder={t('beta.sidebar.searchPlaceholder')}
           className={cn(
             'w-full pl-9 pr-3 py-2 h-10 rounded-xl',
-            'text-[13px] placeholder:text-fg-subtle/60',
+            'text-[13px] placeholder:text-fg-subtle',
             'bg-surface-muted/80',
             'border-transparent'
           )}
@@ -195,7 +195,7 @@ export function ConversationList() {
         ) : (
           grouped.map(({ group, items }) => (
             <div key={group} role="listitem">
-              <MonoLabel className="block px-2 mb-1 tracking-widest text-fg-subtle/60">
+              <MonoLabel className="block px-2 mb-1 tracking-widest text-fg-subtle">
                 {t(DATE_GROUP_KEYS[group])}
               </MonoLabel>
               <div className="space-y-0.5">

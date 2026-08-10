@@ -28,6 +28,7 @@ export default function CallCostPanel({ cost }: CallCostPanelProps) {
   const allZero =
     (cost.llmUsd ?? 0) === 0 &&
     (cost.voiceUsd ?? 0) === 0 &&
+    (cost.platformUsd ?? 0) === 0 &&
     (cost.whatsappUsd ?? 0) === 0 &&
     (cost.totalUsd ?? 0) === 0
   return (
@@ -58,6 +59,20 @@ export default function CallCostPanel({ cost }: CallCostPanelProps) {
             </dt>
             <dd className="font-mono tabular-nums text-fg">
               {formatUsd(cost.voiceUsd ?? 0, locale)}
+            </dd>
+          </div>
+          {/*
+            La tarifa de plataforma del proveedor de voz suele ser el
+            componente MÁS grande de la llamada (0.0812 de 0.1405 en la muestra
+            real). Sin esta fila, las partes no suman el total y el desglose
+            miente.
+          */}
+          <div className="flex justify-between">
+            <dt className="text-fg-muted">
+              {t('inmobiliaria.ai.cobranza.call.cost.platform')}
+            </dt>
+            <dd className="font-mono tabular-nums text-fg">
+              {formatUsd(cost.platformUsd ?? 0, locale)}
             </dd>
           </div>
           <div className="flex justify-between">

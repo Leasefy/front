@@ -21,7 +21,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { paths } from '@/lib/api/generated/agent'
 
@@ -104,6 +104,21 @@ export function useDebtorList(filters: UseDebtorListFilters = {}): UseDebtorList
   const loadMoreInFlight = useRef<boolean>(false)
   const hasLoadedFirstPage = useRef<boolean>(false)
 
+  /**
+   * Con qué filtros se pidió la respuesta que estamos esperando.
+   *
+   * Sin esto la pantalla mentía: al marcar una etapa quedaban SIETE filas de
+   * esa etapa arriba y las 45 de antes abajo, con el chip marcado. No era el
+   * filtro roto — era el sondeo de 30s (y la petición anterior en vuelo)
+   * llegando DESPUÉS de la filtrada. Como para entonces `hasLoadedFirstPage`
+   * ya era true, la rama de «refresco» las fusionaba en vez de reemplazarlas.
+   *
+   * La regla: una respuesta sólo se aplica si sigue siendo la vigente. Una
+   * respuesta vieja no es un dato viejo, es un dato de OTRA pregunta.
+   */
+  const filtrosVigentes = useRef<string>(filtersKey)
+  filtrosVigentes.current = filtersKey
+
   // ── Page 1 fetch (initial + filter change + polling) ──────────────────────
   const fetchFirstPage = useCallback(async (): Promise<void> => {
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
@@ -119,13 +134,15 @@ export function useDebtorList(filters: UseDebtorListFilters = {}): UseDebtorList
 
     const qs = buildQs(filters, null)
     const suffix = qs ? `?${qs}` : ''
+    // Con qué pregunta sale esta petición. Si al volver ya no es la vigente,
+    // se descarta entera: aplicarla a medias es lo que hacía que el filtro
+    // pareciera roto.
+    const preguntaDeEstaPeticion = filtersKey
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/debtors${suffix}`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/debtors${suffix}`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as DebtorListResponse
+      if (filtrosVigentes.current !== preguntaDeEstaPeticion) return
       // Polling refresh REPLACES page 1 only. Since each filter change resets
       // pages anyway, "replace page 1" === "set pages to the new page-1 items
       // and keep nextCursor of page 1" — subsequent pages survive because the
@@ -151,9 +168,11 @@ export function useDebtorList(filters: UseDebtorListFilters = {}): UseDebtorList
       setError(null)
       hasLoadedFirstPage.current = true
     } catch (err) {
+      // Un fallo de una pregunta que ya nadie hizo no es un error que mostrar.
+      if (filtrosVigentes.current !== preguntaDeEstaPeticion) return
       setError(err instanceof Error ? err.message : 'Failed to fetch debtors list')
     } finally {
-      setIsLoading(false)
+      if (filtrosVigentes.current === preguntaDeEstaPeticion) setIsLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agencyId, filtersKey])
@@ -181,18 +200,20 @@ export function useDebtorList(filters: UseDebtorListFilters = {}): UseDebtorList
 
     loadMoreInFlight.current = true
     setIsLoadingMore(true)
+    const preguntaDeEstaPeticion = filtersKey
     try {
       const qs = buildQs(filters, nextCursor)
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/debtors?${qs}`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/debtors?${qs}`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as DebtorListResponse
+      // Una página siguiente del filtro anterior se pegaría al final de la
+      // lista nueva: filas que no cumplen el filtro, sin explicación.
+      if (filtrosVigentes.current !== preguntaDeEstaPeticion) return
       setPages((prev) => [...prev, ...json.items])
       setNextCursor(json.nextCursor)
       setError(null)
     } catch (err) {
+      if (filtrosVigentes.current !== preguntaDeEstaPeticion) return
       setError(err instanceof Error ? err.message : 'Failed to load more debtors')
     } finally {
       setIsLoadingMore(false)

@@ -26,6 +26,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import {
   INBOX_GRUPOS,
@@ -51,6 +52,8 @@ export interface InboxThreadSummary {
   channel: string
   label: string | null
   status: string
+  /** Nombre del deudor; null sólo si el deudor ya no existe. */
+  debtorName?: string | null
   unread: boolean
   requiresAction: boolean
   lastMessageAt: string
@@ -162,10 +165,7 @@ export function useCobranzaInbox(): UseCobranzaInboxResult {
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/inbox`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/inbox`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json: InboxListResponse = await res.json()
       setData(json)
@@ -194,7 +194,7 @@ export function useCobranzaInbox(): UseCobranzaInboxResult {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId || !threadId) return false
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/inbox/${threadId}/read`,
           {
             method: 'POST',
@@ -278,10 +278,7 @@ export function useInboxThread(threadId: string | null): UseInboxThreadResult {
     }
     setIsLoading(true)
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/inbox/${threadId}`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/inbox/${threadId}`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json: InboxThreadDetailResponse = await res.json()
       setData(json)

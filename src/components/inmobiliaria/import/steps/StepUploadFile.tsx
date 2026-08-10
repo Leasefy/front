@@ -169,12 +169,12 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
         className={cn(
           'border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all duration-200',
           isParsing
-            ? 'border-border dark:border-strong cursor-not-allowed'
+            ? 'border-border dark:border-border-strong cursor-not-allowed'
             : isDragActive
               ? 'border-primary/30 bg-primary-soft'
               : hasFile
                 ? 'border-success/30 bg-success-soft'
-                : 'border-border dark:border-strong hover:border-primary/30 dark:hover:border-primary/30 hover:bg-surface-muted dark:hover:bg-ink/50'
+                : 'border-border dark:border-border-strong hover:border-primary/30 dark:hover:border-primary/30 hover:bg-surface-muted dark:hover:bg-ink'
         )}
       >
         {/* allowlist: react-dropzone hidden file input (canonical dropzone mechanism) */}
@@ -246,14 +246,14 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
               {t('inmobiliaria.import.upload.rowsDetected', { count: state.rawRows.length })}
             </MonoLabel>
           </div>
-          <div className="overflow-x-auto rounded-xl border border-border dark:border-strong">
+          <div className="overflow-x-auto rounded-xl border border-border dark:border-border-strong">
             <Table className="text-sm">
               <TableHeader>
                 <TableRow className="bg-surface-muted dark:bg-ink">
                   {state.headers.map((header) => (
                     <TableHead
                       key={header}
-                      className="px-3 py-2 text-left whitespace-nowrap border-b border-border dark:border-strong"
+                      className="px-3 py-2 text-left whitespace-nowrap border-b border-border dark:border-border-strong"
                     >
                       {header}
                     </TableHead>
@@ -262,7 +262,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
               </TableHeader>
               <TableBody>
                 {state.rawRows.slice(0, 5).map((row) => (
-                  <TableRow key={row._rowIndex} className="border-b border-faint dark:border-strong last:border-0">
+                  <TableRow key={row._rowIndex} className="border-b border-border-faint dark:border-border-strong last:border-0">
                     {state.headers.map((header) => {
                       const value = String(row[header] ?? '');
                       const truncated = value.length > 30 ? value.slice(0, 30) + '...' : value;

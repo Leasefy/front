@@ -353,11 +353,19 @@ function ConciliacionLiquidaciones() {
           ))}
         </div>
       ) : error ? (
-        // Fail-soft: backend no disponible/404 degrada a la misma superficie vacía.
+        /*
+          Acá el error se pintaba como «no hay nada», con un comentario que lo
+          defendía: «fail-soft, nunca un muro de error que bloquee al operador».
+          La intención es correcta —no se bloquea— pero el texto afirmaba algo
+          falso: no es que no haya, es que no pudimos preguntar. En un módulo
+          que mueve plata, eso hace cerrar el día creyendo que no quedaba nada.
+
+          Se conserva el no-bloqueo y se cambia lo que dice, con reintento.
+        */
         <EmptyState
           icon={Receipt}
-          title="Sin liquidaciones"
-          description="Aún no hay liquidaciones a propietario. Genera la primera con las cifras del periodo."
+          title="No pudimos consultar las liquidaciones"
+          description="No es que no haya: no pudimos preguntarle al servicio. Vuelve a intentarlo."
         />
       ) : isEmpty ? (
         statusFilter === 'todos' ? (

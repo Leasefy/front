@@ -36,8 +36,13 @@ export default function CallStateTracePanel({
               className="flex flex-col gap-0.5 border-l-2 border-border pl-3 py-1"
             >
               <p className="text-sm font-mono text-fg">
+                {/*
+                  `fromStage` es null en la primera transición del deudor (no
+                  venía de ninguna etapa). Antes se interpolaba el null y la
+                  línea decía «null → PREJURIDICO».
+                */}
                 {t('inmobiliaria.ai.cobranza.call.stateTrace.transition', {
-                  from: row.fromStage,
+                  from: row.fromStage ?? 'Inicio',
                   to: row.toStage,
                 })}
               </p>

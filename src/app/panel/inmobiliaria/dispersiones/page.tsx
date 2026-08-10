@@ -481,7 +481,7 @@ function DispersionesContent() {
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
                 <PaperPlaneTilt
                   weight="duotone"
-                  className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
+                  className="h-6 w-6 text-fg-muted"
                   aria-hidden="true"
                 />
               </div>

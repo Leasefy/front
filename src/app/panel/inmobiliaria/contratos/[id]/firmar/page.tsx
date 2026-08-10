@@ -10,6 +10,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { useContract, useContractPreview, useContractActions, useSignedPdfUrl, isPermissionError } from '@/lib/hooks/useContracts';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 // ─── Content ─────────────────────────────────────────────────────────────────
 
@@ -55,9 +56,9 @@ function FirmarContratoContent() {
       // Backend rechaza con 400 "Tenant must sign first" si el landlord intenta firmar antes.
       const msg = actions.lastError?.message ?? '';
       if (msg === 'Tenant must sign first' || /tenant.*sign first/i.test(msg)) {
-        toast.error('El inquilino todavía no firmó. No podés firmar hasta que lo haga.');
+        toast.error('El inquilino todavía no firmó. No puedes firmar hasta que lo haga.');
       } else if (isPermissionError(actions.lastError)) {
-        toast.error('No tenés permisos para esta acción.');
+        toast.error('No tienes permisos para esta acción.');
       } else {
         toast.error('No se pudo firmar el contrato. Intentá de nuevo.');
       }
@@ -74,7 +75,25 @@ function FirmarContratoContent() {
     );
   }
 
-  if (error || !contract) {
+    /*
+   * «No existe» y «no se pudo cargar» eran la misma pantalla: `if (!x || error)`.
+   * Le decía a alguien con mala conexión que este contrato había sido eliminado, y sin
+   * ofrecer reintentar — porque sobre algo que no existe reintentar no tiene
+   * sentido. Las dos señales ya estaban por separado; se juntaban a mano.
+   */
+  if (error) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+        <FalloDeCarga
+          error={error}
+          queEs="este contrato"
+          volverA={{ label: 'Contratos', href: '/panel/inmobiliaria/contratos' }}
+        />
+      </div>
+    );
+  }
+
+  if (!contract) {
     return (
       <div className="max-w-2xl mx-auto p-8">
         <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
@@ -151,7 +170,7 @@ function FirmarContratoContent() {
         </Button>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Firmar contrato</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Revisá el documento y firmá digitalmente para enviarlo al inquilino.
+          Revisa el documento y firma digitalmente para enviarlo al inquilino.
         </p>
       </div>
 

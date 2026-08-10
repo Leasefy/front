@@ -38,6 +38,7 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Spinner } from '@/components/ui'
 import { SegmentedControl } from '@leasefy/cadence'
 import { usePromises } from '@/lib/hooks/cobranza/use-promises'
+import { ManualWAModal } from '@/components/inmobiliaria/cobranza/intervention/ManualWAModal'
 import {
   PromesaCard,
   PROMESA_ESTADO_TOKEN,
@@ -61,7 +62,7 @@ const FILTRO_OPCIONES: { value: EstadoFiltro; label: string }[] = [
   { value: 'cumplida', label: 'Cumplidas' },
 ]
 
-// ── Acción sugerida por estado (placeholder honesto, sin endpoint) ───────────
+// ── Acción sugerida por estado ───────────────────────────────────────────────
 
 const ACCION_POR_ESTADO: Record<PromesaEstado, string> = {
   activa: 'Esperar',
@@ -70,6 +71,16 @@ const ACCION_POR_ESTADO: Record<PromesaEstado, string> = {
   parcial: 'Recontactar',
   cumplida: 'Esperar',
 }
+
+/**
+ * Estados donde la acción sugerida significa CONTACTAR al inquilino. Se
+ * resuelven con el envío manual de WhatsApp (plantilla aprobada), el mismo
+ * camino de la ficha del deudor.
+ *
+ * «Esperar» no lleva botón: no hay nada que hacer, y un botón que dice
+ * «Esperar» invita a hacer clic para nada.
+ */
+const ESTADOS_QUE_CONTACTAN: PromesaEstado[] = ['por_vencer', 'incumplida', 'parcial']
 
 // ── Contenido ────────────────────────────────────────────────────────────────
 
@@ -82,6 +93,9 @@ function PromesasContent() {
   useAutoRefresh(refetch)
 
   const [filtro, setFiltro] = useState<EstadoFiltro>('todas')
+
+  /** Deudor al que se le va a enviar la plantilla de seguimiento. */
+  const [contactarA, setContactarA] = useState<string | null>(null)
 
   // Mapea el histórico de promesas → modelo de UI. El estado ya viene derivado
   // del backend (derivedStatus). El canal/condiciones se exponen cuando existen.
@@ -237,15 +251,17 @@ function PromesasContent() {
                             {ACCION_POR_ESTADO[p.estado]}
                           </span>
                         </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          hideArrow
-                          disabled
-                          title="Próximamente"
-                        >
-                          {ACCION_POR_ESTADO[p.estado]} · Próximamente
-                        </Button>
+                        {ESTADOS_QUE_CONTACTAN.includes(p.estado) && p.debtorId && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            hideArrow
+                            onClick={() => setContactarA(p.debtorId)}
+                            title="Enviar una plantilla aprobada por WhatsApp"
+                          >
+                            {ACCION_POR_ESTADO[p.estado]}
+                          </Button>
+                        )}
                       </div>
                     </li>
                   ))}
@@ -274,6 +290,20 @@ function PromesasContent() {
             </p>
           </>
         )
+      )}
+
+      {contactarA && (
+        <ManualWAModal
+          open
+          onClose={() => setContactarA(null)}
+          debtorId={contactarA}
+          debtorName=""
+          prefill={{}}
+          onSuccess={() => {
+            setContactarA(null)
+            void refetch()
+          }}
+        />
       )}
     </main>
   )

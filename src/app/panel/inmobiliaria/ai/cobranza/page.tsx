@@ -5,21 +5,22 @@ import { useState, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
+  CaretRight,
   ChatCircleText,
   ClipboardText,
   CreditCard,
   FolderOpen,
   UsersThree,
-  Warning,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
 import type { StageTransitionEvent } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
-import { CobranzaExecKpiGrid } from '@/components/inmobiliaria/cobranza/CobranzaExecKpiGrid'
-import { CobranzaAtencionPreview } from '@/components/inmobiliaria/cobranza/CobranzaAtencionPreview'
-import { CobranzaWowBanner } from '@/components/inmobiliaria/cobranza/CobranzaWowBanner'
+import { CobranzaResultadosKpis } from '@/components/inmobiliaria/cobranza/CobranzaResultadosKpis'
+import { CobranzaAnaliticaResumen } from '@/components/inmobiliaria/cobranza/CobranzaAnaliticaResumen'
+import { CobranzaTeTocaATi } from '@/components/inmobiliaria/cobranza/CobranzaTeTocaATi'
+import { CobranzaDeudoresQuePesan } from '@/components/inmobiliaria/cobranza/CobranzaDeudoresQuePesan'
 import { CobranzaStageCard } from '@/components/inmobiliaria/cobranza/CobranzaStageCard'
 import { CobranzaFunnelChart } from '@/components/inmobiliaria/cobranza/CobranzaFunnelChart'
 import { CobranzaTransitionsFeed } from '@/components/inmobiliaria/cobranza/CobranzaTransitionsFeed'
@@ -191,15 +192,15 @@ export default function CobranzaOverviewPage() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {t('inmobiliaria.ai.cobranza.overview.title')}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">
+          <p className="text-fg-muted mt-0.5 text-sm">
             {t(`${PAGES_NS}.salaDesc`)}
           </p>
         </div>
         {data?.generatedAt && (
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap mt-1 flex items-center gap-2">
+          <p className="text-xs text-fg-subtle whitespace-nowrap mt-1 flex items-center gap-2">
             {t('inmobiliaria.ai.cobranza.overview.lastUpdated')}{' '}
             {relativeTime(data.generatedAt, locale)}
             {isConnected && (
@@ -212,91 +213,42 @@ export default function CobranzaOverviewPage() {
         )}
       </header>
 
-      {/* Momento wow — banner narrativo + 4 cards de beneficio (visión #21).
-          Daily-report / cartas / siniestros se cargan dentro del banner; si
-          fallan, degrada a los datos del overview sin romper la página. */}
-      <CobranzaWowBanner
-        enMora={enMora}
-        gestionados={data?.kpis.llamadasHoy ?? 0}
-        escalacionesPendientes={data?.kpis.escalacionesPendientes ?? 0}
-        prejuridicoCount={prejuridicoCount}
-        pagadoHoyCopFallback={data?.kpis.pagadoHoyCop ?? 0}
-      />
+      {/* ═══ 1. TE TOCA A TI ═══════════════════════════════════════════════
+          Lo único que pide que una persona haga algo. Reemplaza cuatro
+          superficies que contestaban la misma pregunta: el banner narrativo,
+          la fila de 4 tarjetas, la tarjeta «Revisar escalaciones» y la lista
+          «Qué necesita tu atención hoy» — con el mismo número repetido cuatro
+          veces y la lista, lo único accionable, al final. */}
+      <CobranzaTeTocaATi enMora={enMora} gestionados={data?.kpis.llamadasHoy ?? 0} />
 
-      {/* Acción principal + ¿Cómo funciona? — patrón avalúos (card + 4 pasos) */}
-      <section className="space-y-4" data-testid="cobranza-accion">
-        {/* Acción principal — revisar escalaciones pendientes */}
-        <div className="rounded-xl border border-border bg-card p-5 max-w-3xl">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
-              <Warning className="w-5 h-5 text-neutral-600 dark:text-neutral-300" weight="duotone" aria-hidden="true" />
-            </div>
-            <div className="flex-1 min-w-0 space-y-0.5">
-              <h2 className="text-base font-semibold text-foreground">
-                {t(`${PAGES_NS}.accionTitle`)}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {t(`${PAGES_NS}.accionDesc`)}
-              </p>
-            </div>
-            <Button asChild hideArrow className="shrink-0" data-testid="cobranza-accion-cta">
-              <Link href="/panel/inmobiliaria/ai/cobranza/escalaciones">
-                {t('inmobiliaria.ai.nav.escalaciones')}
-                {(data?.kpis.escalacionesPendientes ?? 0) > 0 && (
-                  <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-white/20 text-xs font-semibold">
-                    {data?.kpis.escalacionesPendientes}
-                  </span>
-                )}
-              </Link>
-            </Button>
-          </div>
-        </div>
-
-        {/* Cómo funciona — el viaje de la cobranza en 4 pasos */}
-        <div className="rounded-xl border border-border bg-card p-5 max-w-3xl space-y-4" data-testid="cobranza-como-funciona">
-          <h2 className="text-sm font-semibold text-foreground">
-            {t(`${PAGES_NS}.comoFunciona.title`)}
-          </h2>
-          <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {COMO_FUNCIONA_STEPS.map((step, i) => {
-              const StepIcon = step.icon
-              return (
-                <li key={step.titleKey} className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-lg bg-primary-soft flex items-center justify-center shrink-0">
-                      <StepIcon className="w-4 h-4 text-primary" weight="duotone" aria-hidden="true" />
-                    </span>
-                    <span className="text-xs font-medium text-muted-foreground">{i + 1}</span>
-                  </div>
-                  <p className="text-sm font-semibold text-foreground leading-tight">
-                    {t(step.titleKey)}
-                  </p>
-                  <p className="text-xs text-muted-foreground leading-snug">{t(step.descKey)}</p>
-                </li>
-              )
-            })}
-          </ol>
-        </div>
+      {/* ═══ 2. LO QUE HIZO EL AGENTE ══════════════════════════════════════
+          Resultado del trabajo automático. Es información, no acción: por eso
+          va DESPUÉS de lo que te toca, y sin botones que compitan. */}
+      <section className="space-y-4" aria-labelledby="cobranza-agente">
+        <h2 id="cobranza-agente" className="text-lg font-semibold text-fg">
+          Lo que hizo el agente
+        </h2>
+        <CobranzaResultadosKpis overview={data} />
+        {/* Se monta solo con analítica de verdad (≥5 llamadas en 30 días). */}
+        <CobranzaAnaliticaResumen />
       </section>
 
-      {/* Fila ejecutiva de 8 métricas (visión #4) — superset del KPI strip de 4.
-          Solo 4 tienen fuente en el overview; las demás muestran "—" (sin inventar). */}
-      <CobranzaExecKpiGrid data={data} isLoading={isLoading} />
-
-      {/* Qué necesita tu atención hoy — preview top-5 de /pendientes (cross-link,
-          no duplica la lista completa). */}
-      <CobranzaAtencionPreview />
-
-      {/* Stage cards — roving-tabindex tablist composite widget (D-38-13) */}
-      <section
-        role="tablist"
-        aria-label={t('inmobiliaria.ai.cobranza.overview.stages.title')}
-        aria-orientation="horizontal"
-      >
-        <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-3">
-          {t('inmobiliaria.ai.cobranza.overview.stages.title')}
+      {/* ═══ 3. TU CARTERA ═════════════════════════════════════════════════
+          Cómo está compuesta la mora: en qué etapa está cada caso, cómo se
+          mueve entre etapas, y quiénes pesan más. Las tres respondían la misma
+          pregunta desde tres lugares distintos de la página. */}
+      <section className="space-y-4" aria-labelledby="cobranza-cartera">
+        <h2 id="cobranza-cartera" className="text-lg font-semibold text-fg">
+          Tu cartera
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
+
+        {/* Etapas — tablist con roving tabindex (D-38-13) */}
+        <div
+          role="tablist"
+          aria-label={t('inmobiliaria.ai.cobranza.overview.stages.title')}
+          aria-orientation="horizontal"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3"
+        >
           {CARTERA_STAGES.map((stage) => {
             const stageData = data?.stages.find((s) => s.stage === stage)
             return (
@@ -319,60 +271,91 @@ export default function CobranzaOverviewPage() {
             )
           })}
         </div>
-      </section>
 
-      {/* Tabpanel — required by ARIA spec when role=tab + aria-controls present */}
-      <section
-        role="tabpanel"
-        id="stage-panel"
-        aria-labelledby={`stage-tab-${focusedStage}`}
-        className="space-y-6"
-      >
-        {/* Funnel chart */}
-        <section aria-label={t('inmobiliaria.ai.cobranza.overview.funnel.title')}>
-          <h2 className="text-base font-semibold text-neutral-900 dark:text-white mb-3">
-            {t('inmobiliaria.ai.cobranza.overview.funnel.title')}
-          </h2>
+        {/* Tabpanel — lo exige ARIA cuando hay role=tab + aria-controls */}
+        {/* Dos columnas sólo cuando hay dos cosas. `CobranzaDeudoresQuePesan`
+            no se monta sin datos, y una grilla de 2 con una celda vacía dejaba
+            el embudo a media pantalla, como si le faltara algo al lado. */}
+        <div
+          role="tabpanel"
+          id="stage-panel"
+          aria-labelledby={`stage-tab-${focusedStage}`}
+          className="grid grid-cols-1 lg:grid-cols-2 items-start gap-4 [&>*:only-child]:lg:col-span-2"
+        >
           <CobranzaFunnelChart
             stages={data?.stages.map((s) => ({ stage: s.stage, count: s.count })) ?? []}
             isLoading={isLoading}
           />
-        </section>
+          {/* «Los que más pesan» estaba entre siniestros y alertas de umbral,
+              como si fuera algo que atender hoy. Es composición de cartera. */}
+          <CobranzaDeudoresQuePesan />
+        </div>
+      </section>
 
-        {/* Two-column section: transitions (60%) + next actions (40%) */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-          {/* On sm: next actions accordion renders above feed */}
-          <div className="md:hidden">
-            <CobranzaNextActionsPanel
-              actions={data?.nextActions ?? []}
-              isLoading={isLoading}
-            />
-          </div>
-
-          {/* Transitions feed — 3/5 = 60% */}
+      {/* ═══ 4. ACTIVIDAD ══════════════════════════════════════════════════ */}
+      <section className="space-y-4" aria-labelledby="cobranza-actividad">
+        <h2 id="cobranza-actividad" className="text-lg font-semibold text-fg">
+          Actividad
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-3">
-            <CobranzaTransitionsFeed
-              transitions={transitions}
-              isLoading={isLoading}
-            />
+            <CobranzaTransitionsFeed transitions={transitions} isLoading={isLoading} />
           </div>
-
-          {/* Next actions panel — 2/5 = 40% (hidden on sm, accordion shows above) */}
-          <div className="hidden md:block md:col-span-2">
-            <CobranzaNextActionsPanel
-              actions={data?.nextActions ?? []}
-              isLoading={isLoading}
-            />
+          <div className="md:col-span-2">
+            <CobranzaNextActionsPanel actions={data?.nextActions ?? []} isLoading={isLoading} />
           </div>
         </div>
-
-        {/* Error state */}
-        {error && !isLoading && (
-          <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
-            {t('inmobiliaria.ai.cobranza.overview.errorLoading')}: {error}
-          </div>
-        )}
       </section>
+
+      {/* ═══ ¿Cómo funciona? ═══════════════════════════════════════════════
+          Contenido de aprendizaje, no de operación. Estaba clavado en mitad
+          del tablero, ocupando el mismo peso que las decisiones del día, todos
+          los días — también al año de usar el producto. Ahora se abre solo si
+          alguien lo pide, y arranca ABIERTO cuando no hay cartera todavía, que
+          es cuando de verdad sirve. */}
+      <details
+        className="group rounded-xl border border-border bg-card"
+        open={enMora === 0}
+        data-testid="cobranza-como-funciona"
+      >
+        <summary className="flex items-center gap-2 cursor-pointer list-none px-5 py-4 text-sm font-semibold text-fg">
+          <CaretRight
+            className="w-4 h-4 text-fg-muted transition-transform group-open:rotate-90"
+            aria-hidden="true"
+          />
+          {t(`${PAGES_NS}.comoFunciona.title`)}
+        </summary>
+        <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-5 pb-5">
+          {COMO_FUNCIONA_STEPS.map((step, i) => {
+            const StepIcon = step.icon
+            return (
+              <li key={step.titleKey} className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg bg-primary-soft flex items-center justify-center shrink-0">
+                    <StepIcon className="w-4 h-4 text-primary" weight="duotone" aria-hidden="true" />
+                  </span>
+                  <span className="text-xs font-medium text-fg-muted font-mono tabular-nums">
+                    {i + 1}
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-fg leading-tight">{t(step.titleKey)}</p>
+                <p className="text-xs text-fg-muted leading-snug">{t(step.descKey)}</p>
+              </li>
+            )
+          })}
+        </ol>
+      </details>
+
+      {/* Fallo al cargar el panorama de cartera. Va al final y no tapa nada:
+          las secciones que sí cargaron siguen siendo útiles. */}
+      {error && !isLoading && (
+        <div
+          role="alert"
+          className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
+        >
+          {t('inmobiliaria.ai.cobranza.overview.errorLoading')}: {error}
+        </div>
+      )}
     </main>
   )
 }

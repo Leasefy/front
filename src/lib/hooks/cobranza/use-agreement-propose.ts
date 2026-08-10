@@ -31,6 +31,7 @@
 import { useCallback, useState } from 'react'
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useAuth } from '@/lib/auth'
 
 // ── Shapes (espejo del contrato del backend) ─────────────────────────────────
@@ -121,7 +122,7 @@ export function useAgreementPropose(): UseAgreementProposeResult {
       setError(null)
       setNotDeployed(false)
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/agreements/propose`,
           {
             method: 'POST',

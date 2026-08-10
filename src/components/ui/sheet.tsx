@@ -71,7 +71,13 @@ interface SheetContentProps extends Omit<DSSheetContentProps, "hideClose"> {
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof DSSheetContent>,
   SheetContentProps
->(({ side = "right", className, overlayClassName, children, hideCloseButton = false, ...props }, ref) => (
+>(({ side = "right", className, overlayClassName, children, hideCloseButton = false, ...props }, ref) => {
+  // Lenis escucha la rueda en `window`, así que el scroll-lock de Radix no lo
+  // frena: con un cajón abierto, la rueda movía el fondo. Antes se frenaba acá
+  // al montar, asumiendo que el Content sólo existe mientras el cajón está
+  // abierto — falso: en el panel se monta cerrado y dejaba la página congelada.
+  // Ahora lo decide `SmoothScroll` mirando `data-state="open"`.
+  return (
   <DSSheetContent
     ref={ref}
     side={side}
@@ -91,7 +97,8 @@ const SheetContent = React.forwardRef<
   >
     {children}
   </DSSheetContent>
-))
+  )
+})
 SheetContent.displayName = "SheetContent"
 
 const SheetHeader = ({

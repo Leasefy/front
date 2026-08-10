@@ -29,6 +29,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useAuth } from '@/lib/auth'
 
 // ── Shapes (espejo del contrato del backend) ─────────────────────────────────
@@ -122,10 +123,7 @@ export function usePromises(params: UsePromisesParams = {}): UsePromisesResult {
       if (typeof limit === 'number') sp.set('limit', String(limit))
       if (typeof offset === 'number') sp.set('offset', String(offset))
       const qs = sp.toString()
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/promises${qs ? `?${qs}` : ''}`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/promises${qs ? `?${qs}` : ''}`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as CobranzaPromisesResponse
       setData(json)

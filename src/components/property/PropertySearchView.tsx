@@ -11,8 +11,11 @@ import { PropertyGrid } from '@/components/property/PropertyGrid';
 import { AISearchInput } from '@/components/property/AISearchInput';
 import dynamic from 'next/dynamic';
 import { MapToggle } from '@/components/map';
+import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
+import { useAuth } from '@/lib/auth/use-auth';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import { useProperties } from '@/lib/hooks/useProperties';
+import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { cn } from '@/lib/utils';
 import type { PropertyFiltersParams } from '@/lib/api/properties.types';
 
@@ -58,6 +61,15 @@ interface PropertySearchViewProps {
 export function PropertySearchView({ embedded = false, basePath }: PropertySearchViewProps) {
   const searchParams = useSearchParams();
   const heroQuery = searchParams.get('q');
+  const { user } = useAuth();
+  const { aprobacion, vigente: aprobacionVigente } = useAprobacion();
+  /**
+   * La aprobación es del inquilino. A este catálogo también entra gente de la
+   * inmobiliaria y propietarios, y a ellos "todavía no sabes hasta cuánto
+   * puedes arrendar" no les dice nada — no son los que arriendan.
+   * Anónimo SÍ la ve: es el caso principal, quien llega por el link del asesor.
+   */
+  const mostrarAprobacion = !user || user.role === 'tenant';
   const [showMap, setShowMap] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
@@ -282,7 +294,7 @@ export function PropertySearchView({ embedded = false, basePath }: PropertySearc
                 'font-medium text-foreground tracking-tight mb-4',
                 embedded ? 'text-base' : 'text-lg'
               )}>
-                Busqueda inteligente
+                Búsqueda inteligente
               </h1>
               <AISearchInput
                 value={aiSearchQuery}
@@ -395,6 +407,23 @@ export function PropertySearchView({ embedded = false, basePath }: PropertySearc
 
           {/* Property Grid */}
           <div className="p-4 md:p-6">
+            {/* La aprobación vuelve personal al catálogo público, que es donde
+                aterriza quien llega por el link del asesor y todavía no tiene
+                cuenta. Sin aprobación la banda invita; con ella, muestra el
+                número y marca lo que se pasa. */}
+            {mostrarAprobacion && (
+              <TopeAprobadoBanner
+                aprobacion={aprobacion}
+                vigente={aprobacionVigente}
+                className="mb-6"
+                detalle={
+                  user
+                    ? { href: '/inquilino/aprobacion', label: 'Ver detalle' }
+                    : // Sin cuenta su aprobación vive solo en este navegador.
+                      { href: '/auth', label: 'Crear cuenta' }
+                }
+              />
+            )}
             <PropertyGrid
               properties={filteredProperties}
               isWishlisted={isWishlisted}
@@ -404,6 +433,7 @@ export function PropertySearchView({ embedded = false, basePath }: PropertySearc
               onPropertyHover={setHoveredPropertyId}
               propertyRefCallback={propertyRefCallback}
               basePath={basePath}
+              aprobacion={mostrarAprobacion && aprobacionVigente ? aprobacion : null}
             />
           </div>
         </div>

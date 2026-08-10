@@ -12,16 +12,13 @@
  *   - reject(artifactId, reject_reason, reject_comment?) → POST .../reject
  *     body per codegen: CarteraApprovalRejectRequest = { rejectReason, rejectComment? }.
  *
- * Deviation note (Rule 1 — codegen ground truth):
- *   Plan 32-09 spec body for approve was
- *   `{ confirmation: 'yes', physicalSendMethod, sentToAddress }` matching the
- *   unused `CarteraLegalArtifactApproveRequest` schema. The wired operator
- *   endpoint actually uses `CarteraPreJudicialApproveRequest` which is
- *   `{ confirmation: 'yes' }` only. The hook still accepts physicalSendMethod
- *   + sentToAddress so the UI form can gate Aprobar on those values (per plan
- *   spec) and so a future backend extension can light them up — but they are
- *   NOT sent on the wire today. The server reads dispatch routing from the
- *   audit_log payload assembled server-side per D-32 / D-31-07.
+ * ⚠️ Acá vivía una nota que decía que `physicalSendMethod` y `sentToAddress`
+ *   se aceptaban «para la compuerta de la UI» pero NO viajaban. Eso convertía
+ *   el formulario en una mentira: el panel no deja aprobar hasta que elegís
+ *   método de envío y escribís la dirección a la que se manda una carta
+ *   PREJURÍDICA, y después los tiraba. Las dos columnas quedaban NULL y la
+ *   tabla de Cartas mostraba «—» en «Método de envío» para todas las filas.
+ *   Desde 2026-08-10 viajan y el agente las persiste y las deja en `audit_log`.
  *
  *   The 7-day download link is the `signedUrl` field returned by the server
  *   (S3 presigned, TTL enforced server-side) — NOT a derived
@@ -32,6 +29,7 @@ import { useCallback, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import type { components } from '@/lib/api/generated/agent'
 
 import type { RejectReasonSlug } from '@/components/inmobiliaria/cobranza/approval/RechazarForm'
@@ -67,12 +65,18 @@ export interface UseCartaApprovalResult {
   ) => Promise<void>
 }
 
+/**
+ * Va por `agentFetch`, NO por `fetch` a secas: si el token venció mientras la
+ * pestaña estaba en segundo plano, el 401 se reintenta una vez con sesión
+ * fresca. Con `fetch` crudo la pantalla queda clavada en «Error: 401» sobre
+ * datos que sí existen.
+ */
 async function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
   const headers = agentAuthHeaders(init.headers)
   if (init.body && !headers.has('content-type')) {
     headers.set('content-type', 'application/json')
   }
-  return globalThis.fetch(input, { ...init, headers })
+  return agentFetch(input, { ...init, headers })
 }
 
 export function useCartaApproval(): UseCartaApprovalResult {
@@ -106,16 +110,15 @@ export function useCartaApproval(): UseCartaApprovalResult {
       setIsApproving(true)
       setApproveError(null)
       try {
-        // Wire body per codegen ground truth — see file header deviation note.
-        // physicalSendMethod + sentToAddress are accepted by the hook for the
-        // UI gate but not yet on the wire.
-        void physicalSendMethod
-        void sentToAddress
         const res = await authFetch(
           `${agentUrl}/api/agency/${agencyId}/cartera/legal-artifacts/${artifactId}/approve`,
           {
             method: 'POST',
-            body: JSON.stringify({ confirmation: 'yes' }),
+            body: JSON.stringify({
+              confirmation: 'yes',
+              physicalSendMethod,
+              sentToAddress: sentToAddress.trim(),
+            }),
           },
         )
         if (!res.ok) {

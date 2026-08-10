@@ -115,7 +115,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
                 'animate-stagger-in rounded-xl border transition-all cursor-pointer',
                 isExpanded
                   ? 'border-primary/30 bg-primary-soft/50 dark:bg-primary/10'
-                  : 'border-border dark:border-strong hover:border-border dark:hover:border-strong bg-surface dark:bg-[#14130F]'
+                  : 'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong bg-surface dark:bg-[#14130F]'
               )}
               style={{ animationDelay: `${index * 80}ms` }}
               onClick={() => handleCardClick(software.id)}
@@ -157,7 +157,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
 
                 {/* Expandable export instructions */}
                 {isExpanded && (
-                  <div className="mt-4 pt-4 border-t border-faint dark:border-strong">
+                  <div className="mt-4 pt-4 border-t border-border-faint dark:border-border-strong">
                     <MonoLabel className="block text-xs text-fg-muted dark:text-fg-subtle mb-3">
                       Instrucciones de exportación
                     </MonoLabel>

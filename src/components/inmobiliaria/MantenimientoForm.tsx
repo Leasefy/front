@@ -75,7 +75,7 @@ const PRIORITY_OPTIONS: { value: MantenimientoPriority; labelKey: string; descKe
     value: 'low',
     labelKey: 'inmobiliaria.mantenimiento.priorityLow',
     descKey: 'inmobiliaria.mantenimiento.priorityLowDesc',
-    color: 'border-fg-muted bg-fg-muted dark:bg-fg-muted/30',
+    color: 'border-fg-muted bg-surface-muted dark:bg-surface-muted',
   },
   {
     value: 'medium',
@@ -203,7 +203,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]"
+                className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]"
               >
                 {filteredConsignaciones.length > 0 ? (
                   filteredConsignaciones.map((consignacion) => (
@@ -217,7 +217,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                         setSearchQuery('');
                         setIsOpen(false);
                       }}
-                      className="w-full p-3 flex items-start gap-3 hover:bg-surface-muted dark:hover:bg-ink transition-colors border-b border-faint dark:border-strong last:border-b-0 text-left"
+                      className="w-full p-3 flex items-start gap-3 hover:bg-surface-muted dark:hover:bg-ink transition-colors border-b border-border-faint dark:border-border-strong last:border-b-0 text-left"
                     >
                       {consignacion.propertyThumbnail ? (
                         <img
@@ -393,7 +393,7 @@ function PhotoUpload({ photos, onAdd, onRemove, t }: PhotoUploadProps) {
 
         {/* Add photo button */}
         {photos.length < 5 && (
-          <label className="w-24 h-24 rounded-xl border-2 border-dashed border-border dark:border-strong flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/30 dark:hover:border-primary/30 hover:bg-primary-soft transition-all">
+          <label className="w-24 h-24 rounded-xl border-2 border-dashed border-border dark:border-border-strong flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/30 dark:hover:border-primary/30 hover:bg-primary-soft transition-all">
             <Camera className="w-6 h-6 text-fg-subtle" />
             <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.mantenimiento.addPhoto')}</span>
             {/* allowlist: hidden type=file behind a custom camera dropzone tile (playbook hidden/file-input allowlist) */}
@@ -583,7 +583,7 @@ export function MantenimientoForm({
       </div>
 
       {/* Section 2: Request Details */}
-      <div className="space-y-6 pt-6 border-t border-faint dark:border-strong">
+      <div className="space-y-6 pt-6 border-t border-border-faint dark:border-border-strong">
         <h3 className="text-lg font-semibold text-fg dark:text-white flex items-center gap-2">
           <Wrench className="w-5 h-5 text-primary" />
           {t('inmobiliaria.mantenimiento.requestDetail')}
@@ -691,7 +691,7 @@ export function MantenimientoForm({
       </div>
 
       {/* Section 3: Responsibility */}
-      <div className="space-y-6 pt-6 border-t border-faint dark:border-strong">
+      <div className="space-y-6 pt-6 border-t border-border-faint dark:border-border-strong">
         <h3 className="text-lg font-semibold text-fg dark:text-white flex items-center gap-2">
           <Wallet className="w-5 h-5 text-primary" />
           {t('inmobiliaria.mantenimiento.responsibility')}
@@ -705,7 +705,7 @@ export function MantenimientoForm({
       </div>
 
       {/* Section 4: Additional Info */}
-      <div className="space-y-6 pt-6 border-t border-faint dark:border-strong">
+      <div className="space-y-6 pt-6 border-t border-border-faint dark:border-border-strong">
         <h3 className="text-lg font-semibold text-fg dark:text-white flex items-center gap-2">
           <Info className="w-5 h-5 text-primary" />
           {t('inmobiliaria.mantenimiento.additionalInfo')}
@@ -726,7 +726,7 @@ export function MantenimientoForm({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-end gap-3 pt-6 border-t border-faint dark:border-strong">
+      <div className="flex items-center justify-end gap-3 pt-6 border-t border-border-faint dark:border-border-strong">
         <Button
           type="button"
           variant="secondary"

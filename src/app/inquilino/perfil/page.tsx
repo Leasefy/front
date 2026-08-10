@@ -956,7 +956,7 @@ export default function PerfilPage() {
                     <ul className="space-y-2">
                       {(locale === 'es' ? [
                         'Tu perfil y toda tu información personal',
-                        'Historial de aplicaciones y documentos',
+                        'Historial de postulaciones y documentos',
                         'Historial de pagos y contratos',
                         'Acceso a propiedades guardadas',
                         'Conversaciones y mensajes',

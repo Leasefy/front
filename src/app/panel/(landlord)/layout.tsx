@@ -59,7 +59,7 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
     label: 'Mensajes',
     href: '/panel/mensajes',
     icon: Chat,
-    badge: 3,
+    // Sin `badge`: el 3 estaba escrito a mano, no contaba nada.
   },
   // --- AI Beta section (hidden — re-enable when ready) ---
   // {

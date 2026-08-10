@@ -7,9 +7,24 @@ import {
 } from './client'
 
 // ---------------------------------------------------------------------------
-// Stub global fetch so we can drive status/body per test.
+// Este archivo llegó a `develop` en 13b40359 CON los marcadores de conflicto
+// adentro, así que no parseaba y la suite entera del archivo no corría. Eran
+// dos suites independientes —el 401 `SESSION_SUPERSEDED` y el respaldo del
+// 402— que se pisaron al fusionar. Acá conviven: se unieron los helpers y los
+// hooks, sin quitarle un test a ninguna.
 // ---------------------------------------------------------------------------
 
+const realLocation = window.location
+
+function setLocation(pathname: string) {
+  Object.defineProperty(window, 'location', {
+    value: { href: '', pathname },
+    writable: true,
+    configurable: true,
+  })
+}
+
+/** Stub de `fetch` vía `vi.stubGlobal` — usado por la suite del 401. */
 function stubFetch(status: number, body: unknown) {
   const res = {
     status,
@@ -29,6 +44,11 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks()
   setUnauthorizedHandler(null)
+  Object.defineProperty(window, 'location', {
+    value: realLocation,
+    writable: true,
+    configurable: true,
+  })
 })
 
 describe('apiClient 401 handling', () => {

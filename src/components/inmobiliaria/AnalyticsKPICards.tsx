@@ -159,7 +159,7 @@ function KPICard({
 
       {/* Progress Bar */}
       {progress !== null && kpi.targetLabel && (
-        <div className="pt-3 border-t border-faint">
+        <div className="pt-3 border-t border-border-faint">
           <div className="flex items-center justify-between text-xs mb-1.5">
             <div className="flex items-center gap-1 text-fg-muted">
               <Target className="w-3 h-3" />
@@ -182,7 +182,7 @@ function KPICard({
 
       {/* Empty state for cards without target */}
       {progress === null && (
-        <div className="pt-3 border-t border-faint">
+        <div className="pt-3 border-t border-border-faint">
           <div className="h-[26px]" />
         </div>
       )}

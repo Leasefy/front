@@ -56,10 +56,34 @@ const DialogOverlay = React.forwardRef<
 ))
 DialogOverlay.displayName = "DialogOverlay"
 
+/**
+ * Frena Lenis mientras hay un modal abierto.
+ *
+ * El bloqueo de scroll de Radix (react-remove-scroll) tapa el scroll NATIVO del
+ * body, pero Lenis no scrollea por ahí: escucha la rueda en `window` y mueve la
+ * página por su cuenta. Resultado: con el modal abierto, la rueda scrolleaba el
+ * fondo. Va en el adaptador y no en cada pantalla porque le pasa a los 21
+ * diálogos del panel.
+ *
+ * Vive en el Content y no en el Root porque el Content sólo está montado
+ * mientras el modal está abierto — así funciona igual controlado que no.
+ */
+function useFrenarLenisMientrasAbierto() {
+  // Ya no hace nada acá: frenar Lenis al MONTARSE era falso. En el panel de
+  // inmobiliaria este Content se monta cerrado al cargar la pantalla, llamaba
+  // `stop()` y nadie llamaba `start()` — la página quedaba con
+  // `overflow: hidden` para siempre, sin modal a la vista y sin ningún error.
+  //
+  // Ahora lo decide `SmoothScroll` observando `data-state="open"` en el DOM,
+  // que es el estado REAL del modal y no una suposición sobre el montaje.
+}
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DSDialogContent>,
   DSDialogContentProps
->(({ className, overlayClassName, children, ...props }, ref) => (
+>(({ className, overlayClassName, children, ...props }, ref) => {
+  useFrenarLenisMientrasAbierto()
+  return (
   <DSDialogContent
     ref={ref}
     overlayClassName={cn(dialogOverlayClasses, overlayClassName)}
@@ -77,7 +101,8 @@ const DialogContent = React.forwardRef<
   >
     {children}
   </DSDialogContent>
-))
+  )
+})
 DialogContent.displayName = "DialogContent"
 
 const DialogHeader = ({

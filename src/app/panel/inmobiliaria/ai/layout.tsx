@@ -1,59 +1,39 @@
 'use client'
 
 /**
- * AI panel layout — Phase 38 plan 38-06 (D-38-07).
+ * AI panel layout.
  *
- * Hosts the PanelTour auto-trigger for any /panel/inmobiliaria/ai/* route.
- * Renders its children verbatim; the only behavior added is:
- *   1. Reads tourDismissed from PanelPrefsContext.
- *   2. When tourDismissed === false, fires the tour after a 500ms delay
- *      (let realtime channels + per-page hydration settle first).
- *   3. Selects isHub via usePathname() — true only on /panel/inmobiliaria/ai
- *      exactly, so sub-pages get the sidebar-link variant of TOUR_STEPS.
+ * Renders its children verbatim; lo único que agrega es la presentación del
+ * agente en la primera visita a su workspace (`AgentIntroModal`).
  *
- * Dismissal persists via PanelPrefsContext.setTourDismissed(true), which
- * writes localStorage and fires the PATCH /api/agency/:id/members/me/preferences
- * endpoint (D-38-06 hybrid persistence).
+ * ── Una sola novedad, no dos ──────────────────────────────────────────────
  *
- * Refs:
- *   - .planning/phases/38-polish-empty-states-onboarding-a11y/38-CONTEXT.md (D-38-07)
- *   - .planning/phases/38-polish-empty-states-onboarding-a11y/38-06-PLAN.md
+ * Antes convivían dos anuncios: un tour multi-paso anclado al sidebar
+ * (`PanelTour`, con foto, contador «1 / 3» y CTA «Siguiente») y esta tarjeta.
+ * Se veían encimados y con dos interacciones distintas para lo mismo.
+ *
+ * Queda **sólo** `AgentIntroModal`, y con una definición única para todas las
+ * novedades: CTA **«Entendido»**, sin contador de pasos, y al confirmar
+ * **se cierra sin navegar** — el usuario se queda donde estaba.
+ *
+ * El tour anclado además nunca llegó a funcionar como spotlight: pintaba el
+ * fondo con un `box-shadow` de 9999px sobre el propio ítem del sidebar, y el
+ * `overflow-y: auto` del `<nav>` lo recortaba, así que la página nunca se
+ * atenuaba y la tarjeta tapaba el menú.
+ *
+ * `tourDismissed` (PanelPrefsContext) sigue siendo el interruptor global de
+ * novedades: `false` = mostrarlas. Mientras hidrata vale `null`, y ahí se
+ * suprime para no producir un parpadeo.
  */
 
-import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext'
-import { PanelTour } from '@/components/tour/PanelTour'
 import { AgentIntroModal } from '@/components/tour/AgentIntroModal'
 import { WorkspaceNav } from '@/components/inmobiliaria/ai/WorkspaceNav'
 
-const HUB_PATHNAME = '/panel/inmobiliaria/ai'
-
 export default function AiLayout({ children }: { children: React.ReactNode }) {
-  const { tourDismissed, setTourDismissed } = usePanelPrefs()
+  const { tourDismissed } = usePanelPrefs()
   const pathname = usePathname()
-  const isHub = pathname === HUB_PATHNAME
-  const [showTour, setShowTour] = useState(false)
-
-  // Auto-trigger logic (D-38-07): only fire when context has hydrated AND
-  // the user has not yet dismissed. Wait 500ms after mount so any per-page
-  // realtime subscription (SSE / Supabase channels) settles first.
-  useEffect(() => {
-    if (tourDismissed !== false) return
-    const timer = window.setTimeout(() => setShowTour(true), 500)
-    return () => window.clearTimeout(timer)
-  }, [tourDismissed])
-
-  // If the user relaunches the tour via the user-menu link (which sets
-  // tourDismissed → false in session-only state), this effect picks it up
-  // again automatically because the dependency is tourDismissed.
-
-  const handleDismiss = () => {
-    // Close immediately — never block the UI on the PATCH.
-    setShowTour(false)
-    // Persist asynchronously (D-38-06: writes localStorage + DB).
-    void setTourDismissed(true)
-  }
 
   return (
     <>
@@ -61,18 +41,8 @@ export default function AiLayout({ children }: { children: React.ReactNode }) {
           global sidebar. Self-hides on the AI hub and outside known agents. */}
       <WorkspaceNav />
       {children}
-      <PanelTour
-        isOpen={showTour}
-        onDismiss={handleDismiss}
-        isHub={isHub}
-      />
-      {/* Per-agent presentation card (first visit to each agent workspace).
-          Suppressed while the panel tour is open or still pending, so the two
-          announcements never stack. */}
-      <AgentIntroModal
-        pathname={pathname}
-        suppressed={showTour || tourDismissed === false}
-      />
+      {/* Presentación del agente en la primera visita a su workspace. */}
+      <AgentIntroModal pathname={pathname} suppressed={tourDismissed !== false} />
     </>
   )
 }

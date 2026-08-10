@@ -30,7 +30,7 @@ export interface RiskFlagsProps {
  */
 const SEVERITY_STYLES = {
   low: {
-    dot: 'bg-fg-muted',
+    dot: 'bg-surface-muted',
     text: 'text-fg-muted',
     icon: 'text-fg-muted',
   },

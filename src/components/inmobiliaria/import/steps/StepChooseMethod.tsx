@@ -96,10 +96,10 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
               className={cn(
                 'animate-stagger-in text-left rounded-xl border-2 p-6 transition-all duration-200',
                 card.disabled
-                  ? 'opacity-60 cursor-not-allowed border-border dark:border-strong'
+                  ? 'opacity-60 cursor-not-allowed border-border dark:border-border-strong'
                   : isSelected
                     ? 'border-primary/30 bg-primary-soft cursor-pointer'
-                    : 'border-border dark:border-strong hover:border-primary/30 dark:hover:border-primary/30 cursor-pointer'
+                    : 'border-border dark:border-border-strong hover:border-primary/30 dark:hover:border-primary/30 cursor-pointer'
               )}
               style={{ animationDelay: `${index * 80}ms` }}
               disabled={card.disabled}

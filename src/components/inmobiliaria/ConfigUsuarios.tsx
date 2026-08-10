@@ -388,7 +388,7 @@ export function ConfigUsuarios({
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <Table className="w-full min-w-[800px]">
           <TableHeader>
-            <TableRow className="border-b border-faint dark:border-strong">
+            <TableRow className="border-b border-border-faint dark:border-border-strong">
               <TableHead className="text-left p-4">
                 <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
                   {t('inmobiliaria.config.users.tableUser')}

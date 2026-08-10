@@ -186,7 +186,8 @@ export default function ContratosPage() {
           className="mb-8"
         >
           <h1 className="text-3xl font-medium text-fg tracking-tight">
-            {locale === 'es' ? 'Mis Contratos' : 'My Contracts'}
+            {/* Sentence case, como el resto del panel. */}
+            {locale === 'es' ? 'Mis contratos' : 'My contracts'}
           </h1>
           <p className="mt-1 text-fg-muted">
             {locale === 'es'
@@ -205,9 +206,16 @@ export default function ContratosPage() {
             <EmptyState
               icon={Handshake}
               title={locale === 'es' ? 'Sin contratos aún' : 'No contracts yet'}
+              /* "aplicación" está muerto: docs/VOCABULARIO.md. */
               description={locale === 'es'
-                ? 'Cuando un propietario apruebe tu aplicación y genere un contrato, aparecerá aquí para que lo firmes.'
-                : 'When a landlord approves your application and generates a contract, it will appear here for you to sign.'}
+                ? 'Cuando te elijan en una postulación y generen el contrato, aparecerá aquí para que lo firmes.'
+                : 'When you are selected for an application and the contract is generated, it will appear here for you to sign.'}
+              /* Era la única pantalla vacía sin ninguna acción: un callejón.
+                 Para llegar a un contrato hay que postularse primero. */
+              action={{
+                label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me',
+                href: '/inquilino/para-ti',
+              }}
             />
           </motion.div>
         ) : (

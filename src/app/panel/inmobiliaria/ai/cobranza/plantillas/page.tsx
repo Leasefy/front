@@ -34,7 +34,7 @@ import { useTemplates, type TemplateRow } from '@/lib/hooks/cobranza/use-templat
 import { NoDataYetBadge } from '@/components/data-display/no-data-yet-badge'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button, Badge } from '@/components/ui'
+import { Button, Badge, type BadgeProps } from '@/components/ui'
 import {
   Tabs,
   TabsList,
@@ -53,14 +53,11 @@ const TOKEN_AMBER_THRESHOLD = 0.8 * TOKEN_BUDGET // 1600
 // Token badge helper
 // =============================================================================
 
-function tokenBadgeClass(count: number): string {
-  if (count >= TOKEN_BUDGET) {
-    return 'bg-danger-soft text-danger'
-  }
-  if (count >= TOKEN_AMBER_THRESHOLD) {
-    return 'bg-warning-soft text-warning'
-  }
-  return 'bg-muted text-muted-foreground'
+/** El pill se armaba a mano; el conteo va en un Badge del DS. */
+function tokenBadgeVariant(count: number): NonNullable<BadgeProps['variant']> {
+  if (count >= TOKEN_BUDGET) return 'destructive'
+  if (count >= TOKEN_AMBER_THRESHOLD) return 'warning'
+  return 'secondary'
 }
 
 function tokenBadgeLevel(count: number): 'normal' | 'amber' | 'rose' {
@@ -135,14 +132,16 @@ function TemplateCard({
   tpl: TemplateRow
   t: (k: string) => string
 }) {
-  const preview = tpl.bodyPublished ?? tpl.bodyDraft ?? ''
+  // El texto vivo, no el borrador: la tarjeta muestra lo que hoy le llega al
+  // deudor y la píldora avisa si hay cambios sin publicar.
+  const preview = tpl.liveBody
   const level = tokenBadgeLevel(tpl.tokenCount)
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3">
       {/* Top row: name + pills */}
       <div className="flex items-center flex-wrap gap-2">
-        <span className="font-medium text-sm text-neutral-900 dark:text-white flex-1 min-w-0 truncate">
+        <span className="font-medium text-sm text-fg flex-1 min-w-0 truncate">
           {tpl.name}
         </span>
         <StatusPill status={tpl.status} t={t} />
@@ -152,20 +151,21 @@ function TemplateCard({
       </div>
 
       {/* Body preview */}
-      <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-3 bg-neutral-50 dark:bg-neutral-800/50 rounded p-2">
+      <p className="text-xs text-fg-muted line-clamp-3 bg-surface-muted rounded p-2">
         {preview || '—'}
       </p>
 
       {/* Footer: token badge + timestamp + Edit button */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <span
+          <Badge
             data-token-badge={level}
-            className={`inline-flex items-center text-xs rounded-full px-2 py-0.5 tabular-nums ${tokenBadgeClass(tpl.tokenCount)}`}
+            variant={tokenBadgeVariant(tpl.tokenCount)}
+            className="tabular-nums"
           >
             {tpl.tokenCount} tokens
-          </span>
-          <span className="text-xs text-neutral-400 dark:text-neutral-500 tabular-nums">
+          </Badge>
+          <span className="text-xs text-fg-subtle tabular-nums">
             {t('inmobiliaria.ai.templates.card.lastEdited')}:{' '}
             {new Date(tpl.updatedAt).toLocaleDateString()}
           </span>
@@ -264,18 +264,21 @@ export default function PlantillasPage() {
     return (
       <main className="p-6 lg:p-8 space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
+          <h1 className="text-2xl font-semibold tracking-tight text-fg" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
             {t('inmobiliaria.ai.templates.title')}
           </h1>
         </header>
+        {/*
+          Sin CTA a propósito. Había un «Crear plantilla» que apuntaba a
+          `?tab=drafts` — un parámetro que esta página no lee — así que
+          recargaba la misma pantalla. Y no podría hacer otra cosa: el agente
+          expone list / draft / publish / wa-status, no hay endpoint de creación.
+          Un botón que no puede cumplir es peor que no tener botón.
+        */}
         <EmptyState
           icon={FileText}
           title={t('inmobiliaria.ai.cobranza.plantillas.empty.title')}
           description={t('inmobiliaria.ai.cobranza.plantillas.empty.description')}
-          primaryCta={{
-            label: t('inmobiliaria.ai.cobranza.plantillas.empty.cta.label'),
-            href: '/panel/inmobiliaria/ai/cobranza/plantillas?tab=drafts',
-          }}
         />
       </main>
     )
@@ -286,7 +289,7 @@ export default function PlantillasPage() {
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-white" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
+          <h1 className="text-2xl font-semibold tracking-tight text-fg" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
             {t('inmobiliaria.ai.templates.title')}
           </h1>
         </div>
@@ -321,14 +324,20 @@ export default function PlantillasPage() {
       {data && (
         <Tabs defaultValue="stage">
           <TabsList>
+            {/*
+              Los conteos van sobre lo que hay, no sobre lo que se esperaba.
+              Las etiquetas traían «(14)», «(8)» y «(5)» quemados en el copy —
+              las 27 plantillas que la fase 36 dio por sentadas— así que la
+              pestaña decía «WhatsApp (8)» encima de dos tarjetas.
+            */}
             <TabsTrigger value="stage">
-              {t('inmobiliaria.ai.templates.tabs.stages')}
+              {t('inmobiliaria.ai.templates.tabs.stages')} ({stageTemplates.length})
             </TabsTrigger>
             <TabsTrigger value="whatsapp">
-              {t('inmobiliaria.ai.templates.tabs.whatsapp')}
+              {t('inmobiliaria.ai.templates.tabs.whatsapp')} ({waTemplates.length})
             </TabsTrigger>
             <TabsTrigger value="objection">
-              {t('inmobiliaria.ai.templates.tabs.objections')}
+              {t('inmobiliaria.ai.templates.tabs.objections')} ({objectionTemplates.length})
             </TabsTrigger>
           </TabsList>
 

@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { PhotoGalleryModal } from '@/components/property/PhotoGalleryModal';
 import { PropertyAccordion } from '@/components/property/PropertyAccordion';
 import { StickyCTA, MobileStickyCTA } from '@/components/property/StickyCTA';
-import { SocialProofBanner } from '@/components/property/SocialProof';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import { useProperty } from '@/lib/hooks/useProperties';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -90,6 +89,14 @@ export interface PropertyDetailViewProps {
   basePath?: string;
   /** Where the "back to listings" breadcrumb goes (public '/propiedades', tenant '/inquilino/explorar'). */
   listingHref?: string;
+  /**
+   * Cómo se llama ese origen en el breadcrumb.
+   *
+   * Era fijo en "Propiedades", así que quien venía de SU catálogo aterrizaba
+   * en una migaja que no tenía nada que ver con donde había empezado — y el
+   * link lo devolvía al listado general, perdiendo su tope y su contexto.
+   */
+  listingLabel?: string;
 }
 
 /**
@@ -103,6 +110,7 @@ export interface PropertyDetailViewProps {
 export function PropertyDetailView({
   propertyId,
   listingHref = '/propiedades',
+  listingLabel = 'Propiedades',
 }: PropertyDetailViewProps) {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { user } = useAuth();
@@ -201,7 +209,7 @@ export function PropertyDetailView({
           <div className="container-platform">
             <nav className="flex items-center gap-2 text-sm text-muted-foreground">
               <Link href={listingHref} className="hover:text-foreground transition-colors">
-                Propiedades
+                {listingLabel}
               </Link>
               <CaretRight className="w-3.5 h-3.5" />
               <span className="text-foreground/70 truncate max-w-[200px]">{property.title}</span>
@@ -313,8 +321,17 @@ export function PropertyDetailView({
                 )}
               </div>
 
-              {/* Social Proof Banner - Styled */}
-              <SocialProofBanner propertyId={property.id} className="mb-8" />
+              {/*
+                Acá iba `SocialProofBanner`: "7 viendo ahora" con un punto que
+                latía, "38 visitas hoy" y una insignia de "demanda muy alta".
+                Nada de eso se medía — salía de `generateMockStats(propertyId)`,
+                un número derivado de las letras del id, y el contador de
+                "viendo ahora" se movía solo cada 8 segundos para parecer vivo.
+
+                Va fuera y no se reemplaza por un cero: es urgencia inventada,
+                puesta justo en la pantalla donde la persona decide postularse.
+                Vuelve cuando haya visitas de verdad que contar.
+              */}
 
               {/* Stats Row - Premium card style */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">

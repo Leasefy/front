@@ -10,7 +10,8 @@ import {
   User,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
-import { Badge, Button, Spinner, EmptyState, ErrorState } from '@/components/ui';
+import { Badge, Button, Spinner, EmptyState } from '@/components/ui';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { getReviewStatusLabel, reviewStatusBadgeVariant } from '@/lib/documents/review-status';
 import type {
   ReviewQueueCounts,
@@ -90,11 +91,11 @@ export function DocumentReviewQueueView({
           <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
             <FileText className="w-5 h-5 text-fg-muted" />
           </div>
-          Revisión de documentos
+          Soportes de candidatos
         </h1>
         <p className="text-sm text-fg-muted max-w-2xl">
-          Revisá los documentos que suben los inquilinos en sus postulaciones y aprobalos o
-          rechazalos con un motivo.
+          Revisa los soportes que adjuntan al postularse —cédula, comprobante de ingresos,
+          carta laboral— y apruébalos o recházalos con un motivo.
         </p>
       </div>
 
@@ -125,16 +126,16 @@ export function DocumentReviewQueueView({
           <Spinner size="lg" />
         </div>
       ) : error ? (
-        <ErrorState
-          title="No pudimos cargar la cola de revisión"
-          description={error}
-          onRetry={onRetry}
+        <FalloDeCarga
+          error={error}
+          queEs="la cola de revisión"
+          onReintentar={onRetry}
         />
       ) : items.length === 0 ? (
         <EmptyState
           icon={FolderOpen}
-          title="No hay documentos por revisar"
-          description="Cuando los inquilinos suban documentos en sus postulaciones, aparecerán acá para revisión."
+          title="No hay soportes por revisar"
+          description="Cuando alguien se postule y adjunte sus soportes, aparecerán acá."
         />
       ) : (
         <div className="space-y-4">

@@ -1,11 +1,34 @@
 # Punto de retome — rama `feat/recorrido-inmobiliaria`
 
-Worktree `~/rent/mvp-inmobiliaria`, dev en `:3002`. **Todo pusheado.**
+Worktree `~/rent/mvp-inmobiliaria`, dev en `:3002`.
 1972 tests · `tsc` · `next lint` · `pnpm build` ✓.
 
 ---
 
-## 🔴 LO PRIMERO: 87 commits sin PR
+## Actualización 2026-08-10 — QA exhaustivo
+
+Se auditó el recorrido completo en navegador. **Tres defectos corregidos acá**
+(commits `500fd63f` y `56d1303a`):
+
+- **El catálogo encogía en silencio.** Con tope de $1.200.000 mostraba 1 de 9 y
+  no decía nada de las otras 8. El aviso existía sólo en `para-ti/page.tsx`, que
+  se pinta con perfil verificado; quien tiene aprobación y aún no perfil cae en
+  `CatalogoPorAprobacion` — el camino más común, y era el que no avisaba.
+- **«Te avisamos por correo»** en el paso de aseguradoras, contra la decisión de
+  asegurabilidad inmediata. Las otras dos apariciones son correctas (el pago
+  acreditándose y la respuesta a una postulación).
+- **«1 baños»** en 5 lugares.
+
+⚠️ **La cobranza NO está en esta rama** — vive en `~/rent/mvp` (:3001), 42
+commits. Acá el nav de cobranza es el viejo de 20 pestañas. El informe completo
+del QA está en `~/rent/mvp/claudedocs/QA-2026-08-10-cobranza-y-recorrido.md`.
+
+También confirmado en vivo: `GET /agent-proxy/api/tenant/aprobacion` → **404**.
+Y ojo, el back de :3002 es **`:3010`**, no `:3000`.
+
+---
+
+## 🔴 LO PRIMERO: 90 commits sin PR
 
 La rama está **87 commits adelante de `develop` y nunca se abrió un PR.** Los 24
 de la última sesión viven ahí, verificados en pantalla, sin que nadie los haya

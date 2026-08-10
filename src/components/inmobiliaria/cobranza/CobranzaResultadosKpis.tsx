@@ -206,8 +206,10 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
 
   return (
     <section aria-label="Cómo va el agente" className="space-y-3">
-      <div className="flex items-end justify-between gap-4 flex-wrap">
-        <h2 className="text-base font-semibold text-fg">Cómo va el agente</h2>
+      {/* Sin título propio: la sección que lo contiene ya se llama «Lo que hizo
+          el agente». Dos encabezados seguidos diciendo lo mismo hacían perder
+          la jerarquía justo donde había que leerla. */}
+      <div className="flex justify-end">
         {/* Solo el reporte diario: la analítica se fusionó en esta misma
             pantalla, así que enlazarla sería mandar a la gente a donde ya está. */}
         <Button asChild variant="secondary" size="sm" hideArrow>

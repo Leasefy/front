@@ -53,16 +53,20 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
 
   const top10 = actions.slice(0, 10)
 
+  // El vacío decía «Ajustar cadencia de contacto» y llevaba a Configuración.
+  // Esa sección ya no existe: cuándo y por qué canal habla el agente lo define
+  // Leasefy, no la inmobiliaria (ver la nota al pie de configuracion/page.tsx).
+  // Un botón primario que lleva a una pantalla donde eso no se puede tocar
+  // enseña a desconfiar de los botones. Sin acciones, se dice y ya.
   const emptyState = (
-    <div className="py-8 flex flex-col items-center gap-3 text-center">
+    <div className="py-8 flex flex-col items-center gap-1 text-center">
       <p className="text-sm text-fg-subtle">
         {t('inmobiliaria.ai.cobranza.overview.nextActions.empty')}
       </p>
-      <Button asChild hideArrow>
-        <Link href="/panel/inmobiliaria/ai/cobranza/configuracion">
-          {t('inmobiliaria.ai.cobranza.overview.nextActions.configCta')}
-        </Link>
-      </Button>
+      <p className="text-xs text-fg-muted max-w-xs">
+        El agente programa los contactos solo; acá aparecen a medida que los
+        agenda.
+      </p>
     </div>
   )
 

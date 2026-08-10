@@ -133,16 +133,28 @@ describe('aprobado', () => {
     await montar({})
     expect(texto()).toContain('Fianli')
     expect(texto()).toContain('Sura')
-    // Concordancia: con UNA aprobada es "te aprobó", no "te aprobaron".
-    expect(texto()).toContain('2 consultadas · 1 te aprobó')
+    // El titular es el dato, no la actividad: cuántas te respaldan, no cuántas
+    // consultamos nosotros.
+    expect(texto()).toContain('1 de 2 aseguradoras te respaldan')
   })
 
-  it('con una sola aseguradora no dice "varias" ni pluraliza', async () => {
+  it('cada una dice su estado con palabras, no solo con color', async () => {
+    await montar({})
+    const t = texto()
+    expect(t).toContain('Te respalda')
+    expect(t).toContain('Esta vez no')
+  })
+
+  it('con una sola aseguradora no dice que le preguntamos a todas', async () => {
     await montar({ aseguradoras: [{ nombre: 'Fianli', aprobada: true }] })
     const t = texto()
-    expect(t).toContain('1 consultada')
-    expect(t).not.toContain('1 consultadas')
-    expect(t).not.toContain('Consultamos varias')
+    expect(t).toContain('Una aseguradora te respalda')
+    expect(t).not.toContain('Le preguntamos a todas')
+  })
+
+  it('sin ninguna aprobada no finge un respaldo', async () => {
+    await montar({ aseguradoras: [{ nombre: 'Sura', aprobada: false }] })
+    expect(texto()).toContain('Ninguna te respalda todavía')
   })
 })
 

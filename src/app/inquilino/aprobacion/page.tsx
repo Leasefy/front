@@ -21,13 +21,12 @@ import { useCallback } from 'react'
 
 import { useAprobacion } from '@/lib/hooks/use-aprobacion'
 import { useCobroAprobacion } from '@/lib/hooks/use-cobro-aprobacion'
+import { AseguradorasQueTeRespaldan } from '@/components/tenant/AseguradorasQueTeRespaldan'
 import Link from 'next/link'
 import {
   ArrowsClockwise,
-  CheckCircle,
   Hourglass,
   SealCheck,
-  UsersThree,
   XCircle,
 } from '@phosphor-icons/react'
 
@@ -135,7 +134,6 @@ function AprobadoView({
   tf: (k: string, f: string) => string
   locale: 'es' | 'en'
 }) {
-  const aprobadas = data.aseguradoras.filter((a) => a.aprobada).length
   const tieneTope = data.topeAprobadoCop !== null
 
   return (
@@ -193,43 +191,9 @@ function AprobadoView({
         </div>
       </section>
 
-      {data.aseguradoras.length > 0 && (
-        <section className="rounded-lg border border-border bg-surface p-6 space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-md bg-primary-soft flex items-center justify-center flex-shrink-0">
-              <UsersThree className="w-5 h-5 text-primary" aria-hidden="true" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-fg">
-                {/* Con una sola aseguradora "Consultamos varias" es falso. */}
-                {data.aseguradoras.length === 1
-                  ? tf('inquilino.aprobacion.aseguradoras.titleUna', 'Consultamos a la aseguradora')
-                  : tf('inquilino.aprobacion.aseguradoras.title', 'Consultamos varias aseguradoras')}
-              </p>
-              <p className="text-sm text-fg-muted mt-0.5">
-                {data.aseguradoras.length === 1
-                  ? `1 consultada · ${aprobadas === 1 ? 'te aprobó' : 'no te aprobó'}`
-                  : `${data.aseguradoras.length} consultadas · ${aprobadas} te ${aprobadas === 1 ? 'aprobó' : 'aprobaron'}`}
-              </p>
-            </div>
-          </div>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {data.aseguradoras.map((a) => (
-              <li
-                key={a.nombre}
-                className="flex items-center gap-2 rounded-md bg-surface-muted px-3 py-2"
-              >
-                {a.aprobada ? (
-                  <CheckCircle className="w-4 h-4 text-success flex-shrink-0" weight="fill" aria-hidden="true" />
-                ) : (
-                  <XCircle className="w-4 h-4 text-fg-muted flex-shrink-0" aria-hidden="true" />
-                )}
-                <span className={cn('text-sm', a.aprobada ? 'text-fg' : 'text-fg-muted')}>{a.nombre}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {/* Era una lista de píldoras grises con ✓/✗: la forma de un checklist de
+          tareas. Es la prueba detrás del número, y ahora se ve como tal. */}
+      <AseguradorasQueTeRespaldan aseguradoras={data.aseguradoras} />
     </div>
   )
 }

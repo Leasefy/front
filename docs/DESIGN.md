@@ -50,16 +50,32 @@ single confident accent — **cobalt `#1A40FF`** on a warm-neutral foundation. D
 > + `src/app/globals.css`.
 
 ### Color Roles (Semantic — Prefer These)
+
+> ⚠️ **Esta tabla se corrigió el 2026-08-09 contra el preset real.** La versión
+> anterior listaba seis tokens que **no existen** (`surface-raised`, `surface-sunken`,
+> `surface-brand`, `on-primary`, `fg-secondary`, `border-subtle`). Tailwind no falla
+> con una clase que no conoce: **no emite regla y el elemento queda transparente**.
+> Así es como `bg-surface-brand` dejó 29 pantallas con el avatar sin fondo.
+>
+> Para verificar uno: `node -e "console.log(Object.keys(require('./node_modules/@leasefy/cadence/tailwind-preset.cjs').theme.extend.colors))"`
+> — o medilo en el navegador con `getComputedStyle`, que es lo único que no miente.
+
 | Token | Use For |
 |---|---|
-| `bg-surface` / `text-fg` | Page bg (`#FBFAF9`) + body text (`#14130F`) |
-| `bg-surface-raised` | Elevated surfaces (white in light, `#1C1A16` in warm-dark) |
-| `bg-surface-sunken` | Wells, insets, subtle sections (`#F4F2EF`) |
-| `bg-primary` / `text-on-primary` | CTAs, focus rings, selected states (cobalt `#1A40FF`) |
-| `bg-surface-brand` | Cobalt-tinted highlight (`#EDF1FF`) — selected, hover-emphasis |
-| `text-fg-secondary` / `text-fg-muted` | Secondary (`#6E6A63`) / muted (`#726E68`) text |
-| `border-border` / `border-border-subtle` | Default (`#E5E2DC`) / hairline (`#ECEAE6`) borders |
-| `text-error` / `bg-error-bg` | Destructive / error states |
+| `bg-surface` / `text-fg` | Page bg + body text |
+| `bg-surface-muted` | Wells, insets, filas recesivas, tiles neutros |
+| `bg-surface-hover` / `bg-surface-pressed` / `bg-surface-selected` | Estados de fila/celda |
+| `bg-primary` / `text-primary-fg` | CTAs, focus rings, selected (cobalto `#1A40FF`) |
+| `bg-primary-soft` | Tinte cobalto — tiles de ícono, realces suaves |
+| `text-fg-muted` / `text-fg-subtle` | Texto secundario / terciario |
+| `border-border` / `border-faint` / `border-strong` | Default / hairline / énfasis |
+| `text-success` + `bg-success-soft` | Confirmación |
+| `text-warning` + `bg-warning-soft` | Advertencia |
+| `text-danger` + `bg-danger-soft` | Destructivo / error |
+| `text-info` + `bg-info-soft` | Informativo |
+
+**No existen** (y por lo tanto no pintan nada): `surface-raised`, `surface-sunken`,
+`surface-brand`, `on-primary`, `fg-secondary`, `border-subtle`, `error`, `error-bg`.
 
 ### Scales (When Roles Don't Fit)
 Primary cobalt (`primary-50…700`), warm Neutral (`neutral-50…950`), and feedback (`success` / `warning`

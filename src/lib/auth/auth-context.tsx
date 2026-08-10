@@ -4,8 +4,10 @@ import { createContext, useCallback, useEffect, useRef, useState, type ReactNode
 import type { User, AuthContextType, Agency, AgencyMemberRole, UserRole } from './types'
 import { toFrontendRole } from './types'
 import { fetchAgencyProfile, type AgencyFetchResult } from './agency-fetch'
+import { toast } from 'sonner'
 import { getSupabase } from '@/lib/supabase/client'
-import { apiClient, ApiError, setAccessToken } from '@/lib/api/client'
+import { apiClient, ApiError, setAccessToken, setUnauthorizedHandler } from '@/lib/api/client'
+import { claimSession } from '@/lib/api/session.service'
 import { TENANT_ONBOARDING_STORAGE_KEY } from '@/lib/onboarding/tenant-onboarding-status'
 import {
   readActiveContext,
@@ -496,6 +498,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setPersistedContext(context)
   }, [user?.id])
 
+  /**
+   * Single-session: claim this device's session as the active one. Must run
+   * BEFORE the first authenticated request (fetchUser) so a device that only
+   * opened the app (INITIAL_SESSION, not SIGNED_IN) becomes active instead of
+   * getting 401'd by the backend's single-session guard. Best-effort with a
+   * hard timeout so a hung/failed claim can never stall the auth bootstrap
+   * (matches signOut's timeout-race style). A `superseded` result means this
+   * device just displaced another one — tell the user.
+   */
+  const claimActiveSession = useCallback(async (token: string) => {
+    const result = await Promise.race([
+      claimSession(token).catch(() => null),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+    ])
+    if (result?.superseded) {
+      toast('Cerramos tu sesión en otro dispositivo')
+    }
+  }, [])
+
   // Initialize auth on mount.
   // We rely exclusively on onAuthStateChange (which fires INITIAL_SESSION on setup)
   // to avoid calling getSession() in parallel, which triggers an AbortError from
@@ -534,6 +555,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (event === 'INITIAL_SESSION') {
           if (session) {
             setAccessToken(session.access_token)
+            // Claim the active session BEFORE any other authenticated request.
+            await claimActiveSession(session.access_token)
             const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
             if (userData) userData.hasPassword = getHasPassword(session)
             setUser(userData)
@@ -553,6 +576,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setIsLoading(false)
         } else if (event === 'SIGNED_IN' && session) {
           setAccessToken(session.access_token)
+          // Claim the active session BEFORE any other authenticated request.
+          await claimActiveSession(session.access_token)
           const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
           if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
@@ -605,7 +630,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
-  }, [fetchUser, checkMfaLevel, probeAgencyMembership])
+  }, [fetchUser, checkMfaLevel, probeAgencyMembership, claimActiveSession])
 
   /** Sign in with Google OAuth via Supabase */
   const signInWithGoogle = useCallback(async () => {
@@ -756,6 +781,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       supabase?.auth.signOut({ scope: 'local' }).catch(() => {})
     } catch {}
   }, [])
+
+  // Global 401 backstop for single-session: the apiClient fires this only on a
+  // 401 carrying code SESSION_SUPERSEDED, so we can sign out unconditionally
+  // here (an ordinary onboarding 401 never reaches this handler). The instant
+  // path is the Realtime modal; this catches the case where that event was missed.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      void signOut()
+    })
+    return () => setUnauthorizedHandler(null)
+  }, [signOut])
 
   // ── Derived membership / active-context signals ────────────────────────────
   // Agency-panel access hinges on this ONE signal (ACTIVE membership only).

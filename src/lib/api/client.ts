@@ -18,10 +18,28 @@ export function getAccessToken(): string | null {
   return _accessToken
 }
 
+// ============================================================================
+// Unauthorized (session-superseded) handler — the global 401 backstop.
+// Registered by AuthProvider. Fires ONLY when a 401 carries the machine-readable
+// `code: 'SESSION_SUPERSEDED'` (single-session revocation), never on an ordinary
+// 401 such as the onboarding "User not found" case on /users/me. The instant
+// "signed in elsewhere" modal comes via Realtime; this is the guaranteed
+// fallback when the realtime event never arrived.
+// ============================================================================
+
+type UnauthorizedHandler = (code: string) => void
+let _onUnauthorized: UnauthorizedHandler | null = null
+
+export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
+  _onUnauthorized = handler
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** Optional machine-readable code forwarded by the backend (e.g. SESSION_SUPERSEDED). */
+    public code?: string,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -70,7 +88,13 @@ async function request<T>(method: string, path: string, body?: unknown, token?: 
     // Preserve the backend message so callers can distinguish "User not found"
     // (onboarding needed) from real auth failures (token invalid/expired).
     const errorBody = await res.json().catch(() => ({}))
-    throw new ApiError(401, errorBody.message || 'No autorizado')
+    const code = typeof errorBody.code === 'string' ? errorBody.code : undefined
+    // Single-session revocation backstop: only this coded 401 triggers a global
+    // sign-out. The onboarding 401 has no code and must NOT log the user out.
+    if (code === 'SESSION_SUPERSEDED') {
+      _onUnauthorized?.(code)
+    }
+    throw new ApiError(401, errorBody.message || 'No autorizado', code)
   }
 
   if (res.status === 403) {

@@ -400,7 +400,7 @@ function ReportesPropietariosContent() {
     if (!esReal || yaEnviado) return
     // Confirmación humana explícita antes de marcar como enviado al propietario.
     const ok = globalThis.confirm(
-      `¿Confirmás que revisaste este reporte y querés enviarlo a ${seleccionado.propietario}? Esta acción lo marca como enviado al propietario.`,
+      `¿Confirmas que revisaste este reporte y quieres enviarlo a ${seleccionado.propietario}? Esta acción lo marca como enviado al propietario.`,
     )
     if (!ok) return
     setActionMsg(null)
@@ -439,7 +439,7 @@ function ReportesPropietariosContent() {
           <FileText className="w-4 h-4 shrink-0 text-fg-muted mt-0.5" weight="duotone" aria-hidden="true" />
           <p>
             Vista previa del formato. Cuando haya reportes de gestión generados, aparecerán acá.
-            Mientras tanto, podés gestionar tus propietarios en{' '}
+            Mientras tanto, puedes gestionar tus propietarios en{' '}
             <Link
               href={PROPIETARIOS_HREF}
               className="text-primary underline-offset-4 hover:underline font-medium"

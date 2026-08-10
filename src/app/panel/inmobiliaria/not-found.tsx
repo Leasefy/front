@@ -21,8 +21,8 @@ export default function NoEncontradoEnPanel() {
         <div className="mt-4 space-y-1.5">
           <p className="text-[15px] font-semibold text-fg">No encontramos eso</p>
           <p className="mx-auto max-w-sm text-sm leading-relaxed text-fg-muted">
-            Puede que se haya eliminado, o que el enlace esté mal. Revisá la dirección
-            o volvé al panel.
+            Puede que se haya eliminado, o que el enlace esté mal. Revisa la dirección
+            o vuelve al panel.
           </p>
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">

@@ -55,9 +55,9 @@ function FirmarContratoContent() {
       // Backend rechaza con 400 "Tenant must sign first" si el landlord intenta firmar antes.
       const msg = actions.lastError?.message ?? '';
       if (msg === 'Tenant must sign first' || /tenant.*sign first/i.test(msg)) {
-        toast.error('El inquilino todavía no firmó. No podés firmar hasta que lo haga.');
+        toast.error('El inquilino todavía no firmó. No puedes firmar hasta que lo haga.');
       } else if (isPermissionError(actions.lastError)) {
-        toast.error('No tenés permisos para esta acción.');
+        toast.error('No tienes permisos para esta acción.');
       } else {
         toast.error('No se pudo firmar el contrato. Intentá de nuevo.');
       }
@@ -151,7 +151,7 @@ function FirmarContratoContent() {
         </Button>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Firmar contrato</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Revisá el documento y firmá digitalmente para enviarlo al inquilino.
+          Revisa el documento y firma digitalmente para enviarlo al inquilino.
         </p>
       </div>
 

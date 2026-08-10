@@ -35,7 +35,7 @@ export default function ErrorDelPanel({
         <div className="mt-4 space-y-1.5">
           <p className="text-[15px] font-semibold text-fg">Esta sección se rompió</p>
           <p className="mx-auto max-w-sm text-sm leading-relaxed text-fg-muted">
-            Fue un problema nuestro, no tuyo. Volvé a cargarla; si sigue igual,
+            Fue un problema nuestro, no tuyo. Vuelve a cargarla; si sigue igual,
             escribinos y pasanos la referencia.
           </p>
         </div>

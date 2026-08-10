@@ -18,7 +18,7 @@
  *    porque quien responde después el teléfono es la inmobiliaria.
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CheckCircle, WarningCircle, X } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -27,6 +27,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { landlordApplicationsApi } from '@/lib/api/applications.service'
 import { clasificarFallo } from '@/lib/errores/clasificar'
+import { useLenis } from '@/components/providers/SmoothScroll'
 import type { LandlordCandidate } from '@/lib/api/applications.types'
 
 const MENSAJE_POR_DEFECTO =
@@ -62,6 +63,33 @@ export function ModalAvisarNoElegidos({
   // Aprobar dos veces al mismo puede dar 409 o duplicar el evento. Un
   // reintento tiene que reintentar SÓLO lo que falló.
   const [elegidoYaAprobado, setElegidoYaAprobado] = useState(false)
+
+  /*
+   * Lenis toma el scroll de toda la página. Sin pararlo, la rueda dentro del
+   * modal mueve el fondo (`docs/DESIGN.md` §8). El `data-lenis-prevent` de
+   * abajo protege al contenedor que scrollea; esto protege al resto.
+   */
+  const lenis = useLenis()
+  useEffect(() => {
+    lenis.stop()
+    return () => lenis.start()
+  }, [lenis])
+
+  /*
+   * Escape cierra. Un overlay a mano no lo trae gratis, y este se abre sobre
+   * una decisión que aprueba a una persona y rechaza a las otras: quien se
+   * arrepiente tiene que poder salir sin buscar el botón.
+   *
+   * No cierra mientras la operación está en curso: irse a mitad dejaría al
+   * elegido aprobado y a los demás sin aviso, sin nadie mirando.
+   */
+  useEffect(() => {
+    const alTeclear = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !enCurso) onCerrar()
+    }
+    document.addEventListener('keydown', alTeclear)
+    return () => document.removeEventListener('keydown', alTeclear)
+  }, [enCurso, onCerrar])
 
   const alternar = (id: string) => {
     setAAvisar((prev) => {
@@ -137,14 +165,23 @@ export function ModalAvisarNoElegidos({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-card" data-lenis-prevent>
+      {/* `role="dialog"` + `aria-modal`: sin esto un lector de pantalla lo lee
+          como una sección más de la página, con el panel entero todavía
+          navegable detrás. */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="avisar-titulo"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-card"
+        data-lenis-prevent
+      >
         <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
           <div>
-            <h2 className="text-base font-semibold text-fg">
-              Elegís a {elegido.tenantName}
+            <h2 id="avisar-titulo" className="text-base font-semibold text-fg">
+              Eliges a {elegido.tenantName}
             </h2>
             <p className="mt-0.5 text-sm text-fg-muted">
-              Queda aprobado y podés armarle el contrato.
+              Queda aprobado y puedes armarle el contrato.
             </p>
           </div>
           <Button variant="ghost" size="icon" hideArrow onClick={onCerrar} aria-label="Cerrar">
@@ -175,7 +212,7 @@ export function ModalAvisarNoElegidos({
                   Avisarle a quienes no quedaron
                 </p>
                 <p className="text-sm text-fg-muted">
-                  Se postularon y esperan una respuesta. Si no les avisás, quedan
+                  Se postularon y esperan una respuesta. Si no les avisas, quedan
                   en revisión sin saberlo.
                 </p>
               </div>
@@ -238,7 +275,7 @@ export function ModalAvisarNoElegidos({
                     className="resize-none"
                   />
                   <p className="text-xs text-fg-muted">
-                    Lo firma tu inmobiliaria, así que revisalo antes de mandarlo.
+                    Lo firma tu inmobiliaria, así que revísalo antes de mandarlo.
                   </p>
                 </div>
               )}

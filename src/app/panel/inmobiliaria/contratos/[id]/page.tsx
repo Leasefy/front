@@ -126,7 +126,7 @@ function ContratoDetalleContent() {
     if (!updated) {
       toast.error(
         isPermissionError(actions.lastError)
-          ? 'No tenés permisos para esta acción.'
+          ? 'No tienes permisos para esta acción.'
           : 'No se pudo cancelar el contrato.'
       );
       return;
@@ -513,7 +513,7 @@ function ActionPanel({
     return (
       <ActionBar
         title="El inquilino solicitó cambios"
-        subtitle={truncated ?? 'Editá los términos y volvé a firmar para enviarlo de nuevo.'}
+        subtitle={truncated ?? 'Edita los términos y vuelve a firmar para enviarlo de nuevo.'}
         cta={{
           label: 'Corregir contrato',
           icon: PencilSimpleLine,

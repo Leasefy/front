@@ -237,7 +237,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
               if (err instanceof ApiError && err.status === 503) {
                 // Agent micro unreachable — backend 503. No credit deducted, evaluation state intact.
                 // Stop polling and surface the error; user can retry via "Re-evaluar".
-                setAiError('Servicio temporalmente no disponible. Reintentá en unos minutos.');
+                setAiError('Servicio temporalmente no disponible. Reintenta en unos minutos.');
                 setIsLoadingAI(false);
                 stopPolling();
                 return;
@@ -329,7 +329,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
           if (err instanceof ApiError && err.status === 503) {
             // Agent micro unreachable — backend 503. No credit deducted, evaluation state intact.
             // Stop polling and surface the error; user can retry via "Re-evaluar".
-            setReevalError('Servicio temporalmente no disponible. Reintentá en unos minutos.');
+            setReevalError('Servicio temporalmente no disponible. Reintenta en unos minutos.');
             setIsLoadingAI(false);
             stopPolling();
             return;
@@ -878,7 +878,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 ))}
                 <div className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2">
                   <p className="text-xs text-warning">
-                    La verificación final es responsabilidad de tu equipo. Revisá los documentos originales antes de tomar una decisión.
+                    La verificación final es responsabilidad de tu equipo. Revisa los documentos originales antes de tomar una decisión.
                   </p>
                 </div>
               </div>
@@ -929,7 +929,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                   hideArrow
                   onClick={() => !requiresManualReview && onAction('approve', candidate)}
                   disabled={requiresManualReview}
-                  title={requiresManualReview ? 'Revisá las alertas de integridad antes de aprobar' : undefined}
+                  title={requiresManualReview ? 'Revisa las alertas de integridad antes de aprobar' : undefined}
                   className="bg-success text-white hover:bg-success/90 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Aprobar

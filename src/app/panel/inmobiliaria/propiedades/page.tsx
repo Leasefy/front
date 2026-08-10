@@ -498,7 +498,7 @@ function PropiedadesContent() {
               search || filterStatus !== 'all'
                 ? 'Ninguna propiedad coincide con los filtros'
                 : isAgent
-                ? 'No tenés propiedades asignadas'
+                ? 'No tienes propiedades asignadas'
                 : 'Aún no hay propiedades publicadas'
             }
           />

@@ -10,13 +10,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { Users } from '@phosphor-icons/react'
-import { BackButton } from '@leasefy/cadence'
+import { Users, Info } from '@phosphor-icons/react'
+import { BackButton, Callout } from '@leasefy/cadence'
 import { EmptyState } from '@/components/ui'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { ComparadorCandidatos } from '@/components/inmobiliaria/ComparadorCandidatos'
+import { construirComparacion } from '@/lib/inmobiliaria/comparacion'
 import { ModalAvisarNoElegidos } from '@/components/inmobiliaria/ModalAvisarNoElegidos'
 import { landlordApplicationsApi } from '@/lib/api/applications.service'
 import { propertiesApi } from '@/lib/api/properties.service'
@@ -102,6 +103,21 @@ function CompararContent() {
 
   const volverALista = `/panel/inmobiliaria/propiedades/${propertyId}/candidatos`
 
+  /*
+   * «Lo verde es quien va mejor en esa fila» explicaba una convención que a
+   * veces no está en pantalla. Verificado con tres candidatos sin evaluación:
+   * el único dato comparable era la fecha, los tres empataban, no había un
+   * solo verde — y arriba seguía la leyenda mandando a buscarlo.
+   *
+   * Se calcula acá lo mismo que pinta la tabla (función pura y memoizada, no
+   * cuesta) para decir la leyenda sólo cuando hay algo que explicar.
+   */
+  const filas = useMemo(() => construirComparacion(entradas), [entradas])
+  const hayDestacado = filas.some((f) => f.mejores.length > 0)
+  /* Sin evaluaciones sólo queda la fecha: una tabla de una fila no es una
+     comparación, y hay que decir por qué está vacía en vez de dejarla rara. */
+  const sinEvaluaciones = entradas.length > 0 && filas.length <= 1
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="space-y-4">
@@ -109,9 +125,8 @@ function CompararContent() {
         <div>
           <h1 className="text-xl font-semibold text-fg">Comparar candidatos</h1>
           <p className="mt-0.5 text-sm text-fg-muted">
-            {property?.title
-              ? `Postulantes a ${property.title}. Lo verde es quien va mejor en esa fila.`
-              : 'Lo verde es quien va mejor en esa fila.'}
+            {property?.title ? `Postulantes a ${property.title}.` : 'Postulantes a esta propiedad.'}
+            {hayDestacado && ' Lo verde es quien va mejor en esa fila.'}
           </p>
         </div>
       </div>
@@ -134,12 +149,23 @@ function CompararContent() {
                 ? 'No elegiste a quién comparar'
                 : 'Con uno solo no hay nada que comparar'
             }
-            description={`Volvé a la lista y marcá entre ${MINIMO_A_COMPARAR} y ${MAXIMO_A_COMPARAR} postulantes.`}
+            description={`Vuelve a la lista y marca entre ${MINIMO_A_COMPARAR} y ${MAXIMO_A_COMPARAR} postulantes.`}
             action={{ label: 'Volver a candidatos', href: volverALista }}
           />
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="space-y-4">
+          {sinEvaluaciones && (
+            <Callout
+              icon={<Info weight="duotone" />}
+              title="Todavía no hay evaluaciones de estos candidatos"
+            >
+              Por ahora sólo podemos comparar cuándo se postularon. La evaluación
+              arranca sola cuando entra la postulación; cuando termine, acá
+              aparecen nivel, ingresos y señales de riesgo.
+            </Callout>
+          )}
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
           <ComparadorCandidatos
             entradas={entradas}
             onVerFicha={(id) => router.push(`${volverALista}?candidato=${encodeURIComponent(id)}`)}
@@ -148,6 +174,7 @@ function CompararContent() {
               if (c) setElegido(c.candidato)
             }}
           />
+          </div>
         </div>
       )}
 

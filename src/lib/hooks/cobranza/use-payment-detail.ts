@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 // Mirrors CobranzaPaymentDetail from the agent backend
 // (src/server/routes/agency-cobranza-payment-verify.ts). `status` is a
@@ -80,10 +81,7 @@ export function usePaymentDetail({ paymentId }: UsePaymentDetailArgs): UsePaymen
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/pagos/${paymentId}`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/pagos/${paymentId}`)
       // Fail-soft: 404 (not found / cross-tenant / unmigrated) degrades to the
       // EmptyState, NOT an error banner.
       if (res.status === 404) {
@@ -108,7 +106,7 @@ export function usePaymentDetail({ paymentId }: UsePaymentDetailArgs): UsePaymen
       if (!agentUrl || !agencyId || !paymentId) return false
       setIsVerifying(true)
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/pagos/${paymentId}/verify`,
           {
             method: 'POST',

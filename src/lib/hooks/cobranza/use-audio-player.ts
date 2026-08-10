@@ -33,7 +33,21 @@ export interface UseAudioPlayerResult {
   togglePlay: () => void
 }
 
-export function useAudioPlayer(externalRef?: React.RefObject<HTMLAudioElement>): UseAudioPlayerResult {
+export function useAudioPlayer(
+  externalRef?: React.RefObject<HTMLAudioElement>,
+  /**
+   * Testigo que cambia cuando el `<audio>` aparece o se reemplaza — en la
+   * práctica, el object URL del blob.
+   *
+   * POR QUÉ HACE FALTA: un ref no dispara re-render y su identidad nunca
+   * cambia, así que el efecto que engancha los listeners corría UNA vez, al
+   * montar. Mientras el reproductor sólo se renderizaba con el audio ya
+   * resuelto eso alcanzaba; desde que hay un estado «buscando» previo, el
+   * elemento aparece después y el efecto ya no volvía a correr: la barra no
+   * avanzaba, la duración quedaba en 00:00 y play nunca pasaba a pausa.
+   */
+  attachToken?: string,
+): UseAudioPlayerResult {
   const internalRef = useRef<HTMLAudioElement>(null)
   const audioRef = externalRef ?? internalRef
   const [currentTime, setCurrentTime] = useState(0)
@@ -67,6 +81,13 @@ export function useAudioPlayer(externalRef?: React.RefObject<HTMLAudioElement>):
     el.addEventListener('play', onPlay)
     el.addEventListener('pause', onPause)
     el.addEventListener('ended', onEnded)
+
+    // El elemento puede haber cargado los metadatos ANTES de que llegáramos a
+    // engancharnos. Perderse ese `loadedmetadata` deja la duración en 00:00
+    // para siempre, porque no se vuelve a emitir.
+    if (el.readyState >= 1 /* HAVE_METADATA */) onLoaded()
+    setIsPlaying(!el.paused)
+
     return () => {
       el.removeEventListener('timeupdate', onTime)
       el.removeEventListener('loadedmetadata', onLoaded)
@@ -74,7 +95,7 @@ export function useAudioPlayer(externalRef?: React.RefObject<HTMLAudioElement>):
       el.removeEventListener('pause', onPause)
       el.removeEventListener('ended', onEnded)
     }
-  }, [audioRef, speed])
+  }, [audioRef, speed, attachToken])
 
   const setSpeed = useCallback(
     (s: PlaybackSpeed) => {

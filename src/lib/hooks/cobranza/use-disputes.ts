@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * use-disputes.ts — controversias (disputas) de cobranza, agency-wide.
+ * use-disputes.ts — disputas (disputas) de cobranza, agency-wide.
  *
  * Cablea la superficie de Disputas a los endpoints NUEVOS del agente:
  *
@@ -10,7 +10,7 @@
  *   POST /api/agency/:agencyId/cobranza/disputes            — abrir una disputa
  *   POST /api/agency/:agencyId/cobranza/disputes/:id/resolve — resolver (HUMANO, T-323)
  *
- * Una disputa registra una controversia del deudor sobre su saldo/cargo. Abrirla
+ * Una disputa registra una disputa del deudor sobre su saldo/cargo. Abrirla
  * NO pausa la cobranza automáticamente (T-323) — solo deja constancia y, fail-soft,
  * una escalación en la cola humana. Resolverla es HUMANO-only (requiere outcome +
  * nota + el userId del operador) y tampoco reactiva cobranza automáticamente; el
@@ -30,9 +30,25 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useAuth } from '@/lib/auth'
+import type { paths } from '@/lib/api/generated/agent'
 
-// ── Shapes (espejo del contrato del backend) ─────────────────────────────────
+// ── Shapes — DERIVADAS del contrato generado, nunca escritas a mano ──────────
+//
+// Estas interfaces existían copiadas a mano y por eso la pantalla podía quedar
+// desalineada del agente con un 200 OK (mismo patrón que reventó Playbooks).
+// Ahora salen de `api/generated/agent.ts`; si el contrato cambia, rompe `tsc`.
+
+type DisputesListOp = paths['/api/agency/{agencyId}/cobranza/disputes']['get']
+type DisputeOpenOp = paths['/api/agency/{agencyId}/cobranza/disputes']['post']
+type DisputeResolveOp =
+  paths['/api/agency/{agencyId}/cobranza/disputes/{id}/resolve']['post']
+
+type DisputesListResponse =
+  DisputesListOp['responses']['200']['content']['application/json']
+
+export type CobranzaDispute = DisputesListResponse['disputes'][number]
 
 /** Estados de una disputa — mirror del disputes_status_check del backend. */
 export type DisputeStatus = 'open' | 'in_review' | 'resolved'
@@ -40,59 +56,21 @@ export type DisputeStatus = 'open' | 'in_review' | 'resolved'
 /** Outcomes de resolución — mirror del disputes_outcome_check del backend. */
 export type DisputeOutcome = 'procedente' | 'improcedente' | 'parcial'
 
-export interface CobranzaDispute {
-  id: string
-  debtor_id: string
-  payment_id: string | null
-  reason: string
-  disputed_amount: number | null
-  evidence_url: string | null
-  status: string
-  outcome: string | null
-  opened_by_user_id: string | null
-  opened_at: string
-  resolved_by_user_id: string | null
-  resolved_at: string | null
-  resolution_note: string | null
-  created_at: string
-}
-
-interface DisputesListResponse {
-  disputes: CobranzaDispute[]
-  generatedAt: string
-}
-
 /** Cuerpo para abrir una disputa (POST /disputes). */
-export interface OpenDisputeBody {
-  debtorId: string
-  reason: string
-  disputedAmount?: number
-  evidenceUrl?: string
-  paymentId?: string
-}
+export type OpenDisputeBody = NonNullable<
+  DisputeOpenOp['requestBody']
+>['content']['application/json']
 
-interface OpenDisputeResponse {
-  dispute: CobranzaDispute | null
-  escalationCreated: boolean
-  persisted: boolean
-}
+type OpenDisputeResponse =
+  DisputeOpenOp['responses']['200']['content']['application/json']
 
 /** Cuerpo para resolver una disputa (POST /disputes/:id/resolve). */
-export interface ResolveDisputeBody {
-  outcome: DisputeOutcome
-  resolutionNote: string
-  resolvedByUserId: string
-}
+export type ResolveDisputeBody = NonNullable<
+  DisputeResolveOp['requestBody']
+>['content']['application/json']
 
-interface ResolveDisputeResponse {
-  id: string
-  status: string
-  outcome: string
-  resolved_at: string
-  resolved_by_user_id: string
-  recommendation: string
-  persisted: boolean
-}
+type ResolveDisputeResponse =
+  DisputeResolveOp['responses']['200']['content']['application/json']
 
 /** Resultado de una mutación — la UI muestra errores inline sin romper. */
 export interface DisputeMutationResult<T> {
@@ -150,10 +128,7 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
       const sp = new URLSearchParams()
       if (status) sp.set('status', status)
       const qs = sp.toString()
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/disputes${qs ? `?${qs}` : ''}`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/disputes${qs ? `?${qs}` : ''}`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as DisputesListResponse
       setDisputes(Array.isArray(json.disputes) ? json.disputes : [])
@@ -185,10 +160,7 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) return null
       try {
-        const res = await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/disputes/${id}`,
-          { headers: agentAuthHeaders() },
-        )
+        const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/disputes/${id}`)
         if (!res.ok) return null
         return (await res.json()) as CobranzaDispute
       } catch {
@@ -207,7 +179,7 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
         return { ok: false, status: 0, data: null }
       }
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/disputes`,
           {
             method: 'POST',
@@ -239,7 +211,7 @@ export function useDisputes(params: UseDisputesParams = {}): UseDisputesResult {
         return { ok: false, status: 0, data: null }
       }
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/disputes/${id}/resolve`,
           {
             method: 'POST',

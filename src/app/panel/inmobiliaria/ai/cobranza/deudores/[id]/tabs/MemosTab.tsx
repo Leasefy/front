@@ -28,7 +28,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
         {Array.from({ length: 3 }, (_, i) => (
           <div
             key={i}
-            className="h-20 bg-neutral-100 dark:bg-neutral-800 rounded-sm animate-pulse"
+            className="h-20 bg-surface-muted rounded-sm animate-pulse"
           />
         ))}
       </div>
@@ -57,8 +57,8 @@ export function MemosTab({ debtorId }: MemosTabProps) {
   const memos = data?.memos ?? []
   if (memos.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+      <div className="rounded-md border border-dashed border-border p-8 text-center">
+        <p className="text-sm text-fg-muted">
           {t('inmobiliaria.ai.cobranza.detail.memos.empty')}
         </p>
       </div>
@@ -70,20 +70,20 @@ export function MemosTab({ debtorId }: MemosTabProps) {
       {memos.map((m) => (
         <li
           key={m.id}
-          className="rounded-sm border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3"
+          className="rounded-sm border border-border bg-surface p-3"
         >
-          <p className="text-sm text-neutral-900 dark:text-white whitespace-pre-wrap">
+          <p className="text-sm text-fg whitespace-pre-wrap">
             {m.body ?? '—'}
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
             <span>{new Date(m.created_at).toLocaleString(locale)}</span>
             {m.last_outcome && (
-              <span className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800">
+              <span className="px-1.5 py-0.5 rounded bg-surface-muted">
                 {m.last_outcome}
               </span>
             )}
             {m.last_emotional_state && (
-              <span className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800">
+              <span className="px-1.5 py-0.5 rounded bg-surface-muted">
                 {m.last_emotional_state}
               </span>
             )}

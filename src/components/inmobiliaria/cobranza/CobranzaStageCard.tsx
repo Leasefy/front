@@ -103,9 +103,12 @@ export const CobranzaStageCard = React.forwardRef<
           </p>
         )}
 
-        {/* Avg days */}
+        {/* Días promedio — el endpoint devuelve el flotante crudo, y en pantalla
+            salía «3.97885756959325 días promedio». Nadie lee catorce decimales:
+            se redondea al día, que es la unidad en la que se piensa la mora. */}
         <p className="text-xs text-fg-subtle mt-1">
-          {avgDaysInStage} {t('inmobiliaria.ai.cobranza.overview.stages.avgDays')}
+          <span className="font-mono tabular-nums">{Math.round(avgDaysInStage)}</span>{' '}
+          {t('inmobiliaria.ai.cobranza.overview.stages.avgDays')}
         </p>
 
         {/* Weekly delta */}

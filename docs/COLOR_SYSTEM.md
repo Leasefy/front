@@ -29,24 +29,36 @@
 
 | Token (Tailwind) | Role | Light value | Use For |
 |---|---|---|---|
-| `bg-surface` | surface.page | `#FBFAF9` | Page background (warm off-white) |
-| `bg-surface-raised` | surface.raised | `#FFFFFF` | Cards, sheets, popovers |
-| `bg-surface-sunken` | surface.sunken | `#F4F2EF` | Wells, insets, subtle sections |
-| `bg-surface-brand` | surface.brand | `#EDF1FF` | Cobalt-tinted highlight surfaces |
-| `bg-surface-inverse` | surface.inverse | `#14130F` | Dark spotlight blocks on light pages |
+| `bg-bg` | surface.page | `#FBFAF9` | Page background (warm off-white) |
+| `bg-surface` | surface.raised | `#FFFFFF` | Cards, sheets, popovers |
+| `bg-surface-muted` | surface.sunken | `#F4F2EF` | Wells, insets, subtle sections |
+| `bg-surface-hover` | surface.hover | `rgba(0,0,0,.04)` | Hover fill on rows / list items |
+| `bg-primary-soft` | surface.brand | `#EDF1FF` | Cobalt-tinted highlight surfaces |
 | `text-fg` | text.primary | `#14130F` | Primary text (warm ink) |
-| `text-fg-secondary` | text.secondary | `#6E6A63` | Secondary text |
-| `text-fg-muted` | text.muted | `#726E68` | Muted / tertiary text, captions |
-| `text-link` | text.link | `#1A40FF` | Inline links |
+| `text-fg-muted` | text.secondary | `#6E6A63` | Secondary text |
+| `text-fg-subtle` | text.muted | `#726E68` | Muted / tertiary text, captions |
 | `bg-primary` | primary | `#1A40FF` | CTAs, focus rings, selected states |
-| `text-on-primary` | primary.foreground | `#FFFFFF` | Text/icons on primary backgrounds |
+| `text-primary` | primary | `#1A40FF` | Inline links, accent text |
+| `text-primary-fg` | primary.foreground | `#FFFFFF` | Text/icons on primary backgrounds |
 | `border-border` | border.default | `#E5E2DC` | Default borders, input outlines |
-| `border-border-subtle` | border.subtle | `#ECEAE6` | Hairline dividers |
-| `border-border-strong` | border.strong | `#C9C4BB` | Emphasized borders |
-| `ring` / `border-focus` | border.focus | `#1A40FF` | Focus rings (cobalt) |
+| `border-border-faint` | border.subtle | `#ECEAE6` | Hairline dividers |
+| `border-border-strong` | border.strong | `#D5D1CA` | Emphasized borders |
+| `ring` | border.focus | `#1A40FF` | Focus rings (cobalt) |
 
-> Exact class suffixes are defined by the `@leasefy/cadence` preset; the preset + `globals.css`
-> are the source of truth. The roles above are stable.
+> ⚠️ **Corregido el 2026-08-07 leyendo `@leasefy/cadence/tailwind-preset`.** Esta tabla listaba
+> `bg-surface-raised`, `bg-surface-sunken`, `bg-surface-brand`, `bg-surface-inverse`,
+> `text-fg-secondary`, `text-link`, `text-on-primary` y `border-border-subtle`: **ninguno existe en
+> el preset.** Los valores hex eran correctos — lo que estaba desactualizado eran los nombres.
+>
+> Dos que cuestan caro:
+> - `text-fg-muted` significa cosas distintas en cada vocabulario. Acá es el gris **más fuerte**
+>   (`#6E6A63`); el más tenue es `text-fg-subtle`.
+> - `bg-surface` **no** es el fondo de página: es la superficie elevada (blanca). El fondo del panel
+>   es `bg-bg`. Usar `bg-surface` para una página la pinta blanca en vez de hueso.
+>
+> Una clase de Tailwind inexistente no falla: no genera nada y el elemento hereda lo que haya. Por
+> eso esto sobrevivió con `tsc`, `lint` y `next build` en verde. Detalle y cómo verificar un token:
+> [`DESIGN.md` §2](./DESIGN.md#2-tokens--quick-reference).
 
 ### Color Scales (When Semantic Tokens Don't Fit)
 
@@ -76,36 +88,27 @@ neutral-600  #7E7A72   Icon muted (#726E68 = text.muted)
 neutral-700  #6E6A63   Secondary text (text.secondary)
 neutral-800  #4D4A45   High-contrast secondary
 neutral-900  #2A2824   Near-ink
-neutral-950  #14130F   Ink (text.primary, surface.inverse)
+neutral-950  #14130F   Ink (text.primary; como fondo oscuro: `bg-fg`)
 ```
 
-#### Success States - `success-*`
-Use for: positive feedback, approvals, completed states.
-```
-success-fg   #3F8A53   Text / icons
-success-bg   #E8F4EA   Tinted background
-```
+#### Feedback States — `success` / `warning` / `danger` / `info`
 
-#### Warning States - `warning-*`
-Use for: caution, pending, attention needed.
-```
-warning-fg   #A8730F   Text / icons
-warning-bg   #FBF1DD   Tinted background
-```
+El texto va **sin sufijo** y el tinte lleva **`-soft`**. No hay `-fg` ni `-bg`, y el rojo se llama
+**`danger`**, no `error` (`error-*` sí existe en `tailwind.config.ts`, pero es una escala numérica
+`error-50/100/500/700`, otra cosa).
 
-#### Error States - `error-*`
-Use for: errors, destructive actions, critical alerts.
-```
-error-fg     #C0392B   Text / icons
-error-bg     #FBE9E6   Tinted background
-```
+| Uso | Texto / iconos | Fondo tinte |
+|---|---|---|
+| Positivo, aprobado, completado | `text-success` `#307E57` | `bg-success-soft` `#E8F4EA` |
+| Atención, pendiente, en riesgo | `text-warning` `#BF752B` | `bg-warning-soft` `#FBF1DD` |
+| Error, destructivo, crítico | `text-danger` `#C0392B` | `bg-danger-soft` `#FBE9E6` |
+| Informativo neutro | `text-info` `#3C83F6` | `bg-info-soft` `#E6F0FA` |
 
-#### Info States - `info-*`
-Use for: neutral informational notices.
-```
-info-fg      #2A6FB0   Text / icons
-info-bg      #E6F0FA   Tinted background
-```
+> Los hex de texto también estaban desactualizados: decían `#3F8A53` / `#A8730F` / `#2A6FB0`. Los
+> valores de arriba salen del CSS que se genera hoy.
+
+⚠️ **Tailwind no puede aplicar opacidad a estos tokens**: resuelven a un `var()` con color literal, no
+a canales, así que `bg-danger-soft/70` no se genera y el estilo queda muerto. Usá `hover:opacity-*`.
 
 #### Supporting Hues - charts & categorical only
 Never for UI chrome, CTAs, or state. Use for data series and categorical accents.
@@ -127,12 +130,12 @@ peach   #F0925A
 | Forbidden | Replacement |
 |-----------|-------------|
 | `indigo-*`, `blue-*`, `violet-*`, `purple-*` (as accent) | `bg-primary` / `primary-*` (cobalt `#1A40FF`) |
-| `emerald-*`, `green-*` | `success-*` (chart green → supporting `green #3F8A53`) |
-| `amber-*`, `yellow-*`, `orange-*` | `warning-*` |
-| `rose-*`, `red-*` | `error-*` |
-| `sky-*`, `cyan-*` (as accent) | `info-*` (chart cyan → supporting `cyan #2BB5E8`) |
+| `emerald-*`, `green-*` | `text-success` / `bg-success-soft` (chart green → supporting `green #3F8A53`) |
+| `amber-*`, `yellow-*`, `orange-*` | `text-warning` / `bg-warning-soft` |
+| `rose-*`, `red-*` | `text-danger` / `bg-danger-soft` |
+| `sky-*`, `cyan-*` (as accent) | `text-info` / `bg-info-soft` (chart cyan → supporting `cyan #2BB5E8`) |
 | `slate-*`, `gray-*`, `zinc-*`, `stone-*` | `neutral-*` (warm ramp) |
-| Legacy Manus `sand-*` ambient | `bg-surface-sunken` / `neutral-100` |
+| Legacy Manus `sand-*` ambient | `bg-surface-muted` / `neutral-100` |
 | Legacy `#5B5FEF` electric blue / "Deep Navy ink" | `#1A40FF` cobalt / `#14130F` warm ink |
 
 **Reversed rule:** gradients are **no longer forbidden**. Cadence encourages brand gradients on
@@ -149,20 +152,20 @@ hero/brand surfaces (see below). They remain off-limits on body content, cards, 
 bg-indigo-500        → bg-primary            (#1A40FF cobalt)
 hover:bg-indigo-600  → hover:bg-primary-600  (#1533D6)
 #5B5FEF (electric)   → #1A40FF
-text-indigo-600      → text-primary / text-link
+text-indigo-600      → text-primary
 
 # Neutrals & surfaces (cool → warm)
-bg-neutral-50 (cool) → bg-surface            (#FBFAF9)
-bg-white card        → bg-surface-raised     (#FFFFFF)
-bg-sand-50 ambient   → bg-surface-sunken     (#F4F2EF)
-text-slate-600       → text-fg-secondary     (#6E6A63)
+bg-neutral-50 (cool) → bg-bg                 (#FBFAF9)
+bg-white card        → bg-surface            (#FFFFFF)
+bg-sand-50 ambient   → bg-surface-muted      (#F4F2EF)
+text-slate-600       → text-fg-muted         (#6E6A63)
 border-neutral-200   → border-border         (#E5E2DC)
 
 # State (palette → semantic)
-bg-emerald-100 text-emerald-700 → bg-success-bg text-success-fg
-bg-amber-50    text-amber-600   → bg-warning-bg text-warning-fg
-bg-rose-100    text-rose-600    → bg-error-bg   text-error-fg
-bg-blue-50     text-blue-700    → bg-info-bg    text-info-fg
+bg-emerald-100 text-emerald-700 → bg-success-soft text-success
+bg-amber-50    text-amber-600   → bg-warning-soft text-warning
+bg-rose-100    text-rose-600    → bg-danger-soft   text-danger
+bg-blue-50     text-blue-700    → bg-info-soft    text-info
 
 # Type & shape (see DESIGN.md)
 font-heading (Manrope/Satoshi)  → font-sans  (Schibsted Grotesk)
@@ -181,7 +184,7 @@ uppercase button label           → sentence case
 <div className="bg-emerald-100 text-emerald-700">Aprobado</div>
 
 // ✅ CORRECT (Cadence)
-<div className="bg-success-bg text-success-fg">Aprobado</div>
+<div className="bg-success-soft text-success">Aprobado</div>
 ```
 
 ### Warning State
@@ -190,7 +193,7 @@ uppercase button label           → sentence case
 <div className="bg-amber-50 text-amber-600">Pendiente</div>
 
 // ✅ CORRECT
-<div className="bg-warning-bg text-warning-fg">Pendiente</div>
+<div className="bg-warning-soft text-warning">Pendiente</div>
 ```
 
 ### Error State
@@ -199,7 +202,7 @@ uppercase button label           → sentence case
 <div className="bg-rose-100 text-rose-600">Rechazado</div>
 
 // ✅ CORRECT
-<div className="bg-error-bg text-error-fg">Rechazado</div>
+<div className="bg-danger-soft text-danger">Rechazado</div>
 ```
 
 ### Primary Action
@@ -208,7 +211,7 @@ uppercase button label           → sentence case
 <button className="bg-indigo-500 hover:bg-indigo-600">Continuar</button>
 
 // ✅ CORRECT (semantic) — pill, sentence case (see DESIGN.md §4)
-<button className="bg-primary text-on-primary hover:bg-primary-600 rounded-full">
+<button className="bg-primary text-primary-fg hover:bg-primary-600 rounded-full">
   Continuar
 </button>
 ```
@@ -219,7 +222,7 @@ uppercase button label           → sentence case
 <p className="text-slate-600">Texto secundario</p>
 
 // ✅ CORRECT (semantic)
-<p className="text-fg-secondary">Texto secundario</p>
+<p className="text-fg-muted">Texto secundario</p>
 
 // ✅ ALSO CORRECT (scale)
 <p className="text-neutral-700">Texto secundario</p>
@@ -231,7 +234,7 @@ uppercase button label           → sentence case
 <div className="bg-orange-50">Sección cálida</div>
 
 // ✅ CORRECT
-<div className="bg-surface-sunken">Sección cálida</div>
+<div className="bg-surface-muted">Sección cálida</div>
 ```
 
 ---
@@ -247,10 +250,10 @@ For illustrations inside cards, use the same role tokens:
 | Error / negative indicators | `error-*` |
 | Info indicators | `info-*` (or supporting `cyan #2BB5E8`) |
 | Primary actions / highlights | `bg-primary` / `primary-*` (cobalt) |
-| Neutral backgrounds | `neutral-*` / `bg-surface-sunken` |
-| Brand-tinted backgrounds | `bg-surface-brand` (`#EDF1FF`) |
+| Neutral backgrounds | `neutral-*` / `bg-surface-muted` |
+| Brand-tinted backgrounds | `bg-primary-soft` (`#EDF1FF`) |
 | Categorical data series | supporting hues (cyan, green, amber, coral, violet, peach) |
-| Text | `text-fg`, `text-fg-secondary`, `text-fg-muted` |
+| Text | `text-fg`, `text-fg-muted`, `text-fg-muted` |
 
 ---
 
@@ -358,8 +361,8 @@ color compliance.
 - [ ] No raw palette classes (`indigo-*`, `blue-*`, `emerald-*`, `amber-*`, `rose-*`, `slate-*`, `gray-*`, legacy `sand-*`)
 - [ ] Single accent only — cobalt `#1A40FF` via `bg-primary` / `primary-*`
 - [ ] Success/warning/error/info states use `success-*` / `warning-*` / `error-*` / `info-*`
-- [ ] Text uses `text-fg`, `text-fg-secondary`, `text-fg-muted`, or `neutral-*`
-- [ ] Surfaces use `bg-surface`, `bg-surface-raised`, `bg-surface-sunken`, `bg-surface-brand`
+- [ ] Text uses `text-fg`, `text-fg-muted`, `text-fg-muted`, or `neutral-*`
+- [ ] Surfaces use `bg-surface`, `bg-surface`, `bg-surface-muted`, `bg-primary-soft`
 - [ ] Borders use `border-border*`; focus ring uses cobalt `ring` / border.focus
 - [ ] No hardcoded hex outside `globals.css` (SVG inline fills use approved Cadence hexes)
 - [ ] Supporting hues used only for charts/categorical data

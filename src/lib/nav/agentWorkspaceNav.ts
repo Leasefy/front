@@ -11,14 +11,14 @@ import {
   PhoneCall,
   Envelope,
   Siren,
-  ChartLine,
+  // ChartLine,  ← reactivar junto con la pestaña «Reporte diario»
   Files,
   ChartLineUp,
-  Trophy,
+  // Trophy,  ← reactivar junto con la pestaña «Resultados»
   FileText,
   ClipboardText,
   ShieldCheck,
-  UsersThree,
+  // UsersThree,  ← reactivar junto con las pestañas «Equipo IA»
   SlidersHorizontal,
   Plus,
   Table,
@@ -89,23 +89,31 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
     items: [
       { labelKey: 'inmobiliaria.ai.nav.cobranzaResumen', href: `${AI}/cobranza`, icon: SquaresFour, exact: true, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaCasos', href: `${AI}/cobranza/deudores`, icon: Users, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaPendientes', href: `${AI}/cobranza/pendientes`, icon: ListChecks, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaInbox', href: `${AI}/cobranza/inbox`, icon: ChatCircleText, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaPromesas', href: `${AI}/cobranza/promesas`, icon: BellRinging, module: 'cobranza' },
+      // FUSIONADO en el Resumen — «Pendientes» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPendientes', href: `${AI}/cobranza/pendientes`, icon: ListChecks, module: 'cobranza' },
+      // OCULTO — «Inbox de conversaciones» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaInbox', href: `${AI}/cobranza/inbox`, icon: ChatCircleText, module: 'cobranza' },
+      // FUSIONADO en «Acuerdos de pago» — «Promesas de pago» (ver nota al pie).
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPromesas', href: `${AI}/cobranza/promesas`, icon: BellRinging, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaAcuerdos', href: `${AI}/cobranza/acuerdos`, icon: Handshake, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaDisputas', href: `${AI}/cobranza/disputas`, icon: Scales, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.pagos', href: `${AI}/cobranza/pagos`, icon: CreditCard, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.llamadas', href: `${AI}/cobranza/llamadas`, icon: PhoneCall, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cartas', href: `${AI}/cobranza/cartas`, icon: Envelope, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.siniestros', href: `${AI}/cobranza/siniestros`, icon: Siren, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaReporte', href: `${AI}/cobranza/reporte`, icon: ChartLine, module: 'cobranza' },
+      // FUSIONADO en el Resumen — «Reporte diario» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaReporte', href: `${AI}/cobranza/reporte`, icon: ChartLine, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.cobranzaReportesPropietarios', href: `${AI}/cobranza/reportes-propietarios`, icon: Files, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.analitica', href: `${AI}/cobranza/analitica`, icon: ChartLineUp, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaResultados', href: `${AI}/cobranza/resultados`, icon: Trophy, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaPlaybooks', href: `${AI}/cobranza/plantillas`, icon: FileText, module: 'cobranza' },
+      // FUSIONADO en el Resumen — «Analítica» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.analitica', href: `${AI}/cobranza/analitica`, icon: ChartLineUp, module: 'cobranza' },
+      // FUSIONADO en el Resumen — «Resultados» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaResultados', href: `${AI}/cobranza/resultados`, icon: Trophy, module: 'cobranza' },
+      // OCULTO — «Playbooks» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaPlaybooks', href: `${AI}/cobranza/plantillas`, icon: FileText, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.compliance', href: `${AI}/cobranza/compliance`, icon: ClipboardText, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.arco', href: `${AI}/cobranza/arco`, icon: ShieldCheck, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.cobranzaEquipo', href: `${AI}/cobranza/equipo`, icon: UsersThree, module: 'cobranza' },
+      // OCULTO — «Equipo IA» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cobranzaEquipo', href: `${AI}/cobranza/equipo`, icon: UsersThree, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.configuracion', href: `${AI}/cobranza/configuracion`, icon: SlidersHorizontal, module: 'cobranza' },
     ],
   },
@@ -123,7 +131,8 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.cotizadorComparar', href: `${AI}/asegurabilidad/comparar`, icon: Table, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.nav.cotizadorEjecucion', href: `${AI}/asegurabilidad/ejecucion`, icon: Lightning, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.cotizador.nav.aseguradoras', href: `${AI}/asegurabilidad/aseguradoras`, icon: ShieldCheck, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizadorEquipo', href: `${AI}/asegurabilidad/equipo`, icon: UsersThree, module: 'cotizador' },
+      // OCULTO — «Equipo IA» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.cotizadorEquipo', href: `${AI}/asegurabilidad/equipo`, icon: UsersThree, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.cotizador.nav.insights', href: `${AI}/asegurabilidad/insights`, icon: ChartLineUp, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.cotizador.nav.costos', href: `${AI}/asegurabilidad/costos`, icon: CurrencyDollar, module: 'cotizador' },
       { labelKey: 'inmobiliaria.ai.nav.cotizadorIntegraciones', href: `${AI}/asegurabilidad/integraciones`, icon: GitMerge, module: 'cotizador' },
@@ -174,7 +183,8 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.estudioCrear', href: `${AI}/estudio/nuevo`, icon: Plus, module: 'estudio' },
       { labelKey: 'inmobiliaria.ai.nav.estudioSolicitud', href: `${AI}/estudio/solicitud`, icon: PaperPlaneTilt, module: 'estudio' },
       { labelKey: 'inmobiliaria.ai.nav.estudioCola', href: `${AI}/estudio/cola`, icon: ClipboardText, module: 'estudio' },
-      { labelKey: 'inmobiliaria.ai.nav.estudioEquipo', href: `${AI}/estudio/equipo`, icon: UsersThree, module: 'estudio' },
+      // OCULTO — «Equipo IA» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.estudioEquipo', href: `${AI}/estudio/equipo`, icon: UsersThree, module: 'estudio' },
       { labelKey: 'inmobiliaria.ai.nav.estudioAnalitica', href: `${AI}/estudio/analitica`, icon: ChartLineUp, module: 'estudio' },
       { labelKey: 'inmobiliaria.ai.nav.estudioReglas', href: `${AI}/estudio/reglas`, icon: Scales, module: 'estudio' },
       { labelKey: 'inmobiliaria.ai.nav.estudioConfiguracion', href: `${AI}/estudio/configuracion`, icon: SlidersHorizontal, module: 'estudio' },
@@ -210,13 +220,189 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.pagosRecordatorios', href: `${AI}/pagos/recordatorios`, icon: BellRinging, module: null, roles: CONTADOR_ROLES },
       { labelKey: 'inmobiliaria.ai.nav.pagosPropietarios', href: `${AI}/pagos/propietarios`, icon: Wallet, module: null, roles: CONTADOR_ROLES },
       { labelKey: 'inmobiliaria.ai.nav.pagosCola', href: `${AI}/pagos/cola`, icon: ClipboardText, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.pagosEquipo', href: `${AI}/pagos/equipo`, icon: UsersThree, module: null, roles: CONTADOR_ROLES },
+      // OCULTO — «Equipo IA» (ver nota al pie del archivo).
+      // { labelKey: 'inmobiliaria.ai.nav.pagosEquipo', href: `${AI}/pagos/equipo`, icon: UsersThree, module: null, roles: CONTADOR_ROLES },
       { labelKey: 'inmobiliaria.ai.nav.pagosAnalitica', href: `${AI}/pagos/analitica`, icon: ChartLineUp, module: null, roles: CONTADOR_ROLES },
       { labelKey: 'inmobiliaria.ai.nav.pagosReglas', href: `${AI}/pagos/reglas`, icon: Lightning, module: null, roles: CONTADOR_ROLES },
       { labelKey: 'inmobiliaria.ai.nav.pagosConfiguracion', href: `${AI}/pagos/configuracion`, icon: SlidersHorizontal, module: null, roles: CONTADOR_ROLES },
     ],
   },
 ];
+
+/**
+ * NOTA — «Equipo IA» oculto (2026-08-07, decisión de Nico).
+ *
+ * Las cuatro pestañas `.../equipo` (cobranza, asegurabilidad, estudio, pagos)
+ * están comentadas arriba. Son contenido estático de presentación —personas
+ * ficticias del equipo— sin backend que las alimente, así que no aportan nada
+ * operativo dentro del workspace.
+ *
+ * Las páginas siguen existiendo en `app/panel/inmobiliaria/ai/*​/equipo/` y sus
+ * claves i18n intactas: para reactivarlas basta descomentar las 4 líneas y el
+ * import de `UsersThree`. No quedan otros enlaces a esas rutas en la app, así
+ * que sólo se alcanzan escribiendo la URL a mano.
+ */
+
+/**
+ * NOTA — «Promesas de pago» fusionado en «Acuerdos de pago» (2026-08-09,
+ * decisión de Nico).
+ *
+ * Eran dos pestañas para la misma pregunta: *¿qué se comprometió a pagar este
+ * deudor?* La diferencia era técnica, no de negocio:
+ *
+ * - `/promesas` → `agent.payment_promises` (49 filas). Lo que el agente
+ *   registra en la llamada: un monto y una fecha.
+ * - `/acuerdos` → `agent.payment_plans` (**0 filas en los tres tenants**).
+ *   Planes con cuota inicial, N cuotas y link de pago, que arma una persona.
+ *
+ * Para el negocio las dos son «acuerdos de pago», así que ahora hay UNA sola
+ * pestaña con una tabla que muestra los dos orígenes; la columna «Tipo»
+ * conserva la diferencia sin obligar a nadie a adivinar en cuál de dos
+ * pantallas buscar a un deudor.
+ *
+ * Lo que sigue abierto (verificado en código, no supuesto): **ningún agente
+ * puede crear un plan**. El Closer sólo tiene `recordPromise`,
+ * `generatePaymentLink`, `scheduleFollowUp` y `sendWhatsAppTemplate`. Sí
+ * negocia cuotas (`calculatePaymentPlan`), pero lo que persiste es una promesa
+ * —`recordPromise` sólo acepta `amountCop` + `dueDate`— así que el cronograma
+ * recién calculado se pierde. `persistOfferedPlan`
+ * (`agent/src/cartera/payment-plans/wompi-link.ts`) crearía el plan con su link
+ * de pago y hoy nadie la invoca: aparece como `void persistOfferedPlan` para
+ * callar al linter.
+ *
+ * La ruta `/promesas`, su pantalla y su i18n quedan intactas (sólo alcanzable
+ * escribiendo la URL) por si hay que volver atrás.
+ */
+
+/**
+ * NOTA — «Playbooks» oculto (2026-08-08, decisión de Nico).
+ *
+ * `.../cobranza/plantillas` era un editor de los guiones del agente: lo que
+ * dice en la llamada, las plantillas de WhatsApp y las respuestas a objeciones.
+ *
+ * No va, y no es por un bug: **qué dice el agente lo definimos nosotros.** No es
+ * una perilla de la inmobiliaria. Lo único que la inmobiliaria configura son los
+ * acuerdos que el agente puede ofrecer —descuento máximo, meses de plan, pago
+ * mínimo, planes permitidos, camino de dificultad, intentos de negociación—, y
+ * eso ya vive en `.../cobranza/configuracion` §Negociación, cableado al endpoint
+ * que el agente lee de verdad (`GET/PATCH /api/agency/:id/policy`).
+ *
+ * Además la pantalla nunca pudo cumplir lo que ofrecía: `agent.script_templates`
+ * está vacía, nada la llena y nada la lee en runtime — los guiones vivos son
+ * datos en código (`agent/src/cartera/scripts/templates/`).
+ *
+ * Se deja la ruta y su i18n en su sitio (sólo alcanzable escribiendo la URL).
+ * Si algún día el runtime pasa a leer la tabla, descomentar la línea y listo.
+ */
+
+/**
+ * NOTA — «Resultados» fusionado en el Resumen (2026-08-08, decisión de Nico).
+ *
+ * `.../cobranza/resultados` y el Resumen hacían el mismo trabajo: KPI ejecutivos
+ * del agente. Tanto, que Resultados llevaba una tarjeta al pie explicando que
+ * ella no era la analítica ni el reporte diario.
+ *
+ * El reparto quedó así:
+ *   Resumen           → cómo va el agente (las métricas con fuente real)
+ *   Analítica         → el detalle por etapa, objeciones, cadencia y costo
+ *   Reporte diario    → el corte operativo del día
+ *
+ * Las métricas de Resultados se movieron a `CobranzaResultadosKpis`, que ahora
+ * monta el Resumen. De paso murió `CobranzaExecKpiGrid`: de sus ocho tarjetas,
+ * cinco tenían el guión escrito a mano (`value: DASH`) — no eran métricas sin
+ * datos, eran métricas sin fuente posible.
+ *
+ * La ruta y su i18n se quedan (sólo alcanzable escribiendo la URL).
+ */
+
+/**
+ * NOTA — «Analítica» fusionada en el Resumen (2026-08-08, decisión de Nico).
+ *
+ * De sus cinco widgets se subieron TRES a `CobranzaAnaliticaResumen`, bajo
+ * «Cómo lo está logrando»: tasa de recuperación, costo por peso recuperado y
+ * objeciones más frecuentes.
+ *
+ * Los otros dos NO subieron:
+ *   · Top scripts — está muerto. El SQL hace `JOIN agent.script_templates`,
+ *     tabla vacía que nada llena, y ninguna llamada trae `script_template_id`.
+ *     Un INNER JOIN contra una tabla vacía no devuelve nada nunca. Es la cara
+ *     analítica del mismo hueco que sacó a Playbooks del panel.
+ *   · Cadencia (mix de canal + mapa 24×7) — sirve para afinar cuándo y por qué
+ *     canal contacta el agente, y eso lo afinamos nosotros. Lo que a la
+ *     inmobiliaria sí le toca de horarios (Ley 2300) vive en Cumplimiento.
+ *
+ * El bloque respeta la compuerta del backend (≥5 llamadas en 30 días): sin eso
+ * no se monta. Antes, no cumplirla significaba una pantalla entera dedicada a
+ * un cartel de «Sin datos aún» — con el número de fase interna a la vista.
+ *
+ * La ruta y su i18n se quedan (sólo alcanzable escribiendo la URL).
+ */
+
+/**
+ * NOTA — «Reporte diario» fusionado en el Resumen (2026-08-08, decisión de Nico).
+ *
+ * Lo que había que mirar cada día —las alertas de umbral y los deudores que más
+ * pesan— subió al Resumen, a «Qué mirar hoy».
+ *
+ * Lo que quedaba en esa pantalla NO se perdió, se repartió:
+ *   · Umbrales y Suscripción → Configuración §Reporte diario. Son perillas de la
+ *     inmobiliaria, de la misma familia que los acuerdos.
+ *   · Histórico de 30 días y Exportar CSV → siguen en `/cobranza/reporte`, ahora
+ *     detrás de dos puertas: «Ver reporte completo» en el Resumen y «Ver
+ *     histórico y exportar CSV» en Configuración.
+ *
+ * Los tres KPI del reporte no subieron a propósito: «llamadas fuera de horario»
+ * ya vive en Cumplimiento, y morosidad/recuperación en «Cómo va el agente».
+ */
+
+/**
+ * NOTA — «Pendientes» fusionado en el Resumen (2026-08-09, decisión de Nico).
+ *
+ * El Resumen ya monta `CobranzaAtencionPreview`, que lee de `usePendientes()`
+ * —LA MISMA fuente que la página— muestra el top 5 por prioridad y cruza a la
+ * lista completa con «Ver todo» y «Ver N pendientes más». No es un resumen
+ * paralelo: es la misma lista, recortada.
+ *
+ * A diferencia del Inbox, ocultar esto NO deja trabajo huérfano. La ruta sigue
+ * viva y el Resumen tiene TRES caminos hacia ella:
+ *   · `CobranzaWowBanner` — el CTA del banner
+ *   · `CobranzaWowBanner` — la tarjeta «Esperan tu aprobación»
+ *   · `CobranzaAtencionPreview` — «Ver todo» / «Ver N pendientes más»
+ *
+ * ⚠️ Lo que queda por resolver es al revés: el Resumen dice lo mismo VARIAS
+ * veces. Los siniestros que esperan aprobación salen en «Qué mirar hoy» (como
+ * banner, vía `useInsuranceClaims`) Y otra vez como filas en «Qué necesita tu
+ * atención hoy» (vía `usePendientes`, que lee el mismo hook). Con la pestaña
+ * afuera esa repetición queda más a la vista, no menos.
+ */
+
+/**
+ * NOTA — «Inbox de conversaciones» oculto (2026-08-09, decisión de Nico).
+ *
+ * ⚠️ NO es la pantalla de Llamadas con otro nombre. Son canales distintos:
+ * Llamadas es voz (Vapi, con grabación y transcripción); el Inbox es texto de
+ * WhatsApp. En la base: 8 hilos, 7 de `channel = 'whatsapp'` y CERO de voz.
+ * No se solapan.
+ *
+ * ⚠️ QUÉ SE PIERDE MIENTRAS ESTÉ OCULTO
+ *
+ * El Inbox es hoy la ÚNICA superficie que muestra los hilos que el agente se
+ * negó a contestar solo. Verificado en la base del tenant de demostración:
+ *
+ *   5 hilos con `requires_action = true`  (requiere_humano, sin_entender,
+ *   disputa, solicitud_acuerdo, pago_reportado)
+ *   0 de ellos tiene una fila en `agent.escalations`
+ *
+ * Y `use-pendientes.ts` NO lee `conversation_threads`: agrupa escalaciones,
+ * cartas, siniestros, planes y reporte diario. Así que un «requiere humano» de
+ * WhatsApp no aparece en Pendientes ni en ningún otro lado — se queda esperando
+ * a alguien que ya no tiene dónde verlo.
+ *
+ * Para que ocultarlo salga gratis hay que enganchar los hilos con
+ * `requires_action` a Pendientes. Mientras tanto, la ruta y su i18n se quedan
+ * (sólo alcanzable escribiendo la URL) y el hook sigue cableado a los tres
+ * endpoints reales del agente.
+ */
 
 /** Find the agent workspace whose basePath contains `pathname` (or null). */
 export function findAgentWorkspace(pathname: string): AgentWorkspace | null {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 
 const POLL_INTERVAL_MS = 60_000
@@ -49,10 +50,7 @@ export function usePoliciesConfig(): UsePoliciesConfigResult {
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/policies`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/policies`)
       if (!res.ok) throw new Error(`${res.status}`)
       // Agent returns snake_case { policy_json, version_number }; map to camelCase.
       const raw = (await res.json()) as PoliciesConfigWire
@@ -89,7 +87,7 @@ export function usePoliciesConfig(): UsePoliciesConfigResult {
       if (!agentUrl) throw new Error('NEXT_PUBLIC_AGENT_URL not configured')
       if (!agencyId) throw new Error('Agency not available')
 
-      const res = await globalThis.fetch(
+      const res = await agentFetch(
         `${agentUrl}/api/agency/${agencyId}/policies`,
         {
           method: 'PUT',

@@ -17,26 +17,23 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import type { components } from '@/lib/api/generated/agent'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
-export interface AuditLogEntry {
-  id: string
-  action: string
-  actor_type: string
-  actor_id: string
-  entity_type: string
-  entity_id: string
-  ip: string | null
-  user_agent: string | null
-  occurred_at: string
-  details: Record<string, unknown>
-}
-
-export interface AuditLogResponse {
-  items: AuditLogEntry[]
-  next_cursor: string | null
-}
+/**
+ * ⚠️ Esto estaba escrito a mano como `{ items, next_cursor }` y el agente
+ * responde `{ entries, nextCursor }`. `json.items` era SIEMPRE `undefined`, así
+ * que la Auditoría decía «Sin eventos de auditoría» con 243 filas en la tabla
+ * y un 200 OK: la pantalla más importante para responderle a la SIC se veía
+ * como si nunca hubiera pasado nada.
+ *
+ * Se tipa desde el contrato generado. `actor_id`, `entity_type` y `entity_id`
+ * son nullables allá y acá se declaraban `string`, que es otra forma de que
+ * TypeScript deje pasar un acceso que revienta en runtime.
+ */
+export type AuditLogResponse = components['schemas']['CobranzaAuditLogPage']
+export type AuditLogEntry = AuditLogResponse['entries'][number]
 
 export interface AuditLogFilters {
   /** Actor user id (email) — undefined clears. */
@@ -104,14 +101,13 @@ export function useAuditLog(filters: AuditLogFilters): UseAuditLogResult {
         return
       }
       try {
-        const res = await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/audit-log${buildQs(filters, cursor)}`,
-          { headers: agentAuthHeaders() },
-        )
+        const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/audit-log${buildQs(filters, cursor)}`)
         if (!res.ok) throw new Error(`${res.status}`)
         const json = (await res.json()) as AuditLogResponse
-        setItems((prev) => (append ? [...prev, ...(json.items ?? [])] : json.items ?? []))
-        setNextCursor(json.next_cursor ?? null)
+        setItems((prev) =>
+          append ? [...prev, ...(json.entries ?? [])] : (json.entries ?? []),
+        )
+        setNextCursor(json.nextCursor ?? null)
         setError(null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'fetch_failed')

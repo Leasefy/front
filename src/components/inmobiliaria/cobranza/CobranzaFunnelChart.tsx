@@ -42,6 +42,18 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
 
   return (
     <div className="rounded-xl border border-border bg-surface p-5">
+      {/* Título DENTRO de la tarjeta. Al reordenar el Resumen se quedó sin el
+          encabezado que tenía afuera, y una barra de colores con códigos S0…SX
+          y ningún texto no dice qué es. */}
+      <div className="mb-3">
+        <h3 className="text-sm font-semibold text-fg">
+          {t('inmobiliaria.ai.cobranza.overview.funnel.title')}
+        </h3>
+        <p className="text-xs text-fg-muted">
+          Qué porcentaje de tus casos está en cada etapa de mora.
+        </p>
+      </div>
+
       {/* Horizontal bar — md+ */}
       <div
         className="hidden md:flex rounded-xl overflow-hidden h-10"
@@ -81,7 +93,10 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
         {stagesWithPct.map(({ stage, pct, colors, label }) => (
           <div key={stage} className="flex items-center gap-1.5 text-xs text-fg-subtle">
             <span className={`inline-block w-2.5 h-2.5 rounded-sm ${colors.bg} border ${colors.border}`} />
-            <MonoLabel className="text-fg-subtle">{stage}</MonoLabel>
+            {/* El nombre primero: «S3» no significa nada para quien no se
+                sabe la taxonomía de memoria. El código queda de apoyo. */}
+            <span className="text-fg-muted">{label}</span>
+            <MonoLabel className="text-fg-subtle opacity-60">{stage}</MonoLabel>
             <span className="opacity-70 font-mono tabular-nums">{pct.toFixed(1)}%</span>
           </div>
         ))}

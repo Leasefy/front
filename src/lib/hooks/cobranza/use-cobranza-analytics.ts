@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 
 // ── Polling interval (D-37-07: 60s for aggregate analytics widgets) ──────────
@@ -142,10 +142,12 @@ export function useCobranzaAnalytics(): UseCobranzaAnalyticsResult {
     }
 
     const base = `${agentUrl}/api/agency/${agencyId}/cobranza/analytics`
-    const opts: RequestInit = { headers: agentAuthHeaders() }
 
     try {
-      // Parallel fetch all 6 endpoints (D-37-07: Promise.all)
+      // Las 6 en paralelo (D-37-07), y por `agentFetch`: con `fetch` crudo un
+      // token vencido dejaba las SEIS en 401 a la vez y la pantalla entera
+      // quedaba en error hasta recargar a mano. `agentFetch` comparte un solo
+      // refresco en vuelo, así que las 6 no disparan 6 refreshes.
       const [
         resRecovery,
         resObjections,
@@ -154,12 +156,12 @@ export function useCobranzaAnalytics(): UseCobranzaAnalyticsResult {
         resTopScripts,
         resAgencyGate,
       ] = await Promise.all([
-        globalThis.fetch(`${base}/recovery-rate`, opts),
-        globalThis.fetch(`${base}/top-objections`, opts),
-        globalThis.fetch(`${base}/cadence`, opts),
-        globalThis.fetch(`${base}/cost-per-peso`, opts),
-        globalThis.fetch(`${base}/top-scripts`, opts),
-        globalThis.fetch(`${base}/agency-gate`, opts),
+        agentFetch(`${base}/recovery-rate`),
+        agentFetch(`${base}/top-objections`),
+        agentFetch(`${base}/cadence`),
+        agentFetch(`${base}/cost-per-peso`),
+        agentFetch(`${base}/top-scripts`),
+        agentFetch(`${base}/agency-gate`),
       ])
 
       // Check if ALL failed — only throw global error if no endpoint succeeded

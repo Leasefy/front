@@ -27,6 +27,7 @@ import {
   Compass,
 } from '@phosphor-icons/react';
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext';
+import { resetAgentIntros } from '@/components/tour/AgentIntroModal';
 import { cn } from '@/lib/utils';
 import { Button, Switch, Spinner } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -824,6 +825,10 @@ function ConfiguracionContent() {
                   size="sm"
                   hideArrow
                   onClick={() => {
+                    // Reponer la preferencia global NO alcanza: cada novedad
+                    // guarda su propio "ya la vi" en localStorage, así que sin
+                    // este reset el botón no mostraría nada.
+                    resetAgentIntros();
                     relaunchTour();
                     toast.success(t('inmobiliaria.config.preferences.relaunchTourStarted'));
                   }}

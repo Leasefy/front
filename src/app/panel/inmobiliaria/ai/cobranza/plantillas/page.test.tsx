@@ -19,6 +19,12 @@ _vi.setConfig({ testTimeout: 60_000 })
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
+import {
+  normalizeTemplate,
+  type TemplateApiItem,
+  type TemplateRow,
+} from '@/lib/hooks/cobranza/use-templates'
+
 // ----- Mocks ----------------------------------------------------------------
 
 vi.mock('@/lib/auth', () => ({
@@ -32,29 +38,25 @@ vi.mock('@/lib/i18n', () => ({
   }),
 }))
 
-let mockTemplates: Array<{
-  id: string
-  name: string
-  category: 'stage' | 'whatsapp' | 'objection'
-  bodyDraft: string
-  bodyPublished: string | null
-  status: 'draft' | 'published'
-  waSubmissionStatus: 'pending' | 'approved' | 'rejected' | null
-  tokenCount: number
-  updatedAt: string
-}> = []
+let mockTemplates: TemplateRow[] = []
 let mockIsLoading = false
 let mockError: string | null = null
 const mockRefetch = vi.fn()
 
-vi.mock('@/lib/hooks/cobranza/use-templates', () => ({
-  useTemplates: () => ({
-    data: { templates: mockTemplates },
-    isLoading: mockIsLoading,
-    error: mockError,
-    refetch: mockRefetch,
-  }),
-}))
+vi.mock('@/lib/hooks/cobranza/use-templates', async () => {
+  const actual = await vi.importActual<
+    typeof import('@/lib/hooks/cobranza/use-templates')
+  >('@/lib/hooks/cobranza/use-templates')
+  return {
+    ...actual,
+    useTemplates: () => ({
+      data: { templates: mockTemplates },
+      isLoading: mockIsLoading,
+      error: mockError,
+      refetch: mockRefetch,
+    }),
+  }
+})
 
 vi.mock('@/components/data-display/no-data-yet-badge', () => ({
   NoDataYetBadge: ({ reason }: { reason: string }) =>
@@ -75,41 +77,61 @@ vi.mock('next/link', () => ({
 
 // ----- Test data ------------------------------------------------------------
 
-const STAGE_TEMPLATE = {
-  id: 'tpl-stage-1',
-  name: 'Etapa S1',
-  category: 'stage' as const,
-  bodyDraft: 'Hola deudor, tu deuda vence pronto.',
-  bodyPublished: null,
-  status: 'draft' as const,
-  waSubmissionStatus: null,
-  tokenCount: 120,
-  updatedAt: '2026-05-29T10:00:00Z',
+/**
+ * Fixtures con la forma que manda el AGENTE (`TemplateApiItem`, generada por
+ * `pnpm api:gen`), pasados por `normalizeTemplate`. Ver la nota extendida en el
+ * test del editor: los fixtures escritos a mano dejaban pasar la pantalla rota.
+ */
+function agentItem(over: Partial<TemplateApiItem>): TemplateApiItem {
+  return {
+    id: 'tpl-x',
+    name: 'plantilla',
+    category: 'stage',
+    channel: 'voice',
+    stage: 'S1',
+    language: 'es',
+    tone_variant: 'cordial',
+    body: 'cuerpo base',
+    body_draft: null,
+    body_published: null,
+    wa_submission_status: null,
+    token_count: 100,
+    updated_at: '2026-05-29T10:00:00Z',
+    ...over,
+  }
 }
 
-const WA_TEMPLATE = {
-  id: 'tpl-wa-1',
-  name: 'WhatsApp Recordatorio',
-  category: 'whatsapp' as const,
-  bodyDraft: 'Hola, te recordamos tu pago.',
-  bodyPublished: null,
-  status: 'draft' as const,
-  waSubmissionStatus: 'pending' as const,
-  tokenCount: 1600,
-  updatedAt: '2026-05-29T10:00:00Z',
-}
+const STAGE_TEMPLATE = normalizeTemplate(
+  agentItem({
+    id: 'tpl-stage-1',
+    name: 'Etapa S1',
+    body_draft: 'Hola deudor, tu deuda vence pronto.',
+    token_count: 120,
+  }),
+)
 
-const OBJECTION_TEMPLATE = {
-  id: 'tpl-obj-1',
-  name: 'Objeción: No tengo dinero',
-  category: 'objection' as const,
-  bodyDraft: 'Entendemos tu situación...',
-  bodyPublished: null,
-  status: 'draft' as const,
-  waSubmissionStatus: null,
-  tokenCount: 90,
-  updatedAt: '2026-05-29T10:00:00Z',
-}
+const WA_TEMPLATE = normalizeTemplate(
+  agentItem({
+    id: 'tpl-wa-1',
+    name: 'WhatsApp Recordatorio',
+    category: 'whatsapp',
+    channel: 'whatsapp',
+    body_draft: 'Hola, te recordamos tu pago.',
+    wa_submission_status: 'pending',
+    token_count: 1600,
+  }),
+)
+
+const OBJECTION_TEMPLATE = normalizeTemplate(
+  agentItem({
+    id: 'tpl-obj-1',
+    name: 'Objeción: No tengo dinero',
+    category: 'objection',
+    body: 'Entendemos tu situación...',
+    body_published: 'Entendemos tu situación...',
+    token_count: 90,
+  }),
+)
 
 // ----- Test helpers ---------------------------------------------------------
 

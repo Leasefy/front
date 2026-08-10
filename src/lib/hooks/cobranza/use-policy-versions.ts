@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useAuth } from '@/lib/auth'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 
@@ -47,10 +47,7 @@ export function usePolicyVersions(): UsePolicyVersionsResult {
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/policies/versions`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/policies/versions`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as PolicyVersionsResponse
       setData(json)

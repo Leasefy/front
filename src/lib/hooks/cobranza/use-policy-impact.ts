@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 export interface PolicyImpactResponse {
   flipped_count: number
@@ -44,7 +45,7 @@ export function usePolicyImpact(): UsePolicyImpactResult {
       setIsSimulating(true)
       setError(null)
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/policies/impact`,
           {
             method: 'POST',

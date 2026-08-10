@@ -175,7 +175,9 @@ export function TranscriptPdf(props: TranscriptPdfProps): JSX.Element {
                   : styles.turnSpeakerDebtor
               }
             >
-              {`${turn.speaker.toUpperCase()} [${turn.timestamp}]`}
+              {/* El documento es en español y va a manos de la inmobiliaria o
+                  de una autoridad; los slugs internos no se muestran. */}
+              {`${turn.speaker === 'agent' ? 'AGENTE' : 'INQUILINO'} [${turn.timestamp}]`}
             </Text>
             <Text style={styles.turnText}>{turn.text}</Text>
           </View>

@@ -29,7 +29,12 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui'
-import { Chip } from '@leasefy/cadence'
+import { Card, Chip } from '@leasefy/cadence'
+import { TablePagination } from '@/components/ui/pagination'
+import {
+  useTablePagination,
+  PAGE_SIZE_OPTIONS,
+} from '@/lib/hooks/use-table-pagination'
 import {
   useLegalArtifacts,
   type LegalArtifactKind,
@@ -70,6 +75,21 @@ const KIND_LABELS: Record<LegalArtifactKind, { es: string; en: string }> = {
   pre_bureau_notification: { es: 'Bureau', en: 'Bureau notification' },
 }
 
+/**
+ * `physical_send_method` es un enum de la base y se estaba pintando crudo en la
+ * tabla: el usuario leía «servicio_472» y «email_only». 4-72 es el operador
+ * postal nacional, y en una carta prejurídica el método de envío no es un
+ * detalle técnico — es la prueba de notificación.
+ *
+ * El CHECK de la tabla admite exactamente estos tres; cualquier valor nuevo cae
+ * al propio slug, que es feo pero honesto (mejor que inventarle un nombre).
+ */
+const SEND_METHOD_LABELS: Record<string, { es: string; en: string }> = {
+  servicio_472: { es: 'Correo certificado (4-72)', en: 'Certified mail (4-72)' },
+  email_only: { es: 'Solo correo electrónico', en: 'Email only' },
+  operator_manual: { es: 'Entrega manual del operador', en: 'Manual operator delivery' },
+}
+
 const STATUS_LABELS: Record<LegalArtifactStatus, { es: string; en: string }> = {
   pending_human_review: { es: 'Pendiente revisión', en: 'Pending review' },
   approved: { es: 'Aprobada', en: 'Approved' },
@@ -92,6 +112,7 @@ function CartasContent() {
 
   useAutoRefresh(refetch)
 
+
   const navigateToCarta = useCallback(
     (id: string) => {
       router.push(`/panel/inmobiliaria/ai/cobranza/cartas/${id}`)
@@ -100,6 +121,20 @@ function CartasContent() {
   )
 
   const artifacts = data?.artifacts ?? []
+
+  /**
+   * Paginado de presentación. `resetKey` con los filtros: sin eso, filtrar
+   * estando en la página 3 deja la tabla vacía y se lee como «no hay nada».
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(artifacts, { resetKey: `${kindFilter ?? ''}|${statusFilter ?? ''}` })
   const hasFilters = kindFilter !== undefined || statusFilter !== undefined
 
   // ── Skeleton ──────────────────────────────────────────────────────────────
@@ -107,24 +142,24 @@ function CartasContent() {
     return (
       <main className="p-4 lg:p-8 max-w-7xl mx-auto" aria-busy="true">
         <header className="mb-5">
-          <div className="h-7 w-40 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse" />
-          <div className="h-4 w-64 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse mt-2" />
+          <div className="h-7 w-40 bg-surface-muted rounded animate-pulse" />
+          <div className="h-4 w-64 bg-surface-muted rounded animate-pulse mt-2" />
         </header>
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-          <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-            <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800 animate-pulse">
+        <Card className="overflow-hidden">
+          <Table>
+            <TableBody className="animate-pulse">
               {Array.from({ length: 6 }, (_, i) => (
                 <TableRow key={`skel-${i}`}>
                   {Array.from({ length: 5 }, (_, j) => (
                     <TableCell key={j} className="px-3 py-3">
-                      <div className="h-3 w-full bg-neutral-200 dark:bg-neutral-800 rounded" />
+                      <div className="h-3 w-full bg-surface-muted rounded" />
                     </TableCell>
                   ))}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Card>
       </main>
     )
   }
@@ -147,17 +182,23 @@ function CartasContent() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-5">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {t('inmobiliaria.ai.cobranza.cartas.pageTitle')}
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="text-sm text-fg-muted">
             {t('inmobiliaria.ai.cobranza.cartas.pageSubtitle')}
           </p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4">
+      {/*
+        Contenedor canónico del panel: UNA tarjeta con su barra de filtros, la
+        tabla y el pie de paginación. Los filtros y el aviso de error vivían
+        sueltos por encima y la pantalla se leía como bloques sin relación.
+      */}
+      <Card className="overflow-hidden">
+      <div className="flex flex-wrap gap-3 border-b border-border px-4 py-3">
         {/* Kind filter */}
         <fieldset>
           <legend className="sr-only">{isEs ? 'Tipo de carta' : 'Letter type'}</legend>
@@ -212,7 +253,7 @@ function CartasContent() {
       {error && (
         <div
           role="alert"
-          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2 mb-4"
+          className="border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
@@ -220,10 +261,15 @@ function CartasContent() {
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-          <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+        <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
+              {/* Destinatario primero: la tabla mostraba tipo, estado y fechas,
+                  o sea que había que adivinar de quién era cada carta. Una
+                  prejurídica sin destinatario visible no se puede revisar, y
+                  revisarla es justo lo que esta pantalla pide hacer. */}
+              <TableHead>{isEs ? 'Deudor' : 'Debtor'}</TableHead>
               <TableHead>
                 {t('inmobiliaria.ai.cobranza.cartas.columns.kind')}
               </TableHead>
@@ -241,11 +287,11 @@ function CartasContent() {
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <TableBody>
             {artifacts.length === 0 && !isLoading && (
               <TableRow>
-                <TableCell colSpan={5} className="px-3 py-12 text-center">
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                <TableCell colSpan={6} className="px-3 py-12 text-center">
+                  <p className="text-sm text-fg-muted">
                     {isEs
                       ? 'Sin cartas con los filtros seleccionados.'
                       : 'No letters match the selected filters.'}
@@ -253,7 +299,7 @@ function CartasContent() {
                 </TableCell>
               </TableRow>
             )}
-            {artifacts.map((a) => (
+            {pageItems.map((a) => (
               <TableRow
                 key={a.id}
                 onClick={() => navigateToCarta(a.id)}
@@ -262,9 +308,19 @@ function CartasContent() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') navigateToCarta(a.id)
                 }}
-                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+                className=" cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <TableCell className="px-3 py-2 text-neutral-900 dark:text-white capitalize whitespace-nowrap">
+                <TableCell className="px-3 py-2">
+                  <span className="block text-fg">
+                    {a.debtorName ?? (isEs ? 'Deudor no encontrado' : 'Debtor not found')}
+                  </span>
+                  {a.debtorDocument && (
+                    <span className="block text-xs text-fg-muted font-mono tabular-nums">
+                      {a.debtorDocument}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="px-3 py-2 text-fg capitalize whitespace-nowrap">
                   {isEs
                     ? (KIND_LABELS[a.kind as LegalArtifactKind]?.es ?? a.kind)
                     : (KIND_LABELS[a.kind as LegalArtifactKind]?.en ?? a.kind)}
@@ -276,14 +332,14 @@ function CartasContent() {
                       : (STATUS_LABELS[a.status as LegalArtifactStatus]?.en ?? a.status)}
                   </Badge>
                 </TableCell>
-                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-xs text-fg-muted tabular-nums whitespace-nowrap">
                   {new Date(a.generatedAt).toLocaleDateString(locale, {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',
                   })}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-xs text-fg-muted tabular-nums whitespace-nowrap">
                   {a.sentAt
                     ? new Date(a.sentAt).toLocaleDateString(locale, {
                         year: 'numeric',
@@ -292,14 +348,34 @@ function CartasContent() {
                       })
                     : '—'}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400">
-                  {a.physicalSendMethod ?? '—'}
+                <TableCell className="px-3 py-2 text-xs text-fg-muted">
+                  {a.physicalSendMethod
+                    ? (isEs
+                        ? SEND_METHOD_LABELS[a.physicalSendMethod]?.es
+                        : SEND_METHOD_LABELS[a.physicalSendMethod]?.en) ??
+                      a.physicalSendMethod
+                    : '—'}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </div>
+        </div>
+
+        {/* Pie: sólo si hay más de una página. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
+      </Card>
     </main>
   )
 }

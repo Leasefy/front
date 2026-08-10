@@ -82,3 +82,38 @@ describe('esDeLaInmobiliaria', () => {
     expect(esDeLaInmobiliaria('contrato')).toBe(true)
   })
 })
+
+describe('la agencia no puede navegar a pantallas del inquilino', () => {
+  /*
+   * El mapa pintaba «Ver →» en el paso 3 apuntando a
+   * /inquilino/aprobacion/pago. Un agente lo tocaba y `ProtectedRoute`
+   * (allowedRoles=['tenant']) lo devolvía al mismo lugar: un link que
+   * parpadeaba y no llevaba a ningún lado.
+   *
+   * El propio campo `href` ya lo declaraba —"dónde lo atiende la
+   * inmobiliaria"— y nadie lo hacía cumplir.
+   */
+  it('ningún paso del inquilino tiene href', () => {
+    for (const paso of PASOS_RECORRIDO) {
+      if (paso.actor === 'inquilino') {
+        expect(paso.href, `«${paso.key}» no debería tener href`).toBeNull()
+      }
+    }
+  })
+
+  it('ningún href sale del panel de la inmobiliaria', () => {
+    for (const paso of PASOS_RECORRIDO) {
+      if (paso.href !== null) {
+        expect(paso.href.startsWith('/panel/inmobiliaria/'), `«${paso.key}» → ${paso.href}`).toBe(true)
+      }
+    }
+  })
+
+  it('los pasos de la inmobiliaria que ya tienen pantalla la declaran', () => {
+    // Si mañana uno pierde su href, deja de ser navegable en silencio.
+    const conPantalla = ['alerta', 'evaluacion', 'comparacion', 'decision', 'contrato']
+    for (const key of conPantalla) {
+      expect(PASOS_RECORRIDO.find((p) => p.key === key)?.href, key).toBeTruthy()
+    }
+  })
+})

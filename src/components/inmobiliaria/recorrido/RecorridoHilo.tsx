@@ -48,7 +48,12 @@ export function RecorridoHilo({ paso, hrefs, className }: RecorridoHiloProps) {
 
   // `numero` es 1-based, así que sirve directo como índice del siguiente.
   const siguiente = PASOS_RECORRIDO[actual.numero]
-  const hrefSiguiente = siguiente ? hrefs?.[siguiente.key] ?? siguiente.href : null
+  // Mismo criterio que `RecorridoMapa`: si el siguiente paso es del inquilino
+  // se nombra pero no se enlaza — la agencia no entra a `/inquilino/*`.
+  const hrefSiguiente =
+    siguiente && siguiente.actor === 'inmobiliaria'
+      ? hrefs?.[siguiente.key] ?? siguiente.href
+      : null
   const meToca = actual.actor === 'inmobiliaria'
 
   return (

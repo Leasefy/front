@@ -64,7 +64,11 @@ export function RecorridoMapa({ pasoActual, hrefs, className }: RecorridoMapaPro
         // oculta. Pero ese paso SÍ tiene pantalla —estás en ella—, así que no
         // debe caer en el "todavía sin pantalla" de abajo.
         const esLaPantallaActual = declarado != null && declarado === pathname
-        const href = esLaPantallaActual ? null : declarado
+        // Un paso del inquilino no se enlaza NUNCA, ni con un `hrefs` a mano:
+        // sus pantallas están cerradas con `allowedRoles={['tenant']}` y el
+        // guard devuelve al agente al mismo lugar. Un link que parpadea y no
+        // lleva a ningún lado es peor que ningún link.
+        const href = esLaPantallaActual || paso.actor === 'inquilino' ? null : declarado
         const esUltimo = i === PASOS_RECORRIDO.length - 1
         // El corte: este paso abre el tramo de la inmobiliaria.
         const cambiaDeManos = i > 0 && PASOS_RECORRIDO[i - 1].actor !== paso.actor

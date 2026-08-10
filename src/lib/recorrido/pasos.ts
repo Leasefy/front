@@ -67,10 +67,12 @@ type DefinicionPaso = Pick<PasoRecorrido, 'key' | 'actor' | 'href'>
 const DEFINICIONES: readonly DefinicionPaso[] = [
   { key: 'catalogo',       actor: 'inquilino',     href: null },
   { key: 'asegurabilidad', actor: 'inquilino',     href: null },
-  // El costo del estudio lo asume el inquilino. La pantalla existe; el cobro
-  // del lado del backend todavía no, y la pantalla lo dice en vez de fingirlo
-  // (ver src/lib/api/estudio-pago.service.ts).
-  { key: 'pago',           actor: 'inquilino',     href: '/inquilino/aprobacion/pago' },
+  // El costo lo asume el inquilino, y su pantalla vive en `/inquilino/*`, que
+  // está cerrado con `allowedRoles={['tenant']}`. Por eso va en `null`: acá
+  // apuntaba a esa ruta y el mapa la pintaba como "Ver →". Un agente la tocaba
+  // y el guard lo devolvía al mismo lugar — un link que parpadea y no lleva a
+  // ningún lado. La pantalla del inquilino se declara en `pasos-inquilino.ts`.
+  { key: 'pago',           actor: 'inquilino',     href: null },
   { key: 'aseguradoras',   actor: 'inquilino',     href: null },
   { key: 'compatibles',    actor: 'inquilino',     href: null },
   { key: 'postulacion',    actor: 'inquilino',     href: null },
@@ -93,12 +95,29 @@ const DEFINICIONES: readonly DefinicionPaso[] = [
   { key: 'contrato',       actor: 'inmobiliaria',  href: '/panel/inmobiliaria/contratos' },
 ]
 
-export const PASOS_RECORRIDO: readonly PasoRecorrido[] = DEFINICIONES.map((paso, i) => ({
-  ...paso,
-  numero: i + 1,
-  labelKey: `${I18N}.${paso.key}.label`,
-  descKey: `${I18N}.${paso.key}.desc`,
-}))
+export const PASOS_RECORRIDO: readonly PasoRecorrido[] = DEFINICIONES.map((paso, i) => {
+  /*
+   * La regla que el campo `href` ya declaraba y nadie hacía cumplir: si el
+   * paso es del inquilino, no hay a dónde mandar a la agencia. Sus pantallas
+   * viven bajo `/inquilino/*`, cerrado con `allowedRoles={['tenant']}`.
+   *
+   * Se valida acá y no en cada componente porque son dos los que pintan links
+   * desde esta tabla (`RecorridoMapa` y `RecorridoHilo`) y el tercero que se
+   * escriba heredaría el mismo agujero.
+   */
+  if (paso.actor === 'inquilino' && paso.href !== null) {
+    throw new Error(
+      `pasos.ts: «${paso.key}» es del inquilino y no puede tener href ` +
+        `(${paso.href}). La agencia no entra a /inquilino/*.`,
+    )
+  }
+  return {
+    ...paso,
+    numero: i + 1,
+    labelKey: `${I18N}.${paso.key}.label`,
+    descKey: `${I18N}.${paso.key}.desc`,
+  }
+})
 
 export const TOTAL_PASOS = PASOS_RECORRIDO.length
 

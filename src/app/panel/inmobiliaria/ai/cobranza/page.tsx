@@ -280,7 +280,7 @@ export default function CobranzaOverviewPage() {
           role="tabpanel"
           id="stage-panel"
           aria-labelledby={`stage-tab-${focusedStage}`}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-4 [&>*:only-child]:lg:col-span-2"
+          className="grid grid-cols-1 lg:grid-cols-2 items-start gap-4 [&>*:only-child]:lg:col-span-2"
         >
           <CobranzaFunnelChart
             stages={data?.stages.map((s) => ({ stage: s.stage, count: s.count })) ?? []}

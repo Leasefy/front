@@ -57,11 +57,14 @@ vi.mock('@/lib/api/client', () => {
   return {
     apiClient: {
       get: (...args: unknown[]) => getMock(...args),
-      post: vi.fn(),
+      // Resolves so the single-session claim (POST /auth/session/claim) in the
+      // bootstrap path returns a promise (its .catch/await must not throw).
+      post: vi.fn().mockResolvedValue({ superseded: false }),
       patch: vi.fn(),
     },
     ApiError,
     setAccessToken: vi.fn(),
+    setUnauthorizedHandler: vi.fn(),
   }
 })
 

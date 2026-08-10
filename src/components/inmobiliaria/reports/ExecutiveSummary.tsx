@@ -94,7 +94,7 @@ export function ExecutiveSummary({ data }: ExecutiveSummaryProps) {
         {/* Health Score Hero */}
         <div
           className={cn(
-            'rounded-xl border border-border dark:border-strong p-6 flex flex-col items-center justify-center',
+            'rounded-xl border border-border dark:border-border-strong p-6 flex flex-col items-center justify-center',
             'bg-surface dark:bg-[#14130F]'
           )}
         >
@@ -154,7 +154,7 @@ export function ExecutiveSummary({ data }: ExecutiveSummaryProps) {
         </div>
 
         {/* Revenue Trend Chart */}
-        <div className="lg:col-span-2 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-5">
+        <div className="lg:col-span-2 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <ChartLineUp className="w-4 h-4 text-fg-muted" />
@@ -176,7 +176,7 @@ export function ExecutiveSummary({ data }: ExecutiveSummaryProps) {
             height={180}
           />
           {/* Net Income Row */}
-          <div className="mt-3 pt-3 border-t border-faint dark:border-strong">
+          <div className="mt-3 pt-3 border-t border-border-faint dark:border-border-strong">
             <div className="flex items-center gap-4 overflow-x-auto">
               {data.monthlySummary.map((m) => (
                 <div key={m.month} className="flex-1 min-w-0 text-center">
@@ -247,7 +247,7 @@ function MetricCard({
   const formattedValue = formatMetricValue(metric.currentValue, metric.format, formatCurrency);
 
   return (
-    <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-4">
+    <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] p-4">
       <div className="flex items-start justify-between mb-3">
         <div className="w-9 h-9 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center">
           <Icon className="w-4.5 h-4.5 text-fg-muted" />

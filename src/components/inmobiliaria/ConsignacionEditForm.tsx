@@ -460,7 +460,7 @@ export function ConsignacionEditForm({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3 pt-4 border-t border-faint dark:border-strong">
+      <div className="flex items-center gap-3 pt-4 border-t border-border-faint dark:border-border-strong">
         <Button
           type="button"
           variant="secondary"

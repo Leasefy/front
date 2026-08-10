@@ -141,7 +141,7 @@ function StepItem({
             />
           ) : (
             <Circle
-              className="w-5 h-5 text-neutral-300 dark:text-neutral-600"
+              className="w-5 h-5 text-fg-subtle"
               weight="regular"
             />
           )}

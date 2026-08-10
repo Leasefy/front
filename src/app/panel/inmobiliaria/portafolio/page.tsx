@@ -191,8 +191,12 @@ function PortafolioContent() {
         </div>
       </div>
 
-      {/* Stats Row — KPIs parejos con tints semánticos por token */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      {/* Stats Row — KPIs parejos con tints semánticos por token.
+          Escalón intermedio a propósito: saltar de 2 a 5 columnas en `sm` deja
+          cada card en ~134px en un portátil de 1024 (icono de 40px + padding no
+          dejan aire para "Total propiedades"). Las 5 columnas entran recién en
+          `xl`, donde cada card pasa de ~230px. */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
         <StatTile
           icon={<Buildings className="w-5 h-5" weight="duotone" />}
           value={stats.total}

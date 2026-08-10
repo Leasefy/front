@@ -86,7 +86,7 @@ export function PropertyMatchCard({
           onClick={onViewProperty}
           className={cn(
             'group flex items-center gap-4 p-4 bg-surface border border-plan-border w-full text-left',
-            'hover:border-plan-border-hover transition-colors',
+            'hover:border-border-strong transition-colors',
             className
           )}
         >
@@ -100,7 +100,7 @@ export function PropertyMatchCard({
         href={`/propiedades/${property.id}`}
         className={cn(
           'group flex items-center gap-4 p-4 bg-surface border border-plan-border',
-          'hover:border-plan-border-hover transition-colors',
+          'hover:border-border-strong transition-colors',
           className
         )}
       >
@@ -166,7 +166,7 @@ export function PropertyMatchCard({
     <div
       className={cn(
         'group bg-surface border border-plan-border overflow-hidden h-full flex flex-col',
-        'hover:border-plan-border-hover transition-colors',
+        'hover:border-border-strong transition-colors',
         className
       )}
     >

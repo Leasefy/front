@@ -375,7 +375,7 @@ export function PropietarioForm({
       </div>
 
       {/* Bank Account */}
-      <div className="space-y-4 pt-4 border-t border-faint dark:border-strong">
+      <div className="space-y-4 pt-4 border-t border-border-faint dark:border-border-strong">
         <div className="flex items-center gap-2 text-fg dark:text-white">
           <Bank className="w-5 h-5 text-success" />
           <h3 className="font-semibold">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
@@ -481,7 +481,7 @@ export function PropietarioForm({
       </div>
 
       {/* Notes */}
-      <div className="space-y-4 pt-4 border-t border-faint dark:border-strong">
+      <div className="space-y-4 pt-4 border-t border-border-faint dark:border-border-strong">
         <InputWrapper label={t('inmobiliaria.propietario.form.internalNotes')} hint={t('inmobiliaria.propietario.form.hintTeamOnly')}>
           <Textarea
             value={formData.notes}
@@ -494,7 +494,7 @@ export function PropietarioForm({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-faint dark:border-strong">
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-border-faint dark:border-border-strong">
         <Button
           type="button"
           variant="secondary"

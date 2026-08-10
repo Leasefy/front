@@ -56,12 +56,14 @@ const DropdownListContent = React.forwardRef<
   <DSDropdownMenuContent
     ref={ref}
     sideOffset={sideOffset}
+    // Sin esto, un menú largo no scrollea: Lenis secuestra la rueda (DESIGN.md §8).
+    data-lenis-prevent
     className={cn(
       // z-[400]: Dialog/Sheet viven en z-[300]; el z-50 del DS dejaría este menú
       // DETRÁS del overlay del modal que lo contiene. Mismo parche que select.tsx.
       "z-[400]",
       "max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-[8rem] max-w-none",
-      "overflow-visible overflow-x-hidden overflow-y-auto",
+      "overflow-visible overflow-x-hidden overflow-y-auto overscroll-contain",
       className
     )}
     {...props}

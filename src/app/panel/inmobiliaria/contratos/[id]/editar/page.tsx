@@ -33,6 +33,7 @@ import {
   useContractRejections,
 } from '@/lib/hooks/useContracts';
 import type { InsuranceTier, UpdateContractDto } from '@/lib/api/contracts.types';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -195,7 +196,25 @@ function EditarContratoContent() {
     );
   }
 
-  if (error || !contract) {
+    /*
+   * «No existe» y «no se pudo cargar» eran la misma pantalla: `if (!x || error)`.
+   * Le decía a alguien con mala conexión que este contrato había sido eliminado, y sin
+   * ofrecer reintentar — porque sobre algo que no existe reintentar no tiene
+   * sentido. Las dos señales ya estaban por separado; se juntaban a mano.
+   */
+  if (error) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+        <FalloDeCarga
+          error={error}
+          queEs="este contrato"
+          volverA={{ label: 'Contratos', href: '/panel/inmobiliaria/contratos' }}
+        />
+      </div>
+    );
+  }
+
+  if (!contract) {
     return (
       <div className="max-w-2xl mx-auto p-8">
         <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">

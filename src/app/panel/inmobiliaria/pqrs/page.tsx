@@ -19,7 +19,7 @@ const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_PQR
   { key: 'enProceso', dot: 'bg-warning', field: 'enProceso' },
   { key: 'enCotizacion', dot: 'bg-muted', field: 'enCotizacion' },
   { key: 'resueltas', dot: 'bg-success', field: 'resueltas' },
-  { key: 'cerradas', dot: 'bg-fg-muted', field: 'cerradas' },
+  { key: 'cerradas', dot: 'bg-surface-muted', field: 'cerradas' },
 ];
 
 const COLUMNS = [

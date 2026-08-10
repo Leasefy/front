@@ -273,7 +273,7 @@ export function ApplicationDetail({
                 onClick={handleWithdrawClick}
               >
                 <Warning className="h-4 w-4 mr-2" />
-                Retirar aplicación
+                Retirar postulación
               </Button>
             </div>
           )}

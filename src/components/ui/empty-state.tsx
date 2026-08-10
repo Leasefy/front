@@ -19,10 +19,17 @@ import { Button } from '@/components/ui/button';
 // Types (API local intacta)
 // ============================================================================
 
-export interface EmptyStateAction {
-  label: string;
-  href: string;
-}
+/**
+ * La acción del estado vacío: o lleva a algún lado, o hace algo acá.
+ *
+ * El `onClick` existe por un caso concreto: cuando la lista está vacía **porque
+ * la consulta falló**, lo que corresponde ofrecer es reintentar, no navegar a
+ * otra parte. Antes sólo había `href`, así que esas pantallas terminaban
+ * diciendo «no hay nada» sin salida.
+ */
+export type EmptyStateAction =
+  | { label: string; href: string; onClick?: never }
+  | { label: string; onClick: () => void; href?: never };
 
 export interface EmptyStateProps {
   /** Icon to display */
@@ -55,11 +62,15 @@ export function EmptyState({
       description={description}
       className={className}
       action={
-        action ? (
+        !action ? undefined : action.href ? (
           <Button asChild variant="secondary" size="sm">
             <Link href={action.href}>{action.label}</Link>
           </Button>
-        ) : undefined
+        ) : (
+          <Button variant="secondary" size="sm" onClick={action.onClick}>
+            {action.label}
+          </Button>
+        )
       }
     />
   );

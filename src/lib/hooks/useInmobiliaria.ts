@@ -52,6 +52,19 @@ import type {
   ForecastData,
 } from '@/lib/types/inmobiliaria';
 
+/*
+ * `errorCrudo` guarda el error TAL CUAL, además del mensaje.
+ *
+ * `error` se aplasta a string con `err.message`, y ahí se pierde el status
+ * HTTP. Sin status, `clasificarFallo` no puede distinguir un 404 —«esto no
+ * existe», sin reintentar— de un 500 o un fallo de red —«probá de nuevo»—, así
+ * que las cuatro estados colapsan a uno. Medido: un 404 salía como «problema
+ * nuestro, probá de nuevo», mandando a reintentar algo que nunca va a existir.
+ *
+ * Se agrega en vez de cambiar el tipo de `error`: 77 consumidores lo pintan
+ * como string y seguirían funcionando igual.
+ */
+
 // ============================================================================
 // Generic fetch hook helper
 // ============================================================================
@@ -65,6 +78,7 @@ function useApiData<T>(
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   // Returns the fetched data on success and null on failure (the error is
   // captured in hook state, NOT rethrown) — callers that must react to a
@@ -73,10 +87,12 @@ function useApiData<T>(
     try {
       setIsLoading(true);
       setError(null);
+      setErrorCrudo(null);
       const result = await fetcher();
       setData(result);
       return result;
     } catch (e) {
+      setErrorCrudo(e);
       setError(e instanceof Error ? e.message : 'Error al cargar datos');
       return null;
     } finally {
@@ -92,7 +108,9 @@ function useApiData<T>(
       const result = await fetcher();
       setData(result);
       setError(null);
+      setErrorCrudo(null);
     } catch (e) {
+      setErrorCrudo(e);
       setError(e instanceof Error ? e.message : 'Error al cargar datos');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -112,7 +130,7 @@ function useApiData<T>(
     return () => clearInterval(id);
   }, [silentRefetch, skip, pollMs]);
 
-  return { data, isLoading, error, refetch, setData };
+  return { data, isLoading, error, errorCrudo, refetch, setData };
 }
 
 // ============================================================================
@@ -456,11 +474,13 @@ export function useAgencyBilling() {
   const [invoices, setInvoices] = useState<BillingInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const refetch = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
+      setErrorCrudo(null);
       const [b, i] = await Promise.all([
         inmobiliariaConfigApi.getBilling(),
         inmobiliariaConfigApi.getInvoices(),
@@ -468,6 +488,7 @@ export function useAgencyBilling() {
       setBilling(b);
       setInvoices(i);
     } catch (e) {
+      setErrorCrudo(e);
       setError(e instanceof Error ? e.message : 'Error al cargar facturacion');
     } finally {
       setIsLoading(false);
@@ -478,7 +499,7 @@ export function useAgencyBilling() {
     refetch();
   }, [refetch]);
 
-  return { billing, invoices, isLoading, error, refetch };
+  return { billing, invoices, isLoading, error, errorCrudo, refetch };
 }
 
 // Re-export API services for direct use in event handlers

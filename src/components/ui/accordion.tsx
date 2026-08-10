@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
  * Accordion — ADAPTER fino sobre @leasefy/cadence que preserva la API local:
  * - Accordion / AccordionTrigger: re-export directo del DS (misma API Radix).
  * - AccordionItem: wrapper que restaura el comportamiento de borde del mvp
- *   (border-border en vez de border-faint, y el último item CONSERVA su
+ *   (border-border en vez de border-border-faint, y el último item CONSERVA su
  *   borde — el DS aplica `last:border-0`).
  * - AccordionContent: implementación local sobre Radix. Se mantiene porque
  *   (a) conserva la animación de altura accordion-up/down del mvp (el DS usa

@@ -209,9 +209,9 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
       </div>
 
       {/* Summary card */}
-      <div className="rounded-xl border border-border dark:border-strong p-6 space-y-4">
+      <div className="rounded-xl border border-border dark:border-border-strong p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
             <FileArrowUp className="w-6 h-6 text-primary" />
           </div>
           <div>
@@ -290,7 +290,7 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
       </div>
 
       {/* Agent assignment note */}
-      <div className="rounded-xl border border-border dark:border-strong bg-surface-muted dark:bg-white/[0.02] p-5">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface-muted dark:bg-white/[0.02] p-5">
         <div className="flex items-start gap-3">
           <UserCircle className="w-5 h-5 text-fg-subtle dark:text-fg-muted mt-0.5 flex-shrink-0" />
           <div>

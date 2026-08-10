@@ -73,7 +73,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Occupancy by Zone - CSS Bar Chart */}
-      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-5">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
           <MapPin className="w-4 h-4 text-fg-muted" />
           Ocupacion por zona
@@ -109,7 +109,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Monthly Occupancy Trend - CSS Dot/Bar Chart */}
-      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-5">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
           <TrendUp className="w-4 h-4 text-fg-muted" />
           Tendencia de ocupacion (12 meses)
@@ -148,8 +148,8 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Property Table */}
-      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
-        <div className="p-4 border-b border-border dark:border-strong">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
+        <div className="p-4 border-b border-border dark:border-border-strong">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <House className="w-4 h-4 text-fg-muted" />
             Detalle por propiedad
@@ -158,7 +158,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader>
-              <TableRow className="border-b border-faint dark:border-strong">
+              <TableRow className="border-b border-border-faint dark:border-border-strong">
                 <TableHead className="text-left py-3 px-4">Propiedad</TableHead>
                 <TableHead className="text-left py-3 px-4">Zona</TableHead>
                 <TableHead className="text-left py-3 px-4">Estado</TableHead>
@@ -171,7 +171,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
               {byProperty.map((prop) => (
                 <TableRow
                   key={prop.id}
-                  className="border-b border-faint dark:border-strong/50 hover:bg-surface-muted dark:hover:bg-ink/30 transition-colors"
+                  className="border-b border-border-faint dark:border-border-strong/50 hover:bg-surface-muted dark:hover:bg-ink transition-colors"
                 >
                   <TableCell className="py-2.5 px-4 font-medium text-foreground">{prop.title}</TableCell>
                   <TableCell className="py-2.5 px-4 text-muted-foreground">{prop.zone}</TableCell>
@@ -237,7 +237,7 @@ function KPICard({
 }) {
   const colors = COLOR_MAP[color];
   return (
-    <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center gap-3">
         <div
           className={cn(

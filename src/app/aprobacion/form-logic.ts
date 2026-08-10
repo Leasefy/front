@@ -4,8 +4,11 @@
  * without rendering radix components in jsdom.
  */
 
+import { errorTelefono, normalizarTelefono } from '@/lib/phone/countries'
+
 export interface PreApprovalFormFields {
   cedula: string
+  /** Número NACIONAL, solo dígitos (sin indicativo +57). */
   phone: string
   ciudad: string
   canon: string
@@ -30,15 +33,14 @@ export function isValidCedula(raw: string): boolean {
 }
 
 /**
- * Normalizes a Colombian mobile to E.164. Accepts a bare 10-digit mobile
- * (3XXXXXXXXX) or an already-prefixed 57XXXXXXXXXX, ignoring spaces/dashes.
- * Returns null when it isn't a valid CO mobile.
+ * Normaliza un celular colombiano a E.164.
+ *
+ * @deprecated El campo ahora es multi-país: usar `normalizarTelefono(raw, iso)`
+ * de `@/lib/phone/countries`. Se conserva porque hardcodear Colombia dejaba
+ * fuera a cualquiera con celular del exterior.
  */
 export function normalizeColombianMobile(raw: string): string | null {
-  const digits = raw.replace(/\D/g, '')
-  if (/^3\d{9}$/.test(digits)) return `+57${digits}`
-  if (/^573\d{9}$/.test(digits)) return `+${digits}`
-  return null
+  return normalizarTelefono(raw, 'CO')
 }
 
 /** Parses a canon amount typed with separators ("$ 2.000.000") into integer COP. */
@@ -54,13 +56,24 @@ export function validatePreApprovalForm(f: PreApprovalFormFields): PreApprovalFo
 
   if (!isValidCedula(f.cedula)) errors.cedula = 'Ingresa una cédula válida (6 a 10 dígitos).'
 
-  const phoneE164 = normalizeColombianMobile(f.phone)
-  if (!phoneE164) errors.phone = 'Ingresa un celular colombiano válido (10 dígitos).'
+  // Largo y prefijo salen del país (Colombia), y el error lo dice concreto
+  // ("El celular en Colombia tiene 10 dígitos") en vez de un genérico.
+  const phoneE164 = normalizarTelefono(f.phone)
+  if (!phoneE164) errors.phone = errorTelefono(f.phone) ?? 'Ingresa un celular válido.'
 
   if (!f.ciudad.trim()) errors.ciudad = 'Selecciona una ciudad.'
 
+  /*
+   * El canon es OPCIONAL: el estudio ya no necesita una propiedad.
+   * La persona se estudia primero y con el tope resultante elige después — ese
+   * es el orden que pidió la operación (antes había que elegir inmueble para
+   * saber si te aprobaban, que es al revés). Si igual escribe un canon porque
+   * ya tiene una en mente, tiene que ser válido; vacío sigue de largo.
+   */
   const canonCop = parseCanonCop(f.canon)
-  if (canonCop === null) errors.canon = 'Ingresa el canon mensual.'
+  if (f.canon.trim() !== '' && canonCop === null) {
+    errors.canon = 'Ingresa un canon válido, o déjalo vacío.'
+  }
 
   if (!TIPOS.has(f.tipoInmueble)) errors.tipoInmueble = 'Selecciona el tipo de inmueble.'
 

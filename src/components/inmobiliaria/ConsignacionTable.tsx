@@ -325,7 +325,7 @@ export function ConsignacionTable({
                           className="w-7 h-7 rounded-full object-cover shrink-0"
                         />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+                        <div className="w-7 h-7 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
                           <span className="text-xs font-medium text-primary">
                             {agenteInfo.name.charAt(0)}
                           </span>

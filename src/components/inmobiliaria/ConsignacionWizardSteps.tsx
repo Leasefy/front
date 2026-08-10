@@ -379,7 +379,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
 
         {/* Commission Summary */}
         {monthlyRent > 0 && (
-          <div className="p-4 rounded-xl bg-surface-muted dark:bg-[#14130F] border border-faint dark:border-strong">
+          <div className="p-4 rounded-xl bg-surface-muted dark:bg-[#14130F] border border-border-faint dark:border-border-strong">
             <h4 className="text-sm font-medium text-fg dark:text-fg-subtle mb-3">
               {t('inmobiliaria.consignaciones.wizard.step3.monthlySummary')}
             </h4>
@@ -398,7 +398,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
                   -{formatCurrency(agencyCommission)}
                 </span>
               </div>
-              <div className="pt-2 border-t border-border dark:border-strong flex justify-between text-sm">
+              <div className="pt-2 border-t border-border dark:border-border-strong flex justify-between text-sm">
                 <span className="font-medium text-fg dark:text-white">{t('inmobiliaria.consignaciones.wizard.step3.ownerNet')}</span>
                 <span className="font-bold text-success">
                   {formatCurrency(ownerNet)}
@@ -547,7 +547,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]"
+                className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]"
               >
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center text-fg-muted dark:text-fg-subtle text-sm font-medium shrink-0">
@@ -619,7 +619,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
             ))}
           </div>
         ) : (
-          <div className="p-8 text-center rounded-xl border border-dashed border-border dark:border-strong bg-surface-muted dark:bg-[#14130F]">
+          <div className="p-8 text-center rounded-xl border border-dashed border-border dark:border-border-strong bg-surface-muted dark:bg-[#14130F]">
             <Package className="w-12 h-12 mx-auto mb-3 text-fg-subtle dark:text-fg-muted" />
             <p className="text-fg-muted dark:text-fg-subtle mb-3">
               {t('inmobiliaria.consignaciones.wizard.step5.emptyInventory')}
@@ -641,7 +641,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
         <h3 className="text-sm font-medium text-fg dark:text-fg-subtle">
           {t('inmobiliaria.consignaciones.wizard.step5.photosTitle')}
         </h3>
-        <div className="p-8 text-center rounded-xl border border-dashed border-border dark:border-strong bg-surface-muted dark:bg-[#14130F]">
+        <div className="p-8 text-center rounded-xl border border-dashed border-border dark:border-border-strong bg-surface-muted dark:bg-[#14130F]">
           <Camera className="w-12 h-12 mx-auto mb-3 text-fg-subtle dark:text-fg-muted" />
           <p className="text-fg-muted dark:text-fg-subtle mb-1">
             {t('inmobiliaria.consignaciones.wizard.step5.photosDropzone')}
@@ -740,7 +740,7 @@ export function StepConfirmation({
 
       <div className="space-y-4">
         {/* Propietario Section */}
-        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.ownerSection')} step={1} />
           <div className="flex items-center gap-3">
             <div className={cn(
@@ -772,7 +772,7 @@ export function StepConfirmation({
         </div>
 
         {/* Property Section */}
-        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.propertySection')} step={2} />
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center text-2xl">
@@ -804,7 +804,7 @@ export function StepConfirmation({
         </div>
 
         {/* Terms Section */}
-        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.termsSection')} step={3} />
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -833,7 +833,7 @@ export function StepConfirmation({
         </div>
 
         {/* Agent Section */}
-        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.agentSection')} step={4} />
           {agente ? (
             <div className="flex items-center gap-3">
@@ -853,7 +853,7 @@ export function StepConfirmation({
         </div>
 
         {/* Inventory Section */}
-        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.inventorySection')} step={5} />
           {inventoryItems.length > 0 ? (
             <div className="space-y-2">

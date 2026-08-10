@@ -24,8 +24,11 @@ const { pushMock, submitMock, authState, wizardState } = vi.hoisted(() => ({
   wizardState: { isSubmitting: false },
 }))
 
+let searchParams = new URLSearchParams()
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: pushMock, replace: vi.fn() }),
+  useSearchParams: () => searchParams,
 }))
 
 vi.mock('@/lib/auth/use-auth', () => ({
@@ -100,6 +103,7 @@ function submitButton(): HTMLButtonElement {
 }
 
 describe('TenantOnboardingShell — completion navigation', () => {
+  beforeEach(() => { searchParams = new URLSearchParams() })
   it('routes straight to /inquilino AFTER submitOnboarding resolves (post-refreshUser)', async () => {
     let resolveSubmit!: () => void
     submitMock.mockImplementation(
@@ -149,6 +153,32 @@ describe('TenantOnboardingShell — completion navigation', () => {
     await act(async () => {})
     expect(submitMock).not.toHaveBeenCalled()
     expect(pushMock).not.toHaveBeenCalled()
+  })
+
+  it('honra un returnUrl seguro — el recorrido de aprobación venía a ver SU catálogo', async () => {
+    // Sin esto el onboarding descartaba el destino y la persona terminaba en la
+    // home, no en el catálogo que se le prometió dos pantallas atrás.
+    searchParams = new URLSearchParams({ returnUrl: '/inquilino/para-ti' })
+    submitMock.mockResolvedValue(undefined)
+    await renderShell()
+
+    await act(async () => {
+      submitButton().click()
+    })
+    expect(pushMock).toHaveBeenCalledWith('/inquilino/para-ti')
+  })
+
+  it('un returnUrl externo NO secuestra el aterrizaje', async () => {
+    // El link de confirmación viaja por correo: un destino absoluto sacaría a
+    // la persona del sitio justo después de autenticarse.
+    searchParams = new URLSearchParams({ returnUrl: 'https://evil.example.com' })
+    submitMock.mockResolvedValue(undefined)
+    await renderShell()
+
+    await act(async () => {
+      submitButton().click()
+    })
+    expect(pushMock).toHaveBeenCalledWith('/inquilino')
   })
 
   it('stays in the wizard on submit failure — no navigation', async () => {

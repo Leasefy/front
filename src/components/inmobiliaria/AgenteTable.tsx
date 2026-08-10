@@ -229,7 +229,7 @@ export function AgenteTable({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.02 }}
                 onClick={() => onView(agente)}
-                className="border-t border-faint hover:bg-muted/50 cursor-pointer transition-colors"
+                className="border-t border-border-faint hover:bg-muted/50 cursor-pointer transition-colors"
               >
                 {/* Agent Name + Avatar */}
                 <TableCell className="p-4">

@@ -74,7 +74,7 @@ const LANDLORD_BADGES: Record<PlanId, {
       bg: 'bg-surface-muted',
       text: 'text-fg-muted',
       border: 'border-border',
-      iconBg: 'bg-fg-muted',
+      iconBg: 'bg-surface-muted',
     },
   },
   pro: {

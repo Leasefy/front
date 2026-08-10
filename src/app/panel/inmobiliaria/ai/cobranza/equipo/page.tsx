@@ -239,7 +239,7 @@ function EquipoCobranzaContent() {
                 {!isLast && (
                   <ArrowDown
                     weight="bold"
-                    className="absolute left-[1.25rem] top-[2.85rem] h-3 w-3 text-fg-muted/50"
+                    className="absolute left-[1.25rem] top-[2.85rem] h-3 w-3 text-fg-subtle"
                     aria-hidden="true"
                   />
                 )}

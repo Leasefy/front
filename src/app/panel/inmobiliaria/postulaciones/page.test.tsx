@@ -12,6 +12,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 import type { AllCandidatesResponse } from '@/lib/api/applications.types'
+import { ApiError } from '@/lib/api/client'
 
 void React // jsx-preserve
 
@@ -25,6 +26,14 @@ const { getAllCandidatesMock, pushMock } = vi.hoisted(() => ({
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: pushMock, replace: vi.fn() }),
+  // El mapa del recorrido lo usa para no enlazar a la pantalla actual.
+  usePathname: () => '/panel/inmobiliaria/postulaciones',
+}))
+
+// El mapa de los 11 pasos tiene su propio test; acá solo importa que esta
+// pantalla lo monte — abierto sin postulaciones, plegado cuando hay trabajo.
+vi.mock('@/components/inmobiliaria/recorrido/RecorridoMapa', () => ({
+  RecorridoMapa: () => React.createElement('div', { 'data-testid': 'recorrido-mapa' }),
 }))
 
 vi.mock('@/lib/api/applications.service', () => ({
@@ -68,6 +77,10 @@ vi.mock('@/components/ui/error-state', () => ({
 }))
 
 vi.mock('@leasefy/cadence', () => ({
+  // Reenvía TODAS las props, no sólo onClick: un mock que las filtra deja
+  // pasar por bueno un botón sin data-testid ni aria-label reales.
+  Button: ({ children, ...props }: { children?: React.ReactNode }) =>
+    React.createElement('button', props, children),
   IconButton: ({ onClick, 'aria-label': ariaLabel }: { onClick?: () => void; 'aria-label'?: string }) =>
     React.createElement('button', { onClick, 'aria-label': ariaLabel }),
   SegmentedControl: ({
@@ -98,10 +111,17 @@ vi.mock('@leasefy/cadence', () => ({
 }))
 
 // The table shim re-exports cadence primitives — replace it with plain elements.
+//
+// Reenvía TODAS las props, no solo `onClick`. Un mock que se queda con una
+// prop y descarta el resto no prueba nada sobre lo que llega al DOM: con la
+// versión anterior, `role`, `tabIndex` y `onKeyDown` desaparecían y el test
+// habría dado verde con la fila igual de inalcanzable por teclado.
+// `TRProps extends React.HTMLAttributes<HTMLTableRowElement>`, así que el
+// componente real sí los acepta.
 vi.mock('@/components/ui/table', () => {
   const el = (tag: string) => {
-    const MockEl = ({ children, onClick }: { children?: React.ReactNode; onClick?: () => void }) =>
-      React.createElement(tag, { onClick }, children)
+    const MockEl = ({ children, ...props }: { children?: React.ReactNode }) =>
+      React.createElement(tag, props, children)
     MockEl.displayName = `MockTable_${tag}`
     return MockEl
   }
@@ -259,7 +279,10 @@ describe('PostulacionesPage', () => {
     expect(activeTile?.textContent).toContain('Pide info')
   })
 
-  it('navigates to the property candidatos page on row click', async () => {
+  it('al tocar una fila abre a ESA persona, no la lista de su propiedad', async () => {
+    // El encabezado promete "haz clic en una para revisarla y decidir". Sin
+    // `?candidato=` el clic dejaba en la lista de candidatos del inmueble y
+    // había que volver a buscar a la persona — parecía que no pasaba nada.
     getAllCandidatesMock.mockResolvedValue(RESPONSE)
 
     await renderPage()
@@ -269,7 +292,33 @@ describe('PostulacionesPage', () => {
       firstRow.click()
     })
 
-    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/propiedades/prop-1/candidatos')
+    expect(pushMock).toHaveBeenCalledWith(
+      '/panel/inmobiliaria/propiedades/prop-1/candidatos?candidato=app-1',
+    )
+  })
+
+  it('la fila se puede abrir con el teclado', async () => {
+    // Era un `<tr>` con `onClick`: ni foco, ni Enter, ni anuncio de que fuera
+    // accionable. La tabla entera quedaba fuera del alcance de quien no usa
+    // mouse — y el proyecto corre axe sobre los paneles.
+    getAllCandidatesMock.mockResolvedValue(RESPONSE)
+
+    await renderPage()
+
+    const firstRow = container.querySelectorAll('tbody tr')[0] as HTMLElement
+    expect(firstRow.getAttribute('role')).toBe('button')
+    expect(firstRow.getAttribute('tabindex')).toBe('0')
+    expect(firstRow.getAttribute('aria-label')).toContain('Revisar la postulación')
+
+    await act(async () => {
+      firstRow.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+      )
+    })
+
+    expect(pushMock).toHaveBeenCalledWith(
+      '/panel/inmobiliaria/propiedades/prop-1/candidatos?candidato=app-1',
+    )
   })
 
   it('renders the empty state when there are no applications', async () => {
@@ -284,13 +333,66 @@ describe('PostulacionesPage', () => {
     expect(container.querySelector('[data-testid="empty-state"]')).not.toBeNull()
   })
 
-  it('renders the error state when the service rejects', async () => {
-    getAllCandidatesMock.mockRejectedValue(new Error('boom'))
+  it('sin postulaciones muestra el recorrido, no seis KPI en cero', async () => {
+    // Con la bandeja vacía lo útil es explicar qué va a llegar y de dónde
+    // viene, no una tabla vacía con filtros ni tiles en cero. El mapa vivía en
+    // una pantalla aparte llamada «Recorrido» que mostraba ESTA misma lista:
+    // dos rutas para una cosa.
+    getAllCandidatesMock.mockResolvedValue({
+      candidates: [],
+      total: 0,
+      stats: { total: 0, pending: 0, approved: 0, rejected: 0 },
+    })
 
     await renderPage()
 
-    const error = container.querySelector('[data-testid="error-state"]')
-    expect(error).not.toBeNull()
-    expect(error?.textContent).toContain('No se pudieron cargar las postulaciones')
+    expect(container.querySelector('[data-testid="recorrido-mapa"]')).not.toBeNull()
+    expect(container.querySelector('table')).toBeNull()
+    expect(tiles().length).toBe(0)
+  })
+
+  it('con postulaciones el recorrido queda plegado, sin robarle espacio', async () => {
+    getAllCandidatesMock.mockResolvedValue(RESPONSE)
+
+    await renderPage()
+
+    const detalles = container.querySelector('details')
+    expect(detalles).not.toBeNull()
+    expect(detalles?.hasAttribute('open')).toBe(false)
+    expect(container.querySelector('table')).not.toBeNull()
+  })
+
+  it('cuando falla la red ofrece reintentar', async () => {
+    getAllCandidatesMock.mockRejectedValue(new ApiError(0, 'Network request failed'))
+
+    await renderPage()
+
+    const fallo = container.querySelector('[data-testid="fallo-de-carga"]')
+    expect(fallo).not.toBeNull()
+    expect(fallo?.getAttribute('data-tipo')).toBe('red')
+    expect(container.querySelector('[data-testid="reintentar"]')).not.toBeNull()
+  })
+
+  it('cuando no existe NO ofrece reintentar, porque no va a aparecer', async () => {
+    getAllCandidatesMock.mockRejectedValue(new ApiError(404, 'Agency not found'))
+
+    await renderPage()
+
+    const fallo = container.querySelector('[data-testid="fallo-de-carga"]')
+    expect(fallo?.getAttribute('data-tipo')).toBe('noExiste')
+    expect(container.querySelector('[data-testid="reintentar"]')).toBeNull()
+  })
+
+  it('nunca muestra el mensaje crudo del backend', async () => {
+    getAllCandidatesMock.mockRejectedValue(new ApiError(500, 'Property with ID abc not found'))
+
+    await renderPage()
+
+    // El detalle técnico queda en el DOM para diagnosticar, pero fuera de la
+    // pantalla: lo que se lee es una frase nuestra, en español.
+    const visible = container.querySelector('[data-testid="fallo-de-carga"] p')
+    expect(visible?.textContent).not.toContain('Property with ID')
+    expect(container.querySelector('[data-testid="fallo-detalle-tecnico"]')?.className)
+      .toContain('sr-only')
   })
 })

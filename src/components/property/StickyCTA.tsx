@@ -14,6 +14,9 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { visitsApi } from '@/lib/api/visits.service';
 import { ApiError } from '@/lib/api/client';
 import type { VisitSlot } from '@/lib/api/visits.types';
+import { PostularButton } from '@/components/tenant/PostularButton';
+import { useAprobacion } from '@/lib/hooks/use-aprobacion';
+import { seLePuedePrometerSinCodeudor } from '@/lib/api/aprobacion.service';
 
 interface StickyCTAProps {
   propertyId: string;
@@ -60,14 +63,16 @@ function addDays(n: number): string {
   return d.toISOString().split('T')[0];
 }
 
-// Generate mock stats based on propertyId (social proof only, unchanged)
-function generateMockStats(propertyId: string) {
-  const seed = propertyId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return {
-    viewingNow: (seed % 8) + 3,
-    demandLevel: seed % 3 === 0 ? 'alta' : seed % 3 === 1 ? 'muy-alta' : 'media',
-  };
-}
+/*
+ * Acá vivía `generateMockStats(propertyId)`: sumaba los códigos de las letras
+ * del id y de ahí salían "N personas viendo ahora" —con un punto latiendo y un
+ * contador que subía o bajaba solo cada 10 segundos— y una insignia de "Muy
+ * solicitado". Nada de eso se medía.
+ *
+ * Iba en el panel pegado al botón de postularse: el peor lugar posible para
+ * urgencia inventada, porque es exactamente donde la persona decide. Fuera
+ * hasta que haya visitas de verdad que contar.
+ */
 
 // ─── Error messages ──────────────────────────────────────────────────────────
 
@@ -98,6 +103,17 @@ export function StickyCTA({
 }: StickyCTAProps) {
   const { user, isAuthenticated, hasActiveAgencyMembership } = useAuth();
   const router = useRouter();
+
+  /*
+   * ¿Podemos decirle que se postula sin codeudor?
+   *
+   * `null` = no sabemos, y entonces no se afirma nada. Sin aprobación resuelta
+   * no hay forma de saber si la aseguradora le va a pedir codeudor, y una
+   * promesa sobre el trato es de las peores cosas que se pueden inventar: la
+   * descubre cuando ya se ilusionó.
+   */
+  const { aprobacion } = useAprobacion();
+  const sinCodeudor = seLePuedePrometerSinCodeudor(aprobacion);
   const pathname = usePathname();
 
   // An inmobiliaria/agent viewing a property is NOT a prospective tenant: they
@@ -119,9 +135,6 @@ export function StickyCTA({
   const [slotsByDate, setSlotsByDate] = useState<SlotsByDate>({});
   const [slotsLoading, setSlotsLoading] = useState(false);
 
-  // Social proof (mock, visual only)
-  const [stats, setStats] = useState<ReturnType<typeof generateMockStats> | null>(null);
-  const [currentViewers, setCurrentViewers] = useState(0);
 
   // Shareable public URL of this property (built client-side to avoid an SSR
   // hydration mismatch). Used by the header share button and the agency panel.
@@ -147,17 +160,6 @@ export function StickyCTA({
     }
   };
 
-  // ─── Social proof ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    const mockStats = generateMockStats(propertyId);
-    setStats(mockStats);
-    setCurrentViewers(mockStats.viewingNow);
-
-    const interval = setInterval(() => {
-      setCurrentViewers((prev) => Math.max(2, Math.min(12, prev + (Math.random() > 0.5 ? 1 : -1))));
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [propertyId]);
 
   // ─── Fetch slots when visit tab opens ─────────────────────────────────────
   useEffect(() => {
@@ -233,28 +235,7 @@ export function StickyCTA({
   return (
     <div className={cn('lg:sticky lg:top-28', className)}>
       <Card className="overflow-hidden rounded-xl border-border shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
-        {/* Urgency Banner */}
-        {stats && stats.demandLevel !== 'media' && (
-          <div className="px-5 py-3 flex items-center justify-center gap-2.5 text-[13px] font-semibold bg-primary text-primary-foreground">
-            <TrendUp className="w-4 h-4" />
-            {stats.demandLevel === 'muy-alta'
-              ? 'Muy solicitado — No te quedes sin verlo'
-              : 'Popular esta semana'}
-          </div>
-        )}
-
         <div className="p-6">
-          {/* Live viewers */}
-          <div className="flex items-center gap-2.5 mb-5">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success-500))] opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[hsl(var(--success-500))]" />
-            </span>
-            <span className="text-[13px] text-muted-foreground">
-              <span className="font-semibold text-foreground">{currentViewers} personas</span> viendo ahora
-            </span>
-          </div>
-
           {/* Header */}
           <div className="flex items-start justify-between mb-6">
             <div>
@@ -384,12 +365,37 @@ export function StickyCTA({
             /* ── Apply tab ── */
             <div>
               <div className="space-y-2.5 mb-6">
-                <div className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-[hsl(var(--success-500))] flex-shrink-0" strokeWidth={3} />
-                  <p className="text-[13px] text-muted-foreground">
-                    <span className="font-semibold text-foreground">Sin codeudor</span> — aplica solo con tu información
-                  </p>
-                </div>
+                {/*
+                  «Sin codeudor» estaba fijo en toda propiedad, y es una promesa
+                  sobre el trato que el propio producto desmiente: una aprobación
+                  condicionada «normalmente pide un codeudor o un depósito
+                  adicional» (ResultadoAprobacion). Se lo prometíamos justo a
+                  quien iba a tener que conseguirlo.
+
+                  Ahora sale de SU aprobación, la misma que usa la puerta de
+                  postularse, y con `null` no se afirma nada: no saber no es
+                  poder prometer. Y se dice "te postulas", no "aplicas"
+                  (docs/VOCABULARIO.md).
+                */}
+                {sinCodeudor !== null && (
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-[hsl(var(--success-500))] flex-shrink-0" strokeWidth={3} />
+                    <p className="text-[13px] text-muted-foreground">
+                      {sinCodeudor ? (
+                        <>
+                          <span className="font-semibold text-foreground">Sin codeudor</span> — te
+                          postulas solo con tu información
+                        </>
+                      ) : (
+                        <>
+                          Tu aprobación quedó{' '}
+                          <span className="font-semibold text-foreground">con condiciones</span> — la
+                          aseguradora puede pedirte codeudor
+                        </>
+                      )}
+                    </p>
+                  </div>
+                )}
                 <div className="flex items-center gap-2.5">
                   <Clock className="w-4 h-4 text-muted-foreground/60 flex-shrink-0" />
                   <p className="text-[13px] text-muted-foreground">
@@ -397,9 +403,9 @@ export function StickyCTA({
                   </p>
                 </div>
               </div>
-              <Link href={`/aplicar/${propertyId}`} className="block">
-                <Button className="w-full">Postularme a esta propiedad</Button>
-              </Link>
+              <PostularButton propertyId={propertyId} canonCop={price} className="w-full">
+                Postularme a esta propiedad
+              </PostularButton>
               <p className="text-[11px] text-muted-foreground text-center mt-3">
                 Completa tu solicitud en minutos
               </p>
@@ -581,13 +587,15 @@ export function StickyCTA({
           )}
         </div>
 
-        {/* Activity footer */}
-        <div className="px-6 py-3.5 bg-surface-muted border-t border-border">
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <span className="w-2 h-2 rounded-full bg-[hsl(var(--success-500))] animate-pulse" />
-            <span>Última postulación hace <span className="font-semibold text-foreground">12 minutos</span></span>
-          </div>
-        </div>
+        {/*
+          Acá iba «Última postulación hace 12 minutos», con un punto verde
+          pulsando para que pareciera un dato en vivo. Estaba escrito a mano:
+          los mismos 12 minutos en TODAS las propiedades, para siempre, incluso
+          en una que nadie tocó nunca. Urgencia inventada.
+
+          No se reemplaza por otro número: el back no expone la actividad de una
+          propiedad. Cuando la exponga, este es el lugar.
+        */}
       </Card>
     </div>
   );
@@ -611,12 +619,7 @@ export function MobileStickyCTA({
   const isAgencyViewer =
     !!user && (user.role === 'agency' || user.backendRole === 'AGENT' || hasActiveAgencyMembership);
 
-  const [stats, setStats] = useState<ReturnType<typeof generateMockStats> | null>(null);
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    setStats(generateMockStats(propertyId));
-  }, [propertyId]);
 
   const handleCopyShare = async () => {
     if (typeof window === 'undefined') return;
@@ -631,25 +634,12 @@ export function MobileStickyCTA({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-xl border-t border-border lg:hidden z-30">
-      {stats && stats.demandLevel !== 'media' && (
-        <div className="px-4 py-2 bg-primary text-primary-foreground text-[11px] font-semibold text-center flex items-center justify-center gap-1.5">
-          <TrendUp className="w-3.5 h-3.5" />
-          {stats.demandLevel === 'muy-alta' ? 'Muy solicitado' : 'Popular esta semana'}
-        </div>
-      )}
       <div className="p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-lg font-mono tabular-nums font-bold text-foreground tracking-tight">
               {formatCurrency(price)}
               <span className="text-[13px] font-medium text-muted-foreground font-sans">/mes</span>
-            </p>
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success-500))] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--success-500))]" />
-              </span>
-              {stats?.viewingNow || 0} personas viendo
             </p>
           </div>
           <div className="flex gap-2">
@@ -669,9 +659,7 @@ export function MobileStickyCTA({
               </Button>
             ) : (
               <>
-                <Button asChild hideArrow>
-                  <Link href={`/aplicar/${propertyId}`}>Postularme</Link>
-                </Button>
+                <PostularButton propertyId={propertyId} canonCop={price} hideArrow />
                 <Button variant="outline" hideArrow>
                   Visita
                 </Button>

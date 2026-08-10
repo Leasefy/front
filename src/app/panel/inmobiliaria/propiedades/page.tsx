@@ -24,7 +24,7 @@ import { propertiesApi } from '@/lib/api/properties.service';
 import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { IconTooltip } from '@/components/ui/icon-tooltip';
-import { Button, Input, EmptyState, Badge, Spinner, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
+import { Button, Input, EmptyState, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
 import {
   Select,
   SelectContent,
@@ -42,7 +42,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ErrorState } from '@/components/ui/error-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { PropertyEditModal } from '@/components/inmobiliaria/PropertyEditModal';
 import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import type { AgencyProperty } from '@/lib/types/property';
@@ -168,7 +169,7 @@ function ChangeAgentModal({ property, onClose, onSuccess }: ChangeAgentModalProp
           {currentAgent && (
             <div className="flex items-center justify-between p-3 rounded-xl bg-surface-muted border border-border">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
                   <span className="text-xs font-medium text-primary">
                     {agentInitials(currentAgent)}
                   </span>
@@ -264,7 +265,9 @@ function PropiedadesContent() {
 
   const [properties, setProperties] = useState<AgencyProperty[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // El error ENTERO, no su mensaje: el status es lo que distingue «no existe»
+  // de «no pudimos cargar», y sólo uno de los dos se puede reintentar.
+  const [error, setError] = useState<unknown>(null);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [unassignedOnly, setUnassignedOnly] = useState(false);
@@ -287,7 +290,7 @@ function PropiedadesContent() {
       hasLoadedRef.current = true;
     } catch (err) {
       if (!hasLoadedRef.current) {
-        setError(err instanceof Error ? err.message : 'Error al cargar propiedades');
+        setError(err);
       }
     } finally {
       setIsLoading(false);
@@ -360,8 +363,10 @@ function PropiedadesContent() {
   // Solo bloquea la vista en el primer load — los auto-refresh son silenciosos.
   if (isLoading && properties.length === 0) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Spinner size="md" className="text-primary" />
+      /* Esqueleto con las columnas reales, no un spinner: la forma ya se
+         conoce y así la pantalla no salta cuando lleguen los datos. */
+      <div className="p-4 md:p-6">
+        <EsqueletoTabla columnas={4} filas={6} />
       </div>
     );
   }
@@ -369,7 +374,11 @@ function PropiedadesContent() {
   if (error) {
     return (
       <div className="p-4 md:p-6">
-        <ErrorState description={error} onRetry={fetchProperties} />
+        <FalloDeCarga
+          error={error}
+          queEs="tus inmuebles"
+          onReintentar={fetchProperties}
+        />
       </div>
     );
   }
@@ -395,9 +404,13 @@ function PropiedadesContent() {
             <Sparkle className="w-4 h-4 text-primary" weight="fill" />
             Capturar con IA
           </Button>
-          <Button hideArrow onClick={() => router.push('/publicar')}>
+          {/* Consignación, no "Nueva propiedad": una inmobiliaria nunca
+              administra un inmueble sin propietario. Esto mandaba a `/publicar`,
+              el formulario del propietario —que es dueño de lo suyo y no tiene a
+              quién declarar—, y dejaba el inmueble sin dueño ni comisión. */}
+          <Button hideArrow onClick={() => router.push('/panel/inmobiliaria/portafolio/nuevo')}>
             <Plus className="w-4 h-4" />
-            Nueva propiedad
+            Nueva consignación
           </Button>
         </div>
       </div>
@@ -485,7 +498,7 @@ function PropiedadesContent() {
               search || filterStatus !== 'all'
                 ? 'Ninguna propiedad coincide con los filtros'
                 : isAgent
-                ? 'No tenés propiedades asignadas'
+                ? 'No tienes propiedades asignadas'
                 : 'Aún no hay propiedades publicadas'
             }
           />
@@ -556,7 +569,7 @@ function PropiedadesContent() {
                       <TableCell className="p-4">
                         {agent ? (
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
                               <span className="text-xs font-medium text-primary">
                                 {agentInitials(agent)}
                               </span>

@@ -168,9 +168,9 @@ describe('<DocumentReviewQueueView>', () => {
   it('renders the error state and wires retry', () => {
     const props = { ...baseProps(), error: 'boom' };
     render(props);
-    const error = container.querySelector('[data-testid="error-state"]');
+    const error = container.querySelector('[data-testid="fallo-de-carga"]');
     expect(error).toBeTruthy();
-    act(() => (container.querySelector('[data-testid="retry"]') as HTMLButtonElement).click());
+    act(() => (container.querySelector('[data-testid="reintentar"]') as HTMLButtonElement).click());
     expect(props.onRetry).toHaveBeenCalled();
   });
 });

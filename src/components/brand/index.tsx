@@ -31,6 +31,10 @@ export {
   SEMANTIC,
 } from "@leasefy/cadence";
 
+// Variante monocroma del símbolo para chrome (sidebar/headers): hereda el
+// color del contenedor, así sale negro en claro y blanco en oscuro.
+export { LeasefySymbol, LeasefyLogotype } from "./LeasefySymbol";
+
 export type { SemanticTone } from "@leasefy/cadence";
 
 export const BRAND_BLUE = "#1A40FF";

@@ -279,7 +279,7 @@ export function WizardShell({
                           isCurrent
                             ? 'text-fg'
                             : isCompleted
-                            ? 'text-fg/70'
+                            ? 'text-fg-muted'
                             : 'text-fg-muted'
                         )}
                       >

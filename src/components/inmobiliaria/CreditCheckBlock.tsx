@@ -214,7 +214,7 @@ export function CreditCheckBlock({
         </div>
         <p className="text-xs text-rose-600 dark:text-rose-300 mt-1 pl-6">
           {t(
-            'Ocurrió un error al consultar el buró. Reintentá la evaluación.',
+            'Ocurrió un error al consultar el buró. Reintenta la evaluación.',
             'An error occurred querying the bureau. Retry the evaluation.',
           )}
         </p>

@@ -12,6 +12,7 @@
 
 import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { leerRespaldo, etiquetaDeTipo } from '@/lib/inmobiliaria/respaldo';
 import Link from 'next/link';
 import {
   CaretLeft,
@@ -28,6 +29,7 @@ import {
   Bell,
   ChatCircle,
   XCircle,
+  ShieldCheck,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -45,6 +47,7 @@ import { DownloadContractPdfButton } from '@/components/contract/DownloadContrac
 import { useContract, useContractPreview, useContractActions, useContractRejections, useSignedPdfUrl, isPermissionError } from '@/lib/hooks/useContracts';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import type { ContractStatus } from '@/lib/types/contract';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
 
@@ -69,6 +72,9 @@ function ContratoDetalleContent() {
   const id = params.id;
 
   const { contract, isLoading, error, refetch, setContract } = useContract(id);
+  // El respaldo vive en las cláusulas del contrato: es el campo real que
+  // el backend persiste hoy. Ver src/lib/inmobiliaria/respaldo.ts.
+  const respaldo = leerRespaldo(contract?.customClauses);
   const { preview, isLoading: isLoadingPreview } = useContractPreview(id);
   const { rejections } = useContractRejections(id);
   const actions = useContractActions();
@@ -121,7 +127,7 @@ function ContratoDetalleContent() {
     if (!updated) {
       toast.error(
         isPermissionError(actions.lastError)
-          ? 'No tenés permisos para esta acción.'
+          ? 'No tienes permisos para esta acción.'
           : 'No se pudo cancelar el contrato.'
       );
       return;
@@ -162,7 +168,26 @@ function ContratoDetalleContent() {
     );
   }
 
-  if (error || !contract) {
+    /*
+   * «No existe» y «no se pudo cargar» eran la misma pantalla: `if (!x || error)`.
+   * Le decía a alguien con mala conexión que este contrato había sido eliminado, y sin
+   * ofrecer reintentar — porque sobre algo que no existe reintentar no tiene
+   * sentido. Las dos señales ya estaban por separado; se juntaban a mano.
+   */
+  if (error) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+        <FalloDeCarga
+          error={error}
+          queEs="este contrato"
+            onReintentar={() => void refetch()}
+          volverA={{ label: 'Contratos', href: '/panel/inmobiliaria/contratos' }}
+        />
+      </div>
+    );
+  }
+
+  if (!contract) {
     return (
       <div className="max-w-2xl mx-auto p-8">
         <div className="rounded-xl border border-danger/30 bg-danger-soft/40 p-5 flex items-start gap-3">
@@ -282,6 +307,32 @@ function ContratoDetalleContent() {
             <InfoRow label="Canon" value={formatCurrency(contract.monthlyRent)} />
             <InfoRow label="Día de pago" value={contract.paymentDueDay ? `Día ${contract.paymentDueDay}` : null} />
           </InfoCard>
+
+          {/* Paso 11: quién respalda este arriendo. Si no está, se dice — un
+              contrato sin respaldo registrado no es un contrato sin respaldo,
+              pero tampoco se puede afirmar que lo tiene. */}
+          {respaldo ? (
+            <InfoCard title="Respaldo del arriendo" icon={ShieldCheck}>
+              <InfoRow label="Aseguradora" value={respaldo.aseguradora} />
+              <InfoRow label="Tipo" value={etiquetaDeTipo(respaldo.tipo)} />
+              <InfoRow label="Número" value={respaldo.identificador} />
+              {(respaldo.vigenciaDesde || respaldo.vigenciaHasta) && (
+                <InfoRow
+                  label="Vigencia"
+                  value={[respaldo.vigenciaDesde, respaldo.vigenciaHasta]
+                    .filter(Boolean)
+                    .join(' → ')}
+                />
+              )}
+            </InfoCard>
+          ) : (
+            <InfoCard title="Respaldo del arriendo" icon={ShieldCheck}>
+              <p className="text-sm text-muted-foreground">
+                Este contrato no tiene registrada la aseguradora que aprobó ni el
+                número de la póliza. Sin eso no hay a quién reclamarle si algo pasa.
+              </p>
+            </InfoCard>
+          )}
 
           {contract.auditTrail && contract.auditTrail.length > 0 && (
             <InfoCard title="Historial" icon={Clock}>
@@ -482,7 +533,7 @@ function ActionPanel({
     return (
       <ActionBar
         title="El inquilino solicitó cambios"
-        subtitle={truncated ?? 'Editá los términos y volvé a firmar para enviarlo de nuevo.'}
+        subtitle={truncated ?? 'Edita los términos y vuelve a firmar para enviarlo de nuevo.'}
         cta={{
           label: 'Corregir contrato',
           icon: PencilSimpleLine,

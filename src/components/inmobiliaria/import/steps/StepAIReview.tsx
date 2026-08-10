@@ -183,7 +183,7 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
         {/* Shimmer loading */}
         <div className="flex flex-col items-center gap-4 py-8">
           <div className="relative">
-            <div className="w-16 h-16 rounded-full bg-surface-brand flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-primary-soft flex items-center justify-center">
               <Spinner size="lg" />
             </div>
           </div>
@@ -264,7 +264,7 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
       </div>
 
       {/* Batch actions bar */}
-      <div className="flex items-center justify-between gap-3 py-2 border-b border-faint dark:border-strong">
+      <div className="flex items-center justify-between gap-3 py-2 border-b border-border-faint dark:border-border-strong">
         <div className="flex items-center gap-3">
           {/* Select all toggle */}
           <label className="flex items-center gap-2 cursor-pointer">

@@ -54,7 +54,7 @@
     "retry": "Retry"
   },
   "nav": {
-    "panel": "Dashboard",
+    "panel": "Home",
     "myRental": "My Rental",
     "applications": "Applications",
     "contracts": "Contracts",
@@ -66,7 +66,8 @@
     "saved": "Saved",
     "forYou": "For You",
     "help": "Help",
-    "logout": "Log out"
+    "logout": "Log out",
+    "approval": "My rental cap"
   },
   "header": {
     "search": "Search properties, payments, documents...",
@@ -858,7 +859,7 @@
       "propietarios": "Owners",
       "portafolio": "Consignments",
       "propiedades": "Properties",
-      "pipeline": "Prospecting (Pipeline)",
+      "pipeline": "Prospecting",
       "agentes": "Agents",
       "cobros": "Manual Collections",
       "contratos": "Contracts",
@@ -896,7 +897,20 @@
       "secFinanzas": "Finance",
       "secAnalisis": "Analytics",
       "equipo": "Team",
-      "cmdPaletteTrigger": "Search everything…"
+      "cmdPaletteTrigger": "Search everything…",
+      "secComercial": "Commercial",
+      "secAdministracion": "Administration",
+      "secGeneral": "General",
+      "solicitudes": "Requests",
+      "contabilidad": "General accounting",
+      "proximamente": "Coming soon",
+      "aprendizaje": "Assistant learning",
+      "hintPipeline": "pipeline",
+      "hintCatalogo": "catalog",
+      "hintRevision": "review",
+      "hintEgresos": "to owners",
+      "recorrido": "Journey",
+      "soportes": "Candidate documents"
     },
     "mobileNav": {
       "moreButton": "More",
@@ -4256,8 +4270,8 @@
         "conciliacionMovimientos": "Transactions",
         "conciliacionConexiones": "Connections",
         "conciliacionLiquidaciones": "Settlements",
-        "estudio": "Tenant screening",
-        "estudioCola": "Screenings to review",
+        "estudio": "Candidate evaluation",
+        "estudioCola": "Evaluations to review",
         "estudioConfiguracion": "Settings",
         "estudioAnalitica": "Analytics",
         "matching": "Matching",
@@ -4293,14 +4307,14 @@
         "cobranzaEquipo": "AI team",
         "cobranzaReportes": "Reports",
         "estudioResumen": "Overview",
-        "estudioCasos": "Studies",
-        "estudioCrear": "New study",
+        "estudioCasos": "Evaluations",
+        "estudioCrear": "New evaluation",
         "estudioEquipo": "AI team",
         "cotizadorResumen": "Overview",
         "cotizadorNueva": "New request",
         "cotizadorComparar": "Comparator",
         "cotizadorEquipo": "AI team",
-        "estudioSolicitud": "Candidate request",
+        "estudioSolicitud": "Approval request",
         "estudioReglas": "Rules",
         "cotizadorEjecucion": "Execution",
         "cotizadorIntegraciones": "Integrations",
@@ -6437,12 +6451,12 @@
           "description": "Match bank statements against your collections automatically. The agent suggests matches and leaves only doubtful cases in the queue for your approval."
         },
         "estudio": {
-          "title": "Tenant Screening Agent",
-          "description": "Full tenant screening: identity, income and background verified in minutes, with an auditable, traceable decision for every applicant."
+          "title": "Candidate Evaluation Agent",
+          "description": "Full candidate evaluation: identity, income and background verified in minutes, with an auditable, traceable decision for every applicant."
         },
         "matching": {
           "title": "Matching Agent",
-          "description": "Connect vacant properties with pre-approved candidates. The agent proposes the best matches and outreach only happens with your approval."
+          "description": "Connect vacant properties with approved candidates. The agent proposes the best matches and outreach only happens with your approval."
         },
         "pagos": {
           "title": "Payments Agent",
@@ -6487,7 +6501,7 @@
           "cotizador": "Insurability",
           "conciliacion": "Reconciliation",
           "pagos": "Vendor payments",
-          "estudio": "Tenant screening",
+          "estudio": "Candidate evaluation",
           "matching": "Matching",
           "avaluos": "Appraisals"
         },
@@ -6654,8 +6668,8 @@
             }
           },
           "estudio": {
-            "eyebrow": "Agent · Tenant screening",
-            "salaTitulo": "Tenant screening",
+            "eyebrow": "Agent · Candidate evaluation",
+            "salaTitulo": "Candidate evaluation",
             "salaDesc": "The agent screens every candidate — identity and ability to pay — and brings you only the doubtful cases so you decide.",
             "colaDesc": "Review the screening result (level and score) and its evidence, and you make the call.",
             "colaEmptyHint": "No screenings pending — a good sign. Screenings arrive when a candidate applies; doubtful cases will appear here for your decision.",
@@ -6700,10 +6714,10 @@
             "salaTitulo": "Matching",
             "salaDesc": "It finds you already-validated tenants for your vacant properties. You review the best match and approve the outreach — nothing is sent without you.",
             "colaDesc": "Candidates the agent paired with compatible properties. Review the best match and its fit factors, then action it (to reach out) or discard it. Copilot mode: nothing happens without you.",
-            "colaEmptyHint": "No matches yet. The agent crosses candidates approved in Tenant screening with your vacant properties — results will appear here.",
+            "colaEmptyHint": "No matches yet. The agent crosses candidates approved in Candidate evaluation with your vacant properties — results will appear here.",
             "casoColaLabel": "Matching queue",
             "crossPregunta": "Is this candidate reliable?",
-            "crossDestino": "Tenant screening",
+            "crossDestino": "Candidate evaluation",
             "analiticaDesc": "How many matches the agent proposed, how well they fit and how many candidates ended up contacted, day by day.",
             "colaTitle": "Suggested candidates",
             "colaLabel": "Suggested candidates",
@@ -8138,7 +8152,7 @@
       },
       "quickActions": {
         "title": "Quick actions",
-        "nuevaPropiedad": "Create property",
+        "nuevaConsignacion": "New listing agreement",
         "cobranza": "Go to Collections",
         "cotizador": "Go to Insurability",
         "reportes": "View reports",
@@ -8148,6 +8162,158 @@
       "hintNavigate": "navigate",
       "hintOpen": "open",
       "hintClose": "close"
+    },
+    "recorrido": {
+      "titulo": "Tenant journey",
+      "subtitulo": "From browsing the catalog to signing. The tenant handles the first six steps; from the seventh on, it's you.",
+      "pasoDe": "Step {{n}} of {{total}}",
+      "teToca": "Your turn",
+      "esperandoAlInquilino": "Tenant's turn",
+      "sigue": "Next",
+      "verPaso": "Open",
+      "sinPantalla": "No screen yet",
+      "cambioDeManos": "Hands over here",
+      "actorInquilino": "Tenant",
+      "actorInmobiliaria": "You",
+      "verdict": {
+        "evaluada": "Assessed",
+        "revision": "Needs review"
+      },
+      "bandeja": {
+        "titulo": "Applications that reached you",
+        "desc": "They land here the moment the tenant applies, with the assessment already done. Oldest first.",
+        "vacioTitulo": "No applications have reached you yet",
+        "vacioDesc": "When someone with valid insurability applies to one of your listings, they show up here with their level and score. Here's the full journey:",
+        "errorTitulo": "We couldn't load the applications",
+        "errorDesc": "This doesn't mean there aren't any. Try again in a moment.",
+        "reintentar": "Try again",
+        "colRef": "Reference",
+        "colNivel": "Level",
+        "colPuntaje": "Score",
+        "colEstado": "Status",
+        "colLlego": "Arrived",
+        "escalada": "Escalated",
+        "sinResolver": "{{n}} need your review",
+        "comoFunciona": "How the journey works",
+        "niveles": "Levels: A = strongest profile · B = good profile · C = tight profile · D = higher risk",
+        "colCandidato": "Candidate",
+        "verCandidatos": "View candidates",
+        "sinNombre": "No candidate details"
+      },
+      "pasos": {
+        "catalogo": {
+          "label": "Browses the catalog",
+          "desc": "Searches published listings — no account, no commitment."
+        },
+        "asegurabilidad": {
+          "label": "Requests insurability",
+          "desc": "Assessed once, with no property attached: the result covers every listing."
+        },
+        "pago": {
+          "label": "Pays for the assessment",
+          "desc": "The tenant covers the cost of the assessment."
+        },
+        "aseguradoras": {
+          "label": "Insurers are queried",
+          "desc": "Every enabled insurer is asked, not just one, and the best coverage cap wins."
+        },
+        "compatibles": {
+          "label": "Matching listings unlock",
+          "desc": "They only see what fits under their coverage cap."
+        },
+        "postulacion": {
+          "label": "Applies",
+          "desc": "They can apply to several listings at once."
+        },
+        "alerta": {
+          "label": "The application reaches you",
+          "desc": "It lands in your inbox with the assessment already done."
+        },
+        "evaluacion": {
+          "label": "The candidate gets assessed",
+          "desc": "Starts on its own when the application lands: level A, B, C or D. Whatever the agent can't settle goes to your review, and you can re-run it any time."
+        },
+        "comparacion": {
+          "label": "You compare candidates",
+          "desc": "Side by side, within the same listing."
+        },
+        "decision": {
+          "label": "You pick one",
+          "desc": "The rest must be told — they were promised an answer when they applied."
+        },
+        "contrato": {
+          "label": "You prepare the contract",
+          "desc": "Which insurer approved, and under which number, is recorded."
+        }
+      }
+    },
+    "nuevo": {
+      "boton": "New",
+      "aria": "Start something new",
+      "grupos": {
+        "captar": "Acquire",
+        "evaluar": "Assess",
+        "cerrar": "Close"
+      },
+      "sinResolver": "We couldn't verify your access. Tap to retry.",
+      "intro": {
+        "queVasAHacer": "What you'll do",
+        "necesitasTitulo": "Before you start",
+        "empezar": "Start",
+        "ahoraNo": "Not now",
+        "soloPrimeraVez": "You'll only see this once.",
+        "nuevaPestana": "Opens in a new tab"
+      },
+      "flujos": {
+        "consignacion": {
+          "label": "New listing agreement",
+          "desc": "Add a property to the portfolio with its owner",
+          "intro": {
+            "titulo": "You're creating a listing agreement",
+            "resumen": "It's the agreement with the owner to manage their property. It's saved to the portfolio, and you can publish it from there.",
+            "paso1": "Pick the owner, or create one if they aren't there yet.",
+            "paso2": "Enter the property details and the rent.",
+            "paso3": "Set the commission and who handles it.",
+            "necesitas": "Have the owner's ID and the property's exact address handy."
+          }
+        },
+        "avaluo": {
+          "label": "New appraisal",
+          "desc": "Request a property's market appraisal",
+          "intro": {
+            "titulo": "You're requesting an appraisal",
+            "resumen": "A licensed appraiser does it and it comes back signed. The request lives outside this panel, so it opens in a new tab and you won't lose anything you have open here.",
+            "paso1": "Enter the address and property details.",
+            "paso2": "Say what you need it for.",
+            "paso3": "Track it under Appraisals until the signed report arrives.",
+            "necesitas": "Have the property's registry number handy."
+          }
+        },
+        "asegurabilidad": {
+          "label": "New insurability check",
+          "desc": "Tells you whether insurers back them, and up to how much",
+          "intro": {
+            "titulo": "You're checking insurability",
+            "resumen": "It's the first question, and the one that decides whether there's anything to pursue: will insurers back this person? If so, you also get the maximum guaranteed amount, which tells you which properties you can offer them. Checked once, with no property attached. The A/B/C/D evaluation is a different thing and comes later: it starts on its own once the candidate applies.",
+            "paso1": "Identify the candidate.",
+            "paso2": "Pick which insurers to query.",
+            "paso3": "Compare the answers and keep the best one.",
+            "necesitas": "You need the candidate's ID number and their authorization to run the check."
+          }
+        },
+        "contrato": {
+          "label": "New contract",
+          "desc": "Prepare the lease agreement",
+          "intro": {
+            "titulo": "You're preparing a contract",
+            "resumen": "It's built on an already-approved application: the tenant, the property and the rent all come from it. You pick which one first.",
+            "paso1": "Pick the approved application.",
+            "paso2": "Confirm rent, dates and guarantee.",
+            "paso3": "Review the clauses and send it for signature.",
+            "necesitas": "You'll need the candidate already approved."
+          }
+        }
+      }
     }
   },
   "validation": {
@@ -9175,6 +9341,240 @@
   "wishlist": {
     "errors": {
       "saveFailed": "Could not update your saved properties. Please try again."
+    }
+  },
+  "inquilino": {
+    "aprobacion": {
+      "eyebrow": "My rental cap",
+      "cargando": "Loading your approval...",
+      "error": {
+        "title": "We could not load your approval"
+      },
+      "aprobado": {
+        "badge": "Approved",
+        "label": "You're approved up to",
+        "ayuda": "You can apply to any property with rent up to that amount — and to as many as you want, without paying again.",
+        "sinTope": {
+          "title": "You're approved",
+          "ayuda": "We're still calculating how much we can back you for. We'll let you know as soon as it's ready."
+        },
+        "cta": "See my properties",
+        "ctaSecundaria": "My applications"
+      },
+      "aseguradoras": {
+        "title": "We checked several insurers"
+      },
+      "vigencia": {
+        "dias": "Expires in {n} days",
+        "manana": "Expires tomorrow",
+        "hoy": "Expires today",
+        "ayer": "Expired yesterday",
+        "vencida": "Expired {n} days ago"
+      },
+      "rechazado": {
+        "title": "We can't approve you right now",
+        "desc": "The insurers we checked didn't back your request this time.",
+        "salidas": "What you can do",
+        "perfil": {
+          "title": "Improve your credit profile",
+          "desc": "Catching up on your obligations and lowering your debt load changes the outcome faster than you might think."
+        },
+        "reintentar": {
+          "title": "Try again later",
+          "desc": "This isn't final. Insurers look at your situation again every time you get assessed."
+        },
+        "tercero": {
+          "title": "Someone can apply for you",
+          "desc": "Whoever signs doesn't have to be whoever lives there. A relative or friend can apply and you live in the property: it's legal, and it's how more than half of rentals work in Colombia."
+        }
+      },
+      "proceso": {
+        "title": "We're checking with the insurers",
+        "desc": "We're asking every insurer we work with, not just one. This can take a few minutes."
+      },
+      "vacio": {
+        "title": "You don't have an approval yet",
+        "desc": "With an approval you know how much you can rent for, and you apply to as many properties as you want with the same assessment.",
+        "cta": "Find out how much you can rent for",
+        "comoFunciona": "How it works"
+      },
+      "pasos": {
+        "uno": {
+          "title": "We assess you",
+          "desc": "We check with every insurer we work with, not just one. That gives you a better chance of being approved."
+        },
+        "dos": {
+          "title": "You choose",
+          "desc": "We show you the properties that fit your approved cap, so you don't waste time on ones that don't."
+        },
+        "tres": {
+          "title": "The owner decides",
+          "desc": "You apply to as many as you want with the same assessment, without paying again."
+        }
+      }
+    },
+    "postularse": {
+      "titulo": "What happens when you apply",
+      "intro": "These properties are within what the insurers approved for you, so you can take them. Applying is the first step of a process, not the end.",
+      "pasos": {
+        "postulas": {
+          "titulo": "You apply",
+          "texto": "You can apply to several properties at once with the same approval, without checking again or paying again."
+        },
+        "comparan": {
+          "titulo": "You're compared with other candidates",
+          "texto": "Applying does not reserve the property or hand it to you. The agency reviews your application alongside the others."
+        },
+        "respuesta": {
+          "titulo": "You get an answer",
+          "texto": "We'll tell you here and by email if you were chosen. If you weren't, we'll tell you too — you won't be left waiting."
+        },
+        "firma": {
+          "titulo": "You sign online",
+          "texto": "If you're chosen, the contract is signed from here. You don't have to go to any office."
+        }
+      }
+    },
+    "tope": {
+      "vencida": "Your approval expired",
+      "sinTope": "You don't know yet how much you can rent",
+      "invita": "With your approval we show you only the properties that work for you.",
+      "cta": {
+        "renovar": "Renew",
+        "conocer": "Find out your cap",
+        "verEstado": "View status",
+        "queHacer": "See what you can do"
+      },
+      "aprobadoHasta": "You're approved up to",
+      "aprobadoPara": "You're approved for",
+      "calculando": "We're calculating your cap",
+      "condicionada": "Conditions still to resolve",
+      "venceEn": "Expires in",
+      "dias": "days",
+      "venceManana": "Expires tomorrow",
+      "venceHoy": "Expires today",
+      "overlay": {
+        "sobreTope": "Above your cap",
+        "sobreConsultado": "Above what you asked about",
+        "consultaste": "You asked about",
+        "asesorRevisa": "an advisor can review it"
+      },
+      "porMes": "/mo",
+      "proceso": {
+        "titulo": "We are checking with the insurers",
+        "texto": "We will let you know as soon as we know how much we can back you for."
+      },
+      "rechazado": {
+        "titulo": "We cannot approve you right now",
+        "texto": "This is not a final no. There are ways forward."
+      }
+    },
+    "resultado": {
+      "aprobado": {
+        "titulo": "You're approved",
+        "bajada": "The insurers back your lease.",
+        "sigue1": "You can now apply to the properties you like.",
+        "sigue2": "Your approval works for several: no checking again, no paying again.",
+        "sigue3ConSesion": "In the catalog we mark what works for you.",
+        "sigue3SinSesion": "Create your account to save it and apply.",
+        "sigue3Demo": "When the result is real, we highlight what fits you in the catalog."
+      },
+      "condiciones": {
+        "titulo": "You're approved, with conditions",
+        "bajada": "It's a yes. There's just one detail to settle with the insurer.",
+        "queSignifica": "What this usually means",
+        "queSignificaTexto": "They usually ask for a co-signer or an extra deposit. It varies by insurer, and an advisor will tell you which suits you best.",
+        "sigue1": "You can keep browsing properties and apply.",
+        "sigue2": "An advisor will contact you to settle the condition.",
+        "sigue3ConSesion": "Your approval is saved to your account.",
+        "sigue3SinSesion": "Create your account so you don't lose this approval."
+      },
+      "rechazo": {
+        "titulo": "We can't back you right now",
+        "bajada": "The insurers we checked don't back you at this time. It's not final.",
+        "salidas": "What you can do",
+        "otro": {
+          "titulo": "Have someone apply for you",
+          "texto": "It's more common than it seems: many leases are signed by a family member. If someone close to you is approved, they're the holder and you live there."
+        },
+        "codeudor": {
+          "titulo": "Apply with a co-signer",
+          "texto": "A co-signer changes the analysis. An advisor can review your case."
+        },
+        "seguir": {
+          "titulo": "Keep browsing properties",
+          "texto": "You can explore the full catalog while you sort out the above."
+        },
+        "cta": "See available properties"
+      },
+      "cifra": {
+        "hasta": "We back you up to",
+        "hastaNota": "With this cap we show you the properties that work for you.",
+        "para": "Approved for a rent of",
+        "paraNota": "That's the rent you asked about. If something pricier interests you, an advisor will review it.",
+        "calculando": "We're calculating how much we can back. We'll confirm shortly.",
+        "hastaNotaDemo": "With a real cap we would show you the properties that fit you."
+      },
+      "aseguradoras": {
+        "una": "One insurer backs you",
+        "varias": "insurers back you",
+        "condicional": "with conditions"
+      },
+      "queSigue": "What's next",
+      "verCatalogo": "See my catalog",
+      "otraPersona": "Check another person",
+      "otraConsulta": "Make another check",
+      "demo": {
+        "titulo": "Sample result.",
+        "texto": "The approval service isn't published yet, so this data isn't real and isn't saved."
+      },
+      "notaAgencia": "You're seeing the result as the candidate sees it. You can send this same link to anyone else.",
+      "porMes": "/mo",
+      "verPropiedades": "View properties"
+    },
+    "crearCuenta": {
+      "titulo": "Create your account to get in",
+      "bajada": "Your approval is saved, and inside we show you only the properties you can take. Three details left.",
+      "yaTenemos": "We already have this",
+      "celular": "Mobile",
+      "cedula": "ID number",
+      "ciudad": "City",
+      "nombre": "Name",
+      "correo": "Email",
+      "password": "Password",
+      "ph": {
+        "nombre": "e.g. María Restrepo",
+        "correo": "e.g. maria@email.com",
+        "password": "At least 6 characters"
+      },
+      "cta": "Create account and see my catalog",
+      "volver": "Back to the result",
+      "err": {
+        "nombre": "Enter your name.",
+        "email": "Enter a valid email.",
+        "password": "At least 6 characters.",
+        "existe": "An account with this email already exists. Sign in and your approval is waiting inside.",
+        "generico": "We couldn't create your account. Please try again."
+      },
+      "confirma": {
+        "titulo": "Confirm your email",
+        "parte1": "We sent a link to",
+        "parte2": "Open it on this same device, finish setting up your profile and you go into your catalog.",
+        "guardada": "Your approval is saved in this browser, so you don't have to check again or pay again. If you open the link on another device, an advisor will re-link it for you."
+      }
+    },
+    "catalogoAprobacion": {
+      "volver": "Back to Home",
+      "titulo": "Properties for you",
+      "cargando": "Looking for properties…",
+      "sinTope": "Your approval is ready. Once we confirm your cap we'll show you what works for you.",
+      "puedesTomar": "you can take with your approval",
+      "ocultasPrefijo": "We're not showing",
+      "ocultasSingular": "property that goes above your cap.",
+      "ocultasPlural": "properties that go above your cap.",
+      "vacio": "There are no properties within your cap right now",
+      "vacioTexto": "New ones come up often. Meanwhile you can browse the full catalog.",
+      "verTodo": "See all properties"
     }
   }
 }

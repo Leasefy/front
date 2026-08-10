@@ -73,7 +73,7 @@ function PeriodComparisonCard({ analysis }: { analysis: TrendAnalysis }) {
   const isPercentMetric = analysis.metricId !== 'revenue' && analysis.metricId !== 'commissions';
 
   return (
-    <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
       <h3 className="text-sm font-medium text-fg-muted dark:text-fg-subtle mb-4">
         {t('inmobiliaria.analytics.trendsComp.periodComparison')}
       </h3>
@@ -111,7 +111,7 @@ function PeriodComparisonCard({ analysis }: { analysis: TrendAnalysis }) {
       </div>
 
       {/* Change Indicator */}
-      <div className="mt-4 pt-4 border-t border-faint dark:border-strong">
+      <div className="mt-4 pt-4 border-t border-border-faint dark:border-border-strong">
         <Badge
           variant={
             comparison.change.direction === 'up'
@@ -211,7 +211,7 @@ function TrendChart({ analysis }: { analysis: TrendAnalysis }) {
   const isPercentMetric = analysis.metricId !== 'revenue' && analysis.metricId !== 'commissions';
 
   return (
-    <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
           {t('inmobiliaria.analytics.trendsComp.historicTrend')}
@@ -418,7 +418,7 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
   const maxDev = Math.max(...allMonths.map((m) => Math.abs(m.deviation)));
 
   return (
-    <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-8 h-8 rounded-md bg-warning-soft flex items-center justify-center">
           <Calendar className="w-4 h-4 text-warning" />
@@ -488,7 +488,7 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
       </div>
 
       {/* Legend */}
-      <div className="mt-4 pt-4 border-t border-faint dark:border-strong flex items-center gap-4 text-xs">
+      <div className="mt-4 pt-4 border-t border-border-faint dark:border-border-strong flex items-center gap-4 text-xs">
         <div className="flex items-center gap-1.5">
           <Sun className="w-4 h-4 text-warning" weight="fill" />
           <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.analytics.trendsComp.highSeason')}</span>
@@ -511,7 +511,7 @@ function SeasonalPatternsSection({ patterns }: { patterns: SeasonalPattern[] }) 
             .map((p, i) => (
               <div
                 key={i}
-                className="flex items-start gap-2 text-xs text-fg-muted dark:text-fg-subtle p-2 rounded-md bg-surface-muted dark:bg-ink/50"
+                className="flex items-start gap-2 text-xs text-fg-muted dark:text-fg-subtle p-2 rounded-md bg-surface-muted"
               >
                 <Info className="w-3.5 h-3.5 text-fg-subtle shrink-0 mt-0.5" />
                 <span>
@@ -534,7 +534,7 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
 
   if (anomalies.length === 0) {
     return (
-      <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+      <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 rounded-md bg-success-soft flex items-center justify-center">
             <Warning className="w-4 h-4 text-success" />
@@ -549,7 +549,7 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
   }
 
   return (
-    <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-8 h-8 rounded-md bg-warning-soft flex items-center justify-center">
           <Warning className="w-4 h-4 text-warning" />
@@ -567,7 +567,7 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
       <div className="overflow-x-auto">
         <Table className="w-full">
           <TableHeader>
-            <TableRow className="border-b border-faint dark:border-strong">
+            <TableRow className="border-b border-border-faint dark:border-border-strong">
               <TableHead className="text-left p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
                 {t('inmobiliaria.analytics.trendsComp.date')}
               </TableHead>
@@ -595,7 +595,7 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="border-b border-faint dark:border-strong/50"
+                className="border-b border-border-faint dark:border-border-strong/50"
               >
                 <TableCell className="p-2 text-sm font-medium text-fg dark:text-white">
                   {new Date(anomaly.date).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
@@ -778,7 +778,7 @@ export function AnalyticsTrends({
         <PeriodComparisonCard analysis={currentAnalysis} />
 
         {/* Trend Summary Card */}
-        <div className="p-6 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+        <div className="p-6 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
           <h3 className="text-sm font-medium text-fg-muted dark:text-fg-subtle mb-4">
             {t('inmobiliaria.analytics.trendsComp.trendLine')}
           </h3>
@@ -812,7 +812,7 @@ export function AnalyticsTrends({
               </p>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-faint dark:border-strong">
+          <div className="mt-4 pt-4 border-t border-border-faint dark:border-border-strong">
             <div className="flex items-center justify-between text-sm">
               <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.analytics.trendsComp.monthlySlope')}</span>
               <span

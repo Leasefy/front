@@ -509,7 +509,9 @@ export function PropertyIACapture() {
             <ArrowClockwise className="w-4 h-4" />
             {t(k('retry'))}
           </Button>
-          <Button hideArrow onClick={() => router.push('/panel/inmobiliaria/propiedades/nueva')}>
+          {/* A mano = consignación. Una inmobiliaria nunca administra un
+              inmueble sin propietario, y `/propiedades/nueva` no lo pide. */}
+          <Button hideArrow onClick={() => router.push('/panel/inmobiliaria/portafolio/nuevo')}>
             {t(k('manualFlow'))}
           </Button>
         </div>

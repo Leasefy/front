@@ -72,8 +72,8 @@ describe('validatePreApprovalForm', () => {
     const r = validatePreApprovalForm({
       cedula: 'abc',
       phone: '123',
-      ciudad: '',
-      canon: '',
+          ciudad: '',
+      canon: 'no-es-plata',
       tipoInmueble: '',
       consent: false,
     })
@@ -84,6 +84,53 @@ describe('validatePreApprovalForm', () => {
     expect(r.errors.canon).toBeTruthy()
     expect(r.errors.tipoInmueble).toBeTruthy()
     expect(r.errors.consent).toBeTruthy()
+  })
+
+  /*
+   * El estudio dejó de necesitar una propiedad: primero te estudias, y con el
+   * tope resultante eliges. Un canon vacío tiene que pasar.
+   */
+  describe('canon opcional', () => {
+    it('sin canon el formulario es válido', () => {
+      const r = validatePreApprovalForm({ ...VALID, canon: '' })
+      expect(r.valid).toBe(true)
+      expect(r.errors.canon).toBeUndefined()
+      expect(r.canonCop).toBeNull()
+    })
+
+    it('solo espacios cuenta como vacío', () => {
+      const r = validatePreApprovalForm({ ...VALID, canon: '   ' })
+      expect(r.valid).toBe(true)
+    })
+
+    it('si lo escribe, tiene que ser un monto válido', () => {
+      const r = validatePreApprovalForm({ ...VALID, canon: 'abc' })
+      expect(r.valid).toBe(false)
+      expect(r.errors.canon).toBeTruthy()
+    })
+
+    it('un canon en cero no pasa por válido', () => {
+      const r = validatePreApprovalForm({ ...VALID, canon: '0' })
+      expect(r.valid).toBe(false)
+    })
+  })
+
+  describe('celular', () => {
+    it('el error dice cuántos dígitos faltan', () => {
+      const r = validatePreApprovalForm({ ...VALID, phone: '300111' })
+      expect(r.errors.phone).toBe('El celular en Colombia tiene 10 dígitos.')
+    })
+
+    it('un fijo no pasa por celular', () => {
+      const r = validatePreApprovalForm({ ...VALID, phone: '6011112233' })
+      expect(r.valid).toBe(false)
+      expect(r.errors.phone).toMatch(/empieza por 3/i)
+    })
+
+    it('dígitos de más se rechazan, no se recortan en silencio', () => {
+      const r = validatePreApprovalForm({ ...VALID, phone: '30011122339' })
+      expect(r.valid).toBe(false)
+    })
   })
 
   it('requires consent even when everything else is valid', () => {

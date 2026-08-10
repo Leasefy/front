@@ -202,7 +202,7 @@ export function PipelineFilters({
                         className="w-6 h-6 rounded-full"
                       />
                     ) : (
-                      <span className="w-6 h-6 rounded-full bg-surface-brand flex items-center justify-center text-xs font-medium text-primary">
+                      <span className="w-6 h-6 rounded-full bg-primary-soft flex items-center justify-center text-xs font-medium text-primary">
                         {getInitials(agente.name)}
                       </span>
                     )}

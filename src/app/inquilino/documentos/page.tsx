@@ -16,6 +16,7 @@ import { useMyApplications } from '@/lib/hooks/useApplications';
 import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
 import { deriveReviewCounts, getReviewStatusLabel } from '@/lib/documents/review-status';
 import type { DocumentReviewStatus } from '@/lib/api/applications.types';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 // Per-status visual config for the tenant-facing document badge.
 // Color is always paired with an icon + label (never color alone) per a11y rules.
@@ -56,7 +57,7 @@ const ITEMS_PER_PAGE = 6;
 export default function DocumentosPage() {
   const { t, locale } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
-  const { applications, isLoading: isLoadingApps } = useMyApplications();
+  const { applications, isLoading: isLoadingApps, errorCrudo: errorApps, refetch: recargarApps } = useMyApplications();
 
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -161,6 +162,23 @@ export default function DocumentosPage() {
     );
   }
 
+  /*
+   * Sin postulaciones no hay documentos que mostrar — pero si la carga falló,
+   * «no tienes documentos» es falso. Se dice, con reintento.
+   */
+  if (errorApps) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+        <FalloDeCarga
+          error={errorApps}
+          queEs="tus documentos"
+          onReintentar={() => void recargarApps()}
+          volverA={{ label: 'Volver a mi panel', href: '/inquilino' }}
+        />
+      </div>
+    );
+  }
+
   // Show "complete profile first" if onboarding not done
   if (!isOnboardingComplete) {
     return (
@@ -189,7 +207,9 @@ export default function DocumentosPage() {
           </p>
         </motion.header>
 
-        {/* Stats Grid */}
+        {/* Stats Grid — solo con documentos. Cuatro contadores en cero no
+            resumen nada y ocupan justo el lugar del único mensaje útil. */}
+        {documents.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -256,8 +276,10 @@ export default function DocumentosPage() {
             </p>
           </div>
         </motion.div>
+        )}
 
-        {/* Filters */}
+        {/* Filtros — sin documentos no hay nada que buscar ni que filtrar. */}
+        {documents.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -301,6 +323,7 @@ export default function DocumentosPage() {
             </div>
           )}
         </motion.div>
+        )}
 
         {/* Documents Grid */}
         <motion.section
@@ -308,25 +331,31 @@ export default function DocumentosPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-fg">
-              {t('nav.documents')}
-            </h2>
-            <span className="text-sm text-fg-muted">
-              {filteredDocuments.length} {locale === 'es'
-                ? (filteredDocuments.length !== 1 ? 'documentos' : 'documento')
-                : (filteredDocuments.length !== 1 ? 'documents' : 'document')}
-            </span>
-          </div>
+          {/* El encabezado con el contador tampoco va sobre el vacío: "0
+              documentos" arriba de "No hay documentos" lo dice dos veces. */}
+          {documents.length > 0 && (
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-fg">
+                {t('nav.documents')}
+              </h2>
+              <span className="text-sm text-fg-muted">
+                {filteredDocuments.length} {locale === 'es'
+                  ? (filteredDocuments.length !== 1 ? 'documentos' : 'documento')
+                  : (filteredDocuments.length !== 1 ? 'documents' : 'document')}
+              </span>
+            </div>
+          )}
 
           {documents.length === 0 ? (
+            /* "aplicaciones" está muerto (docs/VOCABULARIO.md) y además mandaba
+               al historial. Lo siguiente que haría es postularse. */
             <EmptyState
               icon={FolderOpen}
               title={locale === 'es' ? 'No hay documentos' : 'No documents'}
               description={locale === 'es'
-                ? 'Cuando subas documentos en tus aplicaciones, aparecerán aquí organizados.'
-                : 'When you upload documents in your applications, they will appear here.'}
-              action={{ label: locale === 'es' ? 'Ver aplicaciones' : 'View applications', href: '/inquilino/aplicaciones' }}
+                ? 'Cuando te postules a una propiedad, los documentos que subas aparecerán aquí organizados.'
+                : 'When you apply to a property, the documents you upload will appear here.'}
+              action={{ label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me', href: '/inquilino/para-ti' }}
             />
           ) : filteredDocuments.length > 0 ? (
             <>

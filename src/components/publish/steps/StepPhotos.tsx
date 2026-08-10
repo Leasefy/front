@@ -142,7 +142,7 @@ export function StepPhotos() {
               : 'border-neutral-300 dark:border-neutral-600 hover:border-neutral-400 dark:hover:border-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
         )}
       >
-        <ImageSquare className="w-10 h-10 mx-auto text-neutral-400 dark:text-neutral-500 mb-3" />
+        <ImageSquare className="w-10 h-10 mx-auto text-fg-muted mb-3" />
         <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
           {isFull
             ? 'Máximo de fotos alcanzado'
@@ -214,7 +214,7 @@ export function StepPhotos() {
               onClick={() => fileInputRef.current?.click()}
               className="aspect-[4/3] rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center gap-1 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors bg-white dark:bg-[#2a2a2c]"
             >
-              <ImageSquare className="w-6 h-6 text-neutral-400 dark:text-neutral-500" />
+              <ImageSquare className="w-6 h-6 text-fg-muted" />
               <span className="text-xs text-neutral-500 dark:text-neutral-400">Agregar</span>
             </button>
           )}

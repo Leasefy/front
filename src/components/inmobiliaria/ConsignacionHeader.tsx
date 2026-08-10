@@ -124,7 +124,7 @@ export function ConsignacionHeader({
   const AvailabilityIcon = availability.icon;
 
   return (
-    <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+    <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex flex-col lg:flex-row rounded-xl">
         {/* Image/Thumbnail Section */}
         <div className="relative w-full lg:w-80 xl:w-96 h-48 lg:h-auto shrink-0 bg-surface-muted dark:bg-ink overflow-hidden rounded-t-xl lg:rounded-t-none lg:rounded-l-xl">
@@ -142,7 +142,7 @@ export function ConsignacionHeader({
 
           {/* Property type badge */}
           <div className="absolute bottom-3 left-3">
-            <span className="px-3 py-1.5 rounded-full bg-white/90 dark:bg-ink/90 backdrop-blur-sm text-sm font-medium text-fg dark:text-fg-subtle flex items-center gap-1.5">
+            <span className="px-3 py-1.5 rounded-full bg-surface-muted backdrop-blur-sm text-sm font-medium text-fg dark:text-fg-subtle flex items-center gap-1.5">
               <PropertyIcon className="w-4 h-4" />
               {t(`inmobiliaria.consignaciones.propertyType.${consignacion.propertyType}`)}
             </span>
@@ -217,7 +217,7 @@ export function ConsignacionHeader({
           </div>
 
           {/* Actions Bar */}
-          <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-faint dark:border-strong">
+          <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-border-faint dark:border-border-strong">
             {/* Edit Button */}
             <Button hideArrow onClick={onEdit}>
               <PencilSimple className="w-4 h-4" />

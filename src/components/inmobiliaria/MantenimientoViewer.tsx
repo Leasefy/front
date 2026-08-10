@@ -107,14 +107,14 @@ const TYPE_ICONS: Record<MantenimientoType, React.ElementType> = {
 };
 
 const PRIORITY_STYLES: Record<MantenimientoPriority, { bg: string; text: string; labelKey: string }> = {
-  low: { bg: 'bg-fg-muted dark:bg-fg-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
+  low: { bg: 'bg-surface-muted dark:bg-surface-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
   medium: { bg: 'bg-primary-soft', text: 'text-primary', labelKey: 'inmobiliaria.mantenimiento.priorityMedium' },
   high: { bg: 'bg-warning-soft', text: 'text-warning', labelKey: 'inmobiliaria.mantenimiento.priorityHigh' },
   emergency: { bg: 'bg-danger-soft', text: 'text-danger', labelKey: 'inmobiliaria.mantenimiento.priorityEmergency' },
 };
 
 const STATUS_STYLES: Record<MantenimientoStatus, { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
-  reported: { bg: 'bg-fg-muted dark:bg-fg-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: Note },
+  reported: { bg: 'bg-surface-muted dark:bg-surface-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: Note },
   quoted: { bg: 'bg-primary-soft', text: 'text-primary', labelKey: 'inmobiliaria.mantenimiento.statusQuoted', icon: CurrencyDollar },
   approved: { bg: 'bg-success-soft', text: 'text-success', labelKey: 'inmobiliaria.mantenimiento.statusApproved', icon: Check },
   in_progress: { bg: 'bg-warning-soft', text: 'text-warning', labelKey: 'inmobiliaria.mantenimiento.statusInProgress', icon: Play },
@@ -275,7 +275,7 @@ function PhotoGallery({
             onClick={() => setSelectedPhoto(url)}
             className="aspect-square rounded-md bg-muted overflow-hidden relative group"
           >
-            <div className="absolute inset-0 flex items-center justify-center bg-fg-muted dark:bg-fg-muted">
+            <div className="absolute inset-0 flex items-center justify-center bg-surface-muted dark:bg-surface-muted">
               <ImageIcon className="w-6 h-6 text-muted-foreground" />
             </div>
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
@@ -320,7 +320,7 @@ function Timeline({ events, fmtDate }: { events: TimelineEvent[]; fmtDate: (d: s
           event.status === 'quote_received' ||
           event.status === 'note_added' ||
           event.status === 'photo_added'
-            ? { bg: 'bg-fg-muted dark:bg-fg-muted', text: 'text-fg-muted dark:text-fg-muted' }
+            ? { bg: 'bg-surface-muted dark:bg-surface-muted', text: 'text-fg-muted dark:text-fg-muted' }
             : STATUS_STYLES[event.status as MantenimientoStatus] || STATUS_STYLES.reported;
 
         return (

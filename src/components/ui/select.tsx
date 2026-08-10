@@ -58,13 +58,16 @@ const SelectContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DSSelectContent
     ref={ref}
-    // Lenis escucha la rueda en `window`: sin esto, la lista larga NO scrollea
-    // con el mouse (sólo con las flechitas de Radix o el teclado) y se lee como
-    // que el select está cortado. Va acá y no en cada call site porque le pasa
-    // a TODOS los selects. `onWheel + stopPropagation` no sirve: Lenis ya lo
-    // escuchó en window. Ver docs/DESIGN.md §Lenis.
+    // `data-lenis-prevent`: sin esto el dropdown NO se puede scrollear.
+    // Con `max-h-96` la lista recorta, pero Lenis (smooth scroll global)
+    // secuestra la rueda y el contenido queda congelado — el modo de fallo
+    // que describe DESIGN.md §8. Lenis sube por el DOM desde el target del
+    // evento buscando este atributo, así que ponerlo en el contenedor del
+    // portal cubre toda la lista.
+    // Va en el ADAPTER a propósito: el bug afecta a TODOS los selects de la
+    // app con más de ~10 opciones, no a una pantalla puntual.
     data-lenis-prevent
-    className={cn("z-[400] max-h-96", className)}
+    className={cn("z-[400] max-h-96 overscroll-contain", className)}
     {...props}
   />
 ))

@@ -653,7 +653,7 @@ export function DocumentoManager({
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex items-start gap-3 min-w-0">
                         <div
-                          className="w-10 h-10 rounded-md bg-surface-brand flex items-center justify-center shrink-0"
+                          className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             toggleDocSelection(doc.id);

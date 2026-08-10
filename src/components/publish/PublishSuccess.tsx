@@ -207,7 +207,9 @@ export function PublishSuccess() {
                 <p className="text-sm font-semibold text-fg">
                   {draft.bedrooms} hab
                 </p>
-                <p className="text-xs text-fg-subtle">{draft.bathrooms} baños</p>
+                <p className="text-xs text-fg-subtle">
+                  {draft.bathrooms} {draft.bathrooms === 1 ? 'baño' : 'baños'}
+                </p>
               </div>
               <div className="bg-[#EEF1FF] dark:bg-[#1A40FF]/15 p-3 rounded-xl text-center">
                 <Sparkle className="w-4 h-4 mx-auto text-[#1A40FF] dark:text-[#5570FF] mb-1" />

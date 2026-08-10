@@ -233,7 +233,9 @@ export default function PagosPage() {
               description={locale === 'es'
                 ? 'Cuando tengas un arriendo activo, aquí podrás ver tus pagos, recibos y estado de cuenta.'
                 : 'When you have an active rental, you\'ll see your payments, receipts and account status here.'}
-              action={{ label: locale === 'es' ? 'Explorar propiedades' : 'Explore properties', href: '/inquilino/explorar' }}
+              /* Al catálogo propio, no al listado general: es lo siguiente que
+                 haría quien todavía no tiene un arriendo. */
+              action={{ label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me', href: '/inquilino/para-ti' }}
             />
           </motion.div>
         </div>

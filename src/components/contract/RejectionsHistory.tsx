@@ -79,7 +79,7 @@ function RejectionCard({ rejection, highlight = false }: { rejection: ContractRe
         'rounded-xl border p-3 flex items-start gap-3',
         highlight
           ? 'bg-surface dark:bg-ink border-warning/30'
-          : 'bg-surface/50 dark:bg-ink/40 border-border'
+          : 'bg-surface border-border'
       )}
     >
       <div className={cn(

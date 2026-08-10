@@ -16,7 +16,6 @@
 import { useRouter } from 'next/navigation';
 import {
   FileText,
-  Plus,
   Warning,
   CaretRight,
   House,
@@ -32,6 +31,7 @@ import { Eyebrow } from '@leasefy/cadence';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useContracts } from '@/lib/hooks/useContracts';
+import { NuevoContratoBoton } from '@/components/inmobiliaria/SelectorPostulacion';
 import {
   CONTRACT_STATUS_LABELS,
   CONTRACT_STATUS_COLORS,
@@ -129,14 +129,11 @@ function ContratosContent() {
             )}
           </p>
         </div>
-        <Button
-          onClick={() => router.push('/panel/inmobiliaria/contratos/nuevo')}
-          hideArrow
-          className="shrink-0 gap-2"
-        >
-          <Plus className="w-4 h-4" weight="bold" />
-          {tx('Nuevo contrato', 'New contract')}
-        </Button>
+        {/* Antes navegaba a /contratos/nuevo a secas, y esa pantalla exige
+            `?applicationId=`: el botón principal de Contratos mostraba
+            "Falta el parámetro applicationId" en vez de crear nada. Ahora
+            pregunta sobre qué postulación aprobada se arma el contrato. */}
+        <NuevoContratoBoton />
       </header>
 
       {/* Stats */}

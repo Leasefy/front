@@ -166,7 +166,7 @@ export function ChatLessonCard({
           <div className="flex items-center gap-1">
             <dt className="sr-only">Observaciones</dt>
             <dd className="tabular-nums">
-              <span className="font-medium text-neutral-700 dark:text-neutral-200">
+              <span className="font-medium text-fg">
                 {lesson.evidence.support}
               </span>{' '}
               {lesson.evidence.support === 1 ? 'observación' : 'observaciones'}

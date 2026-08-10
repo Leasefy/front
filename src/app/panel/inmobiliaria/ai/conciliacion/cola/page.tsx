@@ -360,16 +360,20 @@ function ConciliacionCola() {
           ))}
         </div>
       ) : error ? (
-        // Fail-soft: backend unavailable/404 degrades to the same empty surface
-        // as "nada por revisar" — never an error wall that blocks the operator.
+        /*
+          Acá el error se pintaba como «no hay nada», con un comentario que lo
+          defendía: «fail-soft, nunca un muro de error que bloquee al operador».
+          La intención es correcta —no se bloquea— pero el texto afirmaba algo
+          falso: no es que no haya, es que no pudimos preguntar. En un módulo
+          que mueve plata, eso hace cerrar el día creyendo que no quedaba nada.
+
+          Se conserva el no-bloqueo y se cambia lo que dice, con reintento.
+        */
         <EmptyState
           icon={Bank}
-          title={t('inmobiliaria.ai.workspace.pages.conciliacion.colaTitle')}
-          description={t('inmobiliaria.ai.workspace.pages.conciliacion.colaEmptyHint')}
-          action={{
-            label: t('inmobiliaria.ai.workspace.pages.conciliacion.accionTitle'),
-            href: '/panel/inmobiliaria/ai/conciliacion/movimientos',
-          }}
+          title="No pudimos consultar la cola"
+          description="No es que no haya nada por revisar: no pudimos preguntarle al servicio. Vuelve a intentarlo."
+          action={{ label: 'Reintentar', onClick: () => void refetch() }}
         />
       ) : isEmpty ? (
         caseFilter === 'todos' ? (

@@ -47,7 +47,7 @@ export function PropietarioCard({
           'w-10 h-10 rounded-full flex items-center justify-center shrink-0',
           isCompany
             ? 'bg-muted text-muted-foreground'
-            : 'bg-surface-brand text-primary'
+            : 'bg-primary-soft text-primary'
         )}>
           {isCompany ? <Buildings className="w-5 h-5" /> : <User className="w-5 h-5" />}
         </div>

@@ -50,15 +50,26 @@ single confident accent — **cobalt `#1A40FF`** on a warm-neutral foundation. D
 > + `src/app/globals.css`.
 
 ### Color Roles (Semantic — Prefer These)
+
+> ⚠️ **Esta tabla se corrigió el 2026-08-09 contra el preset real.** La versión
+> anterior listaba seis tokens que **no existen** (`surface-raised`, `surface-sunken`,
+> `surface-brand`, `on-primary`, `fg-secondary`, `border-subtle`). Tailwind no falla
+> con una clase que no conoce: **no emite regla y el elemento queda transparente**.
+> Así es como `bg-surface-brand` dejó 29 pantallas con el avatar sin fondo.
+>
+> Para verificar uno: `node -e "console.log(Object.keys(require('./node_modules/@leasefy/cadence/tailwind-preset.cjs').theme.extend.colors))"`
+> — o medilo en el navegador con `getComputedStyle`, que es lo único que no miente.
+
 | Token | Use For |
 |---|---|
 | `bg-surface` / `text-fg` | Elevated surface (white) + body text (`#14130F`) |
 | `bg-bg` | Page background del panel (`#FBFAF9`) |
 | `bg-surface-muted` | Wells, insets, subtle sections (`#F4F2EF`) |
+| `bg-surface-hover` / `bg-surface-pressed` / `bg-surface-selected` | Estados de fila/celda |
 | `bg-primary` / `text-primary-fg` | CTAs, focus rings, selected states (cobalt `#1A40FF`) |
 | `bg-primary-soft` | Cobalt-tinted highlight (`#EDF1FF`) — selected, hover-emphasis |
 | `text-fg-muted` / `text-fg-subtle` | Secondary (`#6E6A63`) / faintest (`#726E68`) text |
-| `border-border` / `border-border-faint` | Default (`#E5E2DC`) / hairline (`#ECEAE6`) borders |
+| `border-border` / `border-border-faint` / `border-border-strong` | Default (`#E5E2DC`) / hairline (`#ECEAE6`) / énfasis |
 | `text-danger` / `bg-danger-soft` | Destructive / error states |
 
 > ⚠️ **Esta tabla se corrigió el 2026-08-07 contra el CSS realmente generado.** Los nombres que

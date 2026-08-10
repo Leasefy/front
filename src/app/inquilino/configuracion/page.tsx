@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth';
 import { settingsApi } from '@/lib/api/settings.service';
+import { getSupabase } from '@/lib/supabase/client';
 import { accountDeletionCopy } from '@/lib/account-deletion/copy';
 import { useI18n } from '@/lib/i18n';
 import type { Locale } from '@/lib/i18n';
@@ -73,16 +74,51 @@ function Modal({
   );
 }
 
-// Mock active sessions
-const mockSessions = [
-  { id: '1', device: 'Chrome en Windows', location: 'Bogotá, Colombia', current: true, lastActive: 'Ahora' },
-  { id: '2', device: 'Safari en iPhone', location: 'Bogotá, Colombia', current: false, lastActive: 'Hace 2 horas' },
-  { id: '3', device: 'Firefox en MacOS', location: 'Medellín, Colombia', current: false, lastActive: 'Hace 1 día' },
-];
+/**
+ * Acá vivía `mockSessions`: tres dispositivos inventados ("Firefox en MacOS ·
+ * Medellín") que se mostraban como las sesiones reales de la persona, y un
+ * botón "Cerrar todas las otras sesiones" que solo filtraba estado de React y
+ * respondía "han sido cerradas".
+ *
+ * Es la peor forma del problema: alguien que ve un dispositivo que no reconoce
+ * y cree que le entraron a la cuenta, cierra sesiones que nunca existieron y se
+ * queda tranquilo sin que pase nada.
+ *
+ * No podemos **listar** sesiones desde el cliente —Supabase no lo expone— pero
+ * sí podemos **cerrarlas de verdad**: `signOut({ scope: 'others' })` revoca los
+ * refresh tokens de los demás dispositivos. Así que se muestra solo lo que
+ * sabemos (este dispositivo) y se ofrece la acción que sí ocurre.
+ */
+function esteDispositivo(): string {
+  if (typeof navigator === 'undefined') return 'Este dispositivo';
+  const ua = navigator.userAgent;
+  const so = /Windows/i.test(ua)
+    ? 'Windows'
+    : /iPhone|iPad/i.test(ua)
+      ? 'iOS'
+      : /Android/i.test(ua)
+        ? 'Android'
+        : /Mac/i.test(ua)
+          ? 'macOS'
+          : /Linux/i.test(ua)
+            ? 'Linux'
+            : null;
+  const nav = /Edg\//i.test(ua)
+    ? 'Edge'
+    : /Chrome\//i.test(ua)
+      ? 'Chrome'
+      : /Safari\//i.test(ua)
+        ? 'Safari'
+        : /Firefox\//i.test(ua)
+          ? 'Firefox'
+          : null;
+  if (nav && so) return `${nav} en ${so}`;
+  return nav ?? so ?? 'Este dispositivo';
+}
 
 export default function ConfiguracionPage() {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, changePassword } = useAuth();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { t, locale, setLocale } = useI18n();
   const [mounted, setMounted] = useState(false);
@@ -92,14 +128,48 @@ export default function ConfiguracionPage() {
     setMounted(true);
   }, []);
 
-  // Gear state
+  /*
+   * Preferencias de notificación. Antes eran estado local puro: el interruptor
+   * se movía, salía "Listo" y al recargar volvía al valor por defecto. Ahora se
+   * cargan y se guardan contra `/users/me/notification-settings`, que ya existía
+   * en `settingsApi` y nunca se había cableado.
+   *
+   * El contrato del back tiene más banderas que interruptores hay en pantalla,
+   * así que el mapeo es explícito. `emailNotifications` agrupa los correos
+   * transaccionales; los otros tres van uno a uno.
+   */
   const [settings, setGear] = useState({
     emailNotifications: true,
     pushNotifications: true,
-    smsNotifications: false,
     paymentReminders: true,
     marketingEmails: false,
   });
+  const [gearListo, setGearListo] = useState(false);
+
+  useEffect(() => {
+    let cancelado = false;
+    settingsApi
+      .getNotificationSettings()
+      .then((n) => {
+        if (cancelado) return;
+        setGear({
+          emailNotifications:
+            n.emailApplications || n.emailVisits || n.emailContracts || n.emailMessages,
+          pushNotifications: n.pushAll,
+          paymentReminders: n.emailPayments,
+          marketingEmails: n.emailMarketing,
+        });
+        setGearListo(true);
+      })
+      // Sin backend se dejan los valores por defecto, pero NO se marca listo:
+      // así un interruptor no promete guardar algo que no se va a guardar.
+      .catch(() => {
+        if (!cancelado) setGearListo(false);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
 
   // Modal states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -110,12 +180,42 @@ export default function ConfiguracionPage() {
   // Form states
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [isLoading, setIsLoading] = useState(false);
-  const [sessions, setSessions] = useState(mockSessions);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-  const handleToggle = (key: keyof typeof settings) => {
-    setGear(prev => ({ ...prev, [key]: !prev[key] }));
-    toast.success(t('common.success'));
+  const handleToggle = async (key: keyof typeof settings) => {
+    const anterior = settings[key];
+    const nuevo = !anterior;
+    setGear((prev) => ({ ...prev, [key]: nuevo }));
+
+    // Sin backend disponible no se afirma que quedó guardado.
+    if (!gearListo) {
+      toast.error('No pudimos guardar tu preferencia. Intenta de nuevo.');
+      setGear((prev) => ({ ...prev, [key]: anterior }));
+      return;
+    }
+
+    const parche =
+      key === 'emailNotifications'
+        ? {
+            emailApplications: nuevo,
+            emailVisits: nuevo,
+            emailContracts: nuevo,
+            emailMessages: nuevo,
+          }
+        : key === 'pushNotifications'
+          ? { pushAll: nuevo }
+          : key === 'paymentReminders'
+            ? { emailPayments: nuevo }
+            : { emailMarketing: nuevo };
+
+    try {
+      await settingsApi.updateNotificationSettings(parche);
+      toast.success(t('common.success'));
+    } catch {
+      // Se revierte: el interruptor debe reflejar lo que de verdad quedó.
+      setGear((prev) => ({ ...prev, [key]: anterior }));
+      toast.error('No pudimos guardar tu preferencia. Intenta de nuevo.');
+    }
   };
 
   const handleDarkModeToggle = () => {
@@ -138,25 +238,66 @@ export default function ConfiguracionPage() {
       toast.error('La contraseña debe tener al menos 8 caracteres');
       return;
     }
+    /*
+     * Esto esperaba 1,5 s y decía "Contraseña actualizada correctamente" sin
+     * tocar nada. La contraseña seguía siendo la vieja, y quien la cambiaba
+     * porque creía tener la cuenta comprometida se quedaba igual de expuesto.
+     *
+     * `changePassword` ya existía en el contexto de auth, con esta misma firma:
+     * verifica la actual contra el backend y recién ahí actualiza.
+     */
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    setShowPasswordModal(false);
-    setPasswordForm({ current: '', new: '', confirm: '' });
-    toast.success('Contraseña actualizada correctamente');
+    try {
+      await changePassword(passwordForm.current, passwordForm.new);
+      setShowPasswordModal(false);
+      setPasswordForm({ current: '', new: '', confirm: '' });
+      toast.success('Contraseña actualizada correctamente');
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'No pudimos cambiar tu contraseña. Intenta de nuevo.',
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCloseSession = (sessionId: string) => {
-    setSessions(prev => prev.filter(s => s.id !== sessionId));
-    toast.success('Sesión cerrada correctamente');
+  /**
+   * Cierra de verdad las sesiones de los demás dispositivos (revoca sus refresh
+   * tokens). Antes esto filtraba un arreglo en memoria y avisaba que estaban
+   * cerradas.
+   */
+  const handleCerrarOtrasSesiones = async () => {
+    setIsLoading(true);
+    try {
+      const supabase = getSupabase();
+      if (!supabase) throw new Error('sin cliente');
+      const { error } = await supabase.auth.signOut({ scope: 'others' });
+      if (error) throw error;
+      setShowSessionsModal(false);
+      toast.success('Cerramos tu sesión en los demás dispositivos');
+    } catch {
+      toast.error('No pudimos cerrar las otras sesiones. Intenta de nuevo.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  /**
+   * Derecho de acceso (Ley 1581). Esperaba 2 s y prometía un correo con los
+   * datos "en las próximas 24 horas" sin pedirle nada a nadie: una promesa
+   * legal que no tenía quién la cumpliera. `requestDataExport` ya existía.
+   */
   const handleDownloadData = async () => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsLoading(false);
-    setShowDownloadModal(false);
-    toast.success('Se te enviará un correo con tus datos en las próximas 24 horas');
+    try {
+      await settingsApi.requestDataExport();
+      setShowDownloadModal(false);
+      toast.success('Recibimos tu solicitud. Te enviaremos tus datos por correo.');
+    } catch {
+      toast.error('No pudimos registrar tu solicitud. Intenta de nuevo.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Canonical deletion strings (single source of truth for all five flows).
@@ -252,13 +393,9 @@ export default function ConfiguracionPage() {
                 enabled={settings.pushNotifications}
                 onToggle={() => handleToggle('pushNotifications')}
               />
-              <SettingToggle
-                icon={DeviceMobile}
-                title={t('settings.notifications.sms')}
-                description={locale === 'es' ? 'Mensajes de texto para alertas importantes' : 'Text messages for important alerts'}
-                enabled={settings.smsNotifications}
-                onToggle={() => handleToggle('smsNotifications')}
-              />
+              {/* El interruptor de SMS salió: no tenemos canal de SMS ni bandera
+                  que lo respalde en `/users/me/notification-settings`, así que
+                  prometía avisos que nunca iban a llegar. Vuelve cuando exista. */}
               <SettingToggle
                 icon={CreditCard}
                 title={t('settings.notifications.payments')}
@@ -307,9 +444,12 @@ export default function ConfiguracionPage() {
                 <SettingLink
                   icon={Monitor}
                   title={t('settings.account.sessions')}
-                  description={locale === 'es' ? `${sessions.length} dispositivos` : `${sessions.length} devices`}
+                  description={
+                    locale === 'es'
+                      ? 'Cierra tu sesión en otros dispositivos'
+                      : 'Sign out on your other devices'
+                  }
                   onClick={() => setShowSessionsModal(true)}
-                  badge={sessions.length > 1 ? `${sessions.length}` : undefined}
                 />
               </div>
             </motion.section>
@@ -514,45 +654,37 @@ export default function ConfiguracionPage() {
       {/* Sessions Modal */}
       <Modal open={showSessionsModal} onClose={() => setShowSessionsModal(false)} title="Sesiones activas">
         <div className="space-y-3">
-          {sessions.map((session) => (
-            <div key={session.id} className="flex items-center justify-between p-4 border border-border rounded-xl bg-surface">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
-                  <Monitor className="w-5 h-5 text-fg-muted" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-fg">{session.device}</p>
-                  <p className="text-xs text-fg-muted">{session.location} · {session.lastActive}</p>
-                </div>
+          {/* Lo único que sabemos con certeza: el dispositivo desde el que está
+              entrando ahora. No inventamos una lista de los demás. */}
+          <div className="flex items-center justify-between p-4 border border-border rounded-xl bg-surface">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
+                <Monitor className="w-5 h-5 text-fg-muted" />
               </div>
-              {session.current ? (
-                <span className="px-3 py-1.5 bg-success-soft text-success text-xs font-medium rounded-full">Actual</span>
-              ) : (
-                <Button
-                  variant="link"
-                  size="sm"
-                  hideArrow
-                  onClick={() => handleCloseSession(session.id)}
-                  className="px-0 text-xs text-danger"
-                >
-                  Cerrar
-                </Button>
-              )}
+              <div>
+                <p className="text-sm font-medium text-fg">{esteDispositivo()}</p>
+                <p className="text-xs text-fg-muted">Estás usando este dispositivo ahora</p>
+              </div>
             </div>
-          ))}
-          {sessions.length > 1 && (
-            <Button
-              variant="outline"
-              hideArrow
-              onClick={() => {
-                setSessions(prev => prev.filter(s => s.current));
-                toast.success('Todas las otras sesiones han sido cerradas');
-              }}
-              className="w-full border-2 border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
-            >
-              Cerrar todas las otras sesiones
-            </Button>
-          )}
+            <span className="px-3 py-1.5 bg-success-soft text-success text-xs font-medium rounded-full">
+              Actual
+            </span>
+          </div>
+
+          <p className="text-xs text-fg-muted">
+            Todavía no podemos mostrarte la lista de los otros dispositivos donde tienes la sesión
+            abierta. Si no reconoces alguno o perdiste un equipo, ciérralos todos y vuelve a entrar.
+          </p>
+
+          <Button
+            variant="outline"
+            hideArrow
+            disabled={isLoading}
+            onClick={handleCerrarOtrasSesiones}
+            className="w-full border-2 border-danger/30 text-danger hover:bg-danger-soft hover:text-danger"
+          >
+            {isLoading ? 'Cerrando…' : 'Cerrar sesión en los demás dispositivos'}
+          </Button>
         </div>
       </Modal>
 
@@ -567,7 +699,7 @@ export default function ConfiguracionPage() {
               'Información de perfil',
               'Historial de pagos',
               'Documentos subidos',
-              'Historial de aplicaciones'
+              'Historial de postulaciones'
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-2 text-sm text-fg">
                 <div className="w-5 h-5 rounded-full bg-success-soft flex items-center justify-center">

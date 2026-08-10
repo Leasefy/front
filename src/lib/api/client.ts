@@ -102,6 +102,23 @@ async function request<T>(method: string, path: string, body?: unknown, token?: 
     throw new ApiError(403, errorBody.message || 'No tienes permiso para realizar esta acción')
   }
 
+  if (res.status === 402) {
+    // Payment Required — the backend gates agency endpoints when the agency has
+    // no active paid plan. Backstop the client-side AgencySubscriptionGuard:
+    // bounce any gated /inmobiliaria/* call to the upgrade flow. Skip when we're
+    // already on the upgrade/checkout pages to avoid a redirect loop.
+    const errorBody = await res.json().catch(() => ({}))
+    if (
+      typeof window !== 'undefined' &&
+      path.startsWith('/inmobiliaria') &&
+      !window.location.pathname.startsWith('/panel/inmobiliaria/upgrade') &&
+      !window.location.pathname.startsWith('/panel/inmobiliaria/checkout')
+    ) {
+      window.location.href = '/panel/inmobiliaria/upgrade'
+    }
+    throw new ApiError(402, errorBody.message || 'Se requiere un plan activo para continuar')
+  }
+
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}))
     throw new ApiError(res.status, errorBody.message || `Error ${res.status}`)

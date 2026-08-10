@@ -111,24 +111,44 @@ function TarjetaAseguradora({ aseguradora }: { aseguradora: AseguradoraConsultad
       )}
       data-testid={respalda ? 'aseguradora-respalda' : 'aseguradora-no'}
     >
-      {/* El monograma. Con el logo real disponible, se usa ese. */}
+      {/*
+        El mismo recuadro para todas, tengan logo o no.
+
+        Cuatro traen su SVG oficial y las otras cinco llevan monograma; si cada
+        tipo tuviera su propia forma, la grilla quedaría despareja. Acá todas
+        miden 72×44 y el contenido se acomoda adentro: un logotipo horizontal
+        como el de Mapfre (3.6:1) entra a lo ancho, uno casi cuadrado como el de
+        La Equidad entra a lo alto.
+
+        Fondo claro SIEMPRE, también en oscuro: los logos son tinta oscura sobre
+        blanco y sobre una superficie oscura desaparecen. Por eso `bg-white` y
+        no un token de tema — es un chip de marca, no una superficie del
+        producto.
+      */}
       <div
         className={cn(
-          'flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md',
-          // Cobalto macizo para las que respaldan: es lo que convierte el
-          // monograma en marca y no en otra celda gris. Un solo acento, y sólo
-          // lo lleva la buena noticia.
-          respalda ? 'bg-primary' : 'bg-surface-muted',
+          'flex h-11 w-[4.5rem] shrink-0 items-center justify-center overflow-hidden',
+          'rounded-md border border-faint bg-white p-1.5',
         )}
       >
         {logo ? (
-          // eslint-disable-next-line @next/next/no-img-element -- SVG de marca, sin optimizar
-          <img src={logo} alt="" className="h-7 w-7 object-contain" aria-hidden="true" />
+          // eslint-disable-next-line @next/next/no-img-element -- SVG de marca; next/image no aporta acá
+          <img
+            src={logo}
+            alt=""
+            aria-hidden="true"
+            className={cn(
+              'max-h-full max-w-full object-contain',
+              // La que no respalda no se recolorea: se apaga. Teñir el logo de
+              // una marca sería inventarle un color que no tiene.
+              !respalda && 'opacity-45 grayscale',
+            )}
+          />
         ) : (
           <span
             className={cn(
               'font-mono text-body-sm font-semibold tracking-[0.06em]',
-              respalda ? 'text-primary-fg' : 'text-fg-subtle',
+              respalda ? 'text-primary' : 'text-fg-subtle',
             )}
             aria-hidden="true"
           >

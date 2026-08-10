@@ -193,7 +193,12 @@ export default function AprobacionPage() {
             <CardHeader>
               <CardTitle>Conoce hasta cuánto te arrendamos</CardTitle>
               <CardDescription>
-                Consultamos varias aseguradoras a la vez y te decimos hasta cuánto te respaldan. Es gratis y sin compromiso.
+                {/* Decía «Es gratis y sin compromiso» y se cobra. No se
+                    inventa el monto: el precio lo manda el backend y hoy no
+                    lo manda (ver lib/api/estudio-pago.service.ts). */}
+                Consultamos varias aseguradoras a la vez y te decimos hasta cuánto te
+                respaldan. Se paga una sola vez y te sirve para todas las propiedades
+                que te interesen.
               </CardDescription>
             </CardHeader>
             <CardContent>

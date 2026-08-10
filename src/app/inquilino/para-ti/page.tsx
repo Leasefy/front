@@ -24,11 +24,11 @@ import {
   getAccessiblePropertiesPercentage,
 } from '@/lib/context/TenantProfileContext';
 import { PropertyMatchCard } from '@/components/tenant/PropertyMatchCard';
-import { TopeAprobadoBanner, SobreTopeOverlay } from '@/components/tenant/TopeAprobadoBanner';
+import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
 import { QueSignificaPostularse } from '@/components/tenant/QueSignificaPostularse';
 import { CatalogoPorAprobacion } from '@/components/tenant/CatalogoPorAprobacion';
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
-import { referenciaCanon, superaReferencia } from '@/lib/api/aprobacion.service';
+import { superaReferencia } from '@/lib/api/aprobacion.service';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { formatCurrency } from '@/lib/format';
 import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
@@ -51,7 +51,6 @@ export default function ParaTiPage() {
   const { t, locale } = useI18n();
   const { profile, hasVerifiedProfile, isLoading } = useTenantProfile();
   const { aprobacion, vigente: aprobacionVigente } = useAprobacion();
-  const referencia = referenciaCanon(aprobacion);
   const [sortBy, setSortBy] = useState<SortOption>('match');
   const [probabilityFunnel, setProbabilityFunnel] = useState<ProbabilityFunnel>('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,9 +71,35 @@ export default function ParaTiPage() {
   // Get all recommendations from backend (no limit)
   const { recommendations: allRecommendations, isLoading: recommendationsLoading } = useRecommendations();
 
+  /*
+   * Lo que se pasa del tope NO se muestra. Decisión de negocio (2026-08-09).
+   *
+   * Antes se veía marcado con `SobreTopeOverlay`, contradiciendo al banner de
+   * arriba, que ya prometía «te mostramos **solo** las propiedades que van
+   * contigo». Mostrarle a alguien lo que no puede tomar es ofrecerle un camino
+   * que la puerta de postularse le va a cerrar.
+   *
+   * Se filtra ACÁ y no al pintar: la paginación, el contador «mostrando X de
+   * Y» y los indicadores cuelgan de esta lista. Filtrar abajo dejaba a los
+   * números contando cosas que nadie ve.
+   *
+   * `superaReferencia` devuelve `null` cuando no se puede saber (sin tope), y
+   * `!== true` lo conserva: no se le esconde algo a alguien por un dato que
+   * todavía no tenemos.
+   */
+  const recomendacionesQueCaben = useMemo(() => {
+    if (!aprobacionVigente) return allRecommendations;
+    return allRecommendations.filter(
+      (r) => superaReferencia(r.property.monthlyRent, aprobacion) !== true,
+    );
+  }, [allRecommendations, aprobacion, aprobacionVigente]);
+
+  /** Cuántas se ocultaron, para poder decirlo en vez de encogerse en silencio. */
+  const ocultasPorTope = allRecommendations.length - recomendacionesQueCaben.length;
+
   // Apply filters and sorting
   const filteredRecommendations = useMemo(() => {
-    let results = [...allRecommendations];
+    let results = [...recomendacionesQueCaben];
 
     // Funnel by probability
     if (probabilityFunnel !== 'all') {
@@ -99,7 +124,7 @@ export default function ParaTiPage() {
     }
 
     return results;
-  }, [allRecommendations, sortBy, probabilityFunnel]);
+  }, [recomendacionesQueCaben, sortBy, probabilityFunnel]);
 
   // Pagination
   const totalPages = Math.ceil(filteredRecommendations.length / ITEMS_PER_PAGE);
@@ -121,23 +146,26 @@ export default function ParaTiPage() {
 
   // Calculate stats
   const stats = useMemo(() => {
-    if (allRecommendations.length === 0) return null;
+    // Sobre lo que se ve, no sobre lo que se trajo: un indicador que cuenta
+    // propiedades ocultas es un número que nadie puede verificar en pantalla.
+    const visibles = recomendacionesQueCaben;
+    if (visibles.length === 0) return null;
 
-    const highProbCount = allRecommendations.filter(r => r.acceptanceProbability === 'alta').length;
-    const mediumProbCount = allRecommendations.filter(r => r.acceptanceProbability === 'media').length;
+    const highProbCount = visibles.filter(r => r.acceptanceProbability === 'alta').length;
+    const mediumProbCount = visibles.filter(r => r.acceptanceProbability === 'media').length;
     const avgMatch = Math.round(
-      allRecommendations.reduce((sum, r) => sum + r.matchScore, 0) / allRecommendations.length
+      visibles.reduce((sum, r) => sum + r.matchScore, 0) / visibles.length
     );
-    const topMatch = allRecommendations[0]?.matchScore || 0;
+    const topMatch = visibles[0]?.matchScore || 0;
 
     return {
-      total: allRecommendations.length,
+      total: visibles.length,
       highProb: highProbCount,
       mediumProb: mediumProbCount,
       avgMatch,
       topMatch,
     };
-  }, [allRecommendations]);
+  }, [recomendacionesQueCaben]);
 
   /*
    * El catálogo por aprobación se decide ANTES del esqueleto de carga, y a
@@ -427,21 +455,39 @@ export default function ParaTiPage() {
             propio del que hablar, y el banner de arriba ya invita a conseguirla. */}
         {aprobacionVigente && <QueSignificaPostularse className="mb-6" />}
 
+        {/* Ocultamos, pero lo decimos. Un catálogo que encoge en silencio se
+            lee como «no hay nada», que es una cosa muy distinta. */}
+        {ocultasPorTope > 0 && (
+          <p className="mb-4 text-sm text-plan-secondary">
+            {locale === 'es' ? (
+              <>
+                No te mostramos{' '}
+                <span className="font-mono tabular-nums">{ocultasPorTope}</span>{' '}
+                {ocultasPorTope === 1 ? 'propiedad que se pasa' : 'propiedades que se pasan'} de tu
+                tope.
+              </>
+            ) : (
+              <>
+                <span className="font-mono tabular-nums">{ocultasPorTope}</span>{' '}
+                {ocultasPorTope === 1 ? 'property is' : 'properties are'} above your cap and not
+                shown.
+              </>
+            )}
+          </p>
+        )}
+
         {/* Properties Grid */}
         {paginatedRecommendations.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
-              {paginatedRecommendations.map((match) => {
-                // Lo que se pasa de la referencia SE VE, marcado y con el motivo.
-                const sobreTope =
-                  aprobacionVigente && superaReferencia(match.property.monthlyRent, aprobacion) === true
-                return (
-                  <div key={match.property.id} className={cn('relative', sobreTope && 'opacity-75')}>
-                    <PropertyMatchCard match={match} onViewProperty={() => handleViewProperty(match)} />
-                    {sobreTope && <SobreTopeOverlay referencia={referencia} />}
-                  </div>
-                )
-              })}
+              {/* Sin marcar nada: lo que se pasa del tope ya no llegó hasta acá. */}
+              {paginatedRecommendations.map((match) => (
+                <PropertyMatchCard
+                  key={match.property.id}
+                  match={match}
+                  onViewProperty={() => handleViewProperty(match)}
+                />
+              ))}
             </div>
 
             {/* Pagination */}
@@ -525,7 +571,15 @@ export default function ParaTiPage() {
               <Funnel className="w-7 h-7 text-plan-muted" />
             </div>
             <h3 className="text-base font-semibold text-plan-primary mb-2">
-              {locale === 'es' ? 'No hay propiedades con estos filtros' : 'No properties with these filters'}
+              {/* Quedarse sin nada por el tope no es quedarse sin nada por un
+                  filtro que uno mismo puso: se explica distinto. */}
+              {ocultasPorTope > 0 && recomendacionesQueCaben.length === 0
+                ? locale === 'es'
+                  ? 'Ninguna propiedad cabe en tu tope ahora mismo'
+                  : 'No properties fit your cap right now'
+                : locale === 'es'
+                  ? 'No hay propiedades con estos filtros'
+                  : 'No properties with these filters'}
             </h3>
             <p className="text-sm text-plan-secondary mb-4">
               {locale === 'es' ? 'Intenta ajustar los filtros para ver más opciones' : 'Try adjusting filters to see more options'}

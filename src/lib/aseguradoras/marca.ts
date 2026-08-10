@@ -1,16 +1,14 @@
 /**
  * marca.ts — cómo se dibuja una aseguradora.
  *
- * ## Por qué monograma y no el logo real
+ * ## Logo real cuando lo hay, monograma cuando no
  *
- * No tenemos los archivos. Y aproximar el logo de una empresa real —redibujarlo
- * de memoria, teñir un cuadrado con «más o menos su azul»— es peor que no
- * ponerlo: queda una marca falsa de una compañía que existe, en la pantalla que
- * le dice a alguien quién respalda su arriendo. Un monograma bien tipografiado
- * no finge ser nada.
- *
- * La costura está lista: en cuanto haya SVGs, se agregan a `LOGOS` y el
- * componente los usa en vez del monograma. Es un cambio de datos, no de diseño.
+ * Cuatro tienen su SVG oficial (dominio público, ver
+ * `public/aseguradoras/PROCEDENCIA.md`). Las demás llevan monograma, y eso es
+ * deliberado: aproximar el logo de una empresa real —redibujarlo de memoria,
+ * teñir un cuadrado con «más o menos su azul»— deja una marca falsa de una
+ * compañía que existe, en la pantalla que dice quién respalda tu arriendo. Un
+ * monograma bien tipografiado no finge ser nada.
  *
  * ## Por qué el monograma es neutro y no del color de cada marca
  *
@@ -61,14 +59,19 @@ export function inicialesDe(nombre: string): string {
 }
 
 /**
- * Logos reales, por nombre de la aseguradora tal como llega del agente.
+ * Logos reales, por nombre de la aseguradora **en minúsculas**, tal como llega
+ * del agente (`aseguradoraDisplayName` en funnel.service.ts).
  *
- * Vacío a propósito — ver la cabecera. Cuando lleguen los archivos:
- *   1. `public/aseguradoras/sura.svg`
- *   2. `sura: '/aseguradoras/sura.svg'` acá
- * y listo. El componente ya sabe preferirlo.
+ * Sacar una de acá la devuelve a su monograma sin tocar nada más — que es lo
+ * que hay que hacer si deja de ser aliada. Ver `PROCEDENCIA.md` para la
+ * licencia de cada archivo y por qué faltan las otras.
  */
-const LOGOS: Record<string, string> = {}
+const LOGOS: Record<string, string> = {
+  sura: '/aseguradoras/sura.svg',
+  mapfre: '/aseguradoras/mapfre.svg',
+  zurich: '/aseguradoras/zurich.svg',
+  'la equidad': '/aseguradoras/equidad.svg',
+}
 
 export interface MarcaAseguradora {
   nombre: string

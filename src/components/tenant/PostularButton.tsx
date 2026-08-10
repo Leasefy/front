@@ -120,7 +120,7 @@ const PASOS = [
   {
     n: '01',
     title: 'Te estudiamos',
-    desc: 'Consultamos a todas las aseguradoras con las que trabajamos, no solo a una.',
+    desc: 'Consultamos a todas las aseguradoras con las que trabajamos, no solo a una. Se paga una vez y la respuesta es inmediata.',
   },
   {
     n: '02',

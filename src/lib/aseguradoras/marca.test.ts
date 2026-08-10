@@ -47,11 +47,30 @@ describe('inicialesDe', () => {
 })
 
 describe('marcaDe', () => {
-  it('hoy ninguna trae logo: se dibuja el monograma', () => {
+  it('las que tienen SVG oficial lo traen', () => {
+    expect(marcaDe('Sura').logo).toBe('/aseguradoras/sura.svg')
+    expect(marcaDe('Mapfre').logo).toBe('/aseguradoras/mapfre.svg')
+    expect(marcaDe('La Equidad').logo).toBe('/aseguradoras/equidad.svg')
+    expect(marcaDe('Zurich').logo).toBe('/aseguradoras/zurich.svg')
+  })
+
+  it('la clave no depende de mayúsculas ni de espacios sueltos', () => {
+    expect(marcaDe('  SURA ').logo).toBe('/aseguradoras/sura.svg')
+    expect(marcaDe('la equidad').logo).toBe('/aseguradoras/equidad.svg')
+  })
+
+  it('las que no lo tienen caen al monograma, no a un logo inventado', () => {
     // Aproximar el logo de una empresa real es peor que un monograma limpio.
-    expect(marcaDe('Sura').logo).toBeUndefined()
-    expect(marcaDe('Sura').iniciales).toBe('SU')
-    expect(marcaDe('Sura').nombre).toBe('Sura')
+    expect(marcaDe('Seguros Bolívar').logo).toBeUndefined()
+    expect(marcaDe('Seguros Bolívar').iniciales).toBe('BO')
+    expect(marcaDe('La Previsora').logo).toBeUndefined()
+  })
+
+  it('siempre trae iniciales, tenga logo o no', () => {
+    // El monograma es el respaldo si el SVG no carga.
+    for (const n of ['Sura', 'Mapfre', 'Seguros Bolívar', 'Sekure']) {
+      expect(marcaDe(n).iniciales, n).toHaveLength(2)
+    }
   })
 })
 

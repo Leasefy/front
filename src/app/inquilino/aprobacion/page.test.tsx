@@ -188,10 +188,24 @@ describe('rechazado — tiene salidas, no es un callejón', () => {
   })
 })
 
-describe('en proceso — libera al usuario', () => {
-  it('le dice que puede cerrar la página', async () => {
+describe('en proceso — la consulta es inmediata', () => {
+  /*
+   * Decisión de negocio (2026-08-09): la asegurabilidad se resuelve al
+   * instante. Antes esta pantalla decía «te avisamos por correo — puedes
+   * cerrar esta página», que es lo que se le dice a alguien que va a esperar
+   * horas. Mandarlo a cerrar la pantalla justo antes de mostrarle su respuesta
+   * es echarlo de lo único que vino a ver.
+   */
+  it('no lo manda a irse ni le promete un correo', async () => {
     await montar({ estado: 'en_proceso' })
-    expect(texto()).toContain('puedes cerrar esta página')
+    const t = texto()
+    expect(t).not.toContain('puedes cerrar esta página')
+    expect(t).not.toContain('Te avisamos por correo')
+  })
+
+  it('dice cuánto tarda de verdad', async () => {
+    await montar({ estado: 'en_proceso' })
+    expect(texto()).toContain('Es cuestión de segundos')
   })
 })
 

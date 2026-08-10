@@ -331,16 +331,15 @@ function EnProcesoView({
       <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
         {tf(
           'inquilino.aprobacion.proceso.desc',
-          'Le preguntamos a todas con las que trabajamos, no solo a una. Puede tomar unos minutos.',
+          'Le preguntamos a todas con las que trabajamos, no solo a una. Es cuestión de segundos.',
         )}
       </p>
-      {/* El punto clave: que sepa que puede irse sin perder nada. */}
-      <p className="text-sm text-fg-muted leading-relaxed max-w-lg">
-        {tf(
-          'inquilino.aprobacion.proceso.liberar',
-          'Te avisamos por correo apenas tengamos respuesta — puedes cerrar esta página tranquilo.',
-        )}
-      </p>
+      {/*
+        Acá decía «te avisamos por correo, puedes cerrar esta página». Eso es lo
+        que se le dice a alguien que va a esperar horas. La consulta es
+        inmediata: mandarlo a cerrar la pantalla justo antes de mostrarle su
+        respuesta es echarlo de la única pantalla que vino a ver.
+      */}
 
       {/* Si quedó un pago pendiente, la consulta no avanza hasta que se haga.
           Decirlo acá es la diferencia entre esperar y esperar en vano. */}

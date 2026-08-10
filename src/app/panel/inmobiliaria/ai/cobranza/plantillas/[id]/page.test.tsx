@@ -20,6 +20,12 @@ _vi.setConfig({ testTimeout: 60_000 })
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
+import {
+  normalizeTemplate,
+  type TemplateApiItem,
+  type TemplateRow,
+} from '@/lib/hooks/cobranza/use-templates'
+
 // ----- Mocks ----------------------------------------------------------------
 
 vi.mock('@/lib/auth', () => ({
@@ -33,28 +39,24 @@ vi.mock('@/lib/i18n', () => ({
   }),
 }))
 
-let mockTemplates: Array<{
-  id: string
-  name: string
-  category: 'stage' | 'whatsapp' | 'objection'
-  bodyDraft: string
-  bodyPublished: string | null
-  status: 'draft' | 'published'
-  waSubmissionStatus: 'pending' | 'approved' | 'rejected' | null
-  tokenCount: number
-  updatedAt: string
-}> = []
+let mockTemplates: TemplateRow[] = []
 let mockIsLoading = false
 let mockError: string | null = null
 
-vi.mock('@/lib/hooks/cobranza/use-templates', () => ({
-  useTemplates: () => ({
-    data: { templates: mockTemplates },
-    isLoading: mockIsLoading,
-    error: mockError,
-    refetch: vi.fn(),
-  }),
-}))
+vi.mock('@/lib/hooks/cobranza/use-templates', async () => {
+  const actual = await vi.importActual<
+    typeof import('@/lib/hooks/cobranza/use-templates')
+  >('@/lib/hooks/cobranza/use-templates')
+  return {
+    ...actual,
+    useTemplates: () => ({
+      data: { templates: mockTemplates },
+      isLoading: mockIsLoading,
+      error: mockError,
+      refetch: vi.fn(),
+    }),
+  }
+})
 
 // Track fetch calls
 const fetchCalls: Array<{ url: string; method: string }> = []
@@ -66,29 +68,55 @@ vi.mock('next/navigation', () => ({
 
 // ----- Test data ------------------------------------------------------------
 
-const STAGE_TEMPLATE = {
-  id: 'tpl-stage-1',
-  name: 'Etapa S1 Recordatorio',
-  category: 'stage' as const,
-  bodyDraft: 'Hola {{deudor_nombre}}, tu deuda es {{deuda_total}}.',
-  bodyPublished: null,
-  status: 'draft' as const,
-  waSubmissionStatus: null,
-  tokenCount: 120,
-  updatedAt: '2026-05-29T10:00:00Z',
+/**
+ * Los fixtures se arman con la forma que manda el AGENTE (`TemplateApiItem`,
+ * generada por `pnpm api:gen`) y se pasan por `normalizeTemplate`.
+ *
+ * Antes eran objetos escritos a mano con la forma que la UI deseaba —
+ * `{ templates: [...] }`, camelCase, un `status` que el servidor nunca envió —
+ * así que estos tests pasaban en verde mientras la pantalla reventaba contra el
+ * error boundary. Si el contrato del agente cambia, ahora esto no compila.
+ */
+function agentItem(over: Partial<TemplateApiItem>): TemplateApiItem {
+  return {
+    id: 'tpl-x',
+    name: 'plantilla',
+    category: 'stage',
+    channel: 'voice',
+    stage: 'S1',
+    language: 'es',
+    tone_variant: 'cordial',
+    body: 'cuerpo base',
+    body_draft: null,
+    body_published: null,
+    wa_submission_status: null,
+    token_count: 100,
+    updated_at: '2026-05-29T10:00:00Z',
+    ...over,
+  }
 }
 
-const WA_TEMPLATE = {
-  id: 'tpl-wa-1',
-  name: 'WhatsApp Recordatorio',
-  category: 'whatsapp' as const,
-  bodyDraft: 'Hola, te recordamos tu pago.',
-  bodyPublished: null,
-  status: 'draft' as const,
-  waSubmissionStatus: 'pending' as const,
-  tokenCount: 200,
-  updatedAt: '2026-05-29T10:00:00Z',
-}
+const STAGE_TEMPLATE = normalizeTemplate(
+  agentItem({
+    id: 'tpl-stage-1',
+    name: 'Etapa S1 Recordatorio',
+    category: 'stage',
+    body_draft: 'Hola {{deudor_nombre}}, tu deuda es {{deuda_total}}.',
+    token_count: 120,
+  }),
+)
+
+const WA_TEMPLATE = normalizeTemplate(
+  agentItem({
+    id: 'tpl-wa-1',
+    name: 'WhatsApp Recordatorio',
+    category: 'whatsapp',
+    channel: 'whatsapp',
+    body_draft: 'Hola, te recordamos tu pago.',
+    wa_submission_status: 'pending',
+    token_count: 200,
+  }),
+)
 
 // ----- Test helpers ---------------------------------------------------------
 
@@ -235,10 +263,12 @@ describe('TemplatePage (detail editor)', () => {
   it('Unknown variable in draft body shows amber warning Alert', async () => {
     // Mock stage template with unknown variable in draft
     mockTemplates = [
-      {
-        ...STAGE_TEMPLATE,
-        bodyDraft: 'Hola {{deudor_nombre}}, tienes {{unknown_var}} pendiente.',
-      },
+      normalizeTemplate(
+        agentItem({
+          id: 'tpl-stage-1',
+          body_draft: 'Hola {{deudor_nombre}}, tienes {{unknown_var}} pendiente.',
+        }),
+      ),
     ]
 
     const { default: TemplatePage } = await import('./page')

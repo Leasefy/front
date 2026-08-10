@@ -10,6 +10,7 @@
  */
 
 import type { Icon } from '@phosphor-icons/react'
+import { Card } from '@leasefy/cadence'
 import {
   Robot,
   ChatCircleText,
@@ -254,7 +255,8 @@ function EquipoCobranzaContent() {
           <h2 className="text-base font-semibold text-fg">En un caso, así se ve</h2>
           <p className="text-xs uppercase tracking-wide text-fg-muted">Ejemplo ilustrativo</p>
         </div>
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -266,7 +268,7 @@ function EquipoCobranzaContent() {
             </TableHeader>
             <TableBody>
               {LOTE_EJEMPLO.map((row) => (
-                <TableRow key={row.agente} className="border-b border-border last:border-0">
+                <TableRow key={row.agente}>
                   <TableCell className="px-4 py-2.5 font-medium text-fg">{row.agente}</TableCell>
                   <TableCell className="px-4 py-2.5 text-fg-muted">{row.trabajo}</TableCell>
                   <TableCell className="px-4 py-2.5 text-fg-muted">{row.estado}</TableCell>
@@ -275,7 +277,8 @@ function EquipoCobranzaContent() {
               ))}
             </TableBody>
           </Table>
-        </div>
+          </div>
+        </Card>
       </section>
     </main>
   )

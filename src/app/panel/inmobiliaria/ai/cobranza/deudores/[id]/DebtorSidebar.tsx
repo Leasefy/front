@@ -53,18 +53,18 @@ export function DebtorSidebar({
 
   if (isLoading && !data) {
     return (
-      <aside className="rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 animate-pulse">
-        <div className="h-4 w-1/2 bg-neutral-200 dark:bg-neutral-800 rounded mb-3" />
-        <div className="h-3 w-3/4 bg-neutral-200 dark:bg-neutral-800 rounded mb-2" />
-        <div className="h-3 w-2/3 bg-neutral-200 dark:bg-neutral-800 rounded" />
+      <aside className="rounded-xl border border-border bg-surface p-4 animate-pulse">
+        <div className="h-4 w-1/2 bg-surface-muted rounded mb-3" />
+        <div className="h-3 w-3/4 bg-surface-muted rounded mb-2" />
+        <div className="h-3 w-2/3 bg-surface-muted rounded" />
       </aside>
     )
   }
 
   if (!data) {
     return (
-      <aside className="rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4">
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+      <aside className="rounded-xl border border-border bg-surface p-4">
+        <p className="text-sm text-fg-muted">
           {t(`${NS}.detail.empty`)}
         </p>
       </aside>
@@ -94,14 +94,14 @@ export function DebtorSidebar({
   }
 
   return (
-    <aside className="rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-4">
+    <aside className="rounded-xl border border-border bg-surface p-4 space-y-4">
       {/* Zone eyebrow — brand mono + dot (FeatureAnnouncementCard pattern) */}
       <h2 className="flex items-center gap-2.5">
         <span
           aria-hidden="true"
           className="w-1.5 h-1.5 rounded-[2px] bg-primary shrink-0"
         />
-        <MonoLabel className="text-fg-muted">
+        <MonoLabel className="text-fg-subtle">
           {t(`${NS}.detalle.contexto`)}
         </MonoLabel>
       </h2>
@@ -110,7 +110,7 @@ export function DebtorSidebar({
       {caseStateKey && (
         <span
           data-testid="case-state-badge"
-          className="inline-flex items-center px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-fg"
+          className="inline-flex items-center px-2.5 py-1 rounded-full bg-surface-muted text-xs font-medium text-fg-muted"
         >
           {t(caseStateKey)}
         </span>
@@ -130,7 +130,7 @@ export function DebtorSidebar({
       {kpis && (
         <div className="space-y-3" data-testid="sidebar-kpis">
           <div>
-            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs font-medium text-fg-muted">
               {t(`${NS}.detalle.saldoPendiente`)}
             </p>
             <p className="mt-0.5 text-xl font-semibold tracking-[-0.02em] text-fg dark:text-white tabular-nums">
@@ -139,18 +139,26 @@ export function DebtorSidebar({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              <p className="text-xs font-medium text-fg-muted">
                 {t(`${NS}.detalle.pagosRecibidos`)}
               </p>
-              <p className="mt-0.5 text-sm font-semibold text-neutral-900 dark:text-white tabular-nums">
+              <p className="mt-0.5 text-sm font-semibold text-fg tabular-nums">
                 {kpis.paymentsCount}
               </p>
+              {/* Cuánto entró, no sólo cuántas veces. «Saldo pendiente» y esto
+                  eran el MISMO número —los pagos aprobados— con dos títulos
+                  distintos; ahora cada uno responde su propia pregunta. */}
+              {kpis.totalCollected != null && kpis.totalCollected > 0 && (
+                <p className="text-xs text-fg-muted tabular-nums">
+                  {formatCurrency(kpis.totalCollected)}
+                </p>
+              )}
             </div>
             <div>
-              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              <p className="text-xs font-medium text-fg-muted">
                 {t(`${NS}.detalle.llamadasRealizadas`)}
               </p>
-              <p className="mt-0.5 text-sm font-semibold text-neutral-900 dark:text-white tabular-nums">
+              <p className="mt-0.5 text-sm font-semibold text-fg tabular-nums">
                 {kpis.callsCount}
               </p>
             </div>
@@ -160,37 +168,37 @@ export function DebtorSidebar({
 
       {/* Contact attempts */}
       <div>
-        <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+        <p className="text-xs font-medium text-fg-muted">
           {t(`${NS}.detail.sidebar.contactAttempts`)}
         </p>
-        <p className="mt-1 text-sm text-neutral-900 dark:text-white font-mono">
+        <p className="mt-1 text-sm text-fg font-mono">
           {contactAttempts}
         </p>
       </div>
 
       {/* PII masks */}
-      <div className="space-y-2 pt-2 border-t border-neutral-200/80 dark:border-neutral-800">
+      <div className="space-y-2 pt-2 border-t border-border">
         <div>
-          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs font-medium text-fg-muted">
             {t(`${NS}.deudores.columns.cedula`)}
           </p>
           <div className="mt-1">{renderMask('cedula', data.cedulaMasked)}</div>
         </div>
         <div>
-          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs font-medium text-fg-muted">
             {t(`${NS}.deudores.columns.phone`)}
           </p>
           <div className="mt-1">{renderMask('phone', data.phoneMasked)}</div>
         </div>
         <div>
-          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs font-medium text-fg-muted">
             {t(`${NS}.deudores.columns.email`)}
           </p>
           <div className="mt-1">{renderMask('email', data.emailMasked)}</div>
         </div>
         {data.fiadorCedulaMasked && (
           <div>
-            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs font-medium text-fg-muted">
               Cédula del fiador
             </p>
             <div className="mt-1">

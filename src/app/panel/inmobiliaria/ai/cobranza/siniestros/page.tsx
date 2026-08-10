@@ -29,7 +29,12 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui'
-import { Chip } from '@leasefy/cadence'
+import { Card, Chip } from '@leasefy/cadence'
+import { TablePagination } from '@/components/ui/pagination'
+import {
+  useTablePagination,
+  PAGE_SIZE_OPTIONS,
+} from '@/lib/hooks/use-table-pagination'
 import {
   useInsuranceClaims,
   type InsuranceClaimStatus,
@@ -71,7 +76,7 @@ const STATUS_LABELS: Record<InsuranceClaimStatus, { es: string; en: string }> = 
 }
 
 function SiniestrosContent() {
-  const { t, locale } = useI18n()
+  const { t, locale, formatCurrency } = useI18n()
   const router = useRouter()
   const isEs = locale.startsWith('es')
 
@@ -83,6 +88,7 @@ function SiniestrosContent() {
 
   useAutoRefresh(refetch)
 
+
   const navigateToSiniestro = useCallback(
     (id: string) => {
       router.push(`/panel/inmobiliaria/ai/cobranza/siniestros/${id}`)
@@ -91,6 +97,20 @@ function SiniestrosContent() {
   )
 
   const claims = data?.claims ?? []
+
+  /**
+   * Paginado de presentación. `resetKey` con los filtros: sin eso, filtrar
+   * estando en la página 3 deja la tabla vacía y se lee como «no hay nada».
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(claims, { resetKey: `${statusFilter ?? ''}` })
   const hasFilters = statusFilter !== undefined
 
   // ── Skeleton ──────────────────────────────────────────────────────────────
@@ -98,24 +118,24 @@ function SiniestrosContent() {
     return (
       <main className="p-4 lg:p-8 max-w-7xl mx-auto" aria-busy="true">
         <header className="mb-5">
-          <div className="h-7 w-40 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse" />
-          <div className="h-4 w-64 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse mt-2" />
+          <div className="h-7 w-40 bg-surface-muted rounded animate-pulse" />
+          <div className="h-4 w-64 bg-surface-muted rounded animate-pulse mt-2" />
         </header>
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-          <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-            <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800 animate-pulse">
+        <Card className="overflow-hidden">
+          <Table>
+            <TableBody className="animate-pulse">
               {Array.from({ length: 6 }, (_, i) => (
                 <TableRow key={`skel-${i}`}>
                   {Array.from({ length: 5 }, (_, j) => (
                     <TableCell key={j} className="px-3 py-3">
-                      <div className="h-3 w-full bg-neutral-200 dark:bg-neutral-800 rounded" />
+                      <div className="h-3 w-full bg-surface-muted rounded" />
                     </TableCell>
                   ))}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Card>
       </main>
     )
   }
@@ -138,17 +158,23 @@ function SiniestrosContent() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-5">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {t('inmobiliaria.ai.cobranza.siniestros.list.pageTitle')}
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="text-sm text-fg-muted">
             {t('inmobiliaria.ai.cobranza.siniestros.list.pageSubtitle')}
           </p>
         </div>
       </div>
 
       {/* Status filter chips */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      {/*
+        Contenedor canónico del panel: UNA tarjeta con su barra de filtros, la
+        tabla y el pie de paginación. Los filtros y el aviso de error vivían
+        sueltos por encima y la pantalla se leía como bloques sin relación.
+      */}
+      <Card className="overflow-hidden">
+      <div className="flex flex-wrap gap-2 border-b border-border px-4 py-3">
         <fieldset>
           <legend className="sr-only">{isEs ? 'Estado del siniestro' : 'Claim status'}</legend>
           <div className="flex flex-wrap gap-2">
@@ -182,7 +208,7 @@ function SiniestrosContent() {
       {error && (
         <div
           role="alert"
-          className="rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2 mb-4"
+          className="border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
@@ -190,10 +216,17 @@ function SiniestrosContent() {
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-          <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+        <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
+              {/* Destinatario y monto primero: la tabla mostraba aseguradora,
+                  estado y fechas, o sea que aprobar un siniestro era autorizar
+                  un reclamo sin saber de quién ni por cuánto. */}
+              <TableHead>{isEs ? 'Deudor' : 'Debtor'}</TableHead>
+              <TableHead className="text-right">
+                {isEs ? 'Saldo en mora' : 'Outstanding'}
+              </TableHead>
               <TableHead>
                 {t('inmobiliaria.ai.cobranza.siniestros.list.columns.aseguradora')}
               </TableHead>
@@ -211,19 +244,41 @@ function SiniestrosContent() {
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <TableBody>
+            {/*
+              Con error NO se puede decir «sin siniestros»: eso es una
+              afirmación sobre los datos, y con la carga fallida no sabemos
+              cuántos hay. La pantalla mostraba el 401 en rojo Y debajo «Sin
+              siniestros con el filtro seleccionado» — o sea, tranquilizando
+              justo cuando no debía.
+            */}
             {claims.length === 0 && !isLoading && (
               <TableRow>
-                <TableCell colSpan={5} className="px-3 py-12 text-center">
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    {isEs
-                      ? 'Sin siniestros con el filtro seleccionado.'
-                      : 'No claims match the selected filter.'}
+                <TableCell colSpan={7} className="px-3 py-12 text-center">
+                  <p className="text-sm text-fg-muted">
+                    {error
+                      ? isEs
+                        ? 'No pudimos cargar los siniestros.'
+                        : 'We could not load the claims.'
+                      : isEs
+                        ? 'Sin siniestros con el filtro seleccionado.'
+                        : 'No claims match the selected filter.'}
                   </p>
+                  {error && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      hideArrow
+                      className="mt-3"
+                      onClick={() => void refetch()}
+                    >
+                      {isEs ? 'Reintentar' : 'Retry'}
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             )}
-            {claims.map((c) => (
+            {pageItems.map((c) => (
               <TableRow
                 key={c.id}
                 onClick={() => navigateToSiniestro(c.id)}
@@ -232,9 +287,38 @@ function SiniestrosContent() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') navigateToSiniestro(c.id)
                 }}
-                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+                className=" cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <TableCell className="px-3 py-2 text-neutral-900 dark:text-white capitalize whitespace-nowrap">
+                <TableCell className="px-3 py-2">
+                  <span className="block text-fg">
+                    {c.debtorName ?? (isEs ? 'Deudor no encontrado' : 'Debtor not found')}
+                  </span>
+                  {c.debtorDocument && (
+                    <span className="block text-xs text-fg-muted font-mono tabular-nums">
+                      {c.debtorDocument}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="px-3 py-2 text-right whitespace-nowrap">
+                  <span className="block text-fg font-mono tabular-nums">
+                    {c.outstandingCop != null ? formatCurrency(c.outstandingCop) : '—'}
+                  </span>
+                  {/* Sólo con mora real: «0 días de mora» al lado de un saldo
+                      se lee como un error de cálculo, no como información. */}
+                  {c.delinquencyDays != null && c.delinquencyDays > 0 && (
+                    <span className="block text-xs text-fg-muted font-mono tabular-nums">
+                      {c.delinquencyDays}{' '}
+                      {isEs
+                        ? c.delinquencyDays === 1
+                          ? 'día de mora'
+                          : 'días de mora'
+                        : c.delinquencyDays === 1
+                          ? 'day overdue'
+                          : 'days overdue'}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="px-3 py-2 text-fg capitalize whitespace-nowrap">
                   {c.aseguradora}
                 </TableCell>
                 <TableCell className="px-3 py-2">
@@ -244,14 +328,14 @@ function SiniestrosContent() {
                       : (STATUS_LABELS[c.status as InsuranceClaimStatus]?.en ?? c.status)}
                   </Badge>
                 </TableCell>
-                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-xs text-fg-muted tabular-nums whitespace-nowrap">
                   {new Date(c.createdAt).toLocaleDateString(locale, {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',
                   })}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums whitespace-nowrap">
+                <TableCell className="px-3 py-2 text-xs text-fg-muted tabular-nums whitespace-nowrap">
                   {c.filedAt
                     ? new Date(c.filedAt).toLocaleDateString(locale, {
                         year: 'numeric',
@@ -260,14 +344,35 @@ function SiniestrosContent() {
                       })
                     : '—'}
                 </TableCell>
-                <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">
-                  {c.approvedByHumanUserId ? c.approvedByHumanUserId.slice(0, 8) + '…' : '—'}
+                {/* El correo, no el UUID: «4a0efc55…» no le dice nada a nadie.
+                    Si el aprobador ya no está en el equipo cae al id recortado,
+                    que al menos es rastreable en la auditoría. */}
+                <TableCell className="px-3 py-2 text-xs text-fg-muted">
+                  {c.approvedByEmail ??
+                    (c.approvedByHumanUserId
+                      ? c.approvedByHumanUserId.slice(0, 8) + '…'
+                      : '—')}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </div>
+        </div>
+
+        {/* Pie: sólo si hay más de una página. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
+      </Card>
     </main>
   )
 }

@@ -16,7 +16,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useAuth } from '@/lib/auth'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 
@@ -25,10 +25,17 @@ export type HabeasDataColor = 'green' | 'yellow' | 'red' | 'red-pulse'
 export interface HabeasDataOpenRequest {
   id: string
   debtor_id: string
+  /**
+   * Nombre de quien reclama. null sólo si el deudor ya no existe; opcional
+   * para que una respuesta cacheada anterior al JOIN siga tipando.
+   */
+  debtor_name?: string | null
   /** ISO timestamp when the Habeas Data request was anchored (D-34-RES-A1). */
   timestamp: string
-  /** Server-computed Math.ceil(15 - daysSince(timestamp)). May go negative on overdue. */
+  /** Días HÁBILES restantes del término legal. Negativo = vencido. */
   remaining_days: number
+  /** Término que rige esta solicitud, en días hábiles (10 consulta / 15 reclamo). */
+  sla_business_days?: number
   color: HabeasDataColor
 }
 
@@ -41,8 +48,11 @@ export interface ComplianceOverviewResponse {
     open_requests: HabeasDataOpenRequest[]
   }
   retention: {
-    compliance_pct: number
+    /** `null` = no hay filas con ventana de retención. NO es lo mismo que 100. */
+    compliance_pct: number | null
     target: number
+    measured_rows: number
+    overdue_rows: number
   }
   sparkline: {
     daily_buckets_30d: Array<{ date: string; flag_rate_pct: number }>
@@ -78,10 +88,7 @@ export function useComplianceOverview(): UseComplianceOverviewResult {
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/compliance/overview`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/compliance/overview`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as ComplianceOverviewResponse
       setData(json)

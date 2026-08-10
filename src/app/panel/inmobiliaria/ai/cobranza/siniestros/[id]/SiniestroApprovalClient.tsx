@@ -22,7 +22,7 @@ import { useRouter } from 'next/navigation'
 
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Checkbox } from '@/components/ui'
@@ -31,6 +31,7 @@ import {
   useSiniestroApproval,
   type SiniestroInsurer,
 } from '@/lib/hooks/cobranza/use-siniestro-approval'
+import { useInsuranceClaims } from '@/lib/hooks/cobranza/use-insurance-claims'
 import {
   RechazarForm,
   type RejectReasonSlug,
@@ -38,7 +39,21 @@ import {
 
 void React
 
+/**
+ * A quién se puede notificar hoy. Es una lista FIJA y el agente la valida con
+ * el mismo enum, así que un siniestro de una aseguradora que no esté acá no se
+ * puede radicar desde el panel. En la base hay pólizas de Chubb y Liberty
+ * Seguros: la pantalla las mostraba igual, con cuatro casillas de otras
+ * compañías y sin decir de cuál era el siniestro. Ampliarla es una decisión de
+ * producto (hay que saber a qué correo se radica: `agent.insurer_contacts`
+ * está vacía); mientras tanto la pantalla al menos LO DICE.
+ */
 const INSURERS: ReadonlyArray<SiniestroInsurer> = ['sura', 'mapfre', 'solidaria', 'accion']
+
+/** «SURA» → «sura»; para casar la aseguradora del siniestro con el enum. */
+function normalizarAseguradora(nombre: string | null | undefined): string {
+  return (nombre ?? '').trim().toLowerCase().replace(/\s+/g, '_')
+}
 
 interface Props {
   claimId: string
@@ -67,6 +82,20 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
     reject,
   } = useSiniestroApproval()
 
+  // El siniestro sale de la MISMA lista que alimenta la tabla — el agente no
+  // expone un detalle por id. Sólo hacen falta el deudor y la aseguradora.
+  const { data: claims } = useInsuranceClaims()
+  const siniestro = useMemo(
+    () => (claims?.claims ?? []).find((c) => c.id === claimId) ?? null,
+    [claims, claimId],
+  )
+  const aseguradoraNotificable = useMemo(() => {
+    if (!siniestro?.aseguradora) return true
+    return INSURERS.some(
+      (i) => i === normalizarAseguradora(siniestro.aseguradora),
+    )
+  }, [siniestro])
+
   const [selectedInsurers, setSelectedInsurers] = useState<SiniestroInsurer[]>([
     'sura',
     'mapfre',
@@ -94,7 +123,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
     setPdfBlobUrl(null)
     void (async () => {
       try {
-        const res = await globalThis.fetch(pdfSrc, { headers: agentAuthHeaders() })
+        const res = await agentFetch(pdfSrc)
         if (!res.ok) throw new Error(`pdf ${res.status}`)
         const blob = await res.blob()
         if (cancelled) return
@@ -174,18 +203,34 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           label={t('inmobiliaria.ai.cobranza.siniestros.back')}
         />
       </div>
-      <header>
+      <header className="space-y-1">
         <h1 className="text-2xl font-semibold text-fg">
           {t('inmobiliaria.ai.cobranza.siniestros.title')}
         </h1>
+        {/* De quién y con qué aseguradora. La pantalla no lo decía: se aprobaba
+            la radicación de un siniestro sin saber sobre qué póliza. */}
+        {siniestro && (
+          <p className="text-sm text-fg-muted">
+            {siniestro.debtorName ?? 'Deudor sin nombre'}
+            {siniestro.aseguradora ? ` · ${siniestro.aseguradora}` : ''}
+          </p>
+        )}
       </header>
+
+      {siniestro && !aseguradoraNotificable && (
+        <div className="rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
+          Este siniestro es de <strong>{siniestro.aseguradora}</strong>, y hoy
+          sólo se puede radicar ante Sura, Mapfre, Solidaria o Acción. Radicarlo
+          ante otra compañía no lo presenta ante la que tiene la póliza.
+        </div>
+      )}
 
       {/* PDF preview iframe */}
       <section
         aria-label={t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.title')}
         className="space-y-2"
       >
-        <h2 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+        <h2 className="text-sm font-medium text-fg-muted">
           {t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.title')}
         </h2>
         <iframe
@@ -193,7 +238,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           title={t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.title')}
           src={pdfBlobUrl ?? 'about:blank'}
           loading="lazy"
-          className="w-full h-96 rounded border border-neutral-200 dark:border-neutral-800"
+          className="w-full h-96 rounded border border-border"
         />
         {pdfError && (
           <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
@@ -204,7 +249,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
 
       {/* Insurer checkbox group */}
       <section className="space-y-2">
-        <h2 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+        <h2 className="text-sm font-medium text-fg-muted">
           {t('inmobiliaria.ai.cobranza.siniestros.insurers.title')}
         </h2>
         <div className="flex flex-wrap gap-3">
@@ -214,7 +259,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
               <label
                 key={ins}
                 htmlFor={`siniestro-insurer-${ins}`}
-                className="inline-flex items-center gap-2 rounded-sm border border-border bg-surface px-3 py-2 text-sm text-fg"
+                className="inline-flex items-center gap-2 rounded-sm border border-border bg-card px-3 py-2 text-sm text-fg-muted"
               >
                 <Checkbox
                   id={`siniestro-insurer-${ins}`}

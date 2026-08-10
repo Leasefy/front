@@ -20,9 +20,22 @@ import {
 
 type AgentPermissions = AgentModulePermissions;
 
+/**
+ * En qué punto está la resolución del acceso a los módulos del AGENTE
+ * (cobranza, cotizador). Ver el comentario largo donde se calcula.
+ */
+export type AgentAccessStatus = 'resolviendo' | 'resuelto' | 'sin-verificar';
+
 interface PermissionsContextValue {
   permissions: MemberPermissionsResponse | null;
   isLoading: boolean;
+  /**
+   * Tri-estado. Mientras sea `resolviendo`, un `canAccess(...)` en false
+   * significa «todavía no sé», NO «no tenés permiso»: hay que esperar, no
+   * negar. `sin-verificar` es «el agente no contestó»: tampoco se niega, se
+   * dice que no pudimos verificar y se ofrece reintentar.
+   */
+  agentAccessStatus: AgentAccessStatus;
   error: string | null;
   canAccess: (module: string, action: string) => boolean;
   /**
@@ -86,7 +99,7 @@ function readAgencyIdFromStorage(): string | null {
 }
 
 export function PermissionsProvider({ children }: { children: ReactNode }) {
-  const { agency } = useAuth();
+  const { agency, agencyMembershipChecked } = useAuth();
   // Prefer the live auth-context agency; fall back to localStorage so the
   // first paint after a hard refresh (and the synthetic Playwright test seed)
   // still triggers fetchAgentPermissions. Without this fallback, the cobranza
@@ -97,6 +110,17 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [agentPerms, setAgentPerms] = useState<AgentPermissions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Para QUÉ agencia terminó el último fetch. `undefined` = todavía ninguno.
+   *
+   * Sin esto hay una ventana en la que `isLoading` ya es false (del ciclo
+   * anterior, cuando `agencyId` era null) mientras el nuevo `agencyId` recién
+   * llegó y su fetch aún no arrancó. En esa ventana `agentPerms` sigue en null
+   * y los módulos del agente —que fallan CERRADO— se leen como «denegado».
+   */
+  const [resolvedFor, setResolvedFor] = useState<string | null | undefined>(
+    undefined,
+  );
 
   const fetchPermissions = useCallback(async () => {
     setIsLoading(true);
@@ -120,6 +144,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       console.error('[PermissionsContext]', message);
       setError(message);
     } finally {
+      setResolvedFor(agencyId);
       setIsLoading(false);
     }
   }, [agencyId]);
@@ -127,6 +152,44 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchPermissions();
   }, [fetchPermissions]);
+
+  /**
+   * `canAccess('cobranza')` en false tiene TRES causas y una pantalla no puede
+   * tratarlas igual:
+   *
+   *   · todavía se está averiguando        → `resolviendo`   (esperar)
+   *   · el agente no contestó (caído/401)  → `sin-verificar` (decir eso, ofrecer reintentar)
+   *   · el agente contestó que no          → `resuelto`      (negar de verdad)
+   *
+   * El bug era colapsar los tres en «no tienes acceso». Dos matices:
+   *
+   * 1. Con `agencyId` null el fetch al agente NI SE DISPARA. La sonda de
+   *    membresía es fire-and-forget —`auth.isLoading` se libera ANTES de que
+   *    termine— así que hay un tramo con sesión válida y agencia desconocida.
+   *    `agencyMembershipChecked` cierra el caso legítimo: sonda asentada y sin
+   *    agencia = no es usuario de agencia, negar está bien.
+   * 2. `resolvedFor === agencyId` cierra la ventana en la que `isLoading` ya
+   *    bajó (del ciclo anterior) pero el fetch del `agencyId` nuevo no arrancó.
+   *
+   * Ver `resolveAgentModuleAccess` en agent-module-access.ts para las posturas
+   * por módulo (cobranza y cotizador fallan CERRADO).
+   */
+  const cicloAlDia = !isLoading && resolvedFor === agencyId;
+  const sinAgenciaConfirmado = agencyId === null && agencyMembershipChecked;
+
+  const agentAccessStatus: AgentAccessStatus = !cicloAlDia
+    ? 'resolviendo'
+    : agentPerms !== null || sinAgenciaConfirmado
+      ? 'resuelto'
+      : agencyId === null
+        ? 'resolviendo' // la sonda todavía no asentó: no sabemos, no negamos
+        : 'sin-verificar'; // había a quién preguntar y el agente no contestó
+
+  /**
+   * Compat con `feat/recorrido-inmobiliaria`, que ya expone este flag con la
+   * misma semántica: el agente CONTESTÓ. Sumado al guard de ciclo al día.
+   */
+  const agentPermsResolved = cicloAlDia && agentPerms !== null;
 
   const canAccess = useCallback(
     (module: string, action: string): boolean => {
@@ -156,15 +219,23 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     () => ({
       permissions,
       isLoading,
+      agentAccessStatus,
+      agentPermsResolved,
       error,
       canAccess,
-      // Mientras carga no está resuelto: `isLoading` mantiene todo cerrado.
-      agentPermsResolved: !isLoading && agentPerms !== null,
       isAdmin: permissions?.isAdmin ?? false,
       agencyRole: permissions?.role ?? null,
       refetch: fetchPermissions,
     }),
-    [permissions, agentPerms, isLoading, error, canAccess, fetchPermissions],
+    [
+      permissions,
+      isLoading,
+      agentAccessStatus,
+      agentPermsResolved,
+      error,
+      canAccess,
+      fetchPermissions,
+    ],
   );
 
   return (

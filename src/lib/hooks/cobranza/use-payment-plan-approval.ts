@@ -31,6 +31,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { components } from '@/lib/api/generated/agent'
 
@@ -147,7 +148,7 @@ function buildView(
 }
 
 async function fetchJson(input: string, init?: RequestInit): Promise<Response> {
-  return globalThis.fetch(input, { ...init, headers: agentAuthHeaders(init?.headers) })
+  return agentFetch(input, { ...init, headers: agentAuthHeaders(init?.headers) })
 }
 
 // =============================================================================

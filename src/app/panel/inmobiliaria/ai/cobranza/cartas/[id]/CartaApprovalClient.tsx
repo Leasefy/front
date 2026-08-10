@@ -20,7 +20,7 @@ import { useRouter } from 'next/navigation'
 
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Input } from '@/components/ui'
@@ -121,7 +121,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
     setPdfBlobUrl(null)
     void (async () => {
       try {
-        const res = await globalThis.fetch(pdfSrc, { headers: agentAuthHeaders() })
+        const res = await agentFetch(pdfSrc)
         if (!res.ok) throw new Error(`pdf ${res.status}`)
         const blob = await res.blob()
         if (cancelled) return
@@ -207,7 +207,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
         aria-label={t('inmobiliaria.ai.cobranza.cartas.pdfPreview.title')}
         className="space-y-2"
       >
-        <h2 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+        <h2 className="text-sm font-medium text-fg-muted">
           {t('inmobiliaria.ai.cobranza.cartas.pdfPreview.title')}
         </h2>
         <iframe
@@ -215,7 +215,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           title={t('inmobiliaria.ai.cobranza.cartas.pdfPreview.title')}
           src={pdfBlobUrl ?? 'about:blank'}
           loading="lazy"
-          className="w-full h-96 rounded border border-neutral-200 dark:border-neutral-800"
+          className="w-full h-96 rounded border border-border"
         />
         {pdfError && (
           <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
@@ -225,9 +225,12 @@ export default function CartaApprovalClient({ artifactId }: Props) {
       </section>
 
       {/* Pre-approve form */}
-      <section className="space-y-3 rounded-md border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+      {/* `bg-white` fijo: en oscuro era una caja blanca en medio de la
+          pantalla, sobre la que además hay que decidir si se manda una carta
+          prejurídica. `bg-card` sigue el tema. */}
+      <section className="space-y-3 rounded-md border border-border bg-card p-4">
         <div className="space-y-1">
-          <span className="block text-sm font-medium text-fg">
+          <span className="block text-sm font-medium text-fg-muted">
             {t('inmobiliaria.ai.cobranza.cartas.physicalSend.label')}
           </span>
           <Select
@@ -252,7 +255,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           </Select>
         </div>
 
-        <label className="block text-sm font-medium text-fg">
+        <label className="block text-sm font-medium text-fg-muted">
           {t('inmobiliaria.ai.cobranza.cartas.sentToAddress.label')}
           <Input
             type="text"

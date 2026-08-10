@@ -640,7 +640,7 @@ function ConfiguracionContent() {
               </div>
               <div className="space-y-1.5">
                 <h3 className="text-base font-semibold text-fg">
-                  Todavía no tienes un plan activo
+                  Todavía no tenés un plan activo
                 </h3>
                 <p className="mx-auto max-w-md text-sm leading-relaxed text-fg-muted">
                   Elegí el plan que mejor se adapte a tu agencia y desbloqueá todas las funcionalidades de Leasefy.

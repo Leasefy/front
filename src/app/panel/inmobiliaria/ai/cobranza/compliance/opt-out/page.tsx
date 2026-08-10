@@ -19,9 +19,8 @@ import { Check, BellSlash } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
-import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import {
@@ -33,19 +32,18 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui'
+import { Card } from '@leasefy/cadence'
+import {
+  normalizeOptOuts,
+  nextCursorOf,
+  type OptOutEntry,
+  type ComplianceLogResponse,
+  type RawOptOut,
+} from '@/lib/hooks/cobranza/compliance-entries'
 
-interface OptOutEntry {
-  event_id: string
-  debtor_id_masked: string
-  requested_at: string
-  source: string
-  acknowledged_at: string | null
-}
-
-interface OptOutResponse {
-  items: OptOutEntry[]
-  next_cursor: string | null
-}
+// Mismo desajuste que en la bitácora de Ley 2300: acá se leía `json.items` /
+// `json.next_cursor` y el agente manda `entries` / `nextCursor`, así que el
+// registro salía vacío por contrato. Contrato real en `compliance-entries.ts`.
 
 function OptOutContent() {
   const { t, locale } = useI18n()
@@ -71,14 +69,13 @@ function OptOutContent() {
       }
       try {
         const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''
-        const res = await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/compliance/opt-out${qs}`,
-          { headers: agentAuthHeaders() },
-        )
+        const res = await agentFetch(
+          `${agentUrl}/api/agency/${agencyId}/cobranza/compliance/opt-out${qs}`)
         if (!res.ok) throw new Error(`${res.status}`)
-        const json = (await res.json()) as OptOutResponse
-        setItems((prev) => (append ? [...prev, ...(json.items ?? [])] : json.items ?? []))
-        setNextCursor(json.next_cursor ?? null)
+        const json = (await res.json()) as ComplianceLogResponse<RawOptOut>
+        const page = normalizeOptOuts(json)
+        setItems((prev) => (append ? [...prev, ...page] : page))
+        setNextCursor(nextCursorOf(json))
         setError(null)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'fetch_failed')
@@ -108,11 +105,11 @@ function OptOutContent() {
       if (!agentUrl || !agencyId) return
       setAcking((prev) => new Set(prev).add(eventId))
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/compliance/opt-out/${eventId}/acknowledge`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
           },
         )
         if (res.ok) {
@@ -152,7 +149,7 @@ function OptOutContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div>
-        <h1 className="text-h2 font-heading text-foreground mt-2">
+        <h1 className="text-h2 font-heading text-fg mt-2">
           {t('inmobiliaria.ai.cobranza.compliance.subPages.optOutTitle')}
         </h1>
       </div>
@@ -164,10 +161,13 @@ function OptOutContent() {
       )}
 
       {items.length > 0 && (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <Card className="overflow-hidden">
+          {/* Forma canónica del panel: `Card` del DS + scroll horizontal propio.
+              El `TableHeader` NO lleva tinte a mano — el del DS ya trae uno
+              adaptativo y un `bg-muted/30` fijo rompe el modo oscuro. */}
           <div className="overflow-x-auto overscroll-contain">
           <Table>
-            <TableHeader className="bg-muted/30 border-b border-border">
+            <TableHeader>
               <TableRow>
                 <TableHead>
                   {locale.startsWith('es') ? 'Solicitado' : 'Requested'}
@@ -186,22 +186,29 @@ function OptOutContent() {
             </TableHeader>
             <TableBody>
               {items.map((row) => {
-                const isAcked = row.acknowledged_at !== null
-                const isAcking = acking.has(row.event_id)
+                const isAcked = row.acknowledgedAt !== null
+                const isAcking = acking.has(row.eventId)
                 return (
-                  <TableRow key={row.event_id} className="border-b border-border last:border-0">
-                    <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-foreground">
-                      {new Date(row.requested_at).toLocaleString(locale)}
+                  <TableRow key={row.eventId}>
+                    <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-fg">
+                      {new Date(row.requestedAt).toLocaleString(locale)}
                     </TableCell>
-                    <TableCell className="px-3 py-2">
-                      <Mask field="cedula" value={row.debtor_id_masked} onReveal={undefined} />
+                  {/* El nombre; la referencia sólo si el dato no lo trae.
+                        La columna mostraba `A0F5DCC3` bajo el encabezado
+                        «Deudor»: un código sobre el que no se puede actuar. */}
+                    <TableCell className="px-3 py-2 text-fg">
+                      {row.debtorName ?? (
+                        <span className="font-mono text-xs text-fg-muted">
+                          {row.debtorRef}
+                        </span>
+                      )}
                     </TableCell>
-                    <TableCell className="px-3 py-2 text-foreground">{row.source}</TableCell>
+                    <TableCell className="px-3 py-2 text-fg">{row.source ?? '—'}</TableCell>
                     <TableCell className="px-3 py-2 font-mono tabular-nums text-xs">
                       {isAcked ? (
                         <span className="inline-flex items-center gap-1 text-success">
                           <Check className="w-3.5 h-3.5" aria-hidden="true" />
-                          {new Date(row.acknowledged_at as string).toLocaleDateString(locale)}
+                          {new Date(row.acknowledgedAt as string).toLocaleDateString(locale)}
                         </span>
                       ) : (
                         <span className="text-warning">
@@ -215,7 +222,7 @@ function OptOutContent() {
                           variant="outline"
                           size="sm"
                           hideArrow
-                          onClick={() => void acknowledge(row.event_id)}
+                          onClick={() => void acknowledge(row.eventId)}
                           disabled={isAcking}
                         >
                           {isAcking
@@ -233,7 +240,7 @@ function OptOutContent() {
           </Table>
           </div>
           {nextCursor && (
-            <div className="p-3 border-t border-border bg-muted/20 text-center">
+            <div className="p-3 border-t border-border text-center">
               <Button
                 variant="outline"
                 size="sm"
@@ -247,7 +254,7 @@ function OptOutContent() {
               </Button>
             </div>
           )}
-        </div>
+        </Card>
       )}
     </div>
   )

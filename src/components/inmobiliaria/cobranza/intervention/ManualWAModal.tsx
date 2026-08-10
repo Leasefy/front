@@ -12,7 +12,7 @@
 import * as React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
@@ -74,10 +74,8 @@ export function ManualWAModal({ open, onClose, debtorId, prefill, onSuccess }: M
     setError(null)
     void (async () => {
       try {
-        const res = await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/wa-templates`,
-          { headers: agentAuthHeaders() },
-        )
+        const res = await agentFetch(
+          `${agentUrl}/api/agency/${agencyId}/cobranza/wa-templates`)
         if (!res.ok) throw new Error(`${res.status}`)
         const json = (await res.json()) as { templates: WATemplate[] }
         if (cancelled) return
@@ -125,11 +123,11 @@ export function ManualWAModal({ open, onClose, debtorId, prefill, onSuccess }: M
     }
     setSubmitting(true)
     try {
-      const res = await globalThis.fetch(
+      const res = await agentFetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}/wa-send`,
         {
           method: 'POST',
-          headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ template_id: selectedId, variables }),
         },
       )

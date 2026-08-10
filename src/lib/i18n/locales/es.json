@@ -49,7 +49,9 @@
     "year": "Año",
     "days": "días",
     "hours": "horas",
-    "minutes": "minutos"
+    "minutes": "minutos",
+    "refresh": "Actualizar",
+    "retry": "Reintentar"
   },
   "nav": {
     "panel": "Inicio",
@@ -5102,6 +5104,7 @@
           "grupoSiniestros": "Siniestros por aprobar",
           "grupoPlanes": "Acuerdos de pago por aprobar",
           "grupoPromesas": "Promesas de pago de hoy",
+          "grupoConversaciones": "Conversaciones que el agente te pasó",
           "prioridadAlta": "Alta",
           "prioridadMedia": "Media",
           "prioridadBaja": "Baja",
@@ -5110,7 +5113,8 @@
           "resolver": "Resolver",
           "aprobar": "Aprobar",
           "revisar": "Revisar",
-          "seguimiento": "Dar seguimiento"
+          "seguimiento": "Dar seguimiento",
+          "responder": "Responder"
         },
         "estados": {
           "alDia": "Al día",
@@ -5191,8 +5195,8 @@
           }
         },
         "deudores": {
-          "title": "Deudores",
-          "subtitle": "Lista de cartera — todos los deudores activos",
+          "title": "Casos",
+          "subtitle": "Cada caso es un deudor con cartera en curso. Arriba, los más estancados.",
           "filters": {
             "title": "Filtros",
             "stage": "Etapa",
@@ -5320,6 +5324,13 @@
               "confirming": "Pausando…",
               "successToast": "Cobranza pausada"
             },
+            "resume": {
+              "cta": "Reanudar cobranza",
+              "modalTitle": "Reanudar cobranza",
+              "modalDescription": "El agente vuelve a trabajar este caso desde la próxima acción programada. Se registra en el log de auditoría.",
+              "confirm": "Confirmar reanudación",
+              "successToast": "Cobranza reanudada"
+            },
             "forceStage": {
               "cta": "Forzar etapa",
               "modalTitle": "Forzar etapa",
@@ -5385,8 +5396,7 @@
             "duration": "Duración",
             "outcome": "Resultado",
             "qaOverall": "QA general",
-            "complianceCount": "marcas",
-            "noRecording": "Esta llamada no tiene grabación disponible."
+            "complianceCount": "marcas"
           },
           "player": {
             "play": "Reproducir",
@@ -5394,7 +5404,12 @@
             "speed": "Velocidad",
             "speedLabel": "Velocidad {{speed}}x",
             "seekHelp": "Usa ArrowLeft o ArrowRight para avanzar ±5 segundos, o presiona un dígito 0-9 para saltar a ese porcentaje del audio.",
-            "audioError": "No se pudo cargar la grabación."
+            "probing": "Buscando la grabación…",
+            "absent": "Esta llamada no tiene grabación.",
+            "absentHint": "La conversación quedó registrada completa en la transcripción.",
+            "failed": "No pudimos cargar la grabación. Existe, pero no logramos traerla.",
+            "retry": "Reintentar",
+            "syntheticNotice": "Audio de demostración · voz sintetizada, no es una grabación real"
           },
           "transcript": {
             "title": "Transcripción",
@@ -5403,17 +5418,17 @@
             "error": "Error cargando la transcripción",
             "errorRetry": "Reintentar",
             "speakerOperador": "Operador",
-            "speakerDeudor": "Deudor",
-            "speakerBot": "Bot",
+            "speakerDeudor": "Inquilino",
+            "speakerBot": "Agente",
             "seekAria": "Saltar a {{time}}"
           },
           "qa": {
             "title": "Calidad de la llamada",
             "overall": "General",
-            "tone": "Tono",
+            "rapport": "Trato",
             "compliance": "Cumplimiento",
-            "recovery": "Recuperación",
-            "clarity": "Claridad",
+            "resolution": "Resolución",
+            "sentiment": "Sentimiento",
             "empty": "QA pendiente."
           },
           "stateTrace": {
@@ -5427,7 +5442,8 @@
             "voice": "Voz",
             "whatsapp": "WhatsApp",
             "total": "Total",
-            "empty": "Sin costo registrado."
+            "empty": "Sin costo registrado.",
+            "platform": "Plataforma"
           },
           "compliance": {
             "pillAria": "Marca de cumplimiento: {{label}}"
@@ -5436,21 +5452,24 @@
         },
         "pagos": {
           "title": "Pagos",
-          "subtitle": "Funnel de pagos y desembolsos",
+          "subtitle": "Lo que está por cobrarse y lo que ya entró. Una obligación importada de la cartera todavía no es un pago.",
           "kpi": {
+            "porCobrar": "Por cobrar",
+            "porCobrarHintOne": "1 obligación",
+            "porCobrarHint": "{{count}} obligaciones",
+            "enProceso": "En proceso",
             "approved": "Aprobados",
-            "pending": "Pendientes",
             "declined": "Rechazados",
             "recaudado": "Total recaudado",
-            "disbursed": "Total desembolsado",
-            "avgFee": "Comisión promedio"
+            "disbursed": "Total desembolsado"
           },
           "dateWindow": {
             "today": "Hoy",
             "7d": "7 días",
             "30d": "30 días",
             "90d": "90 días",
-            "mtd": "Mes actual"
+            "mtd": "Mes actual",
+            "label": "Ventana de tiempo"
           },
           "filter": {
             "provider": "Proveedor",
@@ -5460,23 +5479,25 @@
             "bold": "Bold"
           },
           "status": {
+            "porCobrar": "Por cobrar",
+            "enProceso": "En proceso",
             "approved": "Aprobado",
-            "pending": "Pendiente",
             "declined": "Rechazado",
             "disbursed": "Desembolsado"
           },
           "sort": {
             "createdAt": "Más recientes",
             "amountDesc": "Mayor monto",
-            "disbursementPendingDays": "Desembolso pendiente"
+            "disbursementPendingDays": "Desembolso pendiente",
+            "label": "Ordenar"
           },
           "columns": {
             "nombre": "Nombre",
             "monto": "Monto",
-            "fee": "Comisión",
             "provider": "Proveedor",
             "status": "Estado",
-            "fecha": "Fecha"
+            "fecha": "Fecha",
+            "disbursement": "Desembolso"
           },
           "pill": {
             "disbursementPending": "Desembolso pendiente"
@@ -5503,6 +5524,16 @@
             "cta": {
               "label": "Ver deudores"
             }
+          },
+          "provider": {
+            "none": "Sin procesar",
+            "noAplica": "No aplica"
+          },
+          "disbursement": {
+            "settled": "Desembolsado",
+            "pending": "Sin desembolsar",
+            "days": "{{days}} d",
+            "noAplica": "No aplica"
           }
         },
         "planes": {
@@ -5740,9 +5771,14 @@
           "pageTitle": "Cumplimiento",
           "overview": {
             "ley2300Heading": "Ley 2300 — intentos fuera de horario",
-            "habeasDataHeading": "Habeas Data — SLA de 15 días",
+            "habeasDataHeading": "Habeas Data — plazo legal",
             "retentionHeading": "Retención de datos",
-            "sparklineHeading": "Tasa de banderas (últimos 30 días)"
+            "sparklineHeading": "Tasa de banderas (últimos 30 días)",
+            "debtorRefHint": "Referencia interna del deudor. La cédula no se muestra en pantallas de cumplimiento.",
+            "retentionUnmeasured": "Sin registros con ventana de retención vigente. No hay nada que medir todavía.",
+            "retentionCaption": "{rows} registros con ventana de retención · {overdue} fuera de plazo",
+            "retentionCaptionOne": "{rows} registro con ventana de retención · {overdue} fuera de plazo",
+            "cardAction": "Ir al registro de no contactar para atenderla"
           },
           "habeasData": {
             "remaining": {
@@ -5750,7 +5786,7 @@
               "hours": "Quedan {{hours}}h"
             },
             "overdue": "VENCIDO HACE {{days}}d",
-            "banner": "Hay solicitudes Habeas Data próximas a vencer el plazo legal de 15 días."
+            "banner": "Hay solicitudes de Habeas Data vencidas o a punto de vencer."
           },
           "trafficLight": {
             "green": "Más de 7 días restantes",
@@ -5949,10 +5985,7 @@
         "plantillas": {
           "empty": {
             "title": "Estás usando las plantillas por defecto",
-            "description": "Personaliza scripts y mensajes para tu inmobiliaria.",
-            "cta": {
-              "label": "Crear plantilla"
-            }
+            "description": "Tu inmobiliaria todavía no tiene plantillas propias en el catálogo. El agente sigue usando los guiones que trae de fábrica."
           }
         },
         "arco": {
@@ -5988,13 +6021,13 @@
         }
       },
       "arco": {
-        "title": "Solicitudes ARCO",
+        "title": "Solicitudes de datos personales",
         "breadcrumb": "ARCO",
         "kpis": {
           "pending": "Pendientes",
           "onTime": "En plazo",
           "overdue": "Vencidas",
-          "resolved": "Resueltas (últimos 30d)"
+          "resolved": "Resueltas"
         },
         "tabs": {
           "all": "Todas",
@@ -6010,38 +6043,82 @@
           "estado": "Estado",
           "plazo": "Plazo",
           "recibida": "Recibida",
-          "actions": "Acciones",
-          "ariaViewRow": "Ver solicitud {type} de {name}"
+          "actions": "Abrir",
+          "ariaViewRow": "Ver solicitud {type} de {name}",
+          "type": "Tipo",
+          "requester": "Solicitante",
+          "status": "Estado",
+          "sla": "Plazo",
+          "submitted": "Recibida",
+          "ref": "Ref.",
+          "refHint": "Referencia derivada del hash de la cédula. La cédula no se almacena en claro."
         },
         "status": {
-          "pending_email_verification": "Verificación pendiente",
-          "pending_admin_triage": "En triage",
+          "pending_email_verification": "Sin confirmar",
+          "pending_admin_triage": "Por revisar",
           "in_progress": "En proceso",
-          "pending_counsel_review": "Revisión de asesor",
-          "resolved": "Resuelto",
-          "rejected": "Rechazado"
+          "resolved": "Resuelta",
+          "rejected": "Rechazada"
         },
         "sla": {
-          "overdue": "VENCIDA",
-          "days": "{count} días hábiles"
+          "overdue": "Vencida",
+          "days": "{count} días hábiles",
+          "overdueBy": "Vencida hace {count} d",
+          "today": "Vence hoy",
+          "paused": "Sin correr",
+          "closed": "Cerrada",
+          "day": "{count} día hábil"
         },
         "detail": {
           "requester": {
-            "nombre": "Nombre",
-            "cedula": "Cédula",
             "email": "Correo",
-            "tipo": "Tipo de solicitud",
-            "descripcion": "Descripción",
-            "enviada": "Enviada",
-            "verificada": "Verificada",
-            "pendiente": "Pendiente"
+            "title": "Quién solicita",
+            "name": "Nombre",
+            "type": "Tipo de solicitud",
+            "description": "Qué pide",
+            "submitted": "Enviada",
+            "verified": "Confirmada",
+            "pending": "Sin confirmar",
+            "slaTitle": "Plazo"
           },
           "resolve": {
             "urlLabel": "URL de datos",
             "rowsLabel": "Filas afectadas",
             "tablesLabel": "Tablas eliminadas",
             "notesLabel": "Notas de resolución",
-            "privateNotesLabel": "Notas adicionales (no se comparte con el solicitante)"
+            "privateNotesLabel": "Notas adicionales (no se comparte con el solicitante)",
+            "title": "Resolver",
+            "fields": {
+              "acceso": {
+                "url": "Enlace con los datos entregados",
+                "expires_at": "El enlace expira"
+              },
+              "rectificacion": {
+                "affectedRows": "Registros corregidos",
+                "fieldsModified": "Campos corregidos",
+                "fieldsPlaceholder": "teléfono, segundo apellido"
+              },
+              "cancelacion": {
+                "reason": "Qué se eliminó y de dónde"
+              },
+              "oposicion": {
+                "reason": "Qué tratamiento se detuvo"
+              },
+              "reasonPlaceholder": "Describe qué hiciste, con el detalle suficiente para sustentarlo."
+            }
+          },
+          "title": "Detalle de la solicitud",
+          "backToInbox": "Volver a la bandeja",
+          "viewAudit": "Ver en auditoría",
+          "timeline": {
+            "title": "Qué ha pasado",
+            "empty": "Todavía no hay movimientos registrados.",
+            "event": {
+              "submitted": "Solicitud enviada",
+              "email_verified": "Correo confirmado",
+              "triaged": "Tomada por el equipo",
+              "resolved": "Resuelta"
+            }
           }
         },
         "resolve": "Resolver solicitud",
@@ -6061,14 +6138,17 @@
         },
         "empty": {
           "title": "Sin solicitudes ARCO",
-          "body": "Cuando los solicitantes envíen solicitudes de acceso, rectificación, cancelación u oposición, aparecerán aquí.",
+          "body": "Cuando alguien pida ver, corregir, eliminar u oponerse al uso de sus datos, la solicitud aparece acá con su plazo.",
           "filteredTitle": "Sin solicitudes de este tipo",
-          "filteredBody": "No hay solicitudes de {type} pendientes."
+          "filteredBody": "No hay solicitudes de {type} en este momento."
         },
         "error": {
-          "load": "No se pudo cargar las solicitudes ARCO. Intenta de nuevo.",
-          "resolve": "No se pudo guardar la resolución. Verifica tu conexión e intenta de nuevo.",
-          "retry": "Reintentar"
+          "load": "No pudimos cargar las solicitudes.",
+          "resolve": "No se pudo guardar la resolución. Verificá la conexión e intentá de nuevo.",
+          "retry": "Reintentar",
+          "loadHint": "Se reintenta sola en un minuto. También podés reintentar ahora.",
+          "reject": "No se pudo rechazar la solicitud. Verificá la conexión e intentá de nuevo.",
+          "triage": "No se pudo tomar la solicitud."
         },
         "public": {
           "title": "Solicitud de derechos ARCO",
@@ -6095,15 +6175,100 @@
         "verify": {
           "confirmed": "Solicitud confirmada — un administrador la revisará pronto",
           "sla": "El equipo de cumplimiento revisará tu solicitud en el plazo establecido por la Ley 1581 de 2012 (10–15 días hábiles)."
+        },
+        "intro": {
+          "eyebrow": "Habeas Data · Ley 1581 de 2012",
+          "body": "Cuando alguien de quien tienes datos pide verlos, corregirlos, borrarlos o que dejes de usarlos, la solicitud llega acá. La ley te da un plazo en días hábiles para responder, y el reloj arranca cuando la persona confirma su correo.",
+          "deadlinesTitle": "Los plazos",
+          "deadlineAcceso": "Acceso: {days} días hábiles",
+          "deadlineReclamo": "Rectificación, cancelación y oposición: {days} días hábiles",
+          "consequence": "Responder tarde es incumplimiento sancionable por la SIC. Esta bandeja es tu registro de que respondiste a tiempo.",
+          "deadlinesSource": "Son los que el sistema está aplicando ahora mismo a estas solicitudes."
+        },
+        "kpi": {
+          "pendingVerification": "Sin confirmar",
+          "pendingVerificationHint": "Esperan que la persona confirme su correo",
+          "onTime": "En plazo",
+          "onTimeHint": "Abiertas y dentro del término legal",
+          "overdue": "Vencidas",
+          "overdueHint": "Pasaron el término legal sin respuesta",
+          "closed": "Cerradas",
+          "closedHint": "Resueltas o rechazadas"
+        },
+        "tab": {
+          "all": "Todas",
+          "acceso": "Acceso",
+          "rectificacion": "Rectificación",
+          "cancelacion": "Cancelación",
+          "oposicion": "Oposición"
+        },
+        "type": {
+          "acceso": "Acceso",
+          "rectificacion": "Rectificación",
+          "cancelacion": "Cancelación",
+          "oposicion": "Oposición"
+        },
+        "typeMeaning": {
+          "acceso": "Quiere ver qué datos suyos tienes",
+          "rectificacion": "Pide que corrijas un dato equivocado",
+          "cancelacion": "Pide que elimines sus datos",
+          "oposicion": "Pide que dejes de usar sus datos"
+        },
+        "actions": {
+          "view": "Ver la solicitud de {name}"
+        },
+        "attention": {
+          "overdueTitle": "{count} solicitud vencida",
+          "overdueTitlePlural": "{count} solicitudes vencidas",
+          "urgentTitle": "{count} vence en menos de {days} días hábiles",
+          "urgentTitlePlural": "{count} vencen en menos de {days} días hábiles",
+          "cta": "Ver las urgentes"
+        },
+        "live": {
+          "updatedJustNow": "Actualizado recién",
+          "updatedMinutes": "Actualizado hace {count} min",
+          "updatedHours": "Actualizado hace {count} h",
+          "auto": "Se actualiza sola cada minuto",
+          "refreshing": "Actualizando…"
+        },
+        "rejectDialog": {
+          "title": "¿Rechazar esta solicitud?",
+          "body": "Quedará marcada como rechazada y se notificará a quien la envió. Rechazar sin fundamento es un incumplimiento: guarda el motivo.",
+          "confirm": "Rechazar",
+          "cancel": "Cancelar",
+          "reasonLabel": "Motivo del rechazo",
+          "reasonPlaceholder": "Por qué no procede la solicitud. Queda en el expediente."
+        },
+        "alert": {
+          "subtitle": "Los plazos de Habeas Data son legales. Abrí la bandeja para responder."
+        },
+        "toast": {
+          "resolved": "Solicitud resuelta",
+          "rejected": "Solicitud rechazada",
+          "triaged": "Solicitud tomada. Queda en curso."
+        },
+        "triage": "Tomar la solicitud",
+        "extend": {
+          "action": "Ampliar el plazo",
+          "title": "Ampliar el plazo de respuesta",
+          "body": "La Ley 1581 permite ampliar el término una sola vez, hasta {max} días hábiles más, y solo si le informas al solicitante los motivos y la fecha en que responderás. Al confirmar le enviamos ese aviso por correo.",
+          "daysLabel": "Días hábiles adicionales (máximo {max})",
+          "reasonLabel": "Motivo de la demora",
+          "reasonPlaceholder": "Ej.: estamos recopilando los registros del archivo histórico del inmueble.",
+          "reasonHint": "Se le copia textual al solicitante en el correo. Escribí algo que se entienda por fuera.",
+          "confirm": "Ampliar y avisar",
+          "toastOk": "Plazo ampliado y aviso enviado al solicitante.",
+          "toastError": "No se pudo avisarle al solicitante, así que el plazo no se amplió.",
+          "grantedLabel": "Plazo ampliado"
         }
       },
       "templates": {
         "title": "Plantillas de cobranza",
         "breadcrumb": "Plantillas",
         "tabs": {
-          "stages": "Etapas de cobranza (14)",
-          "whatsapp": "WhatsApp (8)",
-          "objections": "Manejadores de objeciones (5)"
+          "stages": "Etapas de cobranza",
+          "whatsapp": "WhatsApp",
+          "objections": "Manejadores de objeciones"
         },
         "status": {
           "draft": "Borrador",
@@ -6149,8 +6314,9 @@
         },
         "empty": {
           "title": "Sin plantillas configuradas",
-          "body": "Configura plantillas de cobranza para que el agente las use en llamadas y mensajes."
+          "body": "No hay plantillas en esta categoría."
         },
+        "notFound": "Esta plantilla no está en el catálogo.",
         "error": {
           "load": "No se pudo cargar las plantillas. Intenta de nuevo.",
           "saveDraft": "No se pudo guardar el borrador. Intenta de nuevo.",

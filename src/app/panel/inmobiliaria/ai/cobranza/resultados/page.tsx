@@ -36,6 +36,7 @@ import {
   PhoneCall,
   Scales,
   TrendDown,
+  TrendUp,
   Wallet,
   Warning,
 } from '@phosphor-icons/react'
@@ -130,6 +131,7 @@ function ResultadosContent() {
 
     // Mora reducida (puntos %, positivo = la mora bajó) — del agregado de recovery.
     const moraReducida = rec?.moraReducedPct ?? null
+    const moraVentanaDias = rec?.moraWindowDays ?? 90
 
     return [
       {
@@ -220,15 +222,32 @@ function ResultadosContent() {
         sublabel: 'Subidos a revisión humana',
       },
       {
+        // El agregado define `moraReducedPct` positivo = la mora BAJÓ. La
+        // tarjeta decía «Mora reducida · Caída del índice de morosidad» con
+        // flecha hacia abajo pasara lo que pasara: con −62,2 estaba anunciando
+        // como buena noticia una subida de 62 puntos de mora. Ahora el signo
+        // manda sobre el título, el ícono y el texto, y el número va en
+        // magnitud para que no se lea dos veces la dirección.
         key: 'mora-reducida',
-        label: 'Mora reducida',
-        icon: TrendDown,
+        label:
+          moraReducida == null || moraReducida === 0
+            ? 'Variación de mora'
+            : moraReducida > 0
+              ? 'Mora reducida'
+              : 'Mora aumentada',
+        icon: moraReducida != null && moraReducida < 0 ? TrendUp : TrendDown,
         value:
-          moraReducida != null ? `${formatNumber(moraReducida)} pts` : null,
-        sublabel:
           moraReducida != null
-            ? 'Caída del índice de morosidad'
-            : 'Aún sin variación de mora',
+            ? `${formatNumber(Math.abs(moraReducida))} pts`
+            : null,
+        sublabel:
+          moraReducida == null
+            ? 'Aún sin variación de mora'
+            : moraReducida === 0
+              ? `Sin cambio en ${moraVentanaDias} días`
+              : moraReducida > 0
+                ? `Bajó en ${moraVentanaDias} días`
+                : `Subió en ${moraVentanaDias} días`,
       },
       {
         key: 'ahorro-operativo',

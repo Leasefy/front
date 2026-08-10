@@ -52,6 +52,8 @@ import {
   useInboxThread,
   backendLabelToGrupo,
 } from '@/lib/hooks/cobranza/use-inbox'
+import { ManualWAModal } from '@/components/inmobiliaria/cobranza/intervention/ManualWAModal'
+import { PauseModal } from '@/components/inmobiliaria/cobranza/intervention/PauseModal'
 
 const BASE = '/panel/inmobiliaria/ai/cobranza'
 const LLAMADAS_HREF = `${BASE}/llamadas`
@@ -74,13 +76,27 @@ function InboxContent() {
   // FUENTE: endpoint unificado de inbox del agente (GET /cobranza/inbox).
   // FAIL-SOFT: si el backend no está desplegado responde vacío/404 → este hook
   // degrada a 0 hilos y la página cae a su <EmptyState>, nunca rompe.
-  const { groups, totalThreads, totalUnread, markRead } = useCobranzaInbox()
+  const { groups, totalThreads, totalUnread, markRead, refetch } = useCobranzaInbox()
 
   // Hilo abierto (master-detail). null = ninguno seleccionado.
   const [openThreadId, setOpenThreadId] = useState<string | null>(null)
   const { data: threadDetail, isLoading: threadLoading } =
     useInboxThread(openThreadId)
   const [marcandoLeido, setMarcandoLeido] = useState(false)
+
+  /**
+   * Deudor al que se le está respondiendo. El envío va por `ManualWAModal`
+   * (POST /cobranza/debtors/:debtorId/wa-send), el mismo camino que usa la
+   * ficha del deudor: sólo plantillas aprobadas, y sólo porque una persona
+   * eligió y envió.
+   */
+  const [responderA, setResponderA] = useState<string | null>(null)
+
+  /**
+   * Deudor sobre el que se está tomando control: pausar al agente para
+   * atenderlo una persona (POST /cobranza/debtors/:debtorId/pause).
+   */
+  const [tomarControlDe, setTomarControlDe] = useState<string | null>(null)
 
   const recibido = (iso: string | null | undefined): string | null =>
     iso ? formatRelativeTime(iso, locale) : null
@@ -149,7 +165,10 @@ function InboxContent() {
     const partes: string[] = []
     for (const g of INBOX_GRUPOS) {
       const n = counts[g]
-      if (n > 0) partes.push(`${n} ${INBOX_GRUPO_META[g].label.toLowerCase()}`)
+      if (n > 0) {
+        const meta = INBOX_GRUPO_META[g]
+        partes.push(`${n} ${(n === 1 ? meta.singular : meta.label).toLowerCase()}`)
+      }
     }
     const desglose = partes.length > 0 ? ` ${partes.join(', ')}.` : ''
     const sinLeer =
@@ -250,6 +269,9 @@ function InboxContent() {
                     onOpenThread={() =>
                       setOpenThreadId(open ? null : it.key)
                     }
+                    onTomarControl={
+                      it.debtorId ? () => setTomarControlDe(it.debtorId) : undefined
+                    }
                   />
                 </ul>
                 {/* Panel de conversación con los mensajes REALES del hilo. */}
@@ -262,6 +284,9 @@ function InboxContent() {
                       marcandoLeido={marcandoLeido}
                       unread={unreadByThread.get(it.key) ?? false}
                       formatRecibido={(iso) => formatRelativeTime(iso, locale)}
+                      onResponder={
+                        it.debtorId ? () => setResponderA(it.debtorId) : undefined
+                      }
                     />
                   </div>
                 )}
@@ -313,15 +338,40 @@ function InboxContent() {
         </Link>
       </section>
 
-      {/* Nota honesta de alcance de la fuente (T-323) */}
+      {/* Nota honesta de alcance de la fuente */}
       <p className="text-xs text-fg-muted leading-relaxed max-w-2xl">
-        Responder, Tomar control y Aprobar respuesta sugerida estarán
-        disponibles cuando exista el envío desde el inbox. Por ahora la
-        conversación es de solo lectura (marcar leído no contacta al inquilino).
-        Los mensajes sin entender, las disputas y los que requieren humano nunca
-        se responden automáticamente. Un acuerdo siempre requiere tu aprobación
-        explícita.
+        Responder envía una plantilla aprobada por WhatsApp, y sale sólo porque
+        vos la elegiste. Los mensajes sin entender, las disputas y los que
+        requieren humano nunca se responden automáticamente. Un acuerdo siempre
+        requiere tu aprobación explícita.
       </p>
+
+      {responderA && (
+        <ManualWAModal
+          open
+          onClose={() => setResponderA(null)}
+          debtorId={responderA}
+          debtorName=""
+          prefill={{}}
+          onSuccess={() => {
+            setResponderA(null)
+            void refetch()
+          }}
+        />
+      )}
+
+      {tomarControlDe && (
+        <PauseModal
+          open
+          onClose={() => setTomarControlDe(null)}
+          debtorId={tomarControlDe}
+          debtorName=""
+          onSuccess={() => {
+            setTomarControlDe(null)
+            void refetch()
+          }}
+        />
+      )}
     </main>
   )
 }

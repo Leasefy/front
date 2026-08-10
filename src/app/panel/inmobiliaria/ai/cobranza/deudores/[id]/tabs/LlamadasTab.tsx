@@ -54,7 +54,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
         {Array.from({ length: 4 }, (_, i) => (
           <div
             key={i}
-            className="h-12 bg-neutral-100 dark:bg-neutral-800 rounded-sm animate-pulse"
+            className="h-12 bg-surface-muted rounded-sm animate-pulse"
           />
         ))}
       </div>
@@ -83,8 +83,8 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
   const calls = data?.calls ?? []
   if (calls.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+      <div className="rounded-md border border-dashed border-border p-8 text-center">
+        <p className="text-sm text-fg-muted">
           {t('inmobiliaria.ai.cobranza.detail.llamadas.empty')}
         </p>
       </div>
@@ -98,9 +98,9 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
   return (
     <>
       {/* md+ table */}
-      <div className="hidden md:block overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-          <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+      <div className="hidden md:block overflow-x-auto rounded-md border border-border bg-surface">
+        <Table className="min-w-full divide-y divide-border text-sm">
+          <TableHeader className="bg-surface-muted">
             <TableRow>
               <TableHead>
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.startedAt')}
@@ -119,7 +119,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <TableBody className="divide-y divide-border-faint">
             {calls.map((c) => (
               <TableRow
                 key={c.id}
@@ -129,9 +129,9 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') navigate(c.id)
                 }}
-                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
+                className="hover:bg-surface-muted cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                <TableCell className="px-3 py-2 text-xs text-fg">
+                <TableCell className="px-3 py-2 text-xs text-fg-muted">
                   {new Date(c.started_at).toLocaleString(locale)}
                 </TableCell>
                 <TableCell className="px-3 py-2 font-mono text-xs">
@@ -163,15 +163,15 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
             <button
               type="button"
               onClick={() => navigate(c.id)}
-              className="w-full text-left rounded-sm border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2"
+              className="w-full text-left rounded-sm border border-border bg-surface px-3 py-2"
             >
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              <p className="text-xs text-fg-muted">
                 {new Date(c.started_at).toLocaleString(locale)}
               </p>
-              <p className="text-sm font-medium text-neutral-900 dark:text-white mt-0.5">
+              <p className="text-sm font-medium text-fg mt-0.5">
                 {c.status ?? '—'} · {formatDuration(c.duration_seconds)}
               </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+              <p className="text-xs text-fg-muted mt-0.5">
                 QA {c.qa_score?.toFixed(1) ?? '—'} · {c.compliance_flags_count}{' '}
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.compliance')}
               </p>

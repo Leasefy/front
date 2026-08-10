@@ -19,7 +19,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useAuth } from '@/lib/auth'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { paths } from '@/lib/api/generated/agent'
@@ -147,10 +147,7 @@ export function usePaymentsFunnel(
     const qs = buildQs(filters, null)
     const suffix = qs ? `?${qs}` : ''
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/pagos${suffix}`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/pagos${suffix}`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as PaymentsFunnelResponse
       setRows((prev) => {
@@ -207,10 +204,7 @@ export function usePaymentsFunnel(
     setIsLoadingMore(true)
     try {
       const qs = buildQs(filters, nextCursor)
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/pagos?${qs}`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/pagos?${qs}`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as PaymentsFunnelResponse
       setRows((prev) => [...prev, ...json.items])

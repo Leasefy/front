@@ -14,11 +14,11 @@
  *   - "Generar" = POST generate → crea un borrador desde data real de cartera.
  *   - "Aprobar / Enviar" = POST approve (markAsSent) con CONFIRMACIÓN HUMANA.
  *   - "Descargar PDF" = GET pdf; el backend responde 501 hasta que la plantilla
- *     exista → mostramos un estado honesto ("Próximamente").
+ *     exista → mostramos un estado honesto.
  *
- * FAIL-SOFT: el backend nuevo aún no está desplegado (Victor aplica migración).
- *   Si el endpoint responde 404/empty/error, la lista degrada a [] y la pantalla
- *   muestra el reporte de EJEMPLO como vista previa + EmptyState. NUNCA rompe.
+ * FAIL-SOFT: si el endpoint responde 404/empty/error la lista degrada a [] y la
+ *   pantalla muestra SÓLO el estado vacío — nunca un reporte de ejemplo, que se
+ *   lee como cartera propia. NUNCA rompe.
  *
  * T-323: el reporte SIEMPRE requiere aprobación humana explícita antes de enviarse
  * al propietario; nunca se auto-envía ni se auto-escala. "Aprobar / Enviar" sólo
@@ -33,11 +33,8 @@ import Link from 'next/link'
 import {
   Buildings,
   CheckCircle,
-  Clock,
   DownloadSimple,
   FileText,
-  FolderSimple,
-  NotePencil,
   PaperPlaneTilt,
   ShieldCheck,
   UsersThree,
@@ -47,6 +44,10 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Card, CardContent, Spinner } from '@/components/ui'
 import { SegmentedControl, Eyebrow } from '@leasefy/cadence'
+import {
+  DebtorPicker,
+  type PickedDebtor,
+} from '@/components/inmobiliaria/cobranza/DebtorPicker'
 import {
   useOwnerReports,
   type OwnerReport,
@@ -108,8 +109,8 @@ const COP = new Intl.NumberFormat('es-CO', {
   maximumFractionDigits: 0,
 })
 
-// ── Datos de ejemplo (preview) — NO provienen de un hook real ────────────────
-// Marcados claramente como ejemplo en la UI vía la nota de "vista previa".
+// ── Shape que consumen las filas y la vista del reporte ─────────────────────
+// Todo sale del backend: no hay fuente de ejemplo.
 
 interface ReportePreview {
   id: string
@@ -138,47 +139,12 @@ function adaptOwnerReport(r: OwnerReport): ReportePreview {
   }
 }
 
-const REPORTES_EJEMPLO: ReportePreview[] = [
-  {
-    id: 'r-1',
-    propietario: 'María González',
-    inmueble: 'Apartamento Laureles',
-    diasMora: 18,
-    valor: '$2.450.000',
-    estado: 'pendiente',
-  },
-  {
-    id: 'r-2',
-    propietario: 'Carlos Restrepo',
-    inmueble: 'Casa Envigado',
-    diasMora: 9,
-    valor: '$1.800.000',
-    estado: 'borrador',
-  },
-  {
-    id: 'r-3',
-    propietario: 'Inversiones Bolívar S.A.S.',
-    inmueble: 'Local Poblado',
-    diasMora: 32,
-    valor: '$4.100.000',
-    estado: 'enviado',
-  },
-]
-
-// ── Acciones SIN endpoint — botones deshabilitados "Próximamente" ─────────────
-// (enviar/aprobar y descargar PDF SÍ tienen endpoint y se cablean aparte.)
-
-interface AccionDef {
-  key: string
-  label: string
-  icon: React.ComponentType<any>
-}
-
-const ACCIONES_PLACEHOLDER: AccionDef[] = [
-  { key: 'editar', label: 'Editar antes de enviar', icon: NotePencil },
-  { key: 'expediente', label: 'Guardar en expediente', icon: FolderSimple },
-  { key: 'programar', label: 'Programar reporte semanal', icon: Clock },
-]
+// Acá vivían tres botones deshabilitados —«Editar antes de enviar», «Guardar en
+// expediente», «Programar reporte semanal»— con la etiqueta «Próximamente», en
+// CADA fila. Ninguno tiene endpoint (la superficie de owner-reports es list,
+// generate, detalle, approve y pdf: nada más). Tres botones apagados no son una
+// función pendiente, son ruido que promete algo que no existe. Se quitaron; si
+// alguno se construye, se agrega el botón junto con su endpoint.
 
 // ── Fila de la lista de reportes preparados ───────────────────────────────────
 
@@ -236,11 +202,60 @@ function ReporteRow({
 }
 
 // ── Vista del reporte (texto redactado) ───────────────────────────────────────
-// Si el reporte es REAL (trae narrativa del backend), se renderiza esa narrativa.
-// Si es el ejemplo (sin narrativa), se mantiene el cuerpo de muestra original.
+//
+// La narrativa la escribe el backend. Cuando falta, se DICE que falta.
+//
+// Acá vivía un cuerpo de muestra que se pintaba en su lugar: «se realizaron 4
+// gestiones de cobro (2 llamadas y 2 mensajes de WhatsApp). El inquilino
+// prometió pagar el 12 de junio». Ninguno de esos hechos salía de ningún lado
+// —ni las cuatro gestiones, ni el 12 de junio— y como el aviso de «vista previa»
+// dependía de `!reporte.raw`, en un reporte REAL sin narrativa el texto
+// inventado salía SIN aviso. Es un documento que se le manda al dueño del
+// inmueble: no puede tener hechos que nadie midió.
+
+// ── Generar un reporte nuevo ─────────────────────────────────────────────────
+//
+// El endpoint pide un `debtorId`, así que el punto de entrada es elegir al
+// deudor. Vive en el encabezado —no dentro de un reporte— porque generar el
+// PRIMERO es justamente lo que no se podía hacer.
+
+function NuevoReporte({
+  isGenerating,
+  onGenerar,
+}: {
+  isGenerating: boolean
+  onGenerar: (debtorId: string) => void
+}) {
+  const [deudor, setDeudor] = useState<PickedDebtor | null>(null)
+
+  return (
+    <div className="w-full max-w-sm space-y-2">
+      <label
+        htmlFor="reporte-deudor"
+        className="block text-xs font-medium text-fg-muted"
+      >
+        Generar reporte de
+      </label>
+      <DebtorPicker inputId="reporte-deudor" value={deudor} onChange={setDeudor} />
+      <Button
+        size="sm"
+        hideArrow
+        disabled={!deudor || isGenerating}
+        onClick={() => deudor && onGenerar(deudor.id)}
+        title={
+          deudor
+            ? 'Generar el borrador con la cartera del deudor'
+            : 'Elegí un deudor primero'
+        }
+      >
+        {isGenerating ? <Spinner size="sm" variant="current" /> : null}
+        Generar reporte
+      </Button>
+    </div>
+  )
+}
 
 function ReportePreviewCard({ reporte }: { reporte: ReportePreview }) {
-  const esEjemplo = !reporte.raw
   return (
     <Card>
       <CardContent className="p-5 space-y-4">
@@ -264,31 +279,20 @@ function ReportePreviewCard({ reporte }: { reporte: ReportePreview }) {
             <p>{reporte.narrativa}</p>
           ) : (
             <>
+              {/* Los únicos hechos que sí vienen del reporte. */}
               <p>
                 El inquilino del <span className="font-medium">{reporte.inmueble}</span> presenta{' '}
                 <span className="font-medium">{reporte.diasMora} días de mora</span> por un valor de{' '}
                 <span className="font-medium">{reporte.valor}</span>.
               </p>
-              <p>
-                Durante este período se realizaron <span className="font-medium">4 gestiones de cobro</span>{' '}
-                (2 llamadas y 2 mensajes de WhatsApp). El inquilino prometió pagar el{' '}
-                <span className="font-medium">12 de junio</span>, pero a la fecha no se ha recibido el pago.
-              </p>
-              <p>
-                <span className="font-medium">Recomendación:</span> continuar con la gestión de cobranza
-                ordinaria una semana más. Si no hay pago, evaluar el envío de comunicación prejurídica, que
-                requerirá su autorización como propietario.
+              <p className="text-fg-muted">
+                Todavía no hay una narrativa redactada para este reporte. Volvé a
+                generarlo para que el agente componga el resumen de gestiones y la
+                recomendación con la información de cartera del deudor.
               </p>
             </>
           )}
         </div>
-
-        {esEjemplo && (
-          <p className="text-xs text-fg-muted">
-            Vista previa de ejemplo del formato. Generá un reporte real para ver la
-            narrativa compuesta con la información de cartera del deudor.
-          </p>
-        )}
 
         {/* Nota de aprobación humana (T-323) */}
         <div className="flex items-start gap-2 rounded-lg bg-primary-soft p-3 text-xs text-fg">
@@ -334,9 +338,12 @@ function ReportesPropietariosContent() {
     [reports],
   )
 
-  // ¿Hay backend con data? Si no, caemos al ejemplo (preview/EmptyState).
+
+  // La única fuente es el backend. Antes había tres reportes de ejemplo
+  // quemados como fallback: se veían como cartera propia (nombre del
+  // propietario, mora, monto, estado de aprobación) y no lo eran.
   const hayReales = realReportes.length > 0
-  const fuente = hayReales ? realReportes : REPORTES_EJEMPLO
+  const fuente = realReportes
 
   const estadoOptions = [
     { value: 'todos', label: 'Todos' },
@@ -346,7 +353,7 @@ function ReportesPropietariosContent() {
   ]
   const [estadoFilter, setEstadoFilter] = useState<string>('todos')
 
-  const [selectedId, setSelectedId] = useState<string>(REPORTES_EJEMPLO[0].id)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   // Estado honesto del PDF (501 → "Próximamente").
   const [pdfMsg, setPdfMsg] = useState<string | null>(null)
@@ -358,16 +365,21 @@ function ReportesPropietariosContent() {
       ? fuente
       : fuente.filter((r) => r.estado === estadoFilter)
 
-  // Selección segura: si el id elegido ya no está en la fuente visible/actual,
-  // caemos al primero disponible.
-  const seleccionado =
-    fuente.find((r) => r.id === selectedId) ??
-    visibles[0] ??
-    fuente[0] ??
-    REPORTES_EJEMPLO[0]
+  /**
+   * Selección segura: si el id elegido ya no está en la fuente, caemos al
+   * primero disponible.
+   *
+   * OJO con el tipo: `visibles[0]` se tipa como `ReportePreview` aunque el
+   * array esté vacío (no hay `noUncheckedIndexedAccess`), así que TypeScript
+   * cree que esto nunca es null y NO avisa de los accesos de abajo. En runtime
+   * sí puede ser null — por eso el render se corta antes con `if
+   * (!seleccionado)`, no con optional chaining disperso.
+   */
+  const seleccionado: ReportePreview | null =
+    fuente.find((r) => r.id === selectedId) ?? visibles[0] ?? fuente[0] ?? null
 
-  const esReal = Boolean(seleccionado.raw)
-  const yaEnviado = seleccionado.estado === 'enviado'
+  const esReal = Boolean(seleccionado?.raw)
+  const yaEnviado = seleccionado?.estado === 'enviado'
 
   // El filtro segmentado también pide al backend la lista filtrada (camino real).
   const onFilterChange = (value: string) => {
@@ -377,8 +389,18 @@ function ReportesPropietariosContent() {
     void refetch(FILTER_TO_STATUS[value])
   }
 
-  // ── Acción REAL: generar un borrador (POST generate) ─────────────────────────
-  // Necesita un debtorId UUID real → solo disponible desde un reporte real.
+  // ── Acción REAL: generar un reporte para CUALQUIER deudor ────────────────────
+  const onGenerarParaDeudor = async (debtorId: string) => {
+    setActionMsg(null)
+    const created = await generate({ debtorId })
+    if (created) {
+      setSelectedId(created.id)
+      setEstadoFilter('todos')
+      setActionMsg('Borrador generado con la información de cartera del deudor.')
+    }
+  }
+
+  // ── Acción REAL: regenerar el borrador del reporte abierto ───────────────────
   const onGenerar = async () => {
     const debtorId = seleccionado.raw?.debtorId
     if (!debtorId) return
@@ -400,7 +422,7 @@ function ReportesPropietariosContent() {
     if (!esReal || yaEnviado) return
     // Confirmación humana explícita antes de marcar como enviado al propietario.
     const ok = globalThis.confirm(
-      `¿Confirmas que revisaste este reporte y quieres enviarlo a ${seleccionado.propietario}? Esta acción lo marca como enviado al propietario.`,
+      `¿Confirmás que revisaste este reporte y querés enviarlo a ${seleccionado.propietario}? Esta acción lo marca como enviado al propietario.`,
     )
     if (!ok) return
     setActionMsg(null)
@@ -423,34 +445,53 @@ function ReportesPropietariosContent() {
   return (
     <main className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-fg">
-          Reportes a propietarios
-        </h1>
-        <p className="text-sm text-fg-muted max-w-2xl">
-          Resúmenes de gestión de cobranza por propietario: estado de mora, gestiones realizadas y
-          recomendación, listos para que los revises y envíes al dueño del inmueble.
-        </p>
-      </header>
-
-      {/* Aviso — solo cuando aún no hay reportes reales (estamos en preview) */}
-      {!hayReales && (
-        <div className="flex items-start gap-2 rounded-xl border border-border bg-surface-muted p-3 text-sm text-fg-muted">
-          <FileText className="w-4 h-4 shrink-0 text-fg-muted mt-0.5" weight="duotone" aria-hidden="true" />
-          <p>
-            Vista previa del formato. Cuando haya reportes de gestión generados, aparecerán acá.
-            Mientras tanto, puedes gestionar tus propietarios en{' '}
-            <Link
-              href={PROPIETARIOS_HREF}
-              className="text-primary underline-offset-4 hover:underline font-medium"
-            >
-              Propietarios
-            </Link>
-            .
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+            Reportes a propietarios
+          </h1>
+          <p className="text-sm text-fg-muted max-w-2xl">
+            Resúmenes de gestión de cobranza por propietario: estado de mora, gestiones realizadas y
+            recomendación, listos para que los revises y envíes al dueño del inmueble.
           </p>
         </div>
+        <NuevoReporte isGenerating={isGenerating} onGenerar={onGenerarParaDeudor} />
+      </header>
+
+      {generateError && (
+        <p className="text-sm text-danger" role="alert">
+          No pudimos generar el reporte. Intentá de nuevo.
+        </p>
       )}
 
+      {/*
+        Sin reportes reales: SOLO el estado vacío.
+
+        Antes se caía a tres reportes de ejemplo quemados en el archivo —
+        «María González · Apartamento Laureles · 18 días de mora · $2.450.000 ·
+        Pendiente aprobación»— con un aviso arriba diciendo que era una vista
+        previa. Nadie lee el aviso: lo que se ve es el nombre de una persona,
+        una deuda y un estado de aprobación que no existen. Un ejemplo con
+        forma de dato ES un dato para quien lo mira.
+
+        Y el estado vacío mandaba a Propietarios: el único botón para GENERAR el
+        primer reporte vivía dentro de un reporte ya seleccionado, así que con la
+        lista vacía —el estado inicial de toda inmobiliaria— la pantalla no podía
+        producir jamás su primer reporte. Ahora el camino de salida es generarlo.
+      */}
+      {isLoading && !hayReales ? (
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-4 text-sm text-fg-muted">
+          <Spinner size="sm" variant="muted" className="shrink-0" />
+          Cargando reportes…
+        </div>
+      ) : !seleccionado ? (
+        <EmptyState
+          icon={FileText}
+          title="Todavía no hay reportes de gestión"
+          description="Elegí un deudor arriba y generá el primero: el agente redacta el estado de mora, las gestiones hechas y una recomendación, para que lo revises y lo apruebes antes de enviárselo al propietario."
+          primaryCta={{ label: 'Ver mis propietarios', href: PROPIETARIOS_HREF }}
+        />
+      ) : (
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         {/* Columna izquierda — lista de reportes preparados */}
         <section className="space-y-3" aria-label="Reportes preparados">
@@ -568,24 +609,6 @@ function ReportesPropietariosContent() {
                   Descargar PDF
                 </Button>
 
-                {/* Acciones sin endpoint — placeholder honesto "Próximamente" */}
-                {ACCIONES_PLACEHOLDER.map((accion) => {
-                  const AccIcon = accion.icon
-                  return (
-                    <Button
-                      key={accion.key}
-                      variant="outline"
-                      size="sm"
-                      hideArrow
-                      disabled
-                      title="Próximamente"
-                      aria-label={`${accion.label} (próximamente)`}
-                    >
-                      <AccIcon className="w-3.5 h-3.5" aria-hidden="true" />
-                      {accion.label}
-                    </Button>
-                  )
-                })}
               </div>
 
               {/* Feedback honesto de las acciones */}
@@ -611,14 +634,7 @@ function ReportesPropietariosContent() {
           </Card>
         </section>
       </div>
-
-      {/* Cierre — cross-link a la superficie real de propietarios */}
-      <EmptyState
-        icon={UsersThree}
-        title="¿Buscás un propietario en particular?"
-        description="Gestioná los datos de contacto, inmuebles y comunicaciones de tus propietarios desde su sección dedicada."
-        primaryCta={{ label: 'Ir a Propietarios', href: PROPIETARIOS_HREF }}
-      />
+      )}
     </main>
   )
 }

@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-<<<<<<< HEAD
 import {
   apiClient,
   ApiError,
@@ -8,25 +7,12 @@ import {
 } from './client'
 
 // ---------------------------------------------------------------------------
-// Stub global fetch so we can drive status/body per test.
+// Este archivo llegó a `develop` en 13b40359 CON los marcadores de conflicto
+// adentro, así que no parseaba y la suite entera del archivo no corría. Eran
+// dos suites independientes —el 401 `SESSION_SUPERSEDED` y el respaldo del
+// 402— que se pisaron al fusionar. Acá conviven: se unieron los helpers y los
+// hooks, sin quitarle un test a ninguna.
 // ---------------------------------------------------------------------------
-
-function stubFetch(status: number, body: unknown) {
-  const res = {
-    status,
-    ok: status >= 200 && status < 300,
-    json: async () => body,
-    text: async () => (body == null ? '' : JSON.stringify(body)),
-    blob: async () => new Blob(),
-  }
-  return vi.fn().mockResolvedValue(res as unknown as Response)
-}
-
-beforeEach(() => {
-  setAccessToken('token-abc')
-  setUnauthorizedHandler(null)
-=======
-import { apiClient, ApiError } from './client'
 
 const realLocation = window.location
 
@@ -38,6 +24,19 @@ function setLocation(pathname: string) {
   })
 }
 
+/** Stub de `fetch` vía `vi.stubGlobal` — usado por la suite del 401. */
+function stubFetch(status: number, body: unknown) {
+  const res = {
+    status,
+    ok: status >= 200 && status < 300,
+    json: async () => body,
+    text: async () => (body == null ? '' : JSON.stringify(body)),
+    blob: async () => new Blob(),
+  }
+  return vi.fn().mockResolvedValue(res as unknown as Response)
+}
+
+/** Stub de `fetch` asignando `global.fetch` — usado por la suite del 402. */
 function mockFetch(status: number, body: unknown = {}) {
   global.fetch = vi.fn().mockResolvedValue({
     status,
@@ -48,14 +47,19 @@ function mockFetch(status: number, body: unknown = {}) {
 }
 
 beforeEach(() => {
+  setAccessToken('token-abc')
+  setUnauthorizedHandler(null)
   setLocation('/panel/inmobiliaria/dashboard')
->>>>>>> 13b40359396a512482c95389a446af7e7ff3a125
 })
 
 afterEach(() => {
   vi.restoreAllMocks()
-<<<<<<< HEAD
   setUnauthorizedHandler(null)
+  Object.defineProperty(window, 'location', {
+    value: realLocation,
+    writable: true,
+    configurable: true,
+  })
 })
 
 describe('apiClient 401 handling', () => {
@@ -88,11 +92,6 @@ describe('apiClient 401 handling', () => {
     vi.stubGlobal('fetch', stubFetch(401, { message: 'User not found' }))
     const err = (await apiClient.get('/users/me').catch((e) => e)) as ApiError
     expect(err.message).toBe('User not found')
-=======
-  Object.defineProperty(window, 'location', {
-    value: realLocation,
-    writable: true,
-    configurable: true,
   })
 })
 
@@ -140,6 +139,5 @@ describe('apiClient 402 backstop', () => {
 
     await expect(apiClient.get('/inmobiliaria/cobros')).resolves.toEqual({ ok: true })
     expect(window.location.href).toBe('')
->>>>>>> 13b40359396a512482c95389a446af7e7ff3a125
   })
 })

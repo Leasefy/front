@@ -464,35 +464,12 @@ function CobranzaConfiguracionContent() {
         )}
       </div>
 
-      {/* ① El acuerdo general se MUDÓ a «Acuerdos de pago» ────────────────
-          Vivía acá y el enlace desde Acuerdos traía hasta esta pantalla. Pero
-          el marco general de los acuerdos no es un ajuste del sistema: es el
-          acuerdo más importante que tiene la inmobiliaria, y se arma junto a
-          los acuerdos puntuales. Ahora se edita en `AcuerdosGeneralesCard`,
-          dentro de /cobranza/acuerdos. */}
-      <section
-        data-testid="section-acuerdo-puntero"
-        className="rounded-xl border border-border bg-card p-6 space-y-3"
-        aria-labelledby="heading-acuerdo-puntero"
-      >
-        <div>
-          <h2 id="heading-acuerdo-puntero" className="text-xl font-semibold text-foreground">
-            Acuerdo general
-          </h2>
-          <p className="text-sm text-fg-muted mt-1">
-            Lo que el agente puede aceptar por su cuenta al negociar se define junto
-            a los acuerdos, no acá.
-          </p>
-        </div>
-        <div className="border-t border-border-faint" />
-        <Button asChild variant="secondary" size="sm" hideArrow>
-          <Link href="/panel/inmobiliaria/ai/cobranza/acuerdos">
-            Ir a Acuerdos de pago
-          </Link>
-        </Button>
-      </section>
+      {/* El acuerdo general NO vive acá — ni siquiera como puntero. Se arma en
+          /cobranza/acuerdos, junto a los acuerdos puntuales. Dejar una tarjeta
+          con el título «Acuerdo general» acá seguía diciendo que esto era su
+          lugar. Ver la nota al pie del archivo. */}
 
-      {/* ①b Facturación e integraciones ──────────────────────────────────────
+      {/* ① Facturación e integraciones ──────────────────────────────────────
           Vivían dentro de «Negociación», bajo el subtítulo «Límites que el
           agente puede ofrecer al negociar con un deudor». No son eso: son cómo
           nos paga la inmobiliaria y con qué sistemas hablamos. Comparten el

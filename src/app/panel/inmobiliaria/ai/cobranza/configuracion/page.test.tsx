@@ -184,8 +184,6 @@ function byTestId(testId: string) {
 describe('<CobranzaConfiguracionPage> — layout', () => {
   it('renders the config sections that survived', () => {
     render()
-    // El acuerdo general se mudó a /cobranza/acuerdos; queda un puntero.
-    expect(byTestId('section-acuerdo-puntero')).toBeTruthy()
     expect(byTestId('section-comercial')).toBeTruthy()
     expect(byTestId('section-autonomia')).toBeTruthy()
     expect(byTestId('section-horario')).toBeTruthy()
@@ -199,13 +197,14 @@ describe('<CobranzaConfiguracionPage> — layout', () => {
     expect(byTestId('save-cadencia')).toBeFalsy()
   })
 
-  it('el acuerdo general ya no se edita acá', () => {
+  it('el acuerdo general no aparece acá, ni siquiera como puntero', () => {
     render()
     expect(byTestId('field-maxDiscountPct')).toBeFalsy()
     expect(byTestId('save-negociacion')).toBeFalsy()
-    // …pero deja cómo llegar a donde sí se edita.
-    const puntero = byTestId('section-acuerdo-puntero') as HTMLElement
-    expect(puntero.querySelector('a[href*="/cobranza/acuerdos"]')).toBeTruthy()
+    expect(byTestId('section-acuerdo-puntero')).toBeFalsy()
+    // Una tarjeta titulada «Acuerdo general» seguiría diciendo que este es su lugar.
+    const titulos = [...container.querySelectorAll('h2')].map((h) => h.textContent)
+    expect(titulos).not.toContain('Acuerdo general')
   })
 
   it('renders the fixed Ley 2300 schedule with no editable inputs', () => {

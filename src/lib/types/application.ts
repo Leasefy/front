@@ -208,11 +208,11 @@ export interface Application {
 
 export const WIZARD_STEPS = [
   { id: 1, key: 'personal', label: 'Personal', description: 'Datos personales' },
-  { id: 2, key: 'employment', label: 'Empleo', description: 'Informacion laboral' },
+  { id: 2, key: 'employment', label: 'Empleo', description: 'Información laboral' },
   { id: 3, key: 'income', label: 'Ingresos', description: 'Capacidad de pago' },
   { id: 4, key: 'references', label: 'Referencias', description: 'Referencias personales' },
   { id: 5, key: 'documents', label: 'Documentos', description: 'Documentos requeridos' },
-  { id: 6, key: 'review', label: 'Revision', description: 'Revisar y enviar' },
+  { id: 6, key: 'review', label: 'Revisión', description: 'Revisar y enviar' },
 ] as const;
 
 export type WizardStepKey = typeof WIZARD_STEPS[number]['key'];

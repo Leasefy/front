@@ -9225,8 +9225,7 @@
       },
       "proceso": {
         "title": "Estamos consultando a las aseguradoras",
-        "desc": "Le preguntamos a todas con las que trabajamos, no solo a una. Puede tomar unos minutos.",
-        "liberar": "Te avisamos por correo apenas tengamos respuesta — puedes cerrar esta página tranquilo."
+        "desc": "Le preguntamos a todas con las que trabajamos, no solo a una. Puede tomar unos minutos."
       },
       "vacio": {
         "title": "Todavía no tienes una aprobación",
@@ -9405,6 +9404,9 @@
       "cargando": "Buscando propiedades…",
       "sinTope": "Tu aprobación está lista. Cuando confirmemos tu tope te mostramos lo que va contigo.",
       "puedesTomar": "que puedes tomar con tu aprobación",
+      "ocultasPrefijo": "No te mostramos",
+      "ocultasSingular": "propiedad que se pasa de tu tope.",
+      "ocultasPlural": "propiedades que se pasan de tu tope.",
       "vacio": "Ahora mismo no hay propiedades dentro de tu tope",
       "vacioTexto": "Aparecen nuevas seguido. Mientras tanto puedes ver el catálogo completo.",
       "verTodo": "Ver todas las propiedades"

@@ -9224,8 +9224,7 @@
       },
       "proceso": {
         "title": "We're checking with the insurers",
-        "desc": "We're asking every insurer we work with, not just one. This can take a few minutes.",
-        "liberar": "We'll email you as soon as we hear back — feel free to close this page."
+        "desc": "We're asking every insurer we work with, not just one. This can take a few minutes."
       },
       "vacio": {
         "title": "You don't have an approval yet",
@@ -9404,6 +9403,9 @@
       "cargando": "Looking for properties…",
       "sinTope": "Your approval is ready. Once we confirm your cap we'll show you what works for you.",
       "puedesTomar": "you can take with your approval",
+      "ocultasPrefijo": "We're not showing",
+      "ocultasSingular": "property that goes above your cap.",
+      "ocultasPlural": "properties that go above your cap.",
       "vacio": "There are no properties within your cap right now",
       "vacioTexto": "New ones come up often. Meanwhile you can browse the full catalog.",
       "verTodo": "See all properties"

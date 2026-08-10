@@ -20,7 +20,8 @@
  *   dice qué podés **tomar**, y alcanza de sobra para armar un catálogo.
  *
  * Acá no se calcula compatibilidad ni probabilidad: se muestran las propiedades
- * y se marca lo que se pasa del tope. Ni más ni menos de lo que sabemos.
+ * que caben en el tope y se dice cuántas quedaron fuera. Ni más ni menos de lo
+ * que sabemos.
  */
 
 import Link from 'next/link'
@@ -66,6 +67,16 @@ export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }
 
   const ordenadas = [...dentroDelTope].sort((a, b) => a.monthlyRent - b.monthlyRent)
 
+  /*
+   * Ocultamos, pero lo decimos — misma regla que `/inquilino/para-ti`.
+   *
+   * Sin esto el catálogo encoge en silencio y se lee como «no hay nada», que
+   * es una cosa muy distinta a «hay, pero se pasan de tu tope». Y esta es la
+   * pantalla que ve quien tiene aprobación pero todavía no perfil verificado:
+   * el camino más común, justo el que se quedaba sin el aviso.
+   */
+  const ocultasPorTope = disponibles.length - dentroDelTope.length
+
   return (
     <div className="min-h-screen bg-plan-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
@@ -89,6 +100,16 @@ export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }
                 : tf(`${NS}.sinTope`, 'Tu aprobación está lista. Cuando confirmemos tu tope te mostramos lo que va contigo.')}
           </p>
         </header>
+
+        {!isLoading && ocultasPorTope > 0 && (
+          <p className="mb-4 text-sm text-fg-muted">
+            {tf(`${NS}.ocultasPrefijo`, 'No te mostramos')}{' '}
+            <span className="font-mono tabular-nums">{ocultasPorTope}</span>{' '}
+            {ocultasPorTope === 1
+              ? tf(`${NS}.ocultasSingular`, 'propiedad que se pasa de tu tope.')
+              : tf(`${NS}.ocultasPlural`, 'propiedades que se pasan de tu tope.')}
+          </p>
+        )}
 
         <TopeAprobadoBanner aprobacion={aprobacion} vigente className="mb-4" />
         <QueSignificaPostularse className="mb-6" />

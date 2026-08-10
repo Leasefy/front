@@ -165,7 +165,10 @@ function InboxContent() {
     const partes: string[] = []
     for (const g of INBOX_GRUPOS) {
       const n = counts[g]
-      if (n > 0) partes.push(`${n} ${INBOX_GRUPO_META[g].label.toLowerCase()}`)
+      if (n > 0) {
+        const meta = INBOX_GRUPO_META[g]
+        partes.push(`${n} ${(n === 1 ? meta.singular : meta.label).toLowerCase()}`)
+      }
     }
     const desglose = partes.length > 0 ? ` ${partes.join(', ')}.` : ''
     const sinLeer =

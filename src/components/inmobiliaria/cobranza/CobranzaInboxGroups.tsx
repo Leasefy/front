@@ -69,6 +69,13 @@ export const INBOX_GRUPO_META: Record<
   InboxGrupo,
   {
     label: string
+    /**
+     * La misma etiqueta en singular. El resumen del inbox compone
+     * `${n} ${label}` y con n=1 salía «1 nuevas respuestas». No se deriva
+     * quitando la «s»: «Disputas»→«Disputa» sí, pero «Requiere humano» no
+     * cambia y «Mensajes sin entender» flexiona en la primera palabra.
+     */
+    singular: string
     icon: Icon
     /** Clases del badge de grupo (pill no interactivo) — solo tokens DS. */
     badge: { bg: string; text: string; ring: string }
@@ -87,24 +94,28 @@ export const INBOX_GRUPO_META: Record<
 > = {
   nuevas: {
     label: 'Nuevas respuestas',
+    singular: 'Nueva respuesta',
     icon: ChatCircleDots,
     badge: { bg: 'bg-primary-soft', text: 'text-primary', ring: 'ring-primary/30' },
     autoResponseAllowed: true,
   },
   promesas: {
     label: 'Promesas detectadas',
+    singular: 'Promesa detectada',
     icon: Handshake,
     badge: { bg: 'bg-primary-soft', text: 'text-primary', ring: 'ring-primary/30' },
     autoResponseAllowed: true,
   },
   pagos: {
     label: 'Pagos reportados',
+    singular: 'Pago reportado',
     icon: CurrencyCircleDollar,
     badge: { bg: 'bg-success-soft', text: 'text-success', ring: 'ring-success/30' },
     autoResponseAllowed: true,
   },
   acuerdos: {
     label: 'Solicitudes de acuerdo',
+    singular: 'Solicitud de acuerdo',
     icon: FileText,
     badge: { bg: 'bg-warning-soft', text: 'text-warning', ring: 'ring-warning/30' },
     // Un acuerdo SIEMPRE requiere aprobación humana explícita; aquí solo se abre
@@ -113,6 +124,7 @@ export const INBOX_GRUPO_META: Record<
   },
   disputas: {
     label: 'Disputas',
+    singular: 'Disputa',
     icon: Warning,
     badge: { bg: 'bg-danger-soft', text: 'text-danger', ring: 'ring-danger/30' },
     // Una disputa es sensible: nunca se auto-responde, la atiende un humano.
@@ -120,12 +132,14 @@ export const INBOX_GRUPO_META: Record<
   },
   sin_entender: {
     label: 'Mensajes sin entender',
+    singular: 'Mensaje sin entender',
     icon: Question,
     badge: { bg: 'bg-surface-muted', text: 'text-fg-muted', ring: 'ring-border' },
     autoResponseAllowed: false,
   },
   requiere_humano: {
     label: 'Requiere humano',
+    singular: 'Requiere humano',
     icon: UserGear,
     badge: { bg: 'bg-danger-soft', text: 'text-danger', ring: 'ring-danger/30' },
     autoResponseAllowed: false,

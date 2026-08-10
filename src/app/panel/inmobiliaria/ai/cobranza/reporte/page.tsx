@@ -271,16 +271,20 @@ function ReporteViewerContent() {
                 <TableBody>
                   {data.top_debtors.slice(0, topN).map((d) => (
                     <TableRow key={d.debtor_id} className="border-b border-border last:border-0">
-                      {/* `debtor_id_masked` no existe en la respuesta — el
-                          agente sólo manda `debtor_id`. O sea que esto le
-                          entregaba a <Mask field="cedula"> un UUID crudo de 36
-                          caracteres y lo presentaba con candado, como si fuera
-                          una cédula enmascarada. No es una cédula ni está
-                          enmascarado: es la llave interna de la fila. Se muestra
-                          el prefijo, que es lo único que sirve — casar la fila
-                          con su caso o con la auditoría. */}
-                      <TableCell className="px-3 py-2 font-mono text-xs text-foreground">
-                        {toDebtorRef(d.debtor_id_masked ?? d.debtor_id)}
+                      {/* El agente SÍ manda `debtor_name` (JOIN agregado el
+                          2026-08-10); esta tabla se quedó pintando la
+                          referencia y mostraba «CD06141F» en la columna
+                          «Deudor». Un prefijo de UUID no identifica a nadie:
+                          para decidir a quién llamar primero hace falta el
+                          nombre. La referencia queda de respaldo, para un
+                          payload cacheado sin el JOIN — nunca un nombre
+                          inventado. */}
+                      <TableCell className="px-3 py-2 text-xs text-foreground">
+                        {d.debtor_name?.trim() || (
+                          <span className="font-mono text-muted-foreground">
+                            {toDebtorRef(d.debtor_id_masked ?? d.debtor_id)}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                         {d.dpd}

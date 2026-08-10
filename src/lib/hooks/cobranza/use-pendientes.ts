@@ -42,6 +42,7 @@ import {
   type DailyReportResponse,
 } from '@/lib/hooks/cobranza/use-daily-report'
 import { useCobranzaInbox } from '@/lib/hooks/cobranza/use-inbox'
+import { escalationReasonLabel } from '@/lib/cobranza/call-vocab'
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -172,8 +173,14 @@ export function usePendientes(): UsePendientesResult {
         key: `esc-${esc.id}`,
         grupo: 'escalaciones',
         prioridad: escalationUrgencyToPrioridad(esc.urgency),
-        titulo: esc.debtor_id_masked ?? esc.debtor_id,
-        reason: esc.reason,
+        // NO cae al `debtor_id`: un UUID en el renglón del nombre no le dice
+        // nada al operador y se lee como un dato roto. `GET /cobranza/escalations`
+        // (y su detalle) devuelven SÓLO el id — son las únicas dos de las seis
+        // fuentes de esta pantalla sin nombre. Mientras el agente no lo mande,
+        // el motivo traducido es la información real que sí tenemos.
+        titulo: esc.debtor_id_masked ?? escalationReasonLabel(esc.reason) ?? '',
+        // Sin duplicar: si el título ya es el motivo, el renglón de abajo sobra.
+        reason: esc.debtor_id_masked ? escalationReasonLabel(esc.reason) : null,
         kind: null,
         montoCop: null,
         dueDate: null,

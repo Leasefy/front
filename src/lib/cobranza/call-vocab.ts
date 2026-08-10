@@ -131,6 +131,18 @@ const PAYMENT_CHANNEL_LABELS: Record<string, string> = {
   efectivo: 'Efectivo',
 }
 
+/**
+ * Motivos de escalación que el agente escribe como slug
+ * (`persist-escalation-from-verdict.ts`). NO son un enum cerrado: la tool
+ * `escalate-to-human` acepta `z.string().min(1).max(500)`, así que el motivo
+ * también puede llegar como frase escrita. Por eso esto NO usa `lookup()`
+ * —ver `escalationReasonLabel`.
+ */
+const ESCALATION_REASON_LABELS: Record<string, string> = {
+  forced_transition_escalate_human: 'El agente pidió pasar a una persona',
+  fraud_signal_confirmed: 'Señal de fraude confirmada',
+}
+
 // ── Lookup ───────────────────────────────────────────────────────────────────
 
 /**
@@ -178,4 +190,25 @@ export function outcomeBadgeVariant(
     default:
       return 'secondary'
   }
+}
+
+/**
+ * Motivo de una escalación, listo para mostrar.
+ *
+ * Tres casos, porque el campo tiene tres orígenes distintos:
+ *   1. slug conocido      → su frase en español
+ *   2. slug desconocido   → marcado, para que se vea que falta traducirlo
+ *   3. frase escrita      → tal cual (la tool acepta texto libre)
+ *
+ * Se distingue por la forma: sólo `[a-z0-9_]` es un slug. Sin esto, un motivo
+ * escrito por el agente saldría envuelto en «Otro (…)», y un slug saldría en
+ * inglés en la mitad de una pantalla en español.
+ */
+export function escalationReasonLabel(reason: string | null | undefined): string | null {
+  if (!reason) return null
+  const limpio = reason.trim()
+  if (!limpio) return null
+  const conocido = ESCALATION_REASON_LABELS[limpio]
+  if (conocido) return conocido
+  return /^[a-z0-9_]+$/.test(limpio) ? `Otro (${limpio})` : limpio
 }

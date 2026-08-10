@@ -5929,7 +5929,10 @@
         "type": "object",
         "properties": {
           "paused_until": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "reason": {
@@ -6858,6 +6861,20 @@
           "indice_morosidad_pct_alert_above",
           "compliance_violations_critical_at_least",
           "calls_outside_window_critical_at_least"
+        ]
+      },
+      "CobranzaDailyReportThresholdsHistory": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CobranzaDailyReportThresholds"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "CobranzaDailyReportThresholdsBody": {
@@ -23501,6 +23518,76 @@
           },
           "500": {
             "description": "Threshold write failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaDailyReportError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaDailyReportError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/cobranza/daily-report/thresholds/history": {
+      "get": {
+        "operationId": "getCobranzaDailyReportThresholdsHistory",
+        "summary": "Threshold versions, newest first",
+        "tags": [
+          "agency",
+          "cobranza",
+          "daily-report"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Threshold versions for the agency",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaDailyReportThresholdsHistory"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {

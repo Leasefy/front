@@ -143,9 +143,11 @@ export function PlanHeader({
   const upgradePlanHref = isInmobiliaria ? '/panel/inmobiliaria/upgrade' : '/panel/upgrade';
   const manageSubscriptionHref = isInmobiliaria ? '/panel/inmobiliaria/configuracion' : '/panel/configuracion';
 
-  // Real notifications from API
-  const landlordNotifs = useLandlordNotifications();
-  const tenantNotifs = useTenantNotifications();
+  // Real notifications from API. Only the active role subscribes/fetches — the
+  // inactive hook is disabled so we don't double-fetch or collide on the
+  // `notifications:{userId}` realtime channel.
+  const landlordNotifs = useLandlordNotifications({ enabled: isLandlord });
+  const tenantNotifs = useTenantNotifications({ enabled: !isLandlord });
   const activeNotifs = isLandlord ? landlordNotifs : tenantNotifs;
   const notifications = activeNotifs.notifications as BaseNotification[];
   const unreadCount = activeNotifs.unreadCount;

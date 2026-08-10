@@ -802,11 +802,12 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                     <p className="text-muted-foreground">
                       Ingresos: <span className="text-foreground">{formatCurrency(matchingResults.candidateProfile.monthlyIncome)}</span> · Presupuesto máx: <span className="text-foreground">{formatCurrency(matchingResults.candidateProfile.maxBudget)}</span>
                     </p>
-                    {matchingResults.candidateProfile.preferredLocations.length > 0 && (
-                      <p className="text-muted-foreground">
-                        Zonas preferidas: <span className="text-foreground">{matchingResults.candidateProfile.preferredLocations.join(', ')}</span>
-                      </p>
-                    )}
+                    {matchingResults.candidateProfile.preferredLocations &&
+                      matchingResults.candidateProfile.preferredLocations.length > 0 && (
+                        <p className="text-muted-foreground">
+                          Zonas preferidas: <span className="text-foreground">{matchingResults.candidateProfile.preferredLocations.join(', ')}</span>
+                        </p>
+                      )}
                   </div>
                 )}
 

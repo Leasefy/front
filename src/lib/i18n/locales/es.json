@@ -5310,6 +5310,13 @@
               "confirming": "Pausando…",
               "successToast": "Cobranza pausada"
             },
+            "resume": {
+              "cta": "Reanudar cobranza",
+              "modalTitle": "Reanudar cobranza",
+              "modalDescription": "El agente vuelve a trabajar este caso desde la próxima acción programada. Se registra en el log de auditoría.",
+              "confirm": "Confirmar reanudación",
+              "successToast": "Cobranza reanudada"
+            },
             "forceStage": {
               "cta": "Forzar etapa",
               "modalTitle": "Forzar etapa",

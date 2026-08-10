@@ -1,13 +1,24 @@
 /**
- * Notification hooks for landlord and tenant dashboards
+ * Notification hooks for landlord and tenant dashboards.
+ *
+ * Inbox delivery is realtime (Supabase postgres_changes on `notification_logs`)
+ * — the previous 2-minute REST poll was removed. On mount we do a single REST
+ * fetch for the initial page + unreadCount, then stream INSERTs live. A REST
+ * refetch also runs on realtime (re)connect to close any gap opened while the
+ * socket was down. Mark-read / mark-all / delete stay on REST.
  */
 
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-
-const POLL_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes
 import { notificationsApi } from '@/lib/api/notifications.service';
+import {
+  mapToLandlordNotification,
+  mapToTenantNotification,
+  type BackendNotification,
+} from '@/lib/api/notifications.types';
+import { useAuth } from '@/lib/auth/use-auth';
+import { useNotificationsRealtime } from './use-notifications-realtime';
 import type { LandlordNotification, TenantNotification } from '@/lib/types/notification';
 
 // ============================================================================
@@ -25,12 +36,30 @@ interface UseLandlordNotificationsReturn {
   refetch: () => Promise<void>;
 }
 
-export function useLandlordNotifications(): UseLandlordNotificationsReturn {
+interface UseNotificationsOptions {
+  /** When false the hook neither fetches nor opens a realtime channel. Used by
+   *  PlanHeader, which mounts both role hooks but only one is active — this
+   *  avoids a double fetch and a `notifications:{userId}` channel collision.
+   *  Defaults to true so single-role call sites need no change. */
+  enabled?: boolean;
+}
+
+export function useLandlordNotifications(
+  { enabled = true }: UseNotificationsOptions = {},
+): UseLandlordNotificationsReturn {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<LandlordNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Mirror of the loaded ids, kept in a ref so the realtime INSERT handler can
+  // dedupe synchronously (before React re-renders) against both the REST page
+  // and already-streamed rows.
+  const idsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    idsRef.current = new Set(notifications.map((n) => n.id));
+  }, [notifications]);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -46,13 +75,37 @@ export function useLandlordNotifications(): UseLandlordNotificationsReturn {
     }
   }, []);
 
+  // One-shot initial load (no interval — inbox is realtime from here on).
   useEffect(() => {
+    if (enabled) fetchNotifications();
+  }, [enabled, fetchNotifications]);
+
+  const handleInsert = useCallback((n: BackendNotification) => {
+    const mapped = mapToLandlordNotification(n);
+    if (idsRef.current.has(mapped.id)) return;
+    idsRef.current.add(mapped.id);
+    setNotifications((prev) =>
+      prev.some((x) => x.id === mapped.id) ? prev : [mapped, ...prev]
+    );
+    if (!mapped.read) setUnreadCount((prev) => prev + 1);
+  }, []);
+
+  // onReconnect fires on the initial SUBSCRIBED too — skip that one (mount
+  // already fetched) and only refetch on genuine reconnects.
+  const reconnectedOnceRef = useRef(false);
+  const handleReconnect = useCallback(() => {
+    if (!reconnectedOnceRef.current) {
+      reconnectedOnceRef.current = true;
+      return;
+    }
     fetchNotifications();
-    intervalRef.current = setInterval(fetchNotifications, POLL_INTERVAL_MS);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
   }, [fetchNotifications]);
+
+  useNotificationsRealtime({
+    userId: enabled ? user?.id : undefined,
+    onInsert: handleInsert,
+    onReconnect: handleReconnect,
+  });
 
   const markAsRead = useCallback(async (id: string) => {
     try {
@@ -120,12 +173,19 @@ interface UseTenantNotificationsReturn {
   refetch: () => Promise<void>;
 }
 
-export function useTenantNotifications(): UseTenantNotificationsReturn {
+export function useTenantNotifications(
+  { enabled = true }: UseNotificationsOptions = {},
+): UseTenantNotificationsReturn {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<TenantNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const idsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    idsRef.current = new Set(notifications.map((n) => n.id));
+  }, [notifications]);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -142,12 +202,33 @@ export function useTenantNotifications(): UseTenantNotificationsReturn {
   }, []);
 
   useEffect(() => {
+    if (enabled) fetchNotifications();
+  }, [enabled, fetchNotifications]);
+
+  const handleInsert = useCallback((n: BackendNotification) => {
+    const mapped = mapToTenantNotification(n);
+    if (idsRef.current.has(mapped.id)) return;
+    idsRef.current.add(mapped.id);
+    setNotifications((prev) =>
+      prev.some((x) => x.id === mapped.id) ? prev : [mapped, ...prev]
+    );
+    if (!mapped.read) setUnreadCount((prev) => prev + 1);
+  }, []);
+
+  const reconnectedOnceRef = useRef(false);
+  const handleReconnect = useCallback(() => {
+    if (!reconnectedOnceRef.current) {
+      reconnectedOnceRef.current = true;
+      return;
+    }
     fetchNotifications();
-    intervalRef.current = setInterval(fetchNotifications, POLL_INTERVAL_MS);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
   }, [fetchNotifications]);
+
+  useNotificationsRealtime({
+    userId: enabled ? user?.id : undefined,
+    onInsert: handleInsert,
+    onReconnect: handleReconnect,
+  });
 
   const markAsRead = useCallback(async (id: string) => {
     try {

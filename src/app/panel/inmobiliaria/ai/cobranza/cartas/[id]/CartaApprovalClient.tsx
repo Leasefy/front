@@ -225,7 +225,10 @@ export default function CartaApprovalClient({ artifactId }: Props) {
       </section>
 
       {/* Pre-approve form */}
-      <section className="space-y-3 rounded-md border border-border bg-white p-4 border-border">
+      {/* `bg-white` fijo: en oscuro era una caja blanca en medio de la
+          pantalla, sobre la que además hay que decidir si se manda una carta
+          prejurídica. `bg-card` sigue el tema. */}
+      <section className="space-y-3 rounded-md border border-border bg-card p-4">
         <div className="space-y-1">
           <span className="block text-sm font-medium text-fg-muted">
             {t('inmobiliaria.ai.cobranza.cartas.physicalSend.label')}

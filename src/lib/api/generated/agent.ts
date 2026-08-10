@@ -3838,6 +3838,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cobranza/daily-report/thresholds/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Threshold versions, newest first */
+        get: operations["getCobranzaDailyReportThresholdsHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cobranza/daily-report/thresholds/rollback": {
         parameters: {
             query?: never;
@@ -7894,7 +7911,7 @@ export interface components {
         };
         CobranzaPauseBody: {
             /** Format: date-time */
-            paused_until: string;
+            paused_until: string | null;
             reason: string;
         };
         CobranzaForceStageBody: {
@@ -8102,6 +8119,9 @@ export interface components {
             calls_outside_window_critical_at_least: number;
             is_rollback_of_version?: number | null;
             created_at?: string | null;
+        };
+        CobranzaDailyReportThresholdsHistory: {
+            items: components["schemas"]["CobranzaDailyReportThresholds"][];
         };
         CobranzaDailyReportThresholdsBody: {
             top_n_debtors_in_report: number;
@@ -13475,6 +13495,48 @@ export interface operations {
             };
             /** @description Threshold write failed */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+        };
+    };
+    getCobranzaDailyReportThresholdsHistory: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Threshold versions for the agency */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportThresholdsHistory"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

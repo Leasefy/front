@@ -39,7 +39,7 @@ export default function CobranzaAnaliticaPage() {
             <div
               key={i}
               className={[
-                'rounded-xl border border-border bg-white dark:bg-[#1a1a1c] p-6',
+                'rounded-xl border border-border bg-card p-6',
                 i === 0 || i === 3 ? 'md:col-span-2' : '',
               ].join(' ')}
               style={{ height: i === 0 || i === 3 ? 340 : 300 }}
@@ -144,7 +144,7 @@ export default function CobranzaAnaliticaPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Widget 1 — Recovery Rate (full-width row) */}
-        <section className="rounded-xl border border-border bg-white dark:bg-[#1a1a1c] p-6 space-y-4 md:col-span-2">
+        <section className="rounded-xl border border-border bg-card p-6 space-y-4 md:col-span-2">
           <h2 className="text-base font-semibold text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.title')}
           </h2>
@@ -158,7 +158,7 @@ export default function CobranzaAnaliticaPage() {
         </section>
 
         {/* Widget 2 — Top Objections (single col) */}
-        <section className="rounded-xl border border-border bg-white dark:bg-[#1a1a1c] p-6 space-y-4">
+        <section className="rounded-xl border border-border bg-card p-6 space-y-4">
           <h2 className="text-base font-semibold text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.title')}
           </h2>
@@ -172,7 +172,7 @@ export default function CobranzaAnaliticaPage() {
         </section>
 
         {/* Widget 3 — Cost Per Peso (single col) */}
-        <section className="rounded-xl border border-border bg-white dark:bg-[#1a1a1c] p-6 space-y-4">
+        <section className="rounded-xl border border-border bg-card p-6 space-y-4">
           <h2 className="text-base font-semibold text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.costPerPeso.title')}
           </h2>
@@ -183,7 +183,7 @@ export default function CobranzaAnaliticaPage() {
         </section>
 
         {/* Widget 4 — Cadence: ChannelMix + Heatmap stacked (full-width row) */}
-        <section className="rounded-xl border border-border bg-white dark:bg-[#1a1a1c] p-6 space-y-4 md:col-span-2">
+        <section className="rounded-xl border border-border bg-card p-6 space-y-4 md:col-span-2">
           <h2 className="text-base font-semibold text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.title')}
           </h2>
@@ -207,7 +207,7 @@ export default function CobranzaAnaliticaPage() {
         </section>
 
         {/* Widget 5 — Top Scripts (Phase 38-04a: branches on data.topScripts.populated) */}
-        <section className="rounded-xl border border-border bg-white dark:bg-[#1a1a1c] p-6 space-y-4">
+        <section className="rounded-xl border border-border bg-card p-6 space-y-4">
           <h2 className="text-base font-semibold text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
           </h2>

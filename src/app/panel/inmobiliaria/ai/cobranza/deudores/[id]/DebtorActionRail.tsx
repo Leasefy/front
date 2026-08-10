@@ -34,7 +34,7 @@ import { ManualCallModal } from '@/components/inmobiliaria/cobranza/intervention
 
 void React
 
-type OpenModal = 'pause' | 'forceStage' | 'manualWA' | 'manualCall' | null
+type OpenModal = 'pause' | 'reanudar' | 'forceStage' | 'manualWA' | 'manualCall' | null
 
 const NS = 'inmobiliaria.ai.cobranza'
 
@@ -112,6 +112,9 @@ export function DebtorActionRail({
       ? `Cadencia de la etapa ${stageName}`
       : `${stageName} stage cadence`
 
+  /** La ficha ya muestra «Pausado · En pausa hasta …» con este mismo dato. */
+  const estaPausado = Boolean(data?.isPaused)
+
   // Same RBAC gates as AccionesTab (CONTEXT D-31-01..04).
   const pauseEnabled = canIntervene
   const forceStageEnabled = canForceStage && isAdmin
@@ -186,13 +189,29 @@ export function DebtorActionRail({
           {t(`${NS}.detalle.accionesRapidas`)}
         </h3>
         <div className="mt-3 space-y-2">
-          <RailAction
-            label={t(`${NS}.detail.acciones.pause.cta`)}
-            disabled={!pauseEnabled}
-            disabledTooltip={t(`${NS}.detail.acciones.adminOnlyTooltip`)}
-            onClick={() => setOpenModal('pause')}
-            testId="rail-pause"
-          />
+          {/*
+            Pausado, la acción es REANUDAR. Antes decía «Pausar cobranza» tanto
+            si el deudor estaba en pausa como si no, y no había ninguna otra
+            puerta: quien se equivocaba de fecha dejaba al agente detenido sobre
+            ese caso hasta que la fecha pasara sola.
+          */}
+          {estaPausado ? (
+            <RailAction
+              label={t(`${NS}.detail.acciones.resume.cta`)}
+              disabled={!pauseEnabled}
+              disabledTooltip={t(`${NS}.detail.acciones.adminOnlyTooltip`)}
+              onClick={() => setOpenModal('reanudar')}
+              testId="rail-resume"
+            />
+          ) : (
+            <RailAction
+              label={t(`${NS}.detail.acciones.pause.cta`)}
+              disabled={!pauseEnabled}
+              disabledTooltip={t(`${NS}.detail.acciones.adminOnlyTooltip`)}
+              onClick={() => setOpenModal('pause')}
+              testId="rail-pause"
+            />
+          )}
           <RailAction
             label={t(`${NS}.detail.acciones.forceStage.cta`)}
             disabled={!forceStageEnabled}
@@ -237,6 +256,14 @@ export function DebtorActionRail({
       </section>
 
       {/* Modals — own instances; success bubbles up to refetch detail */}
+      <PauseModal
+        modo="reanudar"
+        open={openModal === 'reanudar'}
+        onClose={() => setOpenModal(null)}
+        debtorId={debtorId}
+        debtorName={debtorName}
+        onSuccess={onIntervention}
+      />
       <PauseModal
         open={openModal === 'pause'}
         onClose={() => setOpenModal(null)}

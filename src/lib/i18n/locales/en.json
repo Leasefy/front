@@ -5309,6 +5309,13 @@
               "confirming": "Pausing…",
               "successToast": "Collection paused"
             },
+            "resume": {
+              "cta": "Resume collection",
+              "modalTitle": "Resume collection",
+              "modalDescription": "The agent picks this case back up from the next scheduled action. Recorded in the audit log.",
+              "confirm": "Confirm resume",
+              "successToast": "Collection resumed"
+            },
             "forceStage": {
               "cta": "Force stage",
               "modalTitle": "Force stage",

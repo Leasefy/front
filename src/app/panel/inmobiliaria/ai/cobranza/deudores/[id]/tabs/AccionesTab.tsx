@@ -26,6 +26,39 @@ void React
 
 type OpenModal = 'pause' | 'forceStage' | 'manualWA' | 'manualCall' | null
 
+/** Lo mínimo que este archivo necesita de una fila de auditoría. */
+interface ActorDeAuditoria {
+  actor_type: string
+  actor_id?: string | null
+  actor_role?: string | null
+}
+
+/**
+ * Quién hizo la acción, para poder rastrearla.
+ *
+ * Antes acá salía `actor_type` a secas: «user». Eso dice la CATEGORÍA del
+ * actor, no la persona — con tres administradores en una agencia, «user ·
+ * 10/8/2026» no permite saber quién pausó una cobranza. El endpoint ya traía
+ * `actor_id` (el email) y ahora también `actor_role`.
+ *
+ * Los actores que no son personas (`saas_orchestrator`, `system`) no tienen
+ * email ni rol: se nombran por lo que son, no con un slug crudo.
+ */
+export function describirActor(
+  e: ActorDeAuditoria,
+  t: (k: string) => string,
+): string {
+  if (!e.actor_id) {
+    const NS = 'inmobiliaria.ai.cobranza.detail.acciones.actor'
+    if (e.actor_type === 'saas_orchestrator') return t(`${NS}.agente`)
+    if (e.actor_type === 'system') return t(`${NS}.sistema`)
+    // Un tipo de actor que no conocemos se muestra crudo antes que inventarle
+    // un nombre: es una traza, y equivocarse acá es peor que verse feo.
+    return e.actor_type
+  }
+  return e.actor_role ? `${e.actor_id} · ${e.actor_role}` : e.actor_id
+}
+
 interface AccionesTabProps {
   debtorId: string
   debtorName: string
@@ -142,7 +175,8 @@ export function AccionesTab({
                   {e.action}
                 </span>
                 <span className="text-fg-muted">
-                  {e.actor_type} · {new Date(e.occurred_at).toLocaleString(locale)}
+                  {describirActor(e, t)} ·{' '}
+                  {new Date(e.occurred_at).toLocaleString(locale)}
                 </span>
               </li>
             ))}

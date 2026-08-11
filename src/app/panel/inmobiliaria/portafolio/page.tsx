@@ -22,6 +22,7 @@ import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
 import { SegmentedControl } from '@leasefy/cadence';
 import { useConsignaciones, usePropietarios, useAgentes } from '@/lib/hooks/useInmobiliaria';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { ConsignacionCard } from '@/components/inmobiliaria/ConsignacionCard';
@@ -40,7 +41,16 @@ const ITEMS_PER_PAGE = 12;
 function PortafolioContent() {
   const { t } = useI18n();
   const router = useRouter();
-  const { consignaciones: allConsignaciones } = useConsignaciones();
+  // `useApiData` captura el fallo en su estado y NO lo relanza: si sólo tomás
+  // los datos, una petición que falló llega como `[]` y la pantalla afirma
+  // «Todavía no hay inmuebles». Lo mismo pasaba durante la carga. Son estados
+  // distintos y ahora se leen distinto.
+  const {
+    consignaciones: allConsignaciones,
+    isLoading: cargandoConsignaciones,
+    error: errorConsignaciones,
+    refetch: recargarConsignaciones,
+  } = useConsignaciones();
   const { propietarios: allPropietarios } = usePropietarios();
   const { agentes: allAgentes } = useAgentes();
   const [viewMode, setViewMode] = useState<ViewMode>('table');
@@ -282,6 +292,15 @@ function PortafolioContent() {
 
         {/* Content */}
         <div>
+          {/* El vacío de acá abajo es «los filtros no encontraron nada», que NO
+              es lo mismo que «todavía no cargó» ni «falló». Esos dos los
+              resuelve EstadoDeDatos antes de llegar. */}
+          <EstadoDeDatos
+            cargando={cargandoConsignaciones}
+            error={errorConsignaciones}
+            queEs="los inmuebles"
+            onReintentar={recargarConsignaciones}
+          >
           <AnimatePresence mode="wait">
             {viewMode === 'grid' ? (
               <motion.div
@@ -340,6 +359,7 @@ function PortafolioContent() {
               </motion.div>
             )}
           </AnimatePresence>
+          </EstadoDeDatos>
         </div>
 
         {/* Pagination Footer */}

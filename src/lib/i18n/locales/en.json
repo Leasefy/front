@@ -4326,6 +4326,14 @@
         "cotizador": "Insurability",
         "detalle": "Detail"
       },
+      "volverA": {
+        "casos": "Back to cases",
+        "llamadas": "Back to calls",
+        "cartas": "Back to letters",
+        "pagos": "Back to payments",
+        "siniestros": "Back to claims",
+        "estudios": "Back to screenings"
+      },
       "cotizador": {
         "placeholder": {
           "title": "Coming Soon",

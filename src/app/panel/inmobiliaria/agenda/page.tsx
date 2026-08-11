@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
 import type { AgendaListResponse, EventoAgenda, EventoTipo, EventoEstado } from '@/lib/api/agenda.types';
 import { agendaApi } from '@/lib/api/agenda.service';
@@ -58,17 +59,21 @@ function AgendaContent() {
 
   const [data, setData] = useState<AgendaListResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
+  // El error entero, no un booleano: `FalloDeCarga` lo clasifica para saber si
+  // reintentar puede dar otro resultado. Con un `true` pelado, una sesión
+  // vencida y un 500 se veían igual, y los dos ofrecían un "Reintentar" que
+  // sobre el 401 no arregla nada.
+  const [error, setError] = useState<unknown>(null);
   const [citaOpen, setCitaOpen] = useState(false);
   const [actingId, setActingId] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setIsLoading(true);
-    setError(false);
+    setError(null);
     agendaApi
       .getAgenda()
       .then(setData)
-      .catch(() => setError(true))
+      .catch(setError)
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -161,18 +166,19 @@ function AgendaContent() {
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Spinner />
-          </div>
-        ) : error ? (
-          <div className="py-14 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">{t(k('loadError'))}</p>
-            <Button variant="outline" onClick={load} hideArrow className="mx-auto">
-              {t(k('retry'))}
-            </Button>
-          </div>
-        ) : (
+        {/* El vacío NO va acá: vive dentro del <TableBody> para que se sigan
+            viendo los encabezados de columna. Acá sólo carga y fallo. */}
+        <EstadoDeDatos
+          cargando={isLoading}
+          error={error}
+          queEs="la agenda"
+          onReintentar={load}
+          esqueleto={
+            <div className="flex items-center justify-center py-16">
+              <Spinner />
+            </div>
+          }
+        >
           <Table>
             <TableHeader>
               <TableRow>
@@ -268,7 +274,7 @@ function AgendaContent() {
               )}
             </TableBody>
           </Table>
-        )}
+        </EstadoDeDatos>
       </section>
 
       <PedirCitaModal isOpen={citaOpen} onClose={() => setCitaOpen(false)} onCreated={load} />

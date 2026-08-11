@@ -126,20 +126,30 @@ del contrato `tsc` rechazó tres fixtures del test que **omitían la clave** —
 el agente siempre la manda (`null` cuando no aplica). Describían una respuesta
 que no existe.
 
-## Una intermitencia que NO pude clavar
+## La intermitencia era CARGA de máquina — y mi primera hipótesis estaba mal
 
-En una de cuatro corridas de la suite completa aparecieron **6 fallas**; las
-otras tres corridas dieron 2216/2216. No capturé los nombres, así que **no
-puedo afirmar cuál fue**.
+Apareció dos veces, y **las dos en archivos distintos**:
 
-La pista: `deudores/[id]/__tests__/page.realtime.test.tsx` tiene exactamente 6
-tests y pasa aislado. Encaja con el patrón ya conocido de
-`reference-contar-turnos-no-es-esperar` — esperar con `await Promise.resolve()`
-en vez de esperar la condición, que sólo falla bajo la carga de la suite
-entera.
+| corrida | fallas | dónde | duración |
+|---|---|---|---|
+| 1 | 6 | no capturé los nombres | normal |
+| 2 | 10 | 5 archivos de `src/lib/api/__tests__/*.service.test.ts` | **968 s** |
+| 3, 4, 5 | 0 | — | ~40 s |
 
-No es de este cambio (el contrato toca tipos, no timing), pero queda anotado
-como intermitencia real, no como «pasó».
+**968 segundos contra 40** es lo que lo explica: en esa corrida estaban
+encima el dev server de `:3005`, un `next build` y otra corrida de vitest. Los
+cinco archivos pasan aislados (29/29) y la suite sin nada compitiendo da
+**exit 0**. El CI de `develop`, que corre en una máquina dedicada, quedó en
+**success**.
+
+**Con las primeras 6 fallas até cabos mal**: `page.realtime.test.tsx` tiene
+exactamente 6 tests, así que lo di por sospechoso. La segunda vez fallaron 10
+tests en 5 archivos sin relación. La coincidencia numérica era eso, una
+coincidencia — cuando no capturaste los nombres no tenés un sospechoso, tenés
+un número.
+
+⚠️ Esto **no** es «entonces está todo bien». Una suite que falla bajo carga va
+a fallar en la máquina de alguien. Queda como deuda real.
 
 ## Lo que queda
 

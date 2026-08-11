@@ -126,6 +126,21 @@ del contrato `tsc` rechazó tres fixtures del test que **omitían la clave** —
 el agente siempre la manda (`null` cuando no aplica). Describían una respuesta
 que no existe.
 
+## Una intermitencia que NO pude clavar
+
+En una de cuatro corridas de la suite completa aparecieron **6 fallas**; las
+otras tres corridas dieron 2216/2216. No capturé los nombres, así que **no
+puedo afirmar cuál fue**.
+
+La pista: `deudores/[id]/__tests__/page.realtime.test.tsx` tiene exactamente 6
+tests y pasa aislado. Encaja con el patrón ya conocido de
+`reference-contar-turnos-no-es-esperar` — esperar con `await Promise.resolve()`
+en vez de esperar la condición, que sólo falla bajo la carga de la suite
+entera.
+
+No es de este cambio (el contrato toca tipos, no timing), pero queda anotado
+como intermitencia real, no como «pasó».
+
 ## Lo que queda
 
 - **front#79 sin mergear.**

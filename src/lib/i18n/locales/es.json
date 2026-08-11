@@ -4327,6 +4327,14 @@
         "cotizador": "Asegurabilidad",
         "detalle": "Detalle"
       },
+      "volverA": {
+        "casos": "Volver a casos",
+        "llamadas": "Volver a llamadas",
+        "cartas": "Volver a cartas",
+        "pagos": "Volver a pagos",
+        "siniestros": "Volver a siniestros",
+        "estudios": "Volver a estudios"
+      },
       "cotizador": {
         "placeholder": {
           "title": "Próximamente",

@@ -38,6 +38,7 @@ import { Button, Badge } from '@/components/ui'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, MonoLabel } from '@leasefy/cadence'
 
+import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 import { DebtorSidebar } from './DebtorSidebar'
 import { DebtorActionRail } from './DebtorActionRail'
 import { TimelineTab } from './tabs/TimelineTab'
@@ -210,6 +211,11 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
     <main className="p-4 lg:p-8 max-w-7xl mx-auto pb-8">
       {/* Header */}
       <header className="mb-5">
+        <VolverALaLista
+          href="/panel/inmobiliaria/ai/cobranza/deudores"
+          label={t('inmobiliaria.ai.volverA.casos')}
+          className="mb-2"
+        />
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {debtorName || t('inmobiliaria.ai.cobranza.detail.title')}

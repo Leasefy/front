@@ -37,6 +37,7 @@ import { HistorialTab } from './tabs/HistorialTab'
 import { ConversacionesTab } from './tabs/ConversacionesTab'
 import { CodeudoresTab } from './tabs/CodeudoresTab'
 import { ReporteTab } from './tabs/ReporteTab'
+import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 
 const NS = 'inmobiliaria.ai.estudio'
 
@@ -148,6 +149,11 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
     <main className="p-4 lg:p-8 max-w-7xl mx-auto pb-8">
       {/* Header */}
       <header className="mb-5">
+        <VolverALaLista
+          href="/panel/inmobiliaria/ai/estudio/estudios"
+          label={t('inmobiliaria.ai.volverA.estudios')}
+          className="mb-2"
+        />
         <h1 className="text-2xl font-semibold text-fg tracking-tight">
           {tf(`${NS}.detalle.titulo`, 'Detalle del estudio')}
         </h1>

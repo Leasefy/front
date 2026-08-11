@@ -2600,7 +2600,8 @@
         "upload": "File",
         "mapping": "Mapping",
         "review": "AI Review",
-        "confirm": "Confirm"
+        "confirm": "Confirm",
+        "enlaces": "Links"
       },
       "methods": {
         "excel": {
@@ -2617,6 +2618,11 @@
           "title": "From portals",
           "desc": "Download your inventory from FincaRaíz, Metrocuadrado or Ciencuadras",
           "badge": "Guided"
+        },
+        "enlaces": {
+          "title": "From links",
+          "desc": "Paste your listing links and we'll read them, photos included",
+          "badge": "New"
         }
       },
       "upload": {
@@ -2724,7 +2730,9 @@
         "porQue": "Portals don't hand your properties over through an API: the integration that exists runs the other way, publishing from your system into them. But your inventory is already in your portal panel, and you can download it from there.",
         "abrirPanel": "Go to my panel",
         "yaLoTengo": "I already have the portal's file",
-        "backToPortfolio": "Back to portfolio"
+        "backToPortfolio": "Back to portfolio",
+        "oEnlaces": "Or paste your listing links and we'll read them for you, photos included.",
+        "pegarEnlaces": "Paste links instead of a file"
       }
     },
     "consignaciones": {

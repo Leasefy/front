@@ -25,7 +25,7 @@
  * una persona que la iban a avisar, sin nada detrás.
  */
 
-import { Globe, FileArrowUp, ArrowSquareOut, Info } from '@phosphor-icons/react';
+import { Globe, FileArrowUp, ArrowSquareOut, Info, LinkSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -69,6 +69,11 @@ export function StepPortalImport({ updateState }: ImportStepProps) {
 
   // Mismo atajo que «Desde software»: el archivo se sube en el paso 2.
   const irASubirArchivo = () => updateState({ method: 'excel' });
+
+  // La otra salida, y para pocos inmuebles la más corta: el enlace de la ficha
+  // del portal es público y trae el dato rotulado. Va acá porque es acá donde
+  // la persona está buscando cómo traer sus inmuebles.
+  const irAPegarEnlaces = () => updateState({ method: 'enlaces' });
 
   return (
     <div className="space-y-6">
@@ -119,10 +124,26 @@ export function StepPortalImport({ updateState }: ImportStepProps) {
         ))}
       </div>
 
-      <div className="pt-2 flex justify-center">
+      <div className="pt-2 flex flex-col items-center gap-3">
         <Button type="button" size="lg" hideArrow onClick={irASubirArchivo} className="gap-2">
           <FileArrowUp className="w-5 h-5" aria-hidden="true" />
           {t('inmobiliaria.import.portal.yaLoTengo')}
+        </Button>
+
+        <p className="text-body-sm text-fg-muted text-center max-w-md">
+          {t('inmobiliaria.import.portal.oEnlaces')}
+        </p>
+
+        <Button
+          type="button"
+          variant="outline"
+          hideArrow
+          onClick={irAPegarEnlaces}
+          className="gap-2"
+          data-testid="portal-pegar-enlaces"
+        >
+          <LinkSimple className="w-4 h-4" aria-hidden="true" />
+          {t('inmobiliaria.import.portal.pegarEnlaces')}
         </Button>
       </div>
     </div>

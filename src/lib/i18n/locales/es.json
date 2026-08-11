@@ -2601,7 +2601,8 @@
         "upload": "Archivo",
         "mapping": "Mapeo",
         "review": "Revisión AI",
-        "confirm": "Confirmar"
+        "confirm": "Confirmar",
+        "enlaces": "Enlaces"
       },
       "methods": {
         "excel": {
@@ -2618,6 +2619,11 @@
           "title": "Desde portales",
           "desc": "Bajá tu inventario de FincaRaíz, Metrocuadrado o Ciencuadras",
           "badge": "Guiado"
+        },
+        "enlaces": {
+          "title": "Desde enlaces",
+          "desc": "Pegá los enlaces de tus fichas y las leemos con fotos",
+          "badge": "Nuevo"
         }
       },
       "upload": {
@@ -2725,7 +2731,9 @@
         "porQue": "Los portales no entregan tus inmuebles por API: la integración que existe va al revés, publicando desde tu sistema hacia ellos. Pero el inventario ya lo tenés en tu panel del portal, y de ahí sí se puede bajar.",
         "abrirPanel": "Ir a mi panel",
         "yaLoTengo": "Ya tengo el archivo del portal",
-        "backToPortfolio": "Volver al portafolio"
+        "backToPortfolio": "Volver al portafolio",
+        "oEnlaces": "O pegá los enlaces de tus fichas y las leemos por vos, con sus fotos.",
+        "pegarEnlaces": "Pegar enlaces en vez de un archivo"
       }
     },
     "consignaciones": {

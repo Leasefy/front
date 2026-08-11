@@ -13,6 +13,7 @@ import {
   CaretRight,
   Check,
   X,
+  LinkSimple,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -24,6 +25,7 @@ import { StepAIReview } from './steps/StepAIReview';
 import { StepConfirmImport } from './steps/StepConfirmImport';
 import { StepSoftwareMigration } from './steps/StepSoftwareMigration';
 import { StepPortalImport } from './steps/StepPortalImport';
+import { StepPasteLinks } from './steps/StepPasteLinks';
 import { TARGET_FIELDS } from './lib/importTypes';
 import type { ImportWizardState } from './lib/importTypes';
 
@@ -40,6 +42,7 @@ const INITIAL_STATE: ImportWizardState = {
   method: null,
   file: null,
   fileName: '',
+  enlacesPegados: '',
   rawRows: [],
   headers: [],
   sheetNames: [],
@@ -87,26 +90,51 @@ export function ImportWizard() {
     if (prevMethodRef.current !== wizardState.method && wizardState.method !== null) {
       const veniaDeUnaGuia =
         prevMethodRef.current === 'software' || prevMethodRef.current === 'portal';
+      // Los dos destinos posibles de un atajo tienen pantalla propia en el
+      // paso 2: subir el archivo, o pegar los enlaces. Antes sólo contemplaba
+      // `excel`, así que «pegar enlaces» desde la guía de portales devolvía al
+      // paso 1 — justo lo que el botón promete evitar.
+      const elAtajoTienePantalla =
+        wizardState.method === 'excel' || wizardState.method === 'enlaces';
       prevMethodRef.current = wizardState.method;
-      setCurrentStep(veniaDeUnaGuia && wizardState.method === 'excel' ? 2 : 1);
+      setCurrentStep(veniaDeUnaGuia && elAtajoTienePantalla ? 2 : 1);
     }
   }, [wizardState.method]);
 
   // Visible steps based on method
+  //
+  // ⚠️ `currentStep` es la POSICIÓN dentro de esta lista, no el id del paso.
+  // Mientras los métodos usaban 1-2-3-4-5 o 1-2 las dos cosas coincidían y no
+  // se notaba; «Desde enlaces» usa los pasos 1-2-4-5 (no hay columnas que
+  // mapear) y ahí la posición 3 es el paso 4. Todo lo que decide QUÉ se dibuja
+  // pasa por `pasoActual`; lo que decide DÓNDE estamos usa la posición.
   const visibleSteps = useMemo(() => {
     if (wizardState.method === 'portal') return STEPS.slice(0, 2);
+    if (wizardState.method === 'enlaces') {
+      return [
+        STEPS[0],
+        { ...STEPS[1], labelKey: 'inmobiliaria.import.steps.enlaces', icon: LinkSimple },
+        STEPS[3],
+        STEPS[4],
+      ];
+    }
     return STEPS;
   }, [wizardState.method]);
 
+  const pasoActual = visibleSteps[currentStep - 1]?.id ?? 1;
+
   // Step validation
   const isStepValid = useMemo(() => {
-    switch (currentStep) {
+    switch (pasoActual) {
       case 1:
         return wizardState.method !== null;
       case 2:
         // Software and portal steps are always "valid" for navigation purposes
         if (wizardState.method === 'software') return true;
         if (wizardState.method === 'portal') return true;
+        // Los enlaces no dejan filas: lo que habilita seguir es que al menos
+        // un enlace se haya podido leer.
+        if (wizardState.method === 'enlaces') return wizardState.properties.length > 0;
         return wizardState.rawRows.length > 0;
       case 3: {
         // All required TARGET_FIELDS must be mapped
@@ -123,7 +151,7 @@ export function ImportWizard() {
       default:
         return false;
     }
-  }, [currentStep, wizardState]);
+  }, [pasoActual, wizardState]);
 
   // Navigation handlers
   const goToNextStep = useCallback(() => {
@@ -132,23 +160,33 @@ export function ImportWizard() {
     }
   }, [currentStep, isStepValid, visibleSteps.length]);
 
+  // Salir de la revisión hacia atrás descarta el análisis para que se rehaga
+  // con lo que la persona vaya a cambiar. Con «Desde enlaces» NO: ahí las
+  // propiedades no salen de filas de un archivo que sigue cargado, salen de
+  // haber leído las páginas. Borrarlas obligaría a leer los veinte enlaces de
+  // nuevo por haber tocado «Anterior».
+  const debeDescartarAnalisis = useCallback(
+    (desde: number) => visibleSteps[desde - 1]?.id === 4 && wizardState.method !== 'enlaces',
+    [visibleSteps, wizardState.method],
+  );
+
   const goToPreviousStep = useCallback(() => {
     if (currentStep > 1) {
-      if (currentStep === 4) {
+      if (debeDescartarAnalisis(currentStep)) {
         updateState({ aiAnalyzed: false, properties: [] });
       }
       setCurrentStep((prev) => prev - 1);
     }
-  }, [currentStep, updateState]);
+  }, [currentStep, debeDescartarAnalisis, updateState]);
 
   const goToStep = useCallback((step: number) => {
     if (step >= 1 && step <= currentStep) {
-      if (currentStep === 4 && step < 4) {
+      if (debeDescartarAnalisis(currentStep) && step < currentStep) {
         updateState({ aiAnalyzed: false, properties: [] });
       }
       setCurrentStep(step);
     }
-  }, [currentStep, updateState]);
+  }, [currentStep, debeDescartarAnalisis, updateState]);
 
   const handleCancel = useCallback(() => {
     setShowCancelDialog(true);
@@ -158,10 +196,10 @@ export function ImportWizard() {
     router.push('/panel/inmobiliaria/portafolio');
   }, [router]);
 
-  // Step status helper
-  const getStepStatus = (stepId: number) => {
-    if (stepId < currentStep) return 'completed';
-    if (stepId === currentStep) return 'current';
+  // Step status helper — recibe la POSICIÓN, no el id (ver `visibleSteps`).
+  const getStepStatus = (posicion: number) => {
+    if (posicion < currentStep) return 'completed';
+    if (posicion === currentStep) return 'current';
     return 'upcoming';
   };
 
@@ -172,12 +210,13 @@ export function ImportWizard() {
       updateState,
     };
 
-    switch (currentStep) {
+    switch (pasoActual) {
       case 1:
         return <StepChooseMethod {...stepProps} />;
       case 2:
         if (wizardState.method === 'software') return <StepSoftwareMigration {...stepProps} />;
         if (wizardState.method === 'portal') return <StepPortalImport {...stepProps} />;
+        if (wizardState.method === 'enlaces') return <StepPasteLinks {...stepProps} />;
         return <StepUploadFile {...stepProps} />;
       case 3:
         return <StepColumnMapping {...stepProps} />;
@@ -197,7 +236,8 @@ export function ImportWizard() {
         {/* Desktop Steps */}
         <div className="hidden md:flex items-center justify-between">
           {visibleSteps.map((step, index) => {
-            const status = getStepStatus(step.id);
+            const posicion = index + 1;
+            const status = getStepStatus(posicion);
             const StepIcon = step.icon;
 
             return (
@@ -205,7 +245,7 @@ export function ImportWizard() {
                 {/* allowlist: clickable wizard step navigator (icon-per-step, label-below,
                     done/active/upcoming) — Cadence Stepper is display-only; kept native */}
                 <button
-                  onClick={() => status !== 'upcoming' && goToStep(step.id)}
+                  onClick={() => status !== 'upcoming' && goToStep(posicion)}
                   disabled={status === 'upcoming'}
                   className={cn(
                     'flex flex-col items-center gap-2 transition-all shrink-0',
@@ -247,7 +287,7 @@ export function ImportWizard() {
                 {index < visibleSteps.length - 1 && (
                   <div className={cn(
                     'flex-1 h-0.5 mx-2',
-                    step.id < currentStep
+                    posicion < currentStep
                       ? 'bg-success'
                       : 'bg-border'
                   )} />
@@ -300,7 +340,7 @@ export function ImportWizard() {
         </div>
 
         {/* Footer Navigation — hidden when import is complete */}
-        {!(currentStep === 5 && wizardState.importedCount > 0) && (
+        {!(pasoActual === 5 && wizardState.importedCount > 0) && (
           // El pie tiene fondo propio: sin `rounded-b-xl` pinta por encima de
           // las esquinas del card y las dos de abajo quedan cuadradas.
           <div className="px-6 py-4 rounded-b-xl border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-[#14130F] flex items-center justify-between">
@@ -330,7 +370,7 @@ export function ImportWizard() {
               )}
 
               {/* Portal terminal step: show "Volver al portafolio" instead of "Siguiente" */}
-              {wizardState.method === 'portal' && currentStep === 2 ? (
+              {wizardState.method === 'portal' && pasoActual === 2 ? (
                 <Button
                   type="button"
                   variant="outline"

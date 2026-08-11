@@ -8,6 +8,7 @@ import {
   FileArrowUp,
   UserCircle,
   WarningCircle,
+  ImageSquare,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -16,6 +17,8 @@ import { Progress } from '@/components/ui/progress';
 import { MonoLabel } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 import { propertiesApi } from '@/lib/api/properties.service';
+import { uploadPropertyPhotos } from '@/lib/api/property-photos';
+import { traerFotoComoArchivo } from '@/lib/inmuebles/enlaces.service';
 import { geocodeImportRow, GEOCODE_ROW_DELAY_MS } from '../lib/geocodeImportRow';
 import { RanuraDelPie, type ImportStepProps } from '../ImportWizard';
 import type { ImportProperty } from '../lib/importTypes';
@@ -77,7 +80,11 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
   const { t } = useI18n();
 
   const [isImporting, setIsImporting] = useState(false);
-  const [isGeocoding, setIsGeocoding] = useState(false);
+  // Tres fases con tiempos muy distintos: geocodificar es medio segundo por
+  // fila, crear es rápido, y bajar y subir fotos es lo más lento de todo.
+  // Cada una cuenta aparte — una barra sola que se queda quieta en el 100 %
+  // mientras suben 80 fotos parece colgada.
+  const [fase, setFase] = useState<'geocodificando' | 'creando' | 'fotos' | null>(null);
   // Un toast se va solo. Si fallaron las 200, el motivo tiene que quedarse en
   // la pantalla para poder leerlo y copiarlo.
   const [errorDeImportacion, setErrorDeImportacion] = useState<string | null>(null);
@@ -105,6 +112,12 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
 
   const importCount = importables.length;
 
+  // Fotos que vienen del enlace de origen. Sólo existen en el método «Desde
+  // enlaces»; en la importación por archivo las dos son cero y nada de esto
+  // se dibuja.
+  const fotosPendientes = importables.filter((p) => p.imagenes?.length).length;
+  const totalDeFotos = importables.reduce((n, p) => n + (p.imagenes?.length ?? 0), 0);
+
   // Map a parsed/AI-reviewed ImportProperty to the propertiesApi.create payload.
   // Accepted AI suggestions are already applied onto the property fields in StepAIReview.
   const toCreatePayload = (p: ImportProperty) => ({
@@ -124,7 +137,7 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
   const handleImport = async () => {
     if (importCount === 0) return;
     setIsImporting(true);
-    setIsGeocoding(true);
+    setFase('geocodificando');
     setProgress(0);
     setCurrentItem(0);
 
@@ -139,16 +152,24 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     // colgada. Ahora cuenta.
     let geocodedCount = 0;
     let fallbackCount = 0;
-    const payloads: Array<ReturnType<typeof toCreatePayload> & { latitude?: number; longitude?: number }> = [];
+    // El payload viaja junto a la propiedad de la que salió: sin eso, después
+    // de crear no hay forma de saber a qué inmueble le tocaban qué fotos.
+    const aCrear: Array<{
+      payload: ReturnType<typeof toCreatePayload> & { latitude?: number; longitude?: number };
+      origen: ImportProperty;
+    }> = [];
 
     for (let i = 0; i < importables.length; i++) {
       const p = importables[i];
       const coords = await geocodeImportRow(p);
       if (coords.source === 'geocoded') geocodedCount += 1;
       else fallbackCount += 1;
-      payloads.push({
-        ...toCreatePayload(p),
-        ...(coords.lat != null && coords.lng != null ? { latitude: coords.lat, longitude: coords.lng } : {}),
+      aCrear.push({
+        origen: p,
+        payload: {
+          ...toCreatePayload(p),
+          ...(coords.lat != null && coords.lng != null ? { latitude: coords.lat, longitude: coords.lng } : {}),
+        },
       });
       setCurrentItem(i + 1);
       setProgress(Math.round(((i + 1) / total) * 100));
@@ -157,7 +178,7 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
       }
     }
 
-    setIsGeocoding(false);
+    setFase('creando');
     setCurrentItem(0);
     setProgress(0);
 
@@ -169,16 +190,26 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     const EN_PARALELO = 6;
     let done = 0;
     const results: PromiseSettledResult<unknown>[] = [];
+    // Los que quedaron creados Y traen fotos del enlace de origen.
+    const conFotos: { id: string; imagenes: string[] }[] = [];
 
-    for (let i = 0; i < payloads.length; i += EN_PARALELO) {
-      const tanda = payloads.slice(i, i + EN_PARALELO);
+    for (let i = 0; i < aCrear.length; i += EN_PARALELO) {
+      const tanda = aCrear.slice(i, i + EN_PARALELO);
       const parcial = await Promise.allSettled(
-        tanda.map((payload) =>
-          propertiesApi.create(payload).finally(() => {
-            done += 1;
-            setCurrentItem(done);
-            setProgress(Math.round((done / total) * 100));
-          })
+        tanda.map(({ payload, origen }) =>
+          propertiesApi
+            .create(payload)
+            .then((creado) => {
+              if (origen.imagenes?.length) {
+                conFotos.push({ id: creado.id, imagenes: origen.imagenes });
+              }
+              return creado;
+            })
+            .finally(() => {
+              done += 1;
+              setCurrentItem(done);
+              setProgress(Math.round((done / total) * 100));
+            })
         )
       );
       results.push(...parcial);
@@ -200,7 +231,49 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
           ? String(primerFallo.reason)
           : undefined;
 
+    // ── Fase 3: las fotos ──────────────────────────────────────────────
+    // Sólo existe cuando los inmuebles vinieron de un enlace. Van DESPUÉS de
+    // crear porque el back las cuelga de un inmueble que ya tiene id, y van de
+    // a uno por inmueble porque el orden de subida es el orden en que quedan
+    // (la primera es la portada).
+    //
+    // Una foto que falla no toca el inmueble: ya está creado y guardado. Por
+    // eso esto no puede tirar — se cuenta y se informa.
+    let fotosSubidas = 0;
+    let fotosFallidas = 0;
+
+    if (conFotos.length > 0) {
+      setFase('fotos');
+      setCurrentItem(0);
+      setProgress(0);
+      const totalConFotos = conFotos.length;
+
+      for (let i = 0; i < conFotos.length; i++) {
+        const { id, imagenes } = conFotos[i];
+
+        // Bajarlas por el proxy (el navegador no puede leer otro dominio) y
+        // convertirlas en archivos, que es lo que sube el back.
+        const archivos = (
+          await Promise.all(
+            imagenes.map((url, n) => traerFotoComoArchivo(url, `foto-${n + 1}`)),
+          )
+        ).filter((f): f is File => f !== null);
+
+        fotosFallidas += imagenes.length - archivos.length;
+
+        if (archivos.length > 0) {
+          const resultado = await uploadPropertyPhotos(id, archivos);
+          fotosSubidas += resultado.uploaded;
+          fotosFallidas += resultado.failed.length;
+        }
+
+        setCurrentItem(i + 1);
+        setProgress(Math.round(((i + 1) / totalConFotos) * 100));
+      }
+    }
+
     setIsImporting(false);
+    setFase(null);
 
     // eslint-disable-next-line no-console -- geocoding coverage isn't surfaced anywhere else
     console.info(`[import] geocoding: ${geocodedCount} resolved, ${fallbackCount} fell back to city center`);
@@ -223,14 +296,22 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     setIsComplete(true);
 
     const geocodeNote = geocodedCount > 0 ? ` (${geocodedCount} con dirección exacta geocodificada)` : '';
+    const notaFotos =
+      fotosSubidas > 0
+        ? ` Se subieron ${fotosSubidas} ${fotosSubidas === 1 ? 'foto' : 'fotos'}${
+            fotosFallidas > 0 ? ` y ${fotosFallidas} no se pudieron traer.` : '.'
+          }`
+        : fotosFallidas > 0
+          ? ` Ninguna de las ${fotosFallidas} fotos se pudo traer.`
+          : '';
 
     if (failed > 0) {
       toast.error('Importación parcial', {
-        description: `${created} propiedades importadas, ${failed} con error.${geocodeNote}`,
+        description: `${created} propiedades importadas, ${failed} con error.${geocodeNote}${notaFotos}`,
       });
     } else {
       toast.success('Importación exitosa', {
-        description: `${created} propiedades importadas correctamente${geocodeNote}`,
+        description: `${created} propiedades importadas correctamente${geocodeNote}${notaFotos}`,
       });
     }
   };
@@ -408,6 +489,29 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
         </div>
       </div>
 
+      {/* Lo que va a pasar con las fotos, dicho antes de empezar: son lo más
+          lento de la importación y conviene que no sorprenda. */}
+      {totalDeFotos > 0 && (
+        <div
+          className="rounded-xl border border-border dark:border-border-strong bg-surface-muted dark:bg-white/[0.02] p-5"
+          data-testid="import-fotos"
+        >
+          <div className="flex items-start gap-3">
+            <ImageSquare className="w-5 h-5 text-fg-subtle dark:text-fg-muted mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="font-semibold text-fg dark:text-white text-sm">
+                {totalDeFotos} {totalDeFotos === 1 ? 'foto' : 'fotos'} de {fotosPendientes}{' '}
+                {fotosPendientes === 1 ? 'inmueble' : 'inmuebles'}
+              </h3>
+              <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1">
+                Se traen desde el enlace después de crear cada inmueble, hasta 10 por inmueble.
+                Es la parte más lenta. Si alguna no se puede bajar, el inmueble se guarda igual.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Agent assignment note */}
       <div className="rounded-xl border border-border dark:border-border-strong bg-surface-muted dark:bg-white/[0.02] p-5">
         <div className="flex items-start gap-3">
@@ -428,17 +532,19 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
       {isImporting && (
         <div className="space-y-2">
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
-            {isGeocoding
+            {fase === 'geocodificando'
               ? `Buscando las direcciones en el mapa — ${currentItem} de ${importCount}`
-              : t('inmobiliaria.import.confirm.importing', {
-                  current: currentItem,
-                  total: importCount,
-                })}
+              : fase === 'fotos'
+                ? `Trayendo las fotos — inmueble ${currentItem} de ${fotosPendientes}`
+                : t('inmobiliaria.import.confirm.importing', {
+                    current: currentItem,
+                    total: importCount,
+                  })}
           </p>
           <Progress
             value={progress}
             size="xs"
-            variant={!isGeocoding && progress >= 100 ? 'success' : 'default'}
+            variant={fase === 'fotos' && progress >= 100 ? 'success' : 'default'}
           />
           <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">
             {progress}%

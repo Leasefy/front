@@ -1,6 +1,6 @@
 // src/components/inmobiliaria/import/lib/importTypes.ts
 
-export type ImportMethod = 'excel' | 'software' | 'portal';
+export type ImportMethod = 'excel' | 'software' | 'portal' | 'enlaces';
 
 export interface ParsedRow {
   _rowIndex: number;
@@ -43,12 +43,26 @@ export interface ImportProperty {
   selected: boolean;
   hasErrors: boolean;
   errorMessages: string[];
+
+  // ── Sólo cuando el inmueble vino de un enlace ──────────────────────────
+  /** El enlace del que se leyó. Se muestra para poder ir a verificar. */
+  enlaceOrigen?: string;
+  /** URLs de las fotos en el CDN de origen; se suben tras crear el inmueble. */
+  imagenes?: string[];
+  /**
+   * De dónde salió cada campo: `'json-ld'` es un dato que el sitio declara,
+   * `'texto'` es algo leído de una frase. La pantalla lo muestra para que la
+   * persona sepa a qué números mirarles la cara.
+   */
+  procedencia?: Record<string, string>;
 }
 
 export interface ImportWizardState {
   method: ImportMethod | null;
   file: File | null;
   fileName: string;
+  /** Lo que la persona pegó en el paso de enlaces, tal cual, para no perderlo al volver. */
+  enlacesPegados: string;
   rawRows: ParsedRow[];
   headers: string[];
   sheetNames: string[];

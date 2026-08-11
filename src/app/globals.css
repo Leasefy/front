@@ -1568,7 +1568,14 @@ select:-webkit-autofill:active {
   --border-strong: #403c33;
   --fg: #fbfaf9;
   --fg-muted: #b3aea5;
-  --fg-subtle: #7e7a72;
+  /* Era #7e7a72 → 3.72:1 sobre la superficie de tabla (#24221c, medido).
+     WCAG AA pide 4.5:1 para texto de menos de 18px, y este token viste las
+     cabeceras de tabla del DS — `TableHead` de @leasefy/cadence trae horneado
+     `text-label text-fg-subtle`, o sea 74 archivos del panel a 11px con
+     contraste insuficiente. #8d8980 es el MISMO matiz aclarado hasta el
+     mínimo que cumple: 4.54:1. En claro el token ya cumplía; esto era un
+     defecto sólo del tema oscuro. */
+  --fg-subtle: #8d8980;
   --primary-hover: #3b5bff;
   /* Dark primary = light periwinkle fill → text must be dark ink (not white).
      Was missing here, so it inherited :root's #fff → white text on periwinkle. */

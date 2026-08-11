@@ -55,6 +55,9 @@ const SEND_METHOD_I18N: Record<CartaPhysicalSendMethod, string> = {
   operator_manual: 'operatorManual',
 }
 
+/** Enlaza el botón deshabilitado con el texto que dice por qué lo está. */
+const PISTA_CAMPOS_ID = 'carta-required-hint'
+
 interface Props {
   artifactId: string
 }
@@ -158,12 +161,12 @@ export default function CartaApprovalClient({ artifactId }: Props) {
     )
   }
 
+  // Los dos campos del envío físico son obligatorios para aprobar. Se separa
+  // del resto de `aprobarDisabled` porque es la ÚNICA causa que el usuario
+  // puede resolver por su cuenta, y por tanto la única que hay que explicar.
+  const faltanCampos = !sendMethod || !sentToAddress.trim()
   const aprobarDisabled =
-    !canApprove ||
-    !sendMethod ||
-    !sentToAddress.trim() ||
-    isApproving ||
-    approveResult !== null
+    !canApprove || faltanCampos || isApproving || approveResult !== null
   const rechazarDisabled = !canApprove || isRejecting || rejectResult?.ok === true
 
   const handleAprobar = async (): Promise<void> => {
@@ -231,14 +234,20 @@ export default function CartaApprovalClient({ artifactId }: Props) {
       <section className="space-y-3 rounded-md border border-border bg-card p-4">
         <div className="space-y-1">
           <span className="block text-sm font-medium text-fg-muted">
-            {t('inmobiliaria.ai.cobranza.cartas.physicalSend.label')}
+            {t('inmobiliaria.ai.cobranza.cartas.physicalSend.label')}{' '}
+            <span
+              className="text-danger"
+              aria-label={t('inmobiliaria.ai.cobranza.cartas.requiredMark')}
+            >
+              *
+            </span>
           </span>
           <Select
             value={sendMethod || undefined}
             onValueChange={(v) => setSendMethod(v as CartaPhysicalSendMethod)}
             disabled={approveResult !== null}
           >
-            <SelectTrigger data-testid="carta-send-method">
+            <SelectTrigger data-testid="carta-send-method" aria-required="true">
               <SelectValue
                 placeholder={t('inmobiliaria.ai.cobranza.cartas.physicalSend.placeholder')}
               />
@@ -256,7 +265,13 @@ export default function CartaApprovalClient({ artifactId }: Props) {
         </div>
 
         <label className="block text-sm font-medium text-fg-muted">
-          {t('inmobiliaria.ai.cobranza.cartas.sentToAddress.label')}
+          {t('inmobiliaria.ai.cobranza.cartas.sentToAddress.label')}{' '}
+          <span
+            className="text-danger"
+            aria-label={t('inmobiliaria.ai.cobranza.cartas.requiredMark')}
+          >
+            *
+          </span>
           <Input
             type="text"
             data-testid="carta-sent-to-address"
@@ -266,9 +281,24 @@ export default function CartaApprovalClient({ artifactId }: Props) {
               'inmobiliaria.ai.cobranza.cartas.sentToAddress.placeholder',
             )}
             disabled={approveResult !== null}
+            aria-required="true"
             className="mt-1 block w-full"
           />
         </label>
+
+        {/* Un botón muerto sin motivo se lee como «está roto». `title` sólo
+            cubría el caso de permisos, así que cuando faltaban estos dos
+            campos —lo habitual al entrar— no había NINGUNA explicación.
+            `aria-describedby` en el botón lo hace audible, no sólo visible. */}
+        {faltanCampos && (
+          <p
+            id={PISTA_CAMPOS_ID}
+            data-testid="carta-required-hint"
+            className="text-sm text-fg-muted"
+          >
+            {t('inmobiliaria.ai.cobranza.cartas.requiredHint')}
+          </p>
+        )}
       </section>
 
       {/* Action buttons */}
@@ -280,10 +310,13 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           disabled={aprobarDisabled}
           isLoading={isApproving}
           hideArrow
+          aria-describedby={faltanCampos ? PISTA_CAMPOS_ID : undefined}
           title={
             !canApprove
               ? t('inmobiliaria.ai.cobranza.cartas.permissionTooltip')
-              : undefined
+              : faltanCampos
+                ? t('inmobiliaria.ai.cobranza.cartas.requiredHint')
+                : undefined
           }
         >
           {isApproving

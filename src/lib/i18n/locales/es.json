@@ -5707,7 +5707,9 @@
             "generatedAt": "Generada",
             "sentAt": "Enviada",
             "sendMethod": "Método de envío"
-          }
+          },
+          "requiredHint": "Elegí el método de envío y la dirección o correo destino para poder aprobar.",
+          "requiredMark": "obligatorio"
         },
         "escalaciones": {
           "pageTitle": "Escalaciones",

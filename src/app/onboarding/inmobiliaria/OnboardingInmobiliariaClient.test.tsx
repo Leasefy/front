@@ -44,8 +44,6 @@ function baseHookResult(overrides: Record<string, unknown> = {}) {
     submitMembers: vi.fn(),
     submitPaymentProvider: vi.fn(),
     submitPolicy: vi.fn(),
-    presignHabeasData: vi.fn(),
-    confirmHabeasData: vi.fn(),
     acceptTerms: vi.fn(),
     completeOnboarding: vi.fn(),
     ...overrides,

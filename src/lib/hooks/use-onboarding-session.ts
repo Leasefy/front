@@ -29,8 +29,6 @@ import {
   submitMembers as submitMembersStep,
   submitPaymentProvider as submitPaymentProviderStep,
   submitPolicy as submitPolicyStep,
-  presignHabeasData as presignHabeasDataStep,
-  confirmHabeasData as confirmHabeasDataStep,
   acceptTerms as acceptTermsStep,
   completeOnboarding as completeOnboardingStep,
   resumeOnboarding,
@@ -45,10 +43,7 @@ import type {
   OnboardingSessionPaymentProviderResponse,
   OnboardingSessionPolicyRequest,
   OnboardingSessionPolicyResponse,
-  OnboardingSessionHabeasDataPresignRequest,
-  OnboardingSessionHabeasDataPresignResponse,
-  OnboardingSessionHabeasDataConfirmRequest,
-  OnboardingSessionHabeasDataConfirmResponse,
+  OnboardingSessionAcceptTermsResponse,
   OnboardingSessionCompleteResponse,
 } from '../api/generated/agency'
 
@@ -63,7 +58,7 @@ export type OnboardingWizardStep =
 
 export type OnboardingSessionStatus = 'idle' | 'loading' | 'submitting' | 'error'
 
-/** Shape shared by every step response except presign (no draft) and complete (terminal). */
+/** Shape shared by every step response except complete (terminal). */
 interface StepEnvelope {
   currentStep: OnboardingWizardStep
   nextStep: OnboardingWizardStep | null
@@ -90,14 +85,8 @@ export interface UseOnboardingSessionResult {
   submitPolicy: (
     body: OnboardingSessionPolicyRequest,
   ) => Promise<OnboardingSessionPolicyResponse | null>
-  presignHabeasData: (
-    body: OnboardingSessionHabeasDataPresignRequest,
-  ) => Promise<OnboardingSessionHabeasDataPresignResponse | null>
-  confirmHabeasData: (
-    body: OnboardingSessionHabeasDataConfirmRequest,
-  ) => Promise<OnboardingSessionHabeasDataConfirmResponse | null>
   /** Completes the `habeas_data` step from a terms acceptance (see acceptTerms in the service). */
-  acceptTerms: () => Promise<OnboardingSessionHabeasDataConfirmResponse | null>
+  acceptTerms: () => Promise<OnboardingSessionAcceptTermsResponse | null>
   completeOnboarding: () => Promise<OnboardingSessionCompleteResponse | null>
 }
 
@@ -230,35 +219,13 @@ export function useOnboardingSession(sessionId: string): UseOnboardingSessionRes
     (body: OnboardingSessionPolicyRequest) => runStep(() => submitPolicyStep(sessionId, body)),
     [runStep, sessionId],
   )
-  const confirmHabeasData = useCallback(
-    (body: OnboardingSessionHabeasDataConfirmRequest) =>
-      runStep(() => confirmHabeasDataStep(sessionId, body)),
-    [runStep, sessionId],
-  )
   const acceptTerms = useCallback(
     () => runStep(() => acceptTermsStep(sessionId)),
     [runStep, sessionId],
   )
 
-  // presignHabeasData and completeOnboarding don't return a StepEnvelope —
-  // handled separately: presign leaves currentStep/nextStep/draft untouched,
-  // complete pins currentStep to 'complete' on success.
-  const presignHabeasData = useCallback(
-    async (body: OnboardingSessionHabeasDataPresignRequest) => {
-      setStatus('submitting')
-      setError(null)
-      try {
-        const result = await withRetry(() => presignHabeasDataStep(sessionId, body))
-        if (mountedRef.current) setStatus('idle')
-        return result
-      } catch (err) {
-        applyError(err)
-        return null
-      }
-    },
-    [sessionId, applyError],
-  )
-
+  // completeOnboarding doesn't return a StepEnvelope — handled separately:
+  // it pins currentStep to 'complete' on success.
   const completeOnboarding = useCallback(async () => {
     setStatus('submitting')
     setError(null)
@@ -287,8 +254,6 @@ export function useOnboardingSession(sessionId: string): UseOnboardingSessionRes
     submitMembers,
     submitPaymentProvider,
     submitPolicy,
-    presignHabeasData,
-    confirmHabeasData,
     acceptTerms,
     completeOnboarding,
   }

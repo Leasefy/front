@@ -22,7 +22,7 @@
 
 import * as React from 'react'
 import { useRef, useState } from 'react'
-import { FileArrowUp } from '@phosphor-icons/react'
+import { FileArrowUp, WarningCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui'
 import {
   useCarteraImport,
@@ -88,9 +88,17 @@ export function CobranzaImportCard({
             Importar cartera
           </h2>
           <p className="text-sm text-muted-foreground">
-            Sube un archivo CSV con tus deudores (cédula, nombre, teléfono y, si
-            tienes, el saldo). Se crean o actualizan sin duplicar. No se contacta
-            a nadie al importar.
+            Sube un archivo CSV con tus deudores: cédula, nombre, teléfono,
+            saldo y{' '}
+            <strong className="font-medium text-foreground">
+              fecha de vencimiento
+            </strong>
+            . Reconocemos los nombres de columna más comunes. Se crean o
+            actualizan sin duplicar y no se contacta a nadie al importar.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Sin fecha de vencimiento no se puede calcular la mora: esas filas
+            entran como deudor, pero no pasan a cobranza.
           </p>
         </div>
       </div>
@@ -161,8 +169,64 @@ export function CobranzaImportCard({
             {summary.truncado
               ? ' · se procesó solo el límite máximo permitido por archivo'
               : ''}
+            {typeof summary.altasAlEmbudo === 'number'
+              ? ` · ${summary.altasAlEmbudo} ${
+                  summary.altasAlEmbudo === 1 ? 'entró' : 'entraron'
+                } a cobranza`
+              : ''}
             .
           </p>
+
+          {/* Cómo se leyeron las fechas. Un archivo interpretado al revés corre
+              TODOS los vencimientos un mes y eso no se nota en los totales: se
+              nota cuando alguien recibe una llamada que no correspondía. */}
+          {summary.vencimiento?.columna && !summary.vencimiento.probado && (
+            <div className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2">
+              <WarningCircle
+                className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
+                aria-hidden="true"
+              />
+              <div>
+                <p className="text-sm font-medium text-warning">
+                  Revisá el formato de las fechas
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Leímos «{summary.vencimiento.columna}» como{' '}
+                  {summary.vencimiento.orden === 'dmy'
+                    ? 'día/mes/año'
+                    : 'mes/día/año'}
+                  , pero ninguna fila lo confirma (todos los días son 12 o
+                  menos). Si tu archivo usa el otro orden, los vencimientos
+                  quedaron corridos. Para evitarlo, escribí las fechas como
+                  AAAA-MM-DD.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {typeof summary.sinVencimiento === 'number' &&
+            summary.sinVencimiento > 0 && (
+              <div className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2">
+                <WarningCircle
+                  className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
+                  aria-hidden="true"
+                />
+                <div>
+                  <p className="text-sm font-medium text-warning">
+                    {summary.sinVencimiento} fila
+                    {summary.sinVencimiento === 1 ? '' : 's'} con saldo pero sin
+                    fecha de vencimiento
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {summary.sinVencimiento === 1 ? 'Entró' : 'Entraron'} como
+                    deudor, pero sin vencimiento no hay días de mora que
+                    calcular, así que no{' '}
+                    {summary.sinVencimiento === 1 ? 'pasa' : 'pasan'} a
+                    cobranza. Agregá la fecha y volvé a subir el archivo.
+                  </p>
+                </div>
+              </div>
+            )}
 
           {summary.errores.length > 0 && (
             <details className="rounded-md border border-border bg-surface-muted px-3 py-2.5">

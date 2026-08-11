@@ -30,6 +30,7 @@ import {
   FileMagnifyingGlass,
   SealCheck,
   ShareNetwork,
+  WarningCircle,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
@@ -40,6 +41,7 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgencyAvaluos } from '@/lib/hooks/useInmobiliaria'
 import { avaluosApi } from '@/lib/api/inmobiliaria.service'
 import { ApiError } from '@/lib/api/client'
+import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url'
 import { formatCurrency, formatDate } from '@/lib/format'
 
 // ---------------------------------------------------------------------------
@@ -117,6 +119,17 @@ const COMO_FUNCIONA_STEPS: { icon: Icon; title: string; desc: string }[] = [
 function AvaluosSala() {
   const [activeState, setActiveState] = useState('')
   const [page, setPage] = useState(0)
+
+  // Both CTAs end at the avalúo MICRO's wizard, whose origin comes from
+  // `NEXT_PUBLIC_AVALUO_API_URL`. When that is unset there is no URL to compose:
+  // `avaluosApi.solicitar()` throws AFTER the back has already minted an agency
+  // token, so the click cost a round-trip and returned nothing usable.
+  //
+  // `wizard-url.ts` states the contract: "Empty when the micro base is unset →
+  // callers must degrade (hide/disable the CTA)". `/avaluo/nuevo` already honours
+  // it ("no está disponible por ahora"); this panel did not — it offered two live
+  // buttons for a service it could not reach. Say so BEFORE the click, not after.
+  const servicioConfigurado = AVALUO_WIZARD_ORIGIN !== ''
 
   // Two distinct ways to request an avalúo, both backed by `avaluosApi.solicitar()`:
   //  - Directo: the agency member does it themselves now → open the wizard in a
@@ -250,6 +263,29 @@ function AvaluosSala() {
         data-testid="avaluos-solicitar"
       >
         <h2 className="text-base font-semibold text-foreground">Solicitar un avalúo</h2>
+
+        {!servicioConfigurado && (
+          <div
+            className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2"
+            data-testid="avaluos-servicio-no-configurado"
+          >
+            <WarningCircle
+              className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
+              aria-hidden="true"
+            />
+            <div>
+              <p className="text-sm font-medium text-warning">
+                Las solicitudes de avalúo están desconectadas
+              </p>
+              <p className="text-body-sm text-fg-muted mt-0.5">
+                Este entorno no tiene conectado el servicio de avalúos, así que no podemos abrir el
+                asistente ni generar links para compartir. Tus avalúos anteriores se siguen viendo
+                más abajo.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Directo — lo hago yo */}
           <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-4">
@@ -263,7 +299,7 @@ function AvaluosSala() {
               hideArrow
               className="mt-auto w-full"
               isLoading={openingWizard}
-              disabled={openingWizard}
+              disabled={openingWizard || !servicioConfigurado}
               onClick={onSolicitarDirecto}
               data-testid="avaluos-solicitar-directo-cta"
             >
@@ -285,7 +321,7 @@ function AvaluosSala() {
               variant="secondary"
               className="mt-auto w-full"
               isLoading={generatingLink}
-              disabled={generatingLink}
+              disabled={generatingLink || !servicioConfigurado}
               onClick={onGenerarLink}
               data-testid="avaluos-generar-link-cta"
             >

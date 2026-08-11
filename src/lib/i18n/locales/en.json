@@ -6469,7 +6469,7 @@
         },
         "avaluos": {
           "title": "Appraisals Agent",
-          "description": "Request certified appraisals and track every request from My requests without leaving the panel. The partner appraiser handles the visit and signature; you see the full trail."
+          "description": "Request reference value estimates and track every request from My requests without leaving the panel. They are 100% remote, with no site visit: a Leasefy reviewer reviews and signs the certificate."
         },
         "conciliacion": {
           "title": "Reconciliation Agent",
@@ -8307,7 +8307,7 @@
           "desc": "Request a property's market appraisal",
           "intro": {
             "titulo": "You're requesting an appraisal",
-            "resumen": "A licensed appraiser does it and it comes back signed. The request lives outside this panel, so it opens in a new tab and you won't lose anything you have open here.",
+            "resumen": "It is a reference value estimate, 100% remote and with no site visit: a Leasefy reviewer reviews and signs it. The request lives outside this panel, so it opens in a new tab and you won't lose anything you have open here.",
             "paso1": "Enter the address and property details.",
             "paso2": "Say what you need it for.",
             "paso3": "Track it under Appraisals until the signed report arrives.",

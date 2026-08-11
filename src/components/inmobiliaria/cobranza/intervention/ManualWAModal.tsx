@@ -37,6 +37,7 @@ import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import type { paths } from '@/lib/api/generated/agent'
 import { construirVistaPrevia } from '@/lib/cobranza/wa-preview'
 import { construirPrefillWA } from '@/lib/cobranza/wa-prefill'
 import {
@@ -71,15 +72,20 @@ interface ManualWAModalProps {
   onSuccess: () => void
 }
 
-interface WATemplate {
-  id: string
-  label: string
-  variables: string[]
-  /** Texto exacto del mensaje. Ausente en agentes anteriores a agent#90. */
-  body?: string
-  /** Qué es cada variable, en español. Ausente en agentes anteriores a agent#90. */
-  variableHints?: Array<{ name: string; description: string }>
-}
+/**
+ * Del contrato generado, no escrito a mano — ver
+ * `reference-tipos-generados-del-agente-son-el-contrato`.
+ *
+ * `body` y `variableHints` se marcan OPCIONALES a propósito: el contrato dice
+ * que el agente los manda, pero un despliegue anterior a Leasefy/agent#90 no.
+ * El modal degrada (muestra el nombre crudo y esconde la vista previa) en vez
+ * de romperse mientras el agente sube.
+ */
+type WATemplateDelContrato =
+  paths['/api/agency/{agencyId}/cobranza/wa-templates']['get']['responses'][200]['content']['application/json']['templates'][number]
+
+type WATemplate = Omit<WATemplateDelContrato, 'body' | 'variableHints'> &
+  Partial<Pick<WATemplateDelContrato, 'body' | 'variableHints'>>
 
 export function ManualWAModal({
   open,

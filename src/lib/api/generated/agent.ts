@@ -7552,6 +7552,7 @@ export interface components {
             action: string;
             actor_type: string;
             actor_id: string | null;
+            actor_role: string | null;
             ip: string | null;
             user_agent: string | null;
             occurred_at: string;
@@ -7752,6 +7753,11 @@ export interface components {
                 id: string;
                 label: string;
                 variables: string[];
+                body: string;
+                variableHints: {
+                    name: string;
+                    description: string;
+                }[];
             }[];
         };
         CobranzaEscalationCard: {

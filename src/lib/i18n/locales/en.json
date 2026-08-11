@@ -2615,8 +2615,8 @@
         },
         "portal": {
           "title": "From portals",
-          "desc": "Import from FincaRaíz, Metrocuadrado",
-          "badge": "Coming soon"
+          "desc": "Download your inventory from FincaRaíz, Metrocuadrado or Ciencuadras",
+          "badge": "Guided"
         }
       },
       "upload": {
@@ -2719,17 +2719,12 @@
         "requestHelp": "Upload the file"
       },
       "portal": {
-        "title": "Import from portals",
-        "subtitle": "Connect your agency profile to automatically import properties",
-        "comingSoon": "Coming soon",
-        "backToPortfolio": "Back to portfolio",
-        "emailCapture": {
-          "title": "Interested in this feature?",
-          "subtitle": "Leave your email and we'll notify you when it's available",
-          "placeholder": "your@email.com",
-          "submit": "Notify me",
-          "success": "Registered! We'll notify you when it's available."
-        }
+        "title": "Bring your properties from a portal",
+        "subtitle": "Download your inventory from the portal's panel and upload it here. We'll match the columns.",
+        "porQue": "Portals don't hand your properties over through an API: the integration that exists runs the other way, publishing from your system into them. But your inventory is already in your portal panel, and you can download it from there.",
+        "abrirPanel": "Go to my panel",
+        "yaLoTengo": "I already have the portal's file",
+        "backToPortfolio": "Back to portfolio"
       }
     },
     "consignaciones": {

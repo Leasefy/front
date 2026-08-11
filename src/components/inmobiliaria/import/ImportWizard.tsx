@@ -69,17 +69,17 @@ export function ImportWizard() {
 
   // Cambiar de método vuelve al paso 1 — salvo cuando el cambio ES el atajo.
   //
-  // Desde «Exporta desde tu software», tanto «Ya tengo mi archivo» como
-  // «¿Tu software no está en la lista?» ponen method='excel'. Eso no es
-  // cambiar de idea sobre el método: es decir «saltemos las instrucciones, ya
-  // tengo el archivo». Mandarlo al paso 1 lo devuelve al principio, que es
-  // justo lo que esos botones prometen evitar.
+  // Los dos pasos guiados —«Desde software» y «Desde portales»— terminan en
+  // «ya tengo el archivo», que pone method='excel'. Eso no es cambiar de idea
+  // sobre el método: es decir «saltemos las instrucciones». Mandarlo al paso 1
+  // lo devuelve al principio, que es justo lo que esos botones prometen evitar.
   const prevMethodRef = useRef(wizardState.method);
   useEffect(() => {
     if (prevMethodRef.current !== wizardState.method && wizardState.method !== null) {
-      const veniaDeSoftware = prevMethodRef.current === 'software';
+      const veniaDeUnaGuia =
+        prevMethodRef.current === 'software' || prevMethodRef.current === 'portal';
       prevMethodRef.current = wizardState.method;
-      setCurrentStep(veniaDeSoftware && wizardState.method === 'excel' ? 2 : 1);
+      setCurrentStep(veniaDeUnaGuia && wizardState.method === 'excel' ? 2 : 1);
     }
   }, [wizardState.method]);
 
@@ -284,7 +284,9 @@ export function ImportWizard() {
 
         {/* Footer Navigation — hidden when import is complete */}
         {!(currentStep === 5 && wizardState.importedCount > 0) && (
-          <div className="px-6 py-4 border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-[#14130F] flex items-center justify-between">
+          // El pie tiene fondo propio: sin `rounded-b-xl` pinta por encima de
+          // las esquinas del card y las dos de abajo quedan cuadradas.
+          <div className="px-6 py-4 rounded-b-xl border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-[#14130F] flex items-center justify-between">
             {/* Cancel Button */}
             <Button
               type="button"

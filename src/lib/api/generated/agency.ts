@@ -15,8 +15,7 @@
 //   POST /onboarding/{token}/members
 //   POST /onboarding/{token}/payment-provider
 //   POST /onboarding/{token}/policy
-//   GET  /onboarding/{token}/habeas-data/presign-url
-//   POST /onboarding/{token}/habeas-data/confirm
+//   POST /onboarding/{token}/habeas-data/accept-terms
 //   POST /onboarding/{token}/complete
 import type { components as AgentComponents } from './agent'
 export type { paths, components, operations } from './agent'
@@ -31,8 +30,7 @@ export type OnboardingResumeResponse = AgentComponents['schemas']['OnboardingRes
 //   POST /onboarding/session/{sessionId}/members
 //   POST /onboarding/session/{sessionId}/payment-provider
 //   POST /onboarding/session/{sessionId}/policy
-//   POST /onboarding/session/{sessionId}/habeas-data/presign-url
-//   POST /onboarding/session/{sessionId}/habeas-data/confirm
+//   POST /onboarding/session/{sessionId}/habeas-data/accept-terms
 //   POST /onboarding/session/{sessionId}/complete
 //   GET  /onboarding/session/{sessionId}/resume
 // Shares business logic with the magic-link token routes above via the
@@ -63,14 +61,23 @@ export type OnboardingSessionPolicyRequest =
   AgentComponents['schemas']['OnboardingSessionPolicyRequest']
 export type OnboardingSessionPolicyResponse =
   AgentComponents['schemas']['OnboardingSessionPolicyResponse']
-export type OnboardingSessionHabeasDataPresignRequest =
-  AgentComponents['schemas']['OnboardingSessionHabeasDataPresignRequest']
-export type OnboardingSessionHabeasDataPresignResponse =
-  AgentComponents['schemas']['OnboardingSessionHabeasDataPresignResponse']
-export type OnboardingSessionHabeasDataConfirmRequest =
-  AgentComponents['schemas']['OnboardingSessionHabeasDataConfirmRequest']
-export type OnboardingSessionHabeasDataConfirmResponse =
-  AgentComponents['schemas']['OnboardingSessionHabeasDataConfirmResponse']
+/**
+ * Paso `habeas_data`. Se completa aceptando los términos, NO subiendo un PDF
+ * firmado: el agente borró `habeas-data/presign-url` y `habeas-data/confirm`,
+ * y esta es la única ruta que queda para cerrar el paso.
+ *
+ * La respuesta es un superconjunto del sobre de paso (sessionId/currentStep/
+ * nextStep/draft) más el commit del tenant (tenantId/agencyId/status/
+ * dashboardUrl): el agente hace en UNA llamada lo que antes eran dos, así que
+ * la SPA no llama `/complete` por separado.
+ */
+export type OnboardingSessionAcceptTermsRequest =
+  AgentComponents['schemas']['OnboardingSessionAcceptTermsRequest']
+export type OnboardingSessionAcceptTermsResponse =
+  AgentComponents['schemas']['OnboardingSessionAcceptTermsResponse']
+/** 409 de accept-terms: faltan pasos previos del wizard. */
+export type OnboardingSessionAcceptTermsMissingSteps =
+  AgentComponents['schemas']['OnboardingSessionAcceptTermsMissingSteps']
 export type OnboardingSessionCompleteResponse =
   AgentComponents['schemas']['OnboardingSessionCompleteResponse']
 export type OnboardingSessionResumeResponse =

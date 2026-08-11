@@ -35,16 +35,16 @@ describe('describirActor', () => {
 
   it('el agente y el sistema se nombran por lo que son, no con un slug', () => {
     expect(
-      describirActor({ actor_type: 'saas_orchestrator', actor_id: null }, t),
+      describirActor({ actor_type: 'saas_orchestrator', actor_id: null, actor_role: null }, t),
     ).toBe('agente')
-    expect(describirActor({ actor_type: 'system', actor_id: null }, t)).toBe(
+    expect(describirActor({ actor_type: 'system', actor_id: null, actor_role: null }, t)).toBe(
       'sistema',
     )
   })
 
   it('un tipo de actor desconocido se muestra crudo, sin inventarle nombre', () => {
     // En una traza, equivocarse es peor que verse feo.
-    expect(describirActor({ actor_type: 'webhook_x', actor_id: null }, t)).toBe(
+    expect(describirActor({ actor_type: 'webhook_x', actor_id: null, actor_role: null }, t)).toBe(
       'webhook_x',
     )
   })

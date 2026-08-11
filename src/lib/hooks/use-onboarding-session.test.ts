@@ -25,8 +25,6 @@ vi.mock('../api/onboarding-session.service', async () => {
     submitMembers: vi.fn(),
     submitPaymentProvider: vi.fn(),
     submitPolicy: vi.fn(),
-    presignHabeasData: vi.fn(),
-    confirmHabeasData: vi.fn(),
     acceptTerms: vi.fn(),
     completeOnboarding: vi.fn(),
   }
@@ -37,7 +35,6 @@ import {
   resumeOnboarding,
   submitAgency,
   submitPolicy,
-  presignHabeasData,
   completeOnboarding,
 } from '../api/onboarding-session.service'
 import { useOnboardingSession } from './use-onboarding-session'
@@ -45,7 +42,6 @@ import { useOnboardingSession } from './use-onboarding-session'
 const resumeMock = resumeOnboarding as unknown as ReturnType<typeof vi.fn>
 const submitAgencyMock = submitAgency as unknown as ReturnType<typeof vi.fn>
 const submitPolicyMock = submitPolicy as unknown as ReturnType<typeof vi.fn>
-const presignHabeasDataMock = presignHabeasData as unknown as ReturnType<typeof vi.fn>
 const completeOnboardingMock = completeOnboarding as unknown as ReturnType<typeof vi.fn>
 
 type Hook = ReturnType<typeof useOnboardingSession>
@@ -86,7 +82,6 @@ beforeEach(() => {
   resumeMock.mockReset()
   submitAgencyMock.mockReset()
   submitPolicyMock.mockReset()
-  presignHabeasDataMock.mockReset()
   completeOnboardingMock.mockReset()
 })
 
@@ -304,32 +299,6 @@ describe('useOnboardingSession — StrictMode double-mount (dev)', () => {
 })
 
 describe('useOnboardingSession — non-envelope actions', () => {
-  it('presignHabeasData does not touch currentStep/nextStep/draft', async () => {
-    resumeMock.mockResolvedValueOnce(RESUME_START)
-    presignHabeasDataMock.mockResolvedValueOnce({
-      presignedUrl: 'https://s3.example/upload',
-      s3Key: 'k1',
-      expiresIn: 900,
-    })
-
-    const hook = renderHook('sess_1')
-    await act(async () => {
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-
-    await act(async () => {
-      await hook.get().presignHabeasData({
-        fileName: 'contrato.pdf',
-        contentType: 'application/pdf',
-        fileSize: 1024,
-      })
-    })
-
-    expect(hook.get().currentStep).toBe('start')
-    expect(hook.get().status).toBe('idle')
-  })
-
   it('completeOnboarding pins currentStep to "complete" on success', async () => {
     resumeMock.mockResolvedValueOnce(RESUME_START)
     completeOnboardingMock.mockResolvedValueOnce({

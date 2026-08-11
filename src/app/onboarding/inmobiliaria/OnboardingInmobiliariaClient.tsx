@@ -239,8 +239,10 @@ function OnboardingWizard({
               // The signed-habeas-data upload was replaced by a terms
               // acceptance. The agent step is still `habeas_data`; it's
               // completed via acceptTerms (backend handoff — see
-              // onboarding-session.service.ts). HabeasDataStepForm is kept in
-              // the codebase, unreachable, for future reuse.
+              // onboarding-session.service.ts). El formulario de subida
+              // (HabeasDataStepForm) se borró: sus dos rutas —presign-url y
+              // confirm— ya no existen en el agente, así que «guardarlo para
+              // después» era guardar llamadas a un 404.
               <TermsStepForm
                 isSubmitting={isSubmitting}
                 onSubmit={withOverrideClear(acceptTerms)}

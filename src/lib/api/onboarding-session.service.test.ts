@@ -20,8 +20,6 @@ import {
   submitMembers,
   submitPaymentProvider,
   submitPolicy,
-  presignHabeasData,
-  confirmHabeasData,
   completeOnboarding,
   resumeOnboarding,
   OnboardingSessionError,
@@ -32,8 +30,6 @@ import type {
   OnboardingSessionPaymentProviderRequest,
   OnboardingSessionPaymentProviderSkipRequest,
   OnboardingSessionPolicyRequest,
-  OnboardingSessionHabeasDataPresignRequest,
-  OnboardingSessionHabeasDataConfirmRequest,
 } from './generated/agency'
 
 const SESSION_ID = 'session-123'
@@ -389,41 +385,4 @@ describe('remaining write steps — happy path smoke tests', () => {
     expect(result).toEqual(RESPONSE)
   })
 
-  it('presignHabeasData POSTs to /habeas-data/presign-url', async () => {
-    const body: OnboardingSessionHabeasDataPresignRequest = {
-      fileName: 'habeas-data.pdf',
-      contentType: 'application/pdf',
-      fileSize: 1024,
-    }
-    const RESPONSE = { presignedUrl: 'https://s3.test/put', s3Key: 'key.pdf', expiresIn: 900 }
-    const fetchMock = mockFetchOnce(jsonResponse(RESPONSE))
-
-    const result = await presignHabeasData(SESSION_ID, body)
-
-    const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
-    expect(url).toBe(`${AGENT_URL}/onboarding/session/${SESSION_ID}/habeas-data/presign-url`)
-    expect(result).toEqual(RESPONSE)
-  })
-
-  it('confirmHabeasData POSTs to /habeas-data/confirm', async () => {
-    const body: OnboardingSessionHabeasDataConfirmRequest = {
-      s3Key: 'key.pdf',
-      sha256: 'abc123',
-      signedByFullName: 'Juan Perez',
-      signedByCedula: '123456789',
-    }
-    const RESPONSE = {
-      sessionId: SESSION_ID,
-      currentStep: 'habeas_data',
-      nextStep: 'complete',
-      draft: {},
-    }
-    const fetchMock = mockFetchOnce(jsonResponse(RESPONSE))
-
-    const result = await confirmHabeasData(SESSION_ID, body)
-
-    const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
-    expect(url).toBe(`${AGENT_URL}/onboarding/session/${SESSION_ID}/habeas-data/confirm`)
-    expect(result).toEqual(RESPONSE)
-  })
 })

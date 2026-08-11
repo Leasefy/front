@@ -15,7 +15,10 @@ import { Badge } from '@/components/ui'
 
 import { useI18n } from '@/lib/i18n'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
-import { useDebtorAudit } from '@/lib/hooks/cobranza/use-debtor-audit'
+import {
+  useDebtorAudit,
+  type DebtorAuditEntry,
+} from '@/lib/hooks/cobranza/use-debtor-audit'
 import { PauseModal } from '@/components/inmobiliaria/cobranza/intervention/PauseModal'
 import { ForceStageModal } from '@/components/inmobiliaria/cobranza/intervention/ForceStageModal'
 import { ManualWAModal } from '@/components/inmobiliaria/cobranza/intervention/ManualWAModal'
@@ -26,12 +29,15 @@ void React
 
 type OpenModal = 'pause' | 'forceStage' | 'manualWA' | 'manualCall' | null
 
-/** Lo mínimo que este archivo necesita de una fila de auditoría. */
-interface ActorDeAuditoria {
-  actor_type: string
-  actor_id?: string | null
-  actor_role?: string | null
-}
+/**
+ * Lo mínimo que este archivo necesita de una fila de auditoría, DERIVADO del
+ * contrato generado.
+ *
+ * Estaba escrito a mano (`actor_role?: string | null`) porque el contrato
+ * todavía no traía el campo. Ahora sí — y un campo de auditoría declarado a
+ * mano es justo lo que después no avisa cuando el agente lo renombra.
+ */
+type ActorDeAuditoria = Pick<DebtorAuditEntry, 'actor_type' | 'actor_id' | 'actor_role'>
 
 /**
  * Quién hizo la acción, para poder rastrearla.

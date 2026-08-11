@@ -32,10 +32,7 @@ import type {
   OnboardingSessionPaymentProviderResponse,
   OnboardingSessionPolicyRequest,
   OnboardingSessionPolicyResponse,
-  OnboardingSessionHabeasDataPresignRequest,
-  OnboardingSessionHabeasDataPresignResponse,
-  OnboardingSessionHabeasDataConfirmRequest,
-  OnboardingSessionHabeasDataConfirmResponse,
+  OnboardingSessionAcceptTermsResponse,
   OnboardingSessionCompleteResponse,
   OnboardingSessionResumeResponse,
   OnboardingSessionStepConflict,
@@ -259,20 +256,6 @@ export function submitPolicy(
   return postStep(sessionId, '/policy', body)
 }
 
-export function presignHabeasData(
-  sessionId: string,
-  body: OnboardingSessionHabeasDataPresignRequest,
-): Promise<OnboardingSessionHabeasDataPresignResponse> {
-  return postStep(sessionId, '/habeas-data/presign-url', body)
-}
-
-export function confirmHabeasData(
-  sessionId: string,
-  body: OnboardingSessionHabeasDataConfirmRequest,
-): Promise<OnboardingSessionHabeasDataConfirmResponse> {
-  return postStep(sessionId, '/habeas-data/confirm', body)
-}
-
 /**
  * Completes the `habeas_data` wizard step from a terms-and-conditions
  * acceptance instead of a signed-PDF upload (see `TermsStepForm`).
@@ -287,9 +270,11 @@ export function confirmHabeasData(
  * `termsVersion` is REQUIRED by the agent (400 if absent) and is recorded
  * verbatim, so the row reflects exactly the T&C text the user saw. The
  * response is a superset of the step envelope (currentStep/nextStep/draft) plus
- * the tenant-commit fields (tenantId/agencyId/status/dashboardUrl). Once
- * `pnpm api:gen` regenerates the agent types, swap the response type for the
- * generated `OnboardingSessionAcceptTermsResponse`.
+ * the tenant-commit fields (tenantId/agencyId/status/dashboardUrl).
+ *
+ * Es la ÚNICA forma de cerrar el paso `habeas_data`. La subida del PDF firmado
+ * (`presign-url` + `confirm`) ya no existe en el agente; el formulario que la
+ * usaba se borró junto con esta regeneración del contrato.
  */
 
 /**
@@ -301,7 +286,7 @@ export const CURRENT_TERMS_VERSION = '2026-08'
 
 export function acceptTerms(
   sessionId: string,
-): Promise<OnboardingSessionHabeasDataConfirmResponse> {
+): Promise<OnboardingSessionAcceptTermsResponse> {
   return postStep(sessionId, '/habeas-data/accept-terms', {
     accepted: true,
     termsVersion: CURRENT_TERMS_VERSION,

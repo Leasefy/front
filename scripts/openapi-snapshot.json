@@ -1127,56 +1127,7 @@
           }
         }
       },
-      "OnboardingHabeasDataPresignResponse": {
-        "type": "object",
-        "properties": {
-          "presignedUrl": {
-            "type": "string"
-          },
-          "s3Key": {
-            "type": "string"
-          },
-          "expiresIn": {
-            "type": "integer",
-            "exclusiveMinimum": 0
-          }
-        },
-        "required": [
-          "presignedUrl",
-          "s3Key",
-          "expiresIn"
-        ]
-      },
-      "OnboardingHabeasDataPresignRequest": {
-        "type": "object",
-        "properties": {
-          "fileName": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255,
-            "example": "habeas-data-delegation.pdf"
-          },
-          "contentType": {
-            "type": "string",
-            "enum": [
-              "application/pdf"
-            ],
-            "example": "application/pdf"
-          },
-          "fileSize": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 10485760,
-            "example": 524288
-          }
-        },
-        "required": [
-          "fileName",
-          "contentType",
-          "fileSize"
-        ]
-      },
-      "OnboardingHabeasDataConfirmResponse": {
+      "OnboardingAcceptTermsResponse": {
         "type": "object",
         "properties": {
           "sessionId": {
@@ -1213,52 +1164,76 @@
           "draft": {
             "type": "object",
             "additionalProperties": {}
+          },
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "agencyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETED"
+            ]
+          },
+          "dashboardUrl": {
+            "type": "string"
           }
         },
         "required": [
           "sessionId",
           "currentStep",
           "nextStep",
-          "draft"
+          "draft",
+          "tenantId",
+          "agencyId",
+          "status",
+          "dashboardUrl"
         ]
       },
-      "OnboardingHabeasDataConfirmRequest": {
+      "OnboardingAcceptTermsMissingSteps": {
         "type": "object",
         "properties": {
-          "s3Key": {
-            "type": "string",
-            "minLength": 1,
-            "example": "habeas-data/<sessionId>/<uuid>.pdf"
+          "error": {
+            "type": "string"
           },
-          "sha256": {
-            "type": "string",
-            "pattern": "^[0-9a-f]{64}$",
-            "example": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-          },
-          "signedByFullName": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 200,
-            "example": "Juan Pérez García"
-          },
-          "signedByCedula": {
-            "type": "string",
-            "minLength": 5,
-            "maxLength": 40,
-            "example": "CC 1.012.345.678"
-          },
-          "contractVersion": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20,
-            "example": "2026-01"
+          "missingSteps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
-          "s3Key",
-          "sha256",
-          "signedByFullName",
-          "signedByCedula"
+          "error",
+          "missingSteps"
+        ]
+      },
+      "OnboardingAcceptTermsRequest": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Must be exactly true — the user checked the T&C box",
+            "example": true
+          },
+          "termsVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Version identifier of the T&C text the SPA rendered. Recorded as-is.",
+            "example": "2026-08"
+          }
+        },
+        "required": [
+          "accepted",
+          "termsVersion"
         ]
       },
       "OnboardingCompleteResponse": {
@@ -1796,57 +1771,7 @@
           }
         }
       },
-      "OnboardingSessionHabeasDataPresignResponse": {
-        "type": "object",
-        "properties": {
-          "presignedUrl": {
-            "type": "string"
-          },
-          "s3Key": {
-            "type": "string"
-          },
-          "expiresIn": {
-            "type": "integer",
-            "exclusiveMinimum": 0
-          }
-        },
-        "required": [
-          "presignedUrl",
-          "s3Key",
-          "expiresIn"
-        ]
-      },
-      "OnboardingSessionHabeasDataPresignRequest": {
-        "type": "object",
-        "properties": {
-          "fileName": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "contentType": {
-            "type": "string",
-            "enum": [
-              "application/pdf"
-            ]
-          },
-          "fileSize": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 10485760
-          },
-          "tenantId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        },
-        "required": [
-          "fileName",
-          "contentType",
-          "fileSize"
-        ]
-      },
-      "OnboardingSessionHabeasDataConfirmResponse": {
+      "OnboardingSessionAcceptTermsResponse": {
         "type": "object",
         "properties": {
           "sessionId": {
@@ -1883,52 +1808,76 @@
           "draft": {
             "type": "object",
             "additionalProperties": {}
+          },
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "agencyId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETED"
+            ]
+          },
+          "dashboardUrl": {
+            "type": "string"
           }
         },
         "required": [
           "sessionId",
           "currentStep",
           "nextStep",
-          "draft"
+          "draft",
+          "tenantId",
+          "agencyId",
+          "status",
+          "dashboardUrl"
         ]
       },
-      "OnboardingSessionHabeasDataConfirmRequest": {
+      "OnboardingSessionAcceptTermsMissingSteps": {
         "type": "object",
         "properties": {
-          "s3Key": {
-            "type": "string",
-            "minLength": 1
+          "error": {
+            "type": "string"
           },
-          "sha256": {
-            "type": "string",
-            "pattern": "^[0-9a-f]{64}$"
-          },
-          "signedByFullName": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 200
-          },
-          "signedByCedula": {
-            "type": "string",
-            "minLength": 5,
-            "maxLength": 40
-          },
-          "contractVersion": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20,
-            "example": "2026-01"
-          },
-          "tenantId": {
-            "type": "string",
-            "format": "uuid"
+          "missingSteps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
-          "s3Key",
-          "sha256",
-          "signedByFullName",
-          "signedByCedula"
+          "error",
+          "missingSteps"
+        ]
+      },
+      "OnboardingSessionAcceptTermsRequest": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Must be exactly true — the user checked the T&C box",
+            "example": true
+          },
+          "termsVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Version identifier of the T&C text the SPA rendered. Recorded as-is so the row reflects exactly what the user saw.",
+            "example": "2026-08"
+          }
+        },
+        "required": [
+          "accepted",
+          "termsVersion"
         ]
       },
       "OnboardingSessionCompleteResponse": {
@@ -5145,6 +5094,12 @@
               "null"
             ]
           },
+          "actor_role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "ip": {
             "type": [
               "string",
@@ -5167,6 +5122,7 @@
           "action",
           "actor_type",
           "actor_id",
+          "actor_role",
           "ip",
           "user_agent",
           "occurred_at"
@@ -6066,12 +6022,35 @@
                   "items": {
                     "type": "string"
                   }
+                },
+                "body": {
+                  "type": "string"
+                },
+                "variableHints": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "description"
+                    ]
+                  }
                 }
               },
               "required": [
                 "id",
                 "label",
-                "variables"
+                "variables",
+                "body",
+                "variableHints"
               ]
             }
           }
@@ -9718,6 +9697,42 @@
           "error"
         ]
       },
+      "CarteraImportVencimiento": {
+        "type": "object",
+        "properties": {
+          "columna": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Encabezado que se detectó como fecha de vencimiento."
+          },
+          "orden": {
+            "type": "string",
+            "enum": [
+              "dmy",
+              "mdy"
+            ],
+            "description": "Cómo se interpretaron las fechas ambiguas tipo 03/04/2026."
+          },
+          "probado": {
+            "type": "boolean",
+            "description": "true si alguna fila lo demostró (traía un día > 12). En false el orden es una SUPOSICIÓN (DD/MM, convención colombiana) y conviene mostrarlo para que la agencia pueda desmentirlo."
+          },
+          "ejemplo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "columna",
+          "orden",
+          "probado",
+          "ejemplo"
+        ]
+      },
       "CarteraImportSummary": {
         "type": "object",
         "properties": {
@@ -9750,6 +9765,28 @@
           "source": {
             "type": "string"
           },
+          "obligacionesCreadas": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Canones vencidos guardados en agent.obligations — de acá sale la mora."
+          },
+          "obligacionesActualizadas": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "altasAlEmbudo": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Deudores que ENTRARON al embudo (fila nueva en agent.debtor_states). Sin esa fila no los llama la cadencia ni aparecen en el panel, así que este número —y no `creados`— dice cuántos empiezan a gestionarse."
+          },
+          "sinVencimiento": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Filas con monto pero sin fecha de vencimiento legible. Se importó el deudor, pero no entra a cobranza: sin vencimiento no hay días de mora, y una fecha inventada dispararía llamadas y una carta con cifras falsas."
+          },
+          "vencimiento": {
+            "$ref": "#/components/schemas/CarteraImportVencimiento"
+          },
           "generatedAt": {
             "type": "string"
           }
@@ -9762,6 +9799,11 @@
           "totalRecibidos",
           "truncado",
           "source",
+          "obligacionesCreadas",
+          "obligacionesActualizadas",
+          "altasAlEmbudo",
+          "sinVencimiento",
+          "vencimiento",
           "generatedAt"
         ]
       },
@@ -15418,10 +15460,10 @@
         }
       }
     },
-    "/onboarding/{token}/habeas-data/presign-url": {
+    "/onboarding/{token}/habeas-data/accept-terms": {
       "post": {
-        "summary": "Onboarding step 5a: mint presigned S3 PUT URL for HBD PDF",
-        "description": "PUBLIC route — magic-link token IS the auth surface. Returns a 10-min presigned PUT URL locked to application/pdf + SSE-AES256 (T-15-04). The client uploads the bytes DIRECTLY to S3, then calls /confirm to persist the metadata. Does NOT mutate the draft.",
+        "summary": "Onboarding wizard: accept T&C and finalize (atomic tenant commit)",
+        "description": "PUBLIC route — magic-link token IS the auth surface. Records the T&C acceptance into terms_acceptances and runs the same atomic 4-table tenant commit as /complete. Idempotent on re-POST after completion.",
         "tags": [
           "onboarding"
         ],
@@ -15442,24 +15484,24 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OnboardingHabeasDataPresignRequest"
+                "$ref": "#/components/schemas/OnboardingAcceptTermsRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Presigned URL minted",
+            "description": "T&C recorded, tenant committed, cursor advanced to complete",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OnboardingHabeasDataPresignResponse"
+                  "$ref": "#/components/schemas/OnboardingAcceptTermsResponse"
                 }
               }
             }
           },
           "400": {
-            "description": "Malformed body / oversized / wrong contentType",
+            "description": "Malformed body / accepted !== true",
             "content": {
               "application/json": {
                 "schema": {
@@ -15489,11 +15531,18 @@
             }
           },
           "409": {
-            "description": "State-machine violation",
+            "description": "State-machine violation OR missing prior draft sections",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OnboardingStepConflict"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/OnboardingStepConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OnboardingAcceptTermsMissingSteps"
+                    }
+                  ]
                 }
               }
             }
@@ -15508,101 +15557,8 @@
               }
             }
           },
-          "503": {
-            "description": "Database unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/onboarding/{token}/habeas-data/confirm": {
-      "post": {
-        "summary": "Onboarding step 5b: confirm HBD PDF upload + persist metadata",
-        "description": "PUBLIC route — magic-link token IS the auth surface. Called by the SPA after a successful presigned PUT to S3. Persists { s3Key, sha256, signedByFullName, signedByCedula, contractVersion } into draft.habeasData and advances current_step to habeas_data. Certicámara delivery is deferred to a Phase 14 background job (D-08).",
-        "tags": [
-          "onboarding"
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Magic-link JWT from the onboarding-start email"
-            },
-            "required": true,
-            "name": "token",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OnboardingHabeasDataConfirmRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "HBD metadata persisted, cursor advanced",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OnboardingHabeasDataConfirmResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed body / s3Key prefix mismatch",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Magic-link invalid / expired / replayed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Session not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "State-machine violation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OnboardingStepConflict"
-                }
-              }
-            }
-          },
-          "410": {
-            "description": "Session expired",
+          "500": {
+            "description": "Transaction failed (e.g. OWNER-singleton constraint hit)",
             "content": {
               "application/json": {
                 "schema": {
@@ -16203,10 +16159,10 @@
         }
       }
     },
-    "/onboarding/session/{sessionId}/habeas-data/presign-url": {
+    "/onboarding/session/{sessionId}/habeas-data/accept-terms": {
       "post": {
-        "summary": "JWT onboarding wizard step 5a: mint presigned S3 PUT URL for HBD PDF",
-        "description": "JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/habeas-data/presign-url. Does NOT mutate the draft.",
+        "summary": "JWT onboarding wizard: accept T&C and finalize (atomic tenant commit)",
+        "description": "JWT-gated — Authorization: Bearer <Supabase JWT>. Records the T&C acceptance into terms_acceptances and runs the same atomic 4-table tenant commit as /complete. Idempotent — a re-POST after completion returns the same envelope with currentStep: \"complete\".",
         "tags": [
           "onboarding"
         ],
@@ -16232,24 +16188,24 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OnboardingSessionHabeasDataPresignRequest"
+                "$ref": "#/components/schemas/OnboardingSessionAcceptTermsRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Presigned URL minted",
+            "description": "T&C recorded, tenant committed, cursor advanced to complete",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OnboardingSessionHabeasDataPresignResponse"
+                  "$ref": "#/components/schemas/OnboardingSessionAcceptTermsResponse"
                 }
               }
             }
           },
           "400": {
-            "description": "Malformed body / oversized / wrong contentType",
+            "description": "Malformed body / accepted !== true",
             "content": {
               "application/json": {
                 "schema": {
@@ -16269,7 +16225,7 @@
             }
           },
           "403": {
-            "description": "Valid JWT but wrong identity / unanchored / completed session",
+            "description": "Valid JWT but wrong identity / unanchored session",
             "content": {
               "application/json": {
                 "schema": {
@@ -16289,11 +16245,18 @@
             }
           },
           "409": {
-            "description": "State-machine violation",
+            "description": "State-machine violation OR missing prior draft sections",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OnboardingSessionStepConflict"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/OnboardingSessionStepConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OnboardingSessionAcceptTermsMissingSteps"
+                    }
+                  ]
                 }
               }
             }
@@ -16308,116 +16271,8 @@
               }
             }
           },
-          "503": {
-            "description": "Database unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/onboarding/session/{sessionId}/habeas-data/confirm": {
-      "post": {
-        "summary": "JWT onboarding wizard step 5b: confirm HBD PDF upload + persist metadata",
-        "description": "JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/habeas-data/confirm.",
-        "tags": [
-          "onboarding"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "description": "onboarding_sessions.id — anchored by back at onboarding-start"
-            },
-            "required": true,
-            "name": "sessionId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OnboardingSessionHabeasDataConfirmRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "HBD metadata persisted, cursor advanced",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OnboardingSessionHabeasDataConfirmResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Malformed body / s3Key prefix mismatch",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing/invalid Supabase JWT",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Valid JWT but wrong identity / unanchored / completed session",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Session not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "State-machine violation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OnboardingSessionStepConflict"
-                }
-              }
-            }
-          },
-          "410": {
-            "description": "Session expired",
+          "500": {
+            "description": "Transaction failed (e.g. OWNER-singleton constraint hit)",
             "content": {
               "application/json": {
                 "schema": {
@@ -16485,7 +16340,7 @@
             }
           },
           "403": {
-            "description": "Valid JWT but wrong identity / unanchored / completed session",
+            "description": "Valid JWT but wrong identity / unanchored session",
             "content": {
               "application/json": {
                 "schema": {
@@ -16557,7 +16412,7 @@
     "/onboarding/session/{sessionId}/resume": {
       "get": {
         "summary": "JWT onboarding wizard: fetch current draft/step state (read-only)",
-        "description": "JWT-gated — Authorization: Bearer <Supabase JWT>. Authorizes iff sub === session.startedByUserId AND session.tenantId !== null AND session.completedAt === null (same gate as the mutating step routes). READ-ONLY: does not mutate the session/draft and does not count as a wizard step. Lets the SPA rehydrate {sessionId, currentStep, nextStep, draft} on browser refresh, mirroring GET /onboarding/{token}/resume for the magic-link family.",
+        "description": "JWT-gated — Authorization: Bearer <Supabase JWT>. Authorizes iff sub === session.startedByUserId AND session.tenantId !== null (completed sessions ARE allowed — this is a read-only rehydration route, so a finalized session returns currentStep: \"complete\"). READ-ONLY: does not mutate the session/draft and does not count as a wizard step. Lets the SPA rehydrate {sessionId, currentStep, nextStep, draft} on browser refresh, mirroring GET /onboarding/{token}/resume for the magic-link family.",
         "tags": [
           "onboarding"
         ],
@@ -16600,7 +16455,7 @@
             }
           },
           "403": {
-            "description": "Valid JWT but wrong identity / unanchored / completed session",
+            "description": "Valid JWT but wrong identity / unanchored session",
             "content": {
               "application/json": {
                 "schema": {

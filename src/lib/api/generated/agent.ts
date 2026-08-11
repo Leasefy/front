@@ -925,7 +925,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/onboarding/{token}/habeas-data/presign-url": {
+    "/onboarding/{token}/habeas-data/accept-terms": {
         parameters: {
             query?: never;
             header?: never;
@@ -935,8 +935,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Onboarding step 5a: mint presigned S3 PUT URL for HBD PDF
-         * @description PUBLIC route — magic-link token IS the auth surface. Returns a 10-min presigned PUT URL locked to application/pdf + SSE-AES256 (T-15-04). The client uploads the bytes DIRECTLY to S3, then calls /confirm to persist the metadata. Does NOT mutate the draft.
+         * Onboarding wizard: accept T&C and finalize (atomic tenant commit)
+         * @description PUBLIC route — magic-link token IS the auth surface. Records the T&C acceptance into terms_acceptances and runs the same atomic 4-table tenant commit as /complete. Idempotent on re-POST after completion.
          */
         post: {
             parameters: {
@@ -949,20 +949,20 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["OnboardingHabeasDataPresignRequest"];
+                    "application/json": components["schemas"]["OnboardingAcceptTermsRequest"];
                 };
             };
             responses: {
-                /** @description Presigned URL minted */
+                /** @description T&C recorded, tenant committed, cursor advanced to complete */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["OnboardingHabeasDataPresignResponse"];
+                        "application/json": components["schemas"]["OnboardingAcceptTermsResponse"];
                     };
                 };
-                /** @description Malformed body / oversized / wrong contentType */
+                /** @description Malformed body / accepted !== true */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -989,13 +989,13 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description State-machine violation */
+                /** @description State-machine violation OR missing prior draft sections */
                 409: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["OnboardingStepConflict"];
+                        "application/json": components["schemas"]["OnboardingStepConflict"] | components["schemas"]["OnboardingAcceptTermsMissingSteps"];
                     };
                 };
                 /** @description Session expired */
@@ -1007,98 +1007,8 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Database unavailable */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/onboarding/{token}/habeas-data/confirm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Onboarding step 5b: confirm HBD PDF upload + persist metadata
-         * @description PUBLIC route — magic-link token IS the auth surface. Called by the SPA after a successful presigned PUT to S3. Persists { s3Key, sha256, signedByFullName, signedByCedula, contractVersion } into draft.habeasData and advances current_step to habeas_data. Certicámara delivery is deferred to a Phase 14 background job (D-08).
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    token: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["OnboardingHabeasDataConfirmRequest"];
-                };
-            };
-            responses: {
-                /** @description HBD metadata persisted, cursor advanced */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["OnboardingHabeasDataConfirmResponse"];
-                    };
-                };
-                /** @description Malformed body / s3Key prefix mismatch */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Magic-link invalid / expired / replayed */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Session not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description State-machine violation */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["OnboardingStepConflict"];
-                    };
-                };
-                /** @description Session expired */
-                410: {
+                /** @description Transaction failed (e.g. OWNER-singleton constraint hit) */
+                500: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1650,7 +1560,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/onboarding/session/{sessionId}/habeas-data/presign-url": {
+    "/onboarding/session/{sessionId}/habeas-data/accept-terms": {
         parameters: {
             query?: never;
             header?: never;
@@ -1660,8 +1570,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * JWT onboarding wizard step 5a: mint presigned S3 PUT URL for HBD PDF
-         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/habeas-data/presign-url. Does NOT mutate the draft.
+         * JWT onboarding wizard: accept T&C and finalize (atomic tenant commit)
+         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Records the T&C acceptance into terms_acceptances and runs the same atomic 4-table tenant commit as /complete. Idempotent — a re-POST after completion returns the same envelope with currentStep: "complete".
          */
         post: {
             parameters: {
@@ -1674,20 +1584,20 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["OnboardingSessionHabeasDataPresignRequest"];
+                    "application/json": components["schemas"]["OnboardingSessionAcceptTermsRequest"];
                 };
             };
             responses: {
-                /** @description Presigned URL minted */
+                /** @description T&C recorded, tenant committed, cursor advanced to complete */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["OnboardingSessionHabeasDataPresignResponse"];
+                        "application/json": components["schemas"]["OnboardingSessionAcceptTermsResponse"];
                     };
                 };
-                /** @description Malformed body / oversized / wrong contentType */
+                /** @description Malformed body / accepted !== true */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -1705,7 +1615,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Valid JWT but wrong identity / unanchored / completed session */
+                /** @description Valid JWT but wrong identity / unanchored session */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -1723,13 +1633,13 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description State-machine violation */
+                /** @description State-machine violation OR missing prior draft sections */
                 409: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["OnboardingSessionStepConflict"];
+                        "application/json": components["schemas"]["OnboardingSessionStepConflict"] | components["schemas"]["OnboardingSessionAcceptTermsMissingSteps"];
                     };
                 };
                 /** @description Session expired */
@@ -1741,107 +1651,8 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Database unavailable */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/onboarding/session/{sessionId}/habeas-data/confirm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * JWT onboarding wizard step 5b: confirm HBD PDF upload + persist metadata
-         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/habeas-data/confirm.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    sessionId: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["OnboardingSessionHabeasDataConfirmRequest"];
-                };
-            };
-            responses: {
-                /** @description HBD metadata persisted, cursor advanced */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["OnboardingSessionHabeasDataConfirmResponse"];
-                    };
-                };
-                /** @description Malformed body / s3Key prefix mismatch */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Missing/invalid Supabase JWT */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Valid JWT but wrong identity / unanchored / completed session */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Session not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description State-machine violation */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["OnboardingSessionStepConflict"];
-                    };
-                };
-                /** @description Session expired */
-                410: {
+                /** @description Transaction failed (e.g. OWNER-singleton constraint hit) */
+                500: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1908,7 +1719,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Valid JWT but wrong identity / unanchored / completed session */
+                /** @description Valid JWT but wrong identity / unanchored session */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -1979,7 +1790,7 @@ export interface paths {
         };
         /**
          * JWT onboarding wizard: fetch current draft/step state (read-only)
-         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Authorizes iff sub === session.startedByUserId AND session.tenantId !== null AND session.completedAt === null (same gate as the mutating step routes). READ-ONLY: does not mutate the session/draft and does not count as a wizard step. Lets the SPA rehydrate {sessionId, currentStep, nextStep, draft} on browser refresh, mirroring GET /onboarding/{token}/resume for the magic-link family.
+         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Authorizes iff sub === session.startedByUserId AND session.tenantId !== null (completed sessions ARE allowed — this is a read-only rehydration route, so a finalized session returns currentStep: "complete"). READ-ONLY: does not mutate the session/draft and does not count as a wizard step. Lets the SPA rehydrate {sessionId, currentStep, nextStep, draft} on browser refresh, mirroring GET /onboarding/{token}/resume for the magic-link family.
          */
         get: {
             parameters: {
@@ -2010,7 +1821,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Valid JWT but wrong identity / unanchored / completed session */
+                /** @description Valid JWT but wrong identity / unanchored session */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -6807,23 +6618,7 @@ export interface components {
              */
             erpProvider?: "alegra" | "alegra_full" | "siigo_full" | "world_office";
         };
-        OnboardingHabeasDataPresignResponse: {
-            presignedUrl: string;
-            s3Key: string;
-            expiresIn: number;
-        };
-        OnboardingHabeasDataPresignRequest: {
-            /** @example habeas-data-delegation.pdf */
-            fileName: string;
-            /**
-             * @example application/pdf
-             * @enum {string}
-             */
-            contentType: "application/pdf";
-            /** @example 524288 */
-            fileSize: number;
-        };
-        OnboardingHabeasDataConfirmResponse: {
+        OnboardingAcceptTermsResponse: {
             /** Format: uuid */
             sessionId: string;
             /** @enum {string} */
@@ -6833,18 +6628,30 @@ export interface components {
             draft: {
                 [key: string]: unknown;
             };
+            /** Format: uuid */
+            tenantId: string;
+            /** Format: uuid */
+            agencyId: string;
+            /** @enum {string} */
+            status: "COMPLETED";
+            dashboardUrl: string;
         };
-        OnboardingHabeasDataConfirmRequest: {
-            /** @example habeas-data/<sessionId>/<uuid>.pdf */
-            s3Key: string;
-            /** @example e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 */
-            sha256: string;
-            /** @example Juan Pérez García */
-            signedByFullName: string;
-            /** @example CC 1.012.345.678 */
-            signedByCedula: string;
-            /** @example 2026-01 */
-            contractVersion?: string;
+        OnboardingAcceptTermsMissingSteps: {
+            error: string;
+            missingSteps: string[];
+        };
+        OnboardingAcceptTermsRequest: {
+            /**
+             * @description Must be exactly true — the user checked the T&C box
+             * @example true
+             * @enum {boolean}
+             */
+            accepted: true;
+            /**
+             * @description Version identifier of the T&C text the SPA rendered. Recorded as-is.
+             * @example 2026-08
+             */
+            termsVersion: string;
         };
         OnboardingCompleteResponse: {
             /** Format: uuid */
@@ -6978,20 +6785,7 @@ export interface components {
             /** Format: uuid */
             tenantId?: string;
         };
-        OnboardingSessionHabeasDataPresignResponse: {
-            presignedUrl: string;
-            s3Key: string;
-            expiresIn: number;
-        };
-        OnboardingSessionHabeasDataPresignRequest: {
-            fileName: string;
-            /** @enum {string} */
-            contentType: "application/pdf";
-            fileSize: number;
-            /** Format: uuid */
-            tenantId?: string;
-        };
-        OnboardingSessionHabeasDataConfirmResponse: {
+        OnboardingSessionAcceptTermsResponse: {
             /** Format: uuid */
             sessionId: string;
             /** @enum {string} */
@@ -7001,16 +6795,30 @@ export interface components {
             draft: {
                 [key: string]: unknown;
             };
-        };
-        OnboardingSessionHabeasDataConfirmRequest: {
-            s3Key: string;
-            sha256: string;
-            signedByFullName: string;
-            signedByCedula: string;
-            /** @example 2026-01 */
-            contractVersion?: string;
             /** Format: uuid */
-            tenantId?: string;
+            tenantId: string;
+            /** Format: uuid */
+            agencyId: string;
+            /** @enum {string} */
+            status: "COMPLETED";
+            dashboardUrl: string;
+        };
+        OnboardingSessionAcceptTermsMissingSteps: {
+            error: string;
+            missingSteps: string[];
+        };
+        OnboardingSessionAcceptTermsRequest: {
+            /**
+             * @description Must be exactly true — the user checked the T&C box
+             * @example true
+             * @enum {boolean}
+             */
+            accepted: true;
+            /**
+             * @description Version identifier of the T&C text the SPA rendered. Recorded as-is so the row reflects exactly what the user saw.
+             * @example 2026-08
+             */
+            termsVersion: string;
         };
         OnboardingSessionCompleteResponse: {
             /** Format: uuid */
@@ -7744,6 +7552,7 @@ export interface components {
             action: string;
             actor_type: string;
             actor_id: string | null;
+            actor_role: string | null;
             ip: string | null;
             user_agent: string | null;
             occurred_at: string;
@@ -7944,6 +7753,11 @@ export interface components {
                 id: string;
                 label: string;
                 variables: string[];
+                body: string;
+                variableHints: {
+                    name: string;
+                    description: string;
+                }[];
             }[];
         };
         CobranzaEscalationCard: {
@@ -8835,6 +8649,18 @@ export interface components {
             rowIndex: number;
             error: string;
         };
+        CarteraImportVencimiento: {
+            /** @description Encabezado que se detectó como fecha de vencimiento. */
+            columna: string | null;
+            /**
+             * @description Cómo se interpretaron las fechas ambiguas tipo 03/04/2026.
+             * @enum {string}
+             */
+            orden: "dmy" | "mdy";
+            /** @description true si alguna fila lo demostró (traía un día > 12). En false el orden es una SUPOSICIÓN (DD/MM, convención colombiana) y conviene mostrarlo para que la agencia pueda desmentirlo. */
+            probado: boolean;
+            ejemplo: string | null;
+        };
         CarteraImportSummary: {
             creados: number;
             actualizados: number;
@@ -8844,6 +8670,14 @@ export interface components {
             /** @description True when the batch exceeded MAX_ROWS (2000) and was truncated. */
             truncado: boolean;
             source: string;
+            /** @description Canones vencidos guardados en agent.obligations — de acá sale la mora. */
+            obligacionesCreadas: number;
+            obligacionesActualizadas: number;
+            /** @description Deudores que ENTRARON al embudo (fila nueva en agent.debtor_states). Sin esa fila no los llama la cadencia ni aparecen en el panel, así que este número —y no `creados`— dice cuántos empiezan a gestionarse. */
+            altasAlEmbudo: number;
+            /** @description Filas con monto pero sin fecha de vencimiento legible. Se importó el deudor, pero no entra a cobranza: sin vencimiento no hay días de mora, y una fecha inventada dispararía llamadas y una carta con cifras falsas. */
+            sinVencimiento: number;
+            vencimiento: components["schemas"]["CarteraImportVencimiento"];
             generatedAt: string;
         };
         CarteraImportError: {

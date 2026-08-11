@@ -102,8 +102,52 @@ export function useSubscriptionPlans(planType?: 'LANDLORD' | 'AGENCY') {
 // Mapper: BackendSubscriptionPlan → AgencyPlan (merges prices with static data)
 // =============================================================================
 
-function mergeBackendIntoAgencyPlan(backend: BackendSubscriptionPlan): AgencyPlan {
-  const staticPlan = AGENCY_PLANS.find(p => p.id === backend.tier?.toLowerCase()) ?? AGENCY_PLANS[0];
+/**
+ * Un plan que el back tiene y el front no conoce (hoy: `pro-plus`, `ultra`).
+ *
+ * ⚠️ Antes esto caía a `AGENCY_PLANS[0]` —Starter— y la tarjeta resultante
+ * MENTÍA: se quedaba con el nombre, la descripción, las features Y EL ID de
+ * Starter, conservando sólo el precio del back. En pantalla salía
+ * «STARTER · 999.000/mes · Scoring básico · Dashboard limitado»: las features
+ * del plan gratis al precio del más caro.
+ *
+ * Y como los tres compartían `id: 'starter'`, el
+ * `selected={plan.id === currentPlanId}` de `PricingTable` encendía
+ * «SELECCIONADO» en las tres tarjetas a la vez.
+ *
+ * Un plan desconocido se arma ahora con lo que el back SÍ manda —nombre,
+ * precio, límites— y sin features. Una tarjeta escueta es mejor que una que
+ * promete lo que no incluye.
+ */
+function planDesconocido(backend: BackendSubscriptionPlan): AgencyPlan {
+  return {
+    id: backend.tier?.toLowerCase() as AgencyPlan['id'],
+    name: backend.name,
+    description: '',
+    pricingModel: 'flat',
+    price: { monthly: backend.monthlyPrice, yearly: backend.annualPrice },
+    evaluation: {
+      price: backend.evaluationCreditPrice ?? 0,
+      discount: 0,
+      limit: null,
+    },
+    limits: {
+      properties: backend.maxProperties === -1 ? null : backend.maxProperties,
+      users: null,
+    },
+    features: [],
+  };
+}
+
+/** Exportada para poder probarla: es pura y es donde vivía el defecto. */
+export function mergeBackendIntoAgencyPlan(
+  backend: BackendSubscriptionPlan,
+): AgencyPlan {
+  const staticPlan = AGENCY_PLANS.find(
+    (p) => p.id === backend.tier?.toLowerCase(),
+  );
+  // Sin plan estático que corresponda, NO se disfraza de otro.
+  if (!staticPlan) return planDesconocido(backend);
   return {
     ...staticPlan,
     price: {

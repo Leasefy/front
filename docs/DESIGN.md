@@ -708,22 +708,51 @@ top by DOM order (it mounts later). The legacy `PlanDetailSheet` still uses `z-5
 side panels should use the shared `<Sheet>` primitive, not roll their own.
 
 ### Dialog Pattern
+
+**Todo modal del producto tiene la misma anatomía, y la impone la primitiva.**
+
+```
+┌──────────────────────────────────────┐
+│  Título                         (✕)  │  cabecera FIJA, filete abajo
+├──────────────────────────────────────┤
+│  cuerpo (lo único que scrollea)      │
+├──────────────────────────────────────┤
+│                  Cancelar  Confirmar │  pie FIJO, filete arriba
+└──────────────────────────────────────┘
+```
+
 ```tsx
 <Dialog open={open} onOpenChange={setOpen}>
-  <DialogContent /* rounded-lg, max-w-lg, p-6, center via translate, shadow-lg */>
+  <DialogContent /* rounded-[20px], max-w-lg, flex-col, centrado por translate */>
     <DialogHeader>
       <DialogTitle>...</DialogTitle>
       <DialogDescription>...</DialogDescription>
     </DialogHeader>
-    {/* body */}
-    <DialogFooter className="flex gap-2 justify-end">
+    {/* cuerpo: hijos sueltos, con su padding y su scroll */}
+    <DialogFooter>
       <Button variant="outline">Cancelar</Button>
       <Button>Confirmar</Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>
 ```
-The X close button is built-in (top-right). Use the primitive — don't roll your own.
+
+`DialogContent` **reparte** a sus hijos: `DialogHeader` arriba, `DialogFooter`
+abajo, y todo lo demás a un cuerpo con `overflow-y-auto` propio. No le pongas
+`p-0`, `overflow-y-auto` ni `flex flex-col` — ya los tiene, y pelean.
+
+Reglas que NO se negocian, porque son lo que hace que 29 modales se vean igual:
+
+| Regla | Por qué |
+|---|---|
+| **Siempre `<DialogHeader>`** | Es lo único que da el título de 16px, el filete y la ✕. Sin él el modal se ve de otra familia. |
+| **La ✕ vive en la cabecera** | La del DS va `absolute` dentro del contenedor que scrollea: en un modal alto desaparece. |
+| **No toques el tamaño del título** | El del DS es `text-h2` (22px), tamaño de encabezado de PÁGINA. La primitiva lo baja con `[&_h2]:text-base`, por especificidad — un `className="text-base"` NO gana (tailwind-merge no reconoce `text-h2` como tamaño y sobreviven las dos). El color sí se puede cambiar. |
+| **Cabecera `sr-only` ⇒ `hideClose`** | Si no, la ✕ nace `sr-only` también y el modal queda sin cierre visible. |
+
+Una cáscara escrita a mano (`createPortal`) usa **`rounded-[20px]`**, el mismo
+radio que la primitiva. `src/components/ui/modales-alineados.test.ts` verifica
+todo esto.
 
 ---
 

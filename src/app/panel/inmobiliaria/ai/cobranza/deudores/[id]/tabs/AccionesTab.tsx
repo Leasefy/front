@@ -30,7 +30,6 @@ interface AccionesTabProps {
   debtorId: string
   debtorName: string
   currentStage: CarteraStage
-  prefill: Record<string, string>
   onIntervention: () => void
 }
 
@@ -38,7 +37,6 @@ export function AccionesTab({
   debtorId,
   debtorName,
   currentStage,
-  prefill,
   onIntervention,
 }: AccionesTabProps) {
   const { t, locale } = useI18n()
@@ -171,7 +169,6 @@ export function AccionesTab({
         onClose={() => setOpenModal(null)}
         debtorId={debtorId}
         debtorName={debtorName}
-        prefill={prefill}
         onSuccess={handleSuccess}
       />
       <ManualCallModal

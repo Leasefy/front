@@ -69,7 +69,7 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative bg-white dark:bg-[#141416] w-full max-w-md rounded-xl overflow-hidden"
+            className="relative bg-surface w-full max-w-md rounded-[20px] overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">

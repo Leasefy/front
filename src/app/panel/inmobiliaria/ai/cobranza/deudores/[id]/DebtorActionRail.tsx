@@ -284,7 +284,6 @@ export function DebtorActionRail({
         onClose={() => setOpenModal(null)}
         debtorId={debtorId}
         debtorName={debtorName}
-        prefill={{ nombre: debtorName }}
         onSuccess={handleSuccess}
       />
       <ManualCallModal

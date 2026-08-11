@@ -310,8 +310,8 @@ export function AuthenticityCertificate({
   // Full variant - modal display
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0">
-        <DialogHeader className="sr-only">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh]">
+        <DialogHeader className="sr-only" hideClose>
           <DialogTitle>Certificado de Autenticidad</DialogTitle>
         </DialogHeader>
 

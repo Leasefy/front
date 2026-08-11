@@ -64,7 +64,7 @@ function CancelModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface w-full max-w-md rounded-xl border border-border">
+      <div className="relative bg-surface w-full max-w-md rounded-[20px] border border-border">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint">
           <h3 className="font-semibold text-fg">{t('landlord.visits.cancelModalTitle')}</h3>
@@ -160,7 +160,7 @@ function RescheduleModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface w-full max-w-md rounded-xl border border-border">
+      <div className="relative bg-surface w-full max-w-md rounded-[20px] border border-border">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint">
           <h3 className="font-semibold text-fg">{t('landlord.visits.rescheduleModalTitle')}</h3>
@@ -283,7 +283,7 @@ function ScheduleModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface w-full max-w-md rounded-xl border border-border">
+      <div className="relative bg-surface w-full max-w-md rounded-[20px] border border-border">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint">
           <h3 className="font-semibold text-fg">{t('landlord.visits.scheduleModalTitle')}</h3>

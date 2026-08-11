@@ -4327,6 +4327,14 @@
         "cotizador": "Asegurabilidad",
         "detalle": "Detalle"
       },
+      "volverA": {
+        "casos": "Volver a casos",
+        "llamadas": "Volver a llamadas",
+        "cartas": "Volver a cartas",
+        "pagos": "Volver a pagos",
+        "siniestros": "Volver a siniestros",
+        "estudios": "Volver a estudios"
+      },
       "cotizador": {
         "placeholder": {
           "title": "Próximamente",
@@ -5335,28 +5343,38 @@
             "forceStage": {
               "cta": "Forzar etapa",
               "modalTitle": "Forzar etapa",
-              "modalDescription": "Acción de administrador. Sobrescribe la máquina de estados y queda registrada en el log de auditoría.",
+              "modalDescription": "La etapa decide qué hace el agente con este caso: a quién contacta, cuándo, y si deja de hacerlo. Normalmente avanza sola con los días de mora — acá la cambiás a mano, y queda registrado quién lo hizo.",
               "targetLabel": "Etapa destino",
-              "reasonLabel": "Motivo (requerido)",
-              "reasonPlaceholder": "Razón del override (mínimo 10 caracteres)…",
-              "confirm": "Confirmar — registrar override",
+              "reasonLabel": "Por qué la cambiás (requerido)",
+              "reasonPlaceholder": "Queda en la auditoría junto a tu nombre. Mínimo 10 caracteres…",
+              "confirm": "Confirmar el cambio",
               "confirming": "Forzando…",
               "successToast": "Etapa forzada",
               "adminOnly": "Solo administradores",
-              "accessDenied": "Acceso denegado"
+              "accessDenied": "Acceso denegado",
+              "currentLabel": "Etapa actual",
+              "effectLabel": "Qué pasa si confirmás",
+              "effectNote": "Los días se cuentan desde el primer vencimiento impago. Este es el calendario por defecto; si tu inmobiliaria configuró el suyo, manda ese.",
+              "reasonTooShort": "Escribí al menos 10 caracteres.",
+              "targetPlaceholder": "Elegí la etapa…",
+              "targetMissing": "Elegí a qué etapa la querés mover."
             },
             "manualWA": {
               "cta": "Enviar WhatsApp manual",
               "modalTitle": "Enviar WhatsApp manual",
-              "modalDescription": "Solo plantillas aprobadas. Sin texto libre en esta versión.",
+              "modalDescription": "Solo se pueden enviar plantillas aprobadas por WhatsApp; no se puede escribir texto libre. Revisá el mensaje antes de mandarlo.",
               "templateLabel": "Plantilla",
-              "variablesLabel": "Variables",
+              "variablesLabel": "Datos del mensaje",
               "templatePlaceholder": "Selecciona plantilla…",
               "noTemplates": "No hay plantillas aprobadas disponibles",
               "loadingTemplates": "Cargando plantillas…",
               "confirm": "Enviar",
               "confirming": "Enviando…",
-              "successToast": "WhatsApp enviado"
+              "successToast": "WhatsApp enviado",
+              "variablesHelp": "Lo que sabemos ya viene puesto. Completá lo que falte: se reemplaza tal cual en el texto.",
+              "previewLabel": "Así le va a llegar",
+              "previewMissing": "Faltan datos por completar; en el mensaje se ven como huecos.",
+              "variableEmpty": "Sin completar"
             },
             "manualCall": {
               "cta": "Llamar manualmente",
@@ -5370,7 +5388,11 @@
               "adminOnly": "Solo administradores"
             },
             "envMissing": "Configuración no disponible",
-            "genericError": "Acción fallida — intenta de nuevo"
+            "genericError": "Acción fallida — intenta de nuevo",
+            "actor": {
+              "agente": "Agente IA",
+              "sistema": "Sistema"
+            }
           },
           "pii": {
             "revealCta": "Revelar",

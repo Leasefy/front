@@ -18,7 +18,11 @@
 
 # next.js
 /.next/
-/.next-build/
+# Cualquier NEXT_DIST_DIR propio: se usan para construir sin pisar el `.next`
+# del dev server que alguien tenga corriendo. Antes sólo estaba
+# `/.next-build/`, así que un `.next-build-loquesea` quedaba sin ignorar y se
+# colaba en el `git status`.
+/.next-*/
 /out/
 
 # production

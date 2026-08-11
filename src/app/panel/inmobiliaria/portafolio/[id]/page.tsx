@@ -118,7 +118,7 @@ function Modal({
       >
         <div
           className={cn(
-            'relative bg-card border border-border w-full rounded-xl flex flex-col',
+            'relative bg-card border border-border w-full rounded-[20px] flex flex-col',
             sizeClasses[size]
           )}
           style={{ maxHeight: '85vh' }}

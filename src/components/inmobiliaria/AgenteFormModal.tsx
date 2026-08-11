@@ -225,7 +225,7 @@ export function AgenteFormModal({
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="pointer-events-auto w-full max-w-lg bg-card rounded-xl flex flex-col max-h-[85vh]"
+              className="pointer-events-auto w-full max-w-lg bg-card rounded-[20px] flex flex-col max-h-[85vh]"
             >
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-border">

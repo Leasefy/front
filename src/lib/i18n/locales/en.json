@@ -4326,6 +4326,14 @@
         "cotizador": "Insurability",
         "detalle": "Detail"
       },
+      "volverA": {
+        "casos": "Back to cases",
+        "llamadas": "Back to calls",
+        "cartas": "Back to letters",
+        "pagos": "Back to payments",
+        "siniestros": "Back to claims",
+        "estudios": "Back to screenings"
+      },
       "cotizador": {
         "placeholder": {
           "title": "Coming Soon",
@@ -5334,28 +5342,38 @@
             "forceStage": {
               "cta": "Force stage",
               "modalTitle": "Force stage",
-              "modalDescription": "Admin action. Overrides the state machine and is recorded in the audit log.",
+              "modalDescription": "The stage decides what the agent does with this case: who it contacts, when, and whether it stops. It normally advances on its own with the days overdue — here you change it by hand, and it is recorded against your name.",
               "targetLabel": "Target stage",
-              "reasonLabel": "Reason (required)",
-              "reasonPlaceholder": "Reason for override (min 10 characters)…",
-              "confirm": "Confirm — record override",
+              "reasonLabel": "Why you are changing it (required)",
+              "reasonPlaceholder": "Goes to the audit log next to your name. Minimum 10 characters…",
+              "confirm": "Confirm the change",
               "confirming": "Forcing…",
               "successToast": "Stage forced",
               "adminOnly": "Admins only",
-              "accessDenied": "Access denied"
+              "accessDenied": "Access denied",
+              "currentLabel": "Current stage",
+              "effectLabel": "What happens if you confirm",
+              "effectNote": "Days are counted from the first unpaid due date. This is the default calendar; if your agency configured its own, that one wins.",
+              "reasonTooShort": "Write at least 10 characters.",
+              "targetPlaceholder": "Pick a stage…",
+              "targetMissing": "Pick the stage you want to move it to."
             },
             "manualWA": {
               "cta": "Send manual WhatsApp",
               "modalTitle": "Send manual WhatsApp",
-              "modalDescription": "Approved templates only. No free-form text in this version.",
+              "modalDescription": "Only WhatsApp templates already approved can be sent; free text is not allowed. Check the message before sending.",
               "templateLabel": "Template",
-              "variablesLabel": "Variables",
+              "variablesLabel": "Message details",
               "templatePlaceholder": "Select template…",
               "noTemplates": "No approved templates available",
               "loadingTemplates": "Loading templates…",
               "confirm": "Send",
               "confirming": "Sending…",
-              "successToast": "WhatsApp sent"
+              "successToast": "WhatsApp sent",
+              "variablesHelp": "What we already know is filled in. Complete the rest: it is substituted verbatim into the text.",
+              "previewLabel": "This is what they will get",
+              "previewMissing": "Some details are missing; they show up as gaps in the message.",
+              "variableEmpty": "Not filled in"
             },
             "manualCall": {
               "cta": "Call manually",
@@ -5369,7 +5387,11 @@
               "adminOnly": "Admins only"
             },
             "envMissing": "Configuration unavailable",
-            "genericError": "Action failed — try again"
+            "genericError": "Action failed — try again",
+            "actor": {
+              "agente": "AI agent",
+              "sistema": "System"
+            }
           },
           "pii": {
             "revealCta": "Reveal",

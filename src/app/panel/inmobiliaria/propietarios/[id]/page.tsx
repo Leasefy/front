@@ -117,7 +117,7 @@ function Modal({
         {/* Modal */}
         <div
           className={cn(
-            'pointer-events-auto bg-card w-full rounded-xl flex flex-col max-h-[85vh]',
+            'pointer-events-auto bg-card w-full rounded-[20px] flex flex-col max-h-[85vh]',
             sizeClasses[size]
           )}
         >

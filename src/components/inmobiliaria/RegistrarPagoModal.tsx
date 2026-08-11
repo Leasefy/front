@@ -220,8 +220,8 @@ export function RegistrarPagoModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden p-0">
-        <DialogHeader className="p-6 pb-0 shrink-0">
+      <DialogContent className="sm:max-w-lg max-h-[85vh]">
+        <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <CurrencyCircleDollar className="w-5 h-5 text-primary" />
             {t('inmobiliaria.cobros.registerModal.title')}

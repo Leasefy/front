@@ -4323,7 +4323,8 @@
       "breadcrumb": {
         "aiAgents": "AI Agents",
         "cobranza": "Collections",
-        "cotizador": "Insurability"
+        "cotizador": "Insurability",
+        "detalle": "Detail"
       },
       "cotizador": {
         "placeholder": {

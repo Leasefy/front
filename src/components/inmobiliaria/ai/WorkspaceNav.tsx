@@ -160,6 +160,16 @@ export function WorkspaceNav() {
   const isActive = (item: WorkspaceNavItem) =>
     pathname === item.href || (!item.exact && (pathname ?? '').startsWith(`${item.href}/`));
 
+  /**
+   * `aria-current="page"` sólo en coincidencia EXACTA.
+   *
+   * `isActive` hace match por PREFIJO, y para resaltar la sección está bien
+   * —en la ficha de un caso seguís dentro de «Casos»—. Pero anunciarle a un
+   * lector de pantalla que ésa ES la página actual es falso: la página actual
+   * es la ficha, y esa pestaña es justamente el camino de VUELTA a la tabla.
+   */
+  const esLaPaginaActual = (item: WorkspaceNavItem) => pathname === item.href;
+
   return (
     <div
       ref={barRef}
@@ -218,7 +228,7 @@ export function WorkspaceNav() {
               <Link
                 key={item.href}
                 href={item.href}
-                aria-current={active ? 'page' : undefined}
+                aria-current={esLaPaginaActual(item) ? 'page' : undefined}
                 data-tour-target={item.dataTourTarget}
                 className={cn(
                   'group relative flex shrink-0 items-center gap-2 whitespace-nowrap px-3 py-3.5 text-[13px] transition-colors',

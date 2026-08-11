@@ -142,7 +142,9 @@ export function PlanHeader({
 
   // Route destinations depend on context
   const upgradePlanHref = isInmobiliaria ? '/panel/inmobiliaria/upgrade' : '/panel/upgrade';
-  const manageSubscriptionHref = isInmobiliaria ? '/panel/inmobiliaria/configuracion' : '/panel/configuracion';
+  // Agencies manage/change their plan (and pay) from the /upgrade flow — send
+  // "Gestionar suscripción" there directly. Landlord/tenant keep their config page.
+  const manageSubscriptionHref = isInmobiliaria ? '/panel/inmobiliaria/upgrade' : '/panel/configuracion';
 
   // Real notifications from API. Only the active role subscribes/fetches — the
   // inactive hook is disabled so we don't double-fetch or collide on the

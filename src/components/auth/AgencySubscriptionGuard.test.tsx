@@ -1,73 +1,39 @@
 /**
- * AgencySubscriptionGuard.test.tsx — UX-only subscription gate for the agency
- * panel. Blocks /panel/inmobiliaria/* unless the agency has an ACTIVE PAID plan
- * (pro/flex). Fail-open on any indeterminate state so a paying user is never
- * bounced on a transient failure. Backend stays the source of truth.
+ * AgencySubscriptionGuard.test.tsx — contrato 29 · planes dinámicos.
  *
- * Strategy: mock useAgencySubscription, useAuth, and next/navigation
- * (usePathname + useRouter). Assert children mount vs the redirect spinner vs
- * the non-admin blocking screen, and that denial for an admin triggers
- * router.replace('/panel/inmobiliaria/upgrade').
+ * Access is governed by CAPS, not paid-vs-free: any agency with an active plan
+ * (INCLUDING the free/default plan) is admitted (hasPanelAccess=true →
+ * passthrough); only a SUSPENDED/CANCELLED subscription is bounced to /upgrade.
+ * The guard stays fail-OPEN on any indeterminate state.
  */
 
-import * as React from 'react'
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createRoot, type Root } from 'react-dom/client'
-import { act } from 'react'
+import * as React from 'react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { createRoot, type Root } from 'react-dom/client';
+import { act } from 'react';
 
-void React // jsx-preserve
+void React; // jsx-preserve
 
-const replaceMock = vi.fn()
-const navMock = { pathname: '/panel/inmobiliaria/dashboard' }
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: replaceMock }),
-  usePathname: () => navMock.pathname,
-}))
+const mockUseAgencySubscription = vi.fn();
+const mockUseAuth = vi.fn();
+const mockReplace = vi.fn();
+let mockPathname = '/panel/inmobiliaria/dashboard';
 
-interface SubscriptionMock {
-  currentPlanId: 'starter' | 'pro' | 'flex' | undefined
-  isLoading: boolean
-  error: Error | null
-}
-const subscriptionMock: SubscriptionMock = {
-  currentPlanId: undefined,
-  isLoading: false,
-  error: null,
-}
 vi.mock('@/lib/hooks/useAgencySubscription', () => ({
-  useAgencySubscription: () => subscriptionMock,
-}))
-
-const authMock: { agencyRole: string | null } = { agencyRole: null }
+  useAgencySubscription: () => mockUseAgencySubscription(),
+}));
 vi.mock('@/lib/auth/use-auth', () => ({
-  useAuth: () => authMock,
-}))
+  useAuth: () => mockUseAuth(),
+}));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: mockReplace }),
+  usePathname: () => mockPathname,
+}));
 
-import { AgencySubscriptionGuard } from './AgencySubscriptionGuard'
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
+import { AgencySubscriptionGuard } from './AgencySubscriptionGuard';
 
-let container: HTMLDivElement
-let root: Root
-
-beforeEach(() => {
-  replaceMock.mockClear()
-  navMock.pathname = '/panel/inmobiliaria/dashboard'
-  subscriptionMock.currentPlanId = undefined
-  subscriptionMock.isLoading = false
-  subscriptionMock.error = null
-  authMock.agencyRole = null
-  container = document.createElement('div')
-  document.body.appendChild(container)
-  root = createRoot(container)
-})
-
-afterEach(() => {
-  act(() => {
-    root.unmount()
-  })
-  container.remove()
-  vi.restoreAllMocks()
-})
+let container: HTMLDivElement;
+let root: Root;
 
 function render() {
   act(() => {
@@ -75,91 +41,56 @@ function render() {
       React.createElement(
         AgencySubscriptionGuard,
         null,
-        React.createElement('div', { 'data-testid': 'inner' }, 'contenido'),
+        React.createElement('div', { 'data-testid': 'child' }, 'panel'),
       ),
-    )
-  })
+    );
+  });
 }
 
-function innerMounted(): boolean {
-  return container.querySelector('[data-testid="inner"]') !== null
-}
+beforeEach(() => {
+  container = document.createElement('div');
+  document.body.appendChild(container);
+  root = createRoot(container);
+  vi.clearAllMocks();
+  mockPathname = '/panel/inmobiliaria/dashboard';
+  mockUseAuth.mockReturnValue({ agencyRole: 'ADMIN' });
+});
 
-describe('AgencySubscriptionGuard', () => {
-  it('renders children when the agency is on a paid plan (pro)', () => {
-    subscriptionMock.currentPlanId = 'pro'
-    authMock.agencyRole = AGENCY_ROLES.ADMIN
-    render()
-    expect(innerMounted()).toBe(true)
-    expect(replaceMock).not.toHaveBeenCalled()
-  })
+afterEach(() => {
+  act(() => {
+    root.unmount();
+  });
+  container.remove();
+  vi.restoreAllMocks();
+});
 
-  it('renders children when the agency is on a paid plan (flex)', () => {
-    subscriptionMock.currentPlanId = 'flex'
-    authMock.agencyRole = AGENCY_ROLES.CONTADOR
-    render()
-    expect(innerMounted()).toBe(true)
-    expect(replaceMock).not.toHaveBeenCalled()
-  })
+describe('<AgencySubscriptionGuard>', () => {
+  it('admits an ACTIVE agency on the free/default plan (no redirect)', () => {
+    mockUseAgencySubscription.mockReturnValue({ hasPanelAccess: true, indeterminate: false });
+    render();
+    expect(container.querySelector('[data-testid="child"]')).toBeTruthy();
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
 
-  it('redirects an admin to /upgrade when on a non-paid plan (starter)', () => {
-    subscriptionMock.currentPlanId = 'starter'
-    authMock.agencyRole = AGENCY_ROLES.ADMIN
-    render()
-    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/upgrade')
-    expect(innerMounted()).toBe(false)
-  })
+  it('bounces a suspended/cancelled admin to /upgrade', () => {
+    mockUseAgencySubscription.mockReturnValue({ hasPanelAccess: false, indeterminate: false });
+    render();
+    expect(container.querySelector('[data-testid="child"]')).toBeFalsy();
+    expect(mockReplace).toHaveBeenCalledWith('/panel/inmobiliaria/upgrade');
+  });
 
-  it('shows the blocking screen (no redirect) for a non-admin on a non-paid plan', () => {
-    subscriptionMock.currentPlanId = 'starter'
-    authMock.agencyRole = AGENCY_ROLES.CONTADOR
-    render()
-    expect(replaceMock).not.toHaveBeenCalled()
-    expect(innerMounted()).toBe(false)
-    expect(container.textContent).toContain('Tu agencia no tiene un plan activo')
-  })
+  it('fails OPEN while the verdict is indeterminate (loading/error)', () => {
+    mockUseAgencySubscription.mockReturnValue({ hasPanelAccess: false, indeterminate: true });
+    render();
+    expect(container.querySelector('[data-testid="child"]')).toBeTruthy();
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
 
-  it('renders children on an exempt route (upgrade) even for an admin with no paid plan', () => {
-    navMock.pathname = '/panel/inmobiliaria/upgrade'
-    subscriptionMock.currentPlanId = 'starter'
-    authMock.agencyRole = AGENCY_ROLES.ADMIN
-    render()
-    expect(innerMounted()).toBe(true)
-    expect(replaceMock).not.toHaveBeenCalled()
-  })
-
-  it('renders children on an exempt route (checkout) even for a non-admin with no paid plan', () => {
-    navMock.pathname = '/panel/inmobiliaria/checkout/pro'
-    subscriptionMock.currentPlanId = 'starter'
-    authMock.agencyRole = AGENCY_ROLES.CONTADOR
-    render()
-    expect(innerMounted()).toBe(true)
-    expect(replaceMock).not.toHaveBeenCalled()
-  })
-
-  it('fails open (renders children) while the subscription is loading', () => {
-    subscriptionMock.isLoading = true
-    subscriptionMock.currentPlanId = 'starter'
-    authMock.agencyRole = AGENCY_ROLES.CONTADOR
-    render()
-    expect(innerMounted()).toBe(true)
-    expect(replaceMock).not.toHaveBeenCalled()
-  })
-
-  it('fails open (renders children) when the subscription fetch errored', () => {
-    subscriptionMock.error = new Error('boom')
-    subscriptionMock.currentPlanId = 'starter'
-    authMock.agencyRole = AGENCY_ROLES.ADMIN
-    render()
-    expect(innerMounted()).toBe(true)
-    expect(replaceMock).not.toHaveBeenCalled()
-  })
-
-  it('fails open (renders children) while currentPlanId is undefined', () => {
-    subscriptionMock.currentPlanId = undefined
-    authMock.agencyRole = AGENCY_ROLES.ADMIN
-    render()
-    expect(innerMounted()).toBe(true)
-    expect(replaceMock).not.toHaveBeenCalled()
-  })
-})
+  it('does not redirect on exempt routes even when blocked', () => {
+    mockPathname = '/panel/inmobiliaria/upgrade';
+    mockUseAgencySubscription.mockReturnValue({ hasPanelAccess: false, indeterminate: false });
+    render();
+    expect(container.querySelector('[data-testid="child"]')).toBeTruthy();
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+});

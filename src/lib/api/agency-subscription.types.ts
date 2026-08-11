@@ -14,7 +14,8 @@
 
 import type { PseUserType, PseLegalIdType } from './pse-checkout.types';
 
-export type AgencyPlanTier = 'STARTER' | 'PRO' | 'FLEX';
+// slug libre admin-creatable, ver contrato 29
+export type AgencyPlanTier = string;
 export type AgencySubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'SUSPENDED' | 'CANCELLED';
 export type AgencyChargeStatus = 'PENDING' | 'SUCCESS' | 'FAILED';
 
@@ -73,4 +74,15 @@ export interface ChargePseCheckoutResponse {
   /** Redirect here to complete the payment. Can be null (URL not ready yet). */
   asyncPaymentUrl: string | null;
   status: AgencyChargeStatus;
+}
+
+/**
+ * POST /inmobiliaria/subscription/charges/:chargeId/payment-link — response.
+ * Hosted Wompi Payment Link (avaluo-style): open `url` in a separate tab; the
+ * payer picks any method (card/PSE/Nequi). The backend matches the webhook by
+ * `payment_link_id` (Payment Links ignore our reference).
+ */
+export interface ChargePaymentLinkResponse {
+  /** Hosted Wompi checkout permalink (e.g. https://checkout.wompi.co/l/...). */
+  url: string;
 }

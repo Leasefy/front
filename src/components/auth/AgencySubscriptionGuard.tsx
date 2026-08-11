@@ -9,19 +9,21 @@ import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 /**
  * AgencySubscriptionGuard — UX-only gate for the agency ("inmobiliaria") panel.
  *
- * Blocks every /panel/inmobiliaria/* route unless the agency is on an ACTIVE
- * PAID plan (pro/flex). The backend remains the source of truth — this is
- * front-end enforcement only, so it fails OPEN on any indeterminate state
- * (loading / error / unknown plan) to never bounce a paying user on a transient
- * failure.
+ * Access is governed by CAPS, not by paid-vs-free: any agency with an active
+ * subscription — INCLUDING the free/default plan — may use the panel, and the
+ * plan's caps (maxProperties/maxUsers/monthlyEvalCap) throttle usage server-side.
+ * Only a SUSPENDED or CANCELLED subscription (dunning) is bounced. The backend
+ * remains the source of truth — this is front-end enforcement only, so it fails
+ * OPEN on any indeterminate state (loading / error) to never bounce on a
+ * transient failure.
  *
  * Decision order:
  *   1. Exempt routes (/upgrade, /checkout) → render children (avoid redirect
  *      loop; those pages carry their own guards).
  *   2. Indeterminate (loading || error || plan undefined) → render children.
- *   3. Paid plan (pro || flex) → render children.
- *   4. No paid plan + admin → redirect to /upgrade + lightweight spinner.
- *   5. No paid plan + non-admin → full-screen blocking screen (no redirect).
+ *   3. Has panel access (active plan, free or paid) → render children.
+ *   4. Suspended/cancelled + admin → redirect to /upgrade + lightweight spinner.
+ *   5. Suspended/cancelled + non-admin → full-screen blocking screen (no redirect).
  *
  * Intentionally does NOT depend on PermissionsProvider — it wraps the entire
  * provider subtree in the inmobiliaria layout.
@@ -35,15 +37,13 @@ const EXEMPT_PREFIXES = [
 export function AgencySubscriptionGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { currentPlanId, isLoading, error } = useAgencySubscription();
+  const { hasPanelAccess, indeterminate } = useAgencySubscription();
   const { agencyRole } = useAuth();
 
   const isAdmin = agencyRole === AGENCY_ROLES.ADMIN;
   const isExempt = EXEMPT_PREFIXES.some((prefix) => pathname?.startsWith(prefix));
-  const indeterminate = isLoading || !!error || currentPlanId === undefined;
-  const hasPaidPlan = currentPlanId === 'pro' || currentPlanId === 'flex';
 
-  const passthrough = isExempt || indeterminate || hasPaidPlan;
+  const passthrough = isExempt || indeterminate || hasPanelAccess;
   // Only admins are bounced to the self-serve upgrade flow; non-admins can't pay.
   const shouldRedirect = !passthrough && isAdmin;
 

@@ -1461,7 +1461,12 @@
           "pending": "Pending",
           "failed": "Failed"
         },
-        "unavailable": "Billing information is unavailable."
+        "unavailable": "Billing information is unavailable.",
+        "free": "Free",
+        "perCanon": "{{percent}}% of rent",
+        "customPrice": "Custom",
+        "planUnavailable": "We couldn't determine your current plan",
+        "usageUnavailable": "Usage information unavailable"
       }
     },
     "propietarios": {

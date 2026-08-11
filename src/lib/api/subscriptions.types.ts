@@ -16,10 +16,18 @@ import type { CouponType } from '@/lib/types/coupon';
  * The `subscription.planId` field is the UUID of the SubscriptionPlanConfig row —
  * the canonical human-readable tier lives at `subscription.plan.tier`.
  */
+/**
+ * Billing model for a plan config row. `FLAT` = fixed monthly/annual price;
+ * `USAGE_CANON` = percentage of administered canon (`usageFeeBps`), monthly
+ * price is not charged. Reused by the admin plan CRUD (see lib/admin/plans.ts).
+ */
+export type AgencyBillingMode = 'FLAT' | 'USAGE_CANON';
+
 export interface BackendSubscriptionPlanInfo {
   id: string;
   planType: 'TENANT' | 'LANDLORD' | 'AGENCY';
-  tier: 'STARTER' | 'PRO' | 'FLEX';
+  // slug libre admin-creatable, ver contrato 29
+  tier: string;
   name: string;
   description?: string;
   monthlyPrice: number;
@@ -143,11 +151,29 @@ export interface BackendSubscriptionPlan {
   planType: 'LANDLORD' | 'AGENCY';
   tier: string;
   name: string;
+  description?: string | null;
+  /** Position in the tier ladder; null = pay-per-use (Flex). */
+  level?: number | null;
   monthlyPrice: number;
   annualPrice: number;
-  maxProperties: number; // -1 = unlimited
+  /** Sentinels: -1 = unlimited, 0 = none, N = cap. */
+  maxProperties: number;
+  maxUsers: number;
+  maxScoringViews: number;
+  monthlyEvalCap: number;
+  monthlyCreditGrant: number;
+  billingMode: AgencyBillingMode;
+  /** Basis points; 100 = 1%. Only relevant when billingMode = USAGE_CANON. */
+  usageFeeBps: number;
+  scoringIncluded: boolean;
   hasPremiumScoring: boolean;
+  hasApiAccess: boolean;
+  scoringViewPrice: number;
   evaluationCreditPrice: number;
+  isDefault: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ============================================================================

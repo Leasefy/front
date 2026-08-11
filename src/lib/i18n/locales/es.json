@@ -1462,7 +1462,12 @@
           "pending": "Pendiente",
           "failed": "Fallido"
         },
-        "unavailable": "La información de facturación no está disponible."
+        "unavailable": "La información de facturación no está disponible.",
+        "free": "Gratis",
+        "perCanon": "{{percent}}% del canon",
+        "customPrice": "A la medida",
+        "planUnavailable": "No pudimos determinar tu plan actual",
+        "usageUnavailable": "Información de uso no disponible"
       }
     },
     "propietarios": {

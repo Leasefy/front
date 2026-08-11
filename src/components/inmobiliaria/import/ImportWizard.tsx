@@ -67,12 +67,19 @@ export function ImportWizard() {
     setWizardState((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  // When method changes (e.g. from software → excel), reset to step 1
+  // Cambiar de método vuelve al paso 1 — salvo cuando el cambio ES el atajo.
+  //
+  // Desde «Exporta desde tu software», tanto «Ya tengo mi archivo» como
+  // «¿Tu software no está en la lista?» ponen method='excel'. Eso no es
+  // cambiar de idea sobre el método: es decir «saltemos las instrucciones, ya
+  // tengo el archivo». Mandarlo al paso 1 lo devuelve al principio, que es
+  // justo lo que esos botones prometen evitar.
   const prevMethodRef = useRef(wizardState.method);
   useEffect(() => {
     if (prevMethodRef.current !== wizardState.method && wizardState.method !== null) {
+      const veniaDeSoftware = prevMethodRef.current === 'software';
       prevMethodRef.current = wizardState.method;
-      setCurrentStep(1);
+      setCurrentStep(veniaDeSoftware && wizardState.method === 'excel' ? 2 : 1);
     }
   }, [wizardState.method]);
 

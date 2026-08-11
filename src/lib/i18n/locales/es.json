@@ -2714,10 +2714,10 @@
           "step3": "Buscar botón 'Exportar' o 'Descargar' (usualmente en formato .xlsx o .csv)",
           "step4": "Descargar el archivo y cargarlo aquí"
         },
-        "otherSoftware": "¿Usas otro software?",
-        "otherSoftwareDesc": "Contáctanos y te ayudamos con la migración",
+        "otherSoftware": "¿Tu software no está en la lista?",
+        "otherSoftwareDesc": "No importa cuál sea: exportá lo que tengas y acomodamos las columnas por vos.",
         "haveFile": "Ya tengo mi archivo",
-        "requestHelp": "Solicitar ayuda"
+        "requestHelp": "Subir el archivo"
       },
       "portal": {
         "title": "Importar desde portales",

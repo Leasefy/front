@@ -5369,7 +5369,11 @@
               "adminOnly": "Admins only"
             },
             "envMissing": "Configuration unavailable",
-            "genericError": "Action failed — try again"
+            "genericError": "Action failed — try again",
+            "actor": {
+              "agente": "AI agent",
+              "sistema": "System"
+            }
           },
           "pii": {
             "revealCta": "Reveal",

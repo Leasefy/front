@@ -5370,7 +5370,11 @@
               "adminOnly": "Solo administradores"
             },
             "envMissing": "Configuración no disponible",
-            "genericError": "Acción fallida — intenta de nuevo"
+            "genericError": "Acción fallida — intenta de nuevo",
+            "actor": {
+              "agente": "Agente IA",
+              "sistema": "Sistema"
+            }
           },
           "pii": {
             "revealCta": "Revelar",

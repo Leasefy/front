@@ -6470,7 +6470,7 @@
         },
         "avaluos": {
           "title": "Agente de Avalúos",
-          "description": "Solicita avalúos certificados y sigue cada solicitud desde Mis solicitudes sin salir del panel. El avaluador aliado gestiona la visita y la firma; tú ves todo el rastro."
+          "description": "Solicita estimaciones de valor referencial y sigue cada solicitud desde Mis solicitudes sin salir del panel. Son 100% remotas, sin visita física: un revisor de Leasefy revisa y firma el certificado."
         },
         "conciliacion": {
           "title": "Agente de Conciliación",
@@ -8308,7 +8308,7 @@
           "desc": "Pide el avalúo comercial de un inmueble",
           "intro": {
             "titulo": "Vas a solicitar un avalúo",
-            "resumen": "Lo hace un perito y llega firmado. La solicitud vive fuera del panel, así que se abre en otra pestaña y no pierdes lo que tengas abierto acá.",
+            "resumen": "Es una estimación de valor referencial, 100% remota y sin visita física: un revisor de Leasefy la revisa y firma. La solicitud vive fuera del panel, así que se abre en otra pestaña y no pierdes lo que tengas abierto acá.",
             "paso1": "Cargas la dirección y los datos del inmueble.",
             "paso2": "Indicas para qué lo necesitas.",
             "paso3": "Lo sigues desde Avalúos hasta que llega firmado.",

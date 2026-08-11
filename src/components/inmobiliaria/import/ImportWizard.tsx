@@ -209,7 +209,11 @@ export function ImportWizard() {
                       ? 'bg-success text-white'
                       : status === 'current'
                         ? 'bg-primary text-primary-fg ring-4 ring-primary/30'
-                        : 'bg-surface-muted dark:bg-ink text-fg-subtle'
+                        // Sin `dark:bg-ink`: ese override daba rgb(20,19,15) sobre
+                        // un fondo de página rgb(17,17,19) — el círculo desaparecía.
+                        // `bg-surface-muted` ya es sensible al tema y da
+                        // rgb(36,34,28), más separado del fondo que en claro.
+                        : 'bg-surface-muted text-fg-subtle'
                   )}>
                     {status === 'completed' ? (
                       <Check className="w-5 h-5" weight="bold" />
@@ -229,13 +233,14 @@ export function ImportWizard() {
                   </span>
                 </button>
 
-                {/* Connector Line */}
+                {/* Connector Line — es un divisor de 2px, así que necesita más
+                    contraste que una superficie grande: va con `bg-border`. */}
                 {index < visibleSteps.length - 1 && (
                   <div className={cn(
                     'flex-1 h-0.5 mx-2',
                     step.id < currentStep
                       ? 'bg-success'
-                      : 'bg-surface-muted dark:bg-ink'
+                      : 'bg-border'
                   )} />
                 )}
               </div>
@@ -255,7 +260,8 @@ export function ImportWizard() {
             </span>
             <span className="text-sm text-fg-muted">{Math.round((currentStep / visibleSteps.length) * 100)}%</span>
           </div>
-          <div className="h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
+          {/* Misma razón que los círculos: el riel se perdía contra el fondo. */}
+          <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-primary"
               initial={false}

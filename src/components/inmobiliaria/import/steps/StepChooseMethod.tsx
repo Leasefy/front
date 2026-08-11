@@ -49,9 +49,14 @@ const METHOD_CARDS: MethodCard[] = [
     titleKey: 'inmobiliaria.import.methods.portal.title',
     descKey: 'inmobiliaria.import.methods.portal.desc',
     badgeKey: 'inmobiliaria.import.methods.portal.badge',
-    badgeVariant: 'secondary',
+    // Es un paso guiado igual que «Desde software», así que se ve igual. Era
+    // `secondary` cuando decía «Próximamente»; con el texto nuevo quedaba un
+    // badge blanco al lado de dos con color.
+    badgeVariant: 'warning',
     icon: Globe,
-    iconBg: 'bg-surface-muted dark:bg-ink',
+    // Sin `dark:bg-ink`: ese override deja la baldosa del mismo color que el
+    // fondo. `bg-surface-muted` ya resuelve los dos temas.
+    iconBg: 'bg-surface-muted',
     disabled: false,
   },
 ];

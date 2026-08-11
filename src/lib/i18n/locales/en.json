@@ -2713,10 +2713,10 @@
           "step3": "Find the 'Export' or 'Download' button (usually in .xlsx or .csv format)",
           "step4": "Download the file and upload it here"
         },
-        "otherSoftware": "Using other software?",
-        "otherSoftwareDesc": "Contact us and we'll help you with the migration",
+        "otherSoftware": "Your software isn't on the list?",
+        "otherSoftwareDesc": "It doesn't matter which one it is: export what you have and we'll match the columns for you.",
         "haveFile": "I already have my file",
-        "requestHelp": "Request help"
+        "requestHelp": "Upload the file"
       },
       "portal": {
         "title": "Import from portals",

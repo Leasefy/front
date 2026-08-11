@@ -15,20 +15,61 @@ import type { ColumnMapping } from './importTypes';
 export const COLUMN_KEYWORDS: Record<string, string[]> = {
   propertyType:     ['tipo inmueble', 'tipo de inmueble', 'tipo propiedad', 'clase inmueble', 'tipo', 'clase', 'type'],
   propertyTitle:    ['titulo', 'nombre propiedad', 'descripcion corta', 'nombre'],
-  propertyAddress:  ['direccion', 'address', 'ubicacion', 'calle', 'dir'],
+  propertyAddress:  ['direccion del inmueble', 'direccion inmueble', 'direccion', 'address', 'ubicacion', 'calle', 'dir'],
   propertyCity:     ['ciudad', 'municipio', 'city'],
-  propertyZone:     ['barrio', 'zona', 'sector', 'localidad', 'urbanizacion', 'vecindario'],
-  monthlyRent:      ['canon mensual', 'canon', 'arriendo', 'valor arriendo', 'precio', 'alquiler', 'renta mensual', 'renta', 'mensual', 'rent'],
-  adminFee:         ['administracion', 'admin', 'cuota admin', 'copropiedad', 'cuota'],
-  commissionPercent:['comision', 'fee', 'honorario', 'honorarios', 'porcentaje'],
-  propertyArea:     ['area m2', 'area', 'metros', 'm2', 'metros cuadrados', 'superficie', 'tamano'],
-  bedrooms:         ['alcobas', 'habitaciones', 'cuartos', 'dormitorios', 'hab', 'recamaras', 'bedrooms'],
-  bathrooms:        ['banos', 'bano', 'bathrooms', 'wc'],
-  ownerName:        ['propietario', 'dueno', 'nombre propietario', 'owner'],
-  ownerPhone:       ['tel propietario', 'telefono propietario', 'celular propietario', 'tel', 'telefono', 'celular', 'phone'],
-  status:           ['estado', 'status', 'disponibilidad'],
-  notes:            ['observaciones', 'notas', 'comentarios', 'descripcion', 'notes'],
+  propertyZone:     ['barrio', 'zona', 'sector', 'localidad', 'urbanizacion', 'vecindario', 'comuna'],
+  monthlyRent:      ['canon de arrendamiento', 'canon arrendamiento', 'valor del arriendo', 'canon mensual', 'valor arriendo', 'valor canon', 'renta mensual', 'arrendamiento', 'canon', 'arriendo', 'precio', 'alquiler', 'renta', 'mensual', 'rent'],
+  adminFee:         ['cuota de administracion', 'valor administracion', 'administracion mensual', 'administracion', 'admin', 'cuota admin', 'copropiedad', 'cuota'],
+  commissionPercent:['porcentaje de comision', 'comision', 'fee', 'honorario', 'honorarios', 'porcentaje'],
+  propertyArea:     ['area construida', 'area privada', 'metros cuadrados', 'area m2', 'area', 'metros', 'mts2', 'mts', 'm2', 'superficie', 'tamano'],
+  bedrooms:         ['numero de habitaciones', 'alcobas', 'habitaciones', 'cuartos', 'dormitorios', 'hab', 'recamaras', 'bedrooms'],
+  bathrooms:        ['numero de banos', 'banos', 'bano', 'bathrooms', 'wc'],
+  ownerName:        ['nombre del propietario', 'nombre propietario', 'propietario', 'arrendador', 'dueno', 'owner'],
+  // OJO: el nivel 1 gana por LONGITUD de la palabra clave, así que cualquier
+  // variante «<algo> propietario» tiene que ser MÁS LARGA que 'propietario'
+  // (11) o el teléfono termina en el campo del nombre. Pasó con
+  // «Movil propietario»: 'propietario' (11) le ganaba a 'movil' (5).
+  ownerPhone:       ['telefono del propietario', 'whatsapp del propietario', 'celular del propietario', 'contacto del propietario', 'whatsapp propietario', 'telefono propietario', 'celular propietario', 'contacto propietario', 'telefono arrendador', 'celular arrendador', 'telefono del dueno', 'numero propietario', 'movil propietario', 'tel propietario', 'telefono', 'whatsapp', 'celular', 'movil', 'tel', 'phone'],
+  status:           ['estado del inmueble', 'estado', 'status', 'disponibilidad'],
+  notes:            ['observaciones', 'observacion', 'notas', 'comentarios', 'descripcion', 'notes'],
 };
+
+/**
+ * Encabezados que NO tienen campo nuestro, y que por eso NUNCA se mapean solos.
+ *
+ * Sin esta lista el matcher los asigna igual, porque el nivel 2 (Levenshtein,
+ * umbral 0.5) siempre encuentra «algo parecido». Medido con encabezados reales
+ * del mercado colombiano ANTES de escribirla:
+ *
+ *   Celular arrendatario  →  ownerPhone    (0.92, marcado «DETECTADO»)
+ *   Arrendatario          →  propertyZone  (0.50)
+ *   Estrato               →  status        (0.71)
+ *   Tipo de negocio       →  propertyType  (0.92)
+ *
+ * El primero es el grave: el teléfono del INQUILINO entrando como el del
+ * propietario, con la confianza más alta que el sistema sabe dar, así que
+ * nadie lo revisa. Un campo vacío se nota; uno lleno con el dato de otra
+ * persona, no.
+ *
+ * Ojo con «arrendador» (el propietario) y «arrendatario» (el inquilino): se
+ * diferencian en dos letras y significan lo contrario. Por eso `arrendador` sí
+ * es palabra clave de ownerName y `arrendatario` se bloquea acá — el bloqueo
+ * se evalúa PRIMERO y, como `arrendatario` no contiene `arrendador`, no se
+ * pisan.
+ */
+export const ENCABEZADOS_SIN_CAMPO = [
+  // Personas que no son el propietario.
+  'arrendatario', 'inquilino', 'codeudor', 'deudor solidario', 'fiador',
+  // Datos del inmueble que la importación no guarda.
+  'estrato', 'matricula inmobiliaria', 'matricula', 'chip catastral',
+  // Identificadores internos del sistema de origen.
+  'codigo', 'referencia', 'consecutivo',
+  // No hay campo de correo en la importación. Sin bloquearlo,
+  // «Correo propietario» caía en ownerName por el mismo problema de longitud.
+  'correo', 'email', 'e-mail',
+  // Arriendo/Venta — no es el TIPO de inmueble (apartamento, casa…).
+  'tipo de negocio', 'tipo negocio',
+];
 
 /**
  * Normalize a string for comparison:
@@ -156,6 +197,15 @@ export function autoMapColumns(headers: string[]): ColumnMapping[] {
   // First pass: score each header
   const results: ColumnMapping[] = headers.map((header) => {
     const normalized = normalize(header);
+
+    // Nivel 0 — el bloqueo va PRIMERO. Para estos encabezados no tenemos
+    // campo, y dejarlos llegar a Levenshtein produce asignaciones seguras de
+    // sí mismas y equivocadas (ver ENCABEZADOS_SIN_CAMPO). Sin campo es un
+    // resultado válido: la persona lo mapea a mano si quiere.
+    if (ENCABEZADOS_SIN_CAMPO.some((termino) => normalized.includes(termino))) {
+      return { sourceColumn: header, targetField: null, confidence: 0, isManual: false };
+    }
+
     const tier1 = tier1Match(normalized);
     if (tier1) {
       return {

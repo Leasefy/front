@@ -11,6 +11,14 @@ import {
   Question,
   CaretDown,
   CaretUp,
+  Storefront,
+  Bank,
+  SquaresFour,
+  Notebook,
+  Receipt,
+  Key,
+  Stack,
+  ArrowSquareOut,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -26,6 +34,15 @@ interface SoftwareItem {
   color: string;
   icon: React.ComponentType<{ className?: string }>;
   popular: boolean;
+  /**
+   * Sitio del fabricante, para que la persona busque ahí cómo exportar.
+   *
+   * Las instrucciones de exportación son GENÉRICAS para todos (buscá
+   * Exportar/Descargar). Escribir el camino exacto de menú de cada sistema
+   * sin haberlo visto sería mandar a la gente a buscar una opción que quizás
+   * no existe. El link es lo único verificable que podemos dar hoy.
+   */
+  sitio?: string;
 }
 
 const SOFTWARE_LIST: SoftwareItem[] = [
@@ -36,6 +53,7 @@ const SOFTWARE_LIST: SoftwareItem[] = [
     color: 'bg-primary',
     icon: Buildings,
     popular: true,
+    sitio: 'https://tae-sas.com/',
   },
   {
     id: 'daytona',
@@ -44,6 +62,7 @@ const SOFTWARE_LIST: SoftwareItem[] = [
     color: 'bg-surface-muted dark:bg-ink',
     icon: Desktop,
     popular: true,
+    sitio: 'https://daytona.cloud/',
   },
   {
     id: 'domus',
@@ -52,6 +71,7 @@ const SOFTWARE_LIST: SoftwareItem[] = [
     color: 'bg-success',
     icon: HouseLine,
     popular: false,
+    sitio: 'https://domus.la/',
   },
   {
     id: 'wasi',
@@ -60,6 +80,7 @@ const SOFTWARE_LIST: SoftwareItem[] = [
     color: 'bg-warning',
     icon: CloudArrowUp,
     popular: false,
+    sitio: 'https://wasi.co/',
   },
   {
     id: 'inmoflex',
@@ -67,6 +88,72 @@ const SOFTWARE_LIST: SoftwareItem[] = [
     description: 'En crecimiento',
     color: 'bg-danger',
     icon: ChartLineUp,
+    popular: false,
+    sitio: 'https://inmoflex.com/',
+  },
+  // ── Agregados tras revisar el mercado colombiano ──────────────────────────
+  // Cada uno se verificó contra el sitio del fabricante. Las descripciones
+  // dicen sólo lo que se pudo comprobar ahí; no hay posiciones de mercado
+  // inventadas.
+  {
+    id: 'nuby',
+    name: 'Nuby',
+    description: 'CRM + ERP desde Medellín, con facturación DIAN',
+    color: 'bg-primary',
+    icon: SquaresFour,
+    popular: false,
+    sitio: 'https://nuby.ai/',
+  },
+  {
+    id: 'sinco',
+    name: 'SINCO ERP',
+    description: 'ERP de construcción e inmobiliaria',
+    color: 'bg-success',
+    icon: Bank,
+    popular: false,
+    sitio: 'https://www.sinco.co/',
+  },
+  {
+    id: 'smarthome',
+    name: 'Smart Home',
+    description: 'Muy usado por constructoras',
+    color: 'bg-warning',
+    icon: Key,
+    popular: false,
+    sitio: 'https://crm.smart-home.com.co/',
+  },
+  {
+    id: 'nuwwe',
+    name: 'Nuwwe',
+    description: 'ERP inmobiliario 100% web',
+    color: 'bg-danger',
+    icon: Stack,
+    popular: false,
+    sitio: 'https://nuwwe.com/',
+  },
+  {
+    id: 'mispropiedades',
+    name: 'MisPropiedades',
+    description: 'Administración de arriendos en la nube',
+    color: 'bg-surface-muted dark:bg-ink',
+    icon: Storefront,
+    popular: false,
+    sitio: 'https://www.mispropiedades.co/',
+  },
+  {
+    id: 'arrendasoft',
+    name: 'Arrendasoft',
+    description: 'Administración inmobiliaria, desde Medellín',
+    color: 'bg-primary',
+    icon: Receipt,
+    popular: false,
+  },
+  {
+    id: 'deb',
+    name: 'DeB Inmobiliaria',
+    description: 'Arriendos, ventas y avalúos',
+    color: 'bg-success',
+    icon: Notebook,
     popular: false,
   },
 ];
@@ -179,6 +266,19 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
                         </li>
                       ))}
                     </ol>
+
+                    {software.sitio && (
+                      <a
+                        href={software.sitio}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                      >
+                        Ver el sitio de {software.name}
+                        <ArrowSquareOut className="w-3.5 h-3.5" aria-hidden="true" />
+                      </a>
+                    )}
                   </div>
                 )}
               </div>
@@ -187,11 +287,16 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
         })}
       </div>
 
-      {/* Request help card */}
-      <a
-        href="#"
-        className="flex items-start gap-4 p-5 rounded-xl border border-warning/30 bg-warning-soft hover:bg-warning-soft transition-colors group"
-        onClick={(e) => e.preventDefault()}
+      {/* «Mi software no está en la lista».
+          Era un <a href="#"> con preventDefault: parecía un enlace, decía
+          «Solicitar ayuda» y no hacía nada. La respuesta de verdad es que la
+          lista no importa — el lector se adapta a las columnas que traiga el
+          archivo — así que ahora lleva a subirlo. */}
+      <button
+        type="button"
+        onClick={handleHaveFile}
+        className="w-full text-left flex items-start gap-4 p-5 rounded-xl border border-warning/30 bg-warning-soft hover:bg-warning-soft transition-colors group"
+        data-testid="software-no-listado"
       >
         <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center shrink-0">
           <Question className="w-5 h-5 text-warning" />
@@ -207,7 +312,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
         <MonoLabel className="text-xs text-warning group-hover:text-warning dark:group-hover:text-warning transition-colors self-center">
           {t('inmobiliaria.import.software.requestHelp')}
         </MonoLabel>
-      </a>
+      </button>
 
       {/* Have file CTA */}
       <div className="pt-2 flex justify-center">

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import {
   CheckCircle,
   FileArrowUp,
   UserCircle,
+  WarningCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -15,8 +17,60 @@ import { MonoLabel } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { geocodeImportRow, GEOCODE_ROW_DELAY_MS } from '../lib/geocodeImportRow';
-import type { ImportStepProps } from '../ImportWizard';
+import { RanuraDelPie, type ImportStepProps } from '../ImportWizard';
 import type { ImportProperty } from '../lib/importTypes';
+
+/**
+ * Lo que `POST /properties` EXIGE y no se puede inventar.
+ *
+ * El asistente nunca se había contrastado con el contrato del back: mandaba
+ * `description: ''` y `area: 0`, y el back responde 400 con
+ * «description must be longer than or equal to 20 characters» y
+ * «area must not be less than 10». O sea que **toda** importación cuyo archivo
+ * no traiga área fallaba al 100%, después de dos minutos de geocodificación y
+ * con un aviso que sólo decía «Error en la importación».
+ *
+ * El paso de Revisión AI rellena tipo, ciudad, canon, zona, comisión y título
+ * — ninguno de los tres que bloquean. Estos no se inventan: el área de un
+ * inmueble es un dato, no una suposición. Se avisan ANTES de importar.
+ */
+function faltantesParaElBack(p: ImportProperty): string[] {
+  const faltan: string[] = [];
+  if (!p.propertyArea || p.propertyArea < 10) faltan.push('área (mínimo 10 m²)');
+  if (!p.bathrooms || p.bathrooms < 1) faltan.push('baños (mínimo 1)');
+  if (!p.monthlyRent || p.monthlyRent < 100_000) faltan.push('canon (mínimo $100.000)');
+  return faltan;
+}
+
+/**
+ * La descripción sí se puede armar, porque NO se inventa nada: es el propio
+ * inmueble contado con sus datos reales. El back sólo pide 20 caracteres.
+ */
+function descripcionParaElBack(p: ImportProperty): string {
+  const propia = (p.notes ?? '').trim();
+  if (propia.length >= 20) return propia;
+
+  const partes = [
+    p.propertyType ? TIPO_EN_ESPANOL[p.propertyType] ?? 'Inmueble' : 'Inmueble',
+    p.propertyZone ? `en ${p.propertyZone}` : null,
+    p.propertyCity ? `, ${p.propertyCity}` : null,
+    p.propertyAddress ? `. ${p.propertyAddress}` : null,
+    propia ? `. ${propia}` : null,
+  ].filter(Boolean);
+
+  const armada = partes.join(' ').replace(/\s+,/g, ',').replace(/\s+\./g, '.');
+  // Piso duro: si el archivo venía casi vacío, igual tiene que pasar el mínimo.
+  return armada.length >= 20 ? armada : `${armada} — inmueble importado`.trim();
+}
+
+const TIPO_EN_ESPANOL: Record<string, string> = {
+  apartment: 'Apartamento',
+  house: 'Casa',
+  studio: 'Apartaestudio',
+  commercial: 'Local comercial',
+  office: 'Oficina',
+  warehouse: 'Bodega',
+};
 
 export function StepConfirmImport({ state, updateState }: ImportStepProps) {
   const router = useRouter();
@@ -24,6 +78,10 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
 
   const [isImporting, setIsImporting] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
+  // Un toast se va solo. Si fallaron las 200, el motivo tiene que quedarse en
+  // la pantalla para poder leerlo y copiarlo.
+  const [errorDeImportacion, setErrorDeImportacion] = useState<string | null>(null);
+  const ranuraDelPie = useContext(RanuraDelPie);
   const [progress, setProgress] = useState(0);
   const [currentItem, setCurrentItem] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
@@ -36,13 +94,22 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     0
   );
   const remainingErrorsCount = properties.filter((p) => p.selected && p.hasErrors).length;
-  const importCount = selectedProperties.length;
+
+  // Las que el back va a rechazar, separadas ANTES de empezar. Antes se
+  // mandaban igual y volvían 400 una por una, después de geocodificarlas.
+  const bloqueadas = selectedProperties
+    .map((p) => ({ p, faltan: faltantesParaElBack(p) }))
+    .filter((x) => x.faltan.length > 0);
+  const importables = selectedProperties.filter((p) => faltantesParaElBack(p).length === 0);
+  const motivosBloqueo = [...new Set(bloqueadas.flatMap((x) => x.faltan))];
+
+  const importCount = importables.length;
 
   // Map a parsed/AI-reviewed ImportProperty to the propertiesApi.create payload.
   // Accepted AI suggestions are already applied onto the property fields in StepAIReview.
   const toCreatePayload = (p: ImportProperty) => ({
     title: p.propertyTitle || p.propertyAddress || p.propertyCity || 'Propiedad importada',
-    description: p.notes ?? '',
+    description: descripcionParaElBack(p),
     type: p.propertyType ?? 'apartment',
     city: p.propertyCity ?? '',
     neighborhood: p.propertyZone ?? '',
@@ -63,15 +130,19 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
 
     const total = importCount;
 
-    // Sequential geocoding — respects LocationIQ's rate limit (no per-row
-    // autocomplete, just the first result for the full address) and a bad
-    // address never blocks the import: it falls back to the city center.
+    // Geocodificación secuencial — respeta el límite de LocationIQ, y una
+    // dirección mala nunca frena la importación: cae al centro de la ciudad.
+    //
+    // Va a paso de tortuga por diseño (550 ms por fila), así que con 200
+    // inmuebles son casi DOS MINUTOS. Antes eso era un texto fijo —
+    // «Geocodificando direcciones…»— sin barra ni conteo: la pantalla parecía
+    // colgada. Ahora cuenta.
     let geocodedCount = 0;
     let fallbackCount = 0;
     const payloads: Array<ReturnType<typeof toCreatePayload> & { latitude?: number; longitude?: number }> = [];
 
-    for (let i = 0; i < selectedProperties.length; i++) {
-      const p = selectedProperties[i];
+    for (let i = 0; i < importables.length; i++) {
+      const p = importables[i];
       const coords = await geocodeImportRow(p);
       if (coords.source === 'geocoded') geocodedCount += 1;
       else fallbackCount += 1;
@@ -79,28 +150,55 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
         ...toCreatePayload(p),
         ...(coords.lat != null && coords.lng != null ? { latitude: coords.lat, longitude: coords.lng } : {}),
       });
-      if (i < selectedProperties.length - 1) {
+      setCurrentItem(i + 1);
+      setProgress(Math.round(((i + 1) / total) * 100));
+      if (i < importables.length - 1) {
         await new Promise((resolve) => setTimeout(resolve, GEOCODE_ROW_DELAY_MS));
       }
     }
 
     setIsGeocoding(false);
+    setCurrentItem(0);
+    setProgress(0);
 
-    // No bulk-import endpoint exists — create each property via the real API,
-    // tracking progress and partial failures honestly.
+    // No hay endpoint de importación masiva: se crea inmueble por inmueble.
+    //
+    // Antes salían TODAS de una (`payloads.map(...)` dentro de un solo
+    // allSettled). Con 200 filas son 200 POST simultáneos contra el back —
+    // pedir eso es pedir que fallen. Ahora van de a EN_PARALELO.
+    const EN_PARALELO = 6;
     let done = 0;
-    const results = await Promise.allSettled(
-      payloads.map((payload) =>
-        propertiesApi.create(payload).finally(() => {
-          done += 1;
-          setCurrentItem(done);
-          setProgress(Math.round((done / total) * 100));
-        })
-      )
-    );
+    const results: PromiseSettledResult<unknown>[] = [];
+
+    for (let i = 0; i < payloads.length; i += EN_PARALELO) {
+      const tanda = payloads.slice(i, i + EN_PARALELO);
+      const parcial = await Promise.allSettled(
+        tanda.map((payload) =>
+          propertiesApi.create(payload).finally(() => {
+            done += 1;
+            setCurrentItem(done);
+            setProgress(Math.round((done / total) * 100));
+          })
+        )
+      );
+      results.push(...parcial);
+    }
 
     const created = results.filter((r) => r.status === 'fulfilled').length;
     const failed = total - created;
+
+    // El motivo del primer rechazo. `allSettled` los guarda y antes se tiraban
+    // todos: el aviso decía «no se pudo importar ninguna» sin decir por qué,
+    // que es justo lo que no sirve cuando fallan las 200.
+    const primerFallo = results.find(
+      (r): r is PromiseRejectedResult => r.status === 'rejected',
+    );
+    const motivo =
+      primerFallo?.reason instanceof Error
+        ? primerFallo.reason.message
+        : primerFallo
+          ? String(primerFallo.reason)
+          : undefined;
 
     setIsImporting(false);
 
@@ -108,12 +206,18 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     console.info(`[import] geocoding: ${geocodedCount} resolved, ${fallbackCount} fell back to city center`);
 
     if (created === 0) {
-      // Nothing persisted — surface the error and do NOT navigate to success.
-      toast.error('Error en la importación', {
-        description: `No se pudo importar ninguna propiedad (${failed} con error). Intenta de nuevo.`,
+      // No se guardó nada — decir qué pasó y NO ir a la pantalla de éxito.
+      setErrorDeImportacion(motivo ?? null);
+      toast.error('No se importó ninguna propiedad', {
+        description: motivo
+          ? `Las ${failed} fallaron. El servidor respondió: ${motivo}`
+          : `Las ${failed} fallaron y el servidor no dio un motivo.`,
+        duration: 10000,
       });
       return;
     }
+
+    setErrorDeImportacion(null);
 
     updateState({ importedCount: created, importProgress: 100 });
     setIsComplete(true);
@@ -130,6 +234,21 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
       });
     }
   };
+
+  const botonImportar = (
+    <Button
+      type="button"
+      hideArrow
+      onClick={handleImport}
+      disabled={importCount === 0 || isImporting}
+      className="gap-2"
+    >
+      <FileArrowUp className="w-4 h-4" />
+      {isImporting
+        ? 'Importando...'
+        : t('inmobiliaria.import.confirm.importButton', { count: importCount })}
+    </Button>
+  );
 
   // Success state
   if (isComplete) {
@@ -304,48 +423,75 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
         </div>
       </div>
 
-      {/* Import progress bar (during import) */}
+      {/* Progreso. Las dos fases cuentan: geocodificar 200 direcciones son casi
+          dos minutos, y sin barra la pantalla parece colgada. */}
       {isImporting && (
         <div className="space-y-2">
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
             {isGeocoding
-              ? 'Geocodificando direcciones…'
+              ? `Buscando las direcciones en el mapa — ${currentItem} de ${importCount}`
               : t('inmobiliaria.import.confirm.importing', {
                   current: currentItem,
                   total: importCount,
                 })}
           </p>
-          {!isGeocoding && (
-            <>
-              <Progress
-                value={progress}
-                size="xs"
-                variant={progress >= 100 ? 'success' : 'default'}
-              />
-              <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">
-                {progress}%
-              </p>
-            </>
-          )}
+          <Progress
+            value={progress}
+            size="xs"
+            variant={!isGeocoding && progress >= 100 ? 'success' : 'default'}
+          />
+          <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">
+            {progress}%
+          </p>
         </div>
       )}
 
-      {/* Import button */}
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          size="lg"
-          hideArrow
-          onClick={handleImport}
-          disabled={importCount === 0 || isImporting}
-          className="gap-2"
+      {/* Lo que el back va a rechazar, dicho ANTES de empezar. Antes se
+          descubría al final: dos minutos geocodificando y después 200 errores
+          400 iguales, con un aviso que no decía cuál era el problema. */}
+      {bloqueadas.length > 0 && !isImporting && (
+        <div
+          className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2"
+          data-testid="import-bloqueadas"
         >
-          <FileArrowUp className="w-4 h-4" />
-          {isImporting
-            ? 'Importando...'
-            : t('inmobiliaria.import.confirm.importButton', { count: importCount })}
-        </Button>
-      </div>
+          <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-warning">
+              {bloqueadas.length === 1
+                ? '1 inmueble no se puede importar'
+                : `${bloqueadas.length} inmuebles no se pueden importar`}
+            </p>
+            <p className="text-body-sm text-fg-muted mt-0.5">
+              Les falta {motivosBloqueo.join(', ')}. Completá esas columnas en tu
+              archivo y volvé a subirlo; el resto se importa igual.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* El motivo del fallo, en la pantalla: el toast se va solo. */}
+      {errorDeImportacion && !isImporting && (
+        <div
+          className="rounded-md bg-danger-soft border border-border p-3 flex items-start gap-2"
+          role="alert"
+          data-testid="import-error"
+        >
+          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-danger">No se importó ninguna propiedad</p>
+            <p className="text-body-sm text-fg-muted mt-0.5 break-words">
+              El servidor respondió: {errorDeImportacion}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* La acción principal va al PIE, junto a «Anterior» — es donde estuvo
+          el primario en los cuatro pasos anteriores. Si la ranura todavía no
+          está montada se dibuja acá, para no quedarse sin botón. */}
+      {ranuraDelPie ? createPortal(botonImportar, ranuraDelPie) : (
+        <div className="flex justify-end">{botonImportar}</div>
+      )}
     </div>
   );
 }

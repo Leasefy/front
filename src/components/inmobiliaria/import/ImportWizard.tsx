@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, createContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -56,11 +56,20 @@ export interface ImportStepProps {
   updateState: (partial: Partial<ImportWizardState>) => void;
 }
 
+/**
+ * Dónde va la acción principal del último paso: al pie, a la derecha de
+ * «Anterior», que es donde estuvo el botón primario en todos los pasos
+ * anteriores. `null` mientras el pie no está montado — el paso entonces
+ * dibuja su botón donde caiga, para no quedarse sin acción.
+ */
+export const RanuraDelPie = createContext<HTMLElement | null>(null);
+
 export function ImportWizard() {
   const router = useRouter();
   const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [ranuraDelPie, setRanuraDelPie] = useState<HTMLDivElement | null>(null);
   const [wizardState, setWizardState] = useState<ImportWizardState>(INITIAL_STATE);
 
   const updateState = useCallback((partial: Partial<ImportWizardState>) => {
@@ -283,7 +292,9 @@ export function ImportWizard() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
             >
-              {renderStepContent()}
+              <RanuraDelPie.Provider value={ranuraDelPie}>
+                {renderStepContent()}
+              </RanuraDelPie.Provider>
             </motion.div>
           </AnimatePresence>
         </div>
@@ -339,7 +350,13 @@ export function ImportWizard() {
                   {t('inmobiliaria.import.wizard.next')}
                   <CaretRight className="w-4 h-4" />
                 </Button>
-              ) : null}
+              ) : (
+                // Ranura del último paso. El botón principal vivió al pie,
+                // a la derecha de «Anterior», en los cuatro pasos anteriores;
+                // en el último se caía adentro de la tarjeta y quedaba raro.
+                // El paso pone su acción acá por portal.
+                <div ref={setRanuraDelPie} className="flex items-center" />
+              )}
             </div>
           </div>
         )}

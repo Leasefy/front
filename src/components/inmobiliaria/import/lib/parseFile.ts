@@ -1,5 +1,6 @@
 // src/components/inmobiliaria/import/lib/parseFile.ts
-// Client-side SheetJS file parsing for xlsx, xls, csv
+// Lectura de planillas en el cliente con SheetJS: xlsx, xls, csv, tsv, txt,
+// ods y fods. El separador (`,`, `;`, tab) lo detecta SheetJS solo.
 
 import type { ParsedRow } from './importTypes';
 
@@ -10,8 +11,43 @@ export interface ParseResult {
 }
 
 /**
- * Parse a spreadsheet file (xlsx, xls, csv) client-side using SheetJS.
- * Uses dynamic import so xlsx is not bundled into the main chunk.
+ * Formatos que llegan como TEXTO plano. SheetJS adivina el separador solo, así
+ * que `;` —lo que exporta Excel en español—, tab y coma funcionan sin
+ * configurar nada. Verificado con los tres.
+ */
+const EXTENSIONES_DE_TEXTO = ['csv', 'txt', 'tsv'];
+
+/**
+ * Decodifica un archivo de texto AVERIGUANDO su codificación, en vez de
+ * asumirla.
+ *
+ * Antes era `await file.text()` —UTF-8 a ciegas— con el comentario «para
+ * preservar los acentos». Hace justo lo contrario con el archivo más común
+ * acá: Excel en español exporta CSV en **Windows-1252**, y leído como UTF-8
+ * «Bogotá» queda `Bogot?`. Eso entraba tal cual al inmueble, sin un error.
+ *
+ * UTF-8 es autoverificable: una secuencia inválida no es UTF-8. Probamos en
+ * estricto y, si el archivo no lo es, cae a Windows-1252 — que acepta
+ * cualquier byte, por eso va último y nunca al revés.
+ */
+function decodificarTexto(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+
+  // BOM UTF-8: el archivo declara su codificación, no hay nada que adivinar.
+  if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) {
+    return new TextDecoder('utf-8').decode(bytes.subarray(3));
+  }
+
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder('windows-1252').decode(bytes);
+  }
+}
+
+/**
+ * Lee la planilla que sea. Import dinámico para que xlsx no entre al chunk
+ * principal.
  */
 export async function parseSpreadsheetFile(
   file: File,
@@ -19,17 +55,14 @@ export async function parseSpreadsheetFile(
 ): Promise<ParseResult> {
   const XLSX = await import('xlsx');
 
-  const ext = file.name.split('.').pop()?.toLowerCase();
-  let workbook;
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+  const buffer = await file.arrayBuffer();
 
-  if (ext === 'csv') {
-    // Read CSV as UTF-8 text to preserve accents and special characters
-    const text = await file.text();
-    workbook = XLSX.read(text, { type: 'string' });
-  } else {
-    const buffer = await file.arrayBuffer();
-    workbook = XLSX.read(buffer, { type: 'array', codepage: 65001 });
-  }
+  // Los binarios (xlsx/xls/ods) traen su codificación adentro; los de texto
+  // no, y por eso hay que deducirla.
+  const workbook = EXTENSIONES_DE_TEXTO.includes(ext)
+    ? XLSX.read(decodificarTexto(buffer), { type: 'string' })
+    : XLSX.read(buffer, { type: 'array', codepage: 65001 });
 
   const sheetNames = workbook.SheetNames;
   const targetSheet = sheetName && sheetNames.includes(sheetName)

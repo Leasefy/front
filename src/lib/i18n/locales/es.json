@@ -2622,7 +2622,7 @@
       },
       "upload": {
         "dragText": "Arrastra tu archivo aquí o haz clic para seleccionar",
-        "formats": "Formatos soportados: .xlsx, .xls, .csv",
+        "formats": "Subí el archivo como lo tengas: .xlsx, .xls, .csv, .tsv, .txt u .ods. Las columnas las acomodamos nosotros.",
         "parsing": "Analizando archivo...",
         "rowsDetected": "{{count}} filas detectadas",
         "selectSheet": "Seleccionar hoja",

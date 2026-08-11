@@ -2621,7 +2621,7 @@
       },
       "upload": {
         "dragText": "Drag your file here or click to select",
-        "formats": "Supported formats: .xlsx, .xls, .csv",
+        "formats": "Upload the file as you have it: .xlsx, .xls, .csv, .tsv, .txt or .ods. We'll match the columns for you.",
         "parsing": "Analyzing file...",
         "rowsDetected": "{{count}} rows detected",
         "selectSheet": "Select sheet",

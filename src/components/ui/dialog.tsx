@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { X } from "@phosphor-icons/react"
 import {
   Dialog as DSDialog,
   DialogTrigger as DSDialogTrigger,
@@ -16,14 +17,51 @@ import {
 import { cn } from "@/lib/utils"
 
 /**
- * ADAPTER fino sobre el Dialog de @leasefy/cadence que preserva la API local del mvp:
- * - DialogContent: contrato de layout legacy (`p-6 grid gap-4 max-w-lg`,
- *   overridable vía className) + sizing mobile (`w-[calc(100%-2rem)]`,
- *   `max-h-[min(640px,90dvh)]`, `overflow-y-auto`), z-[300] sobre headers
- *   fijos, overlay `z-[300] bg-black/60`, onWheel stopPropagation y animación
- *   legacy (tailwindcss-animate in/out) en lugar del animate-scale-in del DS.
- * - Header/Footer mantienen las clases de layout legacy (el padding vive en
- *   el Content, no en los sub-parts como en el DS).
+ * ADAPTER sobre el Dialog de @leasefy/cadence.
+ *
+ * ══ UNA SOLA CABECERA PARA TODA LA PLATAFORMA ═══════════════════════════════
+ *
+ * Todo modal del producto tiene la misma anatomía, y la impone esta primitiva
+ * —no cada pantalla—, que es la única forma de que 40 modales escritos por
+ * gente distinta en momentos distintos se vean igual:
+ *
+ *     ┌──────────────────────────────────────┐
+ *     │  Título                         (✕)  │  cabecera fija, filete abajo
+ *     ├──────────────────────────────────────┤
+ *     │  cuerpo (lo único que scrollea)      │
+ *     ├──────────────────────────────────────┤
+ *     │                  Cancelar  Confirmar │  pie fijo, filete arriba
+ *     └──────────────────────────────────────┘
+ *
+ * `DialogContent` REPARTE a sus hijos: el `<DialogHeader>` va arriba, el
+ * `<DialogFooter>` abajo, y todo lo demás queda en un cuerpo con scroll propio.
+ * Los call sites no cambian una línea — siguen escribiendo header, cuerpo
+ * suelto y footer como hermanos.
+ *
+ * ── Qué arregla, en concreto ───────────────────────────────────────────────
+ *
+ * 1. **El título se iba de la pantalla.** Antes scrolleaba el Content entero,
+ *    así que en un modal alto el título, la descripción y la ✕ se perdían
+ *    arriba y los botones abajo: quedabas dentro de un formulario sin saber de
+ *    qué era, sin cómo salir y sin cómo confirmar. Ahora scrollea SÓLO el
+ *    cuerpo.
+ *
+ * 2. **La ✕ del DS también se iba**, porque va `absolute` dentro del
+ *    contenedor que scrollea. Acá vive DENTRO de la cabecera, y es un chip
+ *    redondo gris idéntico en todos lados.
+ *
+ * 3. **El título del DS es `text-h2` (22px), tamaño de encabezado de PÁGINA.**
+ *    Dentro de un modal se lee enorme. La cabecera lo baja a 16px con un
+ *    selector de descendiente (`[&_h2]`), que gana por especificidad: pasarle
+ *    `className="text-base"` NO alcanza, porque `text-h2` no es un tamaño que
+ *    tailwind-merge reconozca — las dos clases sobreviven y decide el orden del
+ *    CSS, que no controlamos.
+ *
+ * ── Lo que se conserva del adapter viejo ───────────────────────────────────
+ *
+ * z-[300] sobre headers fijos, overlay `bg-black/60`, `onWheel` stopPropagation,
+ * la animación legacy (tailwindcss-animate in/out) en vez del `animate-scale-in`
+ * del DS, y el `gap-4` entre los hijos sueltos del cuerpo.
  */
 
 // Scroll locking is handled by Radix (modal by default via react-remove-scroll),
@@ -62,11 +100,8 @@ DialogOverlay.displayName = "DialogOverlay"
  * El bloqueo de scroll de Radix (react-remove-scroll) tapa el scroll NATIVO del
  * body, pero Lenis no scrollea por ahí: escucha la rueda en `window` y mueve la
  * página por su cuenta. Resultado: con el modal abierto, la rueda scrolleaba el
- * fondo. Va en el adaptador y no en cada pantalla porque le pasa a los 21
+ * fondo. Va en el adaptador y no en cada pantalla porque le pasa a los 40
  * diálogos del panel.
- *
- * Vive en el Content y no en el Root porque el Content sólo está montado
- * mientras el modal está abierto — así funciona igual controlado que no.
  */
 function useFrenarLenisMientrasAbierto() {
   // Ya no hace nada acá: frenar Lenis al MONTARSE era falso. En el panel de
@@ -78,54 +113,138 @@ function useFrenarLenisMientrasAbierto() {
   // que es el estado REAL del modal y no una suposición sobre el montaje.
 }
 
+// ── Reparto de hijos ────────────────────────────────────────────────────────
+
+interface RepartoDeHijos {
+  cabecera: React.ReactNode
+  cuerpo: React.ReactNode[]
+  pie: React.ReactNode
+  /** La cabecera pinta su propia ✕ ⇒ hay que apagar la del DS o salen dos. */
+  cabeceraTraeCierre: boolean
+}
+
+function repartirHijos(children: React.ReactNode): RepartoDeHijos {
+  let cabecera: React.ReactNode = null
+  let pie: React.ReactNode = null
+  let cabeceraTraeCierre = false
+  const cuerpo: React.ReactNode[] = []
+
+  React.Children.forEach(children, (hijo) => {
+    if (React.isValidElement(hijo) && hijo.type === DialogHeader && !cabecera) {
+      cabecera = hijo
+      cabeceraTraeCierre = (hijo.props as DialogHeaderProps).hideClose !== true
+      return
+    }
+    if (React.isValidElement(hijo) && hijo.type === DialogFooter && !pie) {
+      pie = hijo
+      return
+    }
+    cuerpo.push(hijo)
+  })
+
+  return { cabecera, cuerpo, pie, cabeceraTraeCierre }
+}
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DSDialogContent>,
   DSDialogContentProps
->(({ className, overlayClassName, children, ...props }, ref) => {
+>(({ className, overlayClassName, children, hideClose, ...props }, ref) => {
   useFrenarLenisMientrasAbierto()
+  const { cabecera, cuerpo, pie, cabeceraTraeCierre } = repartirHijos(children)
+
   return (
-  <DSDialogContent
-    ref={ref}
-    overlayClassName={cn(dialogOverlayClasses, overlayClassName)}
-    onWheel={(e) => e.stopPropagation()}
-    className={cn(
-      // contrato de layout legacy — overridable por className del call site.
-      // Sizing mobile: margen lateral de 1rem y alto acotado con scroll interno.
-      "z-[300] grid w-[calc(100%-2rem)] max-w-lg max-h-[min(640px,90dvh)] overflow-y-auto gap-4 p-6 overscroll-contain",
-      // animación legacy del mvp (in/out). `animate-none` apaga el
-      // animate-scale-in base del DS; los modifiers data-[state] ganan.
-      "animate-none duration-[var(--duration-normal)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
-      className
-    )}
-    {...props}
-  >
-    {children}
-  </DSDialogContent>
+    <DSDialogContent
+      ref={ref}
+      overlayClassName={cn(dialogOverlayClasses, overlayClassName)}
+      onWheel={(e) => e.stopPropagation()}
+      // La ✕ flotante del DS sólo queda cuando NADIE más pone una: sin
+      // cabecera, o con una cabecera que la apagó a propósito.
+      hideClose={hideClose || cabeceraTraeCierre}
+      className={cn(
+        // Columna: cabecera / cuerpo con scroll / pie. El padding vive en cada
+        // banda, no acá — por eso `p-0`. `overflow-hidden` recorta a los 20px
+        // de radio del DS y deja el scroll al cuerpo, no al contenedor.
+        "z-[300] flex flex-col w-[calc(100%-2rem)] max-w-lg max-h-[min(640px,90dvh)] overflow-hidden p-0",
+        // animación legacy del mvp (in/out). `animate-none` apaga el
+        // animate-scale-in base del DS; los modifiers data-[state] ganan.
+        "animate-none duration-[var(--duration-normal)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
+        className
+      )}
+      {...props}
+    >
+      {cabecera}
+      {/* El cuerpo es lo ÚNICO que scrollea. `min-h-0` es obligatorio: sin él
+          un hijo flex no baja de su altura de contenido y el scroll se lo come
+          el contenedor, que es justo lo que estábamos arreglando. */}
+      <div
+        className="grid min-h-0 flex-1 gap-4 overflow-y-auto overscroll-contain p-6"
+        data-lenis-prevent
+      >
+        {cuerpo}
+      </div>
+      {pie}
+    </DSDialogContent>
   )
 })
 DialogContent.displayName = "DialogContent"
 
-const DialogHeader = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
+interface DialogHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+  /**
+   * No pintar la ✕ de la cabecera.
+   *
+   * Dos usos legítimos: una cabecera `sr-only` que sólo existe para darle
+   * título accesible al diálogo (ahí la ✕ del DS sigue visible), y un modal
+   * que el usuario no debe abandonar a medias —una firma, un pago en curso—,
+   * donde la salida tiene que ser una decisión explícita del pie.
+   */
+  hideClose?: boolean
+}
+
+const DialogHeader = ({ className, children, hideClose, ...props }: DialogHeaderProps) => (
   <div
     className={cn(
-      "flex flex-col space-y-1.5 text-center sm:text-left",
+      "shrink-0 border-b border-border bg-surface px-6 py-4",
+      // Título + descripción a la izquierda, ✕ a la derecha, alineados arriba:
+      // una descripción larga no debe descentrar el aspa.
+      "flex items-start justify-between gap-4 text-left",
+      // El título del DS es text-h2 (22px). Acá manda 16px, por especificidad
+      // de descendiente para que no dependa del orden del CSS (ver arriba).
+      "[&_h2]:text-base [&_h2]:leading-6 [&_h2]:font-semibold [&_h2]:tracking-[-0.005em] [&_h2]:pr-0",
       className
     )}
     {...props}
-  />
+  >
+    <div className="flex min-w-0 flex-col gap-1">{children}</div>
+    {!hideClose && (
+      <DialogClose
+        aria-label="Cerrar"
+        data-testid="dialog-close"
+        className={cn(
+          "mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full",
+          "bg-surface-muted text-fg-muted transition-colors",
+          "hover:bg-border hover:text-fg",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+        )}
+      >
+        <X size={16} weight="bold" aria-hidden="true" />
+      </DialogClose>
+    )}
+  </div>
 )
 DialogHeader.displayName = "DialogHeader"
 
+/**
+ * Banda inferior, simétrica a la cabecera. Fija: sin esto, en un modal alto los
+ * botones se van con el scroll y no hay cómo confirmar.
+ */
 const DialogFooter = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+      "shrink-0 border-t border-border bg-surface px-6 py-4",
+      "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
       className
     )}
     {...props}

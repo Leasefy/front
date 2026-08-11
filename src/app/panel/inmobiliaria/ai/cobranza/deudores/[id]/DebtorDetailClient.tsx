@@ -380,9 +380,6 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               debtorId={debtorId}
               debtorName={debtorName}
               currentStage={data?.currentStage ?? 'S0'}
-              prefill={{
-                nombre: debtorName,
-              }}
               onIntervention={onIntervention}
             />
           )}

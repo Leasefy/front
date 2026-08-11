@@ -529,8 +529,8 @@ function DispersionesContent() {
 
       {/* Extracto Modal */}
       <Dialog open={isExtractoOpen} onOpenChange={(open) => !open && handleExtractoClose()}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
-          <DialogHeader className="p-6 pb-0">
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>{t('inmobiliaria.dispersiones.detail.ownerStatement')}</span>
               {extractoData && (

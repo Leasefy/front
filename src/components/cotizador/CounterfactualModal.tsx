@@ -24,7 +24,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 void React
 import { Minus, Plus, Spinner } from '@phosphor-icons/react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useI18n } from '@/lib/i18n'
 import { CarrierCard } from '@/components/inmobiliaria/cotizador/CarrierCard'
 import { useAskWhy, type AskWhyResult, type AskWhyError, type AskWhyVariable, type AskWhyNewValue } from '@/lib/hooks/cotizador/use-ask-why'
@@ -252,21 +252,21 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
     <Dialog open={open} onOpenChange={v => { if (!v) onClose() }}>
       <DialogContent
         className="
-          max-w-none p-0
+          max-w-none
           sm:rounded-none sm:translate-x-0 sm:translate-y-0
-          sm:left-0 sm:top-0 sm:w-full sm:h-full sm:m-0
-          md:rounded-xl md:max-w-2xl md:mx-auto md:my-12
+          sm:left-0 sm:top-0 sm:w-full sm:h-full sm:m-0 sm:max-h-none
+          md:rounded-[20px] md:max-w-2xl md:mx-auto md:my-12
           md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2
           md:w-full md:h-auto
-          overflow-y-auto
         "
       >
-        <div className="p-6 space-y-5" data-testid="cf-modal-body">
-          <header>
-            <h2 className="text-lg font-semibold">
-              {t('inmobiliaria.ai.cotizador.askWhy.title')}
-            </h2>
-          </header>
+        {/* Antes esto era un `<h2>` suelto dentro del cuerpo: título más grande
+            que el del resto de los modales, sin filete, sin ✕ y —lo peor— sin
+            `DialogTitle`, o sea un diálogo sin nombre accesible. */}
+        <DialogHeader>
+          <DialogTitle>{t('inmobiliaria.ai.cotizador.askWhy.title')}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-5" data-testid="cf-modal-body">
 
           {/* Cap-exhausted banner OR 429 inline banner */}
           {(capExhausted || (error && error.code === 429)) && (

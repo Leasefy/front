@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText,
@@ -20,6 +20,21 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
+import { agendaApi } from '@/lib/api/agenda.service';
+import type { EventoAgenda, EventoTipo } from '@/lib/api/agenda.types';
+
+/**
+ * Cómo se dibuja cada tipo de evento de la agenda en esta línea de tiempo.
+ * Es sólo presentación: el evento y su fecha vienen del back tal cual.
+ */
+const TIPO_DE_AGENDA: Record<EventoTipo, TimelineEventType> = {
+  visita: 'visit_scheduled',
+  firma_pendiente: 'contract_signed',
+  vencimiento_contrato: 'lease_renewal',
+  seguimiento: 'agent_assigned',
+  inspeccion: 'handover_completed',
+  tarea: 'property_published',
+};
 
 // Timeline event types
 type TimelineEventType =
@@ -109,147 +124,110 @@ export function ConsignacionTimeline({
   const [isExpanded, setIsExpanded] = useState(false);
   const { t, formatDate: fmtDate, formatRelativeDate: fmtRelDate } = useI18n();
 
-  // Generate timeline events from consignacion data
+  // ── De dónde salen los eventos ───────────────────────────────────────────
+  //
+  // Antes se GENERABAN: «agente asignado» = contractDate + 1 día, «publicada»
+  // = +3, «visita agendada» = +7, «visita completada» = +8, y si estaba
+  // arrendada aparecía «Candidato aprobado» atribuido al SISTEMA DE SCORING
+  // con el nombre real del inquilino, en una fecha sacada de leaseEndDate
+  // menos un año. Diez eventos, ninguno ocurrido.
+  //
+  // Una pantalla que dice que una persona con nombre hizo algo un día
+  // concreto está afirmando un hecho. Si el hecho lo produjo una suma de
+  // días, es falso — y encima se ve idéntico a los que sí pasaron.
+  //
+  // Ahora hay dos fuentes, las dos reales:
+  //   1. Hitos del propio registro, SIN aritmética: una fecha guardada es un
+  //      hecho; esa fecha más tres días es una invención.
+  //   2. Eventos de la agenda vinculados a esta propiedad (visitas, firmas,
+  //      vencimientos). Son los que de verdad ocurrieron.
+  const [eventosAgenda, setEventosAgenda] = useState<EventoAgenda[]>([]);
+  const [cargandoAgenda, setCargandoAgenda] = useState(true);
+  const [falloAgenda, setFalloAgenda] = useState(false);
+
+  useEffect(() => {
+    let vivo = true;
+    setCargandoAgenda(true);
+    setFalloAgenda(false);
+    agendaApi
+      .getAgenda()
+      .then((r) => {
+        if (!vivo) return;
+        setEventosAgenda(
+          r.eventos.filter(
+            (e) => e.vinculoTipo === 'propiedad' && e.vinculoId === consignacion.propertyId,
+          ),
+        );
+      })
+      .catch(() => {
+        if (vivo) setFalloAgenda(true);
+      })
+      .finally(() => {
+        if (vivo) setCargandoAgenda(false);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [consignacion.propertyId]);
+
   const events = useMemo(() => {
-    const generatedEvents: TimelineEvent[] = [];
+    const reales: TimelineEvent[] = [];
 
-    // 1. Consignacion created
-    generatedEvents.push({
-      id: 'evt-1',
-      type: 'consignacion_created',
-      date: consignacion.contractDate,
-      title: t('inmobiliaria.consignaciones.timeline.events.consignacionCreated'),
-      description: t('inmobiliaria.consignaciones.timeline.events.consignacionCreatedDesc'),
-      actor: t('inmobiliaria.consignaciones.timeline.actors.system'),
-    });
-
-    // 2. Agent assigned (same day or day after)
-    const agentDate = new Date(consignacion.contractDate);
-    agentDate.setDate(agentDate.getDate() + 1);
-    generatedEvents.push({
-      id: 'evt-2',
-      type: 'agent_assigned',
-      date: agentDate.toISOString().split('T')[0],
-      title: t('inmobiliaria.consignaciones.timeline.events.agentAssigned'),
-      description: agenteName ? t('inmobiliaria.consignaciones.timeline.events.agentAssignedWithName', { name: agenteName }) : t('inmobiliaria.consignaciones.timeline.events.agentAssignedDefault'),
-      actor: t('inmobiliaria.consignaciones.timeline.actors.coordinator'),
-    });
-
-    // 3. Property published (2-3 days after)
-    if (consignacion.availability !== 'maintenance') {
-      const publishDate = new Date(consignacion.contractDate);
-      publishDate.setDate(publishDate.getDate() + 3);
-      generatedEvents.push({
-        id: 'evt-3',
-        type: 'property_published',
-        date: publishDate.toISOString().split('T')[0],
-        title: t('inmobiliaria.consignaciones.timeline.events.propertyPublished'),
-        description: t('inmobiliaria.consignaciones.timeline.events.propertyPublishedDesc'),
-        actor: agenteName || t('inmobiliaria.consignaciones.timeline.actors.agent'),
+    // Hito 1 — la consignación existe desde que se registró. Fecha guardada.
+    if (consignacion.contractDate) {
+      reales.push({
+        id: 'hito-consignacion',
+        type: 'consignacion_created',
+        date: consignacion.contractDate,
+        title: t('inmobiliaria.consignaciones.timeline.events.consignacionCreated'),
+        description: t('inmobiliaria.consignaciones.timeline.events.consignacionCreatedDesc'),
+        actor: t('inmobiliaria.consignaciones.timeline.actors.system'),
       });
     }
 
-    // 4-5. Generate 2-3 mock visits if property has been active
-    const daysSinceContract = Math.floor(
-      (Date.now() - new Date(consignacion.contractDate).getTime()) / (1000 * 60 * 60 * 24)
+    // Hito 2 — fin del contrato de consignación, si está guardado.
+    if (consignacion.contractEndDate) {
+      reales.push({
+        id: 'hito-fin-consignacion',
+        type: 'lease_renewal',
+        date: consignacion.contractEndDate,
+        title: t('inmobiliaria.consignaciones.timeline.events.consignacionEnds'),
+        description: '',
+        actor: t('inmobiliaria.consignaciones.timeline.actors.system'),
+      });
+    }
+
+    // Hito 3 — vencimiento del arriendo vigente. El nombre del inquilino va
+    // como CONTEXTO del hecho, no como si él hubiera hecho algo ese día.
+    if (consignacion.leaseEndDate) {
+      reales.push({
+        id: 'hito-fin-arriendo',
+        type: 'lease_renewal',
+        date: consignacion.leaseEndDate,
+        title: t('inmobiliaria.consignaciones.timeline.events.leaseEnds'),
+        description: consignacion.currentTenantName
+          ? t('inmobiliaria.consignaciones.timeline.events.leaseEndsWithTenant', {
+              name: consignacion.currentTenantName,
+            })
+          : '',
+        actor: t('inmobiliaria.consignaciones.timeline.actors.system'),
+      });
+    }
+
+    // Lo que de verdad pasó, traído de la agenda.
+    const deLaAgenda: TimelineEvent[] = eventosAgenda.map((e) => ({
+      id: `agenda-${e.id}`,
+      type: TIPO_DE_AGENDA[e.tipo] ?? 'visit_scheduled',
+      date: e.fecha,
+      title: e.titulo,
+      description: e.descripcion ?? '',
+      actor: e.responsableNombre ?? agenteName ?? t('inmobiliaria.consignaciones.timeline.actors.agent'),
+    }));
+
+    return [...reales, ...deLaAgenda].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
-    if (daysSinceContract > 7) {
-      // First visit scheduled
-      const visit1ScheduledDate = new Date(consignacion.contractDate);
-      visit1ScheduledDate.setDate(visit1ScheduledDate.getDate() + 7);
-      generatedEvents.push({
-        id: 'evt-4',
-        type: 'visit_scheduled',
-        date: visit1ScheduledDate.toISOString().split('T')[0],
-        title: t('inmobiliaria.consignaciones.timeline.events.visitScheduled'),
-        description: t('inmobiliaria.consignaciones.timeline.events.firstVisit'),
-        actor: agenteName || t('inmobiliaria.consignaciones.timeline.actors.agent'),
-      });
-
-      // First visit completed
-      const visit1CompletedDate = new Date(visit1ScheduledDate);
-      visit1CompletedDate.setDate(visit1CompletedDate.getDate() + 1);
-      generatedEvents.push({
-        id: 'evt-5',
-        type: 'visit_completed',
-        date: visit1CompletedDate.toISOString().split('T')[0],
-        title: t('inmobiliaria.consignaciones.timeline.events.visitCompleted'),
-        description: t('inmobiliaria.consignaciones.timeline.events.visitCompletedDesc'),
-        actor: agenteName || t('inmobiliaria.consignaciones.timeline.actors.agent'),
-      });
-
-      if (daysSinceContract > 14) {
-        // Second visit
-        const visit2Date = new Date(consignacion.contractDate);
-        visit2Date.setDate(visit2Date.getDate() + 12);
-        generatedEvents.push({
-          id: 'evt-6',
-          type: 'visit_scheduled',
-          date: visit2Date.toISOString().split('T')[0],
-          title: t('inmobiliaria.consignaciones.timeline.events.visitScheduled'),
-          description: t('inmobiliaria.consignaciones.timeline.events.secondVisit'),
-          actor: agenteName || t('inmobiliaria.consignaciones.timeline.actors.agent'),
-        });
-
-        const visit2CompletedDate = new Date(visit2Date);
-        visit2CompletedDate.setDate(visit2CompletedDate.getDate() + 1);
-        generatedEvents.push({
-          id: 'evt-7',
-          type: 'visit_completed',
-          date: visit2CompletedDate.toISOString().split('T')[0],
-          title: t('inmobiliaria.consignaciones.timeline.events.visitCompleted'),
-          description: t('inmobiliaria.consignaciones.timeline.events.secondVisitCompleted'),
-          actor: agenteName || t('inmobiliaria.consignaciones.timeline.actors.agent'),
-        });
-      }
-    }
-
-    // 6. If rented - candidate approved
-    if (consignacion.availability === 'rented' && consignacion.currentTenantName) {
-      // Candidate approved date (some weeks before lease end - simulating)
-      const approvedDate = consignacion.leaseEndDate
-        ? new Date(consignacion.leaseEndDate)
-        : new Date();
-      approvedDate.setFullYear(approvedDate.getFullYear() - 1);
-      approvedDate.setDate(approvedDate.getDate() + 14);
-
-      generatedEvents.push({
-        id: 'evt-8',
-        type: 'candidate_approved',
-        date: approvedDate.toISOString().split('T')[0],
-        title: t('inmobiliaria.consignaciones.timeline.events.candidateApproved'),
-        description: t('inmobiliaria.consignaciones.timeline.events.candidateApprovedDesc', { name: consignacion.currentTenantName }),
-        actor: t('inmobiliaria.consignaciones.timeline.actors.scoringSystem'),
-      });
-
-      // 7. Contract signed (days after approval)
-      const signedDate = new Date(approvedDate);
-      signedDate.setDate(signedDate.getDate() + 5);
-      generatedEvents.push({
-        id: 'evt-9',
-        type: 'contract_signed',
-        date: signedDate.toISOString().split('T')[0],
-        title: t('inmobiliaria.consignaciones.timeline.events.contractSigned'),
-        description: t('inmobiliaria.consignaciones.timeline.events.contractSignedDesc'),
-        actor: consignacion.currentTenantName,
-      });
-
-      // 8. Handover completed (days after signing)
-      const handoverDate = new Date(signedDate);
-      handoverDate.setDate(handoverDate.getDate() + 3);
-      generatedEvents.push({
-        id: 'evt-10',
-        type: 'handover_completed',
-        date: handoverDate.toISOString().split('T')[0],
-        title: t('inmobiliaria.consignaciones.timeline.events.handoverCompleted'),
-        description: t('inmobiliaria.consignaciones.timeline.events.handoverCompletedDesc'),
-        actor: agenteName || t('inmobiliaria.consignaciones.timeline.actors.agent'),
-      });
-    }
-
-    // Sort by date descending (newest first)
-    return generatedEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [consignacion, agenteName, t]);
+  }, [consignacion, agenteName, eventosAgenda, t]);
 
   const visibleEvents = isExpanded ? events : events.slice(0, maxVisibleItems);
   const hasMoreEvents = events.length > maxVisibleItems;
@@ -271,6 +249,22 @@ export function ConsignacionTimeline({
 
       {/* Timeline */}
       <div className="p-5">
+        {/* Cargando, falló y vacío son tres cosas distintas. Antes ninguna
+            existía: siempre había eventos porque siempre se inventaban. */}
+        {cargandoAgenda && events.length === 0 ? (
+          <p className="py-6 text-center text-sm text-fg-muted dark:text-fg-subtle">
+            {t('common.loading')}
+          </p>
+        ) : events.length === 0 ? (
+          <div className="py-8 text-center" data-testid="timeline-sin-actividad">
+            <p className="text-sm font-medium text-fg dark:text-white">
+              {t('inmobiliaria.consignaciones.timeline.noEvents')}
+            </p>
+            <p className="mx-auto mt-1 max-w-sm text-sm text-fg-muted dark:text-fg-subtle">
+              {t('inmobiliaria.consignaciones.timeline.noEventsDesc')}
+            </p>
+          </div>
+        ) : (
         <div className="relative">
           {/* Vertical line */}
           <div className="absolute left-4 top-0 bottom-0 w-px bg-surface-muted dark:bg-ink" />
@@ -337,6 +331,15 @@ export function ConsignacionTimeline({
             </AnimatePresence>
           </div>
         </div>
+        )}
+
+        {/* Si la agenda no respondió, decirlo — pero sin borrar los hitos del
+            registro, que no dependen de ella. */}
+        {falloAgenda && (
+          <p className="mt-3 text-xs text-fg-muted dark:text-fg-subtle" data-testid="timeline-fallo-agenda">
+            {t('inmobiliaria.consignaciones.timeline.loadFailed')}
+          </p>
+        )}
 
         {/* Show More / Less */}
         {hasMoreEvents && (

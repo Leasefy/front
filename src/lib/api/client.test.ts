@@ -83,3 +83,65 @@ describe('apiClient 401 handling', () => {
     expect(err.message).toBe('User not found')
   })
 })
+
+describe('401 durante la renovación del token', () => {
+  /**
+   * El access token de Supabase dura una hora y se renueva solo. Lo que salió
+   * con el token viejo vuelve 401 con la sesión viva — medido en el panel:
+   * `arco/requests` 401 → `grant_type=refresh_token` 200 → `arco/requests` 200.
+   *
+   * La pantalla se quedaba con ese 401 para siempre, y «Intentar de nuevo»
+   * disparaba otra petición dentro de la misma ventana: parecía un botón muerto.
+   */
+  it('repite UNA vez con el token nuevo y devuelve los datos', async () => {
+    setAccessToken('token-viejo')
+
+    const llamadas: string[] = []
+    const fetchFalso = vi.fn(async (_url: string, init?: RequestInit) => {
+      const auth = (init?.headers as Record<string, string>)?.['Authorization'] ?? ''
+      llamadas.push(auth)
+      if (auth === 'Bearer token-viejo') {
+        // Mientras esta petición viajaba, el provider ya renovó.
+        setAccessToken('token-nuevo')
+        return {
+          status: 401,
+          ok: false,
+          json: async () => ({ message: 'Unauthorized' }),
+          text: async () => JSON.stringify({ message: 'Unauthorized' }),
+          blob: async () => new Blob(),
+        } as unknown as Response
+      }
+      return {
+        status: 200,
+        ok: true,
+        json: async () => ({ ok: true }),
+        text: async () => JSON.stringify({ ok: true }),
+        blob: async () => new Blob(),
+      } as unknown as Response
+    })
+    vi.stubGlobal('fetch', fetchFalso)
+
+    await expect(apiClient.get('/inmobiliaria/avaluos')).resolves.toEqual({ ok: true })
+    expect(llamadas).toEqual(['Bearer token-viejo', 'Bearer token-nuevo'])
+  })
+
+  it('un 401 de permisos NO se reintenta: el token sigue siendo el mismo', async () => {
+    // Sin token nuevo no hay carrera que justificar. Reintentar a ciegas
+    // escondería un «no tenés acceso» detrás de dos peticiones iguales.
+    setAccessToken('token-abc')
+    const fetchFalso = stubFetch(401, { message: 'Forbidden for this role' })
+    vi.stubGlobal('fetch', fetchFalso)
+
+    await expect(apiClient.get('/inmobiliaria/avaluos')).rejects.toBeInstanceOf(ApiError)
+    expect(fetchFalso).toHaveBeenCalledTimes(1)
+  })
+
+  it('SESSION_SUPERSEDED no se reintenta nunca: la sesión fue revocada', async () => {
+    setAccessToken('token-abc')
+    const fetchFalso = stubFetch(401, { message: 'sesión cerrada', code: 'SESSION_SUPERSEDED' })
+    vi.stubGlobal('fetch', fetchFalso)
+
+    await expect(apiClient.get('/users/me')).rejects.toBeInstanceOf(ApiError)
+    expect(fetchFalso).toHaveBeenCalledTimes(1)
+  })
+})

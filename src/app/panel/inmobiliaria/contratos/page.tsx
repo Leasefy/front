@@ -28,7 +28,7 @@ import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@leasefy/cadence';
-import { EmptyState } from '@/components/ui/empty-state';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useContracts } from '@/lib/hooks/useContracts';
 import { NuevoContratoBoton } from '@/components/inmobiliaria/SelectorPostulacion';
@@ -202,13 +202,21 @@ function ContratosContent() {
             {!isLoading && !error && contracts.length === 0 && (
               <TableRow>
                 <TableCell colSpan={COLUMNS.length} className="p-0">
-                  <EmptyState
-                    icon={FileText}
-                    title={tx('Sin contratos aún', 'No contracts yet')}
-                    description={tx(
-                      'Crea tu primer contrato de arrendamiento para empezar.',
-                      'Create your first rental contract to get started.',
+                  {/* No hay filtros en esta pantalla: un vacío acá siempre
+                      significa «todavía no hay ninguno», y lo útil es poder
+                      crear el primero desde el mismo lugar donde falta. */}
+                  <SinDatos
+                    queSon="contratos"
+                    icono={FileText}
+                    titulo={tx('Sin contratos aún', 'No contracts yet')}
+                    descripcion={tx(
+                      'Cuando cierres un arriendo, su contrato aparece acá con su estado y sus fechas.',
+                      "When you close a lease, its contract shows up here with its status and dates.",
                     )}
+                    crear={{
+                      label: tx('Crear contrato', 'Create contract'),
+                      href: '/panel/inmobiliaria/contratos/nuevo',
+                    }}
                   />
                 </TableCell>
               </TableRow>

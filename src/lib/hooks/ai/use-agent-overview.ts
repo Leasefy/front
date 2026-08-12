@@ -21,6 +21,13 @@ export interface UseAgentOverviewResult {
   data: AgentOverviewResponse | null
   isLoading: boolean
   error: string | null
+  /**
+   * El error ENTERO, no su mensaje. `FalloDeCarga` necesita el status para
+   * distinguir un 404 —que no se reintenta— de un 401 por token renovado o un
+   * 500. Con sólo el texto, las pantallas mostraban «Error al cargar: 401», que
+   * no le dice nada a nadie y no ofrece salida.
+   */
+  errorCrudo: unknown
   /** Backend 404 — "el agente aún no reporta métricas" (not an error). */
   notAvailable: boolean
   refetch: () => Promise<void>
@@ -33,6 +40,7 @@ export function useAgentOverview(agente: AgenteId): UseAgentOverviewResult {
   const [data, setData] = useState<AgentOverviewResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null)
   const [notAvailable, setNotAvailable] = useState(false)
 
   /** Stale-response guard: each fetch aborts the previous one (agency switch race). */
@@ -65,8 +73,10 @@ export function useAgentOverview(agente: AgenteId): UseAgentOverviewResult {
       setData(res.data)
       setNotAvailable(res.notAvailable)
       setError(null)
+      setErrorCrudo(null)
     } catch (err) {
       if (controller.signal.aborted && !timedOut) return
+      setErrorCrudo(err)
       setError(
         timedOut
           ? 'timeout'
@@ -93,5 +103,5 @@ export function useAgentOverview(agente: AgenteId): UseAgentOverviewResult {
     }
   }, [fetchData, agencyId])
 
-  return { data, isLoading, error, notAvailable, refetch: fetchData }
+  return { data, isLoading, error, errorCrudo, notAvailable, refetch: fetchData }
 }

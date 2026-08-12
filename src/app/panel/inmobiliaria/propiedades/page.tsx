@@ -43,6 +43,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { SinDatos } from '@/components/estado/SinDatos';
+import { TablePagination } from '@/components/ui/pagination';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { PropertyEditModal } from '@/components/inmobiliaria/PropertyEditModal';
 import { SegmentedControl, IconButton } from '@leasefy/cadence';
@@ -325,6 +327,26 @@ function PropiedadesContent() {
     return result;
   }, [properties, filterStatus, unassignedOnly, search]);
 
+  // ── Paginación ────────────────────────────────────────────────────────
+  // 18 inmuebles ya no entran en una pantalla, y con un portafolio real son
+  // cientos. Mismo patrón que Propietarios y Consignaciones: `TablePagination`.
+  const [pagina, setPagina] = useState(1);
+  const [porPagina, setPorPagina] = useState(10);
+
+  // Filtrar desde la página 3 dejaba la tabla vacía sin motivo: los resultados
+  // nuevos no llegan hasta ahí. Cualquier cambio de filtro vuelve a la 1.
+  useEffect(() => {
+    setPagina(1);
+  }, [filterStatus, unassignedOnly, search]);
+
+  const totalPaginas = Math.max(1, Math.ceil(filtered.length / porPagina));
+  const paginadas = useMemo(() => {
+    const desde = (pagina - 1) * porPagina;
+    return filtered.slice(desde, desde + porPagina);
+  }, [filtered, pagina, porPagina]);
+
+  const hayFiltrosPuestos = Boolean(search.trim()) || filterStatus !== 'all' || unassignedOnly;
+
   // Stats
   const stats = useMemo(() => ({
     total: properties.length,
@@ -491,16 +513,28 @@ function PropiedadesContent() {
 
         {/* Table */}
         {filtered.length === 0 ? (
-          <EmptyState
-            icon={Buildings}
-            title="Sin propiedades"
-            description={
-              search || filterStatus !== 'all'
-                ? 'Ninguna propiedad coincide con los filtros'
-                : isAgent
-                ? 'No tienes propiedades asignadas'
-                : 'Aún no hay propiedades publicadas'
+          /* Un filtro sólo explica el vacío si había algo que filtrar. Y a un
+             agente no se le ofrece «crear»: los inmuebles se le asignan. */
+          <SinDatos
+            hayFiltros={hayFiltrosPuestos && properties.length > 0}
+            queSon="inmuebles"
+            icono={Buildings}
+            titulo={isAgent ? 'No tenés inmuebles asignados' : undefined}
+            descripcion={
+              isAgent
+                ? 'Cuando la inmobiliaria te asigne uno, aparece acá.'
+                : 'Creá el primero o importá tu portafolio desde un archivo o desde los enlaces de tus fichas.'
             }
+            crear={
+              isAgent
+                ? undefined
+                : { label: 'Importar inmuebles', href: '/panel/inmobiliaria/portafolio/importar' }
+            }
+            onLimpiarFiltros={() => {
+              setSearch('');
+              setFilterStatus('all');
+              setUnassignedOnly(false);
+            }}
           />
         ) : (
           <div className="overflow-x-auto">
@@ -515,7 +549,7 @@ function PropiedadesContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((property) => {
+                {paginadas.map((property) => {
                   const statusCfg = STATUS_CONFIG[property.status] ?? STATUS_CONFIG.pending;
                   const agent = property.agents[0] ?? null;
 
@@ -699,6 +733,22 @@ function PropiedadesContent() {
                 })}
               </TableBody>
             </Table>
+
+            {totalPaginas > 1 && (
+              <div className="px-4 py-3 border-t border-border bg-muted/10">
+                <TablePagination
+                  total={filtered.length}
+                  page={pagina}
+                  pageSize={porPagina}
+                  pageSizeOptions={[10, 20, 50, 100]}
+                  onPageChange={setPagina}
+                  onPageSizeChange={(size) => {
+                    setPorPagina(size);
+                    setPagina(1);
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -23,6 +23,7 @@ import { Button, EmptyState } from '@/components/ui';
 import { SegmentedControl } from '@leasefy/cadence';
 import { useConsignaciones, usePropietarios, useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { SinDatos } from '@/components/estado/SinDatos';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { ConsignacionCard } from '@/components/inmobiliaria/ConsignacionCard';
@@ -126,6 +127,38 @@ function PortafolioContent() {
 
     return result;
   }, [filters, allConsignaciones]);
+
+  /**
+   * ¿Hay algún filtro puesto? Es lo ÚNICO que distingue «todavía no tenés
+   * inmuebles» de «ninguno coincide con lo que buscaste». Decirle lo primero a
+   * quien tiene 200 y filtró mal es afirmar algo falso y dejarlo sin salida.
+   */
+  //
+  // ⚠️ Y un filtro sólo EXPLICA el vacío si había algo que filtrar. Esta
+  // pantalla abre con `availability: 'available'` puesto de fábrica, así que
+  // sin este `&& hay alguno` una inmobiliaria recién creada —cero
+  // consignaciones— vería «quitá los filtros» en vez de «creá la primera».
+  const hayFiltrosPuestos =
+    Boolean(filters.search) ||
+    filters.availability !== 'all' ||
+    filters.agenteId !== 'all' ||
+    filters.propietarioId !== 'all' ||
+    filters.city !== 'all' ||
+    filters.propertyType !== 'all';
+
+  const elVacioEsPorLosFiltros = hayFiltrosPuestos && allConsignaciones.length > 0;
+
+  const limpiarFiltros = useCallback(() => {
+    setFilters({
+      search: '',
+      availability: 'all',
+      agenteId: 'all',
+      propietarioId: 'all',
+      city: 'all',
+      propertyType: 'all',
+    });
+    setCurrentPage(1);
+  }, []);
 
   // Calculate stats from filtered data
   const stats = useMemo(() => {
@@ -326,10 +359,14 @@ function PortafolioContent() {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState
-                    icon={Buildings}
-                    title={t('inmobiliaria.portafolio.noProperties')}
-                    description={t('inmobiliaria.portafolio.noPropertiesDesc')}
+                  <SinDatos
+                    hayFiltros={elVacioEsPorLosFiltros}
+                    queSon="inmuebles"
+                    icono={Buildings}
+                    titulo={t('inmobiliaria.portafolio.noProperties')}
+                    descripcion={t('inmobiliaria.portafolio.noPropertiesDesc')}
+                    crear={{ label: 'Nueva consignación', href: '/panel/inmobiliaria/portafolio/nueva' }}
+                    onLimpiarFiltros={limpiarFiltros}
                   />
                 )}
               </motion.div>
@@ -350,10 +387,14 @@ function PortafolioContent() {
                     onAgendarCita={handleAgendarCita}
                   />
                 ) : (
-                  <EmptyState
-                    icon={Buildings}
-                    title={t('inmobiliaria.portafolio.noProperties')}
-                    description={t('inmobiliaria.portafolio.noPropertiesDesc')}
+                  <SinDatos
+                    hayFiltros={elVacioEsPorLosFiltros}
+                    queSon="inmuebles"
+                    icono={Buildings}
+                    titulo={t('inmobiliaria.portafolio.noProperties')}
+                    descripcion={t('inmobiliaria.portafolio.noPropertiesDesc')}
+                    crear={{ label: 'Nueva consignación', href: '/panel/inmobiliaria/portafolio/nueva' }}
+                    onLimpiarFiltros={limpiarFiltros}
                   />
                 )}
               </motion.div>

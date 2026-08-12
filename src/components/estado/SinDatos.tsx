@@ -42,6 +42,15 @@ export interface SinDatosProps {
   descripcion?: string
   /** Crear el primero. Sólo aparece cuando NO hay filtros puestos. */
   crear?: { label: string; href?: string; onClick?: () => void }
+  /**
+   * Una acción propia, cuando crear no es «ir a una ruta».
+   *
+   * ⚠️ Existe porque algunas cosas NO se crean desde cero: un contrato nace de
+   * una postulación aprobada, y `/contratos/nuevo` sin `?applicationId=`
+   * responde «Falta el parámetro applicationId». Un enlace ahí es un botón que
+   * lleva a un error. Tiene prioridad sobre `crear`.
+   */
+  accion?: React.ReactNode
   /** Volver a ver todo. Sólo aparece cuando SÍ hay filtros. */
   onLimpiarFiltros?: () => void
   className?: string
@@ -54,6 +63,7 @@ export function SinDatos({
   titulo,
   descripcion,
   crear,
+  accion,
   onLimpiarFiltros,
   className,
 }: SinDatosProps) {
@@ -87,12 +97,14 @@ export function SinDatos({
       {/* La acción cambia con el caso: crear cuando no hay nada, limpiar
           cuando lo que falta es lo que se buscó. Ofrecer «crear el primero»
           a quien tiene 200 y filtró mal no le sirve de nada. */}
-      {(hayFiltros ? Boolean(onLimpiarFiltros) : Boolean(crear)) && (
+      {(hayFiltros ? Boolean(onLimpiarFiltros) : Boolean(crear) || Boolean(accion)) && (
         <div className="mt-6 flex justify-center">
           {hayFiltros ? (
             <Button variant="outline" onClick={onLimpiarFiltros} data-testid="limpiar-filtros">
               Quitar los filtros
             </Button>
+          ) : accion ? (
+            accion
           ) : crear?.href ? (
             <Button asChild className="gap-2">
               <Link href={crear.href}>

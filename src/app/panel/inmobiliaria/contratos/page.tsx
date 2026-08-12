@@ -213,10 +213,14 @@ function ContratosContent() {
                       'Cuando cierres un arriendo, su contrato aparece acá con su estado y sus fechas.',
                       "When you close a lease, its contract shows up here with its status and dates.",
                     )}
-                    crear={{
-                      label: tx('Crear contrato', 'Create contract'),
-                      href: '/panel/inmobiliaria/contratos/nuevo',
-                    }}
+                    /* ⚠️ Acá había un enlace a `/contratos/nuevo` a secas, y esa
+                       pantalla EXIGE `?applicationId=`: el botón mostraba
+                       «Falta el parámetro applicationId» en vez de crear nada.
+                       Es el mismo defecto que ya estaba resuelto arriba con
+                       `NuevoContratoBoton`, que pregunta sobre qué postulación
+                       aprobada se arma el contrato. Un contrato no se crea de
+                       cero: nace de una postulación. */
+                    accion={<NuevoContratoBoton />}
                   />
                 </TableCell>
               </TableRow>

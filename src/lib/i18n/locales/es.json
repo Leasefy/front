@@ -736,7 +736,10 @@
       "accountSetDefault": "Cuenta establecida como predeterminada",
       "assignmentsUpdated": "Asignaciones actualizadas correctamente",
       "cannotDeleteDefault": "No puedes eliminar la cuenta por defecto",
-      "cannotDeleteWithProperties": "Esta cuenta tiene propiedades asignadas"
+      "cannotDeleteWithProperties": "Esta cuenta tiene propiedades asignadas",
+      "errorAddingAccount": "No pudimos agregar la cuenta",
+      "errorDeletingAccount": "No pudimos eliminar la cuenta",
+      "errorUpdatingAccount": "No pudimos actualizar la cuenta"
     },
     "paymentAccounts": {
       "title": "Cuentas de Recaudo",
@@ -1606,7 +1609,8 @@
         "status": {
           "active": "Activo",
           "inactive": "Inactivo",
-          "onLeave": "Licencia"
+          "onLeave": "Licencia",
+          "invited": "Invitado"
         },
         "properties": "Propiedades",
         "leases": "Arriendos",
@@ -2378,6 +2382,7 @@
       "statusInactive": "Inactivo",
       "statusOnLeave": "En licencia",
       "statusOnLeaveShort": "Licencia",
+      "statusInvited": "Invitado",
       "specResidential": "Residencial",
       "specCommercial": "Comercial",
       "specBoth": "Ambos",

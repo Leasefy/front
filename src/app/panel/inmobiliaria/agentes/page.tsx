@@ -22,7 +22,7 @@ import {
 import { Button, Pagination } from '@/components/ui';
 import { EmptyState as DSEmptyState } from '@/components/ui/empty-state';
 import { SegmentedControl } from '@leasefy/cadence';
-import { useAgentes } from '@/lib/hooks/useInmobiliaria';
+import { useEquipo } from '@/lib/hooks/useInmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { AgenteCard } from '@/components/inmobiliaria/AgenteCard';
 import { AgenteTable } from '@/components/inmobiliaria/AgenteTable';
@@ -30,8 +30,8 @@ import { AgenteFilters, AgenteFiltersState } from '@/components/inmobiliaria/Age
 import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
 import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
 import { AgenteFormModal } from '@/components/inmobiliaria/AgenteFormModal';
-import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service';
-import type { UserInvite } from '@/lib/types/inmobiliaria';
+import { agencyApi, inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service';
+import type { AgencyInviteResult, UserInvite } from '@/lib/types/inmobiliaria';
 
 type ViewMode = 'grid' | 'table';
 type TabType = 'equipo' | 'ranking' | 'workload';
@@ -45,7 +45,14 @@ const ITEMS_PER_PAGE = 6;
 function AgentesContent() {
   const { t } = useI18n();
   const router = useRouter();
-  const { agentes: allAgentes } = useAgentes();
+  // `useEquipo` = agentes activos + invitaciones pendientes. `useAgentes` solo
+  // no alcanza: `GET /agentes` filtra ACTIVE y con usuario vinculado, así que
+  // el agente que acabás de invitar no sale ahí ni recargando (ver el hook).
+  const {
+    agentes: allAgentes,
+    invitacionesCaidas,
+    refetch: recargarEquipo,
+  } = useEquipo();
   const { canAccess } = usePermissions();
 
   const TABS: { id: TabType; label: string; icon: React.ElementType }[] = useMemo(() => [
@@ -109,10 +116,11 @@ function AgentesContent() {
   const stats = useMemo(() => {
     const total = allAgentes.length;
     const active = allAgentes.filter((a) => a.status === 'active').length;
+    const invitados = allAgentes.filter((a) => a.status === 'invited').length;
     const closedThisMonth = allAgentes.reduce((sum, a) => sum + a.metrics.closedThisMonth, 0);
     const commissionsThisMonth = allAgentes.reduce((sum, a) => sum + a.metrics.commissionsThisMonth, 0);
 
-    return { total, active, closedThisMonth, commissionsThisMonth };
+    return { total, active, invitados, closedThisMonth, commissionsThisMonth };
   }, [allAgentes]);
 
   // Pagination
@@ -130,7 +138,16 @@ function AgentesContent() {
   }, []);
 
   // Handlers
+  // Una invitación pendiente no tiene ficha: `GET /agentes/:id` sólo encuentra
+  // miembros ACTIVE, así que abrirla daría un 404. En vez de mandar a una
+  // pantalla rota, se dice qué falta.
   const handleView = useCallback((agente: typeof allAgentes[0]) => {
+    if (agente.status === 'invited') {
+      toast.info('Todavía no aceptó la invitación', {
+        description: `${agente.email} va a tener ficha cuando cree su cuenta y entre.`,
+      });
+      return;
+    }
     router.push(`/panel/inmobiliaria/agentes/${agente.id}`);
   }, [router]);
 
@@ -144,13 +161,54 @@ function AgentesContent() {
     setShowAddModal(true);
   }, []);
 
+  /*
+   * Cuando el correo no sale, la invitación igual quedó creada — lo que falta
+   * es que la persona reciba el enlace. Sin una salida, el admin queda mirando
+   * un aviso que no puede resolver: reintentar manda el mismo correo por el
+   * mismo camino roto.
+   *
+   * El enlace es el mismo que manda el correo. `/invitacion/:token` sirve para
+   * los dos casos (si no tiene cuenta, esa pantalla lo lleva a /registro).
+   */
+  const copiarEnlaceDeInvitacion = useCallback(async (token: string, email: string) => {
+    const enlace = `${window.location.origin}/invitacion/${token}`;
+    try {
+      await navigator.clipboard.writeText(enlace);
+      toast.success('Enlace copiado', {
+        description: `Pasáselo a ${email} por donde puedas. Vence en 7 días.`,
+      });
+    } catch {
+      // Sin permiso de portapapeles el enlace se muestra para copiarlo a mano:
+      // dejarlo en un toast que no se puede copiar sería no dar salida.
+      toast.info('Copialo a mano', { description: enlace, duration: 30000 });
+    }
+  }, []);
+
+  const avisoDeCorreoNoEnviado = useCallback(
+    (result: AgencyInviteResult, email: string) =>
+      result.invitationToken
+        ? {
+            label: 'Copiar enlace',
+            onClick: () => void copiarEnlaceDeInvitacion(result.invitationToken!, email),
+          }
+        : undefined,
+    [copiarEnlaceDeInvitacion],
+  );
+
   const handleCreateAgente = useCallback(async (data: UserInvite) => {
     try {
       const result = await inmobiliariaConfigApi.inviteUser(data);
+      // La tabla se recarga SIEMPRE que el backend haya guardado la invitación
+      // —aunque el correo no haya salido—, porque la fila ya existe y la
+      // pantalla tiene que mostrarla. Antes no se recargaba nada: quedaba
+      // diciendo «0 agentes» encima de un agente recién creado.
+      await recargarEquipo();
       if (result.emailDelivered === false) {
         // Agent row was created, but the invitation email failed to send.
         toast.warning(t('inmobiliaria.agentes.toasts.created'), {
           description: t('inmobiliaria.agentes.toasts.createdEmailNotDeliveredDesc', { name: data.name }),
+          action: avisoDeCorreoNoEnviado(result, data.email),
+          duration: 12000,
         });
       } else {
         toast.success(t('inmobiliaria.agentes.toasts.created'), {
@@ -162,7 +220,29 @@ function AgentesContent() {
         description: error instanceof Error ? error.message : undefined,
       });
     }
-  }, [t]);
+  }, [t, recargarEquipo, avisoDeCorreoNoEnviado]);
+
+  const handleReenviarInvitacion = useCallback(async (agente: typeof allAgentes[0]) => {
+    try {
+      const result = await agencyApi.resendInvitation(agente.id);
+      if (result.emailDelivered === false) {
+        toast.warning('Invitación regenerada, pero el correo no salió', {
+          description: `El enlace de ${agente.email} es nuevo y sirve. Pasáselo vos.`,
+          action: avisoDeCorreoNoEnviado(result, agente.email),
+          duration: 12000,
+        });
+      } else {
+        toast.success('Invitación reenviada', {
+          description: `Le mandamos un enlace nuevo a ${agente.email}.`,
+        });
+      }
+      await recargarEquipo();
+    } catch (error) {
+      toast.error('No pudimos reenviar la invitación', {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    }
+  }, [recargarEquipo, avisoDeCorreoNoEnviado]);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -213,8 +293,13 @@ function AgentesContent() {
               <p className="text-2xl font-semibold tabular-nums text-fg">
                 {stats.active}
               </p>
+              {/* «Activo» cuenta sólo a los que ya aceptaron. Si hay
+                  invitaciones sin aceptar hay que decirlo acá, o el número de
+                  arriba (Total) parece un error de suma. */}
               <p className="text-xs text-fg-muted">
-                {t('inmobiliaria.agentes.active')}
+                {stats.invitados > 0
+                  ? `${t('inmobiliaria.agentes.active')} · ${stats.invitados} sin aceptar`
+                  : t('inmobiliaria.agentes.active')}
               </p>
             </div>
           </div>
@@ -329,6 +414,25 @@ function AgentesContent() {
                 agentes={allAgentes}
               />
 
+              {/* Las invitaciones son una llamada aparte. Si esa llamada falla
+                  (y no por falta de permiso, que es respuesta válida) el equipo
+                  se ve incompleto: decirlo es mejor que mostrar una lista corta
+                  como si estuviera entera. */}
+              {invitacionesCaidas && (
+                <div className="px-4 py-3 border-b border-border bg-warning-soft/40">
+                  <p className="text-sm text-fg-muted">
+                    No pudimos traer las invitaciones pendientes, así que acá faltan las
+                    personas que todavía no aceptaron.{' '}
+                    <button
+                      onClick={() => void recargarEquipo()}
+                      className="underline underline-offset-2 hover:text-fg"
+                    >
+                      Reintentar
+                    </button>
+                  </p>
+                </div>
+              )}
+
               {/* Content */}
               <div>
                 <AnimatePresence mode="wait">
@@ -367,6 +471,9 @@ function AgentesContent() {
                           agentes={paginatedAgentes}
                           onView={handleView}
                           onEdit={handleEdit}
+                          onReenviarInvitacion={
+                            canAccess('configuracion', 'edit') ? handleReenviarInvitacion : undefined
+                          }
                         />
                       ) : (
                         <EmptyState />

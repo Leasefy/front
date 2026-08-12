@@ -736,7 +736,10 @@
       "accountSetDefault": "Account set as default",
       "assignmentsUpdated": "Assignments updated successfully",
       "cannotDeleteDefault": "Cannot delete the default account",
-      "cannotDeleteWithProperties": "This account has assigned properties"
+      "cannotDeleteWithProperties": "This account has assigned properties",
+      "errorAddingAccount": "We could not add the account",
+      "errorDeletingAccount": "We could not delete the account",
+      "errorUpdatingAccount": "We could not update the account"
     },
     "paymentAccounts": {
       "title": "Payment Accounts",
@@ -1605,7 +1608,8 @@
         "status": {
           "active": "Active",
           "inactive": "Inactive",
-          "onLeave": "On leave"
+          "onLeave": "On leave",
+          "invited": "Invited"
         },
         "properties": "Properties",
         "leases": "Leases",
@@ -2377,6 +2381,7 @@
       "statusInactive": "Inactive",
       "statusOnLeave": "On leave",
       "statusOnLeaveShort": "Leave",
+      "statusInvited": "Invited",
       "specResidential": "Residential",
       "specCommercial": "Commercial",
       "specBoth": "Both",

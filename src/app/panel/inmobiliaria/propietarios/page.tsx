@@ -181,18 +181,25 @@ function PropietariosContent() {
   // vacía y la pantalla decía «todavía no tenés propietarios» — afirmando algo
   // que nadie verificó. `errorCrudo` es el error entero, que es lo que
   // `FalloDeCarga` necesita para saber si reintentar sirve.
+  //
+  // La lista es la del hook, sin copia local. Antes había un `useState` espejo
+  // que se sincronizaba con `if (apiPropietarios.length > 0) setPropietarios(…)`
+  // y que cada handler parcheaba a mano. Dos problemas:
+  //
+  //  · borrar el último propietario dejaba la copia en `[]`, pero el próximo
+  //    refetch devolvía `[]` y ese `if` NO copiaba nada: la pantalla se quedaba
+  //    con lo que hubiera antes;
+  //  · los KPI de arriba (inmuebles, canon, pendiente) se suman de esta lista, y
+  //    esos campos los calcula el backend. Un objeto recién creado los trae en
+  //    cero, así que crear un propietario bajaba los totales de la agencia.
+  //
+  // Releer del servidor después de cada mutación no tiene ninguno de los dos.
   const {
-    propietarios: apiPropietarios,
+    propietarios,
     isLoading: cargandoPropietarios,
     errorCrudo: errorPropietarios,
     refetch: recargarPropietarios,
   } = usePropietarios();
-  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
-
-  // Sync with API data
-  useEffect(() => {
-    if (apiPropietarios.length > 0) setPropietarios(apiPropietarios);
-  }, [apiPropietarios]);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showIACapture, setShowIACapture] = useState(false);
@@ -268,8 +275,7 @@ function PropietariosContent() {
     setIsDeleting(true);
     try {
       await propietariosApi.delete(deletingPropietario.id);
-      // Only remove from local state once the backend confirms deletion
-      setPropietarios((prev) => prev.filter((p) => p.id !== deletingPropietario.id));
+      await recargarPropietarios();
       toast.success(t('inmobiliaria.propietarios.toasts.deleted', { name: deletingPropietario.name }));
       setDeletingPropietario(null);
     } catch (err) {
@@ -284,8 +290,7 @@ function PropietariosContent() {
   const handleCreateSubmit = async (data: PropietarioFormData) => {
     try {
       const created = await propietariosApi.create(data);
-      // Use the persisted object returned by the backend (real id, computed fields)
-      setPropietarios((prev) => [created, ...prev]);
+      await recargarPropietarios();
       toast.success(t('inmobiliaria.propietarios.toasts.created', { name: created.name }));
       setShowAddModal(false);
       setCurrentPage(1); // Reset to first page to show new item
@@ -301,11 +306,8 @@ function PropietariosContent() {
     if (!editingPropietario) return;
 
     try {
-      const updated = await propietariosApi.update(editingPropietario.id, data);
-      // Replace with the persisted object returned by the backend
-      setPropietarios((prev) =>
-        prev.map((p) => (p.id === editingPropietario.id ? updated : p))
-      );
+      await propietariosApi.update(editingPropietario.id, data);
+      await recargarPropietarios();
       toast.success(t('inmobiliaria.propietarios.toasts.updated'));
       setEditingPropietario(null);
     } catch (err) {

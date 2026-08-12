@@ -25,7 +25,6 @@ function RenovacionesContent() {
     isLoading,
     errorCrudo: error,
     refetch,
-    setData: setRenovacionesData,
   } = useRenovaciones();
 
   const [selectedRenovacion, setSelectedRenovacion] = useState<Renovacion | null>(null);
@@ -41,23 +40,38 @@ function RenovacionesContent() {
     setTimeout(() => setSelectedRenovacion(null), 300);
   }, []);
 
+  /*
+   * Después de tocar una renovación se vuelve a leer del servidor.
+   *
+   * Antes cada handler parcheaba la fila a mano con lo que suponía que había
+   * quedado (`notifiedAt: new Date()`, `updatedAt: new Date()`), y esas fechas
+   * son inventadas: las pone el backend, que además puede rechazar una
+   * transición o mover otros campos. La pantalla mostraba una versión que no
+   * existía en ningún lado.
+   *
+   * El drawer muestra UNA renovación tomada de la lista, así que también hay
+   * que apuntarlo a la fila fresca; si no, queda mostrando lo viejo encima de
+   * una lista ya actualizada.
+   */
+  const recargarRenovaciones = useCallback(async () => {
+    const frescas = await refetch();
+    if (!frescas) return;
+    setSelectedRenovacion((actual) =>
+      actual ? frescas.find((r) => r.id === actual.id) ?? actual : actual,
+    );
+  }, [refetch]);
+
   const handleNotifyTenant = useCallback(async (renovacion: Renovacion) => {
     try {
       await renovacionesApi.updateStage(renovacion.id, { status: 'notified' });
+      await recargarRenovaciones();
       toast.success(t('inmobiliaria.operaciones.toasts.notificationSent'), {
         description: t('inmobiliaria.operaciones.toasts.notificationSentDesc', { name: renovacion.tenantName ?? '' }),
       });
-      setRenovacionesData((prev) =>
-        prev ? prev.map((r) =>
-          r.id === renovacion.id
-            ? { ...r, status: 'notified' as const, notifiedAt: new Date().toISOString() }
-            : r
-        ) : []
-      );
     } catch {
       toast.error('Error al notificar inquilino');
     }
-  }, [t, setRenovacionesData]);
+  }, [t, recargarRenovaciones]);
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -113,10 +127,12 @@ function RenovacionesContent() {
               ...(nr ? { negotiatedRent: nr } : {}),
               ...(naf ? { negotiatedAdminFee: naf } : {}),
             });
+            await recargarRenovaciones();
             toast.success('Propuesta enviada al inquilino');
           }}
           onUploadDocument={async (file) => {
             await renovacionesApi.uploadDocument(selectedRenovacion.id, file);
+            await recargarRenovaciones();
             toast.success('Documento de renovación subido');
           }}
           onStepComplete={async (newStatus, negotiatedRent, negotiatedAdminFee, notificationMessage) => {
@@ -127,19 +143,7 @@ function RenovacionesContent() {
                 ...(negotiatedAdminFee ? { negotiatedAdminFee } : {}),
                 ...(notificationMessage ? { notificationMessage } : {}),
               });
-              setRenovacionesData((prev) =>
-                prev ? prev.map((r) =>
-                  r.id === selectedRenovacion.id
-                    ? {
-                        ...r,
-                        status: newStatus,
-                        ...(negotiatedRent ? { negotiatedRent } : {}),
-                        ...(negotiatedAdminFee ? { negotiatedAdminFee } : {}),
-                        updatedAt: new Date().toISOString(),
-                      }
-                    : r
-                ) : []
-              );
+              await recargarRenovaciones();
               toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: getRenovacionStatusLabel(newStatus) }));
             } catch {
               toast.error('Error al actualizar renovación');
@@ -151,13 +155,7 @@ function RenovacionesContent() {
                 status: 'terminated',
                 ...(reason ? { historyNote: reason } : {}),
               });
-              setRenovacionesData((prev) =>
-                prev ? prev.map((r) =>
-                  r.id === selectedRenovacion.id
-                    ? { ...r, status: 'terminated' as const, updatedAt: new Date().toISOString() }
-                    : r
-                ) : []
-              );
+              await recargarRenovaciones();
               handleClose();
               toast.success(t('inmobiliaria.operaciones.toasts.renewalTerminated'));
             } catch {
@@ -167,6 +165,9 @@ function RenovacionesContent() {
           onNoteAdd={async (note) => {
             try {
               await renovacionesApi.addNote(selectedRenovacion.id, note);
+              // La nota entra en el historial de la renovación: sin releer, el
+              // drawer seguía mostrando el historial sin ella.
+              await recargarRenovaciones();
               toast.success(t('inmobiliaria.operaciones.toasts.noteAdded'));
             } catch {
               toast.error('Error al agregar nota');

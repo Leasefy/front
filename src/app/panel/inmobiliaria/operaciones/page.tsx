@@ -226,14 +226,12 @@ function OperacionesContent() {
     isLoading: isLoadingRenovaciones,
     errorCrudo: renovacionesError,
     refetch: refetchRenovaciones,
-    setData: setRenovacionesData,
   } = useRenovaciones();
   const {
     mantenimientos: mantenimientosData,
     isLoading: isLoadingMantenimientos,
     errorCrudo: mantenimientosError,
     refetch: refetchMantenimientos,
-    setData: setMantenimientosData,
   } = useMantenimientos();
   const {
     consignaciones: consignacionesData,
@@ -294,24 +292,46 @@ function OperacionesContent() {
     setIsRenovacionWorkflowOpen(true);
   }, []);
 
+  /*
+   * Después de cada mutación se relee del servidor, en vez de parchear la fila
+   * a mano con lo que suponemos que quedó.
+   *
+   * Los parches inventaban fechas (`notifiedAt`/`updatedAt`/`completedAt` con
+   * `new Date()`) y campos derivados (`approvedAmount` copiado de la
+   * cotización): eso lo decide el backend, que además puede rechazar la
+   * transición. Y los KPI de arriba se calculan de estas dos listas, así que
+   * un parche mal puesto también corre los contadores.
+   *
+   * El drawer muestra UN ítem tomado de la lista: hay que volver a apuntarlo a
+   * la fila fresca o queda mostrando lo viejo sobre una lista ya actualizada.
+   */
+  const recargarRenovaciones = useCallback(async () => {
+    const frescas = await refetchRenovaciones();
+    if (!frescas) return;
+    setSelectedRenovacion((actual) =>
+      actual ? frescas.find((r) => r.id === actual.id) ?? actual : actual,
+    );
+  }, [refetchRenovaciones]);
+
+  const recargarMantenimientos = useCallback(async () => {
+    const frescos = await refetchMantenimientos();
+    if (!frescos) return;
+    setSelectedMantenimiento((actual) =>
+      actual ? frescos.find((m) => m.id === actual.id) ?? actual : actual,
+    );
+  }, [refetchMantenimientos]);
+
   const handleNotifyTenant = useCallback(async (renovacion: Renovacion) => {
     try {
       await renovacionesApi.updateStage(renovacion.id, { status: 'notified' });
+      await recargarRenovaciones();
       toast.success(t('inmobiliaria.operaciones.toasts.notificationSent'), {
         description: t('inmobiliaria.operaciones.toasts.notificationSentDesc', { name: renovacion.tenantName }),
       });
-      // Update local state
-      setRenovacionesData((prev) =>
-        prev ? prev.map((r) =>
-          r.id === renovacion.id
-            ? { ...r, status: 'notified' as const, notifiedAt: new Date().toISOString() }
-            : r
-        ) : []
-      );
     } catch (error) {
       toast.error('Error al notificar inquilino');
     }
-  }, [t, setRenovacionesData]);
+  }, [t, recargarRenovaciones]);
 
   const handleViewRenovacionDetails = useCallback((renovacion: Renovacion) => {
     setSelectedRenovacion(renovacion);
@@ -346,9 +366,7 @@ function OperacionesContent() {
     setIsSubmittingMantenimiento(true);
 
     try {
-      const consignacion = consignaciones.find((c) => c.id === data.consignacionId);
-
-      const newSolicitud = await mantenimientoApi.create({
+      await mantenimientoApi.create({
         consignacionId: data.consignacionId,
         type: data.type,
         priority: data.priority,
@@ -358,8 +376,7 @@ function OperacionesContent() {
         paidBy: data.paidBy,
       });
 
-      // Update local state
-      setMantenimientosData((prev) => [newSolicitud, ...(prev ?? [])]);
+      await recargarMantenimientos();
 
       setIsSubmittingMantenimiento(false);
       setIsMantenimientoFormOpen(false);
@@ -370,7 +387,7 @@ function OperacionesContent() {
       toast.error('Error al crear solicitud de mantenimiento');
       setIsSubmittingMantenimiento(false);
     }
-  }, [consignaciones, t, setMantenimientosData]);
+  }, [t, recargarMantenimientos]);
 
   const handleMantenimientoFormCancel = useCallback(() => {
     setIsMantenimientoFormOpen(false);
@@ -385,20 +402,7 @@ function OperacionesContent() {
     async (solicitudId: string, newStatus: MantenimientoStatus) => {
       try {
         await mantenimientoApi.updateStatus(solicitudId, newStatus);
-
-        // Update local state
-        setMantenimientosData((prev) =>
-          prev ? prev.map((m) =>
-            m.id === solicitudId
-              ? {
-                  ...m,
-                  status: newStatus,
-                  updatedAt: new Date().toISOString(),
-                  completedAt: newStatus === 'completed' ? new Date().toISOString() : m.completedAt,
-                }
-              : m
-          ) : []
-        );
+        await recargarMantenimientos();
 
         const statusLabels: Record<MantenimientoStatus, string> = {
           reported: t('inmobiliaria.operaciones.maintenance.status.pending'),
@@ -418,37 +422,18 @@ function OperacionesContent() {
         toast.error('Error al actualizar estado de mantenimiento');
       }
     },
-    [t, setMantenimientosData, handleMantenimientoViewerClose]
+    [t, recargarMantenimientos, handleMantenimientoViewerClose]
   );
 
   const handleApproveQuote = useCallback(async (solicitudId: string, quoteId: string) => {
     try {
       await mantenimientoApi.approveQuote(solicitudId, quoteId);
-
-      // Update local state
-      setMantenimientosData((prev) =>
-        prev ? prev.map((m) => {
-          if (m.id !== solicitudId) return m;
-          const quote = m.quotes.find((q) => q.id === quoteId);
-          return {
-            ...m,
-            selectedQuoteId: quoteId,
-            approvedAmount: quote?.amount,
-            status: 'approved' as const,
-            updatedAt: new Date().toISOString(),
-          };
-        }) : []
-      );
-
+      await recargarMantenimientos();
       toast.success(t('inmobiliaria.operaciones.toasts.quoteApproved'));
     } catch (error) {
       toast.error('Error al aprobar cotización');
     }
-  }, [t, setMantenimientosData]);
-
-  const handleAddNote = useCallback((solicitudId: string, note: string) => {
-    toast.success(t('inmobiliaria.operaciones.toasts.noteAdded'));
-  }, [t]);
+  }, [t, recargarMantenimientos]);
 
   const handleRequestQuote = useCallback((solicitudId: string) => {
     toast.info(t('inmobiliaria.operaciones.toasts.featureInDevelopment'), {
@@ -784,10 +769,12 @@ function OperacionesContent() {
               ...(nr ? { negotiatedRent: nr } : {}),
               ...(naf ? { negotiatedAdminFee: naf } : {}),
             });
+            await recargarRenovaciones();
             toast.success('Propuesta enviada al inquilino');
           }}
           onUploadDocument={async (file) => {
             await renovacionesApi.uploadDocument(selectedRenovacion.id, file);
+            await recargarRenovaciones();
             toast.success('Documento de renovación subido');
           }}
           onStepComplete={async (newStatus, negotiatedRent, negotiatedAdminFee, notificationMessage) => {
@@ -798,20 +785,7 @@ function OperacionesContent() {
                 ...(negotiatedAdminFee ? { negotiatedAdminFee } : {}),
                 ...(notificationMessage ? { notificationMessage } : {}),
               });
-              // Update local state
-              setRenovacionesData((prev) =>
-                prev ? prev.map((r) =>
-                  r.id === selectedRenovacion.id
-                    ? {
-                        ...r,
-                        status: newStatus,
-                        ...(negotiatedRent ? { negotiatedRent } : {}),
-                        ...(negotiatedAdminFee ? { negotiatedAdminFee } : {}),
-                        updatedAt: new Date().toISOString(),
-                      }
-                    : r
-                ) : []
-              );
+              await recargarRenovaciones();
               toast.success(t('inmobiliaria.operaciones.toasts.statusUpdated', { status: getRenovacionStatusLabel(newStatus) }));
             } catch (error) {
               toast.error('Error al actualizar renovación');
@@ -823,14 +797,7 @@ function OperacionesContent() {
                 status: 'terminated',
                 ...(reason ? { historyNote: reason } : {}),
               });
-              // Update local state
-              setRenovacionesData((prev) =>
-                prev ? prev.map((r) =>
-                  r.id === selectedRenovacion.id
-                    ? { ...r, status: 'terminated' as const, updatedAt: new Date().toISOString() }
-                    : r
-                ) : []
-              );
+              await recargarRenovaciones();
               handleRenovacionWorkflowClose();
               toast.success(t('inmobiliaria.operaciones.toasts.renewalTerminated'));
             } catch (error) {
@@ -840,6 +807,7 @@ function OperacionesContent() {
           onNoteAdd={async (note) => {
             try {
               await renovacionesApi.addNote(selectedRenovacion.id, note);
+              await recargarRenovaciones();
               toast.success(t('inmobiliaria.operaciones.toasts.noteAdded'));
             } catch (error) {
               toast.error('Error al agregar nota');
@@ -848,14 +816,15 @@ function OperacionesContent() {
         />
       )}
 
-      {/* Mantenimiento Viewer Sheet */}
+      {/* Mantenimiento Viewer Sheet
+          Sin `onAddNote`: no hay endpoint de notas para mantenimientos, así que
+          el viewer esconde ese botón en vez de fingir que la guardó. */}
       <MantenimientoViewer
         solicitud={selectedMantenimiento}
         isOpen={isMantenimientoViewerOpen}
         onClose={handleMantenimientoViewerClose}
         onStatusChange={handleMantenimientoStatusChange}
         onApproveQuote={handleApproveQuote}
-        onAddNote={handleAddNote}
         onRequestQuote={handleRequestQuote}
       />
 

@@ -178,7 +178,7 @@ function DocumentosContent() {
   // API Hooks
   const { documents, isLoading: isLoadingDocuments, errorCrudo: errorDocuments, refetch: recargarDocuments } = usePropertyDocuments();
   const { templates, isLoading: isLoadingTemplates, errorCrudo: errorTemplates, refetch: recargarTemplates } = useDocumentTemplates();
-  const { actas, isLoading: isLoadingActas, setData: setActas } = useActasEntrega();
+  const { actas, isLoading: isLoadingActas, refetch: recargarActas } = useActasEntrega();
   const { consignaciones, isLoading: isLoadingConsignaciones } = useConsignaciones({ status: 'active' });
 
   // State
@@ -329,9 +329,10 @@ function DocumentosContent() {
       // assigns the canonical id/timestamps and returns the persisted record.
       const created = await actasApi.create(data);
 
-      // Update the local list with the persisted record returned by the API
-      // (not a client-fabricated object).
-      setActas((prev) => [created, ...(prev ?? [])]);
+      // Y se relee la lista. Prepender el objeto creado alcanzaba para verlo,
+      // pero deja la lista ordenada por el cliente y sin lo que el backend
+      // recalcule. Releer es la misma regla que en el resto del panel.
+      await recargarActas();
 
       setIsActaFormOpen(false);
       toast.success(t('inmobiliaria.documentos.toasts.actaCreated'), {

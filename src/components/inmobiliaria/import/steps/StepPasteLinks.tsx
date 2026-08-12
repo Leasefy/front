@@ -41,21 +41,17 @@ import {
   type ResultadoDeEnlace,
 } from '@/lib/inmuebles/enlaces.service';
 import { analyzeProperties } from '../lib/gapFiller';
+import { faltantesParaElBack, recalcularEstado, escribirCampo } from '../lib/requisitosDelBack';
 import type { ImportStepProps } from '../ImportWizard';
 import type { ImportProperty } from '../lib/importTypes';
 
 /**
- * Lo que le falta a un inmueble ya leído, recalculado en vivo: si la persona
- * escribe la dirección, el aviso tiene que desaparecer solo.
+ * Lo que le falta, con las MISMAS reglas del back que usa la revisión. Antes
+ * este paso tenía su propia lista, y dos listas que dicen lo mismo terminan
+ * diciendo cosas distintas.
  */
 function faltaDe(p: ImportProperty): string[] {
-  const faltan: string[] = [];
-  if (!p.propertyAddress?.trim()) faltan.push('dirección');
-  if (!p.propertyCity?.trim()) faltan.push('ciudad');
-  if (!p.monthlyRent || p.monthlyRent < 100_000) faltan.push('canon');
-  if (!p.propertyArea || p.propertyArea < 10) faltan.push('área');
-  if (!p.bathrooms || p.bathrooms < 1) faltan.push('baños');
-  return faltan;
+  return faltantesParaElBack(p).map((f) => f.etiqueta.toLowerCase());
 }
 
 export function StepPasteLinks({ state, updateState }: ImportStepProps) {
@@ -91,7 +87,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
 
     updateState({
       enlacesPegados: pegado,
-      properties: analyzeProperties(propiedades),
+      properties: analyzeProperties(propiedades).map(recalcularEstado),
       // El análisis ya corrió acá: el paso de revisión no debe volver a
       // construir las propiedades desde filas de un archivo que no existen.
       aiAnalyzed: true,
@@ -115,10 +111,10 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
    * Se vuelve a correr `analyzeProperties` porque recalcula errores y
    * selección desde cero: al completar el dato, el inmueble se re-habilita solo.
    */
-  const escribirCampo = (rowIndex: number, campo: keyof ImportProperty, valor: string) => {
+  const escribirEnLaFila = (rowIndex: number, campo: keyof ImportProperty, valor: string) => {
     updateState({
-      properties: analyzeProperties(
-        state.properties.map((p) => (p._rowIndex === rowIndex ? { ...p, [campo]: valor } : p)),
+      properties: state.properties.map((p) =>
+        p._rowIndex === rowIndex ? escribirCampo(p, campo, valor) : p,
       ),
     });
   };
@@ -281,7 +277,7 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
                           id={`direccion-${p._rowIndex}`}
                           value={p.propertyAddress ?? ''}
                           onChange={(e) =>
-                            escribirCampo(p._rowIndex, 'propertyAddress', e.target.value)
+                            escribirEnLaFila(p._rowIndex, 'propertyAddress', e.target.value)
                           }
                           placeholder="Calle 39A # 25-14"
                           className="h-8 text-sm"

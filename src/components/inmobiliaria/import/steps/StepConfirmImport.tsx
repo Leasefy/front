@@ -19,31 +19,20 @@ import { toast } from '@/components/ui/toast';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { uploadPropertyPhotos } from '@/lib/api/property-photos';
 import { traerFotoComoArchivo } from '@/lib/inmuebles/enlaces.service';
+import { faltantesParaElBack } from '../lib/requisitosDelBack';
 import { geocodeImportRow, GEOCODE_ROW_DELAY_MS } from '../lib/geocodeImportRow';
 import { RanuraDelPie, type ImportStepProps } from '../ImportWizard';
 import type { ImportProperty } from '../lib/importTypes';
 
 /**
- * Lo que `POST /properties` EXIGE y no se puede inventar.
+ * Los requisitos del back viven en `lib/requisitosDelBack.ts` y ahora se
+ * evalúan en la REVISIÓN, que es donde cada inmueble se puede completar.
  *
- * El asistente nunca se había contrastado con el contrato del back: mandaba
- * `description: ''` y `area: 0`, y el back responde 400 con
- * «description must be longer than or equal to 20 characters» y
- * «area must not be less than 10». O sea que **toda** importación cuyo archivo
- * no traiga área fallaba al 100%, después de dos minutos de geocodificación y
- * con un aviso que sólo decía «Error en la importación».
- *
- * El paso de Revisión AI rellena tipo, ciudad, canon, zona, comisión y título
- * — ninguno de los tres que bloquean. Estos no se inventan: el área de un
- * inmueble es un dato, no una suposición. Se avisan ANTES de importar.
+ * Acá quedan sólo como red de seguridad: si algo llegó hasta este paso sin
+ * cumplirlos, se aparta ANTES de geocodificar. Antes este era el único lugar
+ * donde se comprobaban, y por eso el aviso salía en una pantalla sin un solo
+ * campo editable: se veía «no se puede importar» y no había nada que hacer.
  */
-function faltantesParaElBack(p: ImportProperty): string[] {
-  const faltan: string[] = [];
-  if (!p.propertyArea || p.propertyArea < 10) faltan.push('área (mínimo 10 m²)');
-  if (!p.bathrooms || p.bathrooms < 1) faltan.push('baños (mínimo 1)');
-  if (!p.monthlyRent || p.monthlyRent < 100_000) faltan.push('canon (mínimo $100.000)');
-  return faltan;
-}
 
 /**
  * La descripción sí se puede armar, porque NO se inventa nada: es el propio
@@ -108,7 +97,9 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     .map((p) => ({ p, faltan: faltantesParaElBack(p) }))
     .filter((x) => x.faltan.length > 0);
   const importables = selectedProperties.filter((p) => faltantesParaElBack(p).length === 0);
-  const motivosBloqueo = [...new Set(bloqueadas.flatMap((x) => x.faltan))];
+  const motivosBloqueo = [
+    ...new Set(bloqueadas.flatMap((x) => x.faltan.map((f) => f.etiqueta.toLowerCase()))),
+  ];
 
   const importCount = importables.length;
 
@@ -568,8 +559,9 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
                 : `${bloqueadas.length} inmuebles no se pueden importar`}
             </p>
             <p className="text-body-sm text-fg-muted mt-0.5">
-              Les falta {motivosBloqueo.join(', ')}. Completá esas columnas en tu
-              archivo y volvé a subirlo; el resto se importa igual.
+              Les falta {motivosBloqueo.join(', ')}. Volvé a{' '}
+              <span className="font-medium text-fg">Revisión</span> con «Anterior» y
+              completalos ahí en cada inmueble; el resto se importa igual.
             </p>
           </div>
         </div>

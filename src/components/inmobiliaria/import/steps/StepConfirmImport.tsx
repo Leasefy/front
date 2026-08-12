@@ -152,6 +152,11 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
 
     for (let i = 0; i < importables.length; i++) {
       const p = importables[i];
+      // El contador dice EN CUÁL VA, y se pone antes de esperar. Cuando decía
+      // cuántos habían terminado, la pantalla mostraba «0 de N» al 0% durante
+      // todo el primer inmueble — medido acá: 4,7 s mirando una barra vacía.
+      // Parecía que no estaba pasando nada.
+      setCurrentItem(i + 1);
       const coords = await geocodeImportRow(p);
       if (coords.source === 'geocoded') geocodedCount += 1;
       else fallbackCount += 1;
@@ -162,7 +167,7 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
           ...(coords.lat != null && coords.lng != null ? { latitude: coords.lat, longitude: coords.lng } : {}),
         },
       });
-      setCurrentItem(i + 1);
+      // El porcentaje sí es trabajo TERMINADO: por eso va después.
       setProgress(Math.round(((i + 1) / total) * 100));
       if (i < importables.length - 1) {
         await new Promise((resolve) => setTimeout(resolve, GEOCODE_ROW_DELAY_MS));
@@ -170,7 +175,8 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     }
 
     setFase('creando');
-    setCurrentItem(0);
+    // Arranca en 1, no en 0: «voy por el primero», no «llevo ninguno».
+    setCurrentItem(Math.min(1, total));
     setProgress(0);
 
     // No hay endpoint de importación masiva: se crea inmueble por inmueble.
@@ -198,7 +204,8 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
             })
             .finally(() => {
               done += 1;
-              setCurrentItem(done);
+              // Mientras quede alguno, el contador señala el siguiente en curso.
+              setCurrentItem(Math.min(done + 1, total));
               setProgress(Math.round((done / total) * 100));
             })
         )
@@ -235,11 +242,12 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
 
     if (conFotos.length > 0) {
       setFase('fotos');
-      setCurrentItem(0);
       setProgress(0);
       const totalConFotos = conFotos.length;
+      setCurrentItem(Math.min(1, totalConFotos));
 
       for (let i = 0; i < conFotos.length; i++) {
+        setCurrentItem(i + 1);
         const { id, imagenes } = conFotos[i];
 
         // Bajarlas por el proxy (el navegador no puede leer otro dominio) y
@@ -258,7 +266,6 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
           fotosFallidas += resultado.failed.length;
         }
 
-        setCurrentItem(i + 1);
         setProgress(Math.round(((i + 1) / totalConFotos) * 100));
       }
     }

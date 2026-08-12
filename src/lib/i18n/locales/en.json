@@ -1597,7 +1597,8 @@
         "editDesc": "Edit form available in the next version",
         "created": "Agent created",
         "createdDesc": "{{name}} has been added to the team",
-        "createdEmailNotDeliveredDesc": "{{name}} was added, but we couldn't send the invitation email. Use \"Resend invitation\"."
+        "createdEmailNotDeliveredDesc": "{{name}} was invited, but the email did not go out. Share the link yourself.",
+        "createdEmailNotConfiguredDesc": "{{name}} was invited. The server has no email configured yet, so nothing was sent: share the link yourself."
       },
       "card": {
         "role": {

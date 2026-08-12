@@ -204,9 +204,15 @@ function AgentesContent() {
       // diciendo «0 agentes» encima de un agente recién creado.
       await recargarEquipo();
       if (result.emailDelivered === false) {
-        // Agent row was created, but the invitation email failed to send.
+        // La fila quedó creada; lo que faltó fue el correo. El motivo cambia el
+        // consejo: si el servidor no tiene SMTP, «reenviar» manda por el mismo
+        // camino roto y no puede funcionar nunca.
+        const clave =
+          result.emailStatus === 'not_configured'
+            ? 'inmobiliaria.agentes.toasts.createdEmailNotConfiguredDesc'
+            : 'inmobiliaria.agentes.toasts.createdEmailNotDeliveredDesc';
         toast.warning(t('inmobiliaria.agentes.toasts.created'), {
-          description: t('inmobiliaria.agentes.toasts.createdEmailNotDeliveredDesc', { name: data.name }),
+          description: t(clave, { name: data.name }),
           action: avisoDeCorreoNoEnviado(result, data.email),
           duration: 12000,
         });
@@ -226,8 +232,11 @@ function AgentesContent() {
     try {
       const result = await agencyApi.resendInvitation(agente.id);
       if (result.emailDelivered === false) {
-        toast.warning('Invitación regenerada, pero el correo no salió', {
-          description: `El enlace de ${agente.email} es nuevo y sirve. Pasáselo vos.`,
+        toast.warning('Invitación regenerada, el correo no salió', {
+          description:
+            result.emailStatus === 'not_configured'
+              ? `El servidor todavía no tiene correo configurado. El enlace de ${agente.email} es nuevo y sirve: pasáselo vos.`
+              : `El enlace de ${agente.email} es nuevo y sirve. Pasáselo vos.`,
           action: avisoDeCorreoNoEnviado(result, agente.email),
           duration: 12000,
         });

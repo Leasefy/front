@@ -1707,6 +1707,18 @@ export interface AgencyMember extends AgencyUser {
 export interface AgencyInviteResult extends AgencyMember {
   emailDelivered: boolean;
   /**
+   * Por qué no salió, no sólo que no salió.
+   *
+   * `not_configured` = el servidor no tiene SMTP. Reintentar manda por el mismo
+   * camino y no puede funcionar nunca, así que ofrecer «Reenviar invitación»
+   * ahí es un consejo falso. `failed` = sí hay correo configurado y este envío
+   * falló; ahí reintentar sí tiene sentido.
+   *
+   * Opcional: un backend viejo no lo manda, y en ese caso se cae al mensaje
+   * genérico en vez de romper.
+   */
+  emailStatus?: 'sent' | 'not_configured' | 'failed';
+  /**
    * El token de la invitación, para armar el enlace cuando el correo no salió.
    *
    * Estos dos endpoints devuelven la fila cruda de `agency_members` (no pasan

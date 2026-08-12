@@ -1598,7 +1598,8 @@
         "editDesc": "Formulario de edición disponible en la próxima versión",
         "created": "Agente creado",
         "createdDesc": "{{name}} ha sido agregado al equipo",
-        "createdEmailNotDeliveredDesc": "{{name}} fue agregado, pero no pudimos enviar el correo de invitación. Usa \"Reenviar invitación\"."
+        "createdEmailNotDeliveredDesc": "{{name}} quedó invitado, pero el correo no salió. Pasale el enlace vos.",
+        "createdEmailNotConfiguredDesc": "{{name}} quedó invitado. El servidor todavía no tiene correo configurado, así que no se envió nada: pasale el enlace vos."
       },
       "card": {
         "role": {

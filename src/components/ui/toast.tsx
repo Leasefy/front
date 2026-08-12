@@ -31,9 +31,19 @@ import { Toaster as DSToaster, toast, type ToasterProps } from '@leasefy/cadence
  * por defecto de la librería mientras cargaban clases Leasefy que no hacían
  * nada — el mismo patrón de «la clase está pero no pinta» de DESIGN.md §2.
  *
+ * ⚠️ `unstyled` no saca sólo la piel: saca TAMBIÉN la maquetación. Las clases
+ * del DS están escritas para ir arriba de la base de sonner —color, radio,
+ * padding— y nunca declararon layout porque nunca hizo falta. Sin
+ * `[data-button] { flex-shrink: 0 }`, el botón de acción se aplasta y su texto
+ * se parte en tres renglones. La estructura que faltaba se re-declara en
+ * globals.css (buscar «la ESTRUCTURA que `unstyled` se llevó puesta»): no
+ * puede ir acá porque el DS mergea plano y pasarle `actionButton` reemplaza su
+ * piel en vez de sumarle.
+ *
  * ⚠️ Esto corresponde arriba, en `@leasefy/cadence`: su `<Toaster>` debería
- * nacer con `unstyled`. Va acá porque el shim es el punto de adaptación del
- * front y el arreglo no puede esperar a publicar el DS.
+ * nacer con `unstyled` Y con el layout ya declarado en sus classNames. Va acá
+ * porque el shim es el punto de adaptación del front y el arreglo no puede
+ * esperar a publicar el DS.
  */
 export function Toaster({ position = 'top-right', toastOptions, ...props }: ToasterProps) {
   return (

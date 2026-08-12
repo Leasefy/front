@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { SectionLabel } from '@/components/ui/section-label';
-import { EmptyState } from '@/components/ui/empty-state';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -193,10 +193,15 @@ function AgendaContent() {
               {eventos.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={COLUMNS.length} className="p-0">
-                    <EmptyState
-                      icon={CalendarBlank}
-                      title={t(k('emptyTitle'))}
-                      description={t(k('emptyDesc'))}
+                    {/* Sin filtros en esta pantalla: un vacío acá es «no hay
+                        nada agendado», y lo útil es poder agendar desde acá.
+                        `setCitaOpen` abre el mismo modal del botón de arriba. */}
+                    <SinDatos
+                      queSon="eventos"
+                      icono={CalendarBlank}
+                      titulo={t(k('emptyTitle'))}
+                      descripcion={t(k('emptyDesc'))}
+                      crear={{ label: 'Agendar una visita', onClick: () => setCitaOpen(true) }}
                     />
                   </TableCell>
                 </TableRow>

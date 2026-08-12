@@ -1,12 +1,34 @@
 'use client';
 
-import { useState } from 'react';
-import { Globe, Envelope } from '@phosphor-icons/react';
+/**
+ * Importar desde un portal (FincaRaíz, Metrocuadrado, Ciencuadras).
+ *
+ * ── Por qué esto NO es una integración por API ────────────────────────────
+ * Ninguno de los tres publica una API para que una inmobiliaria saque sus
+ * propios inmuebles. La integración que sí existe va al revés: los CRMs
+ * PUBLICAN hacia el portal por XML. El portal es el destino, no la fuente —
+ * su negocio es cobrar por publicar.
+ *
+ * Lo que hay dando vueltas son scrapers de terceros (Apify, PropAPIS). Son de
+ * pago, no oficiales, van contra los términos de los portales y se rompen
+ * cada vez que el portal cambia el HTML. No es algo que se pueda poner
+ * adelante de una inmobiliaria y prometer que va a seguir andando.
+ *
+ * ── Lo que sí funciona hoy ────────────────────────────────────────────────
+ * El inventario ya lo tiene la inmobiliaria en el panel de su portal, y de ahí
+ * se puede bajar. Así que esta pantalla hace lo mismo que «Desde software»:
+ * te lleva a bajar tu inventario y a subirlo acá, donde el lector se adapta a
+ * las columnas que traiga.
+ *
+ * Antes esto era una pantalla «Próximamente» con una caja de correo cuyo
+ * `handleEmailSubmit` marcaba «listo» y **tiraba la dirección**: le prometía a
+ * una persona que la iban a avisar, sin nada detrás.
+ */
+
+import { Globe, FileArrowUp, ArrowSquareOut, Info, LinkSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { MonoLabel } from '@leasefy/cadence';
 import type { ImportStepProps } from '../ImportWizard';
 
 interface PortalItem {
@@ -14,7 +36,8 @@ interface PortalItem {
   name: string;
   domain: string;
   color: string;
-  description: string;
+  /** Dónde entra la inmobiliaria a su panel. URLs verificadas. */
+  panel: string;
 }
 
 const PORTALS: PortalItem[] = [
@@ -23,41 +46,37 @@ const PORTALS: PortalItem[] = [
     name: 'FincaRaíz',
     domain: 'fincaraiz.com.co',
     color: 'bg-success',
-    description: 'Ideal para agencias con 50+ propiedades publicadas',
+    panel: 'https://www.fincaraiz.com.co/',
   },
   {
     id: 'metrocuadrado',
     name: 'Metrocuadrado',
     domain: 'metrocuadrado.com',
     color: 'bg-primary',
-    description: 'Importa tu portafolio de Metrocuadrado',
+    panel: 'https://www.metrocuadrado.com/publicar-inmuebles/',
   },
   {
     id: 'ciencuadras',
     name: 'Ciencuadras',
     domain: 'ciencuadras.com',
     color: 'bg-warning',
-    description: 'Próxima integración disponible',
+    panel: 'https://www.ciencuadras.com/publicacion-inmuebles/inmobiliaria',
   },
 ];
 
-export function StepPortalImport({ state, updateState }: ImportStepProps) {
+export function StepPortalImport({ updateState }: ImportStepProps) {
   const { t } = useI18n();
-  const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(false);
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-    setSubmitted(true);
-    setEmail('');
-    // Reset after a few seconds so user can submit again
-    setTimeout(() => setSubmitted(false), 5000);
-  };
+  // Mismo atajo que «Desde software»: el archivo se sube en el paso 2.
+  const irASubirArchivo = () => updateState({ method: 'excel' });
+
+  // La otra salida, y para pocos inmuebles la más corta: el enlace de la ficha
+  // del portal es público y trae el dato rotulado. Va acá porque es acá donde
+  // la persona está buscando cómo traer sus inmuebles.
+  const irAPegarEnlaces = () => updateState({ method: 'enlaces' });
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
           {t('inmobiliaria.import.portal.title')}
@@ -67,91 +86,65 @@ export function StepPortalImport({ state, updateState }: ImportStepProps) {
         </p>
       </div>
 
-      {/* Portal Cards */}
+      {/* Por qué hay que pasar por el panel del portal. Decirlo de frente sale
+          mejor que un «Próximamente» que no explica nada. */}
+      <div className="rounded-md bg-surface-muted dark:bg-ink border border-border dark:border-border-strong p-3 flex items-start gap-2">
+        <Info className="w-5 h-5 text-fg-muted flex-shrink-0 mt-0.5" aria-hidden="true" />
+        <p className="text-body-sm text-fg-muted dark:text-fg-subtle">
+          {t('inmobiliaria.import.portal.porQue')}
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {PORTALS.map((portal, index) => (
           <div
             key={portal.id}
-            className="animate-stagger-in rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] p-6 relative overflow-hidden"
+            className="animate-stagger-in rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] p-5 flex flex-col gap-3"
             style={{ animationDelay: `${index * 80}ms` }}
           >
-            {/* Próximamente badge */}
-            <MonoLabel className="absolute top-0 right-0 bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle text-xs px-3 py-1 rounded-bl-xl">
-              {t('inmobiliaria.import.portal.comingSoon')}
-            </MonoLabel>
-
-            {/* Icon */}
-            <div className={cn(
-              'w-12 h-12 rounded-xl flex items-center justify-center mb-4',
-              portal.color
-            )}>
-              <Globe className="w-6 h-6 text-white" />
+            <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', portal.color)}>
+              <Globe className="w-5 h-5 text-white" aria-hidden="true" />
             </div>
-
-            {/* Name & domain */}
-            <p className="font-semibold text-fg dark:text-white text-lg">
-              {portal.name}
-            </p>
-            <p className="text-sm text-fg-subtle dark:text-fg-muted font-mono mt-0.5">
-              {portal.domain}
-            </p>
-
-            {/* Description */}
-            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-2 leading-relaxed">
-              {portal.description}
-            </p>
-
-            {/* Disabled URL input */}
-            <div className="mt-4">
-              <Input
-                type="url"
-                disabled
-                placeholder={`https://${portal.domain}/tu-agencia`}
-                className="w-full"
-              />
+            <div>
+              <p className="font-semibold text-fg dark:text-white text-sm">{portal.name}</p>
+              <p className="text-xs font-mono text-fg-subtle dark:text-fg-muted mt-0.5">
+                {portal.domain}
+              </p>
             </div>
+            <a
+              href={portal.panel}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-auto inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+            >
+              {t('inmobiliaria.import.portal.abrirPanel')}
+              <ArrowSquareOut className="w-3.5 h-3.5" aria-hidden="true" />
+            </a>
           </div>
         ))}
       </div>
 
-      {/* Email capture */}
-      <div className="rounded-xl border border-primary/30 bg-primary-soft p-6">
-        <div className="flex items-start gap-4 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
-            <Envelope className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <p className="font-semibold text-fg dark:text-white">
-              {t('inmobiliaria.import.portal.emailCapture.title')}
-            </p>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
-              {t('inmobiliaria.import.portal.emailCapture.subtitle')}
-            </p>
-          </div>
-        </div>
+      <div className="pt-2 flex flex-col items-center gap-3">
+        <Button type="button" size="lg" hideArrow onClick={irASubirArchivo} className="gap-2">
+          <FileArrowUp className="w-5 h-5" aria-hidden="true" />
+          {t('inmobiliaria.import.portal.yaLoTengo')}
+        </Button>
 
-        {submitted ? (
-          <div className="py-3 px-4 rounded-xl bg-success-soft text-success font-medium">
-            {t('inmobiliaria.import.portal.emailCapture.success')}
-          </div>
-        ) : (
-          <form onSubmit={handleEmailSubmit} className="flex">
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t('inmobiliaria.import.portal.emailCapture.placeholder')}
-              className="flex-1 rounded-r-none"
-            />
-            <Button
-              type="submit"
-              hideArrow
-              className="rounded-l-none whitespace-nowrap"
-            >
-              {t('inmobiliaria.import.portal.emailCapture.submit')}
-            </Button>
-          </form>
-        )}
+        <p className="text-body-sm text-fg-muted text-center max-w-md">
+          {t('inmobiliaria.import.portal.oEnlaces')}
+        </p>
+
+        <Button
+          type="button"
+          variant="outline"
+          hideArrow
+          onClick={irAPegarEnlaces}
+          className="gap-2"
+          data-testid="portal-pegar-enlaces"
+        >
+          <LinkSimple className="w-4 h-4" aria-hidden="true" />
+          {t('inmobiliaria.import.portal.pegarEnlaces')}
+        </Button>
       </div>
     </div>
   );

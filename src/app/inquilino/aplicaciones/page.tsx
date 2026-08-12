@@ -14,6 +14,7 @@ import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -147,7 +148,7 @@ export default function AplicacionesPage() {
   const canScheduleVisit = (s: string) =>
     ['submitted', 'under_review', 'needs_info', 'pre_approved'].includes(s);
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
-  const { active: activeApplications, completed: completedApplications, contractsByApp, isLoading: isAppsLoading, error } = useTenantApplications();
+  const { active: activeApplications, completed: completedApplications, contractsByApp, isLoading: isAppsLoading, error, errorCrudo, refetch: recargarPostulaciones } = useTenantApplications();
 
   const [activeTab, setTab] = useState<'active' | 'completed'>('active');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -251,16 +252,18 @@ export default function AplicacionesPage() {
     );
   }
 
-  // Error state
+  // Un fallo NO es un vacío. Antes se pintaba con `EmptyState` —el cartel de
+  // «no hay nada»— y su «Reintentar» era un <a> a esta misma ruta: en el App
+  // Router eso no vuelve a pedir nada, así que el botón no hacía absolutamente
+  // nada. `FalloDeCarga` clasifica el fallo y reintenta de verdad.
   if (error) {
     return (
       <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          <EmptyState
-            icon={XCircle}
-            title={locale === 'es' ? 'Error al cargar aplicaciones' : 'Error loading applications'}
-            description={error}
-            action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', href: '/inquilino/aplicaciones' }}
+          <FalloDeCarga
+            error={errorCrudo ?? error}
+            queEs="tus postulaciones"
+            onReintentar={recargarPostulaciones}
           />
         </div>
       </div>

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { analyzeProperties, mapRowsToProperties } from '../lib/gapFiller';
+import { recalcularEstado, escribirCampo } from '../lib/requisitosDelBack';
 import { AISuggestionCard } from '../components/AISuggestionCard';
 import type { ImportStepProps } from '../ImportWizard';
 import type { ImportProperty } from '../lib/importTypes';
@@ -36,8 +37,12 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
 
       if (cancelled) return;
 
-      // Run heuristic gap-filling
-      const analyzed = analyzeProperties(mapped);
+      // Relleno de huecos + el veredicto del back.
+      //
+      // `analyzeProperties` sólo marcaba error por dirección; área, baños y
+      // canon se evaluaban en el ÚLTIMO paso, donde no hay nada que editar.
+      // Evaluarlos acá es lo que permite completarlos donde se ven.
+      const analyzed = analyzeProperties(mapped).map(recalcularEstado);
 
       updateState({ properties: analyzed, aiAnalyzed: true });
       setIsAnalyzing(false);
@@ -78,15 +83,30 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
     });
   };
 
-  const handleAcceptSuggestion = (rowIndex: number, field: string) => {
+  /**
+   * Escribir un campo a mano. Recalcula el veredicto SIN tocar las
+   * sugerencias: `analyzeProperties` las reconstruiría desde cero y se
+   * perdería lo que la persona ya aceptó o rechazó.
+   */
+  const handleEditField = (rowIndex: number, campo: keyof ImportProperty, valor: string) => {
+    updateState({
+      properties: properties.map((p) =>
+        p._rowIndex === rowIndex ? escribirCampo(p, campo, valor) : p
+      ),
+    });
+  };
+
+  const handleAcceptSuggestion = (rowIndex: number, field: string, valorEditado?: string) => {
     updateState({
       properties: properties.map((p) => {
         if (p._rowIndex !== rowIndex) return p;
-        const updatedSuggestions = p.suggestions.map((s) => {
-          if (s.field !== field) return s;
-          return { ...s, accepted: true };
-        });
-        // Apply the accepted suggestion value to the property field
+        // Si la persona editó el valor, ES ese el que se guarda — y la
+        // sugerencia queda registrada con lo que realmente se aceptó.
+        const updatedSuggestions = p.suggestions.map((s) =>
+          s.field === field
+            ? { ...s, accepted: true, suggestedValue: valorEditado ?? s.suggestedValue }
+            : s
+        );
         const accepted = updatedSuggestions.find((s) => s.field === field);
         const fieldUpdate: Partial<ImportProperty> = {};
         if (accepted) {
@@ -98,7 +118,8 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
             (fieldUpdate as unknown as Record<string, unknown>)[accepted.field] = accepted.suggestedValue;
           }
         }
-        return { ...p, ...fieldUpdate, suggestions: updatedSuggestions };
+        // Aceptar el canon estimado tiene que DESBLOQUEAR el inmueble.
+        return recalcularEstado({ ...p, ...fieldUpdate, suggestions: updatedSuggestions });
       }),
     });
   };
@@ -133,7 +154,7 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
           }
           return { ...s, accepted: true };
         });
-        return { ...p, ...fieldUpdate, suggestions: updatedSuggestions };
+        return recalcularEstado({ ...p, ...fieldUpdate, suggestions: updatedSuggestions });
       }),
     });
   };
@@ -153,7 +174,7 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
           }
           return { ...s, accepted: true };
         });
-        return { ...p, ...fieldUpdate, suggestions: updatedSuggestions };
+        return recalcularEstado({ ...p, ...fieldUpdate, suggestions: updatedSuggestions });
       }),
     });
   };
@@ -315,6 +336,7 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
             onAcceptSuggestion={handleAcceptSuggestion}
             onRejectSuggestion={handleRejectSuggestion}
             onAcceptAll={handleAcceptAll}
+            onEditField={handleEditField}
           />
         ))}
       </div>

@@ -20,6 +20,7 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui/button'
 import { useEstudioOverview } from '@/lib/hooks/estudio/use-estudio-overview'
@@ -42,7 +43,7 @@ const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] =
 
 function EstudioOverview() {
   const { t, locale } = useI18n()
-  const { data, isLoading, error } = useEstudioOverview()
+  const { data, isLoading, error, errorCrudo, refetch } = useEstudioOverview()
 
   /** i18n con fallback — nunca muestra la clave cruda. */
   const tf = (key: string, fallback: string): string => {
@@ -217,10 +218,16 @@ function EstudioOverview() {
       </section>
 
       {/* Error (no bloqueante) */}
+      {/* El status crudo —«Error al cargar los estudios: 401»— no le dice nada
+          a nadie y no ofrece salida. `FalloDeCarga` clasifica el fallo, escribe
+          en español lo que pasó y sólo ofrece reintentar cuando reintentar
+          puede dar otro resultado. */}
       {error && !isLoading && (
-        <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
-          {tf(`${NS}.overview.errorLoading`, 'Error al cargar los estudios')}: {error}
-        </div>
+        <FalloDeCarga
+          error={errorCrudo ?? error}
+          queEs="los estudios"
+          onReintentar={refetch}
+        />
       )}
     </main>
   )

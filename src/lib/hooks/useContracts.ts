@@ -20,6 +20,8 @@ export function useContracts() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // El error entero: `FalloDeCarga` necesita el status, no el texto.
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const fetchContracts = useCallback(async () => {
     setIsLoading(true);
@@ -28,6 +30,7 @@ export function useContracts() {
       const result = await contractsApi.getMine();
       setContracts(result);
     } catch (err) {
+      setErrorCrudo(err);
       const message = err instanceof Error ? err.message : 'Error cargando contratos';
       setError(message);
       setContracts([]);
@@ -71,7 +74,7 @@ export function useContracts() {
   }, [contracts]);
 
   return {
-    contracts, stats, isLoading, error,
+    contracts, stats, isLoading, error, errorCrudo,
     refetch: fetchContracts,
     getPending, getActive, getForProperty, getByPropertyAndTenant, getByApplicationId,
   };

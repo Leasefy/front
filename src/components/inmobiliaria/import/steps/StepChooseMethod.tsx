@@ -1,6 +1,6 @@
 'use client';
 
-import { FileXls, Desktop, Globe, DownloadSimple } from '@phosphor-icons/react';
+import { FileXls, Desktop, Globe, DownloadSimple, LinkSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { downloadTemplate } from '../lib/parseFile';
 import type { ImportStepProps } from '../ImportWizard';
 import type { ImportMethod } from '../lib/importTypes';
 
-type BadgeVariant = 'success' | 'warning' | 'secondary';
+type BadgeVariant = 'success' | 'warning' | 'secondary' | 'default';
 
 interface MethodCard {
   method: ImportMethod;
@@ -24,6 +24,19 @@ interface MethodCard {
 }
 
 const METHOD_CARDS: MethodCard[] = [
+  {
+    // Va primero porque es el que menos le pide a la inmobiliaria: no hay que
+    // exportar nada ni saber dónde queda el panel del portal. Si el inmueble se
+    // puede mandar por WhatsApp, se puede traer.
+    method: 'enlaces',
+    titleKey: 'inmobiliaria.import.methods.enlaces.title',
+    descKey: 'inmobiliaria.import.methods.enlaces.desc',
+    badgeKey: 'inmobiliaria.import.methods.enlaces.badge',
+    badgeVariant: 'default',
+    icon: LinkSimple,
+    iconBg: 'bg-primary-soft',
+    disabled: false,
+  },
   {
     method: 'excel',
     titleKey: 'inmobiliaria.import.methods.excel.title',
@@ -49,9 +62,14 @@ const METHOD_CARDS: MethodCard[] = [
     titleKey: 'inmobiliaria.import.methods.portal.title',
     descKey: 'inmobiliaria.import.methods.portal.desc',
     badgeKey: 'inmobiliaria.import.methods.portal.badge',
-    badgeVariant: 'secondary',
+    // Es un paso guiado igual que «Desde software», así que se ve igual. Era
+    // `secondary` cuando decía «Próximamente»; con el texto nuevo quedaba un
+    // badge blanco al lado de dos con color.
+    badgeVariant: 'warning',
     icon: Globe,
-    iconBg: 'bg-surface-muted dark:bg-ink',
+    // Sin `dark:bg-ink`: ese override deja la baldosa del mismo color que el
+    // fondo. `bg-surface-muted` ya resuelve los dos temas.
+    iconBg: 'bg-surface-muted',
     disabled: false,
   },
 ];
@@ -79,8 +97,8 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
         </p>
       </div>
 
-      {/* Method Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Method Cards Grid — cuatro métodos: de a dos en tablet, en fila en desktop */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {METHOD_CARDS.map((card, index) => {
           const isSelected = state.method === card.method;
           const CardIcon = card.icon;
@@ -111,6 +129,7 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
               )}>
                 <CardIcon className={cn(
                   'w-6 h-6',
+                  card.method === 'enlaces' ? 'text-primary' :
                   card.method === 'excel' ? 'text-success' :
                   card.method === 'software' ? 'text-warning' :
                   'text-fg-muted dark:text-fg-subtle'

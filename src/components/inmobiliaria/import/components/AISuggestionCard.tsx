@@ -8,22 +8,97 @@ import {
   CaretUp,
   Warning,
   Sparkle,
+  PencilSimple,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { IconButton, MonoLabel } from '@leasefy/cadence';
+import { faltantesParaElBack } from '../lib/requisitosDelBack';
 import type { ImportProperty, AISuggestion } from '../lib/importTypes';
 
 interface AISuggestionCardProps {
   property: ImportProperty;
   index: number;
   onToggleSelect: (rowIndex: number) => void;
-  onAcceptSuggestion: (rowIndex: number, field: string) => void;
+  /** `valorEditado` llega cuando la persona cambió la sugerencia antes de aceptarla. */
+  onAcceptSuggestion: (rowIndex: number, field: string, valorEditado?: string) => void;
   onRejectSuggestion: (rowIndex: number, field: string) => void;
   onAcceptAll: (rowIndex: number) => void;
+  /** Escribir un campo a mano, venga o no de una sugerencia. */
+  onEditField: (rowIndex: number, campo: keyof ImportProperty, valor: string) => void;
+}
+
+/** Todo lo que se puede escribir a mano en la revisión. */
+const CAMPOS_EDITABLES: {
+  campo: keyof ImportProperty;
+  etiqueta: string;
+  tipo: 'texto' | 'numero';
+  sufijo?: string;
+}[] = [
+  { campo: 'propertyTitle', etiqueta: 'Título', tipo: 'texto' },
+  { campo: 'propertyAddress', etiqueta: 'Dirección', tipo: 'texto' },
+  { campo: 'propertyCity', etiqueta: 'Ciudad', tipo: 'texto' },
+  { campo: 'propertyZone', etiqueta: 'Barrio / zona', tipo: 'texto' },
+  { campo: 'monthlyRent', etiqueta: 'Canon mensual', tipo: 'numero', sufijo: 'COP' },
+  { campo: 'adminFee', etiqueta: 'Administración', tipo: 'numero', sufijo: 'COP' },
+  { campo: 'propertyArea', etiqueta: 'Área', tipo: 'numero', sufijo: 'm²' },
+  { campo: 'bedrooms', etiqueta: 'Habitaciones', tipo: 'numero' },
+  { campo: 'bathrooms', etiqueta: 'Baños', tipo: 'numero' },
+  { campo: 'commissionPercent', etiqueta: 'Comisión', tipo: 'numero', sufijo: '%' },
+  { campo: 'ownerName', etiqueta: 'Propietario', tipo: 'texto' },
+  { campo: 'ownerPhone', etiqueta: 'Teléfono del propietario', tipo: 'texto' },
+];
+
+/** Un campo escribible. Vacío se muestra vacío, nunca como cero. */
+function CampoEditable({
+  etiqueta,
+  valor,
+  sufijo,
+  tipo,
+  invalido,
+  ayuda,
+  onCambiar,
+  testId,
+}: {
+  etiqueta: string;
+  valor: unknown;
+  sufijo?: string;
+  tipo: 'texto' | 'numero';
+  invalido?: boolean;
+  ayuda?: string;
+  onCambiar: (valor: string) => void;
+  testId?: string;
+}) {
+  const mostrado =
+    valor === undefined || valor === null || (typeof valor === 'number' && Number.isNaN(valor))
+      ? ''
+      : String(valor);
+
+  return (
+    <label className="block">
+      <span className="block text-xs text-fg-muted dark:text-fg-subtle mb-1">
+        {etiqueta}
+        {sufijo && <span className="text-fg-subtle"> ({sufijo})</span>}
+      </span>
+      <Input
+        value={mostrado}
+        inputMode={tipo === 'numero' ? 'numeric' : 'text'}
+        onChange={(e) => onCambiar(e.target.value)}
+        className={cn('h-8 text-sm', invalido && 'border-danger')}
+        data-testid={testId}
+        aria-invalid={invalido || undefined}
+      />
+      {ayuda && (
+        <span className={cn('block text-xs mt-1', invalido ? 'text-danger' : 'text-fg-subtle')}>
+          {ayuda}
+        </span>
+      )}
+    </label>
+  );
 }
 
 function formatCOP(value: number): string {
@@ -67,12 +142,26 @@ function SuggestionRow({
 }: {
   suggestion: AISuggestion;
   rowIndex: number;
-  onAccept: (rowIndex: number, field: string) => void;
+  onAccept: (rowIndex: number, field: string, valorEditado?: string) => void;
   onReject: (rowIndex: number, field: string) => void;
 }) {
   const { t } = useI18n();
 
+  // Una sugerencia es una propuesta, no un menú de dos opciones. Antes sólo se
+  // podía aceptar tal cual o rechazar: si el canon estimado era $2.000.000 y el
+  // real $1.850.000, había que rechazar y quedarse sin nada.
+  const [editando, setEditando] = useState(false);
+  const [borrador, setBorrador] = useState(suggestion.suggestedValue);
+
   const fieldLabel = t(`inmobiliaria.import.fields.${suggestion.field}` as Parameters<typeof t>[0]);
+  const esNumerico = ['monthlyRent', 'adminFee', 'commissionPercent'].includes(suggestion.field);
+
+  const confirmar = () => {
+    const limpio = esNumerico ? borrador.replace(/[^\d]/g, '') : borrador.trim();
+    if (!limpio) return;
+    onAccept(rowIndex, suggestion.field, limpio);
+    setEditando(false);
+  };
 
   return (
     <div
@@ -93,28 +182,47 @@ function SuggestionRow({
           </span>
           <ConfidencePill confidence={suggestion.confidence} />
         </div>
-        <div
-          className={cn(
-            'font-mono text-sm mt-0.5',
-            suggestion.accepted === false
-              ? 'line-through text-fg-subtle dark:text-fg-muted'
-              : suggestion.accepted === true
-                ? 'text-success'
-                : 'text-fg dark:text-white'
-          )}
-        >
-          {suggestion.field === 'monthlyRent'
-            ? formatCOP(Number(suggestion.suggestedValue))
-            : suggestion.field === 'commissionPercent'
-              ? `${suggestion.suggestedValue}%`
-              : suggestion.suggestedValue}
-        </div>
+        {editando ? (
+          <div className="mt-1 flex items-center gap-2">
+            <Input
+              value={borrador}
+              autoFocus
+              inputMode={esNumerico ? 'numeric' : 'text'}
+              onChange={(e) => setBorrador(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') confirmar();
+                if (e.key === 'Escape') setEditando(false);
+              }}
+              className="h-8 text-sm font-mono"
+              aria-label={`Valor para ${fieldLabel}`}
+              data-testid={`sugerencia-editar-${suggestion.field}`}
+            />
+            <span className="text-xs text-fg-subtle whitespace-nowrap">Enter para guardar</span>
+          </div>
+        ) : (
+          <div
+            className={cn(
+              'font-mono text-sm mt-0.5',
+              suggestion.accepted === false
+                ? 'line-through text-fg-subtle dark:text-fg-muted'
+                : suggestion.accepted === true
+                  ? 'text-success'
+                  : 'text-fg dark:text-white'
+            )}
+          >
+            {suggestion.field === 'monthlyRent'
+              ? formatCOP(Number(suggestion.suggestedValue))
+              : suggestion.field === 'commissionPercent'
+                ? `${suggestion.suggestedValue}%`
+                : suggestion.suggestedValue}
+          </div>
+        )}
         <p className="text-xs text-fg-subtle dark:text-fg-muted italic mt-0.5 leading-relaxed">
           {suggestion.reasoning}
         </p>
       </div>
 
-      {/* Right: Accept/Reject buttons */}
+      {/* Right: aceptar · editar · rechazar */}
       {suggestion.accepted === null ? (
         <div className="flex items-center gap-1 shrink-0 mt-0.5">
           <IconButton
@@ -122,19 +230,34 @@ function SuggestionRow({
             variant="outline"
             size="sm"
             icon={<Check className="w-3.5 h-3.5" weight="bold" />}
-            onClick={() => onAccept(rowIndex, suggestion.field)}
-            aria-label="Aceptar sugerencia"
-            title="Aceptar sugerencia"
+            onClick={() => (editando ? confirmar() : onAccept(rowIndex, suggestion.field))}
+            aria-label={editando ? 'Guardar valor' : 'Aceptar sugerencia'}
+            title={editando ? 'Guardar valor' : 'Aceptar sugerencia'}
             className="text-success border-success/30 hover:bg-success-soft"
           />
+          {!editando && (
+            <IconButton
+              type="button"
+              variant="outline"
+              size="sm"
+              icon={<PencilSimple className="w-3.5 h-3.5" />}
+              onClick={() => {
+                setBorrador(suggestion.suggestedValue);
+                setEditando(true);
+              }}
+              aria-label="Editar el valor"
+              title="Editar el valor antes de aceptarlo"
+              data-testid={`sugerencia-lapiz-${suggestion.field}`}
+            />
+          )}
           <IconButton
             type="button"
             variant="outline"
             size="sm"
             icon={<X className="w-3.5 h-3.5" weight="bold" />}
-            onClick={() => onReject(rowIndex, suggestion.field)}
-            aria-label="Rechazar sugerencia"
-            title="Rechazar sugerencia"
+            onClick={() => (editando ? setEditando(false) : onReject(rowIndex, suggestion.field))}
+            aria-label={editando ? 'Cancelar edición' : 'Rechazar sugerencia'}
+            title={editando ? 'Cancelar edición' : 'Rechazar sugerencia'}
           />
         </div>
       ) : (
@@ -160,13 +283,16 @@ export function AISuggestionCard({
   onAcceptSuggestion,
   onRejectSuggestion,
   onAcceptAll,
+  onEditField,
 }: AISuggestionCardProps) {
   const [isExpanded, setIsExpanded] = useState(
     property.hasErrors || property.suggestions.length > 0
   );
+  const [editandoTodo, setEditandoTodo] = useState(false);
 
   const pendingSuggestions = property.suggestions.filter((s) => s.accepted === null);
   const hasSuggestions = property.suggestions.length > 0;
+  const faltantes = faltantesParaElBack(property);
 
   // Status
   const statusLabel = (() => {
@@ -265,6 +391,71 @@ export function AISuggestionCard({
               <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-primary-soft text-primary">
                 {formatCOP(property.monthlyRent)}/mes
               </span>
+            )}
+          </div>
+
+          {/* Lo que falta para poder crearlo — editable ACÁ.
+              Antes esto aparecía recién en el último paso, en una pantalla sin
+              campos: se veía «no se puede importar» y no había qué hacer. */}
+          {faltantes.length > 0 && (
+            <div
+              className="border-t border-border-faint dark:border-border-strong pt-3"
+              data-testid={`completar-${property._rowIndex}`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Warning className="w-3.5 h-3.5 text-danger" />
+                <span className="text-xs font-semibold text-danger uppercase tracking-wide">
+                  Completá esto para poder crearlo
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {faltantes.map((f) => (
+                  <CampoEditable
+                    key={f.campo}
+                    etiqueta={f.etiqueta}
+                    valor={property[f.campo]}
+                    sufijo={f.sufijo}
+                    tipo={f.tipo}
+                    invalido
+                    ayuda={f.ayuda}
+                    testId={`falta-${f.campo}-${property._rowIndex}`}
+                    onCambiar={(v) => onEditField(property._rowIndex, f.campo, v)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Editar cualquier dato, falte o no. Un valor leído de un archivo
+              ajeno puede estar mal sin estar vacío. */}
+          <div className="border-t border-border-faint dark:border-border-strong pt-3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              hideArrow
+              onClick={() => setEditandoTodo((v) => !v)}
+              className="gap-1.5"
+              data-testid={`editar-todo-${property._rowIndex}`}
+            >
+              <PencilSimple className="w-3.5 h-3.5" />
+              {editandoTodo ? 'Ocultar los campos' : 'Editar los datos'}
+            </Button>
+
+            {editandoTodo && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                {CAMPOS_EDITABLES.map((c) => (
+                  <CampoEditable
+                    key={c.campo}
+                    etiqueta={c.etiqueta}
+                    valor={property[c.campo]}
+                    sufijo={c.sufijo}
+                    tipo={c.tipo}
+                    testId={`campo-${c.campo}-${property._rowIndex}`}
+                    onCambiar={(v) => onEditField(property._rowIndex, c.campo, v)}
+                  />
+                ))}
+              </div>
             )}
           </div>
 

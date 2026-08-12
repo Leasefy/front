@@ -5,6 +5,7 @@ import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import {
   ChartLineUp,
   ChartBar,
@@ -210,67 +211,6 @@ function HeroKPICard({
 }
 
 // ============================================================================
-// Quick Insight Card
-// ============================================================================
-
-interface InsightProps {
-  type: 'success' | 'warning' | 'info';
-  title: string;
-  description: string;
-  action?: { label: string; onClick: () => void };
-}
-
-function InsightCard({ type, title, description, action }: InsightProps) {
-  const config = {
-    success: {
-      bg: 'bg-success-soft',
-      border: 'border-success/30',
-      icon: CheckCircle,
-      iconColor: 'text-success',
-    },
-    warning: {
-      bg: 'bg-warning-soft',
-      border: 'border-warning/30',
-      icon: WarningCircle,
-      iconColor: 'text-warning',
-    },
-    // Informational (non-actionable) = neutral; blue stays reserved for actions.
-    info: {
-      bg: 'bg-neutral-100 dark:bg-neutral-800',
-      border: 'border-neutral-200 dark:border-neutral-700',
-      icon: Lightning,
-      iconColor: 'text-neutral-600 dark:text-neutral-300',
-    },
-  };
-
-  const { bg, border, icon: Icon, iconColor } = config[type];
-
-  return (
-    <div className={cn('p-4 rounded-xl border', bg, border)}>
-      <div className="flex items-start gap-3">
-        <Icon className={cn('w-5 h-5 shrink-0 mt-0.5', iconColor)} weight="fill" />
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-foreground text-sm">{title}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-          {action && (
-            <Button
-              variant="link"
-              size="sm"
-              hideArrow
-              onClick={action.onClick}
-              className="mt-2 h-auto p-0 gap-1 text-xs"
-            >
-              {action.label}
-              <CaretRight className="w-3 h-3" />
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
 // Main Component
 // ============================================================================
 
@@ -367,7 +307,13 @@ function AnalyticsContent() {
   const [dateRange, setDateRange] = useState<DateRange>('30d');
 
   // API hooks — PageGuard guarantees this only mounts when analytics:view is granted
-  const { metrics, isLoading: loadingMetrics, error: metricsError } = useAiMetrics();
+  // `errorCrudo`, no el mensaje: `FalloDeCarga` clasifica por status.
+  const {
+    metrics,
+    isLoading: loadingMetrics,
+    errorCrudo: metricsError,
+    refetch: recargarMetricas,
+  } = useAiMetrics();
   const { isLoading: loadingActivity } = useAiActivity(20);
 
   const isLoading = loadingMetrics || loadingActivity;
@@ -414,25 +360,25 @@ function AnalyticsContent() {
     };
   }, [metrics, t]);
 
-  // Insights
-  const insights = useMemo(() => [
-    {
-      type: 'success' as const,
-      title: t('inmobiliaria.analytics.insights.occupancyUp'),
-      description: t('inmobiliaria.analytics.insights.occupancyUpDesc'),
-    },
-    {
-      type: 'warning' as const,
-      title: t('inmobiliaria.analytics.insights.unrentedProperties'),
-      description: t('inmobiliaria.analytics.insights.unrentedPropertiesDesc'),
-      action: { label: t('inmobiliaria.analytics.insights.viewProperties'), onClick: () => toast.info(t('inmobiliaria.analytics.insights.viewProperties')) },
-    },
-    {
-      type: 'info' as const,
-      title: t('inmobiliaria.analytics.insights.collectionGoalNear'),
-      description: t('inmobiliaria.analytics.insights.collectionGoalNearDesc'),
-    },
-  ], [t]);
+  /*
+   * ── Los «insights» salieron ────────────────────────────────────────────
+   *
+   * Eran tres tarjetas fijas leídas de i18n. No miraban un solo dato:
+   *
+   *   «La ocupación subió 2.1% respecto al mes anterior»
+   *   «3 propiedades sin arrendar · Llevan más de 45 días disponibles»
+   *   «Estás al 94% de tu meta mensual de recaudo»
+   *
+   * Se le mostraban idénticas a cualquier inmobiliaria. En la agencia de
+   * pruebas —1 inmueble, $0 de recaudo, sin meta configurada— las tres eran
+   * falsas al mismo tiempo, arriba de unos KPI que decían 0. Y «Ver
+   * propiedades» abría un toast con su propia etiqueta: un botón que no lleva
+   * a ningún lado.
+   *
+   * Un insight que no se calcula de los datos no es un insight: es decoración
+   * que afirma cosas. Cuando el back exponga tendencia de ocupación, días en
+   * mercado y meta de recaudo, esto vuelve — calculado.
+   */
 
   // Handlers
   const handleExport = useCallback(async (format: 'pdf' | 'excel') => {
@@ -542,18 +488,6 @@ function AnalyticsContent() {
         />
       </motion.div>
 
-      {/* Quick Insights */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-4"
-      >
-        {insights.map((insight, i) => (
-          <InsightCard key={i} {...insight} />
-        ))}
-      </motion.div>
-
       {/* Main Content Card */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -594,9 +528,20 @@ function AnalyticsContent() {
             >
               {activeView === 'dashboard' && (
                 <>
+                  {/* Antes acá salía `Unauthorized` en rojo: el mensaje crudo
+                      del backend, en inglés, suelto en el medio de la tarjeta,
+                      sin decir qué hacer. `FalloDeCarga` lo clasifica y ofrece
+                      reintentar cuando reintentar sirve. */}
                   {isLoading && <p className="text-sm text-muted-foreground">{t('common.loading')}</p>}
-                  {analyticsError && <p className="text-sm text-danger">{analyticsError}</p>}
-                  {analyticsData && <AnalyticsDashboard data={analyticsData} />}
+                  {!isLoading && Boolean(analyticsError) && (
+                    <FalloDeCarga
+                      error={analyticsError}
+                      queEs="las métricas del asistente"
+                      onReintentar={() => void recargarMetricas()}
+                      enmarcado={false}
+                    />
+                  )}
+                  {!analyticsError && analyticsData && <AnalyticsDashboard data={analyticsData} />}
                 </>
               )}
             </motion.div>

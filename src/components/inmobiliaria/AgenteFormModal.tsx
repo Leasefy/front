@@ -208,17 +208,30 @@ export function AgenteFormModal({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* ── Backdrop ──────────────────────────────────────────────────
+              Estaba en `zIndex: 99998`, y el modal en 99999. Ese número no
+              sale de ningún lado: el proyecto tiene una escala declarada en
+              globals.css (`--z-modal-backdrop: 40`, `--z-modal: 50`,
+              `--z-popover: 60`) justamente para que las capas se ordenen
+              solas.
+
+              Ganarle a todo tiene una consecuencia que se ve: los dos <Select>
+              de este mismo formulario —Zona y Especialización— abren su lista
+              en OTRO portal, a nivel de <body>, con z-index 400. Medido: al
+              hacer clic el trigger pasaba a `data-state="open"` y el listbox
+              existía con 224×384 px de tamaño real… detrás del backdrop. Se
+              veía como un select muerto: clic y nada.
+
+              Con la escala, el popover (60) queda arriba del modal (50), que
+              es para lo que la escala existe. */}
           <div
             onClick={handleClose}
-            className="bg-black/50 backdrop-blur-sm"
-            style={{ position: 'fixed', top: '-100px', left: '-100px', width: 'calc(100vw + 200px)', height: 'calc(100vh + 200px)', zIndex: 99998 }}
+            className="fixed inset-0 z-modal-backdrop bg-black/50 backdrop-blur-sm"
           />
 
           {/* Modal */}
           <div
-            className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none"
-            style={{ zIndex: 99999 }}
+            className="fixed inset-0 z-modal flex items-center justify-center p-4 pointer-events-none"
             onWheel={(e) => e.stopPropagation()}
           >
             <motion.div

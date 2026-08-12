@@ -471,6 +471,7 @@ function DocumentosContent() {
                     error={errorDocuments}
                     queEs="los documentos"
                     onReintentar={() => void recargarDocuments()}
+                    enmarcado={false}
                   />
                 ) : (
                   <DocumentoManager
@@ -499,6 +500,7 @@ function DocumentosContent() {
                     error={errorTemplates}
                     queEs="las plantillas"
                     onReintentar={() => void recargarTemplates()}
+                    enmarcado={false}
                   />
                 ) : (
                   <DocumentoTemplates

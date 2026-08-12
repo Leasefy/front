@@ -46,10 +46,14 @@ function PortafolioContent() {
   // los datos, una petición que falló llega como `[]` y la pantalla afirma
   // «Todavía no hay inmuebles». Lo mismo pasaba durante la carga. Son estados
   // distintos y ahora se leen distinto.
+  // `errorCrudo`, no `error`: el segundo es sólo el mensaje, y sin el status
+  // `FalloDeCarga` no puede distinguir un 404 —donde reintentar es mentir— de
+  // un 401 por token recién renovado. Con el string todo caía en «fue un
+  // problema nuestro».
   const {
     consignaciones: allConsignaciones,
     isLoading: cargandoConsignaciones,
-    error: errorConsignaciones,
+    errorCrudo: errorConsignaciones,
     refetch: recargarConsignaciones,
   } = useConsignaciones();
   const { propietarios: allPropietarios } = usePropietarios();

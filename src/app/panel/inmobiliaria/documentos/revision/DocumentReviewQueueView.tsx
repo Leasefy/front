@@ -10,8 +10,10 @@ import {
   User,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
-import { Badge, Button, Spinner, EmptyState } from '@/components/ui';
+import Link from 'next/link';
+import { Badge, Button, Spinner } from '@/components/ui';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { getReviewStatusLabel, reviewStatusBadgeVariant } from '@/lib/documents/review-status';
 import type {
   ReviewQueueCounts,
@@ -46,7 +48,11 @@ export interface DocumentReviewQueueViewProps {
   counts: ReviewQueueCounts;
   items: ReviewQueueItem[];
   isLoading: boolean;
-  error: string | null;
+  /**
+   * El error ENTERO, no su mensaje: `FalloDeCarga` clasifica por status para
+   * saber si reintentar sirve. Con un string todo caía en «problema nuestro».
+   */
+  error: unknown;
   /** Whether the current user may run review actions (manager roles only). */
   canReview: boolean;
   /** id of the document currently being mutated — disables its row buttons. */
@@ -112,7 +118,12 @@ export function DocumentReviewQueueView({
                 <CardIcon className="w-5 h-5 text-fg-muted" />
               </div>
               <div className="min-w-0">
-                <p className="text-2xl font-semibold tabular-nums text-fg">{counts[key]}</p>
+                {/* Con la consulta caída, `counts` viene en ceros: cinco
+                    tarjetas afirmando «0 pendientes» sobre un dato que nadie
+                    trajo. Mientras carga tampoco se sabe todavía. */}
+                <p className="text-2xl font-semibold tabular-nums text-fg">
+                  {isLoading || error ? '—' : counts[key]}
+                </p>
                 <p className="text-xs text-fg-muted">{label}</p>
               </div>
             </div>
@@ -132,10 +143,20 @@ export function DocumentReviewQueueView({
           onReintentar={onRetry}
         />
       ) : items.length === 0 ? (
-        <EmptyState
-          icon={FolderOpen}
-          title="No hay soportes por revisar"
-          description="Cuando alguien se postule y adjunte sus soportes, aparecerán acá."
+        /* Sin filtros en esta pantalla: acá el vacío es siempre «todavía no
+           llegó nada», nunca «filtraste mal». Y no se crea desde acá — los
+           soportes los sube quien se postula—, así que la salida útil es ir a
+           ver las postulaciones. */
+        <SinDatos
+          queSon="soportes por revisar"
+          icono={FolderOpen}
+          titulo="No hay soportes por revisar"
+          descripcion="Los soportes los adjunta el candidato al postularse. Apenas alguien mande los suyos, aparecen acá."
+          accion={
+            <Button asChild variant="outline">
+              <Link href="/panel/inmobiliaria/postulaciones">Ver postulaciones</Link>
+            </Button>
+          }
         />
       ) : (
         <div className="space-y-4">

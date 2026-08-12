@@ -85,6 +85,29 @@ venían gratis → 📌 `reference_la_piel_del_ds_que_no_pinta` (actualizada)
 
 ---
 
+## 6. El catálogo de correos (pedido al final, sin código)
+
+Nico pidió el listado de todo lo que le mandamos por correo a los usuarios,
+por destinatario. No existía escrito.
+
+📌 https://claude.ai/code/artifact/961014bb-6c6c-4398-aefa-96f3438aee39
+📌 `reference_catalogo_de_correos_de_leasefy`
+
+Lo que hay que saber para volver a mirarlo: **las plantillas viven en la base**
+(`notification_templates`), no en el repo — grepear el código por asuntos no
+encuentra casi nada. Son 47 plantillas (46 salen por correo) más 10 envíos
+sueltos entre el back, el agente y Supabase.
+
+Tres hallazgos del inventario:
+
+- **27 plantillas activas nunca se dispararon**, y no todas son de flujos
+  dormidos: `DOCUMENT_APPROVED`, `VISIT_REMINDER_24H`, `LEASE_EXPIRING_SOON` y
+  todo el bloque de trial son de recorridos vivos.
+- **El primer correo que ve cualquier usuario está en inglés** — «Confirm Your
+  Signup» sale de Supabase Auth, se edita en su panel y está fuera del repo.
+- El endpoint de prueba manda con asunto «Test Leasefy — **Brevo** SMTP»,
+  nombrando un proveedor que ya no usamos.
+
 ## Lo que queda
 
 - **PR front #87 (20 commits) y PR back #27 (2 commits)**, esperando a Víctor.

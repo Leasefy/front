@@ -19,7 +19,7 @@
  * Ver la regla en CobranzaResultadosKpis / feedback_andamiaje_sobre_vacio.
  *
  * DS: tokens de Cadence (`bg-surface`, `text-fg`, `border-border`), primitivas
- * del DS vía el shim de `@/components/ui`, `PageHeader`/`ErrorState` del DS.
+ * del DS vía el shim de `@/components/ui`; el fallo va con <FalloDeCarga>.
  * Refs DESIGN.md §2 (tokens), §11 (estados), §12 (badges), §16 (numéricos).
  */
 
@@ -42,7 +42,8 @@ import {
 } from '@/components/ui'
 import { Button } from '@/components/ui'
 import { TablePagination } from '@/components/ui/pagination'
-import { Card, Chip, ErrorState } from '@leasefy/cadence'
+import { Card, Chip } from '@leasefy/cadence'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import {
   useTablePagination,
   PAGE_SIZE_OPTIONS,
@@ -318,11 +319,14 @@ function LlamadasContent() {
   if (error && calls.length === 0) {
     return (
       <main className="p-6 lg:p-8 max-w-7xl mx-auto">
-        <ErrorState
-          title="No pudimos cargar las llamadas"
-          message={`El servicio del agente respondió con un error (${error}). No sabemos cuántas llamadas hay.`}
-          retryLabel="Reintentar"
-          onRetry={() => void refetch()}
+        {/* Interpolaba el error crudo del agente dentro del mensaje —«respondió
+            con un error (Failed to fetch)»—: no le dice nada a quien lo lee y
+            filtra internals. `FalloDeCarga` lo deja en el DOM para diagnóstico
+            y en pantalla dice qué pasó y si sirve reintentar. */}
+        <FalloDeCarga
+          error={error}
+          queEs="las llamadas"
+          onReintentar={() => void refetch()}
         />
       </main>
     )

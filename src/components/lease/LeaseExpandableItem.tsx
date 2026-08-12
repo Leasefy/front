@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Buildings, CaretDown, CheckCircle, Clock, WarningCircle, ChatCircle, FileText, Phone, Envelope, ArrowsClockwise } from '@phosphor-icons/react';
 import { Spinner } from '@/components/ui/spinner';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { useLeasePayments } from '@/lib/hooks/useLeases';
 import type { Lease, Payment } from '@/lib/types/lease';
 
@@ -61,10 +62,17 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const router = useRouter();
 
-  // Lazy-load payments only when expanded
-  const { payments, isLoading: paymentsLoading } = useLeasePayments(
-    isExpanded ? lease.id : null
-  );
+  // Lazy-load payments only when expanded.
+  // `errorCrudo`: sin mirarlo, una consulta caída decía «No hay pagos
+  // registrados» sobre un contrato que sí los tiene. Afirmarle a un
+  // propietario que no le cobraron nada es de las mentiras más caras que
+  // puede decir esta pantalla.
+  const {
+    payments,
+    isLoading: paymentsLoading,
+    errorCrudo: errorPagos,
+    refetch: recargarPagos,
+  } = useLeasePayments(isExpanded ? lease.id : null);
 
   const handleMessage = () => {
     router.push(`/panel/mensajes?to=${lease.tenantId}`);
@@ -306,6 +314,14 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
                 <div className="flex items-center justify-center py-8">
                   <Spinner size="md" variant="current" className="text-primary" />
                 </div>
+              ) : errorPagos ? (
+                <FalloDeCarga
+                  error={errorPagos}
+                  queEs="el historial de pagos"
+                  onReintentar={recargarPagos}
+                  enmarcado={false}
+                  className="py-8"
+                />
               ) : payments.length === 0 ? (
                 <p className="text-sm text-fg-muted p-5 text-center">
                   No hay pagos registrados

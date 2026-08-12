@@ -7,6 +7,14 @@ interface UseRecommendationsReturn {
   recommendations: RecommendedProperty[];
   isLoading: boolean;
   error: string | null;
+  /**
+   * El error ENTERO, además del mensaje.
+   *
+   * `FalloDeCarga` clasifica por status para saber si reintentar sirve; con
+   * sólo el string, un 404 y un 500 salen iguales. Se agrega en vez de cambiar
+   * el tipo de `error` para no romper a quien ya lo pinta como texto.
+   */
+  errorCrudo: unknown;
   refetch: () => Promise<void>;
 }
 
@@ -14,14 +22,17 @@ export function useRecommendations(limit?: number): UseRecommendationsReturn {
   const [recommendations, setRecommendations] = useState<RecommendedProperty[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const fetchRecommendations = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
+      setErrorCrudo(null);
       const data = await recommendationsApi.getMine(limit);
       setRecommendations(data);
     } catch (err) {
+      setErrorCrudo(err);
       setError(err instanceof Error ? err.message : 'Error al cargar recomendaciones');
       setRecommendations([]);
     } finally {
@@ -37,6 +48,7 @@ export function useRecommendations(limit?: number): UseRecommendationsReturn {
     recommendations,
     isLoading,
     error,
+    errorCrudo,
     refetch: fetchRecommendations,
   };
 }

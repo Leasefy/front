@@ -11,6 +11,7 @@ import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
@@ -43,10 +44,19 @@ export default function PagosPage() {
   const { t, locale, formatCurrency: formatCurrencyI18n } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
-  const { getActive, isLoading: leasesLoading } = useLeases();
+  // `errorCrudo`: sin esto, una consulta muerta entraba como `[]` y la
+  // pantalla decía «Sin pagos por ahora» —y antes de eso, «no tenés arriendo
+  // activo»— a alguien que sí lo tiene. Dos afirmaciones falsas seguidas.
+  const {
+    getActive,
+    isLoading: leasesLoading,
+    errorCrudo: errorArriendos,
+    refetch: recargarArriendos,
+  } = useLeases();
   const {
     requests: rawRequests,
     isLoading: requestsLoading,
+    errorCrudo: errorPagos,
     refetch: refetchRequests,
   } = useMyPaymentRequests();
 
@@ -199,6 +209,26 @@ export default function PagosPage() {
       <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="payments" />
+        </div>
+      </div>
+    );
+  }
+
+  // El fallo va ANTES de decidir si hay arriendo: `getActive()` devuelve `[]`
+  // cuando la consulta murió, y entonces la rama de abajo concluye «no tenés
+  // arriendo activo» sobre un dato que nunca llegó.
+  if (errorArriendos || errorPagos) {
+    return (
+      <div className="min-h-screen bg-bg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+          <FalloDeCarga
+            error={errorArriendos ?? errorPagos}
+            queEs="tus pagos"
+            onReintentar={() => {
+              void recargarArriendos();
+              void refetchRequests();
+            }}
+          />
         </div>
       </div>
     );

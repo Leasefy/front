@@ -26,12 +26,15 @@ export function useCandidates(params?: {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // El error entero además del mensaje: `FalloDeCarga` clasifica por status.
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const paramsKey = JSON.stringify(params ?? {});
 
   const fetchCandidates = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const parsed = JSON.parse(paramsKey);
       const result = await landlordApi.getCandidates(parsed);
@@ -40,6 +43,7 @@ export function useCandidates(params?: {
       setStats(result.stats);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error cargando candidatos';
+      setErrorCrudo(err);
       setError(message);
       setCandidates([]);
     } finally {
@@ -51,7 +55,7 @@ export function useCandidates(params?: {
     fetchCandidates();
   }, [fetchCandidates]);
 
-  return { candidates, total, stats, isLoading, error, refetch: fetchCandidates };
+  return { candidates, total, stats, isLoading, error, errorCrudo, refetch: fetchCandidates };
 }
 
 // ============================================================================
@@ -256,6 +260,12 @@ export function useLandlordProperty(propertyId: string | null | undefined) {
   const [property, setProperty] = useState<LandlordProperty | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // El error entero además del mensaje. Sin el status no se puede distinguir
+  // «esta propiedad no existe» —donde reintentar es una promesa falsa— de «no
+  // se pudo traer»: la pantalla decía «no existe o no tenés acceso» para las
+  // dos, acusando de un problema de permisos a un 500.
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
+  const [intento, setIntento] = useState(0);
 
   useEffect(() => {
     if (!propertyId) {
@@ -267,6 +277,7 @@ export function useLandlordProperty(propertyId: string | null | undefined) {
     let cancelled = false;
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
 
     landlordApi
       .getMyProperty(propertyId)
@@ -278,6 +289,7 @@ export function useLandlordProperty(propertyId: string | null | undefined) {
       })
       .catch((err) => {
         if (!cancelled) {
+          setErrorCrudo(err);
           setError(err instanceof Error ? err.message : 'Error cargando propiedad');
           setProperty(null);
           setIsLoading(false);
@@ -287,9 +299,15 @@ export function useLandlordProperty(propertyId: string | null | undefined) {
     return () => {
       cancelled = true;
     };
-  }, [propertyId]);
+  }, [propertyId, intento]);
 
-  return { property, isLoading, error };
+  return {
+    property,
+    isLoading,
+    error,
+    errorCrudo,
+    refetch: () => setIntento((n) => n + 1),
+  };
 }
 
 // ============================================================================

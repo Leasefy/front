@@ -19,10 +19,13 @@ export function useConversations() {
   const [totalUnread, setTotalUnread] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // El error entero además del mensaje: `FalloDeCarga` clasifica por status.
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
 
   const fetchConversations = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setErrorCrudo(null);
     try {
       const res = await messagesApi.getConversations();
       const mapped = res.conversations.map(mapToConversation);
@@ -30,6 +33,7 @@ export function useConversations() {
       setTotalUnread(mapped.reduce((sum, c) => sum + c.unreadCount, 0));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error cargando conversaciones';
+      setErrorCrudo(err);
       setError(message);
       setConversations([]);
     } finally {
@@ -41,7 +45,7 @@ export function useConversations() {
     fetchConversations();
   }, [fetchConversations]);
 
-  return { conversations, totalUnread, isLoading, error, refetch: fetchConversations };
+  return { conversations, totalUnread, isLoading, error, errorCrudo, refetch: fetchConversations };
 }
 
 // ============================================================================

@@ -42,6 +42,7 @@
  * Los títulos los pone cada widget — repetirlos acá los duplicaba en pantalla.
  */
 
+import { Button } from '@/components/ui/button'
 import { useCobranzaAnalytics } from '@/lib/hooks/cobranza/use-cobranza-analytics'
 import { RecoveryRateChart } from '@/components/inmobiliaria/cobranza/RecoveryRateChart'
 import { TopObjectionsTable } from '@/components/inmobiliaria/cobranza/TopObjectionsTable'
@@ -51,7 +52,7 @@ import { CostPerPesoKpi } from '@/components/inmobiliaria/cobranza/CostPerPesoKp
 const MIN_LLAMADAS_30D = 5
 
 export function CobranzaAnaliticaResumen() {
-  const { isLoading, data } = useCobranzaAnalytics()
+  const { isLoading, error, data, refetch } = useCobranzaAnalytics()
 
   const gate = data?.agencyGate
   const compuertaAbierta =
@@ -62,6 +63,34 @@ export function CobranzaAnaliticaResumen() {
   const hayRecuperacion = Boolean(data?.recovery?.populated)
   const hayCosto = Boolean(data?.costPerPeso?.populated)
   const hayObjeciones = Boolean(data?.objections?.populated)
+
+  /*
+   * Desaparecer y fallar son cosas distintas.
+   *
+   * Con la consulta caída, `data` queda en null → la compuerta no abre → la
+   * sección se iba entera, sin dejar rastro. Visto desde afuera es idéntico a
+   * «todavía no llegaste a 5 llamadas»: dos motivos opuestos, cero señal para
+   * distinguirlos, y ninguna forma de reintentar.
+   *
+   * Desaparecer sigue siendo correcto cuando NO HAY datos —lo que no puede
+   * decir nada no ocupa lugar—. Fallar no: eso se avisa. En una línea, porque
+   * esto es una sección secundaria y no debe tapar la página.
+   */
+  if (error && !isLoading) {
+    return (
+      <section aria-label="Cómo lo está logrando" className="space-y-3">
+        <h2 className="text-base font-semibold text-fg">Cómo lo está logrando</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3">
+          <p className="text-sm text-fg-muted">
+            No pudimos traer la analítica del agente.
+          </p>
+          <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()}>
+            Intentar de nuevo
+          </Button>
+        </div>
+      </section>
+    )
+  }
 
   if (!compuertaAbierta || (!hayRecuperacion && !hayCosto && !hayObjeciones)) {
     return null

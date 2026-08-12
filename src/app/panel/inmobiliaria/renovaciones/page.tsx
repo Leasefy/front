@@ -7,7 +7,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { useI18n } from '@/lib/i18n';
 import { MonoLabel, BrandDot } from '@/components/brand';
 import { Spinner } from '@/components/ui';
-import { ErrorState } from '@/components/ui/error-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { useRenovaciones, renovacionesApi } from '@/lib/hooks/useInmobiliaria';
 import { getRenovacionStatusLabel } from '@/lib/types/inmobiliaria';
 import type { Renovacion } from '@/lib/types/inmobiliaria';
@@ -23,7 +23,7 @@ function RenovacionesContent() {
   const {
     renovaciones,
     isLoading,
-    error,
+    errorCrudo: error,
     refetch,
     setData: setRenovacionesData,
   } = useRenovaciones();
@@ -77,11 +77,11 @@ function RenovacionesContent() {
         </p>
       </div>
 
-      {error && (
-        <ErrorState
-          title={t('inmobiliaria.nav.renovaciones')}
-          description="No pudimos cargar las renovaciones. Verificá tu conexión e intentá de nuevo."
-          onRetry={refetch}
+      {Boolean(error) && (
+        <FalloDeCarga
+          error={error}
+          queEs="las renovaciones"
+          onReintentar={refetch}
         />
       )}
 

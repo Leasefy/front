@@ -40,6 +40,8 @@ export interface UseAgentWorkItemsResult {
   total: number
   isLoading: boolean
   error: string | null
+  /** El error entero: sin el status no se distingue un 404 de un 401. */
+  errorCrudo: unknown
   refetch: () => Promise<void>
   /** Posts to the action's declared endpoint, then refetches on success. */
   runAction: (
@@ -60,6 +62,8 @@ export function useAgentWorkItems(
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // El error entero: sin el status, `FalloDeCarga` no distingue 404 de 401.
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null)
 
   /** Stale-response guard: each fetch aborts the previous one (agency switch race). */
   const abortRef = useRef<AbortController | null>(null)
@@ -115,6 +119,7 @@ export function useAgentWorkItems(
       setTotal(json.total ?? 0)
       setError(null)
     } catch (err) {
+      setErrorCrudo(err)
       if (controller.signal.aborted && !timedOut) return
       setError(
         timedOut
@@ -169,5 +174,5 @@ export function useAgentWorkItems(
     [agencyId, fetchData],
   )
 
-  return { items, total, isLoading, error, refetch: fetchData, runAction }
+  return { items, total, isLoading, error, errorCrudo, refetch: fetchData, runAction }
 }

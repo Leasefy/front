@@ -226,10 +226,17 @@ describe('sin estudio — enseña el camino antes de pedir datos', () => {
 
 describe('error', () => {
   it('muestra el estado de error en vez de una pantalla vacía', async () => {
+    // La intención de siempre: un fallo NO se pinta como pantalla vacía.
+    // El copy exacto lo escribe `FalloDeCarga` según el tipo de fallo, así que
+    // acá se verifica el ESTADO —hay cartel de fallo y ofrece reintentar—, no
+    // una frase: atarse a la frase hace que mejorar el mensaje rompa el test.
     fetchMock.mockRejectedValue(new Error('agente caído'))
     await act(async () => {
       root.render(<AprobacionPage />)
     })
-    expect(texto()).toContain('No pudimos cargar tu aprobación')
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="reintentar"]')).not.toBeNull()
+    // Y NO el cartel de vacío: son estados distintos y llevan a acciones distintas.
+    expect(container.querySelector('[data-testid="sin-datos"]')).toBeNull()
   })
 })

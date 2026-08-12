@@ -22,7 +22,7 @@ import { CotizadorPriorityInbox } from '@/components/inmobiliaria/cotizador/Coti
 import { CotizadorRecentQuotesFeed } from '@/components/inmobiliaria/cotizador/CotizadorRecentQuotesFeed'
 import { CotizadorCarriersStatus } from '@/components/inmobiliaria/cotizador/CotizadorCarriersStatus'
 import { CotizadorOverviewSkeleton } from '@/components/skeleton/panel/CotizadorOverviewSkeleton'
-import { EmptyState } from '@/components/data-display/EmptyState'
+import { SinDatos } from '@/components/estado/SinDatos'
 import { Button } from '@/components/ui/button'
 import { relativeTime } from '@/lib/cartera'
 
@@ -127,15 +127,20 @@ export default function CotizadorOverviewPage() {
   if (!isLoading && !error && mergedQuotes.length === 0) {
     return (
       <main className="p-6 lg:p-8 space-y-6">
-        <EmptyState
-          icon={Tray}
-          title={t('inmobiliaria.ai.cotizador.overview.empty.title')}
-          description={t('inmobiliaria.ai.cotizador.overview.empty.description')}
-          primaryCta={{
-            label: t('inmobiliaria.ai.cotizador.overview.empty.cta.label'),
-            href: '/panel/inmobiliaria/ai/asegurabilidad/nueva',
-          }}
-        />
+        {/* Dentro de un recuadro: sin él el mensaje quedaba flotando en el
+            medio de la página y no se leía como una sección. */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <SinDatos
+            queSon="cotizaciones"
+            icono={Tray}
+            titulo={t('inmobiliaria.ai.cotizador.overview.empty.title')}
+            descripcion={t('inmobiliaria.ai.cotizador.overview.empty.description')}
+            crear={{
+              label: t('inmobiliaria.ai.cotizador.overview.empty.cta.label'),
+              href: '/panel/inmobiliaria/ai/asegurabilidad/nueva',
+            }}
+          />
+        </div>
         {/* La cola de consultas es independiente del feed de cotizaciones:
             puede haber casos pendientes aunque hoy no se haya creado ninguna. */}
         <CotizadorPriorityInbox />

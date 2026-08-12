@@ -28,7 +28,8 @@ import {
   estadoLabel,
   relativeTime,
 } from '@/components/inmobiliaria/ai/ColaHumana'
-import { EmptyState } from '@/components/data-display/EmptyState'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { SinDatos } from '@/components/estado/SinDatos'
 
 const NS = 'inmobiliaria.ai.cotizador.overview.inbox'
 
@@ -102,7 +103,7 @@ export function CotizadorPriorityInbox() {
     return r === k ? fb : r
   }
 
-  const { items, total, isLoading, error } = useAgentWorkItems('cotizador')
+  const { items, total, isLoading, error, errorCrudo, refetch } = useAgentWorkItems('cotizador')
 
   const sorted = useMemo(
     () =>
@@ -136,6 +137,11 @@ export function CotizadorPriorityInbox() {
         )}
       </div>
 
+      {/* ── Los estados SIN filas van dentro de un recuadro ────────────────
+          Sin él, el mensaje quedaba flotando sobre el fondo de la página y la
+          sección no se leía como una sección: sólo se veía texto suelto en el
+          medio de la nada. Cuando SÍ hay filas no hace falta —cada fila ya es
+          una tarjeta con borde— y meterlas en otro recuadro anidaría tarjetas. */}
       {isLoading ? (
         <div className="space-y-2" data-testid="cotizador-inbox-loading">
           {[0, 1, 2].map((i) => (
@@ -146,21 +152,26 @@ export function CotizadorPriorityInbox() {
           ))}
         </div>
       ) : error ? (
-        <div
-          className="rounded-xl border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
-          data-testid="cotizador-inbox-error"
-        >
-          {tf(`${NS}.error`, 'No pudimos cargar la cola de consultas')}: {error}
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <FalloDeCarga
+            error={errorCrudo ?? error}
+            queEs="la cola de consultas"
+            onReintentar={refetch}
+            className="border-0 bg-transparent"
+          />
         </div>
       ) : sorted.length === 0 ? (
-        <EmptyState
-          icon={Tray}
-          title={tf(`${NS}.empty.title`, 'Todo al día')}
-          description={tf(
-            `${NS}.empty.description`,
-            'No hay consultas pendientes de revisión. Aparecerán aquí cuando una requiera tu atención.',
-          )}
-        />
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <SinDatos
+            queSon="consultas"
+            icono={Tray}
+            titulo={tf(`${NS}.empty.title`, 'Todo al día')}
+            descripcion={tf(
+              `${NS}.empty.description`,
+              'No hay consultas pendientes de revisión. Aparecerán aquí cuando una requiera tu atención.',
+            )}
+          />
+        </div>
       ) : (
         <div className="space-y-2" data-testid="cotizador-inbox">
           {sorted.map((item) => (

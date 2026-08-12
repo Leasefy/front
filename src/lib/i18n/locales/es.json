@@ -1462,7 +1462,12 @@
           "pending": "Pendiente",
           "failed": "Fallido"
         },
-        "unavailable": "La información de facturación no está disponible."
+        "unavailable": "La información de facturación no está disponible.",
+        "free": "Gratis",
+        "perCanon": "{{percent}}% del canon",
+        "customPrice": "A la medida",
+        "planUnavailable": "No pudimos determinar tu plan actual",
+        "usageUnavailable": "Información de uso no disponible"
       }
     },
     "propietarios": {
@@ -2601,7 +2606,8 @@
         "upload": "Archivo",
         "mapping": "Mapeo",
         "review": "Revisión AI",
-        "confirm": "Confirmar"
+        "confirm": "Confirmar",
+        "enlaces": "Enlaces"
       },
       "methods": {
         "excel": {
@@ -2616,8 +2622,13 @@
         },
         "portal": {
           "title": "Desde portales",
-          "desc": "Importa desde FincaRaíz, Metrocuadrado",
-          "badge": "Próximamente"
+          "desc": "Bajá tu inventario de FincaRaíz, Metrocuadrado o Ciencuadras",
+          "badge": "Guiado"
+        },
+        "enlaces": {
+          "title": "Desde enlaces",
+          "desc": "Pegá los enlaces de tus fichas y las leemos con fotos",
+          "badge": "Nuevo"
         }
       },
       "upload": {
@@ -2720,17 +2731,14 @@
         "requestHelp": "Subir el archivo"
       },
       "portal": {
-        "title": "Importar desde portales",
-        "subtitle": "Conecta tu perfil de agencia para importar propiedades automáticamente",
-        "comingSoon": "Próximamente",
+        "title": "Traer tus inmuebles desde un portal",
+        "subtitle": "Bajá tu inventario del panel del portal y subilo acá. Nosotros acomodamos las columnas.",
+        "porQue": "Los portales no entregan tus inmuebles por API: la integración que existe va al revés, publicando desde tu sistema hacia ellos. Pero el inventario ya lo tenés en tu panel del portal, y de ahí sí se puede bajar.",
+        "abrirPanel": "Ir a mi panel",
+        "yaLoTengo": "Ya tengo el archivo del portal",
         "backToPortfolio": "Volver al portafolio",
-        "emailCapture": {
-          "title": "¿Te interesa esta función?",
-          "subtitle": "Déjanos tu email y te avisamos cuando esté disponible",
-          "placeholder": "tu@email.com",
-          "submit": "Avisar",
-          "success": "¡Registrado! Te avisaremos cuando esté disponible."
-        }
+        "oEnlaces": "O pegá los enlaces de tus fichas y las leemos por vos, con sus fotos.",
+        "pegarEnlaces": "Pegar enlaces en vez de un archivo"
       }
     },
     "consignaciones": {

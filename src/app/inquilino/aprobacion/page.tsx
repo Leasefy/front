@@ -32,7 +32,8 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui'
-import { ErrorState } from '@/components/ui/error-state'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { SinDatos } from '@/components/estado/SinDatos'
 import { useI18n } from '@/lib/i18n'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -84,13 +85,27 @@ export default function AprobacionPage() {
     )
   }
 
-  if (error || !data) {
+  // ⚠️ Antes era `error || !data`: un fallo y un vacío en la misma rama, las dos
+  // cosas anunciadas como «No pudimos cargar tu aprobación». No cargar y no
+  // tener son estados distintos y llevan a acciones distintas.
+  if (error) {
     return (
       <div className="py-12">
-        <ErrorState
-          title={tf(`${NS}.error.title`, 'No pudimos cargar tu aprobación')}
-          description={error ?? undefined}
-          onRetry={load}
+        <FalloDeCarga error={error} queEs="tu aprobación" onReintentar={load} />
+      </div>
+    )
+  }
+
+  if (!data) {
+    return (
+      <div className="py-12">
+        <SinDatos
+          queSon="datos de aprobación"
+          titulo={tf(`${NS}.vacio.title`, 'Todavía no tenés una aprobación')}
+          descripcion={tf(
+            `${NS}.vacio.desc`,
+            'Cuando completes tu estudio vas a ver acá hasta cuánto podés arrendar.',
+          )}
         />
       </div>
     )

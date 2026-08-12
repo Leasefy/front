@@ -10,8 +10,6 @@
  * @module lib/constants/feature-gates
  */
 
-import type { AgencyPlanId } from '@/lib/types/subscription';
-
 /**
  * All gatable feature identifiers.
  */
@@ -27,10 +25,15 @@ export type FeatureName =
 
 /**
  * Gate definition for a single feature.
+ *
+ * NOTE (contrato 29): tier gating for the agency panel is enforced server-side.
+ * `minTier` is now presentation-only metadata (a plain slug/label for an upgrade
+ * hint), decoupled from any closed tier enum — the UI no longer compares against
+ * it. `useAgencyPlan` is permissive and does not read this field.
  */
 export interface FeatureGate {
-  /** Minimum plan tier required to access this feature */
-  minTier: AgencyPlanId;
+  /** Presentation-only hint of the suggested plan slug; not used for gating. */
+  minTier?: string;
   /** If true, feature is only available on flex (per-lease) plans */
   flexOnly?: boolean;
   /** Human-readable label in Spanish */

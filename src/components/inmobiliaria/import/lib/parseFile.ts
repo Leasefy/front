@@ -100,7 +100,15 @@ export async function parseSpreadsheetFile(
 }
 
 /**
- * Download a Leasefy template .xlsx file with the standard column headers.
+ * Baja la plantilla .xlsx con los encabezados que esperamos.
+ *
+ * ⚠️ NO usar `XLSX.writeFile()` acá. Esa función es de Node: escribe con `fs`.
+ * Importada como módulo en el navegador **no tira ningún error y tampoco baja
+ * nada** — el clic se sentía muerto, sin consola, sin toast, sin archivo. Fue
+ * exactamente así como llegó reportada.
+ *
+ * En el navegador hay que armar los bytes con `XLSX.write({type:'array'})` y
+ * disparar la descarga a mano con un Blob y un <a download>.
  */
 export async function downloadTemplate(): Promise<void> {
   const XLSX = await import('xlsx');
@@ -151,5 +159,26 @@ export async function downloadTemplate(): Promise<void> {
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Propiedades');
 
-  XLSX.writeFile(workbook, 'plantilla-leasefy.xlsx');
+  const bytes = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer;
+  descargar(
+    new Blob([bytes], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    }),
+    'plantilla-leasefy.xlsx',
+  );
+}
+
+/** Dispara la descarga de un Blob con el nombre pedido. */
+function descargar(blob: Blob, nombre: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nombre;
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Revocar en el siguiente tick: hacerlo de inmediato cancela la descarga en
+  // algunos navegadores.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }

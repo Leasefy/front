@@ -58,6 +58,51 @@ async function esperarRespuestaDeSesion(): Promise<void> {
   ])
 }
 
+/**
+ * Un 401 con el token que ACABA de vencer no es un fallo: es una carrera.
+ *
+ * El access token de Supabase dura una hora y se renueva solo. Las peticiones
+ * que salen mientras la renovación está en vuelo llevan el token viejo y el
+ * backend responde 401 — con la sesión perfectamente viva. Medido en el panel:
+ *
+ *     GET  …/arco/requests                        → 401
+ *     POST supabase/token?grant_type=refresh_token → 200   ← se renovó acá
+ *     GET  …/arco/requests                        → 200
+ *
+ * La pantalla que pidió primero se quedaba con el 401 para siempre y mostraba
+ * «No pudimos cargar esto». Peor: «Intentar de nuevo» disparaba OTRA petición
+ * dentro de la misma ventana y fallaba igual, así que el botón parecía muerto.
+ *
+ * Esto espera a que el AuthProvider avise que hay un token DISTINTO —no a un
+ * reloj— y devuelve el nuevo. Si no llega ninguno, el 401 sigue su camino: no
+ * se reintenta a ciegas, porque un 401 que de verdad es de permisos tiene que
+ * llegar a la pantalla.
+ */
+/**
+ * ⚠️ El tope es corto A PROPÓSITO. Este camino lo recorre TODO 401, incluido el
+ * de «no tenés permiso», que es legítimo y tiene que llegar rápido a la
+ * pantalla. Con un tope de 4 s, cada 401 real tardaba cuatro segundos de más en
+ * mostrarse — se veía en los tests, que pasaron a durar 4 s cada uno.
+ *
+ * Casi siempre ni se espera: para cuando el 401 vuelve, la renovación ya
+ * terminó y el token nuevo está puesto. El bucle es sólo para el caso en que la
+ * respuesta gane la carrera por poco.
+ */
+const ESPERA_DE_TOKEN_NUEVO_MS = 1000
+
+async function esperarUnTokenDistinto(usado: string | null): Promise<string | null> {
+  if (!usado) return null
+  // Lo más común: ya se renovó mientras esta petición viajaba.
+  if (_accessToken && _accessToken !== usado) return _accessToken
+
+  const hasta = Date.now() + ESPERA_DE_TOKEN_NUEVO_MS
+  while (Date.now() < hasta) {
+    await new Promise((resolve) => setTimeout(resolve, 60))
+    if (_accessToken && _accessToken !== usado) return _accessToken
+  }
+  return null
+}
+
 // ============================================================================
 // Unauthorized (session-superseded) handler — the global 401 backstop.
 // Registered by AuthProvider. Fires ONLY when a 401 carries the machine-readable
@@ -98,7 +143,14 @@ function getAuthHeaders(): Record<string, string> {
   return headers
 }
 
-async function request<T>(method: string, path: string, body?: unknown, token?: string): Promise<T> {
+async function request<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  token?: string,
+  /** Interno: evita que el reintento por token renovado se encadene. */
+  yaSeReintento = false,
+): Promise<T> {
   const url = `${BACKEND_URL}${path}`
 
   // Si el AuthProvider todavía no contestó, esperamos acá en vez de salir sin
@@ -106,6 +158,7 @@ async function request<T>(method: string, path: string, body?: unknown, token?: 
   // —haya sesión o no— esto no cuesta nada.
   if (!token) await esperarRespuestaDeSesion()
 
+  const tokenUsado = token ?? getAccessToken()
   const headers: Record<string, string> = token
     ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
     : getAuthHeaders()
@@ -138,7 +191,19 @@ async function request<T>(method: string, path: string, body?: unknown, token?: 
     // sign-out. The onboarding 401 has no code and must NOT log the user out.
     if (code === 'SESSION_SUPERSEDED') {
       _onUnauthorized?.(code)
+      throw new ApiError(401, errorBody.message || 'No autorizado', code)
     }
+
+    // ¿Fue la carrera de la renovación? Si aparece un token distinto, esta
+    // petición salió con uno que ya no servía: se repite UNA vez con el nuevo.
+    // Si no aparece ninguno, el 401 sigue de largo hacia la pantalla.
+    if (!yaSeReintento) {
+      const tokenNuevo = await esperarUnTokenDistinto(tokenUsado)
+      if (tokenNuevo) {
+        return request<T>(method, path, body, tokenNuevo, true)
+      }
+    }
+
     throw new ApiError(401, errorBody.message || 'No autorizado', code)
   }
 

@@ -4,15 +4,16 @@
  */
 
 /**
- * Canonical plan tier identifiers — match backend enum `SubscriptionPlan`
- * (STARTER | PRO | FLEX, lowercased for UI keys).
- *
- * The same three tiers apply to all planType values (TENANT | LANDLORD | AGENCY);
- * role-specific labels are resolved via planType, not via a separate tier.
+ * Plan tier identifier. Historically the closed set `starter | pro | flex`
+ * (backend enum `SubscriptionPlan` lowercased), now an open slug string so
+ * admin-created agency plans (contrato 29 · planes dinámicos) are representable.
+ * The three legacy tiers remain the common case; treat any value as opaque.
  */
-export type PlanId = 'starter' | 'pro' | 'flex';
+// slug libre admin-creatable, ver contrato 29
+export type PlanId = string;
 
 /** @deprecated Use PlanId — tiers are unified across roles */
+// slug libre admin-creatable, ver contrato 29
 export type AgencyPlanId = PlanId | 'enterprise';
 
 // Pricing model for agency plans

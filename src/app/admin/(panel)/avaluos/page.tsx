@@ -25,6 +25,39 @@ function confianzaBorder(item: PendingReviewItem): string {
   }
 }
 
+/**
+ * WHOSE avalúo — one identity line above the confidence row so the reviewer sees
+ * the owner at a glance. `agencyName != null` ⇒ came through an inmobiliaria (show
+ * the agency, then the owner as the underlying client); otherwise it's a
+ * particular. Null on both ⇒ anonymous / legacy draft.
+ */
+function AvaluoIdentity({ item }: { item: PendingReviewItem }) {
+  const { ownerName, agencyName } = item
+
+  if (!ownerName && !agencyName) {
+    return (
+      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-dim mb-1">
+        sin identificar
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-baseline gap-2 mb-1 flex-wrap">
+      <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">
+        {agencyName ? 'inmobiliaria' : 'propietario'}
+      </span>
+      {agencyName && <span className="text-sm font-medium text-fg">{agencyName}</span>}
+      {agencyName && ownerName && <span className="text-fg-dim">·</span>}
+      {ownerName && (
+        <span className={agencyName ? 'text-sm text-fg-muted' : 'text-sm font-medium text-fg'}>
+          {ownerName}
+        </span>
+      )}
+    </div>
+  )
+}
+
 function AvaluoCard({ item }: { item: PendingReviewItem }) {
   const router = useRouter()
   const band =
@@ -41,6 +74,7 @@ function AvaluoCard({ item }: { item: PendingReviewItem }) {
       className={`card border-l-4 ${confianzaBorder(item)} p-4 flex items-start gap-4 hover:bg-bg-hover transition-colors cursor-pointer`}
     >
       <div className="flex-1 min-w-0">
+        <AvaluoIdentity item={item} />
         <div className="flex items-baseline gap-2 mb-1 flex-wrap">
           {item.confianza && (
             <Pill tone={CONFIANZA_TONE[item.confianza.nivel]}>

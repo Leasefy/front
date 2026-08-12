@@ -3,13 +3,13 @@ import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CreditCard, CheckCircle, Shield, Sparkle, Lock, ArrowRight, Crown, Robot, ChartBar, Buildings, WarningCircle, ArrowCounterClockwise } from '@phosphor-icons/react';
+import { CheckCircle, Shield, Sparkle, Lock, Crown, Robot, ChartBar, Buildings, WarningCircle, ArrowCounterClockwise } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
 import { PricingTable } from '@/components/pricing';
-import { Button } from '@/components/ui/button';
+import { AgencyCheckoutOverlay } from '@/components/inmobiliaria/AgencyCheckoutOverlay';
 import { useAgencyPlans } from '@/lib/hooks/useSubscription';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
-import { getAgencyPlanById } from '@/lib/constants/subscription-plans';
+import { useAgencyCheckout } from '@/lib/hooks/useAgencyCheckout';
 import type { AgencyPlanId } from '@/lib/types/subscription';
 
 /**
@@ -28,22 +28,37 @@ function AgencyUpgradeContent() {
     : agencyPlanId ?? 'starter') as AgencyPlanId | undefined;
   const [selectedPlan, setSelectedPlan] = useState<AgencyPlanId | null>(null);
 
-  // currentPlan is null when subscription failed to load (currentPlanId is undefined).
-  const currentPlan = currentPlanId ? getAgencyPlanById(currentPlanId) : null;
-  const newPlan = selectedPlan ? getAgencyPlanById(selectedPlan) : null;
+  // Resolve the current/selected plan from the BACKEND catalog (not a static
+  // lookup) so admin-created slugs (contrato 29) surface their real name/price
+  // instead of silently falling back to Starter. Null when unresolved (e.g. the
+  // subscription failed to load, or the slug isn't in the catalog yet).
+  const currentPlan = currentPlanId ? plans.find((p) => p.id === currentPlanId) ?? null : null;
+  const newPlan = selectedPlan ? plans.find((p) => p.id === selectedPlan) ?? null : null;
 
+  // Direct-to-Wompi checkout (avaluo-style, no intermediate page). On success the
+  // subscription is ACTIVE → go to the panel; the overlay shows success first.
+  const { state, error, paymentUrl, popupBlocked, pollError, activate, pay, verifyNow, reset } =
+    useAgencyCheckout(() => router.push('/panel/inmobiliaria'));
+
+  // Tocar "Seleccionar plan" en la card va DIRECTO al pago, sin paso intermedio
+  // (la info del plan ya está en la card). FLAT abre Wompi al toque —`pay()` abre
+  // la pestaña de forma SÍNCRONA dentro del gesto del click, por eso el navegador
+  // no la bloquea—; free/percentage se activan sin cobro; custom (inexistente en
+  // el modelo dinámico) cae al checkout como cotización. El estado se ve en el overlay.
   const handleSelectPlan = (planId: string) => {
-    if (planId !== currentPlanId) {
-      setSelectedPlan(planId as AgencyPlanId);
+    if (planId === currentPlanId) return;
+    if (state === 'processing' || state === 'awaiting') return;
+    const target = plans.find((p) => p.id === planId);
+    if (!target) return;
+    setSelectedPlan(planId as AgencyPlanId);
+    if (target.pricingModel === 'custom') {
+      router.push(`/panel/inmobiliaria/checkout?plan=${planId}`);
+    } else if (target.pricingModel === 'flat') {
+      void pay(planId);
+    } else {
+      void activate(planId);
     }
   };
-
-  const handleCheckout = async () => {
-    if (!selectedPlan) return;
-    router.push(`/panel/inmobiliaria/checkout?plan=${selectedPlan}`);
-  };
-
-  const canUpgrade = selectedPlan && selectedPlan !== currentPlanId;
 
   return (
     <div className="min-h-screen bg-bg">
@@ -131,39 +146,6 @@ function AgencyUpgradeContent() {
           />
         )}
 
-        {/* Selected plan CTA */}
-        {canUpgrade && newPlan && (
-          <div className="mt-8 bg-primary-soft border border-primary/30 rounded-xl p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-card flex items-center justify-center shrink-0">
-                  <CheckCircle className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-semibold text-fg">
-                    Plan seleccionado: {newPlan.name}
-                  </p>
-                  <p className="text-sm text-fg-muted mt-0.5">
-                    {newPlan.pricingModel === 'percentage'
-                      ? `${newPlan.canonPercentage}% del canon administrado`
-                      : newPlan.pricingModel === 'custom'
-                        ? 'Precio a la medida — te contactaremos'
-                        : newPlan.price.monthly != null
-                          ? `$${newPlan.price.monthly.toLocaleString('es-CO')} COP / mes`
-                          : ''}
-                  </p>
-                </div>
-              </div>
-
-              <Button onClick={handleCheckout} hideArrow className="min-w-[200px] justify-center">
-                <CreditCard className="w-4 h-4" />
-                {newPlan.pricingModel === 'custom' ? 'Solicitar cotización' : 'Continuar al pago'}
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-
         {/* Trust indicators */}
         <div className="mt-12 text-center">
           <div className="inline-flex items-center gap-6 px-6 py-4 bg-card rounded-xl border border-border">
@@ -181,6 +163,21 @@ function AgencyUpgradeContent() {
           </div>
         </div>
       </div>
+
+      {/* Direct checkout status overlay (no intermediate page). */}
+      {newPlan && (
+        <AgencyCheckoutOverlay
+          planName={newPlan.name}
+          isPaid={newPlan.pricingModel === 'flat'}
+          state={state}
+          error={error}
+          paymentUrl={paymentUrl}
+          popupBlocked={popupBlocked}
+          pollError={pollError}
+          onVerify={verifyNow}
+          onClose={reset}
+        />
+      )}
     </div>
   );
 }

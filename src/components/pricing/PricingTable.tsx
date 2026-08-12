@@ -89,8 +89,11 @@ export function PricingTable({
                 properties={plan.limits.properties ?? undefined}
                 users={plan.limits.users ?? undefined}
                 popular={plan.highlighted}
-                isFlex={plan.id === 'flex'}
-                isEnterprise={plan.id === 'enterprise'}
+                // Card styling derived from the plan's pricing model, not a tier
+                // name (contrato 29): percentage-of-canon → the "todo incluido"
+                // Flex style; custom-quote → the Enterprise style.
+                isFlex={plan.pricingModel === 'percentage'}
+                isEnterprise={plan.pricingModel === 'custom'}
                 selected={plan.id === currentPlanId}
                 noCurrencySymbol={plan.pricingModel !== 'flat'}
                 onSelect={() => handlePlanSelect(plan.id)}

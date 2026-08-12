@@ -43,12 +43,14 @@ const BILLING_MAP: Record<string, BillingCycle> = {
 
 /**
  * Maps the canonical tier from the backend to the frontend PlanId.
- * Reads `plan.tier` (STARTER | PRO | FLEX) — NOT `planId`, which is a UUID
- * pointing to the SubscriptionPlanConfig row.
+ * Reads `plan.tier` (a lowercased slug) — NOT `planId`, which is a UUID pointing
+ * to the SubscriptionPlanConfig row. The slug is PRESERVED as-is (contrato 29 ·
+ * planes dinámicos) so admin-created tiers survive; only an empty tier falls back
+ * to the canonical base 'starter'.
  */
 function mapSubscription(backend: BackendSubscription): DisplaySubscription {
   const tier = (backend.plan?.tier || '').toLowerCase();
-  const planId: PlanId = (['starter', 'pro', 'flex'].includes(tier) ? tier : 'starter') as PlanId;
+  const planId: PlanId = tier || 'starter';
 
   const cycle = backend.cycle ?? backend.billingCycle ?? 'monthly';
   const periodStart = backend.startDate ?? backend.currentPeriodStart ?? new Date().toISOString();

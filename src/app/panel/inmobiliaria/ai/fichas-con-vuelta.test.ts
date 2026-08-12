@@ -17,7 +17,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { readdirSync, readFileSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { basename, join, relative } from 'node:path'
 
 const RAIZ = join(process.cwd(), 'src/app/panel/inmobiliaria/ai')
 
@@ -48,7 +48,8 @@ function fichasDeDetalle(dir: string, encontradas: string[] = []): string[] {
     }
     if (!entrada.name.endsWith('Client.tsx')) continue
     // Sólo las que viven DENTRO de un segmento dinámico: ésas son las fichas.
-    const padre = dir.split('/').pop() ?? ''
+    // `basename` funciona con separadores '/' y '\' (Windows).
+    const padre = basename(dir)
     if (ES_SEGMENTO_DINAMICO.test(padre)) encontradas.push(ruta)
   }
   return encontradas

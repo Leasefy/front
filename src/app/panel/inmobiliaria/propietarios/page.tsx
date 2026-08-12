@@ -18,6 +18,7 @@ import {
   List,
   CaretRight,
   Users,
+  UserCircle,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,8 @@ import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria'
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { Button } from '@/components/ui/button';
 import { TablePagination } from '@/components/ui/pagination';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { SegmentedControl, KpiCard, IconButton } from '@leasefy/cadence';
 
 type ViewMode = 'table' | 'grid';
@@ -173,7 +176,17 @@ function PropietariosContent() {
   const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { propietarios: apiPropietarios } = usePropietarios();
+  // ⚠️ Tomar SÓLO los datos era el defecto: `useApiData` captura el fallo en su
+  // estado y no lo relanza, así que una petición muerta llegaba acá como lista
+  // vacía y la pantalla decía «todavía no tenés propietarios» — afirmando algo
+  // que nadie verificó. `errorCrudo` es el error entero, que es lo que
+  // `FalloDeCarga` necesita para saber si reintentar sirve.
+  const {
+    propietarios: apiPropietarios,
+    isLoading: cargandoPropietarios,
+    errorCrudo: errorPropietarios,
+    refetch: recargarPropietarios,
+  } = usePropietarios();
   const [propietarios, setPropietarios] = useState<Propietario[]>([]);
 
   // Sync with API data
@@ -410,25 +423,41 @@ function PropietariosContent() {
 
         {/* Content */}
         <div>
-          {viewMode === 'table' ? (
-            <PropietarioTable
-              propietarios={paginationData.paginatedItems}
-              onView={handleView}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onExport={handleExport}
-            />
-          ) : (
-            <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {paginationData.paginatedItems.map((propietario) => (
-                <PropietarioCard
-                  key={propietario.id}
-                  propietario={propietario}
-                  onClick={() => handleView(propietario)}
-                />
-              ))}
-            </div>
-          )}
+          <EstadoDeDatos
+            cargando={cargandoPropietarios}
+            error={errorPropietarios}
+            queEs="los propietarios"
+            onReintentar={recargarPropietarios}
+          >
+            {paginationData.totalItems === 0 ? (
+              /* Sin filtros en esta pantalla: un vacío acá es siempre «todavía
+                 no hay ninguno», y lo útil es crear el primero. */
+              <SinDatos
+                queSon="propietarios"
+                icono={UserCircle}
+                descripcion="Registrá al dueño de un inmueble para poder consignarlo y liquidarle sus pagos."
+                crear={{ label: 'Agregar propietario', onClick: () => setShowAddModal(true) }}
+              />
+            ) : viewMode === 'table' ? (
+              <PropietarioTable
+                propietarios={paginationData.paginatedItems}
+                onView={handleView}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onExport={handleExport}
+              />
+            ) : (
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {paginationData.paginatedItems.map((propietario) => (
+                  <PropietarioCard
+                    key={propietario.id}
+                    propietario={propietario}
+                    onClick={() => handleView(propietario)}
+                  />
+                ))}
+              </div>
+            )}
+          </EstadoDeDatos>
         </div>
 
         {/* Pagination Footer */}

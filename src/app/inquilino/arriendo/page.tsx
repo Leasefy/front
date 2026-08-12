@@ -13,7 +13,7 @@ import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ErrorState } from '@/components/ui/error-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Spinner } from '@/components/ui/spinner';
 
 /**
@@ -23,7 +23,7 @@ export default function ArriendoPage() {
   const { t, locale, formatCurrency } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
-  const { leases, isLoading, error, refetch, getActive } = useLeases();
+  const { leases, isLoading, error, errorCrudo, refetch, getActive } = useLeases();
   const { getNextPayment } = useMyPayments();
 
   const activeLeases = isOnboardingComplete ? getActive() : [];
@@ -91,7 +91,10 @@ export default function ArriendoPage() {
     return (
       <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          <ErrorState description={error} onRetry={refetch} />
+          {/* `ErrorState` mostraba el mensaje crudo del backend y ofrecía
+              reintentar siempre, incluso sobre un 404. `FalloDeCarga` clasifica
+              el fallo y sólo ofrece reintentar cuando puede cambiar algo. */}
+          <FalloDeCarga error={errorCrudo ?? error} queEs="tu arriendo" onReintentar={refetch} />
         </div>
       </div>
     );

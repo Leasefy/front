@@ -2,6 +2,8 @@
  * Property Publishing Types
  */
 
+import type { PlanId } from './subscription';
+
 // ============================================================================
 // Tenant Requirements Types
 // ============================================================================
@@ -180,7 +182,9 @@ export interface PropertyDraft {
 
   // Step 9: Plan Selection
   ownerType: 'propietario' | 'inmobiliaria' | '';
-  selectedPlan: 'starter' | 'pro' | 'flex' | 'enterprise' | '';
+  // '' = sin selección. `PlanId` es un slug abierto (planes dinámicos admin,
+  // contrato 29), así que el plan elegido ya no es un union cerrado de tiers.
+  selectedPlan: PlanId | '';
 }
 
 export interface PublishStep {

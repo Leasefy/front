@@ -200,14 +200,76 @@ export const contractsApi = {
 
   /** POST /contracts - create a new contract (from an APPROVED application) */
   /**
-   * Migrar contratos que ya existían fuera de Leasefy.
+   * Migración de cartera: **preparar → resolver → activar**.
    *
-   * Devuelve el resumen aunque haya filas fallidas: una importación de 1.200
-   * contratos donde falla la 300 no puede tirar las 1.199 restantes. Por eso
-   * NO lanza — el resultado se lee, no se atrapa.
+   * Tres pasos y no uno, porque un import que crea o falla obliga a corregir
+   * el Excel y volver a subirlo por cada dato que falte — y en 1.200 contratos
+   * siempre falta algo.
    */
-  async migrar(contratos: ContratoAMigrar[]): Promise<ResumenMigracion> {
-    return apiClient.post<ResumenMigracion>('/contracts/migrar', { contratos });
+  migracion: {
+    /** 1. Deja las filas listas para revisar. NO crea contratos. */
+    async preparar(contratos: FilaAMigrar[], lote?: string): Promise<ResumenLote> {
+      return apiClient.post<ResumenLote>('/contracts/migrar/preparar', {
+        contratos,
+        lote,
+      });
+    },
+
+    /** 2. La lista de trabajo: qué quedó pendiente y por qué. */
+    async filas(lote?: string): Promise<FilaDeMigracion[]> {
+      const q = lote ? `?lote=${encodeURIComponent(lote)}` : '';
+      return apiClient.get<FilaDeMigracion[]>(`/contracts/migrar/filas${q}`);
+    },
+
+    async resumen(lote?: string): Promise<ResumenLote> {
+      const q = lote ? `?lote=${encodeURIComponent(lote)}` : '';
+      return apiClient.get<ResumenLote>(`/contracts/migrar/resumen${q}`);
+    },
+
+    /** Corregir una fila. Pasa sola a LISTO cuando ya no le falta nada. */
+    async resolver(id: string, cambios: CambiosDeFila): Promise<FilaDeMigracion> {
+      return apiClient.patch<FilaDeMigracion>(`/contracts/migrar/filas/${id}`, cambios);
+    },
+
+    /** Crear el inmueble que el contrato dice tener y no está cargado. */
+    async crearInmueble(
+      id: string,
+      datos: { address: string; city: string; neighborhood?: string },
+    ): Promise<FilaDeMigracion> {
+      return apiClient.post<FilaDeMigracion>(
+        `/contracts/migrar/filas/${id}/inmueble`,
+        datos,
+      );
+    },
+
+    /** Registrar al propietario y consignar. Sin esto no se genera un cobro. */
+    async registrarPropietario(
+      id: string,
+      datos: {
+        nombre: string;
+        documento: string;
+        correo?: string;
+        telefono?: string;
+        comisionPorcentaje?: number;
+      },
+    ): Promise<FilaDeMigracion> {
+      return apiClient.post<FilaDeMigracion>(
+        `/contracts/migrar/filas/${id}/propietario`,
+        datos,
+      );
+    },
+
+    async descartar(id: string): Promise<FilaDeMigracion> {
+      return apiClient.delete<FilaDeMigracion>(`/contracts/migrar/filas/${id}`);
+    },
+
+    /** 3. Convierte en contratos las filas LISTO. Sólo esas. */
+    async activar(lote?: string, invitar = true): Promise<ResumenActivacion> {
+      return apiClient.post<ResumenActivacion>('/contracts/migrar/activar', {
+        lote,
+        invitar,
+      });
+    },
   },
 
   async create(dto: CreateContractDto): Promise<Contract> {
@@ -334,45 +396,94 @@ function mapBackendContractRejection(br: BackendContractRejection): ContractReje
 // Migración de cartera
 // ============================================================================
 
-export interface ContratoAMigrar {
-  propertyId: string;
-  inquilino: {
-    nombre: string;
-    correo: string;
-    telefono?: string;
-    documento?: string;
-  };
+/** Una fila del archivo, como viene. La dirección, no nuestro uuid. */
+export interface FilaAMigrar {
+  direccion: string;
+  inquilino: { nombre: string; correo: string; telefono?: string; documento?: string };
   startDate: string;
   endDate: string;
   monthlyRent: number;
   deposit?: number;
   paymentDay: number;
   /** Sin esto no se puede liquidar: vivienda va sin IVA, comercial con IVA. */
-  usoInmueble: 'VIVIENDA' | 'COMERCIAL';
+  usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
   periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
   comisionPorcentaje?: number;
-  /** Por defecto true: el inquilino migrado sigue usando su portal. */
-  invitar?: boolean;
+}
+
+export type EstadoMigracion = 'PENDIENTE' | 'LISTO' | 'ACTIVADO' | 'DESCARTADO';
+
+/**
+ * Qué le falta a una fila para poder activarse.
+ *
+ * Cada uno tiene su propia salida en pantalla: no alcanza con decir que "algo
+ * falta", porque lo que se hace para resolverlo es distinto en cada caso.
+ */
+export type Faltante =
+  | 'inmueble'
+  | 'inmueble_ambiguo'
+  | 'inmueble_ocupado'
+  | 'propietario'
+  | 'inquilino_correo'
+  | 'inquilino_nombre'
+  | 'fechas'
+  | 'canon'
+  | 'uso';
+
+export interface InmuebleCandidato {
+  id: string;
+  address: string;
+  city: string | null;
+  ocupado?: boolean;
+}
+
+export interface FilaDeMigracion {
+  id: string;
+  lote: string;
+  /** Índice en el archivo, para señalar la línea real que hay que corregir. */
+  fila: number;
+  datos: FilaAMigrar;
+  propertyId: string | null;
+  propietarioId: string | null;
+  tenantId: string | null;
+  candidatos: InmuebleCandidato[];
+  estado: EstadoMigracion;
+  faltantes: Faltante[];
+  contractId: string | null;
+}
+
+export interface CambiosDeFila {
+  propertyId?: string;
+  inquilinoCorreo?: string;
+  inquilinoNombre?: string;
+  usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
+  monthlyRent?: number;
+  startDate?: string;
+  endDate?: string;
+  paymentDay?: number;
+}
+
+export interface ResumenLote {
+  lote: string | null;
+  total: number;
+  pendientes: number;
+  listos: number;
+  activados: number;
+  descartados: number;
 }
 
 export interface ResultadoDeFila {
-  /** Índice en el archivo, para señalar la fila real que hay que corregir. */
   fila: number;
-  estado: 'creado' | 'omitido' | 'fallido';
+  estado: 'creado' | 'fallido';
   contratoId?: string;
   inquilinoInvitado: boolean;
-  /** Si el contrato va a producir cobros. false = su inmueble no tiene consignación. */
-  generaCartera?: boolean;
   motivo?: string;
 }
 
-export interface ResumenMigracion {
-  total: number;
-  creados: number;
-  omitidos: number;
-  fallidos: number;
+export interface ResumenActivacion {
+  intentadas: number;
+  activadas: number;
+  fallidas: number;
   invitados: number;
-  /** Creados que NO van a generar cobros. Se ve igual que "no deben nada". */
-  sinCartera: number;
   resultados: ResultadoDeFila[];
 }

@@ -50,10 +50,12 @@ import {
 } from '@/lib/contratos/columnas-de-contrato'
 import {
   contractsApi,
-  type ContratoAMigrar,
-  type ResumenMigracion,
+  type FilaAMigrar,
+  type FilaDeMigracion,
+  type ResumenActivacion,
+  type ResumenLote,
 } from '@/lib/api/contracts.service'
-import { propertiesApi } from '@/lib/api/properties.service'
+import { FaltantesDeFila } from './FaltantesDeFila'
 import {
   comoEntero,
   comoFecha,
@@ -87,13 +89,16 @@ export function MigrarContratos() {
   const [invitar, setInvitar] = useState(true)
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [resumen, setResumen] = useState<ResumenMigracion | null>(null)
+  const [lote, setLote] = useState<string | null>(null)
+  const [resumen, setResumen] = useState<ResumenLote | null>(null)
+  const [pendientes, setPendientes] = useState<FilaDeMigracion[]>([])
+  const [activacion, setActivacion] = useState<ResumenActivacion | null>(null)
 
   const faltan = useMemo(() => faltantes(mapeo), [mapeo])
 
   const leerArchivo = useCallback(async (archivo: File) => {
     setError(null)
-    setResumen(null)
+    setActivacion(null)
     try {
       const { rows, headers } = await parseSpreadsheetFile(archivo)
       setFilas(rows as Fila[])
@@ -105,33 +110,31 @@ export function MigrarContratos() {
     }
   }, [])
 
-  const importar = useCallback(async () => {
+  const refrescar = useCallback(async (elLote: string) => {
+    const [r, f] = await Promise.all([
+      contractsApi.migracion.resumen(elLote),
+      contractsApi.migracion.filas(elLote),
+    ])
+    setResumen(r)
+    setPendientes(f.filter((x) => x.estado === 'PENDIENTE'))
+  }, [])
+
+  /**
+   * Paso 1: preparar. NO crea contratos.
+   *
+   * La dirección viaja como texto, no como uuid: el sistema del que se migra
+   * no conoce nuestros ids, y resolverla es justamente lo que el back hace con
+   * cuidado —pidiendo desempatar cuando dos inmuebles comparten dirección en
+   * vez de elegir uno y quedar perfecto y equivocado.
+   */
+  const preparar = useCallback(async () => {
     setCargando(true)
     setError(null)
     try {
-      /*
-       * El archivo trae la DIRECCIÓN del inmueble, no su id: el sistema viejo
-       * no conoce nuestros uuid. Hay que resolverla contra el portafolio ya
-       * cargado — por eso migrar inmuebles va primero.
-       */
-      const inmuebles = await propertiesApi.getMine()
-      const porDireccion = new Map(
-        inmuebles.map((p) => [normalizar(p.address ?? ''), p.id]),
-      )
-
-      const contratos: ContratoAMigrar[] = []
-      const sinInmueble: number[] = []
-
-      filas.forEach((fila, i) => {
+      const aMigrar: FilaAMigrar[] = filas.map((fila) => {
         const v = (campo: CampoDeContrato) => valorDe(fila, mapeo, campo)
-        const direccion = normalizar(String(v('direccionInmueble') ?? ''))
-        const propertyId = porDireccion.get(direccion)
-        if (!propertyId) {
-          sinInmueble.push(i)
-          return
-        }
-        contratos.push({
-          propertyId,
+        return {
+          direccion: String(v('direccionInmueble') ?? ''),
           inquilino: {
             nombre: String(v('inquilinoNombre') ?? ''),
             correo: String(v('inquilinoCorreo') ?? ''),
@@ -146,41 +149,57 @@ export function MigrarContratos() {
           usoInmueble: comoUso(v('uso')),
           comisionPorcentaje:
             v('comision') != null ? Number(v('comision')) || undefined : undefined,
-          invitar,
-        })
+        }
       })
 
-      const r = await contractsApi.migrar(contratos)
-
-      /*
-       * Las filas cuyo inmueble no encontramos NO llegaron al back, así que su
-       * ausencia no aparecería en el resumen. Sumarlas acá es lo que evita que
-       * la pantalla diga "800 procesados" cuando el archivo traía 1.200.
-       */
-      setResumen({
-        ...r,
-        total: filas.length,
-        fallidos: r.fallidos + sinInmueble.length,
-        sinCartera: r.sinCartera,
-        resultados: [
-          ...r.resultados,
-          ...sinInmueble.map((fila) => ({
-            fila,
-            estado: 'fallido' as const,
-            inquilinoInvitado: false,
-            motivo: 'No encontramos ese inmueble en tu portafolio',
-          })),
-        ],
-      })
+      const elLote = `lote-${filas.length}-${aMigrar[0]?.direccion?.slice(0, 8) ?? 'x'}`
+      const r = await contractsApi.migracion.preparar(aMigrar, elLote)
+      setLote(elLote)
+      setResumen(r)
+      await refrescar(elLote)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos importar los contratos.')
+      setError(e instanceof Error ? e.message : 'No pudimos preparar la migración.')
     } finally {
       setCargando(false)
     }
-  }, [filas, mapeo, invitar])
+  }, [filas, mapeo, refrescar])
 
-  if (resumen) {
-    return <Reporte resumen={resumen} onVolver={() => setResumen(null)} />
+  const activar = useCallback(async () => {
+    if (!lote) return
+    setCargando(true)
+    setError(null)
+    try {
+      setActivacion(await contractsApi.migracion.activar(lote, invitar))
+      await refrescar(lote)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No pudimos activar.')
+    } finally {
+      setCargando(false)
+    }
+  }, [lote, invitar, refrescar])
+
+  // ── Ya se preparó: lista de trabajo ──────────────────────────────────────
+  if (resumen && lote) {
+    return (
+      <ListaDeTrabajo
+        resumen={resumen}
+        pendientes={pendientes}
+        activacion={activacion}
+        invitar={invitar}
+        setInvitar={setInvitar}
+        cargando={cargando}
+        error={error}
+        onActivar={() => void activar()}
+        onFilaResuelta={() => void refrescar(lote)}
+        onOtroArchivo={() => {
+          setResumen(null)
+          setLote(null)
+          setFilas([])
+          setMapeo([])
+          setActivacion(null)
+        }}
+      />
+    )
   }
 
   return (
@@ -224,7 +243,7 @@ export function MigrarContratos() {
             </h2>
             <p className="text-xs text-muted-foreground">
               {filas.length} contratos en el archivo. Revisá el mapeo antes de
-              importar: «arrendador» es el propietario y «arrendatario» es el
+              seguir: «arrendador» es el propietario y «arrendatario» es el
               inquilino, y se parecen demasiado.
             </p>
           </div>
@@ -268,39 +287,18 @@ export function MigrarContratos() {
                 <p className="text-muted-foreground">
                   {faltan.map((c) => NOMBRE_DE_CAMPO[c]).join(' · ')}
                 </p>
-                {faltan.includes('uso') ? (
-                  <p className="text-xs text-muted-foreground">
-                    Sin el uso del inmueble no podemos liquidar: el arrendamiento
-                    de vivienda está excluido de IVA y el comercial no.
-                  </p>
-                ) : null}
               </div>
             </div>
           ) : null}
 
-          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3">
-            <Checkbox
-              id="invitar-inquilinos"
-              checked={invitar}
-              onCheckedChange={(c) => setInvitar(c === true)}
-              className="mt-0.5"
-            />
-            <span className="text-sm text-foreground/80">
-              Invitar a los inquilinos al portal
-              <span className="block text-xs text-muted-foreground">
-                Se manda por tandas, no todo de golpe. Si lo dejás apagado, los
-                inquilinos quedan creados con su contrato pero sin recibir nada.
-              </span>
-            </span>
-          </label>
-
+          {/* No dice "importar": todavía no se crea nada. */}
           <Button
-            onClick={() => void importar()}
+            onClick={() => void preparar()}
             disabled={faltan.length > 0 || filas.length === 0 || cargando}
             isLoading={cargando}
             hideArrow
           >
-            Importar {filas.length} contratos
+            Revisar {filas.length} contratos
           </Button>
         </Card>
       ) : null}
@@ -308,102 +306,114 @@ export function MigrarContratos() {
   )
 }
 
-function Reporte({
+/**
+ * La lista de trabajo.
+ *
+ * Es el corazón del rediseño: en vez de un reporte de lo que falló, una lista
+ * de lo que falta con la salida al lado. Nada se perdió y nada se creó todavía.
+ */
+function ListaDeTrabajo({
   resumen,
-  onVolver,
+  pendientes,
+  activacion,
+  invitar,
+  setInvitar,
+  cargando,
+  error,
+  onActivar,
+  onFilaResuelta,
+  onOtroArchivo,
 }: {
-  resumen: ResumenMigracion
-  onVolver: () => void
+  resumen: ResumenLote
+  pendientes: FilaDeMigracion[]
+  activacion: ResumenActivacion | null
+  invitar: boolean
+  setInvitar: (v: boolean) => void
+  cargando: boolean
+  error: string | null
+  onActivar: () => void
+  onFilaResuelta: () => void
+  onOtroArchivo: () => void
 }) {
-  const problemas = resumen.resultados.filter((r) => r.estado !== 'creado')
-
   return (
-    <Card className="space-y-5 p-6" data-testid="reporte-migracion">
-      <div className="grid gap-3 sm:grid-cols-4">
-        <Dato etiqueta="En el archivo" valor={resumen.total} />
-        <Dato etiqueta="Creados" valor={resumen.creados} tono="ok" />
-        <Dato etiqueta="Ya estaban" valor={resumen.omitidos} />
-        <Dato etiqueta="Fallaron" valor={resumen.fallidos} tono="mal" />
-      </div>
-
-      {resumen.sinCartera > 0 ? (
-        /*
-         * Los cobros se generan desde la consignación del inmueble, no desde
-         * el contrato. Callar esto dejaría a la inmobiliaria mirando una
-         * cartera vacía que se lee igual que "nadie te debe nada".
-         */
-        <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft p-3">
-          <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-          <div className="space-y-1 text-sm text-foreground">
-            <p className="font-medium">
-              {resumen.sinCartera}{' '}
-              {resumen.sinCartera === 1 ? 'contrato entró' : 'contratos entraron'} sin
-              cartera
-            </p>
-            <p className="text-muted-foreground">
-              Sus inmuebles no tienen una consignación activa, y los cobros se
-              generan desde ahí. Los contratos quedaron cargados, pero no van a
-              producir cobros hasta que consignes esos inmuebles.
-            </p>
-          </div>
+    <div className="space-y-6" data-testid="lista-de-trabajo">
+      <Card className="space-y-4 p-6">
+        <div className="grid gap-3 sm:grid-cols-4">
+          <Dato etiqueta="En el archivo" valor={resumen.total} />
+          <Dato etiqueta="Listos" valor={resumen.listos} tono="ok" />
+          <Dato etiqueta="Les falta algo" valor={resumen.pendientes} tono="mal" />
+          <Dato etiqueta="Ya activados" valor={resumen.activados} />
         </div>
-      ) : null}
 
-      {resumen.invitados > 0 ? (
-        <p className="flex items-start gap-2 text-sm text-muted-foreground">
-          <Info className="mt-0.5 h-4 w-4 shrink-0" />
-          Se invitaron {resumen.invitados} inquilinos al portal.
-        </p>
-      ) : null}
+        {resumen.listos > 0 ? (
+          <>
+            <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3">
+              <Checkbox
+                id="invitar-inquilinos"
+                checked={invitar}
+                onCheckedChange={(c) => setInvitar(c === true)}
+                className="mt-0.5"
+              />
+              <span className="text-sm text-foreground/80">
+                Invitar a los inquilinos al portal
+                <span className="block text-xs text-muted-foreground">
+                  Se manda por tandas, no todo de golpe.
+                </span>
+              </span>
+            </label>
+            <Button onClick={onActivar} disabled={cargando} isLoading={cargando} hideArrow>
+              Activar {resumen.listos} contratos
+            </Button>
+          </>
+        ) : null}
 
-      {problemas.length > 0 ? (
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-foreground">Qué revisar</h3>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fila</TableHead>
-                  <TableHead>Qué pasó</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {problemas.map((r) => (
-                  <TableRow key={`${r.fila}-${r.estado}`}>
-                    {/* +1: en el archivo la primera fila de datos es la 2, no la 0. */}
-                    <TableCell className="tabular-nums">{r.fila + 2}</TableCell>
-                    <TableCell className="text-sm">
-                      <span className="inline-flex items-center gap-1.5">
-                        {r.estado === 'fallido' ? (
-                          <XCircle className="h-4 w-4 text-destructive" />
-                        ) : (
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        {r.motivo}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Corregí esas filas y volvé a subir el mismo archivo: los que ya
-            entraron no se duplican.
+        {resumen.listos === 0 && resumen.pendientes > 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Ninguno se puede activar todavía. Resolvé lo de abajo y van pasando
+            a listos solos.
           </p>
-        </div>
-      ) : (
-        <p className="flex items-center gap-2 text-sm text-foreground">
-          <CheckCircle className="h-4 w-4 text-success" weight="fill" />
-          Entraron todos.
-        </p>
-      )}
+        ) : null}
 
-      <Button variant="outline" onClick={onVolver} hideArrow>
-        Importar otro archivo
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      </Card>
+
+      {activacion ? (
+        <Card className="space-y-2 p-6" data-testid="resultado-activacion">
+          <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <CheckCircle className="h-4 w-4 text-success" weight="fill" />
+            {activacion.activadas} contratos activados
+            {activacion.invitados > 0 ? ` · ${activacion.invitados} inquilinos invitados` : ''}
+          </p>
+          {activacion.fallidas > 0 ? (
+            <ul className="space-y-1 text-sm text-muted-foreground">
+              {activacion.resultados
+                .filter((r) => r.estado === 'fallido')
+                .map((r) => (
+                  <li key={r.fila}>Fila {r.fila + 2}: {r.motivo}</li>
+                ))}
+            </ul>
+          ) : null}
+        </Card>
+      ) : null}
+
+      {pendientes.map((f) => (
+        <Card key={f.id} className="space-y-3 p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-sm font-medium text-foreground">
+              {/* +2: en el archivo la primera fila de datos es la 2. */}
+              Fila {f.fila + 2} · {f.datos.inquilino?.nombre || 'sin nombre'}
+            </p>
+            <p className="text-xs text-muted-foreground">{f.datos.direccion}</p>
+          </div>
+          <FaltantesDeFila fila={f} onResuelta={onFilaResuelta} />
+        </Card>
+      ))}
+
+      <Button variant="outline" onClick={onOtroArchivo} hideArrow>
+        Subir otro archivo
         <ArrowRight className="ml-1.5 h-4 w-4" />
       </Button>
-    </Card>
+    </div>
   )
 }
 

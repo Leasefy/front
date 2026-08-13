@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+
 import {
   fetchAprobacion,
   parseAprobacion,
@@ -7,13 +8,21 @@ import {
   DIAS_POR_VENCER,
   seLePuedePrometerSinCodeudor,
 } from './aprobacion.service'
+import { ApiError, apiClient } from './client'
 
-function mockFetch(status: number, body: unknown) {
-  return vi.fn().mockResolvedValue({
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => body,
-  } as Response)
+/*
+ * Se espía el cliente REAL, y el spy se crea dentro de cada test.
+ *
+ * Dos cosas que costaron encontrar:
+ *  - Con `vi.mock('./client') + importActual`, el `ApiError` del test y el del
+ *    servicio son CLASES DISTINTAS (dos instancias del módulo), así que el
+ *    `instanceof` del servicio daba false y el 404 se propagaba.
+ *  - Con el spy creado a nivel de módulo + `mockReset()` en `beforeEach`, los
+ *    casos que rechazan quedaban reportados como error suelto del archivo.
+ *    Creándolo por test, cada uno es dueño de su doble.
+ */
+function espiarGet() {
+  return vi.spyOn(apiClient, 'get')
 }
 
 const OK = {
@@ -24,106 +33,71 @@ const OK = {
   resueltoEn: '2026-08-01T00:00:00.000Z',
 }
 
-describe('fetchAprobacion — postura de producción', () => {
-  const realFetch = globalThis.fetch
-  beforeEach(() => {
-    vi.stubEnv('NEXT_PUBLIC_AGENT_URL', 'http://agent.test')
-    vi.stubEnv('NEXT_PUBLIC_USE_MOCK_API', undefined)
-  })
+/**
+ * ── Acá vivían los tests del fixture ─────────────────────────────────────
+ *
+ * `mockAprobacion()` fabricaba una aprobación de $2.400.000 SIN marca de demo
+ * —a diferencia del funnel, que viaja con `stubMode`— así que la pantalla la
+ * mostraba como un hecho y el catálogo filtraba inmuebles reales contra un
+ * techo inventado. Existía porque el endpoint no estaba: daba 404 en el
+ * agente.
+ *
+ * Ahora está, en el back (`GET /tenant/aprobacion`). El fixture se borró y
+ * estos tests pasaron a cubrir lo único que importa de este cliente: que
+ * pregunte al lugar correcto, que "todavía no te estudiaste" NO sea un error,
+ * y que un fallo de verdad se propague en vez de convertirse en un número.
+ */
+describe('fetchAprobacion', () => {
   afterEach(() => {
-    globalThis.fetch = realFetch
+    vi.restoreAllMocks()
     vi.unstubAllEnvs()
   })
 
-  /*
-   * El caso que motivó la guarda de `NODE_ENV`. `mockAprobacion()` devuelve un
-   * `Aprobacion` **sin ninguna marca de demo** —a diferencia del funnel, que
-   * viaja con `stubMode`— así que la pantalla lo muestra como un hecho y el
-   * catálogo filtra propiedades reales contra un techo inventado. Alcanzaba con
-   * que `NEXT_PUBLIC_AGENT_URL` faltara en el deploy para fabricarle a una
-   * persona real una aprobación de $2.400.000 que nadie le dio.
-   */
-  it('en producción NO fabrica una aprobación aunque falte la URL del agente', async () => {
-    vi.stubEnv('NODE_ENV', 'production')
-    vi.stubEnv('NEXT_PUBLIC_AGENT_URL', '')
-    const f = mockFetch(404, {})
-    globalThis.fetch = f
+  it('le pregunta al back, no al agente', async () => {
+    const getMock = espiarGet().mockResolvedValue(OK)
 
     const r = await fetchAprobacion()
 
-    expect(f).toHaveBeenCalledTimes(1) // intentó de verdad, no cortó al mock
-    expect(r.estado).toBe('sin_estudio')
-    expect(r.topeAprobadoCop).toBeNull()
-  })
-
-  it('en producción tampoco fabrica con el override de mock puesto', async () => {
-    vi.stubEnv('NODE_ENV', 'production')
-    vi.stubEnv('NEXT_PUBLIC_USE_MOCK_API', 'true')
-    const f = mockFetch(404, {})
-    globalThis.fetch = f
-
-    const r = await fetchAprobacion()
-
-    expect(f).toHaveBeenCalledTimes(1)
-    expect(r.estado).toBe('sin_estudio')
-  })
-
-  it('con la URL del agente puesta y sin override, pega de verdad', async () => {
-    const f = mockFetch(200, OK)
-    globalThis.fetch = f
-    const r = await fetchAprobacion()
-    expect(f).toHaveBeenCalledTimes(1)
-    expect(String(f.mock.calls[0][0])).toBe('http://agent.test/api/tenant/aprobacion')
+    expect(getMock).toHaveBeenCalledTimes(1)
+    expect(getMock).toHaveBeenCalledWith('/tenant/aprobacion')
     expect(r.topeAprobadoCop).toBe(1_800_000)
   })
 
-  it('"false" explícito tampoco activa el mock', async () => {
-    vi.stubEnv('NEXT_PUBLIC_USE_MOCK_API', 'false')
-    const f = mockFetch(200, OK)
-    globalThis.fetch = f
-    await fetchAprobacion()
-    expect(f).toHaveBeenCalledTimes(1)
-  })
+  it('sin estudio es un estado, no un error: llega con 200 desde el back', async () => {
+    // El back devuelve la forma completa con `sin_estudio`; no hay 404 que
+    // traducir, y por eso tampoco hay excepción que atrapar en la pantalla.
+    espiarGet().mockResolvedValue({ estado: 'sin_estudio', topeAprobadoCop: null })
 
-  it('404 no es error: es el primer estado del recorrido', async () => {
-    globalThis.fetch = mockFetch(404, null)
     const r = await fetchAprobacion()
+
     expect(r.estado).toBe('sin_estudio')
     expect(r.topeAprobadoCop).toBeNull()
   })
 
-  it('un 500 sí falla, con mensaje en español', async () => {
-    globalThis.fetch = mockFetch(500, null)
-    await expect(fetchAprobacion()).rejects.toThrow(/aprobación/i)
-  })
-})
+  it('un 404 de una capa intermedia tampoco rompe', async () => {
+    espiarGet().mockImplementation(async () => {
+      throw new ApiError(404, 'Not Found')
+    })
 
-describe('fetchAprobacion — modo mock', () => {
-  afterEach(() => vi.unstubAllEnvs())
-
-  it('sin agente configurado sirve el fixture, sin tocar la red', async () => {
-    vi.stubEnv('NEXT_PUBLIC_AGENT_URL', '')
-    const f = vi.fn()
-    globalThis.fetch = f
-    const r = await fetchAprobacion()
-    expect(f).not.toHaveBeenCalled()
-    expect(r.estado).toBe('aprobado')
-    expect(r.topeAprobadoCop).toBeGreaterThan(0)
+    await expect(fetchAprobacion()).resolves.toMatchObject({ estado: 'sin_estudio' })
   })
 
-  it('el override fuerza el mock aun con la URL puesta', async () => {
-    vi.stubEnv('NEXT_PUBLIC_AGENT_URL', 'http://agent.test')
+  it('cualquier otro fallo se propaga — no se inventa una aprobación', async () => {
+    espiarGet().mockImplementation(async () => {
+      throw new ApiError(500, 'Boom')
+    })
+
+    await expect(fetchAprobacion()).rejects.toBeInstanceOf(ApiError)
+  })
+
+  it('ni siquiera con el override de mock puesto fabrica algo', async () => {
+    // La env que antes prendía el fixture ya no existe en este camino.
     vi.stubEnv('NEXT_PUBLIC_USE_MOCK_API', 'true')
-    const f = vi.fn()
-    globalThis.fetch = f
-    await fetchAprobacion()
-    expect(f).not.toHaveBeenCalled()
-  })
+    espiarGet().mockImplementation(async () => {
+      throw new ApiError(503, 'Service Unavailable')
+    })
 
-  it('el fixture viene vigente, para que dev no vea siempre una aprobación vencida', async () => {
-    vi.stubEnv('NEXT_PUBLIC_AGENT_URL', '')
-    const r = await fetchAprobacion()
-    expect(diasParaVencer(r.vigenteHasta)).toBeGreaterThan(DIAS_POR_VENCER)
+    await expect(fetchAprobacion()).rejects.toBeInstanceOf(ApiError)
   })
 })
 

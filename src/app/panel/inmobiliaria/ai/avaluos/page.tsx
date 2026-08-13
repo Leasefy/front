@@ -9,10 +9,19 @@
  *  - "Solicitar avalúo" mints a SHAREABLE wizard link (`avaluosApi.solicitar`)
  *    the agency sends to its client; the certificate is issued in the agency's
  *    name. The link is the primary output — NOT an auto-redirect.
- *  - "Casos por etapa / Mis solicitudes" reads the agency's own certificates by
+ *  - "Avalúos de tu inmobiliaria" reads the agency's own certificates by
  *    lifecycle state (`useAgencyAvaluos`) — the SAME closed set the avalúo micro
- *    exposes (borrador|en_revisión|firmado|rechazado|entregado).
- *  - "Actividad reciente" shows the latest requests, unfiltered.
+ *    exposes (borrador|en_revisión|firmado|rechazado|entregado). Deliberately NOT
+ *    called "Mis solicitudes": that is the neighbouring TAB (`./cola`), which
+ *    shows the agent's work-items — otro servicio, otros datos. Two places with
+ *    the same name and different contents leave you unable to tell which you
+ *    are looking at.
+ *
+ * There used to be a third block, "Actividad reciente", calling the same hook a
+ * second time to render the 5 newest rows of the list already shown in full
+ * above it. It added no data, cost a second round-trip, and had no error branch:
+ * with the list failing it announced "Aún no hay actividad reciente" right below
+ * "No pudimos cargar los avalúos". Removed.
  *
  * PRODUCT REALITY (legal-sensitive copy): this is a REMOTE "estimación de valor
  * referencial" generated with AI — there is NO physical visit (the certificate
@@ -20,7 +29,7 @@
  * by a Leasefy reviewer. The copy below must never imply a site visit.
  */
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import {
   Check,
@@ -36,7 +45,8 @@ import type { Icon } from '@phosphor-icons/react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/data-display/EmptyState'
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { SinDatos } from '@/components/estado/SinDatos'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgencyAvaluos } from '@/lib/hooks/useInmobiliaria'
 import { avaluosApi } from '@/lib/api/inmobiliaria.service'
@@ -144,21 +154,25 @@ function AvaluosSala() {
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
-  // Main list — filterable by state, paginated.
-  const { avaluos, total, pageSize, isLoading, error } = useAgencyAvaluos({
+  // La lista de la agencia — filtrable por estado, paginada. UNA sola vez.
+  //
+  // Había una segunda llamada a este mismo hook para pintar «Actividad
+  // reciente», que mostraba las 5 más nuevas de la MISMA lista que ya estaba
+  // completa arriba. Costaba un segundo viaje al servidor (cuatro en total,
+  // porque StrictMode duplica cada uno) para no agregar ni un dato nuevo.
+  //
+  // Y mentía: no tenía rama de error, así que cuando la carga fallaba —hoy
+  // falla, 502: el micro de avalúos no responde— la sección de arriba decía
+  // «No pudimos cargar los avalúos» y la de abajo, con el MISMO pedido
+  // fallado, decía «Aún no hay actividad reciente». Dos frases que se
+  // contradicen a diez centímetros una de otra. Se fue entera.
+  //
+  // `errorCrudo` (el error tal cual, no su mensaje) es lo que necesita
+  // <EstadoDeDatos> para clasificar: un 502 no se cuenta igual que un 403.
+  const { avaluos, total, pageSize, isLoading, errorCrudo, refetch } = useAgencyAvaluos({
     state: activeState || undefined,
     page,
   })
-
-  // "Actividad reciente" — always the latest requests regardless of the filter.
-  const { avaluos: recentAll } = useAgencyAvaluos({ page: 0 })
-  const recent = useMemo(
-    () =>
-      [...recentAll]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 5),
-    [recentAll],
-  )
 
   const onStateChange = (state: string) => {
     setActiveState(state)
@@ -277,10 +291,14 @@ function AvaluosSala() {
               <p className="text-sm font-medium text-warning">
                 Las solicitudes de avalúo están desconectadas
               </p>
+              {/* La frase que estaba acá —«Tus avalúos anteriores se siguen viendo
+                  más abajo»— era falsa: la lista de abajo sale del MISMO servicio
+                  y falla por la misma razón (502). Un aviso no puede prometer lo
+                  que la propia pantalla incumple diez centímetros más abajo. */}
               <p className="text-body-sm text-fg-muted mt-0.5">
-                Este entorno no tiene conectado el servicio de avalúos, así que no podemos abrir el
-                asistente ni generar links para compartir. Tus avalúos anteriores se siguen viendo
-                más abajo.
+                Este entorno no tiene conectado el servicio de avalúos: no podemos abrir el
+                asistente ni generar links para compartir. Escribile a tu contacto de Leasefy para
+                activarlo.
               </p>
             </div>
           </div>
@@ -406,10 +424,15 @@ function AvaluosSala() {
         </p>
       </div>
 
-      {/* ── Casos por etapa / Mis solicitudes ──────────────────────── */}
-      <section className="space-y-4" data-testid="avaluos-mis-solicitudes">
+      {/* ── Los avalúos de la agencia ───────────────────────────────────
+          NO se llama «Mis solicitudes»: ése es el nombre de la pestaña de al
+          lado (`/avaluos/cola`), que muestra OTRA cosa —los work-items del
+          agente— desde otro servicio. Dos lugares distintos con el mismo
+          nombre y datos distintos hacen imposible saber cuál mira uno. La
+          pestaña es un lugar; esta sección es un lugar distinto. */}
+      <section className="space-y-4" data-testid="avaluos-de-la-agencia">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-base font-semibold text-foreground">Mis solicitudes</h2>
+          <h2 className="text-base font-semibold text-foreground">Avalúos de tu inmobiliaria</h2>
         </div>
 
         {/* State filter */}
@@ -434,23 +457,35 @@ function AvaluosSala() {
           })}
         </div>
 
-        {/* Content */}
-        {isLoading ? (
-          <div className="rounded-xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">
-            Cargando avalúos…
-          </div>
-        ) : error ? (
-          <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-6 text-sm text-destructive">
-            No pudimos cargar los avalúos. {error}
-          </div>
-        ) : avaluos.length === 0 ? (
-          <EmptyState
-            icon={FileMagnifyingGlass}
-            title="Todavía no hay avalúos"
-            description="Cuando solicites un avalúo, aparecerá aquí con su estado y valor de mercado."
-          />
-        ) : (
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {/* Los cuatro estados, en un solo marco.
+            Antes eran tres cajas distintas —una por estado— cada una con su
+            propio borde, así que el hueco cambiaba de forma según qué pasara.
+            Y el cartel de error escupía el mensaje del backend tal cual: la
+            agencia leía «Error 502». <EstadoDeDatos> los ordena (cargando →
+            falló → vacío → datos), clasifica el fallo y sólo ofrece reintentar
+            cuando reintentar puede cambiar algo. */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <EstadoDeDatos
+            cargando={isLoading}
+            error={errorCrudo}
+            vacio={avaluos.length === 0}
+            queEs="los avalúos"
+            onReintentar={() => void refetch()}
+            cuandoVacio={
+              // El vacío son DOS: nunca pediste uno, o el filtro de estado no
+              // deja pasar ninguno. Decir «todavía no hay avalúos» cuando hay
+              // tres firmados y estás mirando «Rechazado» es afirmar algo falso,
+              // y deja sin la única salida útil: quitar el filtro.
+              <SinDatos
+                hayFiltros={activeState !== ''}
+                queSon="avalúos"
+                icono={FileMagnifyingGlass}
+                titulo="Todavía no hay avalúos"
+                descripcion="Cuando solicites un avalúo, aparece acá con su estado y su valor de mercado."
+                onLimpiarFiltros={() => onStateChange('')}
+              />
+            }
+          >
             {/* Table header */}
             <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 px-4 py-2.5 bg-muted/40 border-b border-border">
               <span className="text-xs font-medium text-muted-foreground">Estado</span>
@@ -521,39 +556,8 @@ function AvaluosSala() {
                 </div>
               </div>
             )}
-          </div>
-        )}
-      </section>
-
-      {/* ── Actividad reciente ─────────────────────────────────────── */}
-      <section
-        className="rounded-xl border border-border bg-card p-5 space-y-3"
-        data-testid="avaluos-actividad-reciente"
-      >
-        <h2 className="text-sm font-semibold text-foreground">Actividad reciente</h2>
-        {recent.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Aún no hay actividad reciente.</p>
-        ) : (
-          <ul className="divide-y divide-border">
-            {recent.map((item) => {
-              const meta = stateMeta(item.state)
-              return (
-                <li key={item.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center gap-3">
-                  <Badge variant={meta.variant}>{meta.label}</Badge>
-                  <span className="flex-1 min-w-0 text-sm text-foreground truncate">
-                    {item.ownerName?.trim() || item.city || 'Inmueble'} ·{' '}
-                    <span className="text-muted-foreground">
-                      {item.valueCop == null ? 'Sin valor' : formatCurrency(item.valueCop)}
-                    </span>
-                  </span>
-                  <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
-                    {formatDate(item.createdAt)}
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
-        )}
+          </EstadoDeDatos>
+        </div>
       </section>
     </div>
   )

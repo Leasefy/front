@@ -6894,7 +6894,7 @@
             "solicitarTitle": "Solicitar un avalúo",
             "solicitarDetalle": "Generás un link para compartir, tu cliente carga los datos del inmueble y paga en línea. El avalúo sale a nombre de tu inmobiliaria.",
             "solicitarCta": "Solicitar avalúo",
-            "solicitarUnavailable": "El asistente de solicitudes aún no está habilitado en este entorno. Escríbele a tu contacto Leasefy para activarlo.",
+            "solicitarUnavailable": "Este entorno no tiene conectado el servicio de avalúos. Escribile a tu contacto de Leasefy para activarlo.",
             "solicitarProximamente": "Próximamente",
             "comoFunciona": {
               "title": "¿Cómo funciona?",

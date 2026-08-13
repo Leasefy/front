@@ -6893,7 +6893,7 @@
             "solicitarTitle": "Request an appraisal",
             "solicitarDetalle": "Mint a shareable link; your client enters the property details and pays online. The appraisal is issued in your agency's name.",
             "solicitarCta": "Request appraisal",
-            "solicitarUnavailable": "The request wizard isn't enabled in this environment yet. Reach out to your Leasefy contact to activate it.",
+            "solicitarUnavailable": "This environment has no appraisal service connected. Reach out to your Leasefy contact to activate it.",
             "solicitarProximamente": "Coming soon",
             "comoFunciona": {
               "title": "How does it work?",

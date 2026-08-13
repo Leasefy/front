@@ -143,14 +143,35 @@ donde ese botón está deshabilitado — una salida a otra puerta cerrada.
 
 9 tests, los dos guards verificados por sabotaje.
 
-**Hallazgo sin tocar**: 10 de las 18 claves i18n de esta página son huérfanas.
-El Resumen hardcodea su copy (es la revisada legalmente; la de i18n es más
-vieja y distinta), así que cambiar a inglés traduce dos de las tres pestañas
-del workspace. Migrarlo sería cambiar copy sensible, no mover strings.
+## 8. El i18n del Resumen (`ac700ae1`)
+
+Nico pidió migrarlo. Eran **10 claves huérfanas de 18**, y el Resumen era la
+única pantalla del workspace que se quedaba en español al cambiar de idioma.
+
+> **La regla: se migra lo que está EN PANTALLA, no lo que está en el JSON.**
+> Las claves ya existían con textos más viejos y distintos; adoptarlos habría
+> cambiado en silencio copy revisado legalmente sobre un servicio que declara
+> «sin visita física».
+
+50 claves en los dos idiomas · 5 huérfanas borradas (una, `estado`, tenía el
+vocabulario de work-items, no el del certificado) · Anterior/Siguiente/Todos/
+Copiado a `common.*` · el aviso y el vacío de la cola comparten UNA clave, que
+antes eran dos frases parecidas, una en voseo y otra en tuteo.
+
+Dos cosas que sólo aparecen al hacerlo:
+
+- **El valor del backend no siempre sirve de clave**: el micro manda
+  `en_revisión`, con tilde. Cada estado lleva la suya y la constante guarda el
+  puente, no el texto.
+- **El umbral del 15% de los tests de claves hermanos no alcanza**: pegué 6
+  strings españoles de 50 (12%) en `en.json` y **pasaba**. Acá la guardia es
+  exacta.
+
+`src/lib/i18n/claves-avaluos.test.ts` congela las 50; 4 sabotajes verificados.
 
 ## Lo que queda
 
-- **PR front #87 (21 commits) y PR back #27 (2 commits)**, esperando a Víctor.
+- **PR front #87 (23 commits) y PR back #27 (2 commits)**, esperando a Víctor.
 - **Avalúos sigue desconectado de punta a punta**: nada en `:3003`, y aunque
   se levante el micro le falta `list/by-identity` e ignora `?agency=`. La
   pantalla ya lo dice sin contradecirse; el servicio sigue sin existir.

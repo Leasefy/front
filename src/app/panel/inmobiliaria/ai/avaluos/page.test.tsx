@@ -53,6 +53,13 @@ vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children: React.ReactNode }) => children,
 }))
 
+// ── i18n real (es.json), no `t: (k) => k` ─────────────────────────────────
+// Todo el copy de esta pantalla vive ahora en el diccionario. Con el stub que
+// resuelve contra el es.json de verdad, las aserciones en español de abajo
+// dejan de comparar contra literales del componente y pasan a verificar lo que
+// el diccionario efectivamente devuelve — que es lo que ve la agencia.
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'))
+
 // ── La lista, controlable por test ────────────────────────────────────────
 // Misma forma que devuelve `useApiData`: `errorCrudo` es el error TAL CUAL
 // (lo que <EstadoDeDatos> necesita para clasificar), `error` es su mensaje.
@@ -81,6 +88,8 @@ vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 
 // ── La página, DESPUÉS de los mocks ───────────────────────────────────────
 import AvaluosSalaPage from './page'
+// El mismo `t` que usa la página: resuelve contra el es.json real.
+import { t } from '@/lib/i18n/i18n-test-stub'
 
 let container: HTMLDivElement
 let root: Root
@@ -189,6 +198,15 @@ describe('Avalúos — la pantalla no se contradice', () => {
     const aviso = container.querySelector(BANNER)?.textContent ?? ''
     expect(aviso).not.toContain('más abajo')
     expect(aviso.length).toBeGreaterThan(0)
+  })
+
+  it('(8) el aviso y el vacío de la cola dicen la MISMA frase', async () => {
+    // Las dos pantallas hablan del mismo servicio caído. Si cada una tuviera su
+    // redacción, se despegarían con el tiempo: una sola clave para las dos.
+    await montar()
+
+    const aviso = container.querySelector(BANNER)?.textContent ?? ''
+    expect(aviso).toContain(t('inmobiliaria.ai.workspace.pages.avaluos.solicitarUnavailable'))
   })
 
   it('(6) vacío con un filtro puesto ofrece quitarlo, no «creá el primero»', async () => {

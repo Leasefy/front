@@ -26,7 +26,17 @@
  * PRODUCT REALITY (legal-sensitive copy): this is a REMOTE "estimación de valor
  * referencial" generated with AI — there is NO physical visit (the certificate
  * itself states "No se realizó visita física") — and it is reviewed and signed
- * by a Leasefy reviewer. The copy below must never imply a site visit.
+ * by a Leasefy reviewer. The copy must never imply a site visit.
+ *
+ * ⚠️ That copy now lives in `es.json`/`en.json` under
+ * `inmobiliaria.ai.workspace.pages.avaluos`, NOT in this file. It used to be
+ * hardcoded here while the same keys sat in both dictionaries with OLDER,
+ * different wording — so this was the only page in the workspace that stayed
+ * in Spanish when you switched to English, and there were two versions of a
+ * legally reviewed sentence with nothing keeping them in sync. The migration
+ * moved what was ON SCREEN into the dictionaries; it did not adopt the stale
+ * text that was already there. `claves-avaluos.test.ts` freezes the key set in
+ * both locales.
  */
 
 import { useState } from 'react'
@@ -53,11 +63,19 @@ import { avaluosApi } from '@/lib/api/inmobiliaria.service'
 import { ApiError } from '@/lib/api/client'
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { useI18n } from '@/lib/i18n'
+
+/** Raíz del diccionario de esta pantalla. */
+const NS = 'inmobiliaria.ai.workspace.pages.avaluos'
 
 // ---------------------------------------------------------------------------
 // State metadata — the real certificate lifecycle states, the SAME closed set
 // the avalúo micro exposes. Mirrors the admin `avaluo-states.ts` template,
 // mapped to the panel's own Badge variants.
+//
+// El valor que manda el micro (`en_revisión`, con tilde) NO sirve como clave de
+// i18n, así que cada estado lleva la suya. Lo que se guarda acá es lo que NO se
+// traduce —la variante del Badge— y el puente al diccionario.
 // ---------------------------------------------------------------------------
 
 const AVALUO_STATES = [
@@ -70,56 +88,47 @@ const AVALUO_STATES = [
 
 type AvaluoStateValue = (typeof AVALUO_STATES)[number]
 
-const STATE_META: Record<
-  AvaluoStateValue,
-  { label: string; variant: React.ComponentProps<typeof Badge>['variant'] }
-> = {
-  borrador: { label: 'Borrador', variant: 'secondary' },
-  'en_revisión': { label: 'En revisión', variant: 'warning' },
-  firmado: { label: 'Firmado', variant: 'success' },
-  rechazado: { label: 'Rechazado', variant: 'destructive' },
-  entregado: { label: 'Entregado', variant: 'default' },
+type BadgeVariant = React.ComponentProps<typeof Badge>['variant']
+
+const STATE_META: Record<AvaluoStateValue, { clave: string; variant: BadgeVariant }> = {
+  borrador: { clave: 'borrador', variant: 'secondary' },
+  'en_revisión': { clave: 'enRevision', variant: 'warning' },
+  firmado: { clave: 'firmado', variant: 'success' },
+  rechazado: { clave: 'rechazado', variant: 'destructive' },
+  entregado: { clave: 'entregado', variant: 'default' },
 }
 
-/** Presentation for a state; an unknown value degrades to a neutral pill. */
-function stateMeta(state: string): {
-  label: string
-  variant: React.ComponentProps<typeof Badge>['variant']
-} {
-  return STATE_META[state as AvaluoStateValue] ?? { label: state, variant: 'secondary' }
+/**
+ * Presentación de un estado. Un valor que no conocemos degrada a píldora
+ * neutra mostrando el valor crudo: inventarle una traducción sería peor.
+ */
+function stateMeta(
+  state: string,
+  t: (key: string) => string,
+): { label: string; variant: BadgeVariant } {
+  const meta = STATE_META[state as AvaluoStateValue]
+  return meta
+    ? { label: t(`${NS}.estados.${meta.clave}`), variant: meta.variant }
+    : { label: state, variant: 'secondary' }
 }
 
-/** Filter tabs: "Todos" ('' → no state filter) + the real lifecycle states. */
-const STATE_TABS: { value: string; label: string }[] = [
-  { value: '', label: 'Todos' },
-  ...AVALUO_STATES.map((s) => ({ value: s, label: STATE_META[s].label })),
-]
+/** Pestañas de filtro: "Todos" ('' → sin filtro) + los estados reales. */
+function stateTabs(t: (key: string) => string): { value: string; label: string }[] {
+  return [
+    { value: '', label: t('common.all') },
+    ...AVALUO_STATES.map((s) => ({ value: s, label: stateMeta(s, t).label })),
+  ]
+}
 
 // ---------------------------------------------------------------------------
 // "¿Cómo funciona?" — the real, truthful journey (no site visit).
 // ---------------------------------------------------------------------------
 
-const COMO_FUNCIONA_STEPS: { icon: Icon; title: string; desc: string }[] = [
-  {
-    icon: ShareNetwork,
-    title: 'Generás y compartís el link',
-    desc: 'Enviás el link a tu cliente; se cargan los datos del inmueble y el pago en línea.',
-  },
-  {
-    icon: ChartLineUp,
-    title: 'Estimación con datos de mercado',
-    desc: 'El motor cruza datos del mercado y genera la estimación de valor referencial, sin visita física.',
-  },
-  {
-    icon: SealCheck,
-    title: 'Revisión y firma',
-    desc: 'Un revisor de Leasefy revisa la estimación y firma el certificado.',
-  },
-  {
-    icon: DownloadSimple,
-    title: 'Certificado firmado',
-    desc: 'Descargás el certificado firmado y llega al correo de la inmobiliaria.',
-  },
+const COMO_FUNCIONA_STEPS: { icon: Icon; clave: string }[] = [
+  { icon: ShareNetwork, clave: 'step1' },
+  { icon: ChartLineUp, clave: 'step2' },
+  { icon: SealCheck, clave: 'step3' },
+  { icon: DownloadSimple, clave: 'step4' },
 ]
 
 // ---------------------------------------------------------------------------
@@ -127,6 +136,7 @@ const COMO_FUNCIONA_STEPS: { icon: Icon; title: string; desc: string }[] = [
 // ---------------------------------------------------------------------------
 
 function AvaluosSala() {
+  const { t } = useI18n()
   const [activeState, setActiveState] = useState('')
   const [page, setPage] = useState(0)
 
@@ -187,11 +197,10 @@ function AvaluosSala() {
       const { wizardUrl } = await avaluosApi.solicitar()
       return wizardUrl
     } catch (err) {
-      // Surface the back's Spanish message (incl. 422 agency missing email/name).
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : 'No pudimos solicitar el avalúo. Intentá de nuevo.'
+      // El mensaje del back se muestra tal cual (incl. el 422 de agencia sin
+      // correo/nombre): lo escribe él en español y es más específico que
+      // cualquier texto nuestro. La clave sólo cubre lo que no es ApiError.
+      const message = err instanceof ApiError ? err.message : t(`${NS}.errorSolicitar`)
       toast.error(message)
       return null
     }
@@ -249,7 +258,7 @@ function AvaluosSala() {
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast.error('No pudimos copiar el link. Copialo manualmente.')
+      toast.error(t(`${NS}.errorCopiar`))
     }
   }
 
@@ -260,11 +269,10 @@ function AvaluosSala() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* ── Header ─────────────────────────────────────────────────── */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Avalúos</h1>
-        <p className="text-sm text-muted-foreground max-w-2xl">
-          Estimación de valor referencial, 100% remota y asistida por IA. Sin visita física: el
-          certificado se genera con datos de mercado y lo firma un revisor de Leasefy.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          {t(`${NS}.salaTitulo`)}
+        </h1>
+        <p className="text-sm text-muted-foreground max-w-2xl">{t(`${NS}.salaDesc`)}</p>
       </header>
 
       {/* ── Solicitar un avalúo ────────────────────────────────────────
@@ -276,7 +284,7 @@ function AvaluosSala() {
         className="rounded-xl border border-border bg-card p-5 space-y-4"
         data-testid="avaluos-solicitar"
       >
-        <h2 className="text-base font-semibold text-foreground">Solicitar un avalúo</h2>
+        <h2 className="text-base font-semibold text-foreground">{t(`${NS}.solicitarTitle`)}</h2>
 
         {!servicioConfigurado && (
           <div
@@ -289,16 +297,18 @@ function AvaluosSala() {
             />
             <div>
               <p className="text-sm font-medium text-warning">
-                Las solicitudes de avalúo están desconectadas
+                {t(`${NS}.desconectadoTitulo`)}
               </p>
-              {/* La frase que estaba acá —«Tus avalúos anteriores se siguen viendo
-                  más abajo»— era falsa: la lista de abajo sale del MISMO servicio
-                  y falla por la misma razón (502). Un aviso no puede prometer lo
-                  que la propia pantalla incumple diez centímetros más abajo. */}
+              {/* `solicitarUnavailable`, la MISMA frase que usa el vacío de la
+                  cola: el servicio está desconectado en un solo lugar del
+                  diccionario, no en dos que se despegan.
+
+                  Lo que decía antes —«Tus avalúos anteriores se siguen viendo
+                  más abajo»— era falso: la lista de abajo sale del MISMO
+                  servicio y falla por la misma razón (502). Un aviso no puede
+                  prometer lo que la pantalla incumple diez centímetros abajo. */}
               <p className="text-body-sm text-fg-muted mt-0.5">
-                Este entorno no tiene conectado el servicio de avalúos: no podemos abrir el
-                asistente ni generar links para compartir. Escribile a tu contacto de Leasefy para
-                activarlo.
+                {t(`${NS}.solicitarUnavailable`)}
               </p>
             </div>
           </div>
@@ -308,9 +318,9 @@ function AvaluosSala() {
           {/* Directo — lo hago yo */}
           <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-4">
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">Solicitar avalúo</p>
+              <p className="text-sm font-semibold text-foreground">{t(`${NS}.solicitarCta`)}</p>
               <p className="text-xs text-muted-foreground leading-snug">
-                Abrí el asistente y cargá los datos del inmueble vos mismo.
+                {t(`${NS}.directoDetalle`)}
               </p>
             </div>
             <Button
@@ -321,17 +331,16 @@ function AvaluosSala() {
               onClick={onSolicitarDirecto}
               data-testid="avaluos-solicitar-directo-cta"
             >
-              {openingWizard ? 'Abriendo asistente…' : 'Solicitar avalúo'}
+              {openingWizard ? t(`${NS}.abriendoAsistente`) : t(`${NS}.solicitarCta`)}
             </Button>
           </div>
 
           {/* Link para compartir — se lo mando a un cliente */}
           <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-4">
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">Generar link para compartir</p>
+              <p className="text-sm font-semibold text-foreground">{t(`${NS}.linkCta`)}</p>
               <p className="text-xs text-muted-foreground leading-snug">
-                Enviá el link a tu cliente para que lo complete; el avalúo saldrá a nombre de tu
-                inmobiliaria.
+                {t(`${NS}.linkDetalle`)}
               </p>
             </div>
             <Button
@@ -344,7 +353,7 @@ function AvaluosSala() {
               data-testid="avaluos-generar-link-cta"
             >
               <ShareNetwork className="size-4" />
-              {generatingLink ? 'Generando link…' : 'Generar link para compartir'}
+              {generatingLink ? t(`${NS}.generandoLink`) : t(`${NS}.linkCta`)}
             </Button>
           </div>
         </div>
@@ -359,15 +368,13 @@ function AvaluosSala() {
           className="rounded-xl border border-border bg-card p-4 space-y-3"
           data-testid="avaluos-share-link"
         >
-          <p className="text-sm text-muted-foreground">
-            Enviá este link a tu cliente; el avalúo saldrá a nombre de tu inmobiliaria.
-          </p>
+          <p className="text-sm text-muted-foreground">{t(`${NS}.linkListoDetalle`)}</p>
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               readOnly
               value={shareUrl}
-              aria-label="Link para compartir el avalúo"
+              aria-label={t(`${NS}.linkAria`)}
               onFocus={(e) => e.currentTarget.select()}
               className="flex-1 min-w-0 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-mono text-foreground truncate"
             />
@@ -376,18 +383,18 @@ function AvaluosSala() {
                 {copied ? (
                   <>
                     <Check className="size-4" weight="bold" />
-                    Copiado
+                    {t('common.copied')}
                   </>
                 ) : (
                   <>
                     <Copy className="size-4" />
-                    Copiar link para compartir
+                    {t(`${NS}.copiarLink`)}
                   </>
                 )}
               </Button>
               <Button asChild variant="outline" hideArrow>
                 <a href={shareUrl} target="_blank" rel="noopener noreferrer">
-                  Abrir ahora
+                  {t(`${NS}.abrirAhora`)}
                 </a>
               </Button>
             </div>
@@ -400,27 +407,32 @@ function AvaluosSala() {
         className="rounded-xl border border-border bg-card p-5 space-y-4"
         data-testid="avaluos-como-funciona"
       >
-        <h2 className="text-base font-semibold text-foreground">¿Cómo funciona?</h2>
+        <h2 className="text-base font-semibold text-foreground">
+          {t(`${NS}.comoFunciona.title`)}
+        </h2>
         <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {COMO_FUNCIONA_STEPS.map((step, i) => {
             const StepIcon = step.icon
             return (
-              <li key={step.title} className="space-y-1.5">
+              <li key={step.clave} className="space-y-1.5">
                 <div className="flex items-center gap-2">
                   <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
                     <StepIcon className="w-4 h-4 text-foreground" weight="duotone" aria-hidden="true" />
                   </span>
                   <span className="text-xs tabular-nums text-muted-foreground">{i + 1}</span>
                 </div>
-                <p className="text-sm font-semibold text-foreground leading-tight">{step.title}</p>
-                <p className="text-xs text-muted-foreground leading-snug">{step.desc}</p>
+                <p className="text-sm font-semibold text-foreground leading-tight">
+                  {t(`${NS}.comoFunciona.${step.clave}.title`)}
+                </p>
+                <p className="text-xs text-muted-foreground leading-snug">
+                  {t(`${NS}.comoFunciona.${step.clave}.desc`)}
+                </p>
               </li>
             )
           })}
         </ol>
         <p className="text-xs text-muted-foreground border-t border-border pt-3">
-          La revisión y la firma del certificado las hace un revisor de Leasefy. No se realiza
-          visita física al inmueble.
+          {t(`${NS}.firmaNota`)}
         </p>
       </div>
 
@@ -432,12 +444,12 @@ function AvaluosSala() {
           pestaña es un lugar; esta sección es un lugar distinto. */}
       <section className="space-y-4" data-testid="avaluos-de-la-agencia">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-base font-semibold text-foreground">Avalúos de tu inmobiliaria</h2>
+          <h2 className="text-base font-semibold text-foreground">{t(`${NS}.listaTitulo`)}</h2>
         </div>
 
         {/* State filter */}
         <div className="flex flex-wrap gap-2">
-          {STATE_TABS.map((tab) => {
+          {stateTabs(t).map((tab) => {
             const active = activeState === tab.value
             return (
               <button
@@ -469,7 +481,7 @@ function AvaluosSala() {
             cargando={isLoading}
             error={errorCrudo}
             vacio={avaluos.length === 0}
-            queEs="los avalúos"
+            queEs={t(`${NS}.queEs`)}
             onReintentar={() => void refetch()}
             cuandoVacio={
               // El vacío son DOS: nunca pediste uno, o el filtro de estado no
@@ -478,28 +490,34 @@ function AvaluosSala() {
               // y deja sin la única salida útil: quitar el filtro.
               <SinDatos
                 hayFiltros={activeState !== ''}
-                queSon="avalúos"
+                queSon={t(`${NS}.queSon`)}
                 icono={FileMagnifyingGlass}
-                titulo="Todavía no hay avalúos"
-                descripcion="Cuando solicites un avalúo, aparece acá con su estado y su valor de mercado."
+                titulo={t(`${NS}.vacioTitulo`)}
+                descripcion={t(`${NS}.vacioDesc`)}
                 onLimpiarFiltros={() => onStateChange('')}
               />
             }
           >
             {/* Table header */}
             <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 px-4 py-2.5 bg-muted/40 border-b border-border">
-              <span className="text-xs font-medium text-muted-foreground">Estado</span>
-              <span className="text-xs font-medium text-muted-foreground">Propietario</span>
-              <span className="text-xs font-medium text-muted-foreground text-right">Valor</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                {t(`${NS}.col.estado`)}
+              </span>
+              <span className="text-xs font-medium text-muted-foreground">
+                {t(`${NS}.col.propietario`)}
+              </span>
+              <span className="text-xs font-medium text-muted-foreground text-right">
+                {t(`${NS}.col.valor`)}
+              </span>
               <span className="text-xs font-medium text-muted-foreground hidden sm:block text-right">
-                Creado
+                {t(`${NS}.col.creado`)}
               </span>
             </div>
 
             {/* Rows */}
             <ul role="list" className="divide-y divide-neutral-100 dark:divide-neutral-800">
               {avaluos.map((item) => {
-                const meta = stateMeta(item.state)
+                const meta = stateMeta(item.state, t)
                 return (
                   <li
                     key={item.id}
@@ -509,7 +527,7 @@ function AvaluosSala() {
 
                     <div className="min-w-0">
                       <p className="text-sm text-foreground truncate">
-                        {item.ownerName?.trim() || 'Propietario sin nombre'}
+                        {item.ownerName?.trim() || t(`${NS}.sinNombre`)}
                       </p>
                       <p className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground truncate">
                         {item.method || '—'}
@@ -531,8 +549,11 @@ function AvaluosSala() {
             {/* Pagination */}
             {(hasPrev || hasNext) && (
               <div className="flex items-center justify-between gap-4 px-4 py-3 border-t border-border">
+                {/* Singular y plural son DOS claves, no una con `{{n}} avalúo(s)`:
+                    el inglés pluraliza distinto y el paréntesis se lee mal en
+                    los dos idiomas. */}
                 <span className="text-xs text-muted-foreground">
-                  {total} {total === 1 ? 'avalúo' : 'avalúos'}
+                  {total === 1 ? t(`${NS}.conteoUno`) : t(`${NS}.conteo`, { n: total })}
                 </span>
                 <div className="flex items-center gap-2">
                   <Button
@@ -542,7 +563,7 @@ function AvaluosSala() {
                     disabled={!hasPrev}
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                   >
-                    Anterior
+                    {t('common.previous')}
                   </Button>
                   <Button
                     variant="outline"
@@ -551,7 +572,7 @@ function AvaluosSala() {
                     disabled={!hasNext}
                     onClick={() => setPage((p) => p + 1)}
                   >
-                    Siguiente
+                    {t('common.next')}
                   </Button>
                 </div>
               </div>

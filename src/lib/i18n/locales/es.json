@@ -6881,21 +6881,50 @@
             }
           },
           "avaluos": {
-            "eyebrow": "Agente · Avalúos",
             "salaTitulo": "Avalúos",
-            "salaDesc": "Pide estimaciones de valor referencial de tus inmuebles sin salir del panel: generás un link, se cargan los datos del inmueble y el pago en línea, el motor cruza datos del mercado y un revisor de Leasefy firma el certificado. Es 100% remoto, sin visita física. Aquí seguís cada solicitud de principio a fin.",
+            "salaDesc": "Estimación de valor referencial, 100% remota y asistida por IA. Sin visita física: el certificado se genera con datos de mercado y lo firma un revisor de Leasefy.",
             "colaTitle": "Mis solicitudes de avalúo",
             "colaDesc": "Cada avalúo que pediste, de principio a fin: solicitud → estimación con datos de mercado → revisión → certificado firmado. Siempre ves el estado al día; la revisión y la firma las hace un revisor de Leasefy. No se realiza visita física.",
             "colaKpiLabel": "Activas",
             "colaEmptyTitle": "Aún no tienes solicitudes",
             "colaEmptyHint": "Pide tu primer avalúo: generás el link, se genera la estimación y aquí sigues cada paso hasta el certificado firmado.",
             "casoColaLabel": "Mis solicitudes",
-            "misSolicitudes": "Mis solicitudes",
             "solicitarTitle": "Solicitar un avalúo",
-            "solicitarDetalle": "Generás un link para compartir, tu cliente carga los datos del inmueble y paga en línea. El avalúo sale a nombre de tu inmobiliaria.",
             "solicitarCta": "Solicitar avalúo",
-            "solicitarUnavailable": "Este entorno no tiene conectado el servicio de avalúos. Escribile a tu contacto de Leasefy para activarlo.",
-            "solicitarProximamente": "Próximamente",
+            "solicitarUnavailable": "Este entorno no tiene conectado el servicio de avalúos: no podemos abrir el asistente ni generar links para compartir. Escribile a tu contacto de Leasefy para activarlo.",
+            "desconectadoTitulo": "Las solicitudes de avalúo están desconectadas",
+            "directoDetalle": "Abrí el asistente y cargá los datos del inmueble vos mismo.",
+            "abriendoAsistente": "Abriendo asistente…",
+            "linkCta": "Generar link para compartir",
+            "linkDetalle": "Enviá el link a tu cliente para que lo complete; el avalúo saldrá a nombre de tu inmobiliaria.",
+            "generandoLink": "Generando link…",
+            "linkListoDetalle": "Enviá este link a tu cliente; el avalúo saldrá a nombre de tu inmobiliaria.",
+            "linkAria": "Link para compartir el avalúo",
+            "copiarLink": "Copiar link para compartir",
+            "abrirAhora": "Abrir ahora",
+            "errorCopiar": "No pudimos copiar el link. Copialo manualmente.",
+            "errorSolicitar": "No pudimos solicitar el avalúo. Intentá de nuevo.",
+            "listaTitulo": "Avalúos de tu inmobiliaria",
+            "queEs": "los avalúos",
+            "queSon": "avalúos",
+            "vacioTitulo": "Todavía no hay avalúos",
+            "vacioDesc": "Cuando solicites un avalúo, aparece acá con su estado y su valor de mercado.",
+            "sinNombre": "Propietario sin nombre",
+            "conteoUno": "1 avalúo",
+            "conteo": "{{n}} avalúos",
+            "col": {
+              "estado": "Estado",
+              "propietario": "Propietario",
+              "valor": "Valor",
+              "creado": "Creado"
+            },
+            "estados": {
+              "borrador": "Borrador",
+              "enRevision": "En revisión",
+              "firmado": "Firmado",
+              "rechazado": "Rechazado",
+              "entregado": "Entregado"
+            },
             "comoFunciona": {
               "title": "¿Cómo funciona?",
               "step1": {
@@ -6915,17 +6944,7 @@
                 "desc": "Descargás el certificado firmado y llega al correo de la inmobiliaria."
               }
             },
-            "firmaNota": "La revisión y la firma del certificado las hace un revisor de Leasefy. No se realiza visita física al inmueble.",
-            "estado": {
-              "detectado": "Solicitado",
-              "sugerido": "En preparación",
-              "en_revision": "En revisión de Leasefy",
-              "aprobado": "Aprobado",
-              "ejecutando": "Estimación en curso",
-              "resuelto": "Certificado entregado",
-              "rechazado": "Rechazado",
-              "fallo": "Con problema"
-            }
+            "firmaNota": "La revisión y la firma del certificado las hace un revisor de Leasefy. No se realiza visita física al inmueble."
           },
           "cobranza": {
             "salaDesc": "El agente trabaja la mora estándar por ti — llamadas, WhatsApp y cartas cumpliendo la ley — y te escala solo los casos críticos.",

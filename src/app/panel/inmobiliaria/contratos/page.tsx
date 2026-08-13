@@ -132,6 +132,11 @@ function ContratosContent() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" asChild hideArrow>
+            <Link href="/panel/inmobiliaria/contratos/migrar">
+              {tx('Migrar', 'Migrate')}
+            </Link>
+          </Button>
+          <Button variant="outline" asChild hideArrow>
             <Link href="/panel/inmobiliaria/contratos/conceptos">
               {tx('Conceptos', 'Concepts')}
             </Link>

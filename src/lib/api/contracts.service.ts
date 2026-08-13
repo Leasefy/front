@@ -199,6 +199,17 @@ export const contractsApi = {
   },
 
   /** POST /contracts - create a new contract (from an APPROVED application) */
+  /**
+   * Migrar contratos que ya existían fuera de Leasefy.
+   *
+   * Devuelve el resumen aunque haya filas fallidas: una importación de 1.200
+   * contratos donde falla la 300 no puede tirar las 1.199 restantes. Por eso
+   * NO lanza — el resultado se lee, no se atrapa.
+   */
+  async migrar(contratos: ContratoAMigrar[]): Promise<ResumenMigracion> {
+    return apiClient.post<ResumenMigracion>('/contracts/migrar', { contratos });
+  },
+
   async create(dto: CreateContractDto): Promise<Contract> {
     const raw = await apiClient.post<BackendContract>('/contracts', dto);
     return mapBackendContract(raw);
@@ -317,4 +328,47 @@ function mapBackendContractRejection(br: BackendContractRejection): ContractReje
     createdAt: br.createdAt,
     rejectedBy: br.rejectedBy,
   };
+}
+
+// ============================================================================
+// Migración de cartera
+// ============================================================================
+
+export interface ContratoAMigrar {
+  propertyId: string;
+  inquilino: {
+    nombre: string;
+    correo: string;
+    telefono?: string;
+    documento?: string;
+  };
+  startDate: string;
+  endDate: string;
+  monthlyRent: number;
+  deposit?: number;
+  paymentDay: number;
+  /** Sin esto no se puede liquidar: vivienda va sin IVA, comercial con IVA. */
+  usoInmueble: 'VIVIENDA' | 'COMERCIAL';
+  periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
+  comisionPorcentaje?: number;
+  /** Por defecto true: el inquilino migrado sigue usando su portal. */
+  invitar?: boolean;
+}
+
+export interface ResultadoDeFila {
+  /** Índice en el archivo, para señalar la fila real que hay que corregir. */
+  fila: number;
+  estado: 'creado' | 'omitido' | 'fallido';
+  contratoId?: string;
+  inquilinoInvitado: boolean;
+  motivo?: string;
+}
+
+export interface ResumenMigracion {
+  total: number;
+  creados: number;
+  omitidos: number;
+  fallidos: number;
+  invitados: number;
+  resultados: ResultadoDeFila[];
 }

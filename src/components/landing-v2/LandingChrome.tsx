@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Inter, Inter_Tight, IBM_Plex_Mono } from "next/font/google";
 
+import { ForceLightMode } from "@/components/providers/ForceLightMode";
 import { LandingHeaderV2 } from "./LandingHeaderV2";
 import LogoDefs from "./LogoDefs";
 import "@/app/(landing)/landing-v2.css";
@@ -22,6 +23,19 @@ import "@/app/(landing)/landing-v2.css";
  *
  * Solo el header: el pie de la landing no aplica a una pantalla de busqueda
  * que ocupa el alto completo.
+ *
+ * ## Siempre claro
+ *
+ * `landing-v2.css` no tiene modo oscuro: `.lv2` fija `--paper` y `--ink` como
+ * valores literales, sin `prefers-color-scheme` ni variante `.dark`. Con el
+ * tema oscuro puesto, el header salia claro sobre una pagina oscura — dos
+ * mitades de dos disenos distintos pegadas por la mitad.
+ *
+ * `ForceLightMode` es la misma pieza que ya usa la home por la misma razon.
+ * Quita `dark` del `<html>` y lo repone al desmontar, asi que el panel
+ * (`/inquilino`, `/panel`) sigue respetando la preferencia. Actua en un
+ * efecto: quien tenga el tema oscuro puede ver un parpadeo en el primer
+ * pintado — el mismo que ya tiene la landing.
  */
 const interTight = Inter_Tight({
   subsets: ["latin"],
@@ -52,7 +66,7 @@ interface LandingChromeProps {
 
 export function LandingChrome({ activo, children }: LandingChromeProps) {
   return (
-    <>
+    <ForceLightMode>
       {/*
        * ⚠️ El scope `.lv2` envuelve SOLO el header — nunca el contenido.
        *
@@ -84,6 +98,6 @@ export function LandingChrome({ activo, children }: LandingChromeProps) {
         <LandingHeaderV2 activo={activo} />
       </div>
       {children}
-    </>
+    </ForceLightMode>
   );
 }

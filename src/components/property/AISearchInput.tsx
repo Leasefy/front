@@ -141,7 +141,20 @@ export function AISearchInput({
               rows={2}
               className={cn(
                 'border-0 bg-transparent shadow-none resize-none px-0 py-0',
-                'focus-visible:ring-0 focus-visible:border-0',
+                /*
+                 * Un solo indicador de foco, no dos.
+                 *
+                 * El contenedor ya marca el foco —borde y halo azules, vía
+                 * `isFocused`— y el Textarea del DS trae ADEMÁS el suyo:
+                 * `focus-visible:shadow-[0_0_0_3px_rgba(26,64,255,.12)]`. Al
+                 * pararse a escribir se veían dos rectángulos redondeados, uno
+                 * dentro del otro. `focus-visible:ring-0` no lo apagaba porque
+                 * el DS no usa el `ring` de Tailwind sino un `box-shadow`.
+                 *
+                 * El foco de teclado NO se pierde: lo sigue mostrando el
+                 * contenedor, que es el control que la persona ve.
+                 */
+                'focus-visible:ring-0 focus-visible:border-0 focus-visible:shadow-none',
                 'text-[15px] md:text-[15px] text-foreground placeholder:text-muted-foreground/70',
                 'leading-relaxed',
                 'disabled:cursor-not-allowed min-h-[52px]'

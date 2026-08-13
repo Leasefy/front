@@ -18,6 +18,7 @@ import type {
   CreditCheck,
   ProtectionOption,
   ApplicationPrefill,
+  ResultadoDeReuso,
 } from './applications.types';
 import type { Application } from '@/lib/types/application';
 import type { TenantApplicationStatus } from '@/lib/types/tenant-application';
@@ -290,6 +291,23 @@ export const applicationsApi = {
    */
   async getPrefill(): Promise<ApplicationPrefill> {
     return apiClient.get<ApplicationPrefill>('/applications/prefill');
+  },
+
+  /**
+   * Adjunta a esta postulación los documentos que el inquilino ya había subido
+   * en postulaciones anteriores. El back copia el archivo (no reapunta el
+   * viejo) y la copia nace sin revisión: el visto bueno que le dio otra
+   * inmobiliaria no se hereda.
+   *
+   * Devuelve qué se copió, qué ya estaba y qué **falló** — quien llame tiene
+   * que mirar `fallaron` antes de dar la postulación por completa.
+   * POST /applications/:id/documents/reuse
+   */
+  async reuseDocuments(applicationId: string): Promise<ResultadoDeReuso> {
+    return apiClient.post<ResultadoDeReuso>(
+      `/applications/${applicationId}/documents/reuse`,
+      {}
+    );
   },
 
   /** Get documents for an application */

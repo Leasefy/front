@@ -420,6 +420,32 @@ export interface ApplicationPrefillEmpty {
   hasPreviousApplication: false;
 }
 
+/**
+ * Un documento que el inquilino ya subió y no hay que volver a pedirle.
+ *
+ * Llega con `uploadedAt` a propósito: la pantalla muestra de cuándo es cada
+ * archivo antes de que la persona confirme. Un extracto bancario de hace ocho
+ * meses sigue siendo un archivo válido, pero no es el extracto que la
+ * aseguradora espera — y reemplazarlo o no es decisión suya, no nuestra.
+ */
+export interface DocumentoReutilizable {
+  /** Tipo del back: ID_DOCUMENT, BANK_STATEMENT, EMPLOYMENT_LETTER… */
+  type: string;
+  originalName: string;
+  size: number;
+  /** ISO-8601 */
+  uploadedAt: string;
+}
+
+/** Resultado de POST /applications/:id/documents/reuse */
+export interface ResultadoDeReuso {
+  copiados: Array<{ id: string; type: string; originalName: string }>;
+  /** Tipos que la postulación ya tenía: no se pisaron. */
+  yaEstaban: string[];
+  /** Tipos cuya copia falló. NO quedaron adjuntos. */
+  fallaron: string[];
+}
+
 /** Returned when the tenant has a previous application; every scalar may be null */
 export interface ApplicationPrefillData {
   hasPreviousApplication: true;
@@ -469,6 +495,14 @@ export interface ApplicationPrefillData {
   } | null;
   hasCoSigner: boolean | null;
   coSigner: Record<string, unknown> | null;
+  /**
+   * Documentos que ya subió y se pueden volver a usar — el más reciente de cada
+   * tipo, sin los que una inmobiliaria rechazó en revisión.
+   *
+   * Opcional porque un back anterior a este contrato no lo manda; ausente se
+   * lee como "no hay ninguno reutilizable", que es el comportamiento de antes.
+   */
+  documents?: DocumentoReutilizable[];
 }
 
 /** Discriminated union returned by GET /applications/prefill */

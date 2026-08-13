@@ -361,6 +361,8 @@ export interface ResultadoDeFila {
   estado: 'creado' | 'omitido' | 'fallido';
   contratoId?: string;
   inquilinoInvitado: boolean;
+  /** Si el contrato va a producir cobros. false = su inmueble no tiene consignación. */
+  generaCartera?: boolean;
   motivo?: string;
 }
 
@@ -370,5 +372,7 @@ export interface ResumenMigracion {
   omitidos: number;
   fallidos: number;
   invitados: number;
+  /** Creados que NO van a generar cobros. Se ve igual que "no deben nada". */
+  sinCartera: number;
   resultados: ResultadoDeFila[];
 }

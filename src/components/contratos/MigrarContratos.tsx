@@ -161,6 +161,7 @@ export function MigrarContratos() {
         ...r,
         total: filas.length,
         fallidos: r.fallidos + sinInmueble.length,
+        sinCartera: r.sinCartera,
         resultados: [
           ...r.resultados,
           ...sinInmueble.map((fila) => ({
@@ -324,6 +325,29 @@ function Reporte({
         <Dato etiqueta="Ya estaban" valor={resumen.omitidos} />
         <Dato etiqueta="Fallaron" valor={resumen.fallidos} tono="mal" />
       </div>
+
+      {resumen.sinCartera > 0 ? (
+        /*
+         * Los cobros se generan desde la consignación del inmueble, no desde
+         * el contrato. Callar esto dejaría a la inmobiliaria mirando una
+         * cartera vacía que se lee igual que "nadie te debe nada".
+         */
+        <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft p-3">
+          <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+          <div className="space-y-1 text-sm text-foreground">
+            <p className="font-medium">
+              {resumen.sinCartera}{' '}
+              {resumen.sinCartera === 1 ? 'contrato entró' : 'contratos entraron'} sin
+              cartera
+            </p>
+            <p className="text-muted-foreground">
+              Sus inmuebles no tienen una consignación activa, y los cobros se
+              generan desde ahí. Los contratos quedaron cargados, pero no van a
+              producir cobros hasta que consignes esos inmuebles.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {resumen.invitados > 0 ? (
         <p className="flex items-start gap-2 text-sm text-muted-foreground">

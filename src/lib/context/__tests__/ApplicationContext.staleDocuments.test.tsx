@@ -5,6 +5,12 @@
  *   (a) create mode + stale slot → guard fires, create NOT called
  *   (b) create mode + real File → create called, uploadDocument called with application id
  *   (c) update mode + stale slot → no error, respondToInfoRequest called
+ *   (d) create mode + slot REUSABLE → no guard, create + reuseDocuments
+ *
+ * (d) es el caso que se rompía: un documento traído de una postulación anterior
+ * también llega sin `File`, y el guard lo confundía con uno perdido al recargar.
+ * A quien reusaba sus documentos se le bloqueaba el envío pidiéndole adjuntar de
+ * nuevo lo que ya había dado.
  */
 
 import * as React from 'react';
@@ -25,6 +31,7 @@ const {
   mockUpdateStep,
   mockRespondToInfoRequest,
   mockUploadDocument,
+  mockReuseDocuments,
 } = vi.hoisted(() => ({
   mockGetConsentText: vi.fn(),
   mockCreate: vi.fn(),
@@ -32,6 +39,7 @@ const {
   mockUpdateStep: vi.fn().mockResolvedValue(undefined),
   mockRespondToInfoRequest: vi.fn().mockResolvedValue(undefined),
   mockUploadDocument: vi.fn().mockResolvedValue(undefined),
+  mockReuseDocuments: vi.fn().mockResolvedValue({ copiados: [], yaEstaban: [], fallaron: [] }),
 }));
 
 vi.mock('@/lib/api/legal.service', () => ({
@@ -48,6 +56,7 @@ vi.mock('@/lib/api/applications.service', () => ({
     uploadDocument: mockUploadDocument,
     updateStep: mockUpdateStep,
     respondToInfoRequest: mockRespondToInfoRequest,
+    reuseDocuments: mockReuseDocuments,
     getPrefill: vi.fn().mockResolvedValue({ hasPreviousApplication: false }),
   },
 }));
@@ -292,5 +301,62 @@ describe('ApplicationContext — stale document guard', () => {
       expect.any(String),
       true
     );
+  });
+
+  // (d) create mode + slot reusable → NO guard, create + reuseDocuments
+  it('deja enviar y copia los documentos cuando la ranura viene de una postulación anterior', async () => {
+    const { getCtx } = await renderProvider({ mode: 'create' });
+
+    // Misma forma que la ranura "perdida" del caso (a) —fileName sin File—,
+    // pero marcada como reusable: el documento vive en el servidor.
+    await act(async () => {
+      getCtx().updateDocuments({
+        idDocument: {
+          fileName: 'cedula.pdf',
+          file: null,
+          uploadedAt: new Date().toISOString(),
+          reusable: true,
+        },
+      });
+    });
+
+    await act(async () => { getCtx().setAcceptTerms(true); });
+    await act(async () => { getCtx().setAuthorizeVerification(true); });
+    await act(async () => { await getCtx().submitApplication(); });
+
+    expect(getCtx().submissionError).toBeNull();
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    // Sin esta llamada la postulación se crea VACÍA: la inmobiliaria no podría
+    // evaluarla, y la pantalla igual diría que quedó enviada.
+    expect(mockReuseDocuments).toHaveBeenCalledWith('app-123');
+    // No hay File que subir: la copia la hace el back.
+    expect(mockUploadDocument).not.toHaveBeenCalled();
+  });
+
+  // Un archivo recién adjuntado le gana al reusado: se sube ANTES de pedir la
+  // copia, y el back sólo copia los tipos que falten.
+  it('sube el archivo nuevo antes de copiar los anteriores', async () => {
+    const orden: string[] = [];
+    mockUploadDocument.mockImplementation(async () => { orden.push('upload'); });
+    mockReuseDocuments.mockImplementation(async () => {
+      orden.push('reuse');
+      return { copiados: [], yaEstaban: [], fallaron: [] };
+    });
+
+    const realFile = new File(['x'], 'extracto.pdf', { type: 'application/pdf' });
+    const { getCtx } = await renderProvider({ mode: 'create' });
+
+    await act(async () => {
+      getCtx().updateDocuments({
+        idDocument: { fileName: 'cedula.pdf', file: null, reusable: true },
+        bankStatement: { fileName: 'extracto.pdf', file: realFile },
+      });
+    });
+
+    await act(async () => { getCtx().setAcceptTerms(true); });
+    await act(async () => { getCtx().setAuthorizeVerification(true); });
+    await act(async () => { await getCtx().submitApplication(); });
+
+    expect(orden).toEqual(['upload', 'reuse']);
   });
 });

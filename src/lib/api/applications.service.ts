@@ -130,7 +130,20 @@ export function mapBackendApplication(ba: BackendApplication): Application {
   };
 }
 
-function generateTrackingCode(id: string): string {
+/**
+ * El código de seguimiento de una postulación.
+ *
+ * No es un dato guardado: se DERIVA del id, con la misma fórmula que usa el
+ * back para las postulaciones de invitado (`applications.service.ts` allá).
+ * Por eso puede vivir en el front sin mentir — dos lados que calculan lo mismo
+ * llegan al mismo código.
+ *
+ * Exportada a propósito: la pantalla de "ya quedaste postulado" mostraba un
+ * `APP-1234` sacado de `Math.random()`, distinto del `AF-XXXXXX` que la persona
+ * veía después en su panel. Le pedíamos guardar un número que no servía para
+ * consultar nada. Un identificador o es el de verdad, o no se muestra.
+ */
+export function codigoDeSeguimiento(id: string): string {
   return 'AF-' + id.replace(/-/g, '').slice(0, 6).toUpperCase();
 }
 
@@ -140,7 +153,7 @@ function mapToTenantView(ba: BackendApplication): TenantApplicationView {
     id: ba.id,
     propertyId: ba.propertyId,
     status: STATUS_TO_TENANT_MAP[ba.status] ?? 'submitted',
-    trackingCode: generateTrackingCode(ba.id),
+    trackingCode: codigoDeSeguimiento(ba.id),
     submittedAt: ba.createdAt,
     updatedAt: ba.updatedAt,
     property: ba.property

@@ -32,6 +32,11 @@ const RANURA_POR_TIPO: Record<string, keyof DocumentInfo> = {
  * tiene un documento que ya vive en el servidor. La validación del wizard
  * (`hasDocument`) da por presente cualquiera de los dos, así que un documento
  * reusado cuenta igual que uno recién subido — que es la verdad: está.
+ *
+ * `reusable: true` no es decorativo: es lo que separa "está en el servidor, hay
+ * que copiarlo" de "se perdió el File al recargar". Sin la marca, el envío del
+ * wizard se bloqueaba pidiendo adjuntar de nuevo justo los documentos que esta
+ * pantalla acaba de dar por presentes.
  */
 export function documentosEnRanuras(
   documentos: DocumentoReutilizable[] | undefined,
@@ -44,6 +49,7 @@ export function documentosEnRanuras(
       file: null,
       fileName: d.originalName,
       uploadedAt: d.uploadedAt,
+      reusable: true,
     }
     ranuras[ranura] = doc
   }

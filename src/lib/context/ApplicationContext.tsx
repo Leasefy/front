@@ -461,6 +461,12 @@ export function ApplicationProvider({
     // Uploading is impossible without the File — block early with a clear message.
     // In update mode, fileName-without-file means the document already exists on
     // the server and skipping the upload is intentional, so the guard is skipped.
+    //
+    // `reusable` es la excepción, y no es un detalle: un documento traído de una
+    // postulación anterior TAMBIÉN llega sin `File`, pero no se perdió nada —
+    // vive en el servidor y lo copia `reuseDocuments` más abajo. Sin distinguir
+    // los dos casos, a quien reusa sus documentos se le bloqueaba el envío
+    // pidiéndole adjuntar de nuevo lo que ya nos había dado.
     if (mode !== 'update') {
       const docs = application.documents;
       const staleSlots = [
@@ -471,7 +477,9 @@ export function ApplicationProvider({
         docs.payStub,
         docs.creditReport,
       ];
-      const hasStaleSlot = staleSlots.some((slot) => slot?.fileName && !slot?.file);
+      const hasStaleSlot = staleSlots.some(
+        (slot) => slot?.fileName && !slot?.file && !slot?.reusable,
+      );
       if (hasStaleSlot) {
         setSubmissionError(
           'Algunos documentos se desconectaron al recargar la página. Volvé al paso de documentos y adjuntalos de nuevo.',
@@ -631,6 +639,30 @@ export function ApplicationProvider({
               const msg = uploadErr instanceof Error ? uploadErr.message : 'Error subiendo documento';
               throw new Error(`No pudimos subir el documento "${type}". ${msg}`);
             }
+          }
+        }
+
+        /*
+         * Los documentos traídos de una postulación anterior no tienen `File`
+         * que subir: se copian en el servidor. Va DESPUÉS de las subidas a
+         * propósito — el back sólo copia los tipos que todavía no están, así
+         * que un archivo recién adjuntado le gana al viejo, que es lo que la
+         * persona espera cuando reemplaza uno.
+         */
+        const hayReusables = [
+          docs.idDocument,
+          docs.bankStatement,
+          docs.incomeProof,
+          docs.employmentLetter,
+          docs.payStub,
+          docs.creditReport,
+        ].some((slot) => slot?.reusable);
+        if (hayReusables) {
+          try {
+            await applicationsApi.reuseDocuments(created.id);
+          } catch (reuseErr) {
+            const msg = reuseErr instanceof Error ? reuseErr.message : 'Error adjuntando documentos';
+            throw new Error(`No pudimos adjuntar tus documentos anteriores. ${msg}`);
           }
         }
       } else {

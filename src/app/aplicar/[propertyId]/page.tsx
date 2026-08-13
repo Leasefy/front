@@ -7,7 +7,7 @@ import { ArrowLeft, CheckCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { WizardShell } from '@/components/wizard/WizardShell';
-import { ConfirmationScreen, generateTrackingCode } from '@/components/wizard/ConfirmationScreen';
+import { PostulacionEnviadaModal } from '@/components/tenant/PostulacionEnviadaModal';
 import { ApplicationProvider, useApplication } from '@/lib/context/ApplicationContext';
 import { useProperty } from '@/lib/hooks/useProperties';
 import { applicationsApi } from '@/lib/api/applications.service';
@@ -219,29 +219,29 @@ export default function AplicarPage({ params }: AplicarPageProps) {
     );
   }
 
-  // Ya quedó postulada desde la pantalla directa.
-  if (postuladaId) {
-    return (
-      <ConfirmationScreen
-        property={property}
-        trackingCode={generateTrackingCode()}
-        isGuest={false}
-      />
-    );
-  }
-
   // A quien ya se estudió, tiene la aprobación vigente, el inmueble le entra en
   // el tope y ya llenó una postulación completa, no hay nada que preguntarle:
   // una pantalla de confirmación en vez de los seis pasos.
+  //
+  // El "ya quedaste postulado" va ENCIMA de esa pantalla, no en lugar de ella:
+  // así queda a la vista a cuál de los inmuebles corresponde.
   if (prefillDirecto && !verFormulario) {
     return (
-      <PostulacionDirecta
-        property={property}
-        prefill={prefillDirecto}
-        consentText={consentText}
-        hrefFormulario={`${pathname}?formulario=1`}
-        onPostulada={setPostuladaId}
-      />
+      <>
+        <PostulacionDirecta
+          property={property}
+          prefill={prefillDirecto}
+          consentText={consentText}
+          hrefFormulario={`${pathname}?formulario=1`}
+          onPostulada={setPostuladaId}
+        />
+        {postuladaId ? (
+          <PostulacionEnviadaModal
+            property={property}
+            applicationId={postuladaId}
+          />
+        ) : null}
+      </>
     );
   }
 
@@ -324,30 +324,30 @@ interface WizardContentProps {
 function WizardContent({ property }: WizardContentProps) {
   const { application, isGuestSubmission } = useApplication();
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [trackingCode, setTrackingCode] = useState('');
 
   // Handle successful submission
   const handleSubmissionComplete = useCallback(() => {
-    setTrackingCode(generateTrackingCode());
     setIsSubmitted(true);
   }, []);
 
-  // Show confirmation screen after successful submission
-  if (isSubmitted || application.status === 'submitted') {
-    return (
-      <ConfirmationScreen
-        property={property}
-        trackingCode={trackingCode || generateTrackingCode()}
-        isGuest={isGuestSubmission}
-        guestEmail={application.personal.email}
-      />
-    );
-  }
+  const enviada = isSubmitted || application.status === 'submitted';
 
+  // El aviso de "ya te postulaste" va encima del formulario, no en su lugar:
+  // detrás queda lo que se acaba de mandar.
   return (
-    <WizardShell property={property}>
-      <WizardStepContent onSubmissionComplete={handleSubmissionComplete} />
-    </WizardShell>
+    <>
+      <WizardShell property={property}>
+        <WizardStepContent onSubmissionComplete={handleSubmissionComplete} />
+      </WizardShell>
+      {enviada ? (
+        <PostulacionEnviadaModal
+          property={property}
+          applicationId={application.id}
+          esInvitado={isGuestSubmission}
+          correoInvitado={application.personal.email}
+        />
+      ) : null}
+    </>
   );
 }
 

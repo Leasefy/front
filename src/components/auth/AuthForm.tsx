@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
+import { SesionYaAbierta } from './SesionYaAbierta';
 import {
   SpinnerGap,
   ArrowLeft,
@@ -136,6 +137,13 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   }, []);
 
   const returnUrl = sanitizeReturnUrl(returnUrlProp || searchParams.get('returnUrl'), '/');
+  /*
+   * Llegar acá con sesión abierta no es un error: pasa cada vez que alguien
+   * toca «Postularme» y la puerta lo manda a entrar. Antes veía un formulario
+   * en blanco, sin señal de que ya estaba dentro y sin forma de continuar.
+   * Se le pregunta con cuál cuenta sigue; `quiereOtraCuenta` es su respuesta.
+   */
+  const [quiereOtraCuenta, setQuiereOtraCuenta] = React.useState(false);
 
   // A fatal auth-bootstrap error (e.g. 409: this email already belongs to
   // another account) is handed over by auth-context via sessionStorage across
@@ -388,6 +396,32 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     : mode === 'reset-sent' ? 'Correo enviado'
     : registerStep === 'confirm-email' ? 'Correo enviado'
     : 'Crear cuenta';
+
+  /*
+   * Sesión ya abierta: se pregunta antes de nada.
+   *
+   * `didAuthenticateInForm` distingue quien acaba de entrar acá —a ese lo
+   * redirige el efecto de arriba— de quien LLEGÓ con sesión. Al segundo se le
+   * ofrecen las dos salidas en vez de mostrarle un formulario vacío.
+   *
+   * Sólo cuando venía a hacer algo (`returnUrl`): entrar a /auth sin destino
+   * es otra cosa y no se toca.
+   */
+  if (
+    !authLoading &&
+    isAuthenticated &&
+    user &&
+    !didAuthenticateInForm.current &&
+    !quiereOtraCuenta &&
+    returnUrl &&
+    returnUrl !== '/'
+  ) {
+    return (
+      <div className={cn('w-full', className)}>
+        <SesionYaAbierta destino={returnUrl} onCambiarDeCuenta={() => setQuiereOtraCuenta(true)} />
+      </div>
+    );
+  }
 
   return (
     <div className={cn('w-full', className)}>

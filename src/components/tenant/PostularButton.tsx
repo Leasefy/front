@@ -103,6 +103,7 @@ export function PostularButton({
         motivo={motivo}
         canonCop={canonCop}
         topeCop={aprobacion?.topeAprobadoCop ?? null}
+        propertyId={propertyId}
       />
     </>
   )
@@ -179,12 +180,14 @@ function AntesDePostularte({
   motivo,
   canonCop,
   topeCop,
+  propertyId,
 }: {
   open: boolean
   onClose: () => void
   motivo: MotivoBloqueo
   canonCop?: number
   topeCop: number | null
+  propertyId: string
 }) {
   const lenis = useLenis()
   useEffect(() => {
@@ -194,9 +197,18 @@ function AntesDePostularte({
   }, [open, lenis])
 
   const copy = COPY[motivo]
-  // Dónde está parada la persona, para volver acá después de entrar.
-  const volverA =
-    typeof window === 'undefined' ? '/' : window.location.pathname + window.location.search
+  /*
+   * Después de entrar, **seguir postulándose** — no volver a la ficha.
+   *
+   * Esto devolvía a `window.location.pathname`, o sea al inmueble. La persona
+   * tocaba «Postularme», la mandábamos a entrar, y al volver aterrizaba en el
+   * mismo punto donde había empezado, teniendo que tocar el botón otra vez.
+   * Desde afuera se lee como «no pasó nada»: hizo el trámite de entrar y no
+   * avanzó un paso.
+   *
+   * El destino es la acción que pidió, no el lugar donde estaba parada.
+   */
+  const volverA = `/aplicar/${propertyId}`
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>

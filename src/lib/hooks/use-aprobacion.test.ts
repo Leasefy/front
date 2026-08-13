@@ -6,10 +6,18 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-const getAccessToken = vi.fn()
+/**
+ * Se dobla `useAuth`, no `getAccessToken`.
+ *
+ * El hook leía el token directo, y en el primer render devuelve null aunque la
+ * persona tenga sesión — nunca preguntaba `/tenant/aprobacion`. Ahora espera a
+ * que el AuthProvider resuelva, así que "todavía no sé" es un tercer estado que
+ * estos tests también tienen que poder representar.
+ */
+const auth = vi.fn()
 const fetchAprobacion = vi.fn()
 
-vi.mock('@/lib/api/client', () => ({ getAccessToken: () => getAccessToken() }))
+vi.mock('@/lib/auth/use-auth', () => ({ useAuth: () => auth() }))
 vi.mock('@/lib/api/aprobacion.service', async () => {
   const real = await vi.importActual<typeof import('@/lib/api/aprobacion.service')>(
     '@/lib/api/aprobacion.service',
@@ -31,15 +39,21 @@ const APROBADO_LOCAL = {
   maxAfianzableCop: 2_800_000,
 }
 
+/** Sesión ya resuelta: hay o no hay, pero se sabe. */
+const conSesion = { isAuthenticated: true, isLoading: false }
+const sinSesion = { isAuthenticated: false, isLoading: false }
+/** Todavía no se sabe — el AuthProvider no contestó. */
+const resolviendo = { isAuthenticated: false, isLoading: true }
+
 describe('de dónde sale la aprobación', () => {
   beforeEach(() => {
     window.localStorage.clear()
-    getAccessToken.mockReset()
+    auth.mockReset()
     fetchAprobacion.mockReset()
   })
 
   it('sin sesión usa el respaldo local', async () => {
-    getAccessToken.mockReturnValue(null)
+    auth.mockReturnValue(sinSesion)
     guardarAprobacionLocal(APROBADO_LOCAL)
     const r = await renderHook(useAprobacion)
     expect(r.aprobacion?.estado).toBe('aprobado')
@@ -50,7 +64,7 @@ describe('de dónde sale la aprobación', () => {
     // Es el caso real de hoy: `/api/tenant/aprobacion` no existe y su 404 se
     // mapea a `sin_estudio`. Sin esta regla, crear la cuenta hacía desaparecer
     // la aprobación justo al entrar a ver el catálogo.
-    getAccessToken.mockReturnValue('token')
+    auth.mockReturnValue(conSesion)
     fetchAprobacion.mockResolvedValue(SIN_APROBACION)
     guardarAprobacionLocal(APROBADO_LOCAL)
     const r = await renderHook(useAprobacion)
@@ -59,7 +73,7 @@ describe('de dónde sale la aprobación', () => {
   })
 
   it('un estado REAL del backend sí manda sobre el local', async () => {
-    getAccessToken.mockReturnValue('token')
+    auth.mockReturnValue(conSesion)
     fetchAprobacion.mockResolvedValue({ ...SIN_APROBACION, estado: 'rechazado' })
     guardarAprobacionLocal(APROBADO_LOCAL)
     const r = await renderHook(useAprobacion)
@@ -67,7 +81,7 @@ describe('de dónde sale la aprobación', () => {
   })
 
   it('sin local y sin backend queda en el estado que enseña el camino', async () => {
-    getAccessToken.mockReturnValue('token')
+    auth.mockReturnValue(conSesion)
     fetchAprobacion.mockResolvedValue(SIN_APROBACION)
     borrarAprobacionLocal()
     const r = await renderHook(useAprobacion)
@@ -75,10 +89,38 @@ describe('de dónde sale la aprobación', () => {
   })
 
   it('un fallo de red tampoco borra lo local', async () => {
-    getAccessToken.mockReturnValue('token')
+    auth.mockReturnValue(conSesion)
     fetchAprobacion.mockRejectedValue(new Error('offline'))
     guardarAprobacionLocal(APROBADO_LOCAL)
     const r = await renderHook(useAprobacion)
     expect(r.aprobacion?.estado).toBe('aprobado')
+  })
+
+  describe('mientras la sesión no se resuelve', () => {
+    /*
+     * El defecto que esto fija: el hook leía `getAccessToken()`, que en el
+     * primer render devuelve null aunque haya sesión, y como corría una sola
+     * vez ahí quedaba — nunca preguntaba al backend. A alguien aprobado se le
+     * mostraba `sin_estudio` en el catálogo, en la ficha y en el botón de
+     * postularse, hasta que navegara a otra pantalla sin recargar.
+     */
+    it('no le pregunta a nadie todavía', async () => {
+      auth.mockReturnValue(resolviendo)
+      const r = await renderHook(useAprobacion)
+      expect(fetchAprobacion).not.toHaveBeenCalled()
+    })
+
+    it('sigue diciendo que carga — "no sé" no es "no tiene"', async () => {
+      auth.mockReturnValue(resolviendo)
+      const r = await renderHook(useAprobacion)
+      expect(r.cargando).toBe(true)
+    })
+
+    it('en cuanto se resuelve, sí le pregunta al backend', async () => {
+      auth.mockReturnValue(conSesion)
+      fetchAprobacion.mockResolvedValue({ ...SIN_APROBACION, estado: 'aprobado' })
+      await renderHook(useAprobacion)
+      expect(fetchAprobacion).toHaveBeenCalledTimes(1)
+    })
   })
 })

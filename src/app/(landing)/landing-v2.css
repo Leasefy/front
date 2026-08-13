@@ -114,6 +114,25 @@ html.product-open .lv2 nav.main a[data-nav="producto"]::after{transform:scaleX(1
 .lv2 header:not(.scrolled) .mbtn{color:#fff}
 .lv2 header:not(.scrolled) .mbtn .bars span{background:#fff}
 .lv2 header.scrolled nav.main a::after{background:var(--ink)}
+/* ── Link activo por RUTA ──────────────────────────────────────────────────
+   Las reglas de `html.*-open` de más arriba marcan las internas que se abren
+   ENCIMA de la landing. Esta marca dónde estás cuando el header viaja a otra
+   pantalla — /propiedades, por ejemplo.
+
+   Va `aria-current="page"` y no una clase: es lo que los lectores de pantalla
+   ya anuncian, así que el estado se declara una sola vez.
+
+   ⚠️ Y va ACÁ ABAJO a propósito. Escrita junto a las otras reglas de activo
+   (línea ~83) no pintaba nada: `.lv2 header.scrolled nav.main a` tiene las
+   mismas tres clases pero un elemento más, así que gana el desempate y además
+   viene después. La regla existía, generaba CSS, y perdía en silencio. */
+.lv2 header.scrolled nav.main a[aria-current="page"],
+.lv2 nav.main a[aria-current="page"]{color:var(--ink)}
+.lv2 header.scrolled nav.main a[aria-current="page"]::after,
+.lv2 nav.main a[aria-current="page"]::after{transform:scaleX(1);background:var(--blue)}
+.lv2 header:not(.scrolled) nav.main a[aria-current="page"]{color:#fff}
+.lv2 header:not(.scrolled) nav.main a[aria-current="page"]::after{transform:scaleX(1);background:#fff}
+.lv2 .mmenu nav a[aria-current="page"] .t{color:var(--blue)}
 .lv2 header.scrolled .hcta .lnk{color:rgba(17,17,17,.7)}
 .lv2 header.scrolled .hcta .lnk:hover{color:var(--ink)}
 .lv2 header.scrolled .mbtn{color:var(--ink)}

@@ -108,11 +108,52 @@ Tres hallazgos del inventario:
 - El endpoint de prueba manda con asunto «Test Leasefy — **Brevo** SMTP»,
   nombrando un proveedor que ya no usamos.
 
+## 7. Avalúos: la pantalla se contradecía sola (`6c59cc3c`)
+
+Nico mandó la captura del aviso amarillo: «mira eso que sale de avaluos, por
+qué? organiza todo!». El aviso era lo de menos — había **cuatro** cosas
+encimadas, y todas se vieron sólo mirando la pantalla corriendo.
+
+📌 `reference_dos_lecturas_del_mismo_pedido_se_desmienten`
+
+**Por qué sale el aviso**, medido: `NEXT_PUBLIC_AVALUO_API_URL` no está en
+ningún worktree → los dos CTA no tienen URL que componer. Y la lista de abajo
+va por el back a `AVALUO_INTERNAL_URL` (default `:3003`), donde **no escucha
+nadie** → 502. Las dos mitades son el mismo micro caído.
+
+> Con la pestaña vieja el error decía «Unauthorized». Recargando con sesión
+> fresca cambia a **502**, que es el real. Antes de leer un 401, volvé a entrar.
+
+Lo que se arregló:
+
+1. El aviso prometía «tus avalúos anteriores se siguen viendo más abajo» — y
+   abajo daba 502. Un aviso no puede prometer lo que la pantalla incumple.
+2. **«Actividad reciente» mentía**: mismo hook llamado dos veces, sin rama de
+   error, así que decía «Aún no hay actividad reciente» debajo de «No pudimos
+   cargar los avalúos». Borrada — mostraba 5 filas de la lista que ya estaba
+   completa arriba. Una lista, un lugar, un pedido.
+3. **«Mis solicitudes» era la pestaña Y una sección**, con datos de servicios
+   distintos. La sección pasó a «Avalúos de tu inmobiliaria».
+4. La cadena de ternarios a mano escupía «Error 502» y confundía los dos
+   vacíos → `<EstadoDeDatos>` + `<SinDatos>`, que ya existían y esta página
+   no usaba (van 51 archivos migrados).
+
+Más: el vacío de la cola ofrecía «Solicitar avalúo» apuntando al Resumen,
+donde ese botón está deshabilitado — una salida a otra puerta cerrada.
+
+9 tests, los dos guards verificados por sabotaje.
+
+**Hallazgo sin tocar**: 10 de las 18 claves i18n de esta página son huérfanas.
+El Resumen hardcodea su copy (es la revisada legalmente; la de i18n es más
+vieja y distinta), así que cambiar a inglés traduce dos de las tres pestañas
+del workspace. Migrarlo sería cambiar copy sensible, no mover strings.
+
 ## Lo que queda
 
-- **PR front #87 (20 commits) y PR back #27 (2 commits)**, esperando a Víctor.
-- **Reiniciar el back** para que tome el `.env` nuevo: `nest start --watch`
-  vigila el código, no las variables de entorno.
+- **PR front #87 (21 commits) y PR back #27 (2 commits)**, esperando a Víctor.
+- **Avalúos sigue desconectado de punta a punta**: nada en `:3003`, y aunque
+  se levante el micro le falta `list/by-identity` e ignora `?agency=`. La
+  pantalla ya lo dice sin contradecirse; el servicio sigue sin existir.
 - **`FRONTEND_URL` en el deploy** tiene que ser la URL pública. Hoy quedó en
   `http://localhost:3005`, que sirve para probar en esta máquina y para nada más.
 - Dos servicios comparten la key de Resend (agente + back). Si se rota, son dos

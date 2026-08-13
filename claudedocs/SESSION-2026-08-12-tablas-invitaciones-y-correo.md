@@ -169,9 +169,29 @@ Dos cosas que sólo aparecen al hacerlo:
 
 `src/lib/i18n/claves-avaluos.test.ts` congela las 50; 4 sabotajes verificados.
 
+### 8.1 Los otros dos guards tenían el mismo agujero (`df17a42e`)
+
+`claves-recorrido` y `claves-aprobacion` usaban el mismo `< TODAS.length * 0.15`
+justificado con «algunas coinciden legítimamente (nombres propios)».
+
+**Medido: cero coincidencias en los dos.** El margen no cubría ningún caso
+real; permitía dejar sin traducir hasta 8 claves del recorrido y 6 de
+aprobación. Los dos pasan a guardia exacta.
+
+> Un umbral que nadie midió no es tolerancia: es un agujero del tamaño del
+> umbral.
+
+Importa sobre todo en `claves-aprobacion`, cuyo propósito declarado ES ese modo
+de falla: `tf(clave, respaldo)` cae al español si falta la traducción, así que
+la pantalla en inglés sale en español y pasa una revisión visual sin problema.
+
+Verificado por sabotaje en los dos: dejando **una** clave sin traducir
+(`inquilino.postularse.titulo` e `inmobiliaria.recorrido.titulo`), cada test
+cae. Con el umbral viejo, las dos pasaban.
+
 ## Lo que queda
 
-- **PR front #87 (23 commits) y PR back #27 (2 commits)**, esperando a Víctor.
+- **PR front #87 (25 commits) y PR back #27 (2 commits)**, esperando a Víctor.
 - **Avalúos sigue desconectado de punta a punta**: nada en `:3003`, y aunque
   se levante el micro le falta `list/by-identity` e ignora `?agency=`. La
   pantalla ya lo dice sin contradecirse; el servicio sigue sin existir.

@@ -48,6 +48,7 @@ import { useContract, useContractPreview, useContractActions, useContractRejecti
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import type { ContractStatus } from '@/lib/types/contract';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { AdministracionDelContrato } from '@/components/contratos/AdministracionDelContrato';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
 
@@ -307,6 +308,14 @@ function ContratoDetalleContent() {
             <InfoRow label="Canon" value={formatCurrency(contract.monthlyRent)} />
             <InfoRow label="Día de pago" value={contract.paymentDueDay ? `Día ${contract.paymentDueDay}` : null} />
           </InfoCard>
+
+          {/* Uso, periodicidad y comisión. Se guardaban desde la migración y no
+              se veían en ninguna pantalla — y el uso decide si hay IVA. */}
+          <AdministracionDelContrato
+            contract={contract}
+            puedeEditar={canEditContracts}
+            onActualizado={(c) => setContract(c)}
+          />
 
           {/* Paso 11: quién respalda este arriendo. Si no está, se dice — un
               contrato sin respaldo registrado no es un contrato sin respaldo,

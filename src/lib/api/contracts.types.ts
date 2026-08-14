@@ -51,6 +51,14 @@ export interface BackendContract {
   endDate: string;
   paymentDay: number;                // backend usa `paymentDay` (el front lo mapea a paymentDueDay)
 
+  // ─── Administración (NO viajan en el documento firmado) ──────────────────
+  usoInmueble?: 'VIVIENDA' | 'COMERCIAL' | null;
+  periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL' | null;
+  /** La del contrato. Llega como string: es Decimal en Prisma. */
+  comisionPorcentaje?: number | string | null;
+  /** La de la consignación — la que de verdad liquida. Sólo la devuelve GET /:id. */
+  comisionDeConsignacion?: number | null;
+
   // ─── PDF origin ──────────────────────────────────────────────────────────
   contractOrigin?: ContractOrigin;
   uploadedPdfPath?: string;

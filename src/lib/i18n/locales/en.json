@@ -862,6 +862,7 @@
       "pipeline": "Prospecting",
       "agentes": "Agents",
       "cobros": "Manual Collections",
+      "cartera": "Portfolio due",
       "contratos": "Contracts",
       "dispersiones": "Disbursements",
       "renovaciones": "Renewals",

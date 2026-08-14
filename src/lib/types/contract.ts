@@ -246,6 +246,22 @@ export interface Contract {
   endDate: string;        // ISO date
   paymentDueDay: number;  // 1-28
 
+  // ─── Administración ───────────────────────────────────────────────────────
+  // No viajan en el documento firmado: corregirlos no invalida ninguna firma.
+  // Se editan por PATCH /contracts/:id/administracion.
+
+  /** Decide el IVA del canon: vivienda excluida, comercial gravada. */
+  usoInmueble?: 'VIVIENDA' | 'COMERCIAL' | null;
+  periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL' | null;
+  /** La del contrato — la que trajo el archivo migrado. */
+  comisionPorcentaje?: number | null;
+  /**
+   * La de la consignación: **es la que liquida**. La dispersión y el extracto
+   * leen ésta para pagarle al propietario. Viaja aparte para poder mostrar el
+   * desacuerdo cuando las dos no coinciden, en vez de elegir un número.
+   */
+  comisionDeConsignacion?: number | null;
+
   // Signatures
   landlordSignature: Signature | null;
   tenantSignature: Signature | null;

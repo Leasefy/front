@@ -459,21 +459,36 @@ export interface ExtractoPropietario {
   };
 }
 
+/**
+ * Una deuda de la cartera, como la manda `GET /inmobiliaria/reports/cartera`.
+ *
+ * Este tipo declaraba antes seis campos que el back nunca enviaba
+ * (`propertyAddress`, `tenantPhone`, `propietarioName`, `agenteId`,
+ * `agenteName`, `bucket`). Una pantalla que los pintara habría mostrado
+ * `undefined` con tsc en verde. Ahora el back sí los manda — menos `bucket`,
+ * que se calcula acá para poder separar lo que aún no vence de la mora.
+ */
 export interface CarteraItem {
   cobroId: string;
+  consignacionId: string;
   propertyTitle: string;
-  propertyAddress: string;
-  tenantName: string;
-  tenantPhone: string;
-  propietarioName: string;
-  agenteId: string;
-  agenteName: string;
+  propertyAddress: string | null;
+  tenantName: string | null;
+  tenantPhone: string | null;
+  propietarioId: string | null;
+  propietarioName: string | null;
+  agenteId: string | null;
+  agenteName: string | null;
   month: string;
+  dueDate: string;
   totalAmount: number;
   paidAmount: number;
   pendingAmount: number;
   daysLate: number;
-  bucket: '0-30' | '31-60' | '61-90' | '90+';
+  status: string;
+  /** Recordatorios efectivamente enviados. Es el dato, no un cero fijo. */
+  remindersSent: number;
+  lastReminderDate: string | null;
 }
 
 export interface CarteraReport {
@@ -736,12 +751,11 @@ export function getDaysLate(dueDate: string): number {
   return Math.max(0, diffDays);
 }
 
-export function getAgingBucket(daysLate: number): CarteraItem['bucket'] {
-  if (daysLate <= 30) return '0-30';
-  if (daysLate <= 60) return '31-60';
-  if (daysLate <= 90) return '61-90';
-  return '90+';
-}
+/*
+ * `getAgingBucket` vivía acá y no la llamaba nadie. Además metía en el mismo
+ * tramo un cobro que aún no vencía (daysLate = 0) y uno con 29 días de mora.
+ * La versión que sí se usa está en `src/lib/cartera/edades.ts` y los separa.
+ */
 
 // ============================================================================
 // Report Definitions (Centro de Reportes)

@@ -37,6 +37,7 @@ import {
   Path,
   Storefront,
   HandCoins,
+  CurrencyCircleDollar,
   Umbrella,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -287,6 +288,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       // agente como un único ítem para no abrumar.
     } as NavItemWithModule,
     { label: t('inmobiliaria.nav.cobros'),       href: '/panel/inmobiliaria/cobros', scope: 'finanzas',       icon: HandCoins,     module: 'cobros' },
+    // Toda la cartera por edad de la deuda. `cobros` muestra el mes corriente;
+    // esto es lo acumulado, que es lo que trae una inmobiliaria que se pasa.
+    { label: t('inmobiliaria.nav.cartera'),      href: '/panel/inmobiliaria/cartera', scope: 'finanzas',      icon: CurrencyCircleDollar, module: 'cobros' },
     {
       // F6: Conciliación is the first complete agent workspace — the parent
       // now points at the Sala (/ai/conciliacion); the legacy /conciliacion

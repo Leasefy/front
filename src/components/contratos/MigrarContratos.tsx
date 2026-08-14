@@ -20,7 +20,7 @@
  *    Un "1.200 procesados" que esconde 300 saltados es peor que un error.
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ArrowRight,
   CheckCircle,
@@ -52,10 +52,13 @@ import {
   contractsApi,
   type FilaAMigrar,
   type FilaDeMigracion,
+  type LoteAbierto,
   type ResumenActivacion,
   type ResumenLote,
 } from '@/lib/api/contracts.service'
 import { FaltantesDeFila } from './FaltantesDeFila'
+import { ResolucionMasiva } from './ResolucionMasiva'
+import { Pagination } from '@/components/ui/pagination'
 import {
   comoEntero,
   comoFecha,
@@ -83,6 +86,14 @@ const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
 
 type Fila = Record<string, unknown>
 
+/**
+ * Cuántas filas pendientes se piden por página.
+ *
+ * Antes se pedían todas: con 1.200 la pantalla pintaba 1.200 tarjetas, cada
+ * una con sus propios controles de resolución.
+ */
+const POR_PAGINA = 25
+
 export function MigrarContratos() {
   const [filas, setFilas] = useState<Fila[]>([])
   const [mapeo, setMapeo] = useState<MapeoDeColumna[]>([])
@@ -92,7 +103,12 @@ export function MigrarContratos() {
   const [lote, setLote] = useState<string | null>(null)
   const [resumen, setResumen] = useState<ResumenLote | null>(null)
   const [pendientes, setPendientes] = useState<FilaDeMigracion[]>([])
+  const [totalPendientes, setTotalPendientes] = useState(0)
+  const [pagina, setPagina] = useState(1)
+  const [seleccion, setSeleccion] = useState<Set<string>>(new Set())
   const [activacion, setActivacion] = useState<ResumenActivacion | null>(null)
+
+  const [lotesAbiertos, setLotesAbiertos] = useState<LoteAbierto[]>([])
 
   const faltan = useMemo(() => faltantes(mapeo), [mapeo])
 
@@ -110,13 +126,29 @@ export function MigrarContratos() {
     }
   }, [])
 
-  const refrescar = useCallback(async (elLote: string) => {
-    const [r, f] = await Promise.all([
+  /**
+   * Trae UNA página de pendientes.
+   *
+   * El filtro por estado va en la consulta, no acá: filtrar la página después
+   * de recibirla daría páginas vacías —las primeras 50 de 1.200 pueden ser
+   * todas LISTO— y parecería que no queda nada por resolver.
+   */
+  const refrescar = useCallback(async (elLote: string, pag = 1) => {
+    const [r, p] = await Promise.all([
       contractsApi.migracion.resumen(elLote),
-      contractsApi.migracion.filas(elLote),
+      contractsApi.migracion.filas(elLote, {
+        pagina: pag,
+        porPagina: POR_PAGINA,
+        estado: 'PENDIENTE',
+      }),
     ])
     setResumen(r)
-    setPendientes(f.filter((x) => x.estado === 'PENDIENTE'))
+    setPendientes(p.filas)
+    setTotalPendientes(p.total)
+    setPagina(p.pagina)
+    // Lo que ya no está en pantalla no puede seguir seleccionado: aplicar algo
+    // a una fila que no se ve es exactamente lo que nadie espera.
+    setSeleccion(new Set())
   }, [])
 
   /**
@@ -178,19 +210,61 @@ export function MigrarContratos() {
     }
   }, [lote, invitar, refrescar])
 
+  /*
+   * Al entrar, buscar migraciones a medias. La lista de trabajo vivía sólo en
+   * el estado del componente: recargar la borraba y la única salida era subir
+   * el archivo otra vez, duplicando todas las filas. Una cartera de 1.200
+   * contratos no se resuelve de una sentada.
+   */
+  useEffect(() => {
+    let vigente = true
+    contractsApi.migracion
+      .lotesAbiertos()
+      .then((l) => {
+        if (vigente) setLotesAbiertos(l)
+      })
+      .catch(() => {
+        // No poder listarlos no debe impedir empezar uno nuevo.
+      })
+    return () => {
+      vigente = false
+    }
+  }, [])
+
+  const retomar = useCallback(
+    async (elLote: string) => {
+      setCargando(true)
+      setError(null)
+      try {
+        setLote(elLote)
+        await refrescar(elLote)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'No pudimos abrir ese lote.')
+      } finally {
+        setCargando(false)
+      }
+    },
+    [refrescar],
+  )
+
   // ── Ya se preparó: lista de trabajo ──────────────────────────────────────
   if (resumen && lote) {
     return (
       <ListaDeTrabajo
         resumen={resumen}
         pendientes={pendientes}
+        totalPendientes={totalPendientes}
+        pagina={pagina}
+        seleccion={seleccion}
         activacion={activacion}
         invitar={invitar}
         setInvitar={setInvitar}
         cargando={cargando}
         error={error}
         onActivar={() => void activar()}
-        onFilaResuelta={() => void refrescar(lote)}
+        onPaginaCambia={(p) => void refrescar(lote, p)}
+        onSeleccionCambia={setSeleccion}
+        onFilaResuelta={() => void refrescar(lote, pagina)}
         onOtroArchivo={() => {
           setResumen(null)
           setLote(null)
@@ -204,6 +278,36 @@ export function MigrarContratos() {
 
   return (
     <div className="space-y-6">
+      {/* Migraciones a medias. Volver a subir el archivo duplicaría las filas:
+          por eso se ofrece retomar ANTES del cargador, no después. */}
+      {lotesAbiertos.length > 0 ? (
+        <Card className="space-y-3 border-primary/30 p-5" data-testid="lotes-abiertos">
+          <p className="text-sm font-medium text-foreground">
+            Tenés una migración sin terminar
+          </p>
+          {lotesAbiertos.map((l) => (
+            <div key={l.lote} className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm text-muted-foreground">
+                <span className="text-foreground">{l.lote}</span> · {l.pendientes}{' '}
+                {l.pendientes === 1 ? 'fila pendiente' : 'filas pendientes'}
+                {l.listos > 0 ? ` · ${l.listos} listas para activar` : ''}
+              </p>
+              <Button
+                size="sm"
+                hideArrow
+                disabled={cargando}
+                onClick={() => void retomar(l.lote)}
+              >
+                Retomar
+              </Button>
+            </div>
+          ))}
+          <p className="text-xs text-muted-foreground">
+            Si volvés a subir el mismo archivo, las filas se duplican.
+          </p>
+        </Card>
+      ) : null}
+
       <Card className="p-6">
         <label className="flex cursor-pointer flex-col items-center gap-3 rounded-lg border border-dashed border-border p-8 text-center hover:bg-muted/40">
           <FileArrowUp className="h-8 w-8 text-muted-foreground" />
@@ -315,6 +419,9 @@ export function MigrarContratos() {
 function ListaDeTrabajo({
   resumen,
   pendientes,
+  totalPendientes,
+  pagina,
+  seleccion,
   activacion,
   invitar,
   setInvitar,
@@ -323,9 +430,14 @@ function ListaDeTrabajo({
   onActivar,
   onFilaResuelta,
   onOtroArchivo,
+  onPaginaCambia,
+  onSeleccionCambia,
 }: {
   resumen: ResumenLote
   pendientes: FilaDeMigracion[]
+  totalPendientes: number
+  pagina: number
+  seleccion: Set<string>
   activacion: ResumenActivacion | null
   invitar: boolean
   setInvitar: (v: boolean) => void
@@ -334,7 +446,13 @@ function ListaDeTrabajo({
   onActivar: () => void
   onFilaResuelta: () => void
   onOtroArchivo: () => void
+  onPaginaCambia: (p: number) => void
+  onSeleccionCambia: (s: Set<string>) => void
 }) {
+  const totalPaginas = Math.max(1, Math.ceil(totalPendientes / POR_PAGINA))
+  const todasMarcadas =
+    pendientes.length > 0 && pendientes.every((f) => seleccion.has(f.id))
+
   return (
     <div className="space-y-6" data-testid="lista-de-trabajo">
       <Card className="space-y-4 p-6">
@@ -396,18 +514,62 @@ function ListaDeTrabajo({
         </Card>
       ) : null}
 
+      {pendientes.length > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+            <Checkbox
+              checked={todasMarcadas}
+              onCheckedChange={(c) =>
+                onSeleccionCambia(
+                  c === true ? new Set(pendientes.map((f) => f.id)) : new Set(),
+                )
+              }
+            />
+            Seleccionar las {pendientes.length} de esta página
+          </label>
+          {/* El total viene del back: contar lo recibido diría «quedan 25». */}
+          <p className="text-xs text-muted-foreground">
+            {totalPendientes} pendientes en total
+          </p>
+        </div>
+      ) : null}
+
+      {seleccion.size > 0 ? (
+        <ResolucionMasiva
+          seleccionadas={pendientes.filter((f) => seleccion.has(f.id))}
+          onListo={onFilaResuelta}
+        />
+      ) : null}
+
       {pendientes.map((f) => (
         <Card key={f.id} className="space-y-3 p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="text-sm font-medium text-foreground">
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground">
+              <Checkbox
+                checked={seleccion.has(f.id)}
+                onCheckedChange={(c) => {
+                  const s = new Set(seleccion)
+                  if (c === true) s.add(f.id)
+                  else s.delete(f.id)
+                  onSeleccionCambia(s)
+                }}
+              />
               {/* +2: en el archivo la primera fila de datos es la 2. */}
               Fila {f.fila + 2} · {f.datos.inquilino?.nombre || 'sin nombre'}
-            </p>
+            </label>
             <p className="text-xs text-muted-foreground">{f.datos.direccion}</p>
           </div>
           <FaltantesDeFila fila={f} onResuelta={onFilaResuelta} />
         </Card>
       ))}
+
+      {totalPaginas > 1 ? (
+        <Pagination
+          currentPage={pagina}
+          totalPages={totalPaginas}
+          onPageChange={onPaginaCambia}
+        />
+      ) : null}
 
       <Button variant="outline" onClick={onOtroArchivo} hideArrow>
         Subir otro archivo

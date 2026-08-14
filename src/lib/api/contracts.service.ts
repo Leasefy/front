@@ -67,6 +67,16 @@ const AUDIT_TYPE_MAP: Record<string, ContractAuditEventType> = {
 // Mapper
 // ============================================================================
 
+/**
+ * Un `Decimal` de Prisma llega por JSON como string ("10.00"), no como número.
+ * Devolver el string haría que la pantalla compare textos: "9" > "10" es true.
+ */
+function aNumero(v: number | string | null | undefined): number | null {
+  if (v === null || v === undefined || v === '') return null;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 function mapBackendContract(bc: BackendContract): Contract {
   return {
     id: bc.id,
@@ -93,6 +103,12 @@ function mapBackendContract(bc: BackendContract): Contract {
     startDate: bc.startDate,
     endDate: bc.endDate,
     paymentDueDay: bc.paymentDay,                    // backend: paymentDay → front: paymentDueDay
+    usoInmueble: bc.usoInmueble ?? null,
+    periodicidad: bc.periodicidad ?? null,
+    // Decimal de Prisma: viaja como string ("10.00"). Sin esto, `12 > 10`
+    // compara textos y un 9% saldría mayor que un 10%.
+    comisionPorcentaje: aNumero(bc.comisionPorcentaje),
+    comisionDeConsignacion: aNumero(bc.comisionDeConsignacion),
     // Deprecated: garantías no modeladas en backend todavía.
     guaranteeType: (bc.guaranteeType ?? 'poliza') as 'poliza' | 'codeudor',
     guaranteeDetails: bc.guaranteeDetails,
@@ -215,15 +231,64 @@ export const contractsApi = {
       });
     },
 
-    /** 2. La lista de trabajo: qué quedó pendiente y por qué. */
-    async filas(lote?: string): Promise<FilaDeMigracion[]> {
-      const q = lote ? `?lote=${encodeURIComponent(lote)}` : '';
-      return apiClient.get<FilaDeMigracion[]>(`/contracts/migrar/filas${q}`);
+    /**
+     * 2. La lista de trabajo, por página: qué quedó pendiente y por qué.
+     *
+     * `total` viene del back, NO del largo de `filas`: con páginas de 50 y
+     * 1.200 pendientes, medirlo por lo recibido diría «quedan 50» para siempre.
+     */
+    async filas(
+      lote?: string,
+      opciones?: { pagina?: number; porPagina?: number; estado?: EstadoMigracion },
+    ): Promise<PaginaDeFilas> {
+      const q = new URLSearchParams();
+      if (lote) q.set('lote', lote);
+      if (opciones?.pagina) q.set('pagina', String(opciones.pagina));
+      if (opciones?.porPagina) q.set('porPagina', String(opciones.porPagina));
+      if (opciones?.estado) q.set('estado', opciones.estado);
+      const qs = q.toString();
+      return apiClient.get<PaginaDeFilas>(
+        `/contracts/migrar/filas${qs ? `?${qs}` : ''}`,
+      );
+    },
+
+    /**
+     * 2-bis. Aplicar la misma resolución a muchas filas.
+     *
+     * Devuelve qué falló y por qué, fila por fila. Doscientos contratos del
+     * mismo propietario no pueden costar doscientas veces el mismo nombre.
+     */
+    async resolverMasivo(
+      ids: string[],
+      cambios: {
+        usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
+        propietario?: {
+          nombre: string;
+          documento: string;
+          correo?: string;
+          telefono?: string;
+          comisionPorcentaje?: number;
+        };
+      },
+    ): Promise<ResultadoMasivo> {
+      return apiClient.patch<ResultadoMasivo>('/contracts/migrar/filas', {
+        ids,
+        ...cambios,
+      });
     },
 
     async resumen(lote?: string): Promise<ResumenLote> {
       const q = lote ? `?lote=${encodeURIComponent(lote)}` : '';
       return apiClient.get<ResumenLote>(`/contracts/migrar/resumen${q}`);
+    },
+
+    /**
+     * Los lotes a medio migrar. Sin esto, recargar la pantalla borraba la
+     * lista de trabajo y la única forma de volver era subir el archivo otra
+     * vez — duplicando las 1.200 filas.
+     */
+    async lotesAbiertos(): Promise<LoteAbierto[]> {
+      return apiClient.get<LoteAbierto[]>('/contracts/migrar/lotes');
     },
 
     /** Corregir una fila. Pasa sola a LISTO cuando ya no le falta nada. */
@@ -334,6 +399,31 @@ export const contractsApi = {
    */
   async update(id: string, dto: UpdateContractDto): Promise<Contract> {
     const raw = await apiClient.patch<BackendContract>(`/contracts/${id}`, dto);
+    return mapBackendContract(raw);
+  },
+
+  /**
+   * PATCH /contracts/:id/administracion — uso, periodicidad y comisión.
+   *
+   * Ruta aparte de `update` a propósito: aquélla invalida las firmas y sólo
+   * corre sobre borradores. Ninguno de estos tres viaja en el documento
+   * firmado, y un contrato migrado nace ACTIVE.
+   *
+   * Cambiar la comisión también la escribe en la consignación, que es de donde
+   * sale la plata del propietario.
+   */
+  async actualizarAdministracion(
+    id: string,
+    dto: {
+      usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
+      periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
+      comisionPorcentaje?: number;
+    },
+  ): Promise<Contract> {
+    const raw = await apiClient.patch<BackendContract>(
+      `/contracts/${id}/administracion`,
+      dto,
+    );
     return mapBackendContract(raw);
   },
 
@@ -461,6 +551,28 @@ export interface CambiosDeFila {
   startDate?: string;
   endDate?: string;
   paymentDay?: number;
+}
+
+/** Un lote a medio migrar, para poder retomarlo. */
+export interface LoteAbierto {
+  lote: string;
+  pendientes: number;
+  listos: number;
+}
+
+export interface PaginaDeFilas {
+  filas: FilaDeMigracion[];
+  /** Cuántas hay en total con este filtro — NO el largo de `filas`. */
+  total: number;
+  pagina: number;
+  porPagina: number;
+}
+
+/** Qué pasó con cada fila de una resolución masiva, una por una. */
+export interface ResultadoMasivo {
+  pedidas: number;
+  aplicadas: number;
+  fallidas: Array<{ id: string; fila: number | null; motivo: string }>;
 }
 
 export interface ResumenLote {

@@ -28,36 +28,56 @@ export default function ErrorDelPanel({
 
   return (
     <div className="p-4 md:p-6" data-testid="panel-error">
-      <div className="rounded-xl border border-border bg-card px-6 py-20 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
-          <WarningOctagon weight="duotone" className="h-6 w-6 text-fg-subtle" aria-hidden="true" />
-        </div>
-        <div className="mt-4 space-y-1.5">
-          <p className="text-[15px] font-semibold text-fg">Esta sección se rompió</p>
-          <p className="mx-auto max-w-sm text-sm leading-relaxed text-fg-muted">
-            Fue un problema nuestro, no tuyo. Vuelve a cargarla; si sigue igual,
-            escribinos y pasanos la referencia.
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-card px-6 py-12 sm:px-10">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-0 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-surface-muted/70 blur-2xl"
+        />
+
+        <div className="relative mx-auto flex max-w-sm flex-col items-center text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-muted">
+            <WarningOctagon
+              weight="duotone"
+              className="h-5 w-5 text-fg-subtle"
+              aria-hidden="true"
+            />
+          </div>
+
+          <h2 className="mt-5 text-base font-semibold tracking-tight text-fg">
+            Esta sección se rompió
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-fg-muted">
+            Fue un problema nuestro, no tuyo. Volvé a cargarla; si sigue igual,
+            escribinos con la referencia de abajo.
+          </p>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => reset()}
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-fg px-5 text-sm font-medium text-bg transition-opacity hover:opacity-90"
+            >
+              <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
+              Volver a cargar
+            </button>
+            <Link
+              href="/panel/inmobiliaria/dashboard"
+              className="inline-flex h-10 items-center rounded-full px-5 text-sm font-medium text-fg-muted transition-colors hover:text-fg"
+            >
+              Ir al panel
+            </Link>
+          </div>
+
+          {/*
+            La referencia SIEMPRE. `error.digest` sólo existe en producción, así
+            que en dev el cartel pedía una referencia que no mostraba. Sin
+            digest se usa el nombre del error, que al menos orienta a quien lo
+            reporta.
+          */}
+          <p className="mt-6 font-mono text-[11px] uppercase tracking-wider text-fg-subtle">
+            Referencia {error.digest ?? error.name ?? 'render'}
           </p>
         </div>
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => reset()}
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-border px-5 text-sm font-medium text-fg transition-colors hover:bg-surface-muted"
-          >
-            <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
-            Volver a cargar
-          </button>
-          <Link
-            href="/panel/inmobiliaria/dashboard"
-            className="inline-flex h-10 items-center rounded-full px-5 text-sm font-medium text-fg-muted transition-colors hover:text-fg"
-          >
-            Ir al panel
-          </Link>
-        </div>
-        {error.digest && (
-          <p className="mt-6 font-mono text-[11px] text-fg-subtle">Ref: {error.digest}</p>
-        )}
       </div>
     </div>
   )

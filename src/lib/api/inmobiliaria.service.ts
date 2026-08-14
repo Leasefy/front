@@ -51,6 +51,7 @@ import type {
   AgencyOnboardingStatus,
 } from '@/lib/types/inmobiliaria';
 import { adaptarDispersion, type DispersionDelBack } from './dispersion-adapter';
+import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 
 const BASE = '/inmobiliaria';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
@@ -661,6 +662,19 @@ export const dispersionesApi = {
         `${BASE}/dispersiones/${id}/process`,
         {},
       ),
+    );
+  },
+
+  /**
+   * Lo que se giraría este mes, **calculado por el back y sin escribir nada**.
+   *
+   * El asistente lo calculaba en el navegador y le salían otros números: la
+   * comisión sobre lo pagado en vez de sobre el canon, un 10% inventado cuando
+   * no encontraba la consignación, sin conceptos, y «Propietario desconocido».
+   */
+  async preview(month: string): Promise<VistaPreviaDeDispersiones> {
+    return apiClient.get<VistaPreviaDeDispersiones>(
+      `${BASE}/dispersiones/preview?month=${month}`,
     );
   },
 

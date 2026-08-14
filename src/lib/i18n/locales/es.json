@@ -2021,7 +2021,7 @@
         "retry": "Reintentar",
         "downloadExtracto": "Descargar extracto",
         "error": "Error",
-        "totalCount": "Total ({{count}} dispersiones)",
+        "totalCount": "Total · {{count}}",
         "pendingAbbr": "{{count}} pend.",
         "processingAbbr": "{{count}} proc.",
         "completedAbbr": "{{count}} comp.",

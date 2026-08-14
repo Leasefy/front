@@ -67,7 +67,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
       tipo: 'noExiste',
       titulo: `No encontramos ${eso}`,
       descripcion:
-        'Puede que se haya eliminado, o que el enlace esté mal. Revisa la dirección o vuelve al listado.',
+        'Puede que se haya eliminado, o que el enlace esté mal. Revisá la dirección o volvé al listado.',
       sePuedeReintentar: false,
       status,
       mensajeOriginal,
@@ -77,7 +77,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
   if (status === 403) {
     return {
       tipo: 'sinPermiso',
-      titulo: 'No tienes acceso a esto',
+      titulo: 'No tenés acceso a esto',
       descripcion:
         'Tu rol en la inmobiliaria no incluye esta sección. Pedile a un administrador que te lo habilite.',
       sePuedeReintentar: false,
@@ -99,7 +99,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
         tipo: 'servidor',
         titulo: 'No pudimos cargar esto',
         descripcion:
-          'Tu sesión sigue abierta; fue esta consulta la que no pasó. Prueba de nuevo.',
+          'Tu sesión sigue abierta; fue esta consulta la que no pasó. Probá de nuevo.',
         sePuedeReintentar: true,
         status,
         mensajeOriginal,
@@ -108,7 +108,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     return {
       tipo: 'sinSesion',
       titulo: 'Tu sesión se venció',
-      descripcion: 'Vuelve a entrar para seguir donde estabas.',
+      descripcion: 'Volvé a entrar para seguir donde estabas.',
       sePuedeReintentar: false,
       status,
       mensajeOriginal,
@@ -121,7 +121,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
       tipo: 'red',
       titulo: 'No pudimos conectarnos',
       descripcion:
-        'Revisa tu conexión. Los datos siguen ahí; apenas vuelva la red los traemos.',
+        'Revisá tu conexión. Los datos siguen ahí; apenas vuelva la red los traemos.',
       sePuedeReintentar: true,
       status,
       mensajeOriginal,
@@ -132,7 +132,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     tipo: 'servidor',
     titulo: 'No pudimos cargar esto',
     descripcion:
-      'Fue un problema nuestro, no tuyo. Prueba de nuevo en un momento; si sigue igual, escribinos.',
+      'Fue un problema nuestro, no tuyo. Probá de nuevo en un momento; si sigue igual, escribinos con la referencia de abajo.',
     sePuedeReintentar: true,
     status,
     mensajeOriginal,

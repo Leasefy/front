@@ -2020,7 +2020,7 @@
         "retry": "Retry",
         "downloadExtracto": "Download statement",
         "error": "Error",
-        "totalCount": "Total ({{count}} disbursements)",
+        "totalCount": "Total · {{count}}",
         "pendingAbbr": "{{count}} pend.",
         "processingAbbr": "{{count}} proc.",
         "completedAbbr": "{{count}} comp.",

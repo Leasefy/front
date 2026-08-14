@@ -1,5 +1,20 @@
 'use client';
 
+/**
+ * ⚠️ `SIN_DATOS`, y no `?? (SIN_DATOS as never[])`.
+ *
+ * `data ?? (SIN_DATOS as never[])` crea un array NUEVO en cada render. Cualquier consumidor que
+ * ponga el resultado en las dependencias de un `useEffect` o un `useMemo`
+ * entra en bucle: efecto → setState → render → array nuevo → efecto.
+ *
+ * No es teórico: pasó en DOS pantallas. En el panel de dispersiones fueron
+ * ~2,5 peticiones por segundo contra el back, indefinidamente; en el wizard,
+ * un «Maximum update depth exceeded» que tumbaba la página con 507 errores.
+ *
+ * Una sola referencia congelada para los 18 hooks mata la clase entera.
+ */
+const SIN_DATOS: readonly never[] = Object.freeze([]);
+
 import { useState, useEffect, useCallback } from 'react';
 import {
   propietariosApi,
@@ -142,7 +157,7 @@ export function usePropietarios(params?: Parameters<typeof propietariosApi.getAl
     () => propietariosApi.getAll(params),
     [params?.search, params?.city, params?.page]
   );
-  return { propietarios: data ?? [], ...rest };
+  return { propietarios: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 export function usePropietario(id: string | undefined) {
@@ -159,7 +174,7 @@ export function usePropietario(id: string | undefined) {
 
 export function useAgentes(options?: { skip?: boolean }) {
   const { data, ...rest } = useApiData(() => agentesApi.getAll(), [], options?.skip);
-  return { agentes: data ?? [], ...rest };
+  return { agentes: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 export function useAgente(id: string | undefined) {
@@ -175,7 +190,7 @@ export function useAgenteConsignaciones(id: string | undefined) {
     () => (id ? agentesApi.getConsignaciones(id) : Promise.reject('No ID')),
     [id]
   );
-  return { consignaciones: data ?? [], ...rest };
+  return { consignaciones: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 export function useAgentePipeline(id: string | undefined) {
@@ -183,7 +198,7 @@ export function useAgentePipeline(id: string | undefined) {
     () => (id ? agentesApi.getPipeline(id) : Promise.reject('No ID')),
     [id]
   );
-  return { pipelineItems: data ?? [], ...rest };
+  return { pipelineItems: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 // ============================================================================
@@ -195,7 +210,7 @@ export function useConsignaciones(params?: Parameters<typeof consignacionesApi.g
     () => consignacionesApi.getAll(params),
     [params?.status, params?.agenteId, params?.propietarioId]
   );
-  return { consignaciones: data ?? [], ...rest };
+  return { consignaciones: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 export function useConsignacion(id: string | undefined) {
@@ -212,7 +227,7 @@ export function useConsignacion(id: string | undefined) {
 
 export function usePipelineItems(options?: { skip?: boolean }) {
   const { data, ...rest } = useApiData(() => pipelineApi.getAll(), [], options?.skip);
-  return { pipelineItems: data ?? [], ...rest };
+  return { pipelineItems: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 // ============================================================================
@@ -225,7 +240,7 @@ export function useCobros(params?: Parameters<typeof cobrosApi.getAll>[0], optio
     [params?.month, params?.status, params?.propietarioId],
     options?.skip
   );
-  return { cobros: data ?? [], ...rest };
+  return { cobros: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 export function useCobroSummary(month: string) {
@@ -257,7 +272,7 @@ export function useAgencyAvaluos(
   );
   return {
     data,
-    avaluos: data?.items ?? [],
+    avaluos: data?.items ?? (SIN_DATOS as never[]),
     total: data?.total ?? 0,
     pageSize: data?.pageSize ?? 100,
     ...rest,
@@ -273,7 +288,7 @@ export function useDispersiones(params?: Parameters<typeof dispersionesApi.getAl
     () => dispersionesApi.getAll(params),
     [params?.month, params?.status, params?.propietarioId]
   );
-  return { dispersiones: data ?? [], ...rest };
+  return { dispersiones: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 // ============================================================================
@@ -286,7 +301,7 @@ export function useMantenimientos(params?: Parameters<typeof mantenimientoApi.ge
     [params?.status, params?.consignacionId],
     options?.skip
   );
-  return { mantenimientos: data ?? [], ...rest };
+  return { mantenimientos: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 // ============================================================================
@@ -295,7 +310,7 @@ export function useMantenimientos(params?: Parameters<typeof mantenimientoApi.ge
 
 export function useRenovaciones() {
   const { data, ...rest } = useApiData(() => renovacionesApi.getAll(), []);
-  return { renovaciones: data ?? [], ...rest };
+  return { renovaciones: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 // ============================================================================
@@ -386,12 +401,12 @@ export function useAnalyticsData(period?: string) {
 
 export function useTrendAnalysis() {
   const { data, ...rest } = useApiData(() => analyticsApi.getTrends(), []);
-  return { trends: data ?? [], ...rest };
+  return { trends: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 export function useForecastData() {
   const { data, ...rest } = useApiData(() => analyticsApi.getForecasts(), []);
-  return { forecasts: data ?? [], ...rest };
+  return { forecasts: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 export function useAiMetrics(options?: { skip?: boolean }) {
@@ -418,7 +433,7 @@ export function useAiActivity(limit?: number, options?: { skip?: boolean }) {
 
 export function useDocumentTemplates() {
   const { data, ...rest } = useApiData(() => documentosApi.getTemplates(), []);
-  return { templates: data ?? [], ...rest };
+  return { templates: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 export function usePropertyDocuments(params?: Parameters<typeof documentosApi.getDocuments>[0]) {
@@ -426,12 +441,12 @@ export function usePropertyDocuments(params?: Parameters<typeof documentosApi.ge
     () => documentosApi.getDocuments(params),
     [params?.consignacionId, params?.category]
   );
-  return { documents: data ?? [], ...rest };
+  return { documents: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 export function useActasEntrega() {
   const { data, ...rest } = useApiData(() => actasApi.getAll(), []);
-  return { actas: data ?? [], ...rest };
+  return { actas: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 // ============================================================================
@@ -458,7 +473,7 @@ export function useAgencyUsers(enabled = true) {
     [enabled],
     !enabled,
   );
-  return { users: data ?? [], ...rest };
+  return { users: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 export function useAgencyIntegrations() {
@@ -466,7 +481,7 @@ export function useAgencyIntegrations() {
     () => inmobiliariaConfigApi.getIntegrations(),
     []
   );
-  return { integrations: data ?? [], ...rest };
+  return { integrations: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
 export function useAgencyBilling() {

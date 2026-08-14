@@ -1,195 +1,150 @@
 'use client';
 
 import { Suspense } from 'react';
-import { LeasefyLogo, LeasefyWordmark, LeasefyMark } from '@/components/brand';
-import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import Link from 'next/link';
-import { AuthForm } from '@/components/auth/AuthForm';
 import { motion } from 'framer-motion';
-import { ArrowRight } from '@phosphor-icons/react';
+import { ArrowLeft } from '@phosphor-icons/react';
+
+import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
+import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
+import { AuthForm } from '@/components/auth/AuthForm';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 
-// Métricas inferiores
-const STATS = [
-  { value: '2,500+', label: 'Propiedades gestionadas' },
-  { value: '98%', label: 'Procesos automatizados' },
-  { value: '< 48h', label: 'Tiempo de respuesta' },
-];
+/**
+ * La obra de marca que ocupa el panel izquierdo.
+ *
+ * Va como `background-image` sobre el degradado, NO como <Image>: si el
+ * archivo no está, se ve el degradado y no el ícono de imagen rota. Un fondo
+ * que falta tiene que degradar a algo que parezca elegido.
+ */
+const ARTE = '/brand/login.jpg';
 
-// Tres beneficios — etiqueta mono (Ubuntu Mono) + descripción Satoshi.
-const FEATURES = [
-  { label: 'Evaluación inteligente', description: 'Riesgo, asegurabilidad y validación con IA' },
-  { label: 'Operación automatizada', description: 'Contratos, cobros y conciliación en un solo flujo' },
-  { label: 'Decisiones más precisas', description: 'Avalúos, reportes y seguimiento accionable' },
-];
-
-// Loading fallback for auth form — mirrors the left-aligned layout
 function AuthFormFallback() {
   return (
     <div className="w-full animate-pulse">
-      <div className="h-3 bg-muted rounded w-16 mb-4" />
-      <div className="h-7 bg-muted rounded w-56 mb-2" />
-      <div className="h-4 bg-muted rounded w-64 mb-8" />
+      <div className="mb-4 h-3 w-16 rounded bg-muted" />
+      <div className="mb-2 h-8 w-60 rounded bg-muted" />
+      <div className="mb-9 h-4 w-64 rounded bg-muted" />
       <div className="space-y-4">
-        <div className="h-11 bg-muted rounded-md" />
-        <div className="h-11 bg-muted rounded-md" />
-        <div className="h-11 bg-muted rounded-md" />
+        <div className="h-11 rounded-xl bg-muted" />
+        <div className="h-11 rounded-xl bg-muted" />
+        <div className="h-11 rounded-xl bg-muted" />
       </div>
     </div>
   );
 }
 
 /**
- * Premium Auth page with split layout
- * Left: Beautiful door images slideshow with glass widgets
- * Right: Clean auth form
+ * Entrada a Leasefy.
+ *
+ * Izquierda: la marca, en silencio. Una obra a sangre, el logotipo arriba y
+ * **una** frase abajo. Antes había tres beneficios y tres métricas: en una
+ * pantalla donde la única tarea es entrar, cada línea de más compite con el
+ * formulario y no convence a nadie — quien llega acá ya decidió.
+ *
+ * Derecha: el formulario solo, sin caja. La jerarquía la hace la tipografía y
+ * el aire, no un borde.
  */
 export default function AuthPage() {
   return (
     <ForceLightMode>
-    <div className="min-h-screen flex flex-col lg:flex-row bg-background" data-lenis-prevent>
-      {/* Left Panel — brand hero: Cadence grainy gradient (Aurora — cobalt·cyan·lime)
-          as a full-bleed field. Copy sits small and bottom-anchored; labels in
-          JetBrains Mono. Replaces the legacy navy photo. */}
-      <div className="hidden lg:flex lg:w-[55%] lg:fixed lg:inset-y-0 lg:left-0 relative overflow-hidden bg-[#0C1F80]">
-        {/* Cadence signature: layered radial blobs + linear base */}
-        <div
-          className="absolute inset-0 z-0"
-          style={{
-            background:
-              'radial-gradient(120% 130% at 10% 14%, rgba(26,64,255,0.95) 0%, rgba(26,64,255,0) 56%), radial-gradient(110% 120% at 90% 24%, rgba(43,181,232,0.55) 0%, rgba(43,181,232,0) 52%), radial-gradient(120% 120% at 74% 96%, rgba(125,224,138,0.40) 0%, rgba(125,224,138,0) 56%), linear-gradient(140deg, #1A40FF 0%, #0C1F80 58%, #081555 100%)',
-          }}
-        />
-        {/* Cadence signature: grain overlay (feTurbulence fractal noise) */}
-        <div
-          className="absolute inset-0 z-[1] pointer-events-none mix-blend-overlay opacity-[0.45]"
-          style={{
-            backgroundImage:
-              `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          }}
-        />
-        {/* Bottom grounding veil for copy legibility */}
-        <div
-          className="absolute inset-0 z-[2]"
-          style={{
-            background:
-              'linear-gradient(to top, rgba(8,21,85,0.60) 0%, rgba(8,21,85,0) 42%)',
-          }}
-        />
+      <div
+        className="flex min-h-screen flex-col bg-background lg:flex-row"
+        data-lenis-prevent
+      >
+        {/* ── Izquierda: la marca ───────────────────────────────────────── */}
+        <div className="relative hidden overflow-hidden bg-[#0C1F80] lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-[52%]">
+          {/* Base: el degradado de Cadence. Queda debajo de la obra, y es lo
+              que se ve si el archivo de arte todavía no está en public/. */}
+          <div
+            className="absolute inset-0 z-0"
+            style={{
+              background:
+                'radial-gradient(120% 130% at 10% 14%, rgba(26,64,255,0.95) 0%, rgba(26,64,255,0) 56%), radial-gradient(110% 120% at 90% 24%, rgba(43,181,232,0.55) 0%, rgba(43,181,232,0) 52%), linear-gradient(140deg, #1A40FF 0%, #0C1F80 58%, #081555 100%)',
+            }}
+          />
 
-        {/* Brand symbol watermark — restores the mark that used to live in the
-            legacy photo (replaced by the gradient above). Oversized, centered,
-            very faint; the copy (z-10) stays fully legible on top. */}
-        <div className="absolute inset-0 z-[3] flex items-center justify-center pointer-events-none">
-          <LeasefyMark variant="bare" size={520} className="text-white opacity-[0.08]" />
-        </div>
+          <div
+            className="absolute inset-0 z-[1] bg-cover bg-center"
+            style={{ backgroundImage: `url('${ARTE}')` }}
+            aria-hidden="true"
+          />
 
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-between p-10 lg:p-12 w-full">
-          {/* Top — wordmark (the symbol now lives in the centered watermark behind) */}
-          <div>
-            {/* Brand — authenticated users go to their dashboard, not the landing */}
-            <BrandHomeLink className="inline-flex items-center group">
-              <LeasefyWordmark className="text-white" style={{ fontSize: 21 }} />
+          {/* Velos: uno arriba para que el logotipo se lea sobre cualquier
+              imagen, otro abajo para la frase. Sin esto el blanco depende de
+              qué foto haya, que es lo que no se puede garantizar. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 z-[2]"
+            style={{
+              background:
+                'linear-gradient(to bottom, rgba(6,16,64,0.45) 0%, rgba(6,16,64,0) 26%), linear-gradient(to top, rgba(6,16,64,0.72) 0%, rgba(6,16,64,0) 46%)',
+            }}
+          />
+
+          <div className="relative z-10 flex w-full flex-col justify-between p-10 lg:p-12">
+            {/* El logotipo de la sidebar. Pinta con `currentColor`, así que
+                `text-white` alcanza: no hace falta un asset aparte en blanco. */}
+            <BrandHomeLink className="inline-flex w-fit items-center">
+              <LeasefyLogotype size={26} className="text-white" title="Leasefy" />
             </BrandHomeLink>
-          </div>
 
-          {/* Bottom — title, subtitle, benefits, metrics */}
-          <div className="max-w-[440px]">
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
+            <motion.p
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              className="max-w-[15ch] font-heading text-[34px] font-medium leading-[1.12] tracking-[-0.025em] text-white lg:text-[40px]"
             >
-              <h1 className="font-heading font-medium tracking-[-0.02em] leading-[1.16] text-white text-[28px] lg:text-[31px]">
-                Toda tu operación inmobiliaria,
-                <br />
-                en una sola plataforma.
-              </h1>
-            </motion.div>
-
-            {/* Tres beneficios — etiqueta mono + descripción, compactos */}
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.15 }}
-              className="mt-7 space-y-3.5"
-            >
-              {FEATURES.map((feature, i) => (
-                <div key={i} className="flex items-baseline gap-3">
-                  <span className="w-1 h-1 rounded-[1px] bg-[#7DE08A] flex-shrink-0 translate-y-[-2px]" />
-                  <div>
-                    <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-white/90 leading-none">
-                      {feature.label}
-                    </p>
-                    <p className="mt-1 text-[12px] text-white/50 leading-snug">{feature.description}</p>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-
-            {/* Métricas inferiores */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="mt-8 pt-5 border-t border-white/10 flex items-start gap-10"
-            >
-              {STATS.map((stat, i) => (
-                <div key={i}>
-                  <div className="text-[17px] font-heading font-medium text-white tabular-nums leading-none">{stat.value}</div>
-                  <div className="mt-1.5 font-mono text-[9.5px] font-medium uppercase tracking-[0.08em] text-white/45 leading-snug">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </motion.div>
+              Todo el arriendo, en un solo lugar.
+            </motion.p>
           </div>
         </div>
-      </div>
 
-      {/* Right Panel — auth form, vertically centered, left-aligned content */}
-      <div className="w-full lg:w-[45%] lg:ml-[55%] bg-background">
-        <div className="min-h-screen flex flex-col py-6 sm:py-8 px-6 sm:px-8 lg:px-12">
-          {/* Top bar with back link */}
-          <div className="w-full max-w-[400px] mx-auto flex items-center justify-between">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-[13px] text-fg-subtle hover:text-fg transition-colors group"
-            >
-              <ArrowRight className="w-4 h-4 rotate-180 group-hover:-translate-x-0.5 transition-transform" />
-              Inicio
-            </Link>
+        {/* ── Derecha: el formulario ────────────────────────────────────── */}
+        <div className="w-full bg-background lg:ml-[52%] lg:w-[48%]">
+          <div className="flex min-h-screen flex-col px-6 py-6 sm:px-10 sm:py-8 lg:px-16">
+            <div className="mx-auto flex w-full max-w-[400px] items-center justify-between">
+              <Link
+                href="/"
+                className="group inline-flex items-center gap-1.5 text-[13px] text-fg-subtle transition-colors hover:text-fg"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+                Inicio
+              </Link>
 
-            {/* Mobile logo — authenticated users go to their dashboard */}
-            <div className="lg:hidden">
-              <BrandHomeLink className="inline-flex items-center justify-center">
-                <LeasefyLogo size={24} tone="brand" />
+              {/* En móvil no hay panel izquierdo: la marca tiene que estar acá
+                  o la pantalla no dice de quién es. */}
+              <BrandHomeLink className="inline-flex items-center lg:hidden">
+                <LeasefyLogotype size={20} className="text-fg" title="Leasefy" />
               </BrandHomeLink>
             </div>
-          </div>
 
-          {/* Centered form */}
-          <div className="flex-1 flex flex-col justify-center w-full max-w-[400px] mx-auto py-10">
-            <Suspense fallback={<AuthFormFallback />}>
-              <AuthForm />
-            </Suspense>
+            <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center py-12">
+              <Suspense fallback={<AuthFormFallback />}>
+                <AuthForm />
+              </Suspense>
 
-            {/* Footer */}
-            <p className="mt-10 text-[11.5px] text-fg-subtle leading-relaxed">
-              Al continuar, aceptas nuestros{' '}
-              <Link href="/terminos" className="text-fg-muted hover:text-fg underline-offset-2 hover:underline">
-                Términos
-              </Link>{' '}
-              y{' '}
-              <Link href="/privacidad" className="text-fg-muted hover:text-fg underline-offset-2 hover:underline">
-                Política de Privacidad
-              </Link>
-            </p>
+              <p className="mt-10 text-[11.5px] leading-relaxed text-fg-subtle">
+                Al continuar, aceptás nuestros{' '}
+                <Link
+                  href="/terminos"
+                  className="text-fg-muted underline-offset-2 hover:text-fg hover:underline"
+                >
+                  Términos
+                </Link>{' '}
+                y la{' '}
+                <Link
+                  href="/privacidad"
+                  className="text-fg-muted underline-offset-2 hover:text-fg hover:underline"
+                >
+                  Política de Privacidad
+                </Link>
+                .
+              </p>
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </ForceLightMode>
   );
 }

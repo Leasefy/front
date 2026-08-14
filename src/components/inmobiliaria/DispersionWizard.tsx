@@ -54,6 +54,10 @@ interface WizardState {
 interface DispersionDraft {
   propietarioId: string;
   propietarioName: string;
+  /** Lo que el propietario paga: predial, reparaciones a su cargo. */
+  totalConceptosACargo: number;
+  /** Lo que la inmobiliaria le abona: devoluciones, reajustes. */
+  totalConceptosAFavor: number;
   items: {
     cobroId: string;
     propertyTitle: string;
@@ -112,61 +116,6 @@ function formatMonth(month: string): string {
 }
 
 /**
- * Group cobros by propietario and calculate commissions
- */
-function calculateDispersionDrafts(
-  cobros: Cobro[],
-  propietarios: Propietario[],
-  consignaciones: Consignacion[],
-): DispersionDraft[] {
-  // Group paid cobros by propietario
-  const grouped = cobros
-    .filter((c) => c.status === 'paid')
-    .reduce((acc, cobro) => {
-      const key = cobro.propietarioId;
-      if (!acc[key]) {
-        acc[key] = [];
-      }
-      acc[key].push(cobro);
-      return acc;
-    }, {} as Record<string, Cobro[]>);
-
-  // Calculate drafts
-  return Object.entries(grouped).map(([propietarioId, propCobros]) => {
-    const propietario = propietarios.find((p) => p.id === propietarioId);
-
-    const items = propCobros.map((cobro) => {
-      const consignacion = consignaciones.find((c) => c.id === cobro.consignacionId);
-      const commissionPercent = consignacion?.commissionPercent || 10;
-      const commissionAmount = Math.round(cobro.paidAmount * (commissionPercent / 100));
-      const netAmount = cobro.paidAmount - commissionAmount;
-
-      return {
-        cobroId: cobro.id,
-        propertyTitle: cobro.propertyTitle,
-        rentCollected: cobro.paidAmount,
-        commissionPercent,
-        commissionAmount,
-        netAmount,
-      };
-    });
-
-    const totalCollected = items.reduce((sum, i) => sum + i.rentCollected, 0);
-    const totalCommission = items.reduce((sum, i) => sum + i.commissionAmount, 0);
-    const netToPropietario = items.reduce((sum, i) => sum + i.netAmount, 0);
-
-    return {
-      propietarioId,
-      propietarioName: propietario?.name || 'Propietario desconocido',
-      items,
-      totalCollected,
-      totalCommission,
-      netToPropietario,
-    };
-  });
-}
-
-/**
  * DispersionWizard - 6-step wizard for generating monthly dispersions
  */
 export function DispersionWizard({
@@ -195,16 +144,60 @@ export function DispersionWizard({
     generatedDispersiones: [],
   });
 
-  // Update drafts when data loads or month changes
+  /*
+   * Los borradores los calcula EL BACK, con la misma función que usa al
+   * generar: lo que se ve acá es lo que se va a guardar.
+   *
+   * Antes se calculaban en el navegador y daban otros números — la comisión
+   * sobre lo pagado en vez de sobre el canon, un 10% inventado cuando no
+   * encontraba la consignación, sin descontar los conceptos del propietario, y
+   * el nombre como «Propietario desconocido».
+   */
+  const [cargandoPrevia, setCargandoPrevia] = useState(false);
+  const [errorPrevia, setErrorPrevia] = useState<string | null>(null);
+  /** Cuántas ya existen: sin esto, «no hay nada» tapa «ya se generaron». */
+  const [yaGenerados, setYaGenerados] = useState(0);
+
   useEffect(() => {
-    if (allCobros.length > 0) {
-      const cobrosRecibidos = allCobros.filter(
-        (c) => c.month === state.month && c.status === 'paid'
-      );
-      const dispersionDrafts = calculateDispersionDrafts(cobrosRecibidos, propietarios, consignaciones);
-      setState((prev) => ({ ...prev, cobrosRecibidos, dispersionDrafts }));
-    }
-  }, [allCobros, propietarios, consignaciones, state.month]);
+    let cancelado = false;
+    setCargandoPrevia(true);
+    setErrorPrevia(null);
+
+    dispersionesApi
+      .preview(state.month)
+      .then((previa) => {
+        if (cancelado) return;
+        setYaGenerados(previa.yaGenerados);
+        setState((prev) => ({
+          ...prev,
+          cobrosRecibidos: [],
+          dispersionDrafts: previa.propietarios
+            .filter((p) => !p.yaExiste)
+            .map((p) => ({
+              propietarioId: p.propietarioId,
+              propietarioName: p.propietarioName,
+              items: p.items,
+              totalCollected: p.totalCollected,
+              totalCommission: p.totalCommission,
+              totalConceptosACargo: p.totalConceptosACargo,
+              totalConceptosAFavor: p.totalConceptosAFavor,
+              netToPropietario: p.netToPropietario,
+            })),
+        }));
+      })
+      .catch(() => {
+        if (!cancelado) {
+          setErrorPrevia('No pudimos calcular las dispersiones de este mes.');
+        }
+      })
+      .finally(() => {
+        if (!cancelado) setCargandoPrevia(false);
+      });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [state.month]);
 
   // Check if dispersiones already exist for the month
   const existingDispersiones = useMemo(() => {
@@ -213,22 +206,19 @@ export function DispersionWizard({
 
   const hasExistingDispersiones = existingDispersiones.length > 0;
 
-  // Update cobros when month changes
+  /*
+   * Cambiar de mes sólo cambia el mes: el efecto de arriba vuelve a pedirle la
+   * cuenta al back. Antes acá se recalculaba todo en el navegador, con una
+   * fórmula distinta a la del back.
+   */
   const handleMonthChange = useCallback((month: string) => {
-    const cobrosRecibidos = allCobros.filter(
-      (c) => c.month === month && c.status === 'paid'
-    );
-    const dispersionDrafts = calculateDispersionDrafts(cobrosRecibidos, propietarios, consignaciones);
-
     setState((prev) => ({
       ...prev,
       month,
-      cobrosRecibidos,
-      dispersionDrafts,
       selectedForApproval: [],
       generatedDispersiones: [],
     }));
-  }, [allCobros, propietarios, consignaciones]);
+  }, []);
 
   // Step validation
   const isStepValid = useMemo(() => {
@@ -236,7 +226,7 @@ export function DispersionWizard({
       case 1:
         return Boolean(state.month);
       case 2:
-        return state.cobrosRecibidos.length > 0;
+        return state.dispersionDrafts.length > 0;
       case 3:
         return state.dispersionDrafts.length > 0;
       case 4:
@@ -302,7 +292,7 @@ export function DispersionWizard({
     }));
 
     setCurrentStep(5);
-  }, [state.dispersionDrafts, state.month]);
+  }, [state.dispersionDrafts, state.month, propietarios]);
 
   // Toggle selection for approval
   const toggleSelection = useCallback((id: string) => {
@@ -407,7 +397,9 @@ export function DispersionWizard({
     } finally {
       setIsSubmitting(false);
     }
-  }, [state.generatedDispersiones, state.selectedForApproval, state.month, onComplete]);
+    // Sólo el mes y el callback: la generación la hace el back con el mes, no
+    // con los borradores locales.
+  }, [state.month, onComplete]);
 
   // Cancel handler
   const handleCancel = useCallback(() => {
@@ -517,9 +509,9 @@ export function DispersionWizard({
             {/* Summary Stats */}
             <div className="flex items-center gap-8 pb-4 border-b border-border">
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Total Cobros</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Inmuebles</p>
                 <p className="text-xl font-semibold text-foreground tabular-nums">
-                  {state.cobrosRecibidos.length}
+                  {state.dispersionDrafts.reduce((n, d) => n + d.items.length, 0)}
                 </p>
               </div>
               <div>
@@ -576,18 +568,36 @@ export function DispersionWizard({
             </div>
 
             {/* Empty state */}
-            {state.cobrosRecibidos.length === 0 && (
+            {/* Tres estados, no uno: cargando, error y vacío dicen cosas
+                distintas, y el vacío tiene DOS causas — o nadie pagó, o ya se
+                generaron todas. Meterlas en el mismo cartel manda a buscar el
+                problema donde no está. */}
+            {cargandoPrevia ? (
+              <div className="p-12 text-center rounded-xl border border-dashed border-border">
+                <p className="text-muted-foreground">Calculando…</p>
+              </div>
+            ) : errorPrevia ? (
+              <div className="p-12 text-center rounded-xl border border-dashed border-destructive/40">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  No pudimos calcular este mes
+                </h3>
+                <p className="text-muted-foreground">{errorPrevia}</p>
+              </div>
+            ) : state.dispersionDrafts.length === 0 ? (
               <div className="p-12 text-center rounded-xl border border-dashed border-border">
                 <CurrencyCircleDollar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">
-                  Sin cobros pagados
+                  {yaGenerados > 0
+                    ? 'Ya están generadas'
+                    : 'Sin cobros pagados'}
                 </h3>
                 <p className="text-muted-foreground">
-                  No hay cobros pagados para {formatMonth(state.month)}.
-                  Selecciona otro mes o espera a que se registren pagos.
+                  {yaGenerados > 0
+                    ? `Las ${yaGenerados} dispersiones de ${formatMonth(state.month)} ya existen. Buscalas en la lista.`
+                    : `No hay cobros pagados en ${formatMonth(state.month)}. Elegí otro mes o esperá a que se registren pagos.`}
                 </p>
               </div>
-            )}
+            ) : null}
           </div>
         );
 
@@ -725,6 +735,29 @@ export function DispersionWizard({
                         -{formatCurrency(draft.totalCommission)}
                       </span>
                     </div>
+                    {/* Sin estos renglones la tarjeta se contradice:
+                        1.000.000 − 100.000 no da 0. Un total que no cuadra con
+                        sus partes no se puede defender delante del dueño. */}
+                    {draft.totalConceptosAFavor > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Conceptos a su favor
+                        </span>
+                        <span className="font-medium text-foreground">
+                          {formatCurrency(draft.totalConceptosAFavor)}
+                        </span>
+                      </div>
+                    )}
+                    {draft.totalConceptosACargo > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Conceptos a su cargo
+                        </span>
+                        <span className="font-medium text-destructive">
+                          -{formatCurrency(draft.totalConceptosACargo)}
+                        </span>
+                      </div>
+                    )}
                     <div className="pt-2 border-t border-border flex items-center justify-between">
                       <span className="font-medium text-foreground">Neto</span>
                       <span className="text-lg font-semibold text-foreground tabular-nums">
@@ -852,12 +885,18 @@ export function DispersionWizard({
                   weight="fill"
                 />
               </motion.div>
+              {/* Este paso es la CONFIRMACIÓN, no el resultado: acá todavía
+                  no se guardó nada. Decía «Se generaron N dispersiones»
+                  antes de que existiera ninguna. */}
               <h3 className="text-xl font-semibold text-foreground mb-2">
-                Dispersiones Listas
+                Todo listo para generar
               </h3>
               <p className="text-muted-foreground">
-                Se generaron {state.selectedForApproval.length} dispersiones
-                para {formatMonth(state.month)}
+                Se van a generar {state.selectedForApproval.length}{' '}
+                {state.selectedForApproval.length === 1
+                  ? 'dispersión'
+                  : 'dispersiones'}{' '}
+                para {formatMonth(state.month)}.
               </p>
             </div>
 

@@ -365,6 +365,45 @@ export interface Dispersion {
   updatedAt: string;
 }
 
+/**
+ * Lo que `GET /dispersiones/preview` dice que pasaría al generar.
+ *
+ * Sale del MISMO cálculo que `generate`: lo que se muestra antes de apretar el
+ * botón es lo que se va a guardar.
+ */
+export interface VistaPreviaDeDispersiones {
+  month: string;
+  totalPropietarios: number;
+  /** Los que ya tienen dispersión de este mes: generar los saltaría. */
+  yaGenerados: number;
+  totalAGirar: number;
+  totalComisiones: number;
+  propietarios: {
+    propietarioId: string;
+    propietarioName: string;
+    propietarioBankName: string | null;
+    propietarioBankAccount: string | null;
+    yaExiste: boolean;
+    totalCollected: number;
+    totalCommission: number;
+    totalConceptosAFavor: number;
+    totalConceptosACargo: number;
+    totalDeTerceros: number;
+    netToPropietario: number;
+    items: {
+      cobroId: string;
+      propertyTitle: string;
+      rentCollected: number;
+      commissionPercent: number;
+      commissionAmount: number;
+      netAmount: number;
+      conceptosAFavor: number;
+      conceptosACargo: number;
+      deTerceros: number;
+    }[];
+  }[];
+}
+
 export interface DispersionSummary {
   month: string;
   totalToDisburse: number;

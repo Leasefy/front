@@ -372,7 +372,13 @@ export function DispersionTable({
         {/* Summary Row */}
         {showSummary && dispersiones.length > 0 && (
           <TableFooter>
-            <TableRow className="bg-muted/30 border-t-2 border-border">
+            {/*
+              Una sola línea, no tres. El `TFoot` del DS ya trae su fondo y su
+              separador, y la última fila del cuerpo trae el suyo: sumarle acá
+              un `border-t-2` y otro tinte apilaba tres rayas al pie de la
+              tabla. El pie se distingue por el peso de la tipografía.
+            */}
+            <TableRow className="border-t border-border hover:bg-transparent">
               <TableCell colSpan={3} className="p-4">
                 <div className="flex items-center gap-4">
                   <span className="font-semibold text-foreground">
@@ -417,7 +423,10 @@ export function DispersionTable({
                   {formatCurrency(summary.totalToDisburse)}
                 </span>
               </TableCell>
-              <TableCell colSpan={3} />
+              {/* Las columnas que no suman nada quedan vacías, pero con el
+                  mismo padding: sin él la fila cambia de alto y el borde se ve
+                  quebrado en el último tramo. */}
+              <TableCell colSpan={3} className="p-4" />
             </TableRow>
           </TableFooter>
         )}

@@ -67,12 +67,12 @@ function GoogleIcon({ className }: { className?: string }) {
 /** Hairline divider with a mono technical label — DS signature. */
 function MonoDivider({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 my-6">
-      <div className="h-px flex-1 bg-border" />
-      <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
+    <div className="my-7 flex items-center gap-4">
+      <div className="h-px flex-1 bg-border/70" />
+      <span className="font-mono text-[9.5px] font-medium uppercase tracking-[0.14em] text-fg-subtle">
         {children}
       </span>
-      <div className="h-px flex-1 bg-border" />
+      <div className="h-px flex-1 bg-border/70" />
     </div>
   );
 }
@@ -84,7 +84,7 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="w-full h-11 flex items-center justify-center gap-2.5 rounded-full border border-border bg-surface hover:border-border-strong hover:bg-surface-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-border bg-surface text-[14px] font-medium text-fg transition-all hover:border-border-strong hover:bg-surface-muted active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50"
     >
       {isLoading ? (
         <SpinnerGap className="w-4 h-4 animate-spin text-fg-subtle" />
@@ -451,15 +451,15 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
 
         <Eyebrow>{eyebrow}</Eyebrow>
 
-        <h1 className="mt-3 font-heading text-[24px] font-medium text-fg tracking-[-0.01em] leading-tight">
+        <h1 className="mt-3 font-heading text-[30px] font-medium leading-[1.15] tracking-[-0.025em] text-fg">
           {mode === 'login' && 'Bienvenido de vuelta'}
           {mode === 'register' && registerStep === 'credentials' && 'Crea tu cuenta'}
           {mode === 'register' && registerStep === 'confirm-email' && 'Revisa tu correo'}
           {mode === 'forgot-password' && 'Recupera tu contraseña'}
           {mode === 'reset-sent' && 'Revisa tu correo'}
         </h1>
-        <p className="mt-1.5 text-[13.5px] text-fg-subtle leading-relaxed">
-          {mode === 'login' && 'Ingresa a tu cuenta para continuar.'}
+        <p className="mt-2.5 text-[14px] leading-relaxed text-fg-subtle">
+          {mode === 'login' && 'Ingresá a tu cuenta para continuar.'}
           {mode === 'register' && registerStep === 'credentials' && 'Ingresa tus datos para continuar.'}
           {mode === 'register' && registerStep === 'confirm-email' && (
             <>Enviamos un enlace de confirmación a <span className="font-medium text-fg-muted">{resetEmail}</span>.</>
@@ -520,13 +520,24 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 </div>
               </div>
               {error && <ErrorBanner>{error}</ErrorBanner>}
-              <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
-                {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Ingresando...</>) : 'Iniciar sesión'}
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="h-12 w-full rounded-full text-[14px] transition-transform active:scale-[0.995]"
+              >
+                {isLoading ? (
+                  <>
+                    <SpinnerGap className="mr-2 h-4 w-4 animate-spin" />
+                    Ingresando…
+                  </>
+                ) : (
+                  'Iniciar sesión'
+                )}
               </Button>
             </form>
 
             <p className="mt-7 text-[13px] text-fg-subtle">
-              ¿No tienes cuenta?{' '}
+              ¿Todavía no tenés cuenta?{' '}
               <button
                 type="button"
                 onClick={() => handleModeSwitch('register')}

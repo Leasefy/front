@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { ArrowLeft } from '@phosphor-icons/react';
 
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
@@ -13,9 +13,10 @@ import { ForceLightMode } from '@/components/providers/ForceLightMode';
 /**
  * La obra de marca que ocupa el panel izquierdo.
  *
- * Va como `background-image` sobre el degradado, NO como <Image>: si el
- * archivo no está, se ve el degradado y no el ícono de imagen rota. Un fondo
- * que falta tiene que degradar a algo que parezca elegido.
+ * Va con `next/image` y no como `background-image`: ahora que no hay nada
+ * encima, la única tarea del panel es mostrarla bien. `next/image` sirve la
+ * variante del tamaño del dispositivo (y en WebP donde se pueda) en vez de
+ * mandar el JPEG entero para que el navegador lo reescale.
  */
 const ARTE = '/brand/login.jpg';
 
@@ -52,51 +53,24 @@ export default function AuthPage() {
         className="flex min-h-screen flex-col bg-background lg:flex-row"
         data-lenis-prevent
       >
-        {/* ── Izquierda: la marca ───────────────────────────────────────── */}
+        {/* ── Izquierda: la obra, sola ──────────────────────────────────── */}
+        {/*
+          Nada encima: ni logotipo, ni frase, ni velos. La marca ya está en el
+          formulario de al lado, y cada capa que se le pone a la obra es una
+          capa que la ensucia. El crema de base es el de la propia pieza, así
+          que mientras carga no hay un rectángulo gris fuera de tono.
+        */}
         <div className="relative hidden overflow-hidden bg-[#EFE9E1] lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-[52%]">
-          {/*
-            La obra manda, así que el texto va OSCURO sobre ella y no blanco:
-            es una pieza clara y cálida, y taparla con un velo azul para poder
-            escribir en blanco encima sería usarla de fondo en vez de mostrarla.
-            El color base es el de la obra, no el degradado de marca — si el
-            archivo faltara, lo que se ve sigue siendo legible con el mismo
-            texto, que es la condición para que un fondo pueda faltar.
-          */}
-          <div
-            className="absolute inset-0 z-0 bg-cover bg-center"
-            style={{ backgroundImage: `url('${ARTE}')` }}
+          <Image
+            src={ARTE}
+            alt=""
             aria-hidden="true"
+            fill
+            priority
+            quality={92}
+            sizes="52vw"
+            className="object-cover object-center"
           />
-
-          {/* Dos velos claros, apenas: uno arriba para el logotipo, otro abajo
-              para la frase. Sin esto la legibilidad depende de qué zona de la
-              foto quede debajo, que cambia con cada alto de ventana. */}
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 z-[1]"
-            style={{
-              background:
-                'linear-gradient(to bottom, rgba(247,244,240,0.82) 0%, rgba(247,244,240,0) 24%), linear-gradient(to top, rgba(247,244,240,0.90) 0%, rgba(247,244,240,0.35) 22%, rgba(247,244,240,0) 42%)',
-            }}
-          />
-
-          <div className="relative z-10 flex w-full flex-col justify-between p-10 lg:p-12">
-            {/* El logotipo de la sidebar. Pinta con `currentColor`: acá va en
-                el gris casi negro de la marca, no en blanco, porque el fondo
-                es claro. */}
-            <BrandHomeLink className="inline-flex w-fit items-center">
-              <LeasefyLogotype size={26} className="text-[#141414]" title="Leasefy" />
-            </BrandHomeLink>
-
-            <motion.p
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              className="max-w-[15ch] font-heading text-[34px] font-medium leading-[1.12] tracking-[-0.025em] text-[#141414] lg:text-[40px]"
-            >
-              Todo el arriendo, en un solo lugar.
-            </motion.p>
-          </div>
         </div>
 
         {/* ── Derecha: el formulario ────────────────────────────────────── */}

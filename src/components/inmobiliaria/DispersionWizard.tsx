@@ -35,6 +35,7 @@ import {
 } from '@/lib/hooks/useInmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
 import { ComisionDesglose } from './ComisionDesglose';
+import { nombreDelMes } from '@/lib/utils/mes';
 
 interface DispersionWizardProps {
   initialMonth?: string;
@@ -107,10 +108,7 @@ function getRecentMonths(count: number): { value: string; label: string }[] {
  * Format month for display
  */
 function formatMonth(month: string): string {
-  return new Date(month + '-01').toLocaleDateString('es-CL', {
-    month: 'long',
-    year: 'numeric',
-  });
+  return nombreDelMes(month);
 }
 
 /**
@@ -261,12 +259,13 @@ export function DispersionWizard({
         id: `disp-gen-${state.month}-${index + 1}`,
         propietarioId: draft.propietarioId,
         propietarioName: draft.propietarioName,
-        propietarioBankAccount: propietario?.bankAccount || {
-          bank: 'bancolombia',
-          accountType: 'savings',
-          accountNumber: '****0000',
-          accountHolder: draft.propietarioName,
-        },
+        /*
+         * Sin cuenta registrada va `null`, y la pantalla lo dice. Antes se
+         * fabricaba una: banco «bancolombia», cuenta «****0000». En una
+         * pantalla sobre A DÓNDE GIRAR PLATA, un dato inventado se ve igual
+         * que uno real — y es el que menos se puede inventar.
+         */
+        propietarioBankAccount: propietario?.bankAccount ?? null,
         month: state.month,
         items: draft.items.map((item) => ({
           cobroId: item.cobroId,
@@ -275,9 +274,20 @@ export function DispersionWizard({
           commissionPercent: item.commissionPercent,
           commissionAmount: item.commissionAmount,
           netAmount: item.netAmount,
+          /*
+           * El borrador del wizard no conoce los conceptos del contrato: es
+           * una vista previa, y la cuenta definitiva la hace el back al
+           * generar. Van en cero para no insinuar que ya se descontaron.
+           */
+          conceptosAFavor: 0,
+          conceptosACargo: 0,
+          deTerceros: 0,
         })),
         totalCollected: draft.totalCollected,
         totalCommission: draft.totalCommission,
+        totalConceptosAFavor: 0,
+        totalConceptosACargo: 0,
+        totalDeTerceros: 0,
         netToPropietario: draft.netToPropietario,
         status: 'pending' as DispersionStatus,
         createdAt: new Date().toISOString(),
@@ -367,33 +377,31 @@ export function DispersionWizard({
     setIsSubmitting(true);
 
     try {
-      // Persist each selected dispersion via the real API. The backend
-      // assigns id/status/transferReference — we never fabricate them here.
-      const toPersist = state.generatedDispersiones.filter((d) =>
-        state.selectedForApproval.includes(d.id)
-      );
+      /*
+       * El back genera y calcula. Antes acá se armaba el payload con los
+       * totales YA calculados en el navegador y se posteaba a `POST
+       * /dispersiones` — una ruta que no existe, así que nunca guardó nada.
+       *
+       * Y de haber existido habría sido peor: los montos del cliente no
+       * descuentan lo que paga el propietario ni sacan la administración de la
+       * copropiedad. La cuenta vive en el back, en un solo lugar.
+       */
+      const resultado = await dispersionesApi.generate(state.month);
 
-      const completedDispersiones = await Promise.all(
-        toPersist.map((d) => {
-          const payload: Partial<Dispersion> = {
-            propietarioId: d.propietarioId,
-            propietarioName: d.propietarioName,
-            propietarioBankAccount: d.propietarioBankAccount,
-            month: d.month,
-            items: d.items,
-            totalCollected: d.totalCollected,
-            totalCommission: d.totalCommission,
-            netToPropietario: d.netToPropietario,
-          };
-          return dispersionesApi.create(payload);
-        })
-      );
+      if (resultado.created === 0) {
+        toast.info('No se generó ninguna dispersión', {
+          description:
+            resultado.skipped > 0
+              ? `Ya existían las ${resultado.skipped} dispersiones de ${formatMonth(state.month)}.`
+              : `No hay cobros pagados en ${formatMonth(state.month)}.`,
+        });
+      } else {
+        toast.success('Dispersiones generadas correctamente', {
+          description: `Se generaron ${resultado.created} dispersiones para ${formatMonth(state.month)}`,
+        });
+      }
 
-      toast.success('Dispersiones generadas correctamente', {
-        description: `Se generaron ${completedDispersiones.length} dispersiones para ${formatMonth(state.month)}`,
-      });
-
-      onComplete?.(completedDispersiones);
+      onComplete?.([]);
     } catch {
       toast.error('Error al generar dispersiones');
     } finally {
@@ -642,6 +650,9 @@ export function DispersionWizard({
                       commissionPercent: i.commissionPercent,
                       commissionAmount: i.commissionAmount,
                       netAmount: i.netAmount,
+                      conceptosAFavor: 0,
+                      conceptosACargo: 0,
+                      deTerceros: 0,
                     }))}
                     variant="compact"
                     showPercentages
@@ -815,7 +826,8 @@ export function DispersionWizard({
                           {formatCurrency(dispersion.netToPropietario)}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {dispersion.propietarioBankAccount.accountNumber}
+                          {dispersion.propietarioBankAccount?.accountNumber ??
+                            'Sin cuenta registrada'}
                         </p>
                       </div>
                     </div>

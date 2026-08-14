@@ -213,6 +213,37 @@ export interface ContractAuditEvent {
 }
 
 // ============================================================================
+// Perfil tributario
+// ============================================================================
+
+/**
+ * Si una parte es agente retenedor, y de qué.
+ *
+ * La retención en la fuente la practica **quien paga**: entre dos personas
+ * naturales no hay; si el que paga es una empresa, sí. No depende de quién
+ * recibe.
+ */
+export interface PerfilTributario {
+  tipoPersona: 'NATURAL' | 'JURIDICA';
+  /** Cobra IVA en sus facturas. */
+  responsableIva: boolean;
+  agenteRetenedorRenta: boolean;
+  agenteRetenedorIva: boolean;
+  agenteRetenedorIca: boolean;
+  /**
+   * Si algún campo se dedujo del tipo de persona en vez de leerse. Se muestra
+   * en pantalla: un número calculado sobre un supuesto no se puede defender.
+   */
+  esPorDefecto: boolean;
+}
+
+export interface PerfilesDelContrato {
+  inquilino: PerfilTributario;
+  propietario: PerfilTributario;
+  inmobiliaria: PerfilTributario;
+}
+
+// ============================================================================
 // Contract
 // ============================================================================
 
@@ -249,6 +280,8 @@ export interface Contract {
   // ─── Administración ───────────────────────────────────────────────────────
   // No viajan en el documento firmado: corregirlos no invalida ninguna firma.
   // Se editan por PATCH /contracts/:id/administracion.
+  //
+  // Ver PerfilTributario / PerfilesDelContrato más abajo en este archivo.
 
   /** Decide el IVA del canon: vivienda excluida, comercial gravada. */
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL' | null;
@@ -261,6 +294,29 @@ export interface Contract {
    * desacuerdo cuando las dos no coinciden, en vez de elegir un número.
    */
   comisionDeConsignacion?: number | null;
+
+  /**
+   * Quién retiene qué. La retención la practica **quien paga**, así que sin
+   * esto la liquidación de cada concepto era una suposición.
+   *
+   * Cada perfil trae `esPorDefecto`: si la parte no tiene el dato configurado
+   * se deduce del tipo de persona y se marca. Un supuesto y un hecho son cinco
+   * booleanos idénticos — si no se distinguen, la pantalla muestra una
+   * retención inventada con la misma cara que una real.
+   */
+  perfilesTributarios?: PerfilesDelContrato | null;
+
+  /**
+   * Lo guardado tal cual, para poblar el formulario. `perfilesTributarios` ya
+   * trae los defaults mezclados y no distingue «configurado como NATURAL» de
+   * «vacío, y NATURAL es el default» — abrir el editor con eso convertiría un
+   * vacío en una respuesta al guardar.
+   */
+  inquilinoTipoPersona?: 'NATURAL' | 'JURIDICA' | null;
+  inquilinoResponsableIva?: boolean | null;
+  inquilinoRetenedorRenta?: boolean | null;
+  inquilinoRetenedorIva?: boolean | null;
+  inquilinoRetenedorIca?: boolean | null;
 
   // Signatures
   landlordSignature: Signature | null;

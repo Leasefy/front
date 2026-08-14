@@ -3,6 +3,8 @@
  * Maps to /contracts controller in NestJS backend
  */
 
+import type { PerfilesDelContrato } from '@/lib/types/contract';
+
 export interface BackendSignature {
   signedAt: string;
   signedBy: string;
@@ -58,6 +60,24 @@ export interface BackendContract {
   comisionPorcentaje?: number | string | null;
   /** La de la consignación — la que de verdad liquida. Sólo la devuelve GET /:id. */
   comisionDeConsignacion?: number | null;
+  /**
+   * Quién retiene qué, por parte. Sólo lo devuelven GET /:id y
+   * PATCH /:id/administracion — las dos con la MISMA forma, a propósito: una
+   * respuesta sin el campo se leería como «no hay perfiles» justo después de
+   * haberlos guardado.
+   */
+  perfilesTributarios?: PerfilesDelContrato | null;
+  /*
+   * Los campos CRUDOS del perfil del inquilino, tal cual están guardados.
+   * `perfilesTributarios.inquilino` ya viene con los defaults mezclados, así
+   * que no sirve para poblar un formulario: no distingue «configurado en
+   * NATURAL» de «vacío, y NATURAL es el default».
+   */
+  inquilinoTipoPersona?: 'NATURAL' | 'JURIDICA' | null;
+  inquilinoResponsableIva?: boolean | null;
+  inquilinoRetenedorRenta?: boolean | null;
+  inquilinoRetenedorIva?: boolean | null;
+  inquilinoRetenedorIca?: boolean | null;
 
   // ─── PDF origin ──────────────────────────────────────────────────────────
   contractOrigin?: ContractOrigin;

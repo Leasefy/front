@@ -317,24 +317,40 @@ export type DispersionStatus = 'pending' | 'processing' | 'completed' | 'failed'
 export interface DispersionItem {
   cobroId: string;
   propertyTitle: string;
+  /** Canon recaudado, SIN la administración: ésa es de la copropiedad. */
   rentCollected: number;
   commissionPercent: number;
   commissionAmount: number;
   netAmount: number;
+  /** Conceptos del contrato que suman a favor del propietario. */
+  conceptosAFavor: number;
+  /** Conceptos que él paga: predial, reparaciones a su cargo. */
+  conceptosACargo: number;
+  /** Lo que entró y no es suyo: administración, seguros, mora. */
+  deTerceros: number;
 }
 
 export interface Dispersion {
   id: string;
   propietarioId: string;
   propietarioName: string;
-  propietarioBankAccount: PropietarioBankAccount;
+  /**
+   * `null` cuando el propietario no tiene cuenta registrada — un estado normal
+   * que hay que poder mostrar. El back manda dos strings sueltos; el objeto lo
+   * arma `adaptarDispersion`. Ver `lib/api/dispersion-adapter.ts`.
+   */
+  propietarioBankAccount: PropietarioBankAccount | null;
 
   month: string; // '2026-02'
   items: DispersionItem[];
 
   // Totals
+  /** Canon recaudado del mes, sin administración. */
   totalCollected: number;
   totalCommission: number;
+  totalConceptosAFavor: number;
+  totalConceptosACargo: number;
+  totalDeTerceros: number;
   netToPropietario: number;
 
   // Status
@@ -428,34 +444,79 @@ export const MANTENIMIENTO_TYPES: { type: MantenimientoType; labelEs: string; la
 // Reportes (Reports)
 // ============================================================================
 
+/**
+ * Un renglón de la liquidación: de dónde sale cada peso.
+ *
+ * Sin el motivo, un extracto sólo se puede revisar rehaciendo la cuenta a mano
+ * — y entonces no sirve para reclamar.
+ */
+export interface RenglonDeLiquidacion {
+  concepto: string;
+  /** Positivo suma a lo que recibe el propietario; negativo lo descuenta. */
+  valorCop: number;
+  motivo: string;
+}
+
+/**
+ * El extracto de un propietario, como lo manda
+ * `GET /inmobiliaria/propietarios/:id/extracto`.
+ *
+ * ⚠️ Este tipo declaraba `properties` y `summary`, que el back NUNCA envió: la
+ * respuesta trae `lineItems` y `totals`. Como la página lo cargaba en un
+ * `useState<any>`, tsc no veía nada y el componente hacía
+ * `extracto.properties.map(...)` sobre `undefined` — el modal reventaba al
+ * abrirlo. Es el mismo defecto que ya había tenido CarteraItem, en el tipo de
+ * al lado.
+ */
 export interface ExtractoPropietario {
   propietarioId: string;
   propietarioName: string;
   month: string;
   generatedAt: string;
 
-  properties: {
-    propertyId: string;
+  lineItems: {
+    cobroId: string;
+    consignacionId: string;
     propertyTitle: string;
-    propertyAddress: string;
-    tenantName: string;
+    propertyAddress: string | null;
+    tenantName: string | null;
+    /** Lo facturado al inquilino. */
     rentAmount: number;
     adminAmount: number;
-    totalCollected: number;
+    totalAmount: number;
+    paidAmount: number;
+    status: string;
     commissionPercent: number;
     commissionAmount: number;
+    /** Lo que se le gira al propietario por este inmueble. */
     netAmount: number;
-    paymentDate?: string;
-    paymentStatus: CobroStatus;
+    /** Canon efectivamente recaudado, SIN la administración. */
+    rentCollected: number;
+    /** Conceptos que suman a su favor (devoluciones, reajustes). */
+    conceptosAFavor: number;
+    /** Conceptos que él paga (predial, reparaciones a su cargo). */
+    conceptosACargo: number;
+    /** Lo que entró y no es suyo: administración, seguros, mora. */
+    deTerceros: number;
+    renglones: RenglonDeLiquidacion[];
   }[];
 
-  summary: {
-    totalProperties: number;
-    totalCollected: number;
-    totalCommissions: number;
-    netToPropietario: number;
-    paymentDate?: string;
-    paymentReference?: string;
+  totals: {
+    totalRent: number;
+    totalAdmin: number;
+    totalPaid: number;
+    totalCommission: number;
+    totalNet: number;
+    totalConceptosAFavor: number;
+    totalConceptosACargo: number;
+    totalDeTerceros: number;
+  };
+
+  bankInfo: {
+    bankName: string | null;
+    bankAccountType: string | null;
+    bankAccountNumber: string | null;
+    bankAccountHolder: string | null;
   };
 }
 

@@ -109,6 +109,14 @@ function mapBackendContract(bc: BackendContract): Contract {
     // compara textos y un 9% saldría mayor que un 10%.
     comisionPorcentaje: aNumero(bc.comisionPorcentaje),
     comisionDeConsignacion: aNumero(bc.comisionDeConsignacion),
+    // Quién retiene qué. Puede faltar en respuestas viejas: null significa
+    // «no vino», y la pantalla cae a los perfiles por defecto diciéndolo.
+    perfilesTributarios: bc.perfilesTributarios ?? null,
+    inquilinoTipoPersona: bc.inquilinoTipoPersona ?? null,
+    inquilinoResponsableIva: bc.inquilinoResponsableIva ?? null,
+    inquilinoRetenedorRenta: bc.inquilinoRetenedorRenta ?? null,
+    inquilinoRetenedorIva: bc.inquilinoRetenedorIva ?? null,
+    inquilinoRetenedorIca: bc.inquilinoRetenedorIca ?? null,
     // Deprecated: garantías no modeladas en backend todavía.
     guaranteeType: (bc.guaranteeType ?? 'poliza') as 'poliza' | 'codeudor',
     guaranteeDetails: bc.guaranteeDetails,
@@ -436,6 +444,15 @@ export const contractsApi = {
       usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
       periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
       comisionPorcentaje?: number;
+      /*
+       * El perfil tributario del inquilino. `null` es una acción —«volvé a no
+       * saberlo»— y no lo mismo que no mandar el campo, que lo deja como está.
+       */
+      inquilinoTipoPersona?: 'NATURAL' | 'JURIDICA' | null;
+      inquilinoResponsableIva?: boolean | null;
+      inquilinoRetenedorRenta?: boolean | null;
+      inquilinoRetenedorIva?: boolean | null;
+      inquilinoRetenedorIca?: boolean | null;
     },
   ): Promise<Contract> {
     const raw = await apiClient.patch<BackendContract>(

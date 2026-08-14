@@ -1,7 +1,7 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -21,7 +21,12 @@ import {
   dispersionesApi,
   propietariosApi,
 } from '@/lib/hooks/useInmobiliaria';
-import type { Dispersion, DispersionStatus, DispersionSummary } from '@/lib/types/inmobiliaria';
+import type {
+  Dispersion,
+  DispersionStatus,
+  DispersionSummary,
+  ExtractoPropietario as ExtractoPropietarioData,
+} from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import {
   DispersionResumen,
@@ -98,8 +103,14 @@ function DispersionesContent() {
   const { propietarios } = usePropietarios();
   const { config } = useInmobiliariaConfig();
 
-  // Use API data or empty array while loading
-  const dispersiones = apiDispersiones ?? [];
+  /*
+   * `?? []` a secas crea un array NUEVO en cada render. Todo lo que dependa de
+   * `dispersiones` —dos useMemo y un useEffect— se recalcula siempre, y el
+   * efecto del resumen entraba en bucle: efecto → setState → render → array
+   * nuevo → efecto. Mientras la ruta de resumen no existió, eso fueron ~2,5
+   * peticiones por segundo contra el back, para siempre.
+   */
+  const dispersiones = useMemo(() => apiDispersiones ?? [], [apiDispersiones]);
 
   // State for view mode
   const [viewMode, setViewMode] = useState<ViewMode>('table');
@@ -141,26 +152,45 @@ function DispersionesContent() {
     dispersionsFailed: 0,
   });
 
+  /*
+   * ⚠️ El efecto NO puede depender de `dispersiones`.
+   *
+   * `useDispersiones` devuelve un array nuevo en cada render, así que
+   * `dispersiones` cambia de identidad siempre. Con él en las dependencias:
+   * efecto → setSummary → render → array nuevo → efecto → … Un bucle infinito
+   * que, mientras `getSummary` falló (la ruta no existía), disparó ~2,5
+   * peticiones por segundo contra el back, indefinidamente.
+   *
+   * El respaldo local se calcula con `dispersionesRef`, que no reengancha.
+   */
+  const dispersionesRef = useRef(dispersiones);
+  dispersionesRef.current = dispersiones;
+
   useEffect(() => {
+    let cancelado = false;
     const fetchSummary = async () => {
       try {
         const data = await dispersionesApi.getSummary(filters.month);
-        setSummary(data);
-      } catch (error) {
-        // Calculate from local data as fallback
-        const monthDispersiones = dispersiones.filter((d) => d.month === filters.month);
+        if (!cancelado) setSummary(data);
+      } catch {
+        // Respaldo con lo que ya está en pantalla, para no mostrar ceros.
+        const delMes = dispersionesRef.current.filter((d) => d.month === filters.month);
+        if (cancelado) return;
         setSummary({
           month: filters.month,
-          totalToDisburse: monthDispersiones.reduce((sum, d) => sum + d.netToPropietario, 0),
-          totalCommissions: monthDispersiones.reduce((sum, d) => sum + d.totalCommission, 0),
-          dispersionsPending: monthDispersiones.filter((d) => d.status === 'pending').length,
-          dispersionsCompleted: monthDispersiones.filter((d) => d.status === 'completed').length,
-          dispersionsFailed: monthDispersiones.filter((d) => d.status === 'failed').length,
+          totalToDisburse: delMes.reduce((sum, d) => sum + d.netToPropietario, 0),
+          totalCommissions: delMes.reduce((sum, d) => sum + d.totalCommission, 0),
+          dispersionsPending: delMes.filter((d) => d.status === 'pending').length,
+          dispersionsCompleted: delMes.filter((d) => d.status === 'completed').length,
+          dispersionsFailed: delMes.filter((d) => d.status === 'failed').length,
         });
       }
     };
-    fetchSummary();
-  }, [filters.month, dispersiones]);
+    void fetchSummary();
+    return () => {
+      cancelado = true;
+    };
+  }, [filters.month]);
 
   // Count dispersiones by status for tabs (hybrid: summary + calculated processing)
   const statusCounts = useMemo(() => {
@@ -335,7 +365,12 @@ function DispersionesContent() {
   }, []);
 
   // Fetch extracto data for modal when dispersion is selected
-  const [extractoData, setExtractoData] = useState<any>(null);
+  /*
+   * Tipado, no `any`. Con `any` acá, el componente leía `extracto.properties`
+   * —un campo que el back nunca envió, la respuesta trae `lineItems`— y tsc no
+   * decía nada: el modal reventaba con un TypeError al abrirlo.
+   */
+  const [extractoData, setExtractoData] = useState<ExtractoPropietarioData | null>(null);
   const [extractoLoading, setExtractoLoading] = useState(false);
 
   // Load extracto when modal opens
@@ -360,7 +395,14 @@ function DispersionesContent() {
   }, [extractoDispersion, isExtractoOpen, t]);
 
   // Format month for display
-  const monthDisplay = new Date(filters.month + '-01').toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+  /*
+   * `new Date('2026-08-01')` se parsea como medianoche UTC y se pinta en hora
+   * local: en Colombia (UTC-5) retrocede al 31 de julio, y el título decía
+   * «julio de 2026» sobre los datos de agosto. Partiendo el string se lee el
+   * mes que dice, sin pasar por ningún huso.
+   */
+  const [anioSel, mesSel] = filters.month.split('-').map(Number);
+  const monthDisplay = new Date(anioSel, mesSel - 1, 1).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
     month: 'long',
     year: 'numeric',
   });
@@ -529,7 +571,15 @@ function DispersionesContent() {
 
       {/* Extracto Modal */}
       <Dialog open={isExtractoOpen} onOpenChange={(open) => !open && handleExtractoClose()}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
+        {/*
+          Más ancho porque el extracto tiene nueve columnas. El scroll vertical
+          ya lo pone el primitivo del Dialog, así que NO se agrega otro acá:
+          dos scrollers anidados se pelean el gesto.
+
+          `data-lenis-prevent` sí es obligatorio — el scroll suave se come el
+          de cualquier cosa flotante si no se le dice que no toque esto.
+        */}
+        <DialogContent className="max-w-5xl max-h-[90vh]" data-lenis-prevent>
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>{t('inmobiliaria.dispersiones.detail.ownerStatement')}</span>
@@ -546,7 +596,9 @@ function DispersionesContent() {
               )}
             </DialogTitle>
           </DialogHeader>
-          <div className="p-6 pt-4">
+          {/* : es hijo de un grid, y sin esto se estira al ancho de
+              la tabla en vez de dejar que ella scrollee adentro. */}
+          <div className="min-w-0 p-6 pt-4">
             {extractoData && (
               <ExtractoPropietario extracto={extractoData} />
             )}

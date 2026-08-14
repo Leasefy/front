@@ -65,6 +65,23 @@ export function AdministracionDelContrato({
   )
 
   /*
+   * El perfil tributario del inquilino. Es el ÚNICO de los tres que vive en el
+   * contrato: la misma persona puede arrendar a título propio y por su empresa.
+   * El del propietario está en su ficha y el de la inmobiliaria en su config.
+   *
+   * Tres estados, no dos: 'si' | 'no' | '' (= no lo sabemos). Un checkbox
+   * colapsaría los dos últimos y convertiría un vacío en la afirmación «no
+   * retiene», que nadie hizo.
+   */
+  const perfilGuardado = contract.perfilesTributarios?.inquilino ?? null
+  const [tipoPersona, setTipoPersona] = useState<TipoPersona | ''>(
+    contract.inquilinoTipoPersona ?? '',
+  )
+  const [retieneRenta, setRetieneRenta] = useState<Ternario>(
+    aTernario(contract.inquilinoRetenedorRenta),
+  )
+
+  /*
    * Hay DOS comisiones: la del contrato (la que trajo el archivo migrado) y la
    * de la consignación, que es la que la dispersión y el extracto usan para
    * pagarle al propietario. Cuando no coinciden, mostrar una sola sería elegir
@@ -88,6 +105,10 @@ export function AdministracionDelContrato({
         usoInmueble: uso === '' ? undefined : uso,
         periodicidad: periodicidad === '' ? undefined : periodicidad,
         comisionPorcentaje: n,
+        // `null` es una acción: «volvé a no saberlo». Distinto de no mandar el
+        // campo, que lo deja como estaba.
+        inquilinoTipoPersona: tipoPersona === '' ? null : tipoPersona,
+        inquilinoRetenedorRenta: deTernario(retieneRenta),
       })
       onActualizado(actualizado)
       setEditando(false)
@@ -168,6 +189,46 @@ export function AdministracionDelContrato({
             </p>
           </div>
 
+          <div className="space-y-1 border-t border-border pt-3">
+            <label className="text-xs text-muted-foreground">
+              El inquilino es
+            </label>
+            <Select
+              value={tipoPersona}
+              onValueChange={(v) => setTipoPersona(v as TipoPersona)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="No se sabe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NATURAL">Persona natural</SelectItem>
+                <SelectItem value="JURIDICA">Empresa</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">
+              ¿Practica retención en la fuente?
+            </label>
+            <Select
+              value={retieneRenta}
+              onValueChange={(v) => setRetieneRenta(v as Ternario)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="No se sabe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="si">Sí, es agente retenedor</SelectItem>
+                <SelectItem value="no">No retiene</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              La retención la practica quien paga. Sin este dato se asume el
+              comportamiento típico de su tipo de persona y se avisa.
+            </p>
+          </div>
+
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
           <div className="flex gap-2">
@@ -210,6 +271,18 @@ export function AdministracionDelContrato({
             ausente="Sin consignación: este inmueble no genera cobros"
           />
 
+          <Fila
+            etiqueta="Retención del inquilino"
+            valor={
+              perfilGuardado && !perfilGuardado.esPorDefecto
+                ? perfilGuardado.agenteRetenedorRenta
+                  ? 'Es agente retenedor'
+                  : 'No retiene'
+                : null
+            }
+            ausente="Sin configurar — se asume por su tipo de persona"
+          />
+
           {discrepan ? (
             <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft/40 p-2.5">
               <WarningCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
@@ -224,6 +297,29 @@ export function AdministracionDelContrato({
       )}
     </section>
   )
+}
+
+type TipoPersona = 'NATURAL' | 'JURIDICA'
+
+/**
+ * Tres estados, no dos.
+ *
+ * Un checkbox sólo sabe decir sí o no. Acá «todavía no se sabe» tiene que
+ * poder decirse: con un booleano, cada contrato sin configurar afirmaría que
+ * el inquilino NO retiene — una afirmación que nadie hizo, sobre plata.
+ */
+type Ternario = 'si' | 'no' | ''
+
+function aTernario(v: boolean | null | undefined): Ternario {
+  if (v === true) return 'si'
+  if (v === false) return 'no'
+  return ''
+}
+
+function deTernario(v: Ternario): boolean | null {
+  if (v === 'si') return true
+  if (v === 'no') return false
+  return null
 }
 
 function Fila({

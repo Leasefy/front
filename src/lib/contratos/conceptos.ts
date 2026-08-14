@@ -19,6 +19,27 @@
  *
  * Quedan **66**, y ninguno pide saber de retenciones para elegirlo.
  *
+ * ── Seis direcciones que estaban al revés ──────────────────────────────────
+ *
+ * `paga` y `recibe` se asignaron al portar el catálogo, y seis quedaron
+ * invertidas. No es una opinión: **el catálogo se desmiente a sí mismo**.
+ *
+ *     Cobro De Servicios Públicos Propietario        paga INMOBILIARIA
+ *     Devolución Por Servicios Públicos Propietario  paga INMOBILIARIA
+ *
+ * Un cobro y una devolución no pueden mover la plata para el mismo lado. Si
+ * las dos existen como filas distintas, una es el cargo y la otra el reintegro.
+ * Igual con "Reparación N a cargo del propietario" contra "Devolución
+ * reparaciones propietario" — y "a cargo de" no admite lectura doble.
+ *
+ * Corregidas: cobro-de-servicios-publicos-propietario · reparacion-1/2/3-a-
+ * cargo-del-propietario · administracion-propietario · poliza-seguro-propietario.
+ *
+ * Importa porque la dirección **es plata**: invertida, el predial o la
+ * reparación del dueño le SUMABAN a lo que se le gira en vez de descontárselo.
+ * Las que quedaron como estaban son las tres "devolución/retribuible", que sí
+ * van hacia el propietario.
+ *
  * ⚠️ Los nombres se conservan tal cual venían salvo en las familias fusionadas.
  * Las mayúsculas raras y los duplicados de matiz ("Administración Propiedad
  * Horizontal" y "…Horizontal 1", tres "Reparación N a cargo del propietario")
@@ -48,7 +69,7 @@ export const CONCEPTOS: Concepto[] = [
   { id: 'administracion-plataforma-virtual', nombre: "Administración Plataforma Virtual", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
   { id: 'administracion-propiedad-horizontal', nombre: "Administración Propiedad Horizontal", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
   { id: 'administracion-propiedad-horizontal-1', nombre: "Administración Propiedad Horizontal 1", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
-  { id: 'administracion-propietario', nombre: "Administración propietario", base: 'NO_GRAVADO', paga: 'INMOBILIARIA', recibe: 'PROPIETARIO' },
+  { id: 'administracion-propietario', nombre: "Administración propietario", base: 'NO_GRAVADO', paga: 'PROPIETARIO', recibe: 'INMOBILIARIA' },
   { id: 'ajuste-al-peso-mayor-valor-pagado', nombre: "Ajuste al peso mayor valor pagado", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
   { id: 'ajuste-al-peso-menor-valor-pagado', nombre: "Ajuste al peso menor valor pagado", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
   { id: 'anticipo-servicios-publicos-inquilino', nombre: "Anticipo Servicios Públicos Inquilino", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
@@ -59,7 +80,7 @@ export const CONCEPTOS: Concepto[] = [
   { id: 'canon-arrendamiento', nombre: "Canon de arrendamiento", base: 'ARRENDAMIENTO', paga: 'INQUILINO', recibe: 'PROPIETARIO' },
   { id: 'cobertura-por-restitucion-o-abandono', nombre: "Cobertura por restitución o abandono", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
   { id: 'cobro-de-servicios-publicos-inquilino', nombre: "Cobro De Servicios Públicos Inquilino", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
-  { id: 'cobro-de-servicios-publicos-propietario', nombre: "Cobro De Servicios Públicos Propietario", base: 'NO_GRAVADO', paga: 'INMOBILIARIA', recibe: 'PROPIETARIO' },
+  { id: 'cobro-de-servicios-publicos-propietario', nombre: "Cobro De Servicios Públicos Propietario", base: 'NO_GRAVADO', paga: 'PROPIETARIO', recibe: 'INMOBILIARIA' },
   { id: 'comision-captacion-de-inmueble', nombre: "Comisión captación de inmueble", base: 'COMISION', paga: 'PROPIETARIO', recibe: 'INMOBILIARIA' },
   /** Reemplaza 4 variantes del catálogo viejo: Comision contrato de arrendamiento · Comision del contrato con IVA y RF  del 11% PJURIDICAS · Comisión Del Contrato con IVA y RF del 11% · Comisión Del Contrato Entre Personas Naturales */
   { id: 'comision-contrato', nombre: "Comisión del contrato", base: 'COMISION', paga: 'PROPIETARIO', recibe: 'INMOBILIARIA' },
@@ -92,7 +113,7 @@ export const CONCEPTOS: Concepto[] = [
   { id: 'papeleria', nombre: "Papeleria", base: 'SERVICIO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
   { id: 'parqueadero-independiente', nombre: "Parqueadero Independiente", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
   { id: 'pintura-para-interiores', nombre: "Pintura para interiores", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
-  { id: 'poliza-seguro-propietario', nombre: "POLIZA SEGURO PROPIETARIO", base: 'NO_GRAVADO', paga: 'INMOBILIARIA', recibe: 'PROPIETARIO' },
+  { id: 'poliza-seguro-propietario', nombre: "POLIZA SEGURO PROPIETARIO", base: 'NO_GRAVADO', paga: 'PROPIETARIO', recibe: 'INMOBILIARIA' },
   { id: 'publicidad-y-propaganda', nombre: "Publicidad y Propaganda", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
   { id: 'reajuste-canon-de-arrendamiento', nombre: "Reajuste canon de arrendamiento", base: 'ARRENDAMIENTO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
   { id: 'reajuste-canon-de-arrendamiento-dias-adicionales', nombre: "Reajuste canon de arrendamiento días adicionales", base: 'ARRENDAMIENTO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
@@ -101,9 +122,9 @@ export const CONCEPTOS: Concepto[] = [
   { id: 'remodelacion-inquilino', nombre: "REMODELACIÓN INQUILINO", base: 'SERVICIO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
   { id: 'renovacion-extemporanea', nombre: "Renovación extemporánea", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
   { id: 'renta-administrada', nombre: "RENTA ADMINISTRADA", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
-  { id: 'reparacion-1-a-cargo-del-propietario', nombre: "Reparación 1 a cargo del propietario", base: 'NO_GRAVADO', paga: 'INMOBILIARIA', recibe: 'PROPIETARIO' },
-  { id: 'reparacion-2-a-cargo-del-propietario', nombre: "Reparación 2 a cargo del propietario", base: 'NO_GRAVADO', paga: 'INMOBILIARIA', recibe: 'PROPIETARIO' },
-  { id: 'reparacion-3-a-cargo-del-propietario', nombre: "Reparación 3 a cargo del propietario", base: 'NO_GRAVADO', paga: 'INMOBILIARIA', recibe: 'PROPIETARIO' },
+  { id: 'reparacion-1-a-cargo-del-propietario', nombre: "Reparación 1 a cargo del propietario", base: 'NO_GRAVADO', paga: 'PROPIETARIO', recibe: 'INMOBILIARIA' },
+  { id: 'reparacion-2-a-cargo-del-propietario', nombre: "Reparación 2 a cargo del propietario", base: 'NO_GRAVADO', paga: 'PROPIETARIO', recibe: 'INMOBILIARIA' },
+  { id: 'reparacion-3-a-cargo-del-propietario', nombre: "Reparación 3 a cargo del propietario", base: 'NO_GRAVADO', paga: 'PROPIETARIO', recibe: 'INMOBILIARIA' },
   { id: 'reparacion-a-cargo-del-inquilino', nombre: "Reparación a cargo del inquilino", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
   { id: 'reparacion-asumida-por-el-inquilino', nombre: "Reparación asumida por el inquilino", base: 'NO_GRAVADO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },
   { id: 'resta-canon', nombre: "Resta Canon", base: 'ARRENDAMIENTO', paga: 'INQUILINO', recibe: 'INMOBILIARIA' },

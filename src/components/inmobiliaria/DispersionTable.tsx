@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useI18n } from '@/lib/i18n';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
+import { nombreDelMes } from '@/lib/utils/mes';
 
 type SortField =
   | 'propietarioName'
@@ -245,7 +246,8 @@ export function DispersionTable({
                       <div className="flex items-center gap-1 text-xs text-muted-foreground truncate max-w-[180px]">
                         <Bank className="w-3 h-3" />
                         <span>
-                          {dispersion.propietarioBankAccount.accountNumber}
+                          {dispersion.propietarioBankAccount?.accountNumber ??
+                            'Sin cuenta registrada'}
                         </span>
                       </div>
                     </div>
@@ -255,7 +257,7 @@ export function DispersionTable({
                 {/* Month */}
                 <TableCell className="p-4">
                   <span className="text-foreground capitalize">
-                    {formatDate(dispersion.month + '-01', { month: 'short', year: 'numeric' })}
+                    {nombreDelMes(dispersion.month, 'es', 'short')}
                   </span>
                 </TableCell>
 

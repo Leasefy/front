@@ -50,6 +50,7 @@ import type {
   AgencyInviteResult,
   AgencyOnboardingStatus,
 } from '@/lib/types/inmobiliaria';
+import { adaptarDispersion, type DispersionDelBack } from './dispersion-adapter';
 
 const BASE = '/inmobiliaria';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
@@ -618,34 +619,54 @@ export const dispersionesApi = {
     if (params?.status) query.set('status', params.status);
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
     const qs = query.toString();
-    const res = await apiClient.get<{ data: Dispersion[] }>(`${BASE}/dispersiones${qs ? `?${qs}` : ''}`);
-    return res.data;
+    /*
+     * El back devuelve el array PELADO. Pedir `res.data` sobre un array da
+     * `undefined`, y el hook lo servía como lista vacía: la pantalla decía
+     * «No hay dispersiones registradas» con dispersiones en la base.
+     */
+    const filas = await apiClient.get<DispersionDelBack[]>(
+      `${BASE}/dispersiones${qs ? `?${qs}` : ''}`,
+    );
+    return filas.map(adaptarDispersion);
   },
 
   async getById(id: string): Promise<Dispersion> {
-    return apiClient.get<Dispersion>(`${BASE}/dispersiones/${id}`);
+    return adaptarDispersion(
+      await apiClient.get<DispersionDelBack>(`${BASE}/dispersiones/${id}`),
+    );
   },
 
-  async create(data: Partial<Dispersion>): Promise<Dispersion> {
-    return apiClient.post<Dispersion>(`${BASE}/dispersiones`, data);
+  /**
+   * Genera las dispersiones del mes. **El back calcula los montos**, no el
+   * navegador: descuenta la comisión sobre el canon recaudado, resta lo que
+   * paga el propietario y deja fuera la administración de la copropiedad.
+   *
+   * Antes esto era un `POST /dispersiones` con los totales ya calculados en el
+   * cliente. La ruta no existía —así que nunca guardó nada— pero de haber
+   * existido habría escrito los números viejos, salteándose la liquidación.
+   */
+  async generate(month: string): Promise<{
+    month: string;
+    totalPropietarios: number;
+    created: number;
+    skipped: number;
+  }> {
+    return apiClient.post(`${BASE}/dispersiones/generate`, { month });
   },
 
+  /** El back expone PUT, no PATCH. Con PATCH la llamada moría en 404. */
   async process(id: string): Promise<Dispersion> {
-    return apiClient.patch<Dispersion>(`${BASE}/dispersiones/${id}/process`, {});
-  },
-
-  async preview(propietarioId: string, period: string): Promise<Dispersion> {
-    return apiClient.get<Dispersion>(`${BASE}/dispersiones/preview?propietarioId=${propietarioId}&period=${period}`);
+    return adaptarDispersion(
+      await apiClient.put<DispersionDelBack>(
+        `${BASE}/dispersiones/${id}/process`,
+        {},
+      ),
+    );
   },
 
   async getSummary(month: string): Promise<DispersionSummary> {
-    const res = await apiClient.get<{ data: DispersionSummary }>(`${BASE}/dispersiones/summary?month=${month}`);
-    return res.data;
-  },
-
-  async getExtracto(propietarioId: string, month?: string): Promise<ExtractoPropietario> {
-    const qs = month ? `?month=${month}` : '';
-    return apiClient.get<ExtractoPropietario>(`${BASE}/dispersiones/${propietarioId}/extracto${qs}`);
+    // Sin envoltorio `{ data }`: el back responde el objeto directo.
+    return apiClient.get<DispersionSummary>(`${BASE}/dispersiones/summary?month=${month}`);
   },
 };
 

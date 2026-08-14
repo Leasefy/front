@@ -39,10 +39,14 @@ import {
   contractsApi,
   type ConceptoDelContrato,
 } from '@/lib/api/contracts.service'
-import { CONCEPTOS } from '@/lib/contratos/conceptos'
+import { CONCEPTOS, type Parte } from '@/lib/contratos/conceptos'
 import { liquidar, perfilPorDefecto } from '@/lib/contratos/escenarios-tributarios'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
-import type { Contract } from '@/lib/types/contract'
+import type {
+  Contract,
+  PerfilTributario,
+  PerfilesDelContrato,
+} from '@/lib/types/contract'
 
 interface Props {
   contract: Contract
@@ -326,26 +330,27 @@ function ConceptoEnLista({
 }) {
   const [abierto, setAbierto] = useState(false)
 
+  const perfiles = contract.perfilesTributarios ?? null
+
   const liquidacion = useMemo(() => {
     if (!uso) return null
     /*
-     * Perfiles por defecto según el tipo de persona. Es una aproximación
-     * declarada, no un dato: el contrato todavía no guarda si cada parte es
-     * agente retenedor. Se dice en pantalla para que nadie tome el número como
-     * definitivo.
+     * Los perfiles REALES de las dos partes del concepto. Antes se usaba
+     * siempre `perfilPorDefecto('NATURAL')` para quien paga —da igual que
+     * pagara una empresa— así que la retención salía en cero incluso cuando
+     * se practica.
+     *
+     * Si el contrato no los trae, se cae al defecto por tipo de persona y se
+     * dice abajo. Un supuesto declarado es defendible; uno callado, no.
      */
     return liquidar({
       base: concepto.base,
       baseCop: concepto.valorCop,
       uso,
-      paga: perfilPorDefecto('NATURAL'),
-      recibe: perfilPorDefecto(
-        concepto.recibe === 'INMOBILIARIA' ? 'JURIDICA' : 'NATURAL',
-      ),
+      paga: perfilDeParte(concepto.paga, perfiles),
+      recibe: perfilDeParte(concepto.recibe, perfiles),
     })
-  }, [concepto, uso])
-
-  void contract
+  }, [concepto, uso, perfiles])
 
   return (
     <div className="rounded-lg border border-border p-3">
@@ -422,10 +427,13 @@ function ConceptoEnLista({
                   </li>
                 ))}
               </ul>
-              <p className="pt-1 text-[11px] text-muted-foreground">
-                Calculado con perfiles por defecto: el contrato todavía no
-                guarda si cada parte es agente retenedor.
-              </p>
+              {esSupuesto(concepto, perfiles) ? (
+                <p className="pt-1 text-[11px] text-muted-foreground">
+                  Alguna de las dos partes no tiene el perfil tributario
+                  configurado: para esos campos se usa el valor por defecto de
+                  su tipo de persona.
+                </p>
+              ) : null}
             </>
           ) : null}
         </div>
@@ -439,6 +447,63 @@ const QUIEN_PAGA: Record<string, string> = {
   PROPIETARIO: 'el propietario',
   INMOBILIARIA: 'la inmobiliaria',
   TERCERO: 'un tercero',
+}
+
+/**
+ * El perfil tributario de una de las partes del concepto.
+ *
+ * Un TERCERO —la copropiedad, la DIAN— no es parte del contrato y no tenemos
+ * su perfil. Se trata como persona natural sin retenciones: es el lado que no
+ * inventa un descuento que después nadie puede consignar.
+ */
+function perfilDeParte(
+  parte: Parte,
+  perfiles: PerfilesDelContrato | null,
+): ReturnType<typeof perfilPorDefecto> {
+  const sinLaMarca = (p: PerfilTributario) => ({
+    tipoPersona: p.tipoPersona,
+    responsableIva: p.responsableIva,
+    agenteRetenedorRenta: p.agenteRetenedorRenta,
+    agenteRetenedorIva: p.agenteRetenedorIva,
+    agenteRetenedorIca: p.agenteRetenedorIca,
+  })
+
+  if (!perfiles) {
+    return perfilPorDefecto(parte === 'INMOBILIARIA' ? 'JURIDICA' : 'NATURAL')
+  }
+
+  switch (parte) {
+    case 'INQUILINO':
+      return sinLaMarca(perfiles.inquilino)
+    case 'PROPIETARIO':
+      return sinLaMarca(perfiles.propietario)
+    case 'INMOBILIARIA':
+      return sinLaMarca(perfiles.inmobiliaria)
+    default:
+      return perfilPorDefecto('NATURAL')
+  }
+}
+
+/** Si alguna de las dos partes del concepto tiene el perfil sin configurar. */
+function esSupuesto(
+  concepto: { paga: Parte; recibe: Parte },
+  perfiles: PerfilesDelContrato | null,
+): boolean {
+  if (!perfiles) return true
+  const porDefecto = (parte: Parte): boolean => {
+    switch (parte) {
+      case 'INQUILINO':
+        return perfiles.inquilino.esPorDefecto
+      case 'PROPIETARIO':
+        return perfiles.propietario.esPorDefecto
+      case 'INMOBILIARIA':
+        return perfiles.inmobiliaria.esPorDefecto
+      default:
+        // De un tercero nunca vamos a tener el perfil: no es parte del contrato.
+        return true
+    }
+  }
+  return porDefecto(concepto.paga) || porDefecto(concepto.recibe)
 }
 
 const NOMBRE_DE_RENGLON: Record<string, string> = {

@@ -646,13 +646,28 @@ export const dispersionesApi = {
    * cliente. La ruta no existía —así que nunca guardó nada— pero de haber
    * existido habría escrito los números viejos, salteándose la liquidación.
    */
-  async generate(month: string): Promise<{
+  async generate(
+    month: string,
+    /**
+     * A quiénes. Sin la lista, el mes entero.
+     *
+     * El asistente deja destildar propietarios; esa decisión se quedaba en el
+     * navegador y `generate` tomaba el mes completo, así que destildar a
+     * alguien no lo excluía de nada.
+     */
+    propietarioIds?: string[],
+  ): Promise<{
     month: string;
     totalPropietarios: number;
     created: number;
     skipped: number;
+    /** Los del mes que quedaron fuera por la selección. */
+    noElegidos: number;
   }> {
-    return apiClient.post(`${BASE}/dispersiones/generate`, { month });
+    return apiClient.post(`${BASE}/dispersiones/generate`, {
+      month,
+      ...(propietarioIds ? { propietarioIds } : {}),
+    });
   },
 
   /** El back expone PUT, no PATCH. Con PATCH la llamada moría en 404. */

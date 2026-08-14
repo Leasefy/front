@@ -1,8 +1,9 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -75,10 +76,20 @@ function getCurrentMonth(): string {
  */
 function DispersionesContent() {
   const { t, locale } = useI18n();
+  const searchParams = useSearchParams();
+
+  /*
+   * `?mes=` abre la lista en ese mes. Lo usa el asistente al terminar: generar
+   * las de julio y caer en agosto —vacío, «No hay dispersiones registradas»—
+   * se lee como que no pasó nada.
+   */
+  const mesPedido = searchParams.get('mes');
 
   // State for filters
   const [filters, setFilters] = useState<DispersionFiltersState>({
-    month: getCurrentMonth(),
+    month: /^\d{4}-\d{2}$/.test(mesPedido ?? '')
+      ? (mesPedido as string)
+      : getCurrentMonth(),
     status: 'all',
     propietarioId: 'all',
     search: '',
@@ -612,7 +623,11 @@ function DispersionesContent() {
 export default function DispersionesPage() {
   return (
     <PageGuard module="dispersiones">
-      <DispersionesContent />
+      {/* `useSearchParams` obliga a un límite de Suspense: sin él, `next build`
+          falla al prerenderizar la ruta. */}
+      <Suspense fallback={null}>
+        <DispersionesContent />
+      </Suspense>
     </PageGuard>
   );
 }

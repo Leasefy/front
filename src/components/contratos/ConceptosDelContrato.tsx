@@ -86,14 +86,31 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
    */
   const uso = contract.usoInmueble ?? null
 
-  const total = useMemo(
-    () => (conceptos ?? []).reduce((s, c) => s + c.valorCop, 0),
-    [conceptos],
-  )
-  const totalRecurrente = useMemo(
+  /*
+   * Lo que se le suma al cobro es SÓLO lo que paga el inquilino: 15 de los 66
+   * conceptos del catálogo los pone el propietario o la inmobiliaria —el
+   * impuesto predial, la comisión del contrato, la póliza del propietario—.
+   * Contarlos todos bajo «se suma al cobro cada mes» diría que al inquilino se
+   * le cobra la plata de otro.
+   */
+  const alCobroDelInquilino = useMemo(
     () =>
       (conceptos ?? [])
-        .filter((c) => c.recurrente)
+        .filter((c) => c.recurrente && c.paga === 'INQUILINO')
+        .reduce((s, c) => s + c.valorCop, 0),
+    [conceptos],
+  )
+  const deUnaSolaVez = useMemo(
+    () =>
+      (conceptos ?? [])
+        .filter((c) => !c.recurrente)
+        .reduce((s, c) => s + c.valorCop, 0),
+    [conceptos],
+  )
+  const noLosPagaElInquilino = useMemo(
+    () =>
+      (conceptos ?? [])
+        .filter((c) => c.recurrente && c.paga !== 'INQUILINO')
         .reduce((s, c) => s + c.valorCop, 0),
     [conceptos],
   )
@@ -184,18 +201,28 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
 
           <div className="flex items-center justify-between border-t border-border pt-2 text-sm">
             <span className="text-muted-foreground">
-              Se suma al cobro cada mes
+              Se le cobra al inquilino cada mes
             </span>
             <span className="font-medium tabular-nums text-foreground">
-              {formatCurrency(totalRecurrente)}
+              {formatCurrency(alCobroDelInquilino)}
             </span>
           </div>
-          {total !== totalRecurrente ? (
+
+          {noLosPagaElInquilino > 0 ? (
+            // Lo que pone el propietario o la inmobiliaria NO entra en el cobro
+            // del inquilino. Sumarlo ahí le cobraría la plata de otro.
+            <p className="text-xs text-muted-foreground">
+              Otros {formatCurrency(noLosPagaElInquilino)} los pone el
+              propietario o la inmobiliaria: no entran en el cobro del inquilino.
+            </p>
+          ) : null}
+
+          {deUnaSolaVez > 0 ? (
             // Los de una sola vez no se repiten: decir sólo el total mensual
             // haría creer que se cobran todos los meses.
             <p className="text-xs text-muted-foreground">
-              Hay {formatCurrency(total - totalRecurrente)} en conceptos de una
-              sola vez, que no se repiten.
+              Hay {formatCurrency(deUnaSolaVez)} en conceptos de una sola vez,
+              que no se repiten.
             </p>
           ) : null}
         </div>
@@ -329,11 +356,12 @@ function ConceptoEnLista({
           onClick={() => setAbierto((v) => !v)}
         >
           {concepto.nombre}
-          {!concepto.recurrente ? (
-            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-              · una sola vez
-            </span>
-          ) : null}
+          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+            {/* Quién lo paga decide si entra en el cobro del inquilino.
+                Deducirlo del nombre es justo lo que hace que se cuele. */}
+            · lo paga {QUIEN_PAGA[concepto.paga]}
+            {!concepto.recurrente ? ' · una sola vez' : ''}
+          </span>
         </button>
         <div className="flex items-center gap-2">
           <span className="font-medium tabular-nums text-foreground">
@@ -404,6 +432,13 @@ function ConceptoEnLista({
       ) : null}
     </div>
   )
+}
+
+const QUIEN_PAGA: Record<string, string> = {
+  INQUILINO: 'el inquilino',
+  PROPIETARIO: 'el propietario',
+  INMOBILIARIA: 'la inmobiliaria',
+  TERCERO: 'un tercero',
 }
 
 const NOMBRE_DE_RENGLON: Record<string, string> = {

@@ -963,13 +963,20 @@ export function DispersionWizard({
                     status === 'upcoming' ? 'cursor-not-allowed' : 'cursor-pointer'
                   )}
                 >
+                  {/*
+                    Tres estados, tres colores, y cada uno significa algo:
+                    verde = hecho, azul = acá estás, gris = todavía no.
+                    Estaban los tres en negro salvo un anillo, así que el paso
+                    actual y los ya cumplidos se leían igual — un indicador de
+                    avance que no indica el avance.
+                  */}
                   <div
                     className={cn(
-                      'w-12 h-12 rounded-full flex items-center justify-center transition-all',
+                      'flex h-12 w-12 items-center justify-center rounded-full transition-all',
                       status === 'completed'
-                        ? 'bg-foreground text-background'
+                        ? 'bg-success text-white'
                         : status === 'current'
-                          ? 'bg-foreground text-background ring-4 ring-foreground/20'
+                          ? 'bg-primary text-primary-foreground ring-4 ring-primary/20'
                           : 'bg-muted text-muted-foreground'
                     )}
                   >
@@ -985,7 +992,7 @@ export function DispersionWizard({
                       status === 'current'
                         ? 'text-primary'
                         : status === 'completed'
-                          ? 'text-fg dark:text-white'
+                          ? 'text-success'
                           : 'text-fg-subtle'
                     )}
                   >
@@ -996,9 +1003,9 @@ export function DispersionWizard({
                 {index < STEPS.length - 1 && (
                   <div
                     className={cn(
-                      'flex-1 h-0.5 mx-2',
+                      'mx-2 h-0.5 flex-1',
                       step.id < currentStep
-                        ? 'bg-foreground'
+                        ? 'bg-success'
                         : 'bg-border'
                     )}
                   />

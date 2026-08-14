@@ -189,11 +189,17 @@ export function DispersionTable({
     children: React.ReactNode;
     className?: string;
   }) => (
-    <TableHead className={cn('text-left p-4', className)}>
-      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
+    <TableHead className={cn('p-4 text-left', className)}>
+      {/*
+        allowlist: disparador de orden — Cadence no trae uno (DataTable no
+        ordena). El botón HEREDA el tratamiento del encabezado del DS
+        (`font: inherit`), en vez de traer el suyo: antes ponía `text-xs
+        font-semibold`, que reemplaza la mono 11px en mayúsculas del `TH` por
+        otra tipografía. Por eso esta tabla se leía distinta de todas las demás.
+      */}
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        className="flex items-center gap-2 font-[inherit] text-[inherit] uppercase tracking-[inherit] text-fg-subtle transition-colors hover:text-fg"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}

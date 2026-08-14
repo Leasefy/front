@@ -54,5 +54,21 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/auth?error=auth_callback_failed`)
+  /*
+   * Sin `?code=` esto NO es necesariamente un fallo: los enlaces de invitación
+   * de Supabase vuelven por el flujo implícito, con el token en el FRAGMENTO
+   * (`#access_token=…`), que el navegador nunca manda al servidor. Desde acá
+   * es invisible.
+   *
+   * Antes se caía a `/auth?error=auth_callback_failed`: el inquilino invitado
+   * hacía clic en su correo, veía un error, y como una cuenta invitada no
+   * tiene contraseña no tenía ninguna otra forma de entrar.
+   *
+   * El fragmento sobrevive a esta redirección —el navegador lo conserva
+   * cuando el destino no trae uno— así que lo resuelve `/auth/enlace`, que sí
+   * corre en el navegador.
+   */
+  return NextResponse.redirect(
+    `${origin}/auth/enlace?returnUrl=${encodeURIComponent(returnUrl)}`,
+  )
 }

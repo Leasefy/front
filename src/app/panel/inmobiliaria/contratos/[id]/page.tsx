@@ -49,6 +49,7 @@ import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import type { ContractStatus } from '@/lib/types/contract';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { AdministracionDelContrato } from '@/components/contratos/AdministracionDelContrato';
+import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
 
@@ -316,6 +317,10 @@ function ContratoDetalleContent() {
             puedeEditar={canEditContracts}
             onActualizado={(c) => setContract(c)}
           />
+
+          {/* Los conceptos que este contrato cobra además del canon. Los
+              recurrentes entran en el cobro de cada mes. */}
+          <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts} />
 
           {/* Paso 11: quién respalda este arriendo. Si no está, se dice — un
               contrato sin respaldo registrado no es un contrato sin respaldo,

@@ -402,6 +402,24 @@ export const contractsApi = {
     return mapBackendContract(raw);
   },
 
+  /** Lo que el contrato cobra además del canon. */
+  async conceptos(id: string): Promise<ConceptoDelContrato[]> {
+    return apiClient.get<ConceptoDelContrato[]>(`/contracts/${id}/conceptos`);
+  },
+
+  async agregarConcepto(
+    id: string,
+    dto: Omit<ConceptoDelContrato, 'id'>,
+  ): Promise<ConceptoDelContrato> {
+    return apiClient.post<ConceptoDelContrato>(`/contracts/${id}/conceptos`, dto);
+  },
+
+  async quitarConcepto(id: string, conceptoId: string): Promise<{ id: string }> {
+    return apiClient.delete<{ id: string }>(
+      `/contracts/${id}/conceptos/${conceptoId}`,
+    );
+  },
+
   /**
    * PATCH /contracts/:id/administracion — uso, periodicidad y comisión.
    *
@@ -551,6 +569,26 @@ export interface CambiosDeFila {
   startDate?: string;
   endDate?: string;
   paymentDay?: number;
+}
+
+/**
+ * Un concepto que el contrato cobra además del canon.
+ *
+ * `nombre` y `base` son una COPIA del catálogo al momento de agregarlo, no una
+ * referencia: el catálogo se va a limpiar con la inmobiliaria, y un contrato
+ * firmado no puede cambiar de tratamiento tributario porque alguien renombró
+ * una fila.
+ */
+export interface ConceptoDelContrato {
+  id: string;
+  conceptoId: string;
+  nombre: string;
+  base: 'ARRENDAMIENTO' | 'COMISION' | 'SERVICIO_GRAVADO' | 'NO_GRAVADO';
+  paga: 'INQUILINO' | 'PROPIETARIO' | 'INMOBILIARIA' | 'TERCERO';
+  recibe: 'INQUILINO' | 'PROPIETARIO' | 'INMOBILIARIA' | 'TERCERO';
+  valorCop: number;
+  /** Si entra en el cobro de cada mes. Falso = una sola vez. */
+  recurrente: boolean;
 }
 
 /** Un lote a medio migrar, para poder retomarlo. */

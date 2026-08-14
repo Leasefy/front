@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Navbar } from "@/components/layout/Navbar";
+import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { Footer } from "@/components/layout/Footer";
 import { SectionLabel } from "@/components/ui/section-label";
 import { CaretDown } from '@phosphor-icons/react';
@@ -38,7 +38,7 @@ const faqData: FAQCategory[] = [
       {
         question: "¿Cómo selecciono al mejor candidato?",
         answer:
-          "Revisa las aplicaciones recibidas, consulta el scoring de riesgo de cada candidato y utiliza las herramientas de comparación de la plataforma para tomar la mejor decisión.",
+          "Revisa las postulaciones recibidas, consulta el scoring de riesgo de cada candidato y utiliza las herramientas de comparación de la plataforma para tomar la mejor decisión.",
       },
     ],
   },
@@ -46,12 +46,12 @@ const faqData: FAQCategory[] = [
     title: "Para arrendatarios",
     items: [
       {
-        question: "¿Cómo aplico a una propiedad?",
+        question: "¿Cómo me postulo a un inmueble?",
         answer:
-          "Busca propiedades disponibles, selecciona la que te interese y completa el formulario de aplicación. El arrendador recibirá tu solicitud junto con tu perfil de scoring.",
+          "Busca propiedades disponibles, selecciona la que te interese y completa el formulario de postulación. El arrendador recibirá tu solicitud junto con tu perfil de scoring.",
       },
       {
-        question: "¿Qué documentos necesito para aplicar?",
+        question: "¿Qué documentos necesito para postularme?",
         answer:
           "Generalmente necesitas cédula de ciudadanía, certificado laboral o de ingresos, referencias personales y extractos bancarios. Los requisitos específicos pueden variar según el arrendador.",
       },
@@ -136,8 +136,7 @@ function FAQItem({ item }: { item: FAQ }) {
 
 export default function AyudaPage() {
   return (
-    <>
-      <Navbar />
+    <LandingChrome>
       <main id="main-content" className="bg-background">
         <section className="pt-32 pb-16 md:pt-40 md:pb-24">
           <div className="container-platform"><div className="max-w-[800px]">
@@ -187,6 +186,6 @@ export default function AyudaPage() {
         </section>
       </main>
       <Footer />
-    </>
+    </LandingChrome>
   );
 }

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Navbar } from '@/components/layout/Navbar';
+import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { CTASection } from '@/components/home/CTASection';
@@ -17,13 +17,13 @@ import { TestimonialCarousel } from '@/components/home/TestimonialCarousel';
 // Testimonials data
 const testimonials = [
   {
-    quote: 'Encontré apartamento en Chapinero en solo 2 días. El Arriendo Pass me permitió aplicar a 5 propiedades sin volver a llenar formularios.',
+    quote: 'Encontré apartamento en Chapinero en solo 2 días. El Arriendo Pass me permitió postularme a 5 inmuebles sin volver a llenar formularios.',
     author: 'Andrés Pereira',
     role: 'Inquilino en Bogotá',
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face&q=80',
   },
   {
-    quote: 'Me mudé de Medellín a Bogotá por trabajo y pude aplicar a propiedades antes de llegar. El proceso fue 100% digital.',
+    quote: 'Me mudé de Medellín a Bogotá por trabajo y pude postularme a inmuebles antes de llegar. El proceso fue 100% digital.',
     author: 'Laura Sánchez',
     role: 'Reubicación laboral',
     image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face&q=80',
@@ -393,7 +393,7 @@ function ArriendoPassVisual() {
         <div className="flex items-center justify-between">
           <div>
             <span className="text-[9px] text-muted-foreground block">Evaluación Completa individual</span>
-            <span className="text-[8px] text-muted-foreground/60">$39.900 × aplicación</span>
+            <span className="text-[8px] text-muted-foreground/60">$39.900 × postulación</span>
           </div>
           <motion.div
             initial={{ opacity: 0, x: 10 }}
@@ -773,8 +773,7 @@ function ContractVisual() {
 
 export default function InquilinosPage() {
   return (
-    <>
-      <Navbar />
+    <LandingChrome>
       <main className="overflow-hidden">
         {/* Hero Section */}
         <section className="relative h-[600px] overflow-hidden bg-black">
@@ -819,7 +818,7 @@ export default function InquilinosPage() {
                   transition={{ delay: 0.2 }}
                   className="!mt-2 text-lg text-white/70 max-w-lg"
                 >
-                  Propiedades verificadas, aplicación simple, contratos claros.
+                  Inmuebles verificados, postulación simple, contratos claros.
                   <span className="text-white font-medium"> Cero estafas, cero sorpresas.</span>
                 </motion.p>
 
@@ -1188,7 +1187,7 @@ export default function InquilinosPage() {
                 </h2>
                 <div className="flex items-start pl-0 lg:pl-6 pt-2">
                   <p className="text-[15px] text-muted-foreground leading-relaxed">
-                    Búsqueda con IA, propiedades verificadas, aplicación simple y contratos claros. Todo desde una app.
+                    Búsqueda con IA, inmuebles verificados, postulación simple y contratos claros. Todo desde una app.
                   </p>
                 </div>
               </div>
@@ -1240,7 +1239,7 @@ export default function InquilinosPage() {
                     Arriendo Pass
                   </h3>
                   <p className="text-[14px] text-muted-foreground leading-relaxed">
-                    Paga una vez, aplica ilimitado por 60 días. Sin repetir documentos.
+                    Paga una vez, postulate sin límite por 60 días. Sin repetir documentos.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-6">
@@ -1341,6 +1340,6 @@ export default function InquilinosPage() {
         <CTASection />
       </main>
       <Footer />
-    </>
+    </LandingChrome>
   );
 }

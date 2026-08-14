@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Navbar } from '@/components/layout/Navbar';
+import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { Footer } from '@/components/layout/Footer';
 import { CTASection } from '@/components/home/CTASection';
 import { Shield, Lightning, Headphones, CheckCircle, Check, House, Briefcase, Calculator, Buildings, UserCheck, ArrowRight, Circle } from '@phosphor-icons/react';
@@ -307,8 +307,7 @@ export default function PricingPage() {
   }, []);
 
   return (
-    <>
-      <Navbar />
+    <LandingChrome>
       <main className="min-h-screen bg-background">
         {/* Hero Section - Full width like home, starts behind navbar */}
         <section className="relative h-[500px] overflow-hidden bg-black">
@@ -1311,6 +1310,6 @@ export default function PricingPage() {
       <CTASection />
       </main>
       <Footer />
-    </>
+    </LandingChrome>
   );
 }

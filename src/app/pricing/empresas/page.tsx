@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Navbar } from '@/components/layout/Navbar';
+import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { Footer } from '@/components/layout/Footer';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Calculator, Check, Buildings, TrendDown, Envelope, Phone, Shield, Lightning, Infinity as InfinityIcon, CheckCircle } from '@phosphor-icons/react';
@@ -73,8 +73,7 @@ export default function EmpresasCalculadoraPage() {
   const sliderPercentage = (quantity / 100) * 100;
 
   return (
-    <>
-      <Navbar />
+    <LandingChrome>
       <main className="min-h-screen bg-background">
         {/* Hero Section */}
         <section className="relative bg-foreground text-background overflow-hidden">
@@ -514,6 +513,6 @@ export default function EmpresasCalculadoraPage() {
         </section>
       </main>
       <Footer />
-    </>
+    </LandingChrome>
   );
 }

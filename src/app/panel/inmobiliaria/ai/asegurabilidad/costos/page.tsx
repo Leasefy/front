@@ -112,13 +112,13 @@ export default function CostosPage() {
         <Table className="min-w-full divide-y divide-border">
           <TableHeader className="bg-surface-muted/60">
             <TableRow>
-              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colSource')}
               </TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
+              <TableHead className="px-4 py-3 text-right">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colTotal')}
               </TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colStatus')}
               </TableHead>
             </TableRow>

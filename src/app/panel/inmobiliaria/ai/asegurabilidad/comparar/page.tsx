@@ -102,7 +102,7 @@ function CompararView() {
                 {/* Esquina criterio × aseguradora */}
                 <TableHead
                   scope="col"
-                  className="sticky left-0 z-10 bg-card px-4 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide border-b border-border min-w-[180px]"
+                  className="sticky left-0 z-10 bg-card px-4 py-3 text-left border-b border-border min-w-[180px]"
                 >
                   {tf(`${NS}.preview.criterioCol`, 'Criterio')}
                 </TableHead>
@@ -135,7 +135,7 @@ function CompararView() {
                     {/* Etiqueta del criterio (real, para que se entienda la matriz) */}
                     <TableHead
                       scope="row"
-                      className="sticky left-0 z-10 bg-card px-4 py-3.5 text-left text-sm font-medium text-fg border-b border-border align-middle"
+                      className="sticky left-0 z-10 bg-card px-4 py-3.5 text-left text-fg border-b border-border align-middle"
                     >
                       <span className="inline-flex items-center gap-2">
                         <RowIcon

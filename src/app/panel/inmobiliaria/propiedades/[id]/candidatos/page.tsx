@@ -348,7 +348,7 @@ function CandidatosContent() {
   const { getByApplicationId: getContractByApplicationId } = useContracts();
 
   // Once content has loaded, background refresh failures must NOT swap the
-  // page for the full ErrorState (silent auto-refresh contract).
+  // page for the full failure card (silent auto-refresh contract).
   const hasLoadedRef = useRef(false);
 
   const fetchData = useCallback(async () => {

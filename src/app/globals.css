@@ -1599,6 +1599,41 @@ select:-webkit-autofill:active {
   --fg: #0A1B2E;
 }
 
+/* ── Toasts: la ESTRUCTURA que `unstyled` se llevó puesta ────────────────────
+   Ver src/components/ui/toast.tsx, que monta el Toaster con
+   `toastOptions={{ unstyled: true }}` para que la piel del DS no la pise la
+   hoja que sonner inyecta en runtime.
+
+   `unstyled` no saca sólo la piel: saca TODO, incluida la maquetación. Y las
+   clases del DS están escritas para ir ARRIBA de la base de sonner: describen
+   color, radio y padding, pero nunca declararon el layout — nunca hizo falta.
+   Medido en el toast con acción:
+
+     botón  76×57 px · white-space: normal · flex-shrink: 1
+     → «Copiar enlace» partido en tres renglones
+
+   Lo que sonner daba y nadie volvió a declarar:
+     [data-button]  → display:flex; align-items:center; flex-shrink:0
+     [data-content] → display:flex; flex-direction:column; gap:2px
+
+   Va acá y no en el shim porque el merge del DS es plano
+   (`{ ...las suyas, ...las tuyas }`): pasar `actionButton` REEMPLAZA su piel en
+   vez de sumarle. Sólo se declara lo que el DS no toca, así que no hay pelea
+   de especificidad con sus clases. */
+[data-sonner-toast] [data-content] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0; /* que se ajuste el texto, no el botón */
+}
+
+[data-sonner-toast] [data-button] {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 /* ── Landing "nueva": seamless section bands ──────────────────────────────────
    Handle uses #fbfaf9 (≈white). These fade the gray into white at the section
    edges so adjacent white sections blend with no hard seam. Variants pick which

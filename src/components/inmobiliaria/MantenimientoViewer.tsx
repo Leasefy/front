@@ -688,17 +688,24 @@ export function MantenimientoViewer({
                 </Button>
               )}
 
-              {/* Secondary Actions */}
+              {/* Secondary Actions
+                  «Agregar nota» sólo aparece si alguien puede guardarla. El
+                  botón estaba siempre, y en Operaciones el handler era un
+                  `toast.success('Nota agregada')` sin nada detrás: no existe
+                  endpoint de notas para mantenimientos (el controlador tiene
+                  quote/select-quote/approve/complete/cancel y nada más). */}
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  hideArrow
-                  onClick={() => setShowNoteDialog(true)}
-                  className="flex-1"
-                >
-                  <ChatCircle className="w-4 h-4" />
-                  {t('inmobiliaria.mantenimiento.addNote')}
-                </Button>
+                {onAddNote && (
+                  <Button
+                    variant="outline"
+                    hideArrow
+                    onClick={() => setShowNoteDialog(true)}
+                    className="flex-1"
+                  >
+                    <ChatCircle className="w-4 h-4" />
+                    {t('inmobiliaria.mantenimiento.addNote')}
+                  </Button>
+                )}
                 <IconButton
                   variant="outline"
                   onClick={() => setShowCancelDialog(true)}

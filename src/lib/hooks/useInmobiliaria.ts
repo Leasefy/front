@@ -23,6 +23,7 @@ import type {
   AiMetricsResponse,
   AiActivityResponse,
 } from '@/lib/api/inmobiliaria.service';
+import { esSinPermiso } from '@/lib/errores/clasificar';
 import type {
   Propietario,
   Agente,
@@ -160,6 +161,91 @@ export function usePropietario(id: string | undefined) {
 export function useAgentes(options?: { skip?: boolean }) {
   const { data, ...rest } = useApiData(() => agentesApi.getAll(), [], options?.skip);
   return { agentes: data ?? [], ...rest };
+}
+
+/*
+ * El equipo = agentes activos + los que invitaste y todavía no aceptaron.
+ *
+ * `GET /inmobiliaria/agentes` devuelve SÓLO miembros `ACTIVE` y con usuario
+ * vinculado (agentes.service `findAll`: `where status: ACTIVE` y después
+ * `members.filter(m => m.userId !== null)`). Un agente recién invitado es
+ * `INVITED` con `userId` null, así que no puede salir ahí —ni recargando, ni
+ * mañana, nunca— hasta que la persona se registre y acepte.
+ *
+ * Por eso la pantalla decía «0 agentes · No hay agentes registrados» justo
+ * después de crear uno, y recargar no cambiaba nada: no era un problema de
+ * refresco, era que la tabla lee una colección más chica que la que escribe el
+ * formulario. Verificado en base: 2 filas AGENTE/INVITED con `user_id` NULL
+ * mientras `GET /agentes` devuelve [].
+ *
+ * Las invitaciones viven en `GET /inmobiliaria/agency/members`, que pide
+ * permiso de `configuracion` (admin). Un 403 ahí NO es un fallo: es que a esa
+ * persona no le corresponde verlas, y el equipo activo se muestra igual.
+ * Cualquier OTRO fallo sí esconde gente, y eso se avisa (`invitacionesCaidas`)
+ * en vez de mostrar un roster incompleto como si estuviera completo.
+ */
+function invitacionComoAgente(m: AgencyUser): Agente {
+  return {
+    id: m.id, // id del AgencyMember — es el que usan las rutas /members/:id
+    // El backend no guarda el nombre del invitado (no hay columna `name` en
+    // `agency_members`), así que `name` vuelve como el email. Mostrar el email
+    // es la verdad disponible.
+    name: m.name || m.email,
+    email: m.email,
+    phone: m.phone ?? '',
+    avatar: m.avatar,
+    role: 'agent',
+    status: 'invited',
+    commissionSplit: 0,
+    assignedPropertyIds: [],
+    hireDate: m.invitedAt ?? m.createdAt,
+    metrics: {
+      assignedProperties: 0,
+      activeLeases: 0,
+      closedThisMonth: 0,
+      closedThisYear: 0,
+      totalCommissions: 0,
+      commissionsThisMonth: 0,
+      avgDaysToClose: 0,
+      conversionRate: 0,
+    },
+    createdAt: m.createdAt,
+    updatedAt: m.createdAt,
+  };
+}
+
+export function useEquipo(options?: { skip?: boolean }) {
+  const { data, ...rest } = useApiData(
+    async () => {
+      const [activos, invitaciones] = await Promise.all([
+        agentesApi.getAll(),
+        inmobiliariaConfigApi.getUsers().then(
+          (miembros) => ({ ok: true as const, miembros }),
+          (err: unknown) => ({ ok: false as const, err }),
+        ),
+      ]);
+
+      const pendientes = invitaciones.ok
+        ? invitaciones.miembros
+            .filter((m) => m.role === 'agente' && m.status === 'invited')
+            .map(invitacionComoAgente)
+        : [];
+
+      return {
+        agentes: [...activos, ...pendientes],
+        // Sólo cuando el fallo NO es «no te corresponde»: ahí sí falta gente.
+        invitacionesCaidas: !invitaciones.ok && !esSinPermiso(invitaciones.err),
+      };
+    },
+    [],
+    options?.skip,
+  );
+
+  return {
+    agentes: data?.agentes ?? [],
+    invitacionesCaidas: data?.invitacionesCaidas ?? false,
+    ...rest,
+  };
 }
 
 export function useAgente(id: string | undefined) {

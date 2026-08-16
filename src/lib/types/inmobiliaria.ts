@@ -59,7 +59,12 @@ export interface PropietarioFormData {
 // ============================================================================
 
 export type AgenteRole = 'agent' | 'coordinator' | 'director';
-export type AgenteStatus = 'active' | 'inactive' | 'on_leave';
+// `invited` = lo invitaste y todavía no aceptó. No sale de `GET /agentes` (ese
+// endpoint sólo devuelve miembros ACTIVE con usuario vinculado): es una fila de
+// `agency_members` en INVITED, sin usuario todavía. Sin este estado la persona
+// que acabás de invitar no existe en ninguna pantalla del módulo.
+// Ver `useEquipo` en src/lib/hooks/useInmobiliaria.ts.
+export type AgenteStatus = 'active' | 'inactive' | 'on_leave' | 'invited';
 
 export interface AgenteMetrics {
   assignedProperties: number;
@@ -1701,6 +1706,27 @@ export interface AgencyMember extends AgencyUser {
  */
 export interface AgencyInviteResult extends AgencyMember {
   emailDelivered: boolean;
+  /**
+   * Por qué no salió, no sólo que no salió.
+   *
+   * `not_configured` = el servidor no tiene SMTP. Reintentar manda por el mismo
+   * camino y no puede funcionar nunca, así que ofrecer «Reenviar invitación»
+   * ahí es un consejo falso. `failed` = sí hay correo configurado y este envío
+   * falló; ahí reintentar sí tiene sentido.
+   *
+   * Opcional: un backend viejo no lo manda, y en ese caso se cae al mensaje
+   * genérico en vez de romper.
+   */
+  emailStatus?: 'sent' | 'not_configured' | 'failed';
+  /**
+   * El token de la invitación, para armar el enlace cuando el correo no salió.
+   *
+   * Estos dos endpoints devuelven la fila cruda de `agency_members` (no pasan
+   * por un DTO), así que viene siempre. Verificado contra la respuesta real de
+   * `POST /inmobiliaria/agency/members`. Opcional en el tipo porque el día que
+   * el backend recorte la respuesta, esto se apaga solo en vez de romper.
+   */
+  invitationToken?: string;
 }
 
 // ============================================================================

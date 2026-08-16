@@ -122,6 +122,28 @@ export function WizardStep3Config({ value, onChange, onNext, onBack }: WizardSte
                 <Spinner size="sm" variant="current" className="shrink-0" aria-hidden />
                 {tf(`${K}.aseguradoras.cargando`, 'Cargando aseguradoras…')}
               </p>
+            ) : registry.error ? (
+              /* «No hay aseguradoras disponibles, usaremos las que Leasefy
+                 recomiende» sobre una consulta caída tranquiliza con algo que
+                 nadie sabe. Y acá pesa doble: la persona acaba de elegir «mis
+                 favoritas» — si la lista no cargó no está eligiendo nada, está
+                 aceptando el default sin enterarse. */
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-fg-muted">
+                  {tf(
+                    `${K}.aseguradoras.errorRegistro`,
+                    'No pudimos traer la lista de aseguradoras.',
+                  )}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  hideArrow
+                  onClick={() => void registry.refetch()}
+                >
+                  {tf(`${K}.aseguradoras.reintentar`, 'Intentar de nuevo')}
+                </Button>
+              </div>
             ) : carrierOptions.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {tf(`${K}.aseguradoras.sinAseguradoras`, 'No hay aseguradoras disponibles. Usaremos las que Leasefy recomiende.')}

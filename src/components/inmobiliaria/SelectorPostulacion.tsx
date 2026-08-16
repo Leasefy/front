@@ -145,6 +145,7 @@ export function SelectorPostulacion({ abierto, onOpenChange }: SelectorPostulaci
             error={error}
             queEs="las postulaciones"
             onReintentar={() => void cargar()}
+            enmarcado={false}
           />
         ) : !hayAlgunaElegible ? (
           <EmptyState

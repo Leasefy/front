@@ -12,7 +12,7 @@ import {
   Star,
   Eye,
   DownloadSimple,
-  ArrowClockwise,
+  Info,
   FilePdf,
   FileXls,
   Lock,
@@ -37,6 +37,12 @@ interface ReporteCardProps {
   onGenerate?: () => void;
   onPreview?: () => void;
   onDownload?: () => void;
+  /**
+   * ¿Este reporte se puede bajar de verdad? Sale de
+   * `src/lib/reportes/exportables.ts`, que es la lista que el back sabe
+   * producir. Cuando es `false` el botón lo dice en vez de prometer.
+   */
+  descargable?: boolean;
   onToggleFavorite?: () => void;
   isGenerating?: boolean;
   /** When true, show locked state with upgrade CTA */
@@ -112,6 +118,7 @@ export function ReporteCard({
   onGenerate,
   onPreview,
   onDownload,
+  descargable = true,
   onToggleFavorite,
   isGenerating = false,
   isLocked = false,
@@ -313,10 +320,16 @@ export function ReporteCard({
           </Button>
         ) : (
           <>
-            {/* Generate Button */}
+            {/* Acción principal.
+                Decía «Generar» y no generaba: esperaba 1,5 s y cantaba éxito.
+                Generar y descargar son la MISMA acción —el back arma el CSV a
+                pedido—, así que el botón dice lo que de verdad va a pasar. Y
+                cuando el reporte todavía no existe, se ve distinto en vez de
+                prometer lo mismo que los que sí funcionan. */}
             {onGenerate && (
               <Button
                 hideArrow
+                variant={descargable ? 'default' : 'secondary'}
                 onClick={(e) => {
                   e.stopPropagation();
                   onGenerate();
@@ -327,12 +340,17 @@ export function ReporteCard({
                 {isGenerating ? (
                   <>
                     <Spinner size="sm" variant="current" />
-                    {t('inmobiliaria.reporte.generating')}
+                    Descargando…
+                  </>
+                ) : descargable ? (
+                  <>
+                    <DownloadSimple className="w-4 h-4" />
+                    Descargar CSV
                   </>
                 ) : (
                   <>
-                    <ArrowClockwise className="w-4 h-4" />
-                    {t('inmobiliaria.reporte.generate')}
+                    <Info className="w-4 h-4" />
+                    Todavía no
                   </>
                 )}
               </Button>
@@ -354,21 +372,10 @@ export function ReporteCard({
               </Button>
             )}
 
-            {/* Download Button */}
-            {onDownload && report.lastGenerated && (
-              <Button
-                variant="secondary"
-                size="icon"
-                hideArrow
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDownload();
-                }}
-                title={t('inmobiliaria.reporte.download')}
-              >
-                <DownloadSimple className="w-4 h-4" />
-              </Button>
-            )}
+            {/* El botón de descarga suelto salió: hacía exactamente lo mismo
+                que el principal, y sólo aparecía después de «generar», que era
+                la parte inventada. Dos botones para una acción es lo que dejó
+                lugar a que uno de los dos mintiera. */}
           </>
         )}
       </div>

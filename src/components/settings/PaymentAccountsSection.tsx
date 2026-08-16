@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { CreditCard, Bank, Wallet, House, Star, Warning, CaretRight, TrashSimple, Plus, X, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -51,32 +51,32 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
   // Property assignments state (maps accountId -> propertyId[])
   const [propertyAssignments, setPropertyAssignments] = useState<Record<string, string[]>>({});
 
-  // Load payment accounts and assignments from API
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const [accounts, assignments] = await Promise.all([
-          paymentMethodsApi.getAll(),
-          paymentMethodsApi.getAssignments(),
-        ]);
-        if (cancelled) return;
-        setPaymentAccounts(accounts);
-        const map: Record<string, string[]> = {};
-        assignments.forEach((a) => {
-          if (a.accountId) {
-            if (!map[a.accountId]) map[a.accountId] = [];
-            map[a.accountId].push(a.propertyId);
-          }
-        });
-        setPropertyAssignments(map);
-      } catch {
-        // API not available yet - start with empty state
-      }
+  // Releer cuentas y asignaciones del servidor.
+  //
+  // Está extraído del efecto justamente para que las mutaciones puedan
+  // llamarlo: antes cada handler parcheaba `paymentAccounts` a mano y la lista
+  // quedaba mostrando una versión que sólo existía en el navegador.
+  const recargarCuentas = useCallback(async () => {
+    try {
+      const [accounts, assignments] = await Promise.all([
+        paymentMethodsApi.getAll(),
+        paymentMethodsApi.getAssignments(),
+      ]);
+      setPaymentAccounts(accounts);
+      const map: Record<string, string[]> = {};
+      assignments.forEach((a) => {
+        if (a.accountId) {
+          if (!map[a.accountId]) map[a.accountId] = [];
+          map[a.accountId].push(a.propertyId);
+        }
+      });
+      setPropertyAssignments(map);
+    } catch {
+      // API not available yet - start with empty state
     }
-    load();
-    return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => { void recargarCuentas(); }, [recargarCuentas]);
 
   // Selected properties for new account
   const [selectedPropertyIds, setSelectedPropertyIds] = useState<string[]>([]);
@@ -198,22 +198,12 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
 
       const newAccount = await paymentMethodsApi.create(accountData);
 
-      if (newAccount.isDefault) {
-        setPaymentAccounts(prev => prev.map(a => ({ ...a, isDefault: false })).concat(newAccount));
-      } else {
-        setPaymentAccounts(prev => [...prev, newAccount]);
+      // Update property assignments if any selected
+      for (const propId of selectedPropertyIds) {
+        await paymentMethodsApi.assignProperty(newAccount.id, propId);
       }
 
-      // Update property assignments if any selected
-      if (selectedPropertyIds.length > 0) {
-        for (const propId of selectedPropertyIds) {
-          await paymentMethodsApi.assignProperty(newAccount.id, propId);
-        }
-        setPropertyAssignments(prev => ({
-          ...prev,
-          [newAccount.id]: selectedPropertyIds,
-        }));
-      }
+      await recargarCuentas();
 
       setShowAddAccountModal(false);
       resetForms();
@@ -225,11 +215,20 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
     }
   };
 
-  const handleSetDefaultAccount = (accountId: string) => {
-    setPaymentAccounts(prev =>
-      prev.map(a => ({ ...a, isDefault: a.id === accountId }))
-    );
-    toast.success(t('landlordSettings.toasts.accountSetDefault'));
+  // Marcar la cuenta principal se guardaba SÓLO en el navegador: cambiaba el
+  // `isDefault` del estado local y decía «listo». Al recargar volvía la de
+  // antes, y las dispersiones seguían saliendo a la cuenta vieja.
+  const handleSetDefaultAccount = async (accountId: string) => {
+    setIsLoading(true);
+    try {
+      await paymentMethodsApi.update(accountId, { isDefault: true });
+      await recargarCuentas();
+      toast.success(t('landlordSettings.toasts.accountSetDefault'));
+    } catch {
+      toast.error(t('landlordSettings.toasts.errorUpdatingAccount'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeletePaymentAccount = async () => {
@@ -247,12 +246,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
     setIsLoading(true);
     try {
       await paymentMethodsApi.delete(editingAccount.id);
-      setPaymentAccounts(prev => prev.filter(a => a.id !== editingAccount.id));
-      setPropertyAssignments(prev => {
-        const next = { ...prev };
-        delete next[editingAccount.id];
-        return next;
-      });
+      await recargarCuentas();
       setShowDeleteAccountModal(false);
       setEditingAccount(null);
       toast.success(t('landlordSettings.toasts.accountDeleted'));

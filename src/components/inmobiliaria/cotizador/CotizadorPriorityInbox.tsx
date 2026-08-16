@@ -157,7 +157,7 @@ export function CotizadorPriorityInbox() {
             error={errorCrudo ?? error}
             queEs="la cola de consultas"
             onReintentar={refetch}
-            className="border-0 bg-transparent"
+            enmarcado={false}
           />
         </div>
       ) : sorted.length === 0 ? (

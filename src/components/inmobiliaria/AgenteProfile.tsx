@@ -55,6 +55,12 @@ const STATUS_CONFIG: Record<AgenteStatus, { label: string; dot: string }> = {
     label: 'En licencia',
     dot: 'bg-warning',
   },
+  // No se llega acá desde una invitación (la ficha sólo existe para miembros
+  // ACTIVE), pero el Record tiene que cubrir el tipo entero.
+  invited: {
+    label: 'Invitado',
+    dot: 'bg-warning',
+  },
 };
 
 // Specialization labels
@@ -83,6 +89,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
     active: t('inmobiliaria.agente.statusActive'),
     inactive: t('inmobiliaria.agente.statusInactive'),
     on_leave: t('inmobiliaria.agente.statusOnLeave'),
+    invited: t('inmobiliaria.agente.statusInvited'),
   };
 
   const specializationLabels: Record<string, string> = {

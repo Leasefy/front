@@ -108,4 +108,53 @@ describe('<FalloDeCarga>', () => {
     expect(container.textContent).not.toContain('se venció')
     setAccessToken(null)
   })
+
+  // ── El marco ───────────────────────────────────────────────────────────
+  // Nico: «tiene como doble borde, se ve raro». El fallo pintaba su propia
+  // tarjeta adentro de la tarjeta de la tabla: dos rectángulos redondeados,
+  // uno dentro del otro. Su gemelo <SinDatos> ocupa ese mismo hueco sin marco.
+
+  it('enmarcado (por defecto) pinta su propia tarjeta: es toda la pantalla', () => {
+    render(<FalloDeCarga error={new Error('boom')} />)
+    const raiz = container.querySelector('[data-testid="fallo-de-carga"]') as HTMLElement
+    expect(raiz.className).toContain('border')
+    expect(raiz.getAttribute('data-enmarcado')).toBe('si')
+  })
+
+  it('sin marco no pinta borde ni fondo: va dentro de algo que ya los tiene', () => {
+    render(<FalloDeCarga error={new Error('boom')} enmarcado={false} />)
+    const raiz = container.querySelector('[data-testid="fallo-de-carga"]') as HTMLElement
+    expect(raiz.className).not.toContain('border')
+    expect(raiz.className).not.toContain('bg-card')
+    expect(raiz.getAttribute('data-enmarcado')).toBe('no')
+  })
+
+  // ── Que el reintento se vea ────────────────────────────────────────────
+
+  it('mientras reintenta, el botón se muestra ocupado y no se puede repetir', async () => {
+    let resolver: () => void = () => {}
+    const onReintentar = vi.fn(() => new Promise<void>((r) => { resolver = r }))
+    render(<FalloDeCarga error={new ApiError(500, 'boom')} onReintentar={onReintentar} />)
+
+    const boton = container.querySelector('[data-testid="reintentar"]') as HTMLButtonElement
+    await act(async () => { boton.click() })
+
+    expect(boton.getAttribute('data-reintentando')).toBe('si')
+    expect(boton.disabled).toBe(true)
+    expect(boton.textContent).toContain('Intentando')
+
+    // Un segundo clic durante el reintento no dispara otra petición.
+    await act(async () => { boton.click() })
+    expect(onReintentar).toHaveBeenCalledTimes(1)
+
+    await act(async () => { resolver() })
+  })
+
+  it('sin marco queda idéntico a <SinDatos>: el mismo hueco en dos estados', () => {
+    // Si las clases de caja se separan, el fallo y el vacío saltan de posición
+    // al cambiar de estado dentro de la misma tabla.
+    render(<FalloDeCarga error={new Error('boom')} enmarcado={false} />)
+    const raiz = container.querySelector('[data-testid="fallo-de-carga"]') as HTMLElement
+    expect(raiz.className.trim()).toBe('px-6 py-16 text-center')
+  })
 })

@@ -22,7 +22,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { EmptyState, Spinner } from '@/components/ui';
-import { ErrorState } from '@/components/ui/error-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { MonoLabel, BrandDot, BrandContour } from '@/components/brand';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -256,7 +256,7 @@ export default function InmobiliariaDashboardPage() {
   const {
     kpis: kpisData,
     isLoading: kpisLoading,
-    error: kpisError,
+    errorCrudo: kpisError,
     refetch: refetchKpis,
   } = useInmobiliariaDashboard({
     skip: permLoading || !canAccess('analytics', 'view'),
@@ -312,10 +312,13 @@ export default function InmobiliariaDashboardPage() {
   if (kpisError && !kpisData) {
     return (
       <div className="p-6 lg:p-8">
-        <ErrorState
-          title={t('inmobiliaria.dashboard.title')}
-          description="No pudimos cargar los indicadores de la agencia. Verificá tu conexión e intentá de nuevo."
-          onRetry={refetchKpis}
+        {/* `ErrorState` no distingue un 404 de un corte de red: ofrecía
+            reintentar siempre y describía todo igual. `FalloDeCarga` lo decide
+            por el status. */}
+        <FalloDeCarga
+          error={kpisError}
+          queEs="los indicadores de la agencia"
+          onReintentar={refetchKpis}
         />
       </div>
     );

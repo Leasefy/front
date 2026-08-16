@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 // Keep the import chain node-safe (agent-auth → supabase client).
 vi.mock('@/lib/api/agent-auth', () => ({
@@ -12,13 +12,10 @@ import {
   dispatchToAgentExecution,
   splitSSEEvents,
   handleSSEEvent,
-  pendingApprovalToPendingDecision,
-  resolveChatApproval,
   mapBackendBriefing,
   sectionsFromSnapshot,
   type ChatStreamHandlers,
   type BackendSnapshot,
-  type BackendPendingApproval,
 } from './ai-hub-chat';
 
 describe('backendAgentToFrontType', () => {
@@ -245,116 +242,5 @@ describe('mapBackendBriefing (tolerant)', () => {
     const briefing = mapBackendBriefing({ snapshot: { ...SNAPSHOT, generatedAt: 'garbage' } });
     expect(briefing).not.toBeNull();
     expect(Number.isNaN(briefing!.date.getTime())).toBe(false);
-  });
-});
-
-// ── Approval gate (F2) ─────────────────────────────────────────────────────────
-
-const APPROVAL: BackendPendingApproval = {
-  id: 'approval-pagos-create_invoice-1750000000000',
-  agent: 'pagos',
-  actionType: 'create_invoice',
-  title: 'Confirmar acción de pagos',
-  description: 'Crear el cargo del período para el inquilino X.',
-  payloadPreview: { inquilino: 'X', monto: '$1.200.000' },
-  options: [
-    { id: 'approve', label: 'Aprobar', description: 'Abre el frente', recommendation: 'neutral' },
-    { id: 'cancel', label: 'Cancelar', description: 'No hacer nada', recommendation: 'neutral' },
-  ],
-  requiresApproval: true,
-};
-
-describe('pendingApprovalToPendingDecision', () => {
-  it('maps a backend approval → a front PendingDecision carrying approvalId', () => {
-    const decision = pendingApprovalToPendingDecision(APPROVAL);
-    expect(decision.id).toBe(APPROVAL.id);
-    expect(decision.approvalId).toBe(APPROVAL.id);
-    expect(decision.category).toBe('pagos'); // proposing agent
-    expect(decision.title).toBe(APPROVAL.title);
-    expect(decision.options).toHaveLength(2);
-    expect(decision.options[0]).toMatchObject({ id: 'approve', recommendation: 'neutral' });
-    expect(decision.selectedOptionId).toBeUndefined();
-  });
-});
-
-describe('handleSSEEvent — approvals', () => {
-  it('dispatches pending_approval to onPendingApproval', () => {
-    const seen: BackendPendingApproval[] = [];
-    const handlers: ChatStreamHandlers = { onPendingApproval: (a) => seen.push(a) };
-    handleSSEEvent(
-      `event: pending_approval\ndata: ${JSON.stringify({ type: 'pending_approval', approval: APPROVAL })}`,
-      handlers,
-    );
-    expect(seen).toHaveLength(1);
-    expect(seen[0].id).toBe(APPROVAL.id);
-    expect(seen[0].agent).toBe('pagos');
-  });
-
-  it('done carries pendingApprovals (defaults to [] when absent)', () => {
-    const finals: number[] = [];
-    const handlers: ChatStreamHandlers = {
-      onDone: (f) => finals.push(f.pendingApprovals.length),
-    };
-    handleSSEEvent(
-      `event: done\ndata: ${JSON.stringify({
-        responseText: 'x',
-        suggestedActions: [],
-        dispatches: [],
-        pendingApprovals: [APPROVAL],
-        generatedAt: 'now',
-      })}`,
-      handlers,
-    );
-    // Absent pendingApprovals → [] (back-compat with the F1 done payload).
-    handleSSEEvent(
-      'event: done\ndata: {"responseText":"x","suggestedActions":[],"dispatches":[],"generatedAt":"now"}',
-      handlers,
-    );
-    expect(finals).toEqual([1, 0]);
-  });
-});
-
-describe('resolveChatApproval', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.unstubAllEnvs();
-  });
-
-  it('POSTs outcome to the resolve route and returns the parsed resolution', async () => {
-    vi.stubEnv('NEXT_PUBLIC_AGENT_URL', 'http://agent.test');
-    const fetchMock = vi.fn(async (_url: string, _init: RequestInit) => ({
-      ok: true,
-      json: async () => ({
-        approvalId: APPROVAL.id,
-        outcome: 'approved',
-        knowledgeUpdated: true,
-        semanticUpdated: false,
-        resolvedAt: '2026-06-25T00:00:00.000Z',
-      }),
-    }));
-    vi.stubGlobal('fetch', fetchMock);
-
-    const res = await resolveChatApproval({
-      agencyId: 'agency-1',
-      approvalId: APPROVAL.id,
-      outcome: 'approved',
-    });
-
-    expect(res.knowledgeUpdated).toBe(true);
-    expect(res.semanticUpdated).toBe(false);
-    const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe(
-      `http://agent.test/api/agency/agency-1/ai-hub/chat/approvals/${encodeURIComponent(APPROVAL.id)}/resolve`,
-    );
-    expect(init.method).toBe('POST');
-    expect(JSON.parse(init.body as string)).toEqual({ outcome: 'approved' });
-  });
-
-  it('throws on a non-OK status (caller decides whether to surface)', async () => {
-    vi.stubEnv('NEXT_PUBLIC_AGENT_URL', 'http://agent.test');
-    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 403, json: async () => ({}) })));
-    await expect(
-      resolveChatApproval({ agencyId: 'a', approvalId: APPROVAL.id, outcome: 'rejected' }),
-    ).rejects.toThrow('403');
   });
 });

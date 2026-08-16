@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Toaster } from '@/components/ui/toast';
 import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck, Target } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
@@ -141,7 +140,9 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
-      <Toaster position="top-right" />
+      {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
+          <ProtectedRoute>: acá adentro se perdía todo toast emitido mientras el guard
+          resuelve. No montés otro: sonner duplica el toast por cada Toaster montado. */}
     </div>
   );
 }

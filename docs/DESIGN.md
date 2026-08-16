@@ -350,8 +350,20 @@ Color follows severity via feedback tokens: `success` (positive), `info` (info),
 Color thresholds: ≥75 `bg-success`, ≥50 `bg-warning`, <50 `bg-danger`.
 
 ### Toaster (Sonner)
-Configured in the panel layout — `position="top-right"`, `borderRadius: 22px` (`rounded-lg`),
+**Hay UN solo `<Toaster>` en toda la app y vive en el layout raíz**
+(`src/app/layout.tsx`), dentro de `ThemeProvider` y **fuera de `AuthProvider` y de todo
+guard** — `position="top-right"`, `borderRadius: 22px` (`rounded-lg`),
 `boxShadow: 0 4px 16px rgba(20,19,15,.08)` (`shadow-md`). Don't override per-toast.
+
+⚠️ **No montes un `<Toaster>` en un layout de sección.** Dos reglas, las dos medidas:
+- Sonner pinta cada toast en **todos** los `<Toaster>` montados ⇒ un segundo Toaster
+  **duplica** cada toast en pantalla.
+- Un Toaster dentro de `<ProtectedRoute>` / `<AgencySubscriptionGuard>` sólo existe
+  después de que el guard deja pasar: todo `toast()` emitido antes se pierde en silencio.
+
+Antes vivía en 4 layouts de sección (panel/inmobiliaria, panel/(landlord), inquilino,
+onboarding), así que `toast()` desde el resto del árbol — `/auth/mfa-verify`, `/avaluo`,
+`/propiedades`, la landing y el propio `auth-context` — no pintaba nada.
 
 ---
 

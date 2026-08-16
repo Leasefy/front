@@ -177,19 +177,19 @@ function TableView({ data, locale, t }: { data: FlujoCajaMonth[]; locale: string
       <Table className="w-full">
         <TableHeader>
           <TableRow className="border-b border-border-faint dark:border-border-strong">
-            <TableHead className="text-left p-3 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
+            <TableHead className="text-left p-3">
               {t('inmobiliaria.finance.cashFlow.month')}
             </TableHead>
-            <TableHead className="text-right p-3 text-xs font-semibold text-success uppercase">
+            <TableHead className="text-right p-3 text-success">
               {t('inmobiliaria.finance.cashFlow.income')}
             </TableHead>
-            <TableHead className="text-right p-3 text-xs font-semibold text-fg dark:text-fg-subtle uppercase">
+            <TableHead className="text-right p-3 text-fg">
               {t('inmobiliaria.finance.cashFlow.disbursements')}
             </TableHead>
-            <TableHead className="text-right p-3 text-xs font-semibold text-primary uppercase">
+            <TableHead className="text-right p-3 text-primary">
               {t('inmobiliaria.finance.cashFlow.commissions')}
             </TableHead>
-            <TableHead className="text-right p-3 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
+            <TableHead className="text-right p-3">
               {t('inmobiliaria.finance.cashFlow.balance')}
             </TableHead>
           </TableRow>

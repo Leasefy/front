@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Navbar } from "@/components/layout/Navbar";
+import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { Footer } from "@/components/layout/Footer";
 import { SectionLabel } from "@/components/ui/section-label";
 export const metadata: Metadata = {
@@ -10,8 +10,7 @@ export const metadata: Metadata = {
 
 export default function PrivacidadPage() {
   return (
-    <>
-      <Navbar />
+    <LandingChrome>
       <main id="main-content" className="bg-background">
         <section className="pt-32 pb-16 md:pt-40 md:pb-24">
           <div className="container-platform"><div className="max-w-[800px]">
@@ -1186,6 +1185,6 @@ export default function PrivacidadPage() {
         </section>
       </main>
       <Footer />
-    </>
+    </LandingChrome>
   );
 }

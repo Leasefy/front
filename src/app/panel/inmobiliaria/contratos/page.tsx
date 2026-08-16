@@ -13,6 +13,7 @@
  * CONTRACT_STATUS_COLORS already ship dark variants).
  */
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   FileText,
@@ -129,11 +130,23 @@ function ContratosContent() {
             )}
           </p>
         </div>
-        {/* Antes navegaba a /contratos/nuevo a secas, y esa pantalla exige
-            `?applicationId=`: el botón principal de Contratos mostraba
-            "Falta el parámetro applicationId" en vez de crear nada. Ahora
-            pregunta sobre qué postulación aprobada se arma el contrato. */}
-        <NuevoContratoBoton />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" asChild hideArrow>
+            <Link href="/panel/inmobiliaria/contratos/migrar">
+              {tx('Migrar', 'Migrate')}
+            </Link>
+          </Button>
+          <Button variant="outline" asChild hideArrow>
+            <Link href="/panel/inmobiliaria/contratos/conceptos">
+              {tx('Conceptos', 'Concepts')}
+            </Link>
+          </Button>
+          {/* Antes navegaba a /contratos/nuevo a secas, y esa pantalla exige
+              `?applicationId=`: el botón principal de Contratos mostraba
+              "Falta el parámetro applicationId" en vez de crear nada. Ahora
+              pregunta sobre qué postulación aprobada se arma el contrato. */}
+          <NuevoContratoBoton />
+        </div>
       </header>
 
       {/* Stats */}

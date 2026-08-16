@@ -156,8 +156,8 @@ pantallas siguen sin poder distinguir un 404 de un 500.
 | `panel/inmobiliaria/operaciones/page.tsx` | sí | no |
 | `panel/inmobiliaria/perfil/page.tsx` | sí | no |
 | `panel/inmobiliaria/pipeline/page.tsx` | sí | no |
-| `panel/inmobiliaria/portafolio/[id]/page.tsx` | sí | sí |
-| `panel/inmobiliaria/propiedades/nueva/page.tsx` | sí | no |
+| `panel/inmobiliaria/inmuebles/[id]/page.tsx` | sí | sí |
+| `panel/inmobiliaria/inmuebles/nueva/page.tsx` | sí | no |
 | `panel/inmobiliaria/propietarios/page.tsx` | sí | no |
 | `panel/inmobiliaria/renovaciones/page.tsx` | sí | no |
 | `panel/inmobiliaria/reportes/page.tsx` | sí | sí |

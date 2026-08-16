@@ -100,7 +100,7 @@ export interface Property {
 
 // ============================================================================
 // Agency property — extends Property with agent assignment data
-// Used in /panel/inmobiliaria/propiedades
+// Used in /panel/inmobiliaria/inmuebles
 // ============================================================================
 
 export interface PropertyAgent {

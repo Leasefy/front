@@ -33,6 +33,7 @@ import { applicationsApi } from '@/lib/api/applications.service';
 import { getAccessToken } from '@/lib/api/client';
 import { getConsentText, type ConsentTextResponse } from '@/lib/api/legal.service';
 import type { ApplicationPrefillData } from '@/lib/api/applications.types';
+import { aplicarPrefill } from '@/lib/tenant/prefill-a-postulacion';
 
 // ============================================================================
 // Local storage key
@@ -294,49 +295,13 @@ export function ApplicationProvider({
           // If the state is no longer pristine (user typed something), bail out.
           if (prev.personal.fullName) return prev;
 
-          return {
-            ...prev,
-            personal: {
-              ...prev.personal,
-              fullName: data.fullName ?? prev.personal.fullName ?? '',
-              documentType: (data.documentType as Application['personal']['documentType']) ?? prev.personal.documentType,
-              documentNumber: data.documentNumber ?? prev.personal.documentNumber ?? '',
-              dateOfBirth: data.dateOfBirth ?? prev.personal.dateOfBirth ?? '',
-              phone: data.phone ?? prev.personal.phone ?? '',
-              email: data.email ?? prev.personal.email ?? '',
-              currentAddress: data.currentAddress ?? prev.personal.currentAddress ?? '',
-              timeAtCurrentAddress: data.timeAtCurrentAddress ?? prev.personal.timeAtCurrentAddress,
-              maritalStatus: (data.maritalStatus as Application['personal']['maritalStatus']) ?? prev.personal.maritalStatus,
-              dependents: data.dependents ?? prev.personal.dependents,
-            },
-            employment: {
-              ...prev.employment,
-              employmentStatus: (data.employmentStatus as Application['employment']['employmentStatus']) ?? prev.employment.employmentStatus,
-              companyName: data.companyName ?? prev.employment.companyName ?? '',
-              industry: data.industry ?? prev.employment.industry ?? '',
-              position: data.position ?? prev.employment.position ?? '',
-              contractType: (data.contractType as Application['employment']['contractType']) ?? prev.employment.contractType,
-              timeAtJob: data.timeAtJob ?? prev.employment.timeAtJob,
-              employerPhone: data.employerPhone ?? prev.employment.employerPhone ?? '',
-              employerAddress: data.employerAddress ?? prev.employment.employerAddress ?? '',
-            },
-            income: {
-              ...prev.income,
-              monthlySalary: data.monthlySalary ?? prev.income.monthlySalary ?? 0,
-              additionalIncome: data.additionalIncome ?? prev.income.additionalIncome ?? 0,
-              additionalIncomeSource: data.additionalIncomeSource ?? prev.income.additionalIncomeSource ?? '',
-              totalMonthlyIncome: data.totalMonthlyIncome ?? prev.income.totalMonthlyIncome ?? 0,
-              monthlyObligations: data.monthlyObligations ?? prev.income.monthlyObligations ?? 0,
-              availableForRent: data.availableForRent ?? prev.income.availableForRent ?? 0,
-            },
-            references: data.references ?? prev.references,
-            hasCoSigner: data.hasCoSigner ?? prev.hasCoSigner,
-            coSigner: (data.coSigner as unknown as Application['coSigner']) ?? prev.coSigner,
-            // Prefilled data is a convenience, not a confirmation: steps stay
-            // unconfirmed and the wizard shows a notice asking to review them.
-            prefilledAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
+          // El mapeo vive en `lib/tenant/prefill-a-postulacion` porque lo usa
+          // también la postulación directa, que decide con él si hay algo que
+          // preguntar. Dos mapeos distintos harían que una pantalla dijera "ya
+          // tenemos todo" sobre datos que la otra considera incompletos.
+          // Los datos traídos NO cuentan como confirmados: los pasos siguen sin
+          // marcar y el wizard muestra el aviso de revisarlos.
+          return aplicarPrefill(prev, data);
         });
       })
       .catch(() => {
@@ -496,6 +461,12 @@ export function ApplicationProvider({
     // Uploading is impossible without the File — block early with a clear message.
     // In update mode, fileName-without-file means the document already exists on
     // the server and skipping the upload is intentional, so the guard is skipped.
+    //
+    // `reusable` es la excepción, y no es un detalle: un documento traído de una
+    // postulación anterior TAMBIÉN llega sin `File`, pero no se perdió nada —
+    // vive en el servidor y lo copia `reuseDocuments` más abajo. Sin distinguir
+    // los dos casos, a quien reusa sus documentos se le bloqueaba el envío
+    // pidiéndole adjuntar de nuevo lo que ya nos había dado.
     if (mode !== 'update') {
       const docs = application.documents;
       const staleSlots = [
@@ -506,7 +477,9 @@ export function ApplicationProvider({
         docs.payStub,
         docs.creditReport,
       ];
-      const hasStaleSlot = staleSlots.some((slot) => slot?.fileName && !slot?.file);
+      const hasStaleSlot = staleSlots.some(
+        (slot) => slot?.fileName && !slot?.file && !slot?.reusable,
+      );
       if (hasStaleSlot) {
         setSubmissionError(
           'Algunos documentos se desconectaron al recargar la página. Volvé al paso de documentos y adjuntalos de nuevo.',
@@ -666,6 +639,30 @@ export function ApplicationProvider({
               const msg = uploadErr instanceof Error ? uploadErr.message : 'Error subiendo documento';
               throw new Error(`No pudimos subir el documento "${type}". ${msg}`);
             }
+          }
+        }
+
+        /*
+         * Los documentos traídos de una postulación anterior no tienen `File`
+         * que subir: se copian en el servidor. Va DESPUÉS de las subidas a
+         * propósito — el back sólo copia los tipos que todavía no están, así
+         * que un archivo recién adjuntado le gana al viejo, que es lo que la
+         * persona espera cuando reemplaza uno.
+         */
+        const hayReusables = [
+          docs.idDocument,
+          docs.bankStatement,
+          docs.incomeProof,
+          docs.employmentLetter,
+          docs.payStub,
+          docs.creditReport,
+        ].some((slot) => slot?.reusable);
+        if (hayReusables) {
+          try {
+            await applicationsApi.reuseDocuments(created.id);
+          } catch (reuseErr) {
+            const msg = reuseErr instanceof Error ? reuseErr.message : 'Error adjuntando documentos';
+            throw new Error(`No pudimos adjuntar tus documentos anteriores. ${msg}`);
           }
         }
       } else {

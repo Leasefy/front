@@ -114,6 +114,57 @@ describe('motivoDeBloqueo', () => {
   })
 })
 
+/**
+ * La puerta de sesión.
+ *
+ * Sin sesión, «sin_estudio» NO prueba que la persona no se haya estudiado —
+ * prueba que no sabemos quién es. Puede tener cuenta y aprobación vigente y
+ * estar simplemente deslogueada; mandarla a pagar otra vez un estudio que ya
+ * pagó es el peor error que puede cometer esta pantalla.
+ */
+describe('motivoDeBloqueo — invitado sin sesión', () => {
+  const SIN_ESTUDIO: Aprobacion = { ...APROBADA, estado: 'sin_estudio', topeAprobadoCop: null }
+
+  it('sin sesión y sin estudio pregunta si ya tiene cuenta, no manda a pagar', () => {
+    expect(motivoDeBloqueo({ aprobacion: SIN_ESTUDIO, vigente: false, haySesion: false })).toBe(
+      'sin_sesion',
+    )
+  })
+
+  it('CON sesión y sin estudio sí manda a estudiarse', () => {
+    expect(motivoDeBloqueo({ aprobacion: SIN_ESTUDIO, vigente: false, haySesion: true })).toBe(
+      'sin_aprobacion',
+    )
+  })
+
+  it('por defecto asume que hay sesión: no le cambia el resultado a quien no manda el dato', () => {
+    expect(motivoDeBloqueo({ aprobacion: SIN_ESTUDIO, vigente: false })).toBe('sin_aprobacion')
+  })
+
+  it('un respaldo local aprobado pasa de largo aunque no haya sesión', () => {
+    // Quien se aprobó por un link de WhatsApp todavía no tiene cuenta, y su
+    // aprobación es real: no se le pide entrar para usar lo que ya se ganó.
+    expect(
+      motivoDeBloqueo({
+        aprobacion: APROBADA,
+        vigente: true,
+        canonCop: 1_500_000,
+        haySesion: false,
+      }),
+    ).toBeNull()
+  })
+
+  it('sin sesión, un rechazo sigue siendo un rechazo', () => {
+    expect(
+      motivoDeBloqueo({
+        aprobacion: { ...APROBADA, estado: 'rechazado' },
+        vigente: false,
+        haySesion: false,
+      }),
+    ).toBe('rechazado')
+  })
+})
+
 describe('cabeEnTope', () => {
   it('null cuando no hay tope: es "no sabemos", ni sí ni no', () => {
     expect(cabeEnTope(1_000_000, null)).toBeNull()

@@ -432,11 +432,18 @@ function SidebarContent({
 
   return (
     <div
-      className="flex flex-col h-full bg-bg relative"
-      // Agency brand tint: scope the DS `--primary` to this subtree so the active
-      // nav accent and brand tile adopt the agency color, without affecting the
-      // rest of the app. Only set when a valid HSL triplet is provided.
-      style={brandPrimaryHsl ? ({ ['--primary']: brandPrimaryHsl } as React.CSSProperties) : undefined}
+      className={cn('flex flex-col h-full bg-bg relative', brandPrimaryHsl && 'tinte-de-marca')}
+      // Tinte de marca de la inmobiliaria: el color entra como `--marca-primary`
+      // y es `.tinte-de-marca` (globals.css) quien decide si manda sobre el
+      // `--primary` del DS. La decisión es por TEMA y por eso vive en CSS: el
+      // color de marca es un solo hex, elegido mirando el panel en claro, y en
+      // oscuro dejaba el sidebar de otro color que el resto del panel.
+      // Solo se aplica cuando el triplete HSL es válido.
+      style={
+        brandPrimaryHsl
+          ? ({ ['--marca-primary']: brandPrimaryHsl } as React.CSSProperties)
+          : undefined
+      }
     >
       {/* Collapse Button */}
       {showCollapseButton && (

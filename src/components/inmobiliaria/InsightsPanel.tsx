@@ -24,7 +24,7 @@ const KIND_PRESENTATION: Record<
   contratos_por_vencer: { icon: FileText, titleKey: 'title_contratos_por_vencer', actionKey: 'action_contratos', href: '/panel/inmobiliaria/contratos' },
   mora_prioritaria: { icon: Warning, titleKey: 'title_mora_prioritaria', actionKey: 'action_cobranza', href: '/panel/inmobiliaria/ai/cobranza' },
   por_dispersar: { icon: Wallet, titleKey: 'title_por_dispersar', actionKey: 'action_tesoreria', href: '/panel/inmobiliaria/tesoreria' },
-  propiedad_estancada: { icon: House, titleKey: 'title_propiedad_estancada', actionKey: 'action_propiedades', href: '/panel/inmobiliaria/propiedades' },
+  propiedad_estancada: { icon: House, titleKey: 'title_propiedad_estancada', actionKey: 'action_propiedades', href: '/panel/inmobiliaria/inmuebles' },
   firma_pendiente: { icon: PenNib, titleKey: 'title_firma_pendiente', actionKey: 'action_firma', href: '/panel/inmobiliaria/contratos' },
 };
 

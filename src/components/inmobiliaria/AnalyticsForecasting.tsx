@@ -533,19 +533,19 @@ function ForecastDetailsTable({ data, unit }: { data: ForecastDataPoint[]; unit:
         <Table className="w-full">
           <TableHeader>
             <TableRow className="border-b border-border-faint dark:border-border-strong">
-              <TableHead className="text-left p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
+              <TableHead className="text-left p-2">
                 {t('inmobiliaria.analytics.forecastComp.month')}
               </TableHead>
-              <TableHead className="text-right p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
+              <TableHead className="text-right p-2">
                 {t('inmobiliaria.analytics.forecastComp.prediction')}
               </TableHead>
-              <TableHead className="text-right p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
+              <TableHead className="text-right p-2">
                 {t('inmobiliaria.analytics.forecastComp.lowerBound')}
               </TableHead>
-              <TableHead className="text-right p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
+              <TableHead className="text-right p-2">
                 {t('inmobiliaria.analytics.forecastComp.upperBound')}
               </TableHead>
-              <TableHead className="text-right p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
+              <TableHead className="text-right p-2">
                 {t('inmobiliaria.analytics.forecastComp.confidenceLabel')}
               </TableHead>
             </TableRow>

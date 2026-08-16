@@ -65,7 +65,7 @@ describe('filterAgencyNav — el encuadre solo puede QUITAR', () => {
     { kind: 'section', label: 'FINANZAS', href: '#sec-finanzas', icon: House, scope: 'finanzas' },
     { label: 'Facturación', href: '/panel/inmobiliaria/facturacion', icon: House, module: 'facturacion', scope: 'finanzas' },
     { kind: 'section', label: 'COMERCIAL', href: '#sec-comercial', icon: House, scope: 'comercial' },
-    { label: 'Inmuebles', href: '/panel/inmobiliaria/propiedades', icon: House, module: 'portafolio', scope: 'comercial' },
+    { label: 'Inmuebles', href: '/panel/inmobiliaria/inmuebles', icon: House, module: 'portafolio', scope: 'comercial' },
   ]
 
   it('nunca devuelve una fila que el permiso negó, aunque el scope la permita', () => {

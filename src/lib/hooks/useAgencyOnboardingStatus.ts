@@ -33,7 +33,7 @@ const MOCK_STEPS: OnboardingStep[] = [
     key: 'first_property',
     label: 'Agrega tu primera propiedad en consignación',
     completed: false,
-    action: { label: 'Agregar', href: '/panel/inmobiliaria/portafolio/nuevo' },
+    action: { label: 'Agregar', href: '/panel/inmobiliaria/inmuebles/nuevo' },
   },
   {
     key: 'invite_agent',

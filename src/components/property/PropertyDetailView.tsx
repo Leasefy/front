@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Bed, Bathtub, ArrowsOut, Buildings, CaretRight, ArrowSquareOut } from '@phosphor-icons/react';
+import { MapPin, Bed, Bathtub, ArrowsOut, Buildings, CaretRight, ArrowSquareOut, ArrowLeft } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { PhotoGalleryModal } from '@/components/property/PhotoGalleryModal';
@@ -213,16 +213,38 @@ export function PropertyDetailView({
   return (
     <>
       <div className="min-h-screen bg-background">
-        {/* Back Compass - Breadcrumb style */}
+        {/*
+          Volver, de verdad.
+          La miga de pan sola no alcanza: es un rastro, no un control. Quien
+          entra a una ficha desde el buscador quiere volver A SEGUIR BUSCANDO, y
+          para eso tiene que haber un botón que se vea como un botón.
+          La miga se queda —dice dónde estás— pero el que devuelve es el botón.
+        */}
         <div className="pt-6">
           <div className="container-platform">
-            <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Link href={listingHref} className="hover:text-foreground transition-colors">
-                {listingLabel}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <Link
+                href={listingHref}
+                className="group inline-flex h-9 items-center gap-2 rounded-full border border-border bg-card pl-3 pr-4 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                <ArrowLeft
+                  className="h-4 w-4 transition-transform group-hover:-translate-x-0.5"
+                  aria-hidden="true"
+                />
+                Volver a {listingLabel.toLowerCase()}
               </Link>
-              <CaretRight className="w-3.5 h-3.5" />
-              <span className="text-foreground/70 truncate max-w-[200px]">{property.title}</span>
-            </nav>
+
+              <nav
+                aria-label="Ruta"
+                className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground"
+              >
+                <Link href={listingHref} className="hover:text-foreground transition-colors">
+                  {listingLabel}
+                </Link>
+                <CaretRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                <span className="truncate text-foreground/70">{property.title}</span>
+              </nav>
+            </div>
           </div>
         </div>
 

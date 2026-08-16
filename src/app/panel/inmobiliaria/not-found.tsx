@@ -33,7 +33,7 @@ export default function NoEncontradoEnPanel() {
             Volver al panel
           </Link>
           <Link
-            href="/panel/inmobiliaria/propiedades"
+            href="/panel/inmobiliaria/inmuebles"
             className="inline-flex h-10 items-center rounded-full px-5 text-sm font-medium text-fg-muted transition-colors hover:text-fg"
           >
             Ver inmuebles

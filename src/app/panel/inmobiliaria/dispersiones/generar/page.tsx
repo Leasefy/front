@@ -19,11 +19,24 @@ function GenerarDispersionesContent() {
   const { t } = useI18n();
   const router = useRouter();
 
-  const handleComplete = (dispersiones: Dispersion[]) => {
-    toast.success(t('inmobiliaria.dispersiones.toasts.generated'), {
-      description: t('inmobiliaria.dispersiones.toasts.generatedDesc', { count: dispersiones.length }),
-    });
-    router.push('/panel/inmobiliaria/dispersiones');
+  /**
+   * El asistente ya avisó, con el número que devolvió el back.
+   *
+   * Acá había un SEGUNDO `toast.success` que contaba `dispersiones.length` — y
+   * el asistente llama a `onComplete([])`, así que anunciaba «0 dispersiones»
+   * pegado al aviso correcto. Dos mensajes sobre la misma acción, y el que
+   * sobraba era el falso.
+   *
+   * Se vuelve al mes que se acaba de generar: la lista abre en el mes actual,
+   * así que generar las de julio y caer en agosto vacío se lee como que no
+   * pasó nada.
+   */
+  const handleComplete = (_dispersiones: Dispersion[], month?: string) => {
+    router.push(
+      month
+        ? `/panel/inmobiliaria/dispersiones?mes=${month}`
+        : '/panel/inmobiliaria/dispersiones',
+    );
   };
 
   const handleCancel = () => {

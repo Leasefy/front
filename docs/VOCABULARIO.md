@@ -87,6 +87,32 @@ término estándar en Colombia. Con esto el choque de tres vías queda resuelto.
 
 ---
 
+## Inmueble — la cosa. Consignación — el mandato sobre esa cosa
+
+Había **cuatro nombres para dos pantallas**: el menú decía «Consignaciones» y el
+H1 «Portafolio»; el menú decía «Inmuebles · catálogo» y el H1 «Propiedades». Y
+las dos pantallas listaban lo mismo — medido el 2026-08-16: 10 consignaciones,
+10 inmuebles, correspondencia 1:1, ningún huérfano de ningún lado, y el mismo
+permiso (`portafolio`) protegiendo las dos.
+
+| Palabra | Qué nombra | Dónde se ve |
+|---|---|---|
+| **Inmueble** | El bien: dirección, fotos, alcobas, estrato | El menú, el H1, la lista |
+| **Consignación** | El **mandato** de la agencia sobre ese inmueble: comisión, fecha de contrato, término mínimo, acta de entrega | Adentro del inmueble |
+| ~~Portafolio~~ | Era el H1 de «Consignaciones» | Muere como título. Sobrevive en *«retirar del portafolio»*, donde sí quiere decir algo: el conjunto de lo que administrás |
+| ~~Propiedad~~ (en el panel) | Era el H1 del catálogo | Muere en el panel. Sigue viva en el marketplace público (`/propiedades`), que le habla a otra audiencia |
+
+Dos reglas que salen de esto:
+
+1. **Para una agencia, entrar un inmueble es siempre una consignación.** No
+   existe el «inmueble suelto»: sin propietario y sin comisión no hay qué
+   cobrar ni a quién liquidarle. Ya estaba escrito en
+   `src/lib/inmobiliaria/flujos.ts`; ahora manda también sobre las palabras.
+2. **`/panel/inmobiliaria/inmuebles/:id` es siempre un id de consignación.** Un
+   mismo hueco de la URL no puede significar dos entidades.
+
+---
+
 ## Palabras muertas
 
 | Muere | Por qué | Qué se usa |

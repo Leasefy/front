@@ -334,16 +334,16 @@ export function ActaEntregaViewer({
                   <Table className="w-full">
                     <TableHeader>
                       <TableRow className="border-b border-border">
-                        <TableHead className="text-left py-2 px-4 text-xs font-medium text-fg-muted uppercase">
+                        <TableHead className="text-left py-2 px-4">
                           {t('inmobiliaria.acta.thItem')}
                         </TableHead>
-                        <TableHead className="text-center py-2 px-4 text-xs font-medium text-fg-muted uppercase">
+                        <TableHead className="text-center py-2 px-4">
                           {t('inmobiliaria.acta.thQty')}
                         </TableHead>
-                        <TableHead className="text-center py-2 px-4 text-xs font-medium text-fg-muted uppercase">
+                        <TableHead className="text-center py-2 px-4">
                           {t('inmobiliaria.acta.thCondition')}
                         </TableHead>
-                        <TableHead className="text-left py-2 px-4 text-xs font-medium text-fg-muted uppercase">
+                        <TableHead className="text-left py-2 px-4">
                           {t('inmobiliaria.acta.thNotes')}
                         </TableHead>
                       </TableRow>

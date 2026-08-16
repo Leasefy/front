@@ -95,7 +95,7 @@ describe('FLUJOS', () => {
     // consignación. `/propiedades/nueva` no pide propietario —ni comisión, ni
     // agente, ni inventario— y publica igual al catálogo: es el formulario del
     // panel del propietario, y desde acá solo crea una ficha a medias.
-    expect(FLUJOS.map((f) => f.href)).not.toContain('/panel/inmobiliaria/propiedades/nueva')
+    expect(FLUJOS.map((f) => f.href)).not.toContain('/panel/inmobiliaria/inmuebles/nueva')
   })
 
   it('un flujo sin href resuelve su destino de otra forma, nunca queda mudo', () => {

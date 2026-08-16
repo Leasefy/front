@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { visitsApi } from '@/lib/api/visits.service';
 import type { Visit } from '@/lib/types/visit';
 import type { CreateVisitDto, CancelVisitDto, RescheduleVisitDto } from '@/lib/api/visits.types';
+import { useRefrescoAutomatico } from './use-refresco-automatico';
 
 // ============================================================================
 // useVisits - list visits with stats and helpers
@@ -55,6 +56,10 @@ export function useVisits() {
   const getForProperty = useCallback((propertyId: string) => {
     return visits.filter(v => v.propertyId === propertyId);
   }, [visits]);
+
+  // Aceptar, cancelar o reprogramar una visita mueve esta lista, y las citas
+  // del panel viven bajo `agenda`: los dos nombres, o media pantalla se queda vieja.
+  useRefrescoAutomatico(['visits', 'agenda'], fetchVisits);
 
   return { visits, stats, isLoading, error, refetch: fetchVisits, getUpcoming, getForProperty };
 }

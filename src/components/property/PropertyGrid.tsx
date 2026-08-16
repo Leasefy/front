@@ -106,7 +106,7 @@ export function PropertyGrid({
     return (
       <div className="space-y-8" role="status" aria-label="Cargando propiedades">
         <span className="sr-only">Cargando propiedades...</span>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="grilla-inmuebles gap-6">
           {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
             <PropertyCardSkeleton key={index} />
           ))}
@@ -129,7 +129,7 @@ export function PropertyGrid({
   return (
     <div className="space-y-8">
       {/* Property Grid - 2 columns for split view */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="grilla-inmuebles gap-6">
         {displayedProperties.map((property) => {
           // `=== true` a propósito: `null` es "no sabemos", y no se marca nada
           // por un dato que falta.

@@ -149,6 +149,17 @@ export interface DocumentUpload {
    * without needing a re-upload.
    */
   remoteId?: string;
+  /**
+   * El documento viene de una postulación ANTERIOR de esta misma persona: existe
+   * en el servidor, pero todavía no en ESTA postulación. Lo adjunta de verdad
+   * `POST /applications/:id/documents/reuse`, después de crearla.
+   *
+   * Distinto de `remoteId`, que significa "ya es de esta postulación". La
+   * diferencia importa: sin la marca, un `fileName` sin `File` se lee como un
+   * archivo perdido al serializar a localStorage y el envío se bloquea pidiendo
+   * adjuntar de nuevo lo que la persona ya nos dio.
+   */
+  reusable?: boolean;
 }
 
 export interface DocumentInfo {

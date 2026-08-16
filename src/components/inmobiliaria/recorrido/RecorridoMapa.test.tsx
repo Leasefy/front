@@ -146,14 +146,14 @@ describe('RecorridoMapa', () => {
     const el = montar(
       <RecorridoMapa
         hrefs={{
-          comparacion: '/panel/inmobiliaria/propiedades/p-9/candidatos',
-          decision: '/panel/inmobiliaria/propiedades/p-9/candidatos',
+          comparacion: '/panel/inmobiliaria/inmuebles/p-9/candidatos',
+          decision: '/panel/inmobiliaria/inmuebles/p-9/candidatos',
         }}
       />,
     )
     const items = [...el.querySelectorAll('li')]
     expect(items[8].querySelector('a')?.getAttribute('href'))
-      .toBe('/panel/inmobiliaria/propiedades/p-9/candidatos')
+      .toBe('/panel/inmobiliaria/inmuebles/p-9/candidatos')
   })
 
   it('los pasos del inquilino nunca dicen "sin pantalla" — no son suyos', () => {

@@ -3,6 +3,7 @@ import path from "path";
 // Node with no TypeScript loader on Next.js 14.2. See
 // src/lib/landing/legacy-redirects.ts for the typed re-export + rationale.
 import { LEGACY_PRODUCT_REDIRECTS_DATA } from "./src/lib/landing/legacy-redirects.data.mjs";
+import { RUTAS_UNIFICADAS_DEL_PANEL_DATA } from "./src/lib/nav/rutas-unificadas-del-panel.data.mjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -114,8 +115,11 @@ const nextConfig = {
   // src/lib/landing/legacy-redirects.ts (unit-tested); this file just
   // wires the same data into Next's redirects() (build-validated, not
   // vitest-covered). CSP/security headers above are untouched.
+  // Las del panel van PRIMERO: son las que reciben enlaces guardados de
+  // /portafolio y /propiedades, unificados en /inmuebles. Ver
+  // src/lib/nav/rutas-unificadas-del-panel.ts para el porqué (con test).
   async redirects() {
-    return LEGACY_PRODUCT_REDIRECTS_DATA;
+    return [...RUTAS_UNIFICADAS_DEL_PANEL_DATA, ...LEGACY_PRODUCT_REDIRECTS_DATA];
   },
 };
 

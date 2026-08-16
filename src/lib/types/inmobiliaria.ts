@@ -73,7 +73,15 @@ export interface AgenteMetrics {
 }
 
 export interface Agente {
+  /** Id de MIEMBRO de la agencia (`AgencyMember.id`). */
   id: string;
+  /**
+   * Id de USUARIO (`User.id`). No es el mismo que `id` y no son
+   * intercambiables: `Consignacion.agenteUserId` guarda éste. Mandar el de
+   * miembro donde va el de usuario no falla ni avisa — asigna a nadie.
+   * Opcional porque hay respuestas viejas del back que todavía no lo traen.
+   */
+  userId?: string;
   name: string;
   email: string;
   phone: string;

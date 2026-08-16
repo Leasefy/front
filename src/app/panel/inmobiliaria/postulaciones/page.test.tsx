@@ -293,7 +293,7 @@ describe('PostulacionesPage', () => {
     })
 
     expect(pushMock).toHaveBeenCalledWith(
-      '/panel/inmobiliaria/propiedades/prop-1/candidatos?candidato=app-1',
+      '/panel/inmobiliaria/inmuebles/prop-1/candidatos?candidato=app-1',
     )
   })
 
@@ -317,7 +317,7 @@ describe('PostulacionesPage', () => {
     })
 
     expect(pushMock).toHaveBeenCalledWith(
-      '/panel/inmobiliaria/propiedades/prop-1/candidatos?candidato=app-1',
+      '/panel/inmobiliaria/inmuebles/prop-1/candidatos?candidato=app-1',
     )
   })
 

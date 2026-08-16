@@ -261,9 +261,35 @@ export function useConsignaciones(params?: Parameters<typeof consignacionesApi.g
   return { consignaciones: data ?? (SIN_DATOS as never[]), ...rest };
 }
 
+/**
+ * El mandato de `/inmuebles/:id`.
+ *
+ * `id` es un id de CONSIGNACIÓN. Pero al unificar «Consignaciones» e
+ * «Inmuebles · catálogo» quedaron entrando por acá enlaces que sólo tienen el
+ * id del INMUEBLE —la paleta de comandos y el matching de candidatos del
+ * `CandidateDrawer`—, y los dos apuntaban a rutas que no resolvían: el de la
+ * paleta iba a `/panel/inmobiliaria/inmuebles/<id>`, una página que **nunca
+ * existió**.
+ *
+ * Como `agencyId + propertyId` es único, buscar por inmueble devuelve cero o
+ * uno. Se intenta primero por mandato —que es lo normal— y sólo si no está se
+ * pregunta por inmueble: un enlace de esos cuesta una petición extra, y
+ * ninguno cae en el vacío.
+ */
 export function useConsignacion(id: string | undefined) {
   const { data, ...rest } = useApiData(
-    () => (id ? consignacionesApi.getById(id) : Promise.reject('No ID')),
+    async () => {
+      if (!id) throw new Error('No ID');
+      try {
+        return await consignacionesApi.getById(id);
+      } catch (error) {
+        const porInmueble = await consignacionesApi.getAll({ propertyId: id });
+        // Si tampoco es un inmueble de esta agencia, el error que vale es el
+        // primero —«no existe esa consignación»—, no «la lista vino vacía».
+        if (porInmueble.length === 0) throw error;
+        return porInmueble[0];
+      }
+    },
     [id],
     false,
     0,

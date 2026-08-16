@@ -858,6 +858,8 @@
       "dashboard": "Dashboard",
       "aiAgents": "Resumen",
       "propietarios": "Propietarios",
+      "inmuebles": "Inmuebles",
+      "hintInmuebles": "portafolio",
       "portafolio": "Consignaciones",
       "propiedades": "Inmuebles",
       "pipeline": "Prospección",
@@ -2469,13 +2471,21 @@
       "confirmReassignment": "Confirmar Reasignación",
       "perMonth": "/mes"
     },
+    "inmuebles": {
+      "acciones": {
+        "captura": "Capturar con IA",
+        "candidatos": "Candidatos",
+        "verAviso": "Ver el aviso público",
+        "eliminar": "Retirar del portafolio"
+      }
+    },
     "portafolio": {
-      "title": "Portafolio",
-      "subtitle": "Gestiona las propiedades de tu portafolio",
-      "search": "Buscar propiedad...",
-      "addProperty": "Nueva propiedad",
-      "noProperties": "No hay propiedades registradas",
-      "noPropertiesDesc": "Comienza agregando tu primera propiedad",
+      "title": "Inmuebles",
+      "subtitle": "Los inmuebles que administrás, con su consignación.",
+      "search": "Buscar inmueble...",
+      "addProperty": "Nueva consignación",
+      "noProperties": "Todavía no administrás ningún inmueble",
+      "noPropertiesDesc": "Consigná el primero: sobre esa consignación se arman el cobro, el contrato y la liquidación al propietario.",
       "filters": {
         "all": "Todas",
         "rented": "Arrendadas",
@@ -2528,7 +2538,7 @@
         "editTitle": "Editar"
       },
       "summary": {
-        "totalProperties": "Total propiedades",
+        "totalProperties": "Total inmuebles",
         "rented": "Arrendadas",
         "available": "Disponibles",
         "totalRent": "Arriendo total",
@@ -2537,7 +2547,7 @@
       "stats": {
         "inProcess": "En proceso",
         "maintenance": "Mantenimiento",
-        "propertyCount": "{{count}} propiedades"
+        "propertyCount": "{{count}} inmuebles"
       },
       "views": {
         "table": "Tabla",
@@ -2965,10 +2975,12 @@
           "yesCancel": "Si, cancelar"
         },
         "toasts": {
-          "successTitle": "Consignacion creada exitosamente",
-          "successDesc": "Se ha registrado \"{{title}}\" en el portafolio.",
-          "errorTitle": "Error al crear consignacion",
-          "errorDesc": "Ocurrio un error. Por favor intenta de nuevo."
+          "successTitle": "Inmueble consignado",
+          "successDesc": "\"{{title}}\" quedó con su propietario, su comisión y su agente.",
+          "errorTitle": "No pudimos crear el inmueble",
+          "errorDesc": "No se guardó nada. Volvé a intentar en un momento.",
+          "mandateErrorTitle": "El inmueble quedó creado; la consignación no",
+          "mandateErrorDesc": "Está en la lista, sin propietario ni comisión. Abrilo y completá la consignación — no lo cargues de nuevo."
         },
         "step1": {
           "title": "Seleccionar Propietario",

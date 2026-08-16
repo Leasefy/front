@@ -250,6 +250,17 @@ export type ConsignacionUpdateInput = Partial<ConsignacionFormData> & {
   currentTenantName?: string;
   leaseEndDate?: string;
   consignmentContractUrl?: string;
+  /**
+   * El inmueble sobre el que corre el mandato. Ahora es llave foránea en la
+   * base: un id inventado se rechaza en vez de guardarse.
+   */
+  propertyId?: string;
+  /**
+   * `User.id` del agente asignado — NO el `Agente.id` del front, que es un
+   * `AgencyMember.id`. Sale de `Agente.userId`, que el back expone desde
+   * 2026-08-16. Ver la nota de arriba sobre `agenteId`.
+   */
+  agenteUserId?: string;
 };
 
 function toConsignacionPayload(data: ConsignacionUpdateInput): Record<string, unknown> {
@@ -271,8 +282,16 @@ export const consignacionesApi = {
     agenteId?: string;
     minRent?: number;
     maxRent?: number;
+    /**
+     * El mandato de UN inmueble. `agencyId + propertyId` es único en la base,
+     * así que devuelve cero o un elemento. Lo usan las pantallas que sólo
+     * tienen el id del inmueble para llegar al detalle, que abre por
+     * consignación.
+     */
+    propertyId?: string;
   }): Promise<Consignacion[]> {
     const query = new URLSearchParams();
+    if (params?.propertyId) query.set('propertyId', params.propertyId);
     if (params?.status) query.set('status', params.status);
     if (params?.propertyType) query.set('propertyType', params.propertyType);
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
@@ -293,7 +312,13 @@ export const consignacionesApi = {
     return normalizeConsignacion(raw);
   },
 
-  async create(data: ConsignacionFormData & { contractDate: string }): Promise<Consignacion> {
+  async create(
+    data: ConsignacionFormData & {
+      contractDate: string;
+      propertyId?: string;
+      agenteUserId?: string;
+    },
+  ): Promise<Consignacion> {
     const raw = await apiClient.post<RawConsignacion>(
       `${BASE}/consignaciones`,
       toConsignacionPayload(data),

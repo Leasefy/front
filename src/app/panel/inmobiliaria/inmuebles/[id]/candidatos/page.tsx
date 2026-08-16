@@ -14,6 +14,7 @@ import { MAXIMO_A_COMPARAR, MINIMO_A_COMPARAR } from '@/lib/inmobiliaria/compara
 import { BackButton } from '@leasefy/cadence';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { propertiesApi } from '@/lib/api/properties.service';
+import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { CandidateDrawer } from '@/components/inmobiliaria/CandidateDrawer';
 import { ModalAvisarNoElegidos } from '@/components/inmobiliaria/ModalAvisarNoElegidos';
@@ -326,7 +327,16 @@ function CandidateActions({
 function CandidatosContent() {
   const params = useParams();
   const router = useRouter();
-  const propertyId = params.id as string;
+  /**
+   * `[id]` es el id de la CONSIGNACIÓN, igual que en `/inmuebles/[id]`.
+   *
+   * Antes esta pantalla vivía en `/propiedades/[id]/candidatos` y leía un id de
+   * inmueble. Al unificar las dos secciones el mismo hueco de la URL habría
+   * significado dos cosas —mandato en una ruta, inmueble en la de al lado—, que
+   * es exactamente la confusión que la unificación viene a quitar. El inmueble
+   * se resuelve desde el mandato, que es donde vive el vínculo.
+   */
+  const consignacionId = params.id as string;
 
   const [property, setProperty] = useState<Property | null>(null);
   const [candidates, setCandidates] = useState<LandlordCandidate[]>([]);
@@ -351,13 +361,27 @@ function CandidatosContent() {
   // page for the full ErrorState (silent auto-refresh contract).
   const hasLoadedRef = useRef(false);
 
+  const [propertyId, setPropertyId] = useState<string | null>(null);
+
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
+      const consignacion = await consignacionesApi.getById(consignacionId);
+      // Un mandato puede no tener inmueble todavía —los de la migración de
+      // cartera nacen así—, y sin inmueble no hay a quién postularse. Se dice,
+      // en vez de pedir candidatos de `undefined` y pintar «no hay ninguno».
+      if (!consignacion.propertyId) {
+        setPropertyId(null);
+        setProperty(null);
+        setCandidates([]);
+        hasLoadedRef.current = true;
+        return;
+      }
+      setPropertyId(consignacion.propertyId);
       const [propertyData, candidatesData] = await Promise.all([
-        propertiesApi.getById(propertyId),
-        landlordApplicationsApi.getCandidates(propertyId),
+        propertiesApi.getById(consignacion.propertyId),
+        landlordApplicationsApi.getCandidates(consignacion.propertyId),
       ]);
       setProperty(propertyData);
       setCandidates(candidatesData);
@@ -373,7 +397,7 @@ function CandidatosContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [propertyId]);
+  }, [consignacionId]);
 
   useEffect(() => {
     fetchData();
@@ -477,7 +501,7 @@ function CandidatosContent() {
           error={error}
           queEs="esa propiedad"
           onReintentar={fetchData}
-          volverA={{ label: 'Volver a inmuebles', href: '/panel/inmobiliaria/propiedades' }}
+          volverA={{ label: 'Volver a inmuebles', href: '/panel/inmobiliaria/inmuebles' }}
         />
       </div>
     );
@@ -489,7 +513,7 @@ function CandidatosContent() {
       <div className="space-y-4">
         <BackButton
           label="Volver a propiedades"
-          onClick={() => router.push('/panel/inmobiliaria/propiedades')}
+          onClick={() => router.push('/panel/inmobiliaria/inmuebles')}
         />
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -512,8 +536,8 @@ function CandidatosContent() {
         hrefs={{
           // Comparar arranca acá: hay que marcar a quiénes antes de poder
           // compararlos, así que el paso apunta a esta misma lista.
-          comparacion: `/panel/inmobiliaria/propiedades/${propertyId}/candidatos`,
-          decision: `/panel/inmobiliaria/propiedades/${propertyId}/candidatos`,
+          comparacion: `/panel/inmobiliaria/inmuebles/${consignacionId}/candidatos`,
+          decision: `/panel/inmobiliaria/inmuebles/${consignacionId}/candidatos`,
         }}
       />
 
@@ -690,7 +714,7 @@ function CandidatosContent() {
               disabled={paraComparar.size < MINIMO_A_COMPARAR}
               onClick={() =>
                 router.push(
-                  `/panel/inmobiliaria/propiedades/${propertyId}/candidatos/comparar?ids=${Array.from(paraComparar).join(',')}`,
+                  `/panel/inmobiliaria/inmuebles/${consignacionId}/candidatos/comparar?ids=${Array.from(paraComparar).join(',')}`,
                 )
               }
               className="gap-1.5"

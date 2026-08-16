@@ -17,7 +17,7 @@ function CapturaContent() {
       <div className="space-y-4">
         <BackButton
           label={t(k('back'))}
-          onClick={() => router.push('/panel/inmobiliaria/propiedades')}
+          onClick={() => router.push('/panel/inmobiliaria/inmuebles')}
         />
 
         <div className="flex items-center gap-3">

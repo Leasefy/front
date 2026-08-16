@@ -820,7 +820,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                     {matchingResults.results.map((r) => (
                       <Link
                         key={r.propertyId}
-                        href={`/panel/inmobiliaria/portafolio/${r.propertyId}`}
+                        href={`/panel/inmobiliaria/inmuebles/${r.propertyId}`}
                         className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-border dark:border-border-strong dark:hover:border-border dark:border-border-strong hover:bg-muted/50 transition-all group"
                       >
                         <div className="flex-1 min-w-0">

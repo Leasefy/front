@@ -35,7 +35,6 @@ import {
   ListChecks,
   Brain,
   Path,
-  Storefront,
   HandCoins,
   CurrencyCircleDollar,
   Umbrella,
@@ -178,7 +177,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // ── COMERCIAL ──  Conseguir inmuebles, estudiar clientes y cerrar renta.
     { kind: 'section', label: t('inmobiliaria.nav.secComercial'), href: '#sec-comercial', scope: 'comercial', icon: Kanban, module: null },
     { label: t('inmobiliaria.nav.pipeline'),     href: '/panel/inmobiliaria/pipeline', scope: 'comercial',     icon: Kanban,        module: 'pipeline', hint: t('inmobiliaria.nav.hintPipeline') },
-    { label: t('inmobiliaria.nav.portafolio'),   href: '/panel/inmobiliaria/portafolio', scope: 'comercial',   icon: Buildings,     module: 'portafolio' },
+    // Una sola entrada. Eran dos —«Consignaciones» e «Inmuebles · catálogo»—
+    // sobre la MISMA lista: medido, 10 consignaciones y 10 inmuebles con
+    // correspondencia 1:1, ningún huérfano de ningún lado y el mismo permiso
+    // (`portafolio`) protegiendo las dos. La consignación no desaparece: es el
+    // mandato, y vive dentro del inmueble.
+    { label: t('inmobiliaria.nav.inmuebles'),    href: '/panel/inmobiliaria/inmuebles', scope: 'comercial',   icon: Buildings,     module: 'portafolio', hint: t('inmobiliaria.nav.hintInmuebles') },
     {
       // Avalúos (7º agente): standalone service proxied by the agent backend;
       // read-only tracking workspace (la inmobiliaria solicita y consulta —
@@ -192,7 +196,6 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       ai: true,
       // Funciones como tabs dentro del workspace (WorkspaceNav / agentWorkspaceNav.ts).
     } as NavItemWithModule,
-    { label: t('inmobiliaria.nav.propiedades'),  href: '/panel/inmobiliaria/propiedades', scope: 'comercial',  icon: Storefront,    module: 'portafolio', hint: t('inmobiliaria.nav.hintCatalogo') },
     {
       // F7: Estudio del inquilino complete workspace. Gated by the agent
       // module 'estudio' (my-permissions payload, agent-repo pair PR) with

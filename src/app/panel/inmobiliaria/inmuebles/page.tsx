@@ -16,12 +16,24 @@ import {
   CaretLeft,
   CaretRight,
   FileArrowUp,
+  Sparkle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
 import { SegmentedControl } from '@leasefy/cadence';
 import { useConsignaciones, usePropietarios, useAgentes } from '@/lib/hooks/useInmobiliaria';
+import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
@@ -37,7 +49,7 @@ const ITEMS_PER_PAGE = 12;
 
 /**
  * Portafolio Page - Main view for managing all consigned properties
- * Route: /panel/inmobiliaria/portafolio
+ * Route: /panel/inmobiliaria/inmuebles
  */
 function PortafolioContent() {
   const { t } = useI18n();
@@ -57,9 +69,16 @@ function PortafolioContent() {
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [currentPage, setCurrentPage] = useState(1);
   const [citaFor, setCitaFor] = useState<Consignacion | null>(null);
+  // ⚠️ 'all', no 'available'.
+  //
+  // Esta lista abría filtrada por «disponibles» y la de al lado —«Inmuebles ·
+  // catálogo»— no. Medido antes de unificarlas: 6 filas contra 10, con los
+  // mismos 10 inmuebles detrás. La diferencia entera era este valor, y era la
+  // razón principal por la que las dos pantallas parecían listar cosas
+  // distintas. Una sección que se llama «Inmuebles» muestra los inmuebles.
   const [filters, setFilters] = useState<ConsignacionFiltersState>({
     search: '',
-    availability: 'available',
+    availability: 'all',
     agenteId: 'all',
     propietarioId: 'all',
     city: 'all',
@@ -75,10 +94,21 @@ function PortafolioContent() {
     return map;
   }, [allPropietarios]);
 
+  /**
+   * Se llavea por `userId`, no sólo por `id`.
+   *
+   * `Agente.id` es un `AgencyMember.id`, y `consignacion.agenteId` sale de
+   * `agenteUserId`, que es un `User.id`. Nunca se cruzaban: la columna AGENTE
+   * mostraba «—» en TODAS las filas, tuvieran agente asignado o no — y «—» se
+   * lee igual que «no tiene». Se deja el `id` como llave también, por si alguna
+   * respuesta del back todavía no trae `userId`.
+   */
   const agentesMap = useMemo(() => {
     const map: Record<string, { name: string; avatar?: string }> = {};
     allAgentes.forEach((a) => {
-      map[a.id] = { name: a.name, avatar: a.avatar };
+      const info = { name: a.name, avatar: a.avatar };
+      if (a.userId) map[a.userId] = info;
+      map[a.id] = info;
     });
     return map;
   }, [allAgentes]);
@@ -134,10 +164,9 @@ function PortafolioContent() {
    * quien tiene 200 y filtró mal es afirmar algo falso y dejarlo sin salida.
    */
   //
-  // ⚠️ Y un filtro sólo EXPLICA el vacío si había algo que filtrar. Esta
-  // pantalla abre con `availability: 'available'` puesto de fábrica, así que
-  // sin este `&& hay alguno` una inmobiliaria recién creada —cero
-  // consignaciones— vería «quitá los filtros» en vez de «creá la primera».
+  // ⚠️ Y un filtro sólo EXPLICA el vacío si había algo que filtrar: sin este
+  // `&& hay alguno` una inmobiliaria recién creada —cero inmuebles— vería
+  // «quitá los filtros» en vez de «creá el primero».
   const hayFiltrosPuestos =
     Boolean(filters.search) ||
     filters.availability !== 'all' ||
@@ -188,25 +217,90 @@ function PortafolioContent() {
 
   // Handlers
   const handleView = useCallback((consignacion: Consignacion) => {
-    router.push(`/panel/inmobiliaria/portafolio/${consignacion.id}`);
+    router.push(`/panel/inmobiliaria/inmuebles/${consignacion.id}`);
   }, [router]);
 
   const handleEdit = useCallback((consignacion: Consignacion) => {
     // Navigate to detail page where edit actions are available
-    router.push(`/panel/inmobiliaria/portafolio/${consignacion.id}`);
+    router.push(`/panel/inmobiliaria/inmuebles/${consignacion.id}`);
   }, [router]);
 
   const handleNuevaConsignacion = useCallback(() => {
-    router.push('/panel/inmobiliaria/portafolio/nuevo');
+    router.push('/panel/inmobiliaria/inmuebles/nuevo');
   }, [router]);
 
   const handleImportar = useCallback(() => {
-    router.push('/panel/inmobiliaria/portafolio/importar');
+    router.push('/panel/inmobiliaria/inmuebles/importar');
   }, [router]);
 
   const handleAgendarCita = useCallback((consignacion: Consignacion) => {
     setCitaFor(consignacion);
   }, []);
+
+  // ── Lo que traía «Inmuebles · catálogo» ─────────────────────────────────
+  // Al fusionar las dos listas estas tres acciones tenían que venirse con
+  // ella; si no, unificar habría sido perder funciones.
+
+  const handleCaptura = useCallback(() => {
+    router.push('/panel/inmobiliaria/inmuebles/captura');
+  }, [router]);
+
+  const handleCandidatos = useCallback((consignacion: Consignacion) => {
+    router.push(`/panel/inmobiliaria/inmuebles/${consignacion.id}/candidatos`);
+  }, [router]);
+
+  // El aviso PÚBLICO — otra pestaña, para no perder la lista de atrás. Va con
+  // el id del inmueble porque es la ficha del marketplace, no el mandato.
+  const handleVerAviso = useCallback((consignacion: Consignacion) => {
+    if (!consignacion.propertyId) return;
+    window.open(`/propiedades/${consignacion.propertyId}`, '_blank', 'noopener,noreferrer');
+  }, []);
+
+  const [porEliminar, setPorEliminar] = useState<Consignacion | null>(null);
+  const [eliminando, setEliminando] = useState(false);
+  /**
+   * El motivo del rechazo se muestra DENTRO del diálogo, no en un toast.
+   *
+   * Dos razones. La primera es de producto: el motivo del back —«tiene cobros,
+   * actas o renovaciones»— es la respuesta a lo que la persona acaba de
+   * preguntar, y su lugar es al lado del botón que apretó, no en una esquina
+   * que se va sola a los cuatro segundos.
+   *
+   * La segunda la encontré probándolo: **los toasts de este panel no se
+   * pintan**. El DELETE devolvía 409, la fila sobrevivía —correcto— y en
+   * pantalla no pasaba absolutamente nada. Medido: el `<section>` de sonner
+   * está montado y vacío, así que `toast()` escribe en un sitio que nadie
+   * muestra. Es anterior a este cambio y está anotado aparte; acá el arreglo
+   * no puede depender de eso.
+   */
+  const [motivoDelRechazo, setMotivoDelRechazo] = useState<string | null>(null);
+
+  const abrirEliminar = useCallback((c: Consignacion) => {
+    setMotivoDelRechazo(null);
+    setPorEliminar(c);
+  }, []);
+
+  const confirmarEliminar = useCallback(async () => {
+    if (!porEliminar || eliminando) return;
+    setEliminando(true);
+    setMotivoDelRechazo(null);
+    try {
+      await consignacionesApi.delete(porEliminar.id);
+      // La lista se refresca sola: el cliente HTTP avisa que cambió
+      // `consignaciones` y este hook lo escucha.
+      setPorEliminar(null);
+    } catch (err) {
+      // El back responde 409 con el motivo. Ese texto explica QUÉ lo retiene,
+      // así que se muestra tal cual en vez de un «no se pudo» genérico.
+      setMotivoDelRechazo(
+        err instanceof Error && err.message
+          ? err.message
+          : 'No pudimos retirarlo. Probá de nuevo en un momento.',
+      );
+    } finally {
+      setEliminando(false);
+    }
+  }, [porEliminar, eliminando]);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -221,6 +315,11 @@ function PortafolioContent() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {/* Captura con IA — venía de «Inmuebles · catálogo». */}
+          <Button variant="secondary" hideArrow onClick={handleCaptura}>
+            <Sparkle className="w-4 h-4 text-primary" weight="fill" />
+            {t('inmobiliaria.inmuebles.acciones.captura')}
+          </Button>
           {/* Import (secundaria) */}
           <Button variant="secondary" hideArrow onClick={handleImportar}>
             <FileArrowUp className="w-4 h-4" />
@@ -365,7 +464,7 @@ function PortafolioContent() {
                     icono={Buildings}
                     titulo={t('inmobiliaria.portafolio.noProperties')}
                     descripcion={t('inmobiliaria.portafolio.noPropertiesDesc')}
-                    crear={{ label: 'Nueva consignación', href: '/panel/inmobiliaria/portafolio/nuevo' }}
+                    crear={{ label: 'Nueva consignación', href: '/panel/inmobiliaria/inmuebles/nuevo' }}
                     onLimpiarFiltros={limpiarFiltros}
                   />
                 )}
@@ -385,6 +484,9 @@ function PortafolioContent() {
                     onView={handleView}
                     onEdit={handleEdit}
                     onAgendarCita={handleAgendarCita}
+                    onCandidatos={handleCandidatos}
+                    onVerAviso={handleVerAviso}
+                    onEliminar={abrirEliminar}
                   />
                 ) : (
                   <SinDatos
@@ -393,7 +495,7 @@ function PortafolioContent() {
                     icono={Buildings}
                     titulo={t('inmobiliaria.portafolio.noProperties')}
                     descripcion={t('inmobiliaria.portafolio.noPropertiesDesc')}
-                    crear={{ label: 'Nueva consignación', href: '/panel/inmobiliaria/portafolio/nuevo' }}
+                    crear={{ label: 'Nueva consignación', href: '/panel/inmobiliaria/inmuebles/nuevo' }}
                     onLimpiarFiltros={limpiarFiltros}
                   />
                 )}
@@ -447,6 +549,47 @@ function PortafolioContent() {
           </div>
         )}
       </motion.div>
+
+      <AlertDialog open={Boolean(porEliminar)} onOpenChange={(abierto) => !abierto && setPorEliminar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Retirar este inmueble de tu portafolio?</AlertDialogTitle>
+            {/* Se dice qué se termina y qué NO se toca. «Eliminar» a secas deja
+                a quien lo lee sin saber si borra también el aviso, el
+                propietario o la plata. */}
+            <AlertDialogDescription>
+              Termina la consignación de «{porEliminar?.propertyTitle}»: deja de aparecer
+              en tu portafolio y de generarte cobros. El inmueble sigue siendo del
+              propietario. Si ya tiene historia en la agencia —cobros, actas o
+              renovaciones— no se puede retirar, y te lo vamos a decir.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {motivoDelRechazo && (
+            <p
+              role="alert"
+              className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+            >
+              {motivoDelRechazo}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              tone="danger"
+              // `preventDefault` para que Radix NO cierre el diálogo al apretar:
+              // si el back lo rechaza, cerrarlo se lleva el motivo con él.
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmarEliminar();
+              }}
+              disabled={eliminando}
+            >
+              {eliminando ? 'Retirando…' : 'Retirar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <PedirCitaModal
         isOpen={!!citaFor}

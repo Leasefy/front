@@ -13,7 +13,7 @@ function ImportarContent() {
     <div className="p-4 md:p-6 space-y-6">
       {/* Back Link */}
       <BackButton
-        href="/panel/inmobiliaria/portafolio"
+        href="/panel/inmobiliaria/inmuebles"
         label={t('inmobiliaria.portafolio.detail.backToPortfolio')}
       />
 

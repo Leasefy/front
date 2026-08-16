@@ -193,7 +193,7 @@ export function ImportWizard() {
   }, []);
 
   const confirmCancel = useCallback(() => {
-    router.push('/panel/inmobiliaria/portafolio');
+    router.push('/panel/inmobiliaria/inmuebles');
   }, [router]);
 
   // Step status helper — recibe la POSICIÓN, no el id (ver `visibleSteps`).

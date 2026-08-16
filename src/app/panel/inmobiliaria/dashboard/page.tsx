@@ -352,7 +352,7 @@ export default function InmobiliariaDashboardPage() {
           value={kpis.totalProperties}
           subtitle={t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: kpis.propertiesRented, available: kpis.propertiesAvailable })}
           icon={Buildings}
-          href="/panel/inmobiliaria/portafolio"
+          href="/panel/inmobiliaria/inmuebles"
         />
         <KPICard
           title={t('inmobiliaria.dashboard.kpi.commissions')}
@@ -458,7 +458,7 @@ export default function InmobiliariaDashboardPage() {
           <QuickAction
             title={t('inmobiliaria.dashboard.quickActions.newConsignment')}
             description={t('inmobiliaria.dashboard.quickActions.newConsignmentDesc')}
-            href="/panel/inmobiliaria/portafolio/nuevo"
+            href="/panel/inmobiliaria/inmuebles/nuevo"
             icon={Buildings}
           />
           <QuickAction

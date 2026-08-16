@@ -21,6 +21,7 @@ import { construirComparacion } from '@/lib/inmobiliaria/comparacion'
 import { ModalAvisarNoElegidos } from '@/components/inmobiliaria/ModalAvisarNoElegidos'
 import { landlordApplicationsApi } from '@/lib/api/applications.service'
 import { propertiesApi } from '@/lib/api/properties.service'
+import { consignacionesApi } from '@/lib/api/inmobiliaria.service'
 import {
   MAXIMO_A_COMPARAR,
   MINIMO_A_COMPARAR,
@@ -35,7 +36,9 @@ function CompararContent() {
   const params = useParams()
   const router = useRouter()
   const buscador = useSearchParams()
-  const propertyId = params.id as string
+  // `[id]` es el id de la CONSIGNACIÓN, igual que en toda la sección; el
+  // inmueble sale del mandato. Ver la nota en `../page.tsx`.
+  const consignacionId = params.id as string
 
   const idsPedidos = useMemo(
     () =>
@@ -61,9 +64,16 @@ function CompararContent() {
     setCargando(true)
     setError(null)
     try {
+      const consignacion = await consignacionesApi.getById(consignacionId)
+      if (!consignacion.propertyId) {
+        // Mandato sin inmueble: no hay a quién comparar.
+        setEntradas([])
+        setProperty(null)
+        return
+      }
       const [inmueble, candidatos] = await Promise.all([
-        propertiesApi.getById(propertyId),
-        landlordApplicationsApi.getCandidates(propertyId),
+        propertiesApi.getById(consignacion.propertyId),
+        landlordApplicationsApi.getCandidates(consignacion.propertyId),
       ])
       setProperty(inmueble)
 
@@ -95,13 +105,13 @@ function CompararContent() {
     } finally {
       setCargando(false)
     }
-  }, [propertyId, idsPedidos])
+  }, [consignacionId, idsPedidos])
 
   useEffect(() => {
     void cargar()
   }, [cargar])
 
-  const volverALista = `/panel/inmobiliaria/propiedades/${propertyId}/candidatos`
+  const volverALista = `/panel/inmobiliaria/inmuebles/${consignacionId}/candidatos`
 
   /*
    * «Lo verde es quien va mejor en esa fila» explicaba una convención que a

@@ -156,7 +156,7 @@ function Modal({
 
 /**
  * Consignacion Detail Page
- * Route: /panel/inmobiliaria/portafolio/[id]
+ * Route: /panel/inmobiliaria/inmuebles/[id]
  */
 function ConsignacionDetailContent() {
   const { t } = useI18n();
@@ -301,7 +301,7 @@ function ConsignacionDetailContent() {
             description={t('inmobiliaria.portafolio.detail.notFoundDesc')}
             action={{
               label: t('inmobiliaria.portafolio.detail.backToPortfolio'),
-              href: '/panel/inmobiliaria/portafolio',
+              href: '/panel/inmobiliaria/inmuebles',
             }}
           />
         </div>
@@ -315,7 +315,7 @@ function ConsignacionDetailContent() {
       <div className="flex items-center justify-between gap-4">
         <nav className="flex items-center gap-2 text-sm min-w-0">
           <Link
-            href="/panel/inmobiliaria/portafolio"
+            href="/panel/inmobiliaria/inmuebles"
             className="flex items-center gap-1.5 text-fg-muted hover:text-primary transition-colors"
           >
             <CaretLeft className="w-4 h-4" />

@@ -174,7 +174,7 @@ export default function PostulacionesPage() {
   const abrirCandidato = useCallback(
     (c: AllCandidatesItem) => {
       router.push(
-        `/panel/inmobiliaria/propiedades/${c.propertyId}/candidatos?candidato=${encodeURIComponent(c.id)}`,
+        `/panel/inmobiliaria/inmuebles/${c.propertyId}/candidatos?candidato=${encodeURIComponent(c.id)}`,
       )
     },
     [router],

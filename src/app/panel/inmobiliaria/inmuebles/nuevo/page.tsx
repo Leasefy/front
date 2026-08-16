@@ -18,7 +18,7 @@ function NuevaConsignacionContent() {
       <div className="flex flex-col gap-4">
         {/* Back Link */}
         <BackButton
-          href="/panel/inmobiliaria/portafolio"
+          href="/panel/inmobiliaria/inmuebles"
           label={t('inmobiliaria.portafolio.detail.backToPortfolio')}
         />
 

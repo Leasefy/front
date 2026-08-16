@@ -147,7 +147,7 @@ const QUICK_ACTIONS: QuickAction[] = [
     id: 'qa-nueva-consignacion',
     labelKey: 'inmobiliaria.commandPalette.quickActions.nuevaConsignacion',
     icon: Plus,
-    href: '/panel/inmobiliaria/portafolio/nuevo',
+    href: '/panel/inmobiliaria/inmuebles/nuevo',
     permission: { module: 'portafolio', action: 'create' },
   },
   {
@@ -175,7 +175,7 @@ const QUICK_ACTIONS: QuickAction[] = [
     id: 'qa-portafolio',
     labelKey: 'inmobiliaria.commandPalette.quickActions.portafolio',
     icon: House,
-    href: '/panel/inmobiliaria/portafolio',
+    href: '/panel/inmobiliaria/inmuebles',
     permission: { module: 'portafolio', action: 'view' },
   },
 ];

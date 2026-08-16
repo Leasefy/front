@@ -88,11 +88,11 @@ describe('RecorridoHilo', () => {
     const el = montar(
       <RecorridoHilo
         paso="comparacion"
-        hrefs={{ decision: '/panel/inmobiliaria/propiedades/p-1/candidatos' }}
+        hrefs={{ decision: '/panel/inmobiliaria/inmuebles/p-1/candidatos' }}
       />,
     )
     expect(
-      el.querySelector('a[href="/panel/inmobiliaria/propiedades/p-1/candidatos"]'),
+      el.querySelector('a[href="/panel/inmobiliaria/inmuebles/p-1/candidatos"]'),
     ).not.toBeNull()
   })
 

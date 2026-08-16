@@ -29,6 +29,8 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui'
+import { TablePagination } from '@/components/ui/pagination'
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import type { Severidad, WorkItem, WorkItemAction } from '@/lib/api/work-item'
 
 // ── Prioridad: colapsa las 4 severidades en 3 niveles con tono token ─────────
@@ -147,6 +149,23 @@ export function PrioridadInbox({ items, onAction, isLoading }: PrioridadInboxPro
     [items],
   )
 
+  /**
+   * Paginado de presentación: misma cola que `PagoFallidoTabla`
+   * (`useAgentWorkItems('pagos')`, sin page/pageSize en el endpoint).
+   *
+   * Va ANTES del early-return de carga: un hook detrás de un `return`
+   * condicional rompe el orden de hooks de React.
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(sorted)
+
   if (isLoading) {
     return (
       <div className="space-y-2" aria-busy="true">
@@ -179,11 +198,25 @@ export function PrioridadInbox({ items, onAction, isLoading }: PrioridadInboxPro
           </TableRow>
         </TableHeader>
         <TableBody className="[&_td:first-child]:pl-4 [&_td:last-child]:pr-4">
-          {sorted.map((item) => (
+          {pageItems.map((item) => (
             <InboxRow key={item.id} item={item} onAction={onAction} />
           ))}
         </TableBody>
       </Table>
+
+      {/* Pie: sólo si hay más de una página. */}
+      {shouldPaginate && (
+        <div className="border-t border-border px-4 py-3">
+          <TablePagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
+      )}
     </div>
   )
 }

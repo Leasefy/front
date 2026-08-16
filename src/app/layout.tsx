@@ -9,6 +9,7 @@ import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 import { PushNotificationHandler } from "@/components/notifications/PushNotificationHandler";
 import { SessionRevocationHandler } from "@/components/auth/SessionRevocationHandler";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
+import { Toaster } from "@/components/ui/toast";
 
 // Cadence: Schibsted Grotesk — Regular (cuerpo) + Semibold (títulos).
 // Una sola familia para sans + heading; se mapea en globals.css.
@@ -131,6 +132,18 @@ export default function RootLayout({
               <SmoothScroll>{children}</SmoothScroll>
             </WishlistProvider>
           </AuthProvider>
+          {/* Toaster ÚNICO de toda la app (DESIGN.md §Toaster: position="top-right").
+              Vive acá, fuera de AuthProvider y de todo guard, por dos razones:
+              1. Antes se montaba sólo en 4 layouts (panel/inmobiliaria, panel/(landlord),
+                 inquilino, onboarding), así que cada toast disparado desde el resto del
+                 árbol — /auth/mfa-verify, /avaluo, /propiedades, la landing y el propio
+                 auth-context — no pintaba nada: la llamada resolvía en silencio.
+              2. En los paneles quedaba DENTRO de <ProtectedRoute>/<AgencySubscriptionGuard>,
+                 así que todo toast emitido mientras el guard resuelve (o cuando el guard
+                 no deja pasar) se perdía.
+              Sonner pinta cada toast en TODOS los <Toaster> montados: debe haber uno solo.
+              Si agregás otro en un layout, los toasts se duplican. */}
+          <Toaster position="top-right" />
         </ThemeProvider>
       </body>
     </html>

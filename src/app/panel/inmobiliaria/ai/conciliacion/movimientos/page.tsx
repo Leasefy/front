@@ -39,6 +39,8 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { SectionLabel } from '@/components/ui/section-label';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -260,6 +262,25 @@ function ConciliacionContent() {
 
   const { items, summary, total, isLoading, error, refetch, confirmMatch, rejectMatch, reverseMatch, ingestStatement } =
     useConciliacionQueue();
+
+  /**
+   * Paginado de presentación, no del servidor.
+   *
+   * `useConciliacionQueue` SÍ acepta `page`/`pageSize` y el back devuelve
+   * `total`, pero el resumen de arriba (`deriveQueueSummary`) se calcula en el
+   * cliente sobre `items`: si le pidiéramos una página al back, los tiles
+   * pasarían a contar sólo la página visible. Mientras no exista endpoint de
+   * resumen, el recorte va acá. Esta pantalla no tiene filtros ⇒ sin `resetKey`.
+   */
+  const {
+    pageItems,
+    total: totalPaginado,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(items);
 
   // Per-row busy state
   const [busyRow, setBusyRow] = useState<string | null>(null);
@@ -503,7 +524,7 @@ function ConciliacionContent() {
                 </TableRow>
               )}
 
-              {!isLoading && items.map((item) => {
+              {!isLoading && pageItems.map((item) => {
                 const caso = itemCaso(item);
                 const isBusy = busyRow === item.id;
                 const dateStr = fmtDate(item.movement.valueDate ?? item.createdAt);
@@ -559,6 +580,20 @@ function ConciliacionContent() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Pie: sólo si hay más de una página. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={totalPaginado}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
       </section>
 
       {/* Reject dialog */}

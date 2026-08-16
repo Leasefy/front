@@ -31,6 +31,8 @@ import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@leasefy/cadence';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { useContracts } from '@/lib/hooks/useContracts';
 import { NuevoContratoBoton } from '@/components/inmobiliaria/SelectorPostulacion';
 import {
@@ -104,6 +106,21 @@ function ContratosContent() {
   const { contracts, stats, isLoading, error, refetch } = useContracts();
 
   useAutoRefresh(refetch);
+
+  /**
+   * Paginado de presentación: `useContracts()` trae el portafolio entero y una
+   * inmobiliaria real tiene cientos de contratos. No hay filtros en esta
+   * pantalla, así que no hace falta `resetKey`.
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(contracts);
 
   const COLUMNS = [
     tx('Inquilino', 'Tenant'),
@@ -239,7 +256,7 @@ function ContratosContent() {
               </TableRow>
             )}
 
-            {contracts.map((c) => (
+            {pageItems.map((c) => (
                 <TableRow
                   key={c.id}
                   onClick={() => openContract(c)}
@@ -288,6 +305,20 @@ function ContratosContent() {
               ))}
           </TableBody>
         </Table>
+
+        {/* Pie: sólo si hay más de una página. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
       </section>
     </div>
   );

@@ -6,6 +6,7 @@ import { tenantPaymentRequestsApi } from '@/lib/api/tenant-payment-requests.serv
 import type { Lease, Payment, LeaseSummaryStats } from '@/lib/types/lease';
 import type { BackendPaymentInfo } from '@/lib/api/leases.types';
 import type { BackendTenantPaymentRequest } from '@/lib/api/tenant-payment-requests.types';
+import { useRefrescoAutomatico } from './use-refresco-automatico';
 
 /*
  * `errorCrudo` guarda el error TAL CUAL, además del mensaje.
@@ -71,6 +72,8 @@ export function useLeases() {
       latePayments: 0,
     };
   }, [leases]);
+
+  useRefrescoAutomatico(['leases', 'contratos', 'cobros'], fetchLeases);
 
   return {
     leases,

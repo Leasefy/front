@@ -7,6 +7,7 @@ import type { TenantApplicationView } from '@/lib/api/applications.service';
 import type { Application } from '@/lib/types/application';
 import type { Contract } from '@/lib/types/contract';
 import type { TenantApplicationStatus } from '@/lib/types/tenant-application';
+import { useRefrescoAutomatico } from './use-refresco-automatico';
 
 /*
  * `errorCrudo` guarda el error TAL CUAL, además del mensaje.
@@ -76,6 +77,7 @@ export function useMyApplications() {
     };
   }, []);
 
+  useRefrescoAutomatico(['applications', 'postulaciones'], fetchMine);
   return { applications, isLoading, error, errorCrudo, refetch: fetchMine };
 }
 
@@ -154,6 +156,7 @@ export function useTenantApplications() {
     [applications, contractsByApp],
   );
 
+  useRefrescoAutomatico(['applications', 'postulaciones'], fetchMine);
   return { applications, active, completed, contractsByApp, isLoading, error, errorCrudo, refetch: fetchMine };
 }
 
@@ -338,5 +341,6 @@ export function usePropertyApplications(propertyId: string | null | undefined) {
     };
   }, [propertyId]);
 
+  useRefrescoAutomatico(['applications', 'postulaciones'], fetch);
   return { applications, isLoading, error, errorCrudo, refetch: fetch };
 }

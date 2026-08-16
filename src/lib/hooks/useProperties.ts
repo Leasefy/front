@@ -5,6 +5,7 @@ import { propertiesApi, type PaginatedProperties } from '@/lib/api/properties.se
 import type { PropertyFiltersParams } from '@/lib/api/properties.types';
 import type { Property } from '@/lib/types/property';
 import type { PaginationMeta } from '@/lib/api/properties.types';
+import { useRefrescoAutomatico } from './use-refresco-automatico';
 
 /*
  * `errorCrudo` guarda el error TAL CUAL, además del mensaje.
@@ -64,6 +65,7 @@ export function useProperties(filters: PropertyFiltersParams = {}) {
     fetchProperties(parsed);
   }, [filtersKey, fetchProperties]);
 
+  useRefrescoAutomatico(['properties', 'propiedades'], refetch);
   return { properties, meta, isLoading, error, errorCrudo, refetch };
 }
 
@@ -145,6 +147,7 @@ export function useMyProperties() {
     fetchMine();
   }, [fetchMine]);
 
+  useRefrescoAutomatico(['properties', 'propiedades'], fetchMine);
   return { properties, isLoading, error, errorCrudo, refetch: fetchMine };
 }
 

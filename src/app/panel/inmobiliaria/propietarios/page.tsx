@@ -187,12 +187,21 @@ function PropietariosContent() {
     errorCrudo: errorPropietarios,
     refetch: recargarPropietarios,
   } = usePropietarios();
-  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
 
-  // Sync with API data
-  useEffect(() => {
-    if (apiPropietarios.length > 0) setPropietarios(apiPropietarios);
-  }, [apiPropietarios]);
+  /*
+   * La lista es la del hook, sin copia local.
+   *
+   * Había un `useState` espejo que se llenaba con
+   * `if (apiPropietarios.length > 0) setPropietarios(...)`. Ese `> 0` es una
+   * trampa: el espejo sólo copia hacia adelante, así que **borrar el último
+   * propietario dejaba su fila en pantalla para siempre** — la petición salía,
+   * el hook devolvía la lista vacía y la copia se quedaba con lo viejo.
+   *
+   * Con el refresco automático el problema se agrava: la pantalla recibe el
+   * dato nuevo y lo ignora. Un espejo que no puede vaciarse no es un caché, es
+   * una afirmación desactualizada.
+   */
+  const propietarios = apiPropietarios;
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showIACapture, setShowIACapture] = useState(false);
@@ -268,8 +277,9 @@ function PropietariosContent() {
     setIsDeleting(true);
     try {
       await propietariosApi.delete(deletingPropietario.id);
-      // Only remove from local state once the backend confirms deletion
-      setPropietarios((prev) => prev.filter((p) => p.id !== deletingPropietario.id));
+      // La fila se va sola: el cliente avisa que «propietarios» cambió y la
+      // lista se vuelve a pedir. Antes se la sacaba a mano de una copia local,
+      // que es una segunda versión de la verdad y podía discrepar del back.
       toast.success(t('inmobiliaria.propietarios.toasts.deleted', { name: deletingPropietario.name }));
       setDeletingPropietario(null);
     } catch (err) {
@@ -284,8 +294,9 @@ function PropietariosContent() {
   const handleCreateSubmit = async (data: PropietarioFormData) => {
     try {
       const created = await propietariosApi.create(data);
-      // Use the persisted object returned by the backend (real id, computed fields)
-      setPropietarios((prev) => [created, ...prev]);
+      // Aparece solo. Y se pide de nuevo al back a propósito: el objeto que
+      // devuelve `create` no trae los campos calculados (propiedades, canon),
+      // así que insertarlo a mano mostraba una fila incompleta hasta recargar.
       toast.success(t('inmobiliaria.propietarios.toasts.created', { name: created.name }));
       setShowAddModal(false);
       setCurrentPage(1); // Reset to first page to show new item
@@ -301,11 +312,8 @@ function PropietariosContent() {
     if (!editingPropietario) return;
 
     try {
-      const updated = await propietariosApi.update(editingPropietario.id, data);
-      // Replace with the persisted object returned by the backend
-      setPropietarios((prev) =>
-        prev.map((p) => (p.id === editingPropietario.id ? updated : p))
-      );
+      await propietariosApi.update(editingPropietario.id, data);
+      // Se actualiza sola.
       toast.success(t('inmobiliaria.propietarios.toasts.updated'));
       setEditingPropietario(null);
     } catch (err) {

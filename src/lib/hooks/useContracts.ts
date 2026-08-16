@@ -11,6 +11,7 @@ import type {
   RejectContractDto,
   CancelContractDto,
 } from '@/lib/api/contracts.types';
+import { useRefrescoAutomatico } from './use-refresco-automatico';
 
 // ============================================================================
 // useContracts - list contracts with stats and helpers
@@ -72,6 +73,8 @@ export function useContracts() {
   const getByApplicationId = useCallback((applicationId: string) => {
     return contracts.find(c => c.applicationId === applicationId) ?? null;
   }, [contracts]);
+
+  useRefrescoAutomatico(['contracts', 'contratos'], fetchContracts);
 
   return {
     contracts, stats, isLoading, error, errorCrudo,

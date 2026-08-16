@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useI18n } from '@/lib/i18n';
 import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
+import { nombreDelMes } from '@/lib/utils/mes';
 
 type SortField =
   | 'propietarioName'
@@ -188,11 +189,17 @@ export function DispersionTable({
     children: React.ReactNode;
     className?: string;
   }) => (
-    <TableHead className={cn('text-left p-4', className)}>
-      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
+    <TableHead className={cn('p-4 text-left', className)}>
+      {/*
+        allowlist: disparador de orden — Cadence no trae uno (DataTable no
+        ordena). El botón HEREDA el tratamiento del encabezado del DS
+        (`font: inherit`), en vez de traer el suyo: antes ponía `text-xs
+        font-semibold`, que reemplaza la mono 11px en mayúsculas del `TH` por
+        otra tipografía. Por eso esta tabla se leía distinta de todas las demás.
+      */}
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        className="flex items-center gap-2 font-[inherit] text-[inherit] uppercase tracking-[inherit] text-fg-subtle transition-colors hover:text-fg"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -245,7 +252,8 @@ export function DispersionTable({
                       <div className="flex items-center gap-1 text-xs text-muted-foreground truncate max-w-[180px]">
                         <Bank className="w-3 h-3" />
                         <span>
-                          {dispersion.propietarioBankAccount.accountNumber}
+                          {dispersion.propietarioBankAccount?.accountNumber ??
+                            'Sin cuenta registrada'}
                         </span>
                       </div>
                     </div>
@@ -255,7 +263,7 @@ export function DispersionTable({
                 {/* Month */}
                 <TableCell className="p-4">
                   <span className="text-foreground capitalize">
-                    {formatDate(dispersion.month + '-01', { month: 'short', year: 'numeric' })}
+                    {nombreDelMes(dispersion.month, 'es', 'short')}
                   </span>
                 </TableCell>
 
@@ -370,7 +378,13 @@ export function DispersionTable({
         {/* Summary Row */}
         {showSummary && dispersiones.length > 0 && (
           <TableFooter>
-            <TableRow className="bg-muted/30 border-t-2 border-border">
+            {/*
+              Una sola línea, no tres. El `TFoot` del DS ya trae su fondo y su
+              separador, y la última fila del cuerpo trae el suyo: sumarle acá
+              un `border-t-2` y otro tinte apilaba tres rayas al pie de la
+              tabla. El pie se distingue por el peso de la tipografía.
+            */}
+            <TableRow className="border-t border-border hover:bg-transparent">
               <TableCell colSpan={3} className="p-4">
                 <div className="flex items-center gap-4">
                   <span className="font-semibold text-foreground">
@@ -415,7 +429,10 @@ export function DispersionTable({
                   {formatCurrency(summary.totalToDisburse)}
                 </span>
               </TableCell>
-              <TableCell colSpan={3} />
+              {/* Las columnas que no suman nada quedan vacías, pero con el
+                  mismo padding: sin él la fila cambia de alto y el borde se ve
+                  quebrado en el último tramo. */}
+              <TableCell colSpan={3} className="p-4" />
             </TableRow>
           </TableFooter>
         )}

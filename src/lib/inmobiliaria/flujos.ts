@@ -73,7 +73,7 @@ export const FLUJOS: readonly FlujoNuevo[] = [
     key: 'consignacion',
     grupo: 'captar',
     icon: Buildings,
-    href: '/panel/inmobiliaria/portafolio/nuevo',
+    href: '/panel/inmobiliaria/inmuebles/nuevo',
     module: 'portafolio',
   },
   {

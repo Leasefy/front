@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Navbar } from '@/components/layout/Navbar';
+import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { CTASection } from '@/components/home/CTASection';
@@ -52,8 +52,7 @@ export default function InmobiliariasPage() {
   };
 
   return (
-    <>
-      <Navbar />
+    <LandingChrome>
       <main className="overflow-hidden">
         {/* Hero Section */}
         <section className="relative h-[600px] overflow-hidden bg-black">
@@ -769,6 +768,6 @@ export default function InmobiliariasPage() {
         <CTASection />
       </main>
       <Footer />
-    </>
+    </LandingChrome>
   );
 }

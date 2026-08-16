@@ -18,7 +18,7 @@
  * que no puede pagar.
  */
 
-import { agentAuthHeaders } from './agent-auth'
+import { ApiError, apiClient } from './client'
 
 /** Días restantes a partir de los cuales la vigencia se muestra como urgente. */
 export const DIAS_POR_VENCER = 3
@@ -73,46 +73,24 @@ export const SIN_APROBACION: Aprobacion = {
 }
 
 /**
- * Mock activo cuando O BIEN no hay agente configurado (dev local sin backend)
- * O BIEN se fuerza con la env explícita. Se leen en cada llamada para que los
- * tests puedan stubearlas.
+ * ── El fixture se fue ─────────────────────────────────────────────────────
  *
- * ⚠️ **Nunca en producción, y acá importa más que en el funnel.**
+ * Acá vivía `mockAprobacion()`: aprobado, tope $2.400.000, tres aseguradoras.
+ * Se prendía solo cuando faltaba `NEXT_PUBLIC_AGENT_URL` — una env sin poner
+ * en el deploy, nada más— y a diferencia del resultado del funnel **no
+ * llevaba marca de demo**, así que la pantalla lo mostraba como un hecho y el
+ * catálogo filtraba inmuebles reales contra un techo inventado.
  *
- * `mockAprobacion()` devuelve un `Aprobacion` común y corriente: aprobado, tope
- * $2.400.000, dos aseguradoras. A diferencia del resultado del funnel —que
- * viaja con `stubMode: true` y la UI rotula "Resultado de ejemplo"— este tipo
- * **no tiene marca de demo**, así que la pantalla lo muestra como un hecho y el
- * catálogo filtra propiedades reales contra un techo inventado.
+ * Existía por una razón sencilla: el endpoint no estaba. `GET
+ * /api/tenant/aprobacion` daba 404 en el agente y la carpeta ni siquiera
+ * existía en su repo.
  *
- * Antes bastaba con que `NEXT_PUBLIC_AGENT_URL` faltara en el deploy —una env
- * sin poner en Vercel, nada más— para fabricarle a una persona real una
- * aprobación que nadie le dio. Ahora producción falla a la vista.
+ * Ahora existe de verdad, en el BACK (`GET /tenant/aprobacion`,
+ * `src/tenant-approval/`), que es donde corresponde: el tope y su vigencia
+ * son dato de dominio del inquilino —del mismo orden que su contrato o sus
+ * pagos—, no algo que razone un modelo. Sin fixture: si el back no contesta,
+ * se dice que no se pudo cargar.
  */
-function isMockMode(): boolean {
-  if (process.env.NODE_ENV === 'production') return false
-  if (process.env.NEXT_PUBLIC_USE_MOCK_API === 'true') return true
-  return !process.env.NEXT_PUBLIC_AGENT_URL
-}
-
-/** Fixture de dev: aprobado, con tope y vigencia corriendo. */
-function mockAprobacion(): Aprobacion {
-  const vence = new Date()
-  vence.setDate(vence.getDate() + 12)
-  return {
-    estado: 'aprobado',
-    topeAprobadoCop: 2_400_000,
-    aseguradoras: [
-      { nombre: 'Fianli', aprobada: true },
-      { nombre: 'Seguros Bolívar', aprobada: true },
-      { nombre: 'Sura', aprobada: false },
-    ],
-    vigenteHasta: vence.toISOString(),
-    resueltoEn: new Date().toISOString(),
-    condicionada: false,
-    canonConsultadoCop: null,
-  }
-}
 
 /** Normaliza la respuesta cruda: nunca confía en que el back mande todo. */
 export function parseAprobacion(data: unknown): Aprobacion {
@@ -142,17 +120,19 @@ export function parseAprobacion(data: unknown): Aprobacion {
 }
 
 export async function fetchAprobacion(): Promise<Aprobacion> {
-  if (isMockMode()) return mockAprobacion()
-
-  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL || ''
-  const res = await fetch(`${agentUrl}/api/tenant/aprobacion`, { headers: agentAuthHeaders() })
-
-  // Todavía sin aprobación no es un error: es el primer estado del recorrido.
-  if (res.status === 404) {
-    return SIN_APROBACION
+  /*
+   * El back ya responde `estado: 'sin_estudio'` con 200 cuando no hay fila —
+   * "todavía no te estudiaste" es el primer estado del recorrido, no un
+   * error—, así que acá no hace falta traducir ningún 404. Se mantiene el
+   * caso por si alguna capa intermedia lo produce: el resultado es el mismo
+   * y NO es una excepción.
+   */
+  try {
+    return parseAprobacion(await apiClient.get<unknown>('/tenant/aprobacion'))
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return SIN_APROBACION
+    throw e
   }
-  if (!res.ok) throw new Error(`No pudimos cargar tu aprobación (error ${res.status}).`)
-  return parseAprobacion(await res.json())
 }
 
 /**

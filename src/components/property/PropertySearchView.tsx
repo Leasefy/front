@@ -50,6 +50,14 @@ const PRICE_RANGES = [
 interface PropertySearchViewProps {
   /** When true, renders without Navbar and adapts layout for embedding inside dashboard */
   embedded?: boolean;
+  /**
+   * No monta ningún header propio: lo pone quien envuelve.
+   *
+   * `/propiedades` ahora usa el header de la landing (`LandingChrome`), que es
+   * el mismo de la home. `embedded` no sirve para esto: además de quitar el
+   * navbar cambia todo el alto del layout para caber dentro del panel.
+   */
+  sinNavbar?: boolean;
   /** Prefix for card detail links. Public '/propiedades', tenant '/inquilino/propiedades'. */
   basePath?: string;
 }
@@ -58,7 +66,7 @@ interface PropertySearchViewProps {
  * Reusable property search view.
  * Used by /propiedades (public, with Navbar) and /inquilino/explorar (embedded in tenant layout).
  */
-export function PropertySearchView({ embedded = false, basePath }: PropertySearchViewProps) {
+export function PropertySearchView({ embedded = false, sinNavbar = false, basePath }: PropertySearchViewProps) {
   const searchParams = useSearchParams();
   const heroQuery = searchParams.get('q');
   const { user } = useAuth();
@@ -263,17 +271,20 @@ export function PropertySearchView({ embedded = false, basePath }: PropertySearc
         ? 'flex flex-col h-[calc(100vh-64px)]'
         : 'min-h-screen bg-background'
     )}>
-      {!embedded && <Navbar />}
+      {!embedded && !sinNavbar && <Navbar />}
 
       {/* Main Layout - Split View */}
       <div className={cn(
         'flex',
-        embedded ? 'flex-1 min-h-0' : 'pt-[76px]'
+        embedded ? 'flex-1 min-h-0' : 'pt-16 lg:pt-[76px]'
       )}>
         {/* Left Panel - Scrollable Content */}
         <div
           className={cn(
-            'w-full lg:w-1/2',
+            // `contenedor-consulta` = container-type: inline-size. La grilla de
+            // adentro mide ESTE ancho, no el de la ventana: en media pantalla
+            // los breakpoints de viewport medían lo que no era.
+            'contenedor-consulta w-full lg:w-1/2 2xl:w-3/5',
             embedded ? 'overflow-y-auto' : 'min-h-screen',
             showMap && 'hidden lg:block'
           )}
@@ -443,12 +454,13 @@ export function PropertySearchView({ embedded = false, basePath }: PropertySearc
           className={cn(
             embedded
               ? cn(
-                  'w-full lg:w-1/2 h-full',
+                  'w-full lg:w-1/2 2xl:w-2/5 h-full',
                   !showMap && 'hidden lg:block'
                 )
               : cn(
-                  'w-full lg:w-1/2 lg:fixed lg:right-0 lg:top-[76px]',
-                  'h-[calc(100vh-76px)]',
+                  'w-full lg:w-1/2 2xl:w-2/5 lg:fixed lg:right-0',
+                  // El header de la landing mide 64px y 76px desde lg.
+                  'lg:top-[76px] h-[calc(100vh-64px)] lg:h-[calc(100vh-76px)]',
                   !showMap && 'hidden lg:block'
                 )
           )}

@@ -28,13 +28,20 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { useLenis } from '@/components/providers/SmoothScroll'
+import { getAccessToken } from '@/lib/api/client'
 import { useAprobacion } from '@/lib/hooks/use-aprobacion'
 import { cabeEnTope, diasParaVencer, estadoVigencia } from '@/lib/api/aprobacion.service'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 /** Por qué no puede postularse todavía. */
-export type MotivoBloqueo = 'sin_aprobacion' | 'vencida' | 'sobre_tope' | 'en_proceso' | 'rechazado'
+export type MotivoBloqueo =
+  | 'sin_sesion'
+  | 'sin_aprobacion'
+  | 'vencida'
+  | 'sobre_tope'
+  | 'en_proceso'
+  | 'rechazado'
 
 interface PostularButtonProps {
   propertyId: string
@@ -57,7 +64,18 @@ export function PostularButton({
   const { aprobacion, cargando, vigente } = useAprobacion()
   const [abierto, setAbierto] = useState(false)
 
-  const motivo = motivoDeBloqueo({ aprobacion, vigente, canonCop })
+  /*
+   * El token vive en memoria, así que esto sólo se puede mirar en el cliente.
+   * Se calcula en un efecto para que el HTML del servidor y el del primer
+   * render del cliente coincidan — leerlo durante el render rompe la
+   * hidratación en las fichas públicas, que son estáticas.
+   */
+  const [haySesion, setHaySesion] = useState(true)
+  useEffect(() => {
+    setHaySesion(Boolean(getAccessToken()))
+  }, [])
+
+  const motivo = motivoDeBloqueo({ aprobacion, vigente, canonCop, haySesion })
 
   // Mientras carga se deja pasar: bloquear por una milésima de duda castiga a
   // quien SÍ está aprobado. El wizard de /aplicar valida igual del otro lado.
@@ -85,6 +103,7 @@ export function PostularButton({
         motivo={motivo}
         canonCop={canonCop}
         topeCop={aprobacion?.topeAprobadoCop ?? null}
+        propertyId={propertyId}
       />
     </>
   )
@@ -95,15 +114,36 @@ export function motivoDeBloqueo({
   aprobacion,
   vigente,
   canonCop,
+  haySesion = true,
 }: {
   aprobacion: { estado: string; topeAprobadoCop: number | null; vigenteHasta: string | null } | null
   vigente: boolean
   canonCop?: number
+  /**
+   * ¿Hay sesión abierta? Por defecto `true` para no cambiarle el resultado a
+   * quien ya llamaba a esta función sin el dato.
+   */
+  haySesion?: boolean
 }): MotivoBloqueo | null {
   if (!aprobacion) return null
   if (aprobacion.estado === 'en_proceso') return 'en_proceso'
   if (aprobacion.estado === 'rechazado') return 'rechazado'
-  if (aprobacion.estado === 'sin_estudio') return 'sin_aprobacion'
+  /*
+   * Sin sesión y sin nada estudiado, «sin_estudio» es una conclusión que no
+   * nos consta: puede ser alguien que ya tiene cuenta y aprobación, y sólo
+   * está deslogueado. Mandarlo a pagar de nuevo un estudio que ya pagó es el
+   * peor error posible de esta pantalla.
+   *
+   * `sin_sesion` no decide por él: le ofrece las DOS puertas —entrar, o
+   * conocer su tope si es la primera vez—. Es lo que se acordó en la reunión
+   * del 11-08: «venga, papito, ¿usted tiene cuenta?».
+   *
+   * Ojo con el orden: si hay respaldo local (se aprobó por un link de
+   * WhatsApp, todavía sin cuenta) el estado NO es `sin_estudio`, así que ese
+   * camino sigue pasando de largo por acá y puede postularse. Ver
+   * `use-aprobacion.ts`.
+   */
+  if (aprobacion.estado === 'sin_estudio') return haySesion ? 'sin_aprobacion' : 'sin_sesion'
   // Aprobada: solo falta que no esté vencida y que el canon entre.
   if (!vigente) return 'vencida'
   if (typeof canonCop === 'number') {
@@ -140,12 +180,14 @@ function AntesDePostularte({
   motivo,
   canonCop,
   topeCop,
+  propertyId,
 }: {
   open: boolean
   onClose: () => void
   motivo: MotivoBloqueo
   canonCop?: number
   topeCop: number | null
+  propertyId: string
 }) {
   const lenis = useLenis()
   useEffect(() => {
@@ -155,6 +197,18 @@ function AntesDePostularte({
   }, [open, lenis])
 
   const copy = COPY[motivo]
+  /*
+   * Después de entrar, **seguir postulándose** — no volver a la ficha.
+   *
+   * Esto devolvía a `window.location.pathname`, o sea al inmueble. La persona
+   * tocaba «Postularme», la mandábamos a entrar, y al volver aterrizaba en el
+   * mismo punto donde había empezado, teniendo que tocar el botón otra vez.
+   * Desde afuera se lee como «no pasó nada»: hizo el trámite de entrar y no
+   * avanzó un paso.
+   *
+   * El destino es la acción que pidió, no el lugar donde estaba parada.
+   */
+  const volverA = `/aplicar/${propertyId}`
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -204,7 +258,17 @@ function AntesDePostularte({
           <Button asChild>
             <Link href={copy.href}>{copy.cta}</Link>
           </Button>
-          <Button variant="secondary" onClick={onClose} hideArrow>
+          {/* La segunda puerta, sólo cuando no hay sesión: quien ya tiene
+              cuenta vuelve ACÁ después de entrar, no al panel. Sin el
+              returnUrl, postularse costaba encontrar el inmueble otra vez. */}
+          {motivo === 'sin_sesion' ? (
+            <Button asChild variant="secondary" hideArrow>
+              <Link href={`/auth?returnUrl=${encodeURIComponent(volverA)}`}>
+                Ya tengo cuenta, entrar
+              </Link>
+            </Button>
+          ) : null}
+          <Button variant="ghost" onClick={onClose} hideArrow>
             Ahora no
           </Button>
         </div>
@@ -230,6 +294,18 @@ function Fila({ label, valor, destacado }: { label: string; valor?: number | nul
 }
 
 const COPY: Record<MotivoBloqueo, { title: string; desc: string; cta: string; href: string }> = {
+  /*
+   * El CTA principal es «conocer el tope», no «crear cuenta»: la cuenta se
+   * pre-crea sola con los datos de la aprobación (ver el recorrido en
+   * `/aprobacion`), así que pedir un registro antes sería una puerta de más.
+   * Quien YA tiene cuenta entra por el enlace secundario del diálogo.
+   */
+  sin_sesion: {
+    title: '¿Ya tenés cuenta en Leasefy?',
+    desc: 'Si ya te aprobamos alguna vez, entrá y seguís desde donde ibas — no hay que estudiarte de nuevo. Si es tu primera vez, empezá por saber hasta cuánto te respaldan.',
+    cta: 'Es mi primera vez',
+    href: '/aprobacion',
+  },
   sin_aprobacion: {
     title: 'Antes de postularte',
     desc: 'Para postularte necesitas saber hasta cuánto te respaldan las aseguradoras. Son tres pasos y se hace una sola vez.',

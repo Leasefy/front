@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Navbar } from "@/components/layout/Navbar";
+import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { Footer } from "@/components/layout/Footer";
 import { SectionLabel } from "@/components/ui/section-label";
 import { Button } from "@/components/ui/button";
@@ -330,8 +330,7 @@ function GuideAccordion({ section }: { section: GuideSection }) {
 
 export default function PropietariosGuidePage() {
   return (
-    <>
-      <Navbar />
+    <LandingChrome>
       <main id="main-content" className="bg-background">
         <section className="pt-32 pb-16 md:pt-40 md:pb-24">
           <div className="container-platform">
@@ -412,6 +411,6 @@ export default function PropietariosGuidePage() {
         </section>
       </main>
       <Footer />
-    </>
+    </LandingChrome>
   );
 }

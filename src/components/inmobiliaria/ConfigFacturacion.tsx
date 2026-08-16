@@ -484,16 +484,16 @@ export function ConfigFacturacion({
             <Table className="w-full">
               <TableHeader>
                 <TableRow className="border-b border-border">
-                  <TableHead className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <TableHead className="text-left py-3 px-4">
                     {t('inmobiliaria.config.billing.invoiceDate')}
                   </TableHead>
-                  <TableHead className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <TableHead className="text-left py-3 px-4">
                     {t('inmobiliaria.config.billing.invoiceAmount')}
                   </TableHead>
-                  <TableHead className="text-left py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <TableHead className="text-left py-3 px-4">
                     {t('inmobiliaria.config.billing.invoiceStatus')}
                   </TableHead>
-                  <TableHead className="text-right py-3 px-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <TableHead className="text-right py-3 px-4">
                     {t('inmobiliaria.config.billing.invoiceActions')}
                   </TableHead>
                 </TableRow>

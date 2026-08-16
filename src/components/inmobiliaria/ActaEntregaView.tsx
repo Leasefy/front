@@ -195,19 +195,19 @@ export function ActaEntregaView({
               <Table className="w-full">
                 <TableHeader>
                   <TableRow className="border-b border-border">
-                    <TableHead className="text-left py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
+                    <TableHead className="text-left py-3 px-2">
                       {t('inmobiliaria.acta.thItem')}
                     </TableHead>
-                    <TableHead className="text-center py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
+                    <TableHead className="text-center py-3 px-2">
                       {t('inmobiliaria.acta.thQty')}
                     </TableHead>
-                    <TableHead className="text-center py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
+                    <TableHead className="text-center py-3 px-2">
                       {t('inmobiliaria.acta.thCondition')}
                     </TableHead>
-                    <TableHead className="text-left py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
+                    <TableHead className="text-left py-3 px-2">
                       {t('inmobiliaria.acta.thNotes')}
                     </TableHead>
-                    <TableHead className="text-center py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
+                    <TableHead className="text-center py-3 px-2">
                       {t('inmobiliaria.acta.thPhoto')}
                     </TableHead>
                   </TableRow>

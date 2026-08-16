@@ -68,6 +68,12 @@ const VACIO_SIN_MIRAR_EL_ERROR: string[] = []
  * Queda una, y a propósito.
  */
 const ERROR_STATE_VIEJO = [
+  'src/app/inquilino/arriendo/page.tsx',
+  'src/app/inquilino/aprobacion/page.tsx',
+  'src/app/panel/inmobiliaria/inmuebles/page.tsx',
+  'src/app/panel/inmobiliaria/inmuebles/[id]/candidatos/page.tsx',
+  'src/app/panel/inmobiliaria/dashboard/page.tsx',
+  'src/app/panel/inmobiliaria/cobros/page.tsx',
   /**
    * `ai/error.tsx` NO es un fallo de carga: es el error boundary de Next para
    * los workspaces de IA. Lo que atrapa es un crash de render —un lookup en un

@@ -354,7 +354,7 @@ export function PropertyIACapture() {
       }
 
       toast.success(t(k('created')));
-      router.push('/panel/inmobiliaria/propiedades');
+      router.push('/panel/inmobiliaria/inmuebles');
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : t(k('createError')));
     } finally {
@@ -511,7 +511,7 @@ export function PropertyIACapture() {
           </Button>
           {/* A mano = consignación. Una inmobiliaria nunca administra un
               inmueble sin propietario, y `/propiedades/nueva` no lo pide. */}
-          <Button hideArrow onClick={() => router.push('/panel/inmobiliaria/portafolio/nuevo')}>
+          <Button hideArrow onClick={() => router.push('/panel/inmobiliaria/inmuebles/nuevo')}>
             {t(k('manualFlow'))}
           </Button>
         </div>
@@ -637,7 +637,7 @@ export function PropertyIACapture() {
           type="button"
           variant="secondary"
           hideArrow
-          onClick={() => router.push('/panel/inmobiliaria/propiedades')}
+          onClick={() => router.push('/panel/inmobiliaria/inmuebles')}
         >
           {t(k('cancel'))}
         </Button>

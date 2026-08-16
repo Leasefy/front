@@ -277,7 +277,7 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
               </div>
             </div>
             <Link
-              href={`/panel/inmobiliaria/portafolio/${item.consignacionId}`}
+              href={`/panel/inmobiliaria/inmuebles/${item.consignacionId}`}
               className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/30 text-sm font-medium text-primary hover:bg-muted/50 transition-colors"
             >
               <span>{t('inmobiliaria.pipeline.viewConsignment')}</span>

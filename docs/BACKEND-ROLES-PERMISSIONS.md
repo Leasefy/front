@@ -185,9 +185,9 @@ Cuando un propietario invita miembros a su equipo, estos tienen acceso **dentro 
 | `/panel/inmobiliaria` | Dashboard | **R**: KPIs portafolio, pipeline, cobros, agentes, propietarios |
 | `/panel/inmobiliaria/propietarios` | Propietarios | **R**: Listar dueños. **C**: Agregar propietario. **U**: Editar. **D**: Eliminar |
 | `/panel/inmobiliaria/propietarios/[id]` | Detalle propietario | **R**: Ver info, propiedades, rendimiento |
-| `/panel/inmobiliaria/portafolio` | Portafolio | **R**: Ver propiedades. **C**: Agregar consignación. **U**: Editar propiedad |
-| `/panel/inmobiliaria/portafolio/nuevo` | Nueva propiedad | **C**: Crear listing, subir fotos, definir términos |
-| `/panel/inmobiliaria/portafolio/[id]` | Detalle propiedad | **R/U**: Editar detalles, gestionar candidatos, ver historial |
+| `/panel/inmobiliaria/inmuebles` | Portafolio | **R**: Ver propiedades. **C**: Agregar consignación. **U**: Editar propiedad |
+| `/panel/inmobiliaria/inmuebles/nuevo` | Nueva propiedad | **C**: Crear listing, subir fotos, definir términos |
+| `/panel/inmobiliaria/inmuebles/[id]` | Detalle propiedad | **R/U**: Editar detalles, gestionar candidatos, ver historial |
 | `/panel/inmobiliaria/pipeline` | Pipeline (Kanban) | **R**: Ver aplicaciones por etapa. **U**: Mover entre etapas, asignar agente |
 | `/panel/inmobiliaria/agentes` | Agentes | **R**: Listar agentes. **C**: Agregar agente. **U**: Editar, asignar propiedades |
 | `/panel/inmobiliaria/agentes/[id]` | Detalle agente | **R**: Perfil, métricas, comisiones. **U**: Asignar propiedades |

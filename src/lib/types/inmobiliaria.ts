@@ -78,7 +78,15 @@ export interface AgenteMetrics {
 }
 
 export interface Agente {
+  /** Id de MIEMBRO de la agencia (`AgencyMember.id`). */
   id: string;
+  /**
+   * Id de USUARIO (`User.id`). No es el mismo que `id` y no son
+   * intercambiables: `Consignacion.agenteUserId` guarda éste. Mandar el de
+   * miembro donde va el de usuario no falla ni avisa — asigna a nadie.
+   * Opcional porque hay respuestas viejas del back que todavía no lo traen.
+   */
+  userId?: string;
   name: string;
   email: string;
   phone: string;
@@ -322,24 +330,40 @@ export type DispersionStatus = 'pending' | 'processing' | 'completed' | 'failed'
 export interface DispersionItem {
   cobroId: string;
   propertyTitle: string;
+  /** Canon recaudado, SIN la administración: ésa es de la copropiedad. */
   rentCollected: number;
   commissionPercent: number;
   commissionAmount: number;
   netAmount: number;
+  /** Conceptos del contrato que suman a favor del propietario. */
+  conceptosAFavor: number;
+  /** Conceptos que él paga: predial, reparaciones a su cargo. */
+  conceptosACargo: number;
+  /** Lo que entró y no es suyo: administración, seguros, mora. */
+  deTerceros: number;
 }
 
 export interface Dispersion {
   id: string;
   propietarioId: string;
   propietarioName: string;
-  propietarioBankAccount: PropietarioBankAccount;
+  /**
+   * `null` cuando el propietario no tiene cuenta registrada — un estado normal
+   * que hay que poder mostrar. El back manda dos strings sueltos; el objeto lo
+   * arma `adaptarDispersion`. Ver `lib/api/dispersion-adapter.ts`.
+   */
+  propietarioBankAccount: PropietarioBankAccount | null;
 
   month: string; // '2026-02'
   items: DispersionItem[];
 
   // Totals
+  /** Canon recaudado del mes, sin administración. */
   totalCollected: number;
   totalCommission: number;
+  totalConceptosAFavor: number;
+  totalConceptosACargo: number;
+  totalDeTerceros: number;
   netToPropietario: number;
 
   // Status
@@ -352,6 +376,45 @@ export interface Dispersion {
 
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Lo que `GET /dispersiones/preview` dice que pasaría al generar.
+ *
+ * Sale del MISMO cálculo que `generate`: lo que se muestra antes de apretar el
+ * botón es lo que se va a guardar.
+ */
+export interface VistaPreviaDeDispersiones {
+  month: string;
+  totalPropietarios: number;
+  /** Los que ya tienen dispersión de este mes: generar los saltaría. */
+  yaGenerados: number;
+  totalAGirar: number;
+  totalComisiones: number;
+  propietarios: {
+    propietarioId: string;
+    propietarioName: string;
+    propietarioBankName: string | null;
+    propietarioBankAccount: string | null;
+    yaExiste: boolean;
+    totalCollected: number;
+    totalCommission: number;
+    totalConceptosAFavor: number;
+    totalConceptosACargo: number;
+    totalDeTerceros: number;
+    netToPropietario: number;
+    items: {
+      cobroId: string;
+      propertyTitle: string;
+      rentCollected: number;
+      commissionPercent: number;
+      commissionAmount: number;
+      netAmount: number;
+      conceptosAFavor: number;
+      conceptosACargo: number;
+      deTerceros: number;
+    }[];
+  }[];
 }
 
 export interface DispersionSummary {
@@ -433,52 +496,112 @@ export const MANTENIMIENTO_TYPES: { type: MantenimientoType; labelEs: string; la
 // Reportes (Reports)
 // ============================================================================
 
+/**
+ * Un renglón de la liquidación: de dónde sale cada peso.
+ *
+ * Sin el motivo, un extracto sólo se puede revisar rehaciendo la cuenta a mano
+ * — y entonces no sirve para reclamar.
+ */
+export interface RenglonDeLiquidacion {
+  concepto: string;
+  /** Positivo suma a lo que recibe el propietario; negativo lo descuenta. */
+  valorCop: number;
+  motivo: string;
+}
+
+/**
+ * El extracto de un propietario, como lo manda
+ * `GET /inmobiliaria/propietarios/:id/extracto`.
+ *
+ * ⚠️ Este tipo declaraba `properties` y `summary`, que el back NUNCA envió: la
+ * respuesta trae `lineItems` y `totals`. Como la página lo cargaba en un
+ * `useState<any>`, tsc no veía nada y el componente hacía
+ * `extracto.properties.map(...)` sobre `undefined` — el modal reventaba al
+ * abrirlo. Es el mismo defecto que ya había tenido CarteraItem, en el tipo de
+ * al lado.
+ */
 export interface ExtractoPropietario {
   propietarioId: string;
   propietarioName: string;
   month: string;
   generatedAt: string;
 
-  properties: {
-    propertyId: string;
+  lineItems: {
+    cobroId: string;
+    consignacionId: string;
     propertyTitle: string;
-    propertyAddress: string;
-    tenantName: string;
+    propertyAddress: string | null;
+    tenantName: string | null;
+    /** Lo facturado al inquilino. */
     rentAmount: number;
     adminAmount: number;
-    totalCollected: number;
+    totalAmount: number;
+    paidAmount: number;
+    status: string;
     commissionPercent: number;
     commissionAmount: number;
+    /** Lo que se le gira al propietario por este inmueble. */
     netAmount: number;
-    paymentDate?: string;
-    paymentStatus: CobroStatus;
+    /** Canon efectivamente recaudado, SIN la administración. */
+    rentCollected: number;
+    /** Conceptos que suman a su favor (devoluciones, reajustes). */
+    conceptosAFavor: number;
+    /** Conceptos que él paga (predial, reparaciones a su cargo). */
+    conceptosACargo: number;
+    /** Lo que entró y no es suyo: administración, seguros, mora. */
+    deTerceros: number;
+    renglones: RenglonDeLiquidacion[];
   }[];
 
-  summary: {
-    totalProperties: number;
-    totalCollected: number;
-    totalCommissions: number;
-    netToPropietario: number;
-    paymentDate?: string;
-    paymentReference?: string;
+  totals: {
+    totalRent: number;
+    totalAdmin: number;
+    totalPaid: number;
+    totalCommission: number;
+    totalNet: number;
+    totalConceptosAFavor: number;
+    totalConceptosACargo: number;
+    totalDeTerceros: number;
+  };
+
+  bankInfo: {
+    bankName: string | null;
+    bankAccountType: string | null;
+    bankAccountNumber: string | null;
+    bankAccountHolder: string | null;
   };
 }
 
+/**
+ * Una deuda de la cartera, como la manda `GET /inmobiliaria/reports/cartera`.
+ *
+ * Este tipo declaraba antes seis campos que el back nunca enviaba
+ * (`propertyAddress`, `tenantPhone`, `propietarioName`, `agenteId`,
+ * `agenteName`, `bucket`). Una pantalla que los pintara habría mostrado
+ * `undefined` con tsc en verde. Ahora el back sí los manda — menos `bucket`,
+ * que se calcula acá para poder separar lo que aún no vence de la mora.
+ */
 export interface CarteraItem {
   cobroId: string;
+  consignacionId: string;
   propertyTitle: string;
-  propertyAddress: string;
-  tenantName: string;
-  tenantPhone: string;
-  propietarioName: string;
-  agenteId: string;
-  agenteName: string;
+  propertyAddress: string | null;
+  tenantName: string | null;
+  tenantPhone: string | null;
+  propietarioId: string | null;
+  propietarioName: string | null;
+  agenteId: string | null;
+  agenteName: string | null;
   month: string;
+  dueDate: string;
   totalAmount: number;
   paidAmount: number;
   pendingAmount: number;
   daysLate: number;
-  bucket: '0-30' | '31-60' | '61-90' | '90+';
+  status: string;
+  /** Recordatorios efectivamente enviados. Es el dato, no un cero fijo. */
+  remindersSent: number;
+  lastReminderDate: string | null;
 }
 
 export interface CarteraReport {
@@ -741,12 +864,11 @@ export function getDaysLate(dueDate: string): number {
   return Math.max(0, diffDays);
 }
 
-export function getAgingBucket(daysLate: number): CarteraItem['bucket'] {
-  if (daysLate <= 30) return '0-30';
-  if (daysLate <= 60) return '31-60';
-  if (daysLate <= 90) return '61-90';
-  return '90+';
-}
+/*
+ * `getAgingBucket` vivía acá y no la llamaba nadie. Además metía en el mismo
+ * tramo un cobro que aún no vencía (daysLate = 0) y uno con 29 días de mora.
+ * La versión que sí se usa está en `src/lib/cartera/edades.ts` y los separa.
+ */
 
 // ============================================================================
 // Report Definitions (Centro de Reportes)

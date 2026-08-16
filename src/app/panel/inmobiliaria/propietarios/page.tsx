@@ -181,25 +181,33 @@ function PropietariosContent() {
   // vacía y la pantalla decía «todavía no tenés propietarios» — afirmando algo
   // que nadie verificó. `errorCrudo` es el error entero, que es lo que
   // `FalloDeCarga` necesita para saber si reintentar sirve.
-  //
-  // La lista es la del hook, sin copia local. Antes había un `useState` espejo
-  // que se sincronizaba con `if (apiPropietarios.length > 0) setPropietarios(…)`
-  // y que cada handler parcheaba a mano. Dos problemas:
-  //
-  //  · borrar el último propietario dejaba la copia en `[]`, pero el próximo
-  //    refetch devolvía `[]` y ese `if` NO copiaba nada: la pantalla se quedaba
-  //    con lo que hubiera antes;
-  //  · los KPI de arriba (inmuebles, canon, pendiente) se suman de esta lista, y
-  //    esos campos los calcula el backend. Un objeto recién creado los trae en
-  //    cero, así que crear un propietario bajaba los totales de la agencia.
-  //
-  // Releer del servidor después de cada mutación no tiene ninguno de los dos.
   const {
-    propietarios,
+    propietarios: apiPropietarios,
     isLoading: cargandoPropietarios,
     errorCrudo: errorPropietarios,
     refetch: recargarPropietarios,
   } = usePropietarios();
+
+  /*
+   * La lista es la del hook, sin copia local.
+   *
+   * Había un `useState` espejo que se llenaba con
+   * `if (apiPropietarios.length > 0) setPropietarios(...)`. Ese `> 0` es una
+   * trampa: el espejo sólo copia hacia adelante, así que **borrar el último
+   * propietario dejaba su fila en pantalla para siempre** — la petición salía,
+   * el hook devolvía la lista vacía y la copia se quedaba con lo viejo.
+   *
+   * Con el refresco automático el problema se agrava: la pantalla recibe el
+   * dato nuevo y lo ignora. Un espejo que no puede vaciarse no es un caché, es
+   * una afirmación desactualizada.
+   *
+   * Y tenía un segundo daño, menos visible (visto al integrar #87): los KPI de
+   * arriba —inmuebles, canon, pendiente— se suman de ESTA lista, y esos campos
+   * los calcula el backend. Un objeto recién creado los trae en cero, así que
+   * parchear la copia a mano al crear un propietario **bajaba los totales de la
+   * agencia**. Leer siempre del hook no tiene ninguno de los dos problemas.
+   */
+  const propietarios = apiPropietarios;
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showIACapture, setShowIACapture] = useState(false);
@@ -275,7 +283,9 @@ function PropietariosContent() {
     setIsDeleting(true);
     try {
       await propietariosApi.delete(deletingPropietario.id);
-      await recargarPropietarios();
+      // La fila se va sola: el cliente avisa que «propietarios» cambió y la
+      // lista se vuelve a pedir. Antes se la sacaba a mano de una copia local,
+      // que es una segunda versión de la verdad y podía discrepar del back.
       toast.success(t('inmobiliaria.propietarios.toasts.deleted', { name: deletingPropietario.name }));
       setDeletingPropietario(null);
     } catch (err) {
@@ -290,7 +300,9 @@ function PropietariosContent() {
   const handleCreateSubmit = async (data: PropietarioFormData) => {
     try {
       const created = await propietariosApi.create(data);
-      await recargarPropietarios();
+      // Aparece solo. Y se pide de nuevo al back a propósito: el objeto que
+      // devuelve `create` no trae los campos calculados (propiedades, canon),
+      // así que insertarlo a mano mostraba una fila incompleta hasta recargar.
       toast.success(t('inmobiliaria.propietarios.toasts.created', { name: created.name }));
       setShowAddModal(false);
       setCurrentPage(1); // Reset to first page to show new item
@@ -307,7 +319,7 @@ function PropietariosContent() {
 
     try {
       await propietariosApi.update(editingPropietario.id, data);
-      await recargarPropietarios();
+      // Se actualiza sola.
       toast.success(t('inmobiliaria.propietarios.toasts.updated'));
       setEditingPropietario(null);
     } catch (err) {

@@ -22,6 +22,7 @@ import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/lib/auth/use-auth';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
+import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import type { Propietario, Agente, InventoryItem } from '@/lib/types/inmobiliaria';
 import {
   StepSelectPropietario,
@@ -49,7 +50,7 @@ const STEPS = [
 
 /**
  * ConsignacionWizard - 6-step wizard for creating new property consignments
- * Used at /panel/inmobiliaria/portafolio/nuevo
+ * Used at /panel/inmobiliaria/inmuebles/nuevo
  */
 // PropertyType values supported by the backend
 const SUPPORTED_TYPES = ['apartment', 'house', 'studio', 'room'] as const;
@@ -152,7 +153,26 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     }
   }, []);
 
-  // Submit handler — creates the property and assigns the agent
+  /**
+   * Crea el inmueble Y el mandato. Son dos cosas.
+   *
+   * Durante meses esto sólo creó el inmueble: las seis pantallas preguntaban
+   * propietario, comisión, agente, fecha y término mínimo, y al final llamaba
+   * a `propertiesApi.create` y navegaba diciendo «listo». Todo lo que hace que
+   * una consignación sea una consignación se descartaba en silencio, y la
+   * liquidación quedaba corriendo al 0% de comisión.
+   *
+   * Se veía perfecto porque el inmueble SÍ aparecía en el catálogo. Medido
+   * antes de arreglarlo: de las 19 consignaciones de la base, 15 las había
+   * creado el sincronizador del pipeline (con `commissionPercent: 0`, que es
+   * el valor que hornea al auto-crear) y 4 la migración de cartera. Ninguna
+   * salió de acá.
+   *
+   * El orden importa: primero el inmueble, porque el mandato lo referencia con
+   * llave foránea. Si el segundo paso falla se avisa que el inmueble quedó
+   * creado sin mandato en vez de decir «listo» — media verdad se lee como
+   * mentira entera cuando aparece la factura.
+   */
   const handleSubmit = useCallback(async () => {
     if (!isStepValid) return;
     setIsSubmitting(true);
@@ -181,15 +201,45 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
       });
 
       // Assign agent
+      const selectedAgente = agentes.find((a) => a.id === formData.agenteId);
       if (isAgentRole && user?.email) {
         // Agent creating → auto-assign to themselves
         await propertiesApi.assignAgent(property.id, user.email);
-      } else if (!isAgentRole && formData.agenteId) {
+      } else if (!isAgentRole && selectedAgente?.email) {
         // Admin → assign the selected agent by email
-        const selectedAgente = agentes.find((a) => a.id === formData.agenteId);
-        if (selectedAgente?.email) {
-          await propertiesApi.assignAgent(property.id, selectedAgente.email);
-        }
+        await propertiesApi.assignAgent(property.id, selectedAgente.email);
+      }
+
+      // El mandato. `agenteUserId` es un User.id: el `Agente.id` del front es
+      // un AgencyMember.id y mandarlo acá no falla, asigna a nadie.
+      const agenteUserId = isAgentRole ? user?.id : selectedAgente?.userId;
+      try {
+        await consignacionesApi.create({
+          propietarioId: formData.propietarioId ?? '',
+          propertyId: property.id,
+          ...(agenteUserId ? { agenteUserId } : {}),
+          propertyTitle: formData.propertyTitle ?? '',
+          propertyAddress: formData.propertyAddress ?? '',
+          propertyCity: formData.propertyCity ?? '',
+          propertyZone: formData.propertyZone ?? '',
+          propertyType: formData.propertyType ?? 'apartment',
+          monthlyRent: formData.monthlyRent ?? 0,
+          ...(formData.adminFee != null ? { adminFee: formData.adminFee } : {}),
+          commissionPercent: formData.commissionPercent ?? 0,
+          contractDate: formData.contractStartDate ?? new Date().toISOString().split('T')[0],
+          ...(formData.minimumTerm != null ? { minimumTerm: formData.minimumTerm } : {}),
+          agenteId: formData.agenteId ?? '',
+        });
+      } catch (error) {
+        // El inmueble YA existe. Decirlo es la diferencia entre que alguien lo
+        // busque en la lista y lo complete, o que lo dé por perdido y lo cargue
+        // de nuevo — y termine con dos.
+        console.error('Error creating consignacion:', error);
+        toast.error(t('inmobiliaria.consignaciones.wizard.toasts.mandateErrorTitle'), {
+          description: t('inmobiliaria.consignaciones.wizard.toasts.mandateErrorDesc'),
+        });
+        router.push('/panel/inmobiliaria/inmuebles');
+        return;
       }
 
       toast.success(t('inmobiliaria.consignaciones.wizard.toasts.successTitle'), {
@@ -198,7 +248,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         }),
       });
 
-      router.push('/panel/inmobiliaria/propiedades');
+      router.push('/panel/inmobiliaria/inmuebles');
     } catch (error) {
       console.error('Error creating property:', error);
       toast.error(t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'), {
@@ -215,7 +265,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
   }, []);
 
   const confirmCancel = useCallback(() => {
-    router.push('/panel/inmobiliaria/portafolio');
+    router.push('/panel/inmobiliaria/inmuebles');
   }, [router]);
 
   // Render step content

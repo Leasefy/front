@@ -409,12 +409,12 @@ export function RenovacionesTable({
               <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.renewals.property')}</SortableHeader>
               <SortableHeader field="tenantName">{t('inmobiliaria.finance.renewals.tenant')}</SortableHeader>
               <SortableHeader field="propietarioName">{t('inmobiliaria.finance.renewals.owner')}</SortableHeader>
-              <TableHead className="p-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="p-4 text-left">
                 {t('inmobiliaria.finance.renewals.expiration')}
               </TableHead>
               <SortableHeader field="daysUntilExpiry">{t('inmobiliaria.finance.renewals.days')}</SortableHeader>
               <SortableHeader field="currentRent">{t('inmobiliaria.finance.renewals.currentRent')}</SortableHeader>
-              <TableHead className="p-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="p-4 text-left">
                 {t('inmobiliaria.finance.renewals.proposed')}
               </TableHead>
               <SortableHeader field="status">{t('inmobiliaria.finance.renewals.status')}</SortableHeader>

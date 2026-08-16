@@ -358,7 +358,7 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
             type="button"
             size="lg"
             hideArrow
-            onClick={() => router.push('/panel/inmobiliaria/portafolio')}
+            onClick={() => router.push('/panel/inmobiliaria/inmuebles')}
           >
             Ver portafolio
           </Button>
@@ -384,7 +384,7 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
                 importedCount: 0,
               });
               // Redirect to step 1 — the wizard handles navigation
-              router.push('/panel/inmobiliaria/portafolio/importar');
+              router.push('/panel/inmobiliaria/inmuebles/importar');
             }}
           >
             Importar más

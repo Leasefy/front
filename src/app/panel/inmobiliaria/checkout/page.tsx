@@ -1,7 +1,7 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   CreditCard,
@@ -9,239 +9,84 @@ import {
   Check,
   Buildings,
   WarningCircle,
-  Bank,
   ArrowSquareOut,
   CheckCircle,
 } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { getAgencyPlanById } from '@/lib/constants/subscription-plans';
-import { pseCheckoutApi } from '@/lib/api/pse-checkout.service';
-import { agencySubscriptionApi } from '@/lib/api/agency-subscription.service';
-import { useAuth } from '@/lib/auth/use-auth';
+import { useAgencyPlans } from '@/lib/hooks/useSubscription';
+import { useAgencyCheckout } from '@/lib/hooks/useAgencyCheckout';
 import { formatCurrency } from '@/lib/format';
-import type { AgencyPlanId } from '@/lib/types/subscription';
-import type {
-  AgencyPlanTier,
-  ChargePseCheckoutDto,
-} from '@/lib/api/agency-subscription.types';
-import type {
-  PseFinancialInstitution,
-  PseLegalIdType,
-  PseUserType,
-} from '@/lib/api/pse-checkout.types';
-
-type CheckoutState = 'idle' | 'processing' | 'awaiting' | 'success' | 'error';
-
-const DOCUMENT_TYPES: { value: PseLegalIdType; label: string }[] = [
-  { value: 'CC', label: 'Cédula de ciudadanía' },
-  { value: 'CE', label: 'Cédula de extranjería' },
-  { value: 'NIT', label: 'NIT' },
-  { value: 'PP', label: 'Pasaporte' },
-];
-
-const POLL_INTERVAL_MS = 5_000;
 
 function AgencyCheckoutInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user } = useAuth();
 
-  const planTier = (searchParams.get('plan') || 'starter') as AgencyPlanId;
-  const plan = getAgencyPlanById(planTier);
+  // Resolve the selected plan from the LIVE AGENCY catalog by its real slug —
+  // NOT from a hardcoded tier name. This admits admin-created plans (contrato 29
+  // · planes dinámicos): what we send to `selectPlan` is the plan's own slug, so
+  // the backend charges the right plan (it validates the slug against the catalog).
+  const { plans, isLoading: plansLoading } = useAgencyPlans();
+  const slug = (searchParams.get('plan') || 'starter').toLowerCase();
+  const plan = plans.find((p) => String(p.id).toLowerCase() === slug);
 
-  const isPercentage = plan.pricingModel === 'percentage';
-  const isCustom = plan.pricingModel === 'custom' || plan.price.monthly === null;
-  const isFree = plan.price.monthly === 0 && !isPercentage && !isCustom;
-  const isPaid = !isFree && !isPercentage && !isCustom; // PRO
+  // Billing behaviour comes from the plan's own pricingModel (derived from the
+  // backend `billingMode`/price columns in useAgencyPlans), never a tier name.
+  const isPercentage = plan?.pricingModel === 'percentage'; // USAGE_CANON (price.monthly is null)
+  const isCustom = plan?.pricingModel === 'custom'; // no dynamic plan is 'custom'; kept for safety
+  const isFree = plan?.price.monthly === 0 && !isPercentage && !isCustom;
+  const isPaid = !!plan && !isFree && !isPercentage && !isCustom; // FLAT, monthlyPrice > 0
 
-  // starter → STARTER (free), flex → FLEX (postpaid), pro → PRO (PSE). enterprise → custom quote.
-  const planTierEnum: AgencyPlanTier | null = isFree
-    ? 'STARTER'
+  const priceDisplay = !plan
+    ? ''
     : isPercentage
-      ? 'FLEX'
-      : isPaid
-        ? 'PRO'
-        : null;
+      ? `${plan.canonPercentage ?? 1}% del canon`
+      : isCustom
+        ? 'A la medida'
+        : formatCurrency(plan.price.monthly ?? 0);
 
-  const priceDisplay = isPercentage
-    ? `${plan.canonPercentage ?? 1}% del canon`
-    : isCustom
-      ? 'A la medida'
-      : formatCurrency(plan.price.monthly ?? 0);
+  // Single source of the checkout orchestration (shared with /upgrade's direct
+  // flow). This page is the deep-link fallback: same hook, no duplicated logic.
+  const { state, error, paymentUrl, popupBlocked, pollError, activate, pay, verifyNow } =
+    useAgencyCheckout(() => router.push('/panel/inmobiliaria'));
 
-  const [state, setState] = useState<CheckoutState>('idle');
-  const [error, setError] = useState<string | null>(null);
+  // Free / percentage (USAGE_CANON) — activate without an upfront charge.
+  const handleActivate = () => {
+    if (plan) void activate(plan.id);
+  };
 
-  // PSE payer form (PRO only)
-  const [institutions, setInstitutions] = useState<PseFinancialInstitution[]>([]);
-  const [userType, setUserType] = useState<PseUserType>('NATURAL');
-  const [legalIdType, setLegalIdType] = useState<PseLegalIdType>('CC');
-  const [legalId, setLegalId] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [institutionCode, setInstitutionCode] = useState('');
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  // Paid FLAT plan — open the hosted Wompi payment link (avaluo-style).
+  const handlePay = () => {
+    if (plan) void pay(plan.id);
+  };
 
-  // Polling / redirect
-  const [asyncUrl, setAsyncUrl] = useState<string | null>(null);
-  const [popupBlocked, setPopupBlocked] = useState(false);
-  const [pollError, setPollError] = useState<string | null>(null);
+  // Catalog still loading — hold the render until we can resolve the plan.
+  if (plansLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Spinner size="md" variant="muted" />
+      </div>
+    );
+  }
 
-  // Prefill payer identity from the logged-in admin.
-  useEffect(() => {
-    if (user) {
-      setFullName((prev) => prev || user.name || '');
-      setEmail((prev) => prev || user.email || '');
-    }
-  }, [user]);
-
-  // Load the real PSE bank catalog (only needed for the paid PRO flow).
-  useEffect(() => {
-    if (!isPaid) return;
-    let cancelled = false;
-    pseCheckoutApi
-      .getFinancialInstitutions()
-      .then((list) => { if (!cancelled) setInstitutions(list); })
-      .catch(() => { if (!cancelled) setInstitutions([]); });
-    return () => { cancelled = true; };
-  }, [isPaid]);
-
-  // Resolve the current payment outcome from the agency subscription state.
-  // active → paid; failed → declined/no charge; pending → keep waiting; error → GET failed.
-  const checkStatus = useCallback(async (): Promise<'active' | 'failed' | 'pending' | 'error'> => {
-    try {
-      // verify() reconciles the open charge against Wompi (self-heals a missing
-      // webhook) and returns fresh state — so awaiting resolves without the webhook.
-      const s = await agencySubscriptionApi.verify();
-      if (!s) return 'pending';
-      const gw = (s.openCharge?.gatewayStatus ?? '').toUpperCase();
-      if (s.status === 'ACTIVE') return 'active';
-      if (!s.openCharge || gw === 'DECLINED' || gw === 'ERROR' || gw === 'VOIDED') return 'failed';
-      return 'pending';
-    } catch {
-      return 'error';
-    }
-  }, []);
-
-  const applyStatus = useCallback(
-    (r: 'active' | 'failed' | 'pending' | 'error') => {
-      if (r === 'active') {
-        setState('success');
-        setTimeout(() => router.push('/panel/inmobiliaria'), 2500);
-      } else if (r === 'failed') {
-        setError('El pago fue rechazado o no se completó. Podés intentar de nuevo.');
-        setState('error');
-      } else if (r === 'error') {
-        setPollError('No pudimos verificar el estado. Reintentando…');
-      } else {
-        setPollError(null);
-      }
-    },
-    [router],
-  );
-
-  // Poll the agency subscription until the charge resolves (paid → ACTIVE).
-  useEffect(() => {
-    if (state !== 'awaiting') return;
-    let cancelled = false;
-    const run = async () => {
-      const r = await checkStatus();
-      if (!cancelled) applyStatus(r);
-    };
-    run();
-    const id = setInterval(run, POLL_INTERVAL_MS);
-    // Background tabs throttle setInterval — re-check immediately when the user
-    // returns from the Wompi payment tab.
-    window.addEventListener('focus', run);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-      window.removeEventListener('focus', run);
-    };
-  }, [state, checkStatus, applyStatus]);
-
-  // Manual fallback if the webhook is slow or a poll hiccuped.
-  const handleVerify = useCallback(async () => {
-    setPollError('Verificando…');
-    const r = await checkStatus();
-    if (r === 'pending') {
-      setPollError('Todavía no vemos la confirmación. Esperá unos segundos y reintentá.');
-    } else {
-      applyStatus(r);
-    }
-  }, [checkStatus, applyStatus]);
-
-  const clearErr = (k: string) =>
-    setFormErrors((prev) => (prev[k] ? { ...prev, [k]: '' } : prev));
-
-  const validateForm = useCallback((): boolean => {
-    const errors: Record<string, string> = {};
-    if (!/^\d{6,15}$/.test(legalId.trim())) errors.legalId = 'Entre 6 y 15 dígitos.';
-    if (fullName.trim().length < 3) errors.fullName = 'Requerido (mínimo 3 caracteres).';
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) errors.email = 'Email inválido.';
-    if (!institutionCode) errors.institutionCode = 'Seleccioná un banco.';
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  }, [legalId, fullName, email, institutionCode]);
-
-  // STARTER / FLEX — activate without payment.
-  const handleActivate = useCallback(async () => {
-    if (!planTierEnum) return;
-    setState('processing');
-    setError(null);
-    try {
-      await agencySubscriptionApi.selectPlan(planTierEnum);
-      setState('success');
-      setTimeout(() => router.push('/panel/inmobiliaria'), 2500);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo activar el plan.');
-      setState('error');
-    }
-  }, [planTierEnum, router]);
-
-  // PRO — select plan (→ PENDING charge) then start the PSE checkout.
-  const handlePayPro = useCallback(async () => {
-    if (!validateForm()) return;
-    setState('processing');
-    setError(null);
-    setPopupBlocked(false);
-    try {
-      const { charge } = await agencySubscriptionApi.selectPlan('PRO');
-      if (!charge) {
-        setError('No se generó un cobro para este plan. Contactá a soporte.');
-        setState('error');
-        return;
-      }
-      const dto: ChargePseCheckoutDto = {
-        userType,
-        legalIdType,
-        legalId: legalId.trim(),
-        financialInstitutionCode: institutionCode,
-        email: email.trim(),
-        fullName: fullName.trim(),
-      };
-      const res = await agencySubscriptionApi.chargePseCheckout(charge.id, dto);
-      setAsyncUrl(res.asyncPaymentUrl);
-      if (res.asyncPaymentUrl) {
-        const win = window.open(res.asyncPaymentUrl, '_blank', 'noopener,noreferrer');
-        if (!win) setPopupBlocked(true);
-      }
-      setState('awaiting');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo iniciar el pago.');
-      setState('error');
-    }
-  }, [validateForm, userType, legalIdType, legalId, institutionCode, email, fullName]);
+  // Unknown/inactive slug — never silently fall back to another plan.
+  if (!plan) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="max-w-md text-center space-y-3">
+          <WarningCircle className="w-10 h-10 text-danger mx-auto" />
+          <h1 className="text-lg font-semibold text-fg">No encontramos ese plan</h1>
+          <p className="text-sm text-fg-muted">
+            El plan que buscás no está disponible. Volvé a elegir uno.
+          </p>
+          <div className="pt-2 flex justify-center">
+            <BackButton href="/panel/inmobiliaria/upgrade" label="Volver a los planes" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -299,69 +144,6 @@ function AgencyCheckoutInner() {
                 </div>
               </div>
             </div>
-
-            {/* PRO — PSE payer form */}
-            {isPaid && state === 'idle' && (
-              <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-                <p className="text-sm font-medium text-foreground">Datos del pagador (PSE)</p>
-
-                <Field label="Banco" error={formErrors.institutionCode}>
-                  <Select
-                    value={institutionCode}
-                    onValueChange={(v) => { setInstitutionCode(v); clearErr('institutionCode'); }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Seleccioná tu banco" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {institutions.map((b) => (
-                        <SelectItem key={b.financial_institution_code} value={b.financial_institution_code}>
-                          {b.financial_institution_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Tipo de persona">
-                    <Select value={userType} onValueChange={(v) => setUserType(v as PseUserType)}>
-                      <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NATURAL">Natural</SelectItem>
-                        <SelectItem value="JURIDICA">Jurídica</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label="Tipo doc.">
-                    <Select value={legalIdType} onValueChange={(v) => setLegalIdType(v as PseLegalIdType)}>
-                      <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {DOCUMENT_TYPES.map((d) => (
-                          <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                </div>
-
-                <Field label="Número de documento" error={formErrors.legalId}>
-                  <Input
-                    inputMode="numeric"
-                    value={legalId}
-                    onChange={(e) => { setLegalId(e.target.value.replace(/\D/g, '')); clearErr('legalId'); }}
-                    className="font-mono tabular-nums"
-                    placeholder="1234567890"
-                  />
-                </Field>
-                <Field label="Nombre completo" error={formErrors.fullName}>
-                  <Input value={fullName} onChange={(e) => { setFullName(e.target.value); clearErr('fullName'); }} />
-                </Field>
-                <Field label="Email" error={formErrors.email}>
-                  <Input type="email" value={email} onChange={(e) => { setEmail(e.target.value); clearErr('email'); }} />
-                </Field>
-              </div>
-            )}
           </div>
 
           {/* Right — price + CTA / states */}
@@ -414,19 +196,19 @@ function AgencyCheckoutInner() {
                 </div>
               )}
 
-              {/* Awaiting payment (PRO) */}
+              {/* Awaiting payment — hosted Wompi tab */}
               {state === 'awaiting' && (
                 <div className="bg-card rounded-xl border border-border p-5 flex flex-col items-center text-center gap-3">
                   <Spinner size="lg" variant="current" className="text-primary" />
                   <p className="text-sm font-medium text-foreground">Esperando la confirmación de tu pago…</p>
                   <p className="text-xs text-muted-foreground">
-                    {asyncUrl
-                      ? 'Completá el pago en la pestaña que abrimos con tu banco. Esta pantalla se actualiza sola.'
-                      : 'Estamos generando el enlace de pago con tu banco.'}
+                    {paymentUrl
+                      ? 'Completá el pago en la pestaña que abrimos. Esta pantalla se actualiza sola.'
+                      : 'Estamos generando el enlace de pago.'}
                   </p>
-                  {asyncUrl && (
+                  {paymentUrl && (
                     <a
-                      href={asyncUrl}
+                      href={paymentUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs font-medium text-primary underline underline-offset-2"
@@ -438,7 +220,7 @@ function AgencyCheckoutInner() {
                   {pollError && (
                     <p className="text-xs text-muted-foreground">{pollError}</p>
                   )}
-                  <Button variant="ghost" size="sm" hideArrow onClick={handleVerify} className="mt-1">
+                  <Button variant="ghost" size="sm" hideArrow onClick={verifyNow} className="mt-1">
                     Ya pagué — Verificar estado
                   </Button>
                 </div>
@@ -462,13 +244,13 @@ function AgencyCheckoutInner() {
                       className="w-full"
                       size="lg"
                       hideArrow
-                      onClick={handlePayPro}
+                      onClick={handlePay}
                       disabled={state === 'processing'}
                     >
                       {state === 'processing' ? (
-                        <><Spinner size="sm" variant="current" className="mr-2" />Conectando con PSE…</>
+                        <><Spinner size="sm" variant="current" className="mr-2" />Generando el pago…</>
                       ) : (
-                        <><Bank className="w-4 h-4 mr-2" />Pagar con PSE</>
+                        <><CreditCard className="w-4 h-4 mr-2" />Ir a pagar</>
                       )}
                     </Button>
                   ) : (
@@ -490,7 +272,7 @@ function AgencyCheckoutInner() {
                   {isPaid && (
                     <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                       <Lock className="w-3 h-3" />
-                      <span>Pago seguro vía PSE</span>
+                      <span>Pago seguro vía Wompi</span>
                     </div>
                   )}
                 </>
@@ -503,24 +285,6 @@ function AgencyCheckoutInner() {
           <p className="text-sm text-muted-foreground">Sin contratos. Cancela cuando quieras.</p>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-xs font-medium text-fg">{label}</label>
-      {children}
-      {error && <p className="text-xs text-danger">{error}</p>}
     </div>
   );
 }

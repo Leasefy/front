@@ -97,7 +97,9 @@ function pantallas(dir: string, encontradas: string[] = []): string[] {
 const TODAS = CARPETAS.flatMap((c) => pantallas(join(RAIZ, c)))
 
 function ruta(absoluta: string) {
-  return relative(RAIZ, absoluta)
+  // Normalizamos a '/' para que las allowlists (escritas con '/') matcheen
+  // también en Windows, donde `relative` devuelve separadores '\'.
+  return relative(RAIZ, absoluta).replace(/\\/g, '/')
 }
 
 describe('un error no se pinta como un vacío', () => {

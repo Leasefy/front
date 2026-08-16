@@ -58,6 +58,15 @@ export interface PendingReviewItem {
   slug: string
   /** ⚠️ Today this is the literal 'Inmueble', NOT a real city. Do not render as city. */
   city: string
+  /**
+   * WHOSE avalúo this is — surfaced so the reviewer knows the owner before signing.
+   * `ownerName` = the «Propietario / Cliente» captured at intake. `agencyName` is
+   * non-null ONLY when the avalúo was requested through an inmobiliaria (an agency
+   * token overrode the identity). Both display-only PII, never the number. Either
+   * may be null (older drafts / anonymous owner).
+   */
+  ownerName: string | null
+  agencyName: string | null
   /** 'comparación de mercado' | 'capitalización de renta' | '—' */
   method: string
   valueCop: number | null

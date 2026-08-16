@@ -57,7 +57,15 @@ vi.mock('@/lib/api/client', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api/client')>('@/lib/api/client')
   return {
     ...actual,
-    apiClient: { ...actual.apiClient, get: fetchUserGetMock },
+    // `post` mockeado: neutraliza el single-session claim (POST
+    // /auth/session/claim) que corre en el bootstrap, para que los tests de
+    // self-heal no dependan de la red real (si hay backend en :3000 el claim
+    // real devolvía 401 y colgaba el test bajo fake timers).
+    apiClient: {
+      ...actual.apiClient,
+      get: fetchUserGetMock,
+      post: vi.fn().mockResolvedValue({ superseded: false }),
+    },
     setAccessToken: vi.fn(),
   }
 })

@@ -5,8 +5,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { subscriptionsApi } from '@/lib/api/subscriptions.service';
 import type { DisplaySubscription, BackendSubscriptionPlan } from '@/lib/api/subscriptions.types';
-import type { PlanId, AgencyPlan } from '@/lib/types/subscription';
-import { AGENCY_PLANS } from '@/lib/constants/subscription-plans';
+import type { PlanId, AgencyPlan, PricingModel } from '@/lib/types/subscription';
+import { AGENCY_PLANS, BASE_EVALUATION_PRICE_COP } from '@/lib/constants/subscription-plans';
 
 /**
  * Hook to get the current user's subscription.
@@ -103,65 +103,106 @@ export function useSubscriptionPlans(planType?: 'LANDLORD' | 'AGENCY') {
 // =============================================================================
 
 /**
- * Un plan que el back tiene y el front no conoce (hoy: `pro-plus`, `ultra`).
+ * Derive the marketing bullets from the backend columns so what the card shows
+ * ALWAYS matches what the backend charges/enforces. Used for EVERY plan (legacy
+ * and admin-created alike) — no plan reuses static copy that could contradict
+ * the live columns (contrato 29 · planes dinámicos).
  *
- * ⚠️ Antes esto caía a `AGENCY_PLANS[0]` —Starter— y la tarjeta resultante
- * MENTÍA: se quedaba con el nombre, la descripción, las features Y EL ID de
- * Starter, conservando sólo el precio del back. En pantalla salía
- * «STARTER · 999.000/mes · Scoring básico · Dashboard limitado»: las features
- * del plan gratis al precio del más caro.
- *
- * Y como los tres compartían `id: 'starter'`, el
- * `selected={plan.id === currentPlanId}` de `PricingTable` encendía
- * «SELECCIONADO» en las tres tarjetas a la vez.
- *
- * Un plan desconocido se arma ahora con lo que el back SÍ manda —nombre,
- * precio, límites— y sin features. Una tarjeta escueta es mejor que una que
- * promete lo que no incluye.
+ * `properties`/`users` are already null-normalized (-1 → null = unlimited).
+ * `evalLimit` is the monthly evaluation cap (null = unlimited).
  */
-function planDesconocido(backend: BackendSubscriptionPlan): AgencyPlan {
-  return {
-    id: backend.tier?.toLowerCase() as AgencyPlan['id'],
-    name: backend.name,
-    description: '',
-    pricingModel: 'flat',
-    price: { monthly: backend.monthlyPrice, yearly: backend.annualPrice },
-    evaluation: {
-      price: backend.evaluationCreditPrice ?? 0,
-      discount: 0,
-      limit: null,
-    },
-    limits: {
-      properties: backend.maxProperties === -1 ? null : backend.maxProperties,
-      users: null,
-    },
-    features: [],
-  };
+function deriveAgencyFeatures(
+  backend: BackendSubscriptionPlan,
+  properties: number | null,
+  users: number | null,
+  evalLimit: number | null,
+): string[] {
+  const features: string[] = [];
+  features.push(properties === null ? 'Propiedades ilimitadas' : `Hasta ${properties} propiedades`);
+  features.push(users === null ? 'Usuarios ilimitados' : `Hasta ${users} usuarios`);
+
+  // Evaluation copy reflects the billing mode, the per-eval price AND the
+  // monthly cap so we never show a stale "Hasta N/mes" that the backend dropped.
+  if (backend.billingMode === 'USAGE_CANON') {
+    features.push('Evaluaciones AI ilimitadas incluidas');
+  } else {
+    const priced =
+      backend.evaluationCreditPrice > 0
+        ? ` a $${backend.evaluationCreditPrice.toLocaleString('es-CO')} COP c/u`
+        : ' incluidas';
+    if (evalLimit === null) {
+      features.push(`Evaluaciones AI ilimitadas${priced}`);
+    } else if (evalLimit > 0) {
+      features.push(`Hasta ${evalLimit} evaluaciones AI/mes${priced}`);
+    } else {
+      features.push(`Evaluaciones AI${priced}`);
+    }
+  }
+
+  if (backend.hasPremiumScoring) features.push('Scoring premium');
+  if (backend.hasApiAccess) features.push('Acceso API + Webhooks');
+  return features;
 }
 
-/** Exportada para poder probarla: es pura y es donde vivía el defecto. */
-export function mergeBackendIntoAgencyPlan(
-  backend: BackendSubscriptionPlan,
-): AgencyPlan {
-  const staticPlan = AGENCY_PLANS.find(
-    (p) => p.id === backend.tier?.toLowerCase(),
-  );
-  // Sin plan estático que corresponda, NO se disfraza de otro.
-  if (!staticPlan) return planDesconocido(backend);
+/**
+ * Build an `AgencyPlan` from the backend plan columns. The resulting `id` is the
+ * REAL backend slug and prices/limits/evaluation come straight from the backend,
+ * so admin-created slugs (contrato 29) never inherit Starter's static data.
+ *
+ * Presentation-only marketing bullets are reused from the static catalog when
+ * the slug maps to a known legacy plan (a dynamic lookup, NOT tier-name gating);
+ * unknown slugs get generic bullets derived from the columns.
+ *
+ * Sentinels: -1 = unlimited (→ null), 0 = none, N = cap. `USAGE_CANON` billing
+ * maps to a percentage-of-canon plan (price shown as `usageFeeBps / 100`%).
+ */
+export function mergeBackendIntoAgencyPlan(backend: BackendSubscriptionPlan): AgencyPlan {
+  const slug = (backend.tier || '').toLowerCase();
+  const isUsage = backend.billingMode === 'USAGE_CANON';
+
+  const pricingModel: PricingModel = isUsage
+    ? 'percentage'
+    : backend.monthlyPrice > 0
+      ? 'flat'
+      : 'free';
+
+  const properties = backend.maxProperties === -1 ? null : backend.maxProperties;
+  const users = backend.maxUsers === -1 ? null : backend.maxUsers;
+  const evalLimit = backend.monthlyEvalCap === -1 ? null : backend.monthlyEvalCap;
+  const evalDiscount =
+    BASE_EVALUATION_PRICE_COP > 0
+      ? Math.max(
+          0,
+          Math.min(100, Math.round((1 - backend.evaluationCreditPrice / BASE_EVALUATION_PRICE_COP) * 100)),
+        )
+      : 0;
+
+  // Bullets are ALWAYS derived from the backend columns — for legacy slugs too —
+  // so the displayed limits/pricing never contradict what the backend enforces
+  // (e.g. legacy `pro` is unlimited in the backend, not the static "Hasta 100").
+  // Only presentation-only flags (highlighted/badge) reuse the known legacy plan.
+  const known = AGENCY_PLANS.find((p) => p.id === slug);
+  const features = deriveAgencyFeatures(backend, properties, users, evalLimit);
+
   return {
-    ...staticPlan,
+    id: slug,
+    name: backend.name,
+    description: backend.description ?? '',
+    pricingModel,
     price: {
-      monthly: backend.monthlyPrice > 0 ? backend.monthlyPrice : staticPlan.price.monthly,
-      yearly: backend.annualPrice > 0 ? backend.annualPrice : staticPlan.price.yearly,
+      monthly: isUsage ? null : backend.monthlyPrice,
+      yearly: isUsage ? null : backend.annualPrice,
     },
+    canonPercentage: isUsage ? backend.usageFeeBps / 100 : undefined,
     evaluation: {
-      ...staticPlan.evaluation,
-      price: backend.evaluationCreditPrice ?? staticPlan.evaluation.price,
+      price: backend.evaluationCreditPrice,
+      discount: evalDiscount,
+      limit: evalLimit,
     },
-    limits: {
-      properties: backend.maxProperties === -1 ? null : (backend.maxProperties > 0 ? backend.maxProperties : staticPlan.limits.properties),
-      users: staticPlan.limits.users,
-    },
+    limits: { properties, users },
+    features,
+    highlighted: known?.highlighted,
+    badge: known?.badge,
   };
 }
 

@@ -178,8 +178,21 @@ function backendPlan(over: Record<string, unknown> = {}) {
     monthlyPrice: 999000,
     annualPrice: 0,
     maxProperties: -1,
+    maxUsers: -1,
+    maxScoringViews: -1,
+    monthlyEvalCap: -1,
+    monthlyCreditGrant: 0,
+    billingMode: 'FLAT' as const,
+    usageFeeBps: 0,
+    scoringIncluded: true,
     hasPremiumScoring: true,
+    hasApiAccess: false,
+    scoringViewPrice: 0,
     evaluationCreditPrice: 0,
+    isDefault: false,
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
     ...over,
   }
 }
@@ -204,20 +217,25 @@ describe('mergeBackendIntoAgencyPlan — un plan desconocido no se disfraza de S
     expect(ids).not.toContain('starter')
   })
 
-  it('NO promete las features del plan gratis a precio de 999.000', () => {
+  it('NO hereda las features estáticas de Starter — las deriva de sus columnas', () => {
     const p = mergeBackendIntoAgencyPlan(backendPlan())
-    expect(p.features).toEqual([])
+    // Planes dinámicos (contrato 29): las bullets salen SIEMPRE de las columnas
+    // del back, no de la copia estática. Antes esto exigía features vacías para
+    // un plan desconocido; ahora exige que estén DERIVADAS (no vacías) y que
+    // nunca arrastren la copia de Starter.
+    expect(p.features.length).toBeGreaterThan(0)
     expect(p.features).not.toContain('Dashboard limitado')
+    expect(p.features).not.toContain('Scoring básico')
     expect(p.price.monthly).toBe(999000)
   })
 
-  it('un tier CONOCIDO sigue mezclándose con su plan estático', () => {
+  it('un tier CONOCIDO conserva su id real y precio del back', () => {
     const p = mergeBackendIntoAgencyPlan(
       backendPlan({ tier: 'pro', name: 'Pro', monthlyPrice: 349000, maxProperties: 100 }),
     )
     expect(p.id).toBe('pro')
     expect(p.price.monthly).toBe(349000) // precio del back
-    expect(p.features.length).toBeGreaterThan(0) // features del estático
+    expect(p.features.length).toBeGreaterThan(0) // derivadas de las columnas del back
   })
 
   it('maxProperties -1 sigue significando ilimitado', () => {

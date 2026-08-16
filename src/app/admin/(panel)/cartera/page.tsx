@@ -6,9 +6,13 @@ import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { Pagination } from '@/components/admin/screen/Pagination'
+import { useClientPagination } from '@/lib/admin/use-client-pagination'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 import type { PillTone } from '@/lib/admin/types'
+
+const PAGE_SIZE = 50
 
 // ---------- Stage constants (BACK.md §7.1) ----------
 
@@ -182,6 +186,11 @@ export default function CarteraPage() {
     (signal) => adminApi('/cartera', { signal }),
   )
 
+  /* Log cross-tenant de transiciones: se acumula con cada corrida del cron, así
+     que no tiene techo. Va ANTES de los early-return de abajo — un hook detrás
+     de un `return` condicional rompe el orden de hooks de React. */
+  const transitionsPaging = useClientPagination(data?.transitions, PAGE_SIZE)
+
   if (isLoading) return <div className="p-6 lg:p-8"><LoadingBlock /></div>
   if (error) return <div className="p-6 lg:p-8"><ErrorBlock error={error} /></div>
 
@@ -315,10 +324,17 @@ export default function CarteraPage() {
         </div>
         <DataTable
           columns={transitionColumns}
-          rows={data?.transitions}
+          rows={transitionsPaging.pageRows}
           getKey={(r) => r.id}
           emptyTitle="Sin transiciones"
           emptyHint="El cron cartera-cadence-cron corre a las 06:30 Bogotá."
+        />
+
+        <Pagination
+          page={transitionsPaging.page}
+          total={transitionsPaging.total}
+          pageSize={PAGE_SIZE}
+          onPage={transitionsPaging.setPage}
         />
       </section>
     </div>

@@ -2,7 +2,6 @@
 
 import { useMemo, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Toaster } from '@/components/ui/toast';
 import {
   SquaresFour,
   Buildings,
@@ -55,7 +54,7 @@ import { CommandPaletteProvider, useCommandPalette } from '@/lib/context/Command
 import { CommandPalette } from '@/components/inmobiliaria/CommandPalette';
 import { BotonNuevo } from '@/components/inmobiliaria/BotonNuevo';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
-import { useMySubscription } from '@/lib/hooks/useSubscription';
+import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -103,11 +102,13 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   const { canAccess, isLoading: permissionsLoading, isAdmin, agencyRole, agentAccessStatus } = usePermissionsContext();
   const { open: openCommandPalette } = useCommandPalette();
   const router = useRouter();
-  // Upgrade CTA only for the base (starter) tier — paid plans (pro/flex)
-  // hide it. While loading or on error the CTA stays hidden so paying
-  // users never see a flash of "Upgrade".
-  const { subscription } = useMySubscription();
-  const showUpgradeCta = subscription?.planId === 'starter';
+  // Upgrade CTA only when the agency is NOT on a paid plan (i.e. on the
+  // free/default plan) — derived from the plan's isDefault flag, never a tier
+  // name (contrato 29). While the subscription / plan catalog is loading or
+  // errored the CTA stays hidden (indeterminate) so paying users never see a
+  // flash of "Upgrade".
+  const { isPaidPlan, indeterminate: subIndeterminate } = useAgencySubscription();
+  const showUpgradeCta = !subIndeterminate && !isPaidPlan;
 
   // Real agency identity for the sidebar brand row. PRIMARY source is the auth
   // membership probe (`useAuth().agency`), which is available to EVERY active
@@ -410,8 +411,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom navigation — hidden at lg+ (where the sidebar appears) */}
       <MobileNavBar navItems={INMOBILIARIA_NAV_ITEMS} />
 
-      {/* Toast notifications - Premium style */}
-      <Toaster position="top-right" />
+      {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
+          <ProtectedRoute>/<AgencySubscriptionGuard>: acá adentro se perdía todo toast
+          emitido mientras los guards resuelven. No montés otro: sonner duplica el toast
+          por cada Toaster montado. */}
     </div>
   );
 }

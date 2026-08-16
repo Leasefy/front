@@ -10,6 +10,8 @@ import { SectionLabel } from '@/components/ui/section-label';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
@@ -100,6 +102,21 @@ function AgendaContent() {
 
   const resumen = data?.resumen ?? RESUMEN_AGENDA_VACIO;
   const eventos = data?.eventos ?? [];
+
+  /**
+   * Paginado de presentación: `agendaApi.getAgenda()` trae el feed completo de
+   * eventos y crece con cada visita, firma y vencimiento. Sin filtros en esta
+   * pantalla ⇒ sin `resetKey`.
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(eventos);
 
   const formatFecha = (iso: string) => {
     const d = new Date(iso);
@@ -206,7 +223,7 @@ function AgendaContent() {
                   </TableCell>
                 </TableRow>
               ) : (
-                eventos.map((e: EventoAgenda) => (
+                pageItems.map((e: EventoAgenda) => (
                   <TableRow key={e.id}>
                     <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
                       {formatFecha(e.fecha)}
@@ -279,6 +296,20 @@ function AgendaContent() {
               )}
             </TableBody>
           </Table>
+
+          {/* Pie: sólo si hay más de una página. */}
+          {shouldPaginate && (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
         </EstadoDeDatos>
       </section>
 

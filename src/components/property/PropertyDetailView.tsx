@@ -12,6 +12,9 @@ import { StickyCTA, MobileStickyCTA } from '@/components/property/StickyCTA';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import { useProperty } from '@/lib/hooks/useProperties';
 import { useAuth } from '@/lib/auth/use-auth';
+import { useAprobacion } from '@/lib/hooks/use-aprobacion';
+import { superaReferencia, referenciaCanon } from '@/lib/api/aprobacion.service';
+import { SobreTopeAlert } from '@/components/tenant/TopeAprobadoBanner';
 import { formatCurrency, formatArea } from '@/lib/format';
 
 // Offering-agency social networks rendered in the compact "Síguenos" row.
@@ -125,6 +128,12 @@ export function PropertyDetailView({
 
   // Fetch property from API
   const { property, isLoading: propertyLoading, error: propertyError } = useProperty(propertyId);
+
+  // Aprobación del inquilino: si esta propiedad supera su tope aprobado, se lo
+  // avisamos acá igual que en el catálogo (mismo `superaReferencia`). Sin
+  // aprobación vigente (o sin tope) no se muestra nada — la lógica gatea sola,
+  // así que un usuario inmobiliaria/propietario nunca ve esto.
+  const { aprobacion, vigente: aprobacionVigente } = useAprobacion();
 
   // Scroll to top on page load and when property changes
   useEffect(() => {
@@ -320,6 +329,18 @@ export function PropertyDetailView({
                   </p>
                 )}
               </div>
+
+              {/* Aviso "supera tu tope" + salida por codeudor (mismo criterio
+                  que el overlay del catálogo). Solo aparece con aprobación
+                  vigente cuyo tope real se pasa este canon. */}
+              {aprobacionVigente &&
+                superaReferencia(property.monthlyRent, aprobacion) === true && (
+                  <SobreTopeAlert
+                    monthlyRent={property.monthlyRent}
+                    referencia={referenciaCanon(aprobacion)}
+                    className="mb-8"
+                  />
+                )}
 
               {/*
                 Acá iba `SocialProofBanner`: "7 viendo ahora" con un punto que

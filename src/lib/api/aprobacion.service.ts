@@ -9,16 +9,16 @@
  * Vocabulario: al inquilino esto se le llama **aprobación**, nunca
  * "asegurabilidad" ni "estudio" (ver `docs/VOCABULARIO.md`).
  *
- * Backend: pendiente. Mientras no exista, este cliente sirve un fixture
- * determinista igual que `funnel-applications.service.ts`; el día que el
- * endpoint exista se prende solo, sin tocar la UI.
+ * Fuente real: el pre-scoring del back principal (`GET /pre-scoring/current`,
+ * Slice 2), traducido a este shape por `aprobacion-from-prescoring.ts` y
+ * consumido en `use-aprobacion.ts`. Este archivo NO pega a ningún backend —
+ * solo define el shape, sus parseos defensivos y las reglas de negocio que
+ * operan sobre él (vigencia, referencia de canon, etc.).
  *
  * ⚠️ Regla: `topeAprobadoCop` puede venir en `null`. La UI **dice que falta**,
  * nunca inventa un número — un tope falso manda a alguien a postularse a algo
  * que no puede pagar.
  */
-
-import { agentAuthHeaders } from './agent-auth'
 
 /** Días restantes a partir de los cuales la vigencia se muestra como urgente. */
 export const DIAS_POR_VENCER = 3
@@ -72,48 +72,6 @@ export const SIN_APROBACION: Aprobacion = {
   canonConsultadoCop: null,
 }
 
-/**
- * Mock activo cuando O BIEN no hay agente configurado (dev local sin backend)
- * O BIEN se fuerza con la env explícita. Se leen en cada llamada para que los
- * tests puedan stubearlas.
- *
- * ⚠️ **Nunca en producción, y acá importa más que en el funnel.**
- *
- * `mockAprobacion()` devuelve un `Aprobacion` común y corriente: aprobado, tope
- * $2.400.000, dos aseguradoras. A diferencia del resultado del funnel —que
- * viaja con `stubMode: true` y la UI rotula "Resultado de ejemplo"— este tipo
- * **no tiene marca de demo**, así que la pantalla lo muestra como un hecho y el
- * catálogo filtra propiedades reales contra un techo inventado.
- *
- * Antes bastaba con que `NEXT_PUBLIC_AGENT_URL` faltara en el deploy —una env
- * sin poner en Vercel, nada más— para fabricarle a una persona real una
- * aprobación que nadie le dio. Ahora producción falla a la vista.
- */
-function isMockMode(): boolean {
-  if (process.env.NODE_ENV === 'production') return false
-  if (process.env.NEXT_PUBLIC_USE_MOCK_API === 'true') return true
-  return !process.env.NEXT_PUBLIC_AGENT_URL
-}
-
-/** Fixture de dev: aprobado, con tope y vigencia corriendo. */
-function mockAprobacion(): Aprobacion {
-  const vence = new Date()
-  vence.setDate(vence.getDate() + 12)
-  return {
-    estado: 'aprobado',
-    topeAprobadoCop: 2_400_000,
-    aseguradoras: [
-      { nombre: 'Fianli', aprobada: true },
-      { nombre: 'Seguros Bolívar', aprobada: true },
-      { nombre: 'Sura', aprobada: false },
-    ],
-    vigenteHasta: vence.toISOString(),
-    resueltoEn: new Date().toISOString(),
-    condicionada: false,
-    canonConsultadoCop: null,
-  }
-}
-
 /** Normaliza la respuesta cruda: nunca confía en que el back mande todo. */
 export function parseAprobacion(data: unknown): Aprobacion {
   const d = (data ?? {}) as Partial<Aprobacion>
@@ -139,20 +97,6 @@ export function parseAprobacion(data: unknown): Aprobacion {
         ? d.canonConsultadoCop
         : null,
   }
-}
-
-export async function fetchAprobacion(): Promise<Aprobacion> {
-  if (isMockMode()) return mockAprobacion()
-
-  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL || ''
-  const res = await fetch(`${agentUrl}/api/tenant/aprobacion`, { headers: agentAuthHeaders() })
-
-  // Todavía sin aprobación no es un error: es el primer estado del recorrido.
-  if (res.status === 404) {
-    return SIN_APROBACION
-  }
-  if (!res.ok) throw new Error(`No pudimos cargar tu aprobación (error ${res.status}).`)
-  return parseAprobacion(await res.json())
 }
 
 /**

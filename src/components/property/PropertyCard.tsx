@@ -57,8 +57,20 @@ export function PropertyCard({
   const [activeImage, setActiveImage] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Use images array if available, fallback to thumbnailUrl
-  const allImages = images && images.length > 0 ? images : [thumbnailUrl];
+  // Use images array if available, fallback to thumbnailUrl. Empty strings are
+  // filtered first: demo/incomplete properties can carry a blank thumbnailUrl
+  // or blank entries, and `next/image` warns (and preloads an empty href) on
+  // `src=""`. If nothing usable is left, fall back to the shared placeholder.
+  const PLACEHOLDER = '/placeholder-property.svg';
+  const isNonEmpty = (src: unknown): src is string =>
+    typeof src === 'string' && src.length > 0;
+  const gallery = (images ?? []).filter(isNonEmpty);
+  const allImages =
+    gallery.length > 0
+      ? gallery
+      : isNonEmpty(thumbnailUrl)
+        ? [thumbnailUrl]
+        : [PLACEHOLDER];
 
   const handlePrev = useCallback((e: React.MouseEvent) => {
     e.preventDefault();

@@ -196,6 +196,18 @@ export const applicationsApi = {
     return result.map(mapToTenantView);
   },
 
+  /**
+   * Lightweight list of my applications with the RAW backend status — used to
+   * decide if a property already has an active application (see
+   * `isActiveApplicationStatus`). The mapped `getMine()` collapses statuses
+   * (WITHDRAWN → 'rejected', etc.), which loses the distinction the anti-dup
+   * guard needs; this keeps `status` verbatim.
+   */
+  async getMineStatuses(): Promise<Array<{ id: string; propertyId: string; status: string }>> {
+    const result = await apiClient.get<BackendApplication[]>('/applications/mine');
+    return result.map((ba) => ({ id: ba.id, propertyId: ba.propertyId, status: ba.status }));
+  },
+
   /** Get a single application by ID */
   async getById(id: string): Promise<Application> {
     const ba = await apiClient.get<BackendApplication>(`/applications/${id}`);

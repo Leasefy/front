@@ -8,8 +8,55 @@
  *  · cada bloqueo tiene su motivo propio, porque cada uno se explica distinto
  */
 
-import { describe, it, expect } from 'vitest'
-import { motivoDeBloqueo } from './PostularButton'
+import * as React from 'react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { createRoot, type Root } from 'react-dom/client'
+import { act } from 'react'
+
+void React
+
+const { aprobacionMock, aplicacionMock } = vi.hoisted(() => ({
+  aprobacionMock: vi.fn(),
+  aplicacionMock: vi.fn(),
+}))
+
+vi.mock('@/lib/hooks/use-aprobacion', () => ({
+  useAprobacion: () => aprobacionMock(),
+}))
+
+vi.mock('@/lib/hooks/use-aplicacion-propiedad', () => ({
+  useAplicacionParaPropiedad: () => aplicacionMock(),
+}))
+
+vi.mock('@/components/ui/button', () => ({
+  Button: ({ children, asChild: _asChild, ...rest }: { children: React.ReactNode } & Record<string, unknown>) => {
+    void _asChild
+    const onClick = rest.onClick as (() => void) | undefined
+    return <span onClick={onClick}>{children}</span>
+  },
+}))
+
+vi.mock('@/components/ui/dialog', () => ({
+  Dialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}))
+
+vi.mock('@/components/providers/SmoothScroll', () => ({
+  useLenis: () => ({ stop: vi.fn(), start: vi.fn() }),
+}))
+
+vi.mock('next/link', () => ({
+  default: ({ children, href }: { children: React.ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  ),
+}))
+
+vi.mock('@phosphor-icons/react', () => ({ Info: () => null }))
+
+import { PostularButton, motivoDeBloqueo } from './PostularButton'
 import { cabeEnTope, estaVigente, type Aprobacion } from '@/lib/api/aprobacion.service'
 
 const APROBADA: Aprobacion = {
@@ -103,5 +150,60 @@ describe('estaVigente', () => {
 
   it('null no revienta', () => {
     expect(estaVigente(null, ahora)).toBe(false)
+  })
+})
+
+describe('PostularButton — ya postulado', () => {
+  let container: HTMLDivElement
+  let root: Root
+
+  beforeEach(() => {
+    aprobacionMock.mockReset()
+    aplicacionMock.mockReset()
+    // Aprobado y vigente por defecto: el CTA normal llevaría al wizard.
+    aprobacionMock.mockReturnValue({ aprobacion: APROBADA, cargando: false, vigente: true })
+    aplicacionMock.mockReturnValue({ activa: null, cargando: false })
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  function render(props: { propertyId: string; canonCop?: number }) {
+    act(() => {
+      root.render(<PostularButton {...props} />)
+    })
+  }
+
+  function link(): HTMLAnchorElement | null {
+    return container.querySelector('a')
+  }
+
+  it('sin postulación activa: el CTA lleva al wizard', () => {
+    render({ propertyId: 'prop-X', canonCop: 1_000_000 })
+    expect(link()?.getAttribute('href')).toBe('/aplicar/prop-X')
+    expect(container.textContent).toContain('Postularme')
+  })
+
+  it('con postulación activa: el CTA lleva a la postulación existente', () => {
+    aplicacionMock.mockReturnValue({ activa: { id: 'app-1', status: 'UNDER_REVIEW' }, cargando: false })
+    render({ propertyId: 'prop-X', canonCop: 1_000_000 })
+
+    expect(link()?.getAttribute('href')).toBe('/inquilino/aplicaciones/app-1')
+    expect(container.textContent).toContain('Ir a mi postulación')
+    expect(container.textContent).not.toContain('Postularme')
+  })
+
+  it('la postulación activa tiene prioridad aunque la aprobación esté vencida', () => {
+    aprobacionMock.mockReturnValue({ aprobacion: APROBADA, cargando: false, vigente: false })
+    aplicacionMock.mockReturnValue({ activa: { id: 'app-9', status: 'APPROVED' }, cargando: false })
+    render({ propertyId: 'prop-X', canonCop: 1_000_000 })
+
+    expect(link()?.getAttribute('href')).toBe('/inquilino/aplicaciones/app-9')
+    expect(container.textContent).toContain('Ir a mi postulación')
   })
 })

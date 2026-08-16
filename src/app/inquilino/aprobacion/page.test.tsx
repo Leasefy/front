@@ -1,17 +1,19 @@
 /**
- * Los cuatro estados de "Mi aprobación".
+ * Los seis estados de "Mi aprobación" (Slice 2 — fuente `usePreScoringCurrent`).
  *
  * Lo que se protege acá no es el markup, son las reglas de la experiencia:
  *  · sin tope NUNCA se pinta un número (mandaría a alguien a postularse a algo
  *    que no puede pagar)
+ *  · el aprobado muestra la prima por aseguradora y el badge Demo cuando
+ *    corresponde
  *  · el rechazo tiene salidas, no es un callejón
- *  · "en proceso" libera al usuario en vez de retenerlo
- *  · el vacío enseña el camino ANTES de pedir datos, y jamás dice "estúdiate ahora"
+ *  · "en proceso" distingue consultando de esperando autorización
+ *  · el vacío enseña el camino ANTES de pedir datos
+ *  · expirado y error son estados nuevos, cada uno con su salida
  */
 
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import * as mockReact from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
@@ -19,85 +21,44 @@ void React // jsx-preserve
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { fetchMock } = vi.hoisted(() => ({ fetchMock: vi.fn() }))
+const { hookMock } = vi.hoisted(() => ({
+  hookMock: vi.fn(),
+}))
 
-vi.mock('@/lib/api/aprobacion.service', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/api/aprobacion.service')>()
-  return { ...actual, fetchAprobacion: () => fetchMock() }
-})
-
-/*
- * La página lee por `useAprobacion`, la misma fuente que el resto del recorrido
- * (antes hacía su propio fetch y era la única que no veía el respaldo local).
- * El mock replica ese contrato apoyándose en el mismo `fetchMock` de siempre.
- */
-vi.mock('@/lib/hooks/use-aprobacion', () => ({
-  useAprobacion: () => {
-    const [estado, set] = mockReact.useState<{ a: unknown; e: string | null; cargando: boolean }>({
-      a: null, e: null, cargando: true,
-    })
-    mockReact.useEffect(() => {
-      Promise.resolve()
-        .then(() => fetchMock())
-        .then((a) => set({ a, e: null, cargando: false }))
-        .catch((err) => set({ a: null, e: err?.message ?? 'error', cargando: false }))
-    }, [])
-    return {
-      aprobacion: estado.a,
-      cargando: estado.cargando,
-      error: estado.e,
-      vigente: (estado.a as { estado?: string } | null)?.estado === 'aprobado',
-      recargar: () => {},
-    }
-  },
+vi.mock('@/lib/hooks/use-prescoring-current', () => ({
+  usePreScoringCurrent: () => hookMock(),
 }))
 
 vi.mock('@/lib/i18n', () => ({
-  // Devolver la clave hace que `tf` caiga en el texto de respaldo: el test lee
-  // exactamente la copy que ve el usuario.
   useI18n: () => ({ t: (key: string) => key, locale: 'es' }),
   useOptionalI18n: () => ({ t: (key: string) => key, locale: 'es' }),
 }))
 
 import AprobacionPage from './page'
-import type { Aprobacion } from '@/lib/api/aprobacion.service'
-
-const BASE: Aprobacion = {
-  estado: 'aprobado',
-  topeAprobadoCop: 2_400_000,
-  aseguradoras: [
-    { nombre: 'Fianli', aprobada: true },
-    { nombre: 'Sura', aprobada: false },
-  ],
-  vigenteHasta: null,
-  resueltoEn: null,
-  condicionada: false,
-  canonConsultadoCop: null,
-}
-
-function enDias(n: number): string {
-  const d = new Date()
-  d.setDate(d.getDate() + n)
-  return d.toISOString()
-}
+// `prescoring.types` NO está mockeado — solo el hook `usePreScoringCurrent`
+// lo está. Se usa el `mapEstadoPreScoring` real para que el mock del hook no
+// se desincronice del mapeo real (ya cubierto exhaustivamente en
+// `prescoring.types.test.ts`; acá no se vuelve a testear, solo se reusa).
+import { mapEstadoPreScoring, type PreScoringCurrent } from '@/lib/api/prescoring.types'
 
 let container: HTMLDivElement
 let root: Root
 
-async function montar(a: Partial<Aprobacion>) {
-  fetchMock.mockResolvedValue({ ...BASE, ...a })
-  await act(async () => {
-    root.render(<AprobacionPage />)
+function montar(current: PreScoringCurrent | null, overrides: Partial<{ isLoading: boolean; error: string | null }> = {}) {
+  hookMock.mockReturnValue({
+    current,
+    isLoading: overrides.isLoading ?? false,
+    error: overrides.error ?? null,
+    refetch: vi.fn(),
+    estado: mapEstadoPreScoring(current),
   })
 }
 
-/** Texto plano de la pantalla, para aserciones legibles. */
 function texto(): string {
   return container.textContent ?? ''
 }
 
 beforeEach(() => {
-  fetchMock.mockReset()
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -108,135 +69,250 @@ afterEach(async () => {
   container.remove()
 })
 
+function render() {
+  act(() => {
+    root.render(<AprobacionPage />)
+  })
+}
+
 describe('aprobado', () => {
-  it('muestra el tope como número formateado', async () => {
-    await montar({ topeAprobadoCop: 2_400_000 })
+  it('muestra el tope como número formateado', () => {
+    montar({
+      order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
+      evaluation: {
+        status: 'completed',
+        result: {
+          carriers: [{ name: 'Fianly', productType: null, viable: true, primaMensualCop: 45000, stubMode: false, motivoRechazo: null }],
+          fianly: { maxEntrenchmentValue: 2_800_000 },
+          bureau: { minimumScore: null, monthlyCapacity: null },
+        },
+      },
+    })
+    render()
     expect(texto()).toContain('Estás aprobado hasta')
-    expect(texto()).toMatch(/2\.400\.000/)
+    expect(texto()).toMatch(/2\.800\.000/)
   })
 
-  it('dice que puede postularse a varias sin volver a pagar', async () => {
-    await montar({})
-    expect(texto()).toContain('no vuelves a pagar')
-  })
-
-  it('SIN tope no inventa un número: lo dice', async () => {
-    await montar({ topeAprobadoCop: null })
+  it('SIN tope no inventa un número: lo dice', () => {
+    montar({
+      order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
+      evaluation: {
+        status: 'completed',
+        result: {
+          carriers: [{ name: 'Fianly', productType: null, viable: true, primaMensualCop: null, stubMode: false, motivoRechazo: null }],
+          fianly: { maxEntrenchmentValue: null },
+          bureau: { minimumScore: null, monthlyCapacity: null },
+        },
+      },
+    })
+    render()
     expect(texto()).toContain('Estás aprobado')
     expect(texto()).not.toContain('Estás aprobado hasta')
     expect(texto()).toContain('Estamos terminando de calcular')
-    // Ni un cero haciéndose pasar por monto.
-    expect(texto()).not.toMatch(/\$\s*0/)
+    expect(texto()).not.toMatch(/\$\s*0(?!\d)/)
   })
 
-  it('lista las aseguradoras consultadas, aprueben o no', async () => {
-    await montar({})
-    expect(texto()).toContain('Fianli')
-    expect(texto()).toContain('Sura')
-    // El titular es el dato, no la actividad: cuántas te respaldan, no cuántas
-    // consultamos nosotros.
-    expect(texto()).toContain('1 de 2 aseguradoras te respaldan')
-  })
-
-  it('cada una dice su estado con palabras, no solo con color', async () => {
-    await montar({})
+  it('muestra la prima mensual por aseguradora', () => {
+    montar({
+      order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
+      evaluation: {
+        status: 'completed',
+        result: {
+          carriers: [
+            { name: 'Fianly', productType: null, viable: true, primaMensualCop: 52000, stubMode: false, motivoRechazo: null },
+            { name: 'Sura', productType: null, viable: false, primaMensualCop: null, stubMode: false, motivoRechazo: 'Score de buró insuficiente' },
+          ],
+          fianly: { maxEntrenchmentValue: 2_800_000 },
+          bureau: { minimumScore: null, monthlyCapacity: null },
+        },
+      },
+    })
+    render()
     const t = texto()
-    expect(t).toContain('Te respalda')
-    expect(t).toContain('Esta vez no')
+    expect(t).toContain('Fianly')
+    expect(t).toMatch(/52\.000/)
+    expect(t).toContain('Sura')
+    expect(t).toContain('Score de buró insuficiente')
   })
 
-  it('con una sola aseguradora no dice que le preguntamos a todas', async () => {
-    await montar({ aseguradoras: [{ nombre: 'Fianli', aprobada: true }] })
+  it('muestra el badge Demo cuando alguna aseguradora corre en modo demo', () => {
+    montar({
+      order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
+      evaluation: {
+        status: 'completed',
+        result: {
+          carriers: [{ name: 'Fianly', productType: null, viable: true, primaMensualCop: 30000, stubMode: true, motivoRechazo: null }],
+          fianly: { maxEntrenchmentValue: 2_400_000 },
+          bureau: { minimumScore: null, monthlyCapacity: null },
+        },
+      },
+    })
+    render()
+    expect(container.querySelector('[data-testid="badge-demo"]')).not.toBeNull()
+  })
+
+  it('muestra el score de buró y la capacidad mensual cuando vienen', () => {
+    montar({
+      order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
+      evaluation: {
+        status: 'completed',
+        result: {
+          carriers: [{ name: 'Fianly', productType: null, viable: true, primaMensualCop: 30000, stubMode: false, motivoRechazo: null }],
+          fianly: { maxEntrenchmentValue: 2_400_000 },
+          bureau: { minimumScore: 650, monthlyCapacity: 3_000_000 },
+        },
+      },
+    })
+    render()
     const t = texto()
-    expect(t).toContain('Una aseguradora te respalda')
-    expect(t).not.toContain('Le preguntamos a todas')
+    expect(t).toContain('Score de buró')
+    expect(t).toMatch(/650/)
+    expect(t).toContain('Capacidad de pago mensual')
+    expect(t).toMatch(/3\.000\.000/)
   })
 
-  it('sin ninguna aprobada no finge un respaldo', async () => {
-    await montar({ aseguradoras: [{ nombre: 'Sura', aprobada: false }] })
-    expect(texto()).toContain('Ninguna te respalda todavía')
-  })
-})
-
-describe('vigencia', () => {
-  it('muestra los días que faltan', async () => {
-    await montar({ vigenteHasta: enDias(12) })
-    expect(texto()).toContain('Vence en 12 días')
-  })
-
-  it('sin fecha no inventa una vigencia', async () => {
-    await montar({ vigenteHasta: null })
-    expect(texto()).not.toContain('Vence')
+  it('sin datos de buró no muestra la sección', () => {
+    montar({
+      order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
+      evaluation: {
+        status: 'completed',
+        result: {
+          carriers: [{ name: 'Fianly', productType: null, viable: true, primaMensualCop: 30000, stubMode: false, motivoRechazo: null }],
+          fianly: { maxEntrenchmentValue: 2_400_000 },
+          bureau: { minimumScore: null, monthlyCapacity: null },
+        },
+      },
+    })
+    render()
+    expect(texto()).not.toContain('Score de buró')
   })
 })
 
 describe('rechazado — tiene salidas, no es un callejón', () => {
-  it('ofrece la salida del familiar o amigo', async () => {
-    await montar({ estado: 'rechazado' })
+  const RECHAZADO: PreScoringCurrent = {
+    order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
+    evaluation: {
+      status: 'completed',
+      result: {
+        carriers: [{ name: 'Sura', productType: null, viable: false, primaMensualCop: null, stubMode: false, motivoRechazo: 'Score bajo' }],
+        fianly: { maxEntrenchmentValue: null },
+        bureau: { minimumScore: null, monthlyCapacity: null },
+      },
+    },
+  }
+
+  it('ofrece la salida del familiar o amigo', () => {
+    montar(RECHAZADO)
+    render()
     expect(texto()).toContain('Alguien puede postularse por ti')
     expect(texto()).toContain('más de la mitad de los arriendos en Colombia')
   })
 
-  it('deja claro que no es definitivo', async () => {
-    await montar({ estado: 'rechazado' })
+  it('deja claro que no es definitivo', () => {
+    montar(RECHAZADO)
+    render()
     expect(texto()).toContain('Vuelve a intentarlo más adelante')
   })
 
-  it('no muestra el tope cuando fue rechazado', async () => {
-    await montar({ estado: 'rechazado', topeAprobadoCop: 2_400_000 })
-    expect(texto()).not.toMatch(/2\.400\.000/)
+  it('no muestra el tope cuando fue rechazado', () => {
+    montar(RECHAZADO)
+    render()
+    expect(texto()).not.toMatch(/2\.800\.000/)
   })
 })
 
-describe('en proceso — la consulta es inmediata', () => {
-  /*
-   * Decisión de negocio (2026-08-09): la asegurabilidad se resuelve al
-   * instante. Antes esta pantalla decía «te avisamos por correo — puedes
-   * cerrar esta página», que es lo que se le dice a alguien que va a esperar
-   * horas. Mandarlo a cerrar la pantalla justo antes de mostrarle su respuesta
-   * es echarlo de lo único que vino a ver.
-   */
-  it('no lo manda a irse ni le promete un correo', async () => {
-    await montar({ estado: 'en_proceso' })
+describe('en proceso', () => {
+  it('consultando: no lo manda a irse ni le promete un correo', () => {
+    montar({
+      order: { status: 'STUDY_STARTED', paymentStatus: 'APPROVED', expiresAt: null },
+      evaluation: { status: 'started', result: null },
+    })
+    render()
     const t = texto()
+    expect(t).toContain('Estamos consultando a las aseguradoras')
     expect(t).not.toContain('puedes cerrar esta página')
-    expect(t).not.toContain('Te avisamos por correo')
   })
 
-  it('dice cuánto tarda de verdad', async () => {
-    await montar({ estado: 'en_proceso' })
-    expect(texto()).toContain('Es cuestión de segundos')
+  it('esperando autorización: lo dice distinto de "consultando"', () => {
+    montar({
+      order: { status: 'PAID', paymentStatus: 'APPROVED', expiresAt: null },
+      evaluation: { status: 'awaiting_authorization', result: null },
+    })
+    render()
+    const t = texto()
+    expect(t).toContain('Esperamos tu autorización')
+    expect(t).not.toContain('Estamos consultando a las aseguradoras')
+  })
+
+  it('muestra la ventana de la orden cuando viene expiresAt', () => {
+    const enDias = (n: number) => {
+      const d = new Date()
+      d.setDate(d.getDate() + n)
+      return d.toISOString()
+    }
+    montar({
+      order: { status: 'PAID', paymentStatus: 'APPROVED', expiresAt: enDias(2) },
+      evaluation: { status: 'started', result: null },
+    })
+    render()
+    expect(texto()).toContain('Vence en 2 días')
   })
 })
 
 describe('sin estudio — enseña el camino antes de pedir datos', () => {
-  it('muestra los tres pasos', async () => {
-    await montar({ estado: 'sin_estudio' })
-    expect(texto()).toContain('Te estudiamos')
-    expect(texto()).toContain('Eliges')
-    expect(texto()).toContain('El propietario decide')
+  it('muestra los tres pasos', () => {
+    montar({ order: { status: 'PENDING_PAYMENT', paymentStatus: null, expiresAt: null }, evaluation: null })
+    render()
+    const t = texto()
+    expect(t).toContain('Te estudiamos')
+    expect(t).toContain('Eliges')
+    expect(t).toContain('El propietario decide')
   })
 
-  it('usa el copy acordado y NUNCA "estúdiate ahora"', async () => {
-    await montar({ estado: 'sin_estudio' })
-    expect(texto()).toContain('Conoce hasta cuánto te arrendamos')
-    expect(texto().toLowerCase()).not.toContain('estúdiate ahora')
+  it('sin order (nunca se consultó) también cae acá', () => {
+    montar(null)
+    render()
+    expect(texto()).toContain('Todavía no tienes una aprobación')
+  })
+
+  it('el CTA por defecto va al flujo vigente de /aprobacion', () => {
+    montar(null)
+    render()
+    const link = container.querySelector('a[href="/aprobacion"]')
+    expect(link).not.toBeNull()
+  })
+})
+
+describe('expirado', () => {
+  it('ofrece volver a intentarlo', () => {
+    montar({ order: { status: 'EXPIRED', paymentStatus: null, expiresAt: '2020-01-01T00:00:00Z' }, evaluation: null })
+    render()
+    const t = texto()
+    expect(t).toContain('venció')
+    const link = container.querySelector('a[href="/aprobacion"]')
+    expect(link).not.toBeNull()
   })
 })
 
 describe('error', () => {
-  it('muestra el estado de error en vez de una pantalla vacía', async () => {
-    // La intención de siempre: un fallo NO se pinta como pantalla vacía.
-    // El copy exacto lo escribe `FalloDeCarga` según el tipo de fallo, así que
-    // acá se verifica el ESTADO —hay cartel de fallo y ofrece reintentar—, no
-    // una frase: atarse a la frase hace que mejorar el mensaje rompa el test.
-    fetchMock.mockRejectedValue(new Error('agente caído'))
-    await act(async () => {
-      root.render(<AprobacionPage />)
-    })
+  it('ofrece reintentar cuando el estudio falló del lado del backend', () => {
+    montar({ order: { status: 'ERROR', paymentStatus: 'APPROVED', expiresAt: null }, evaluation: null })
+    render()
+    expect(container.querySelector('[data-testid="reintentar-estudio"]')).not.toBeNull()
+  })
+
+  it('un fallo de RED al cargar (no del estudio) muestra FalloDeCarga y ofrece reintentar', () => {
+    montar(null, { error: 'agente caído' })
+    render()
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
     expect(container.querySelector('[data-testid="reintentar"]')).not.toBeNull()
-    // Y NO el cartel de vacío: son estados distintos y llevan a acciones distintas.
-    expect(container.querySelector('[data-testid="sin-datos"]')).toBeNull()
+  })
+})
+
+describe('cargando', () => {
+  it('muestra el spinner mientras isLoading', () => {
+    montar(null, { isLoading: true })
+    render()
+    expect(texto()).toContain('Cargando tu aprobación')
   })
 })

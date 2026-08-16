@@ -51,6 +51,9 @@ describe('parseCanonCop', () => {
 })
 
 const VALID: PreApprovalFormFields = {
+  nombres: 'María',
+  apellidos: 'Restrepo',
+  email: 'maria@correo.com',
   cedula: '1098765432',
   phone: '3001112233',
   ciudad: 'Bogotá',
@@ -70,6 +73,9 @@ describe('validatePreApprovalForm', () => {
 
   it('flags each invalid field', () => {
     const r = validatePreApprovalForm({
+      nombres: '',
+      apellidos: '',
+      email: 'no-es-un-correo',
       cedula: 'abc',
       phone: '123',
           ciudad: '',
@@ -78,6 +84,9 @@ describe('validatePreApprovalForm', () => {
       consent: false,
     })
     expect(r.valid).toBe(false)
+    expect(r.errors.nombres).toBeTruthy()
+    expect(r.errors.apellidos).toBeTruthy()
+    expect(r.errors.email).toBeTruthy()
     expect(r.errors.cedula).toBeTruthy()
     expect(r.errors.phone).toBeTruthy()
     expect(r.errors.ciudad).toBeTruthy()
@@ -86,24 +95,50 @@ describe('validatePreApprovalForm', () => {
     expect(r.errors.consent).toBeTruthy()
   })
 
+  describe('nombres, apellidos y correo', () => {
+    it('nombres vacío o solo espacios no pasa', () => {
+      expect(validatePreApprovalForm({ ...VALID, nombres: '' }).errors.nombres).toBeTruthy()
+      expect(validatePreApprovalForm({ ...VALID, nombres: '   ' }).errors.nombres).toBeTruthy()
+    })
+
+    it('apellidos vacío o solo espacios no pasa', () => {
+      expect(validatePreApprovalForm({ ...VALID, apellidos: '' }).errors.apellidos).toBeTruthy()
+      expect(validatePreApprovalForm({ ...VALID, apellidos: '   ' }).errors.apellidos).toBeTruthy()
+    })
+
+    it('exige un correo con formato válido', () => {
+      expect(validatePreApprovalForm({ ...VALID, email: '' }).errors.email).toBeTruthy()
+      expect(validatePreApprovalForm({ ...VALID, email: 'maria@' }).errors.email).toBeTruthy()
+      expect(validatePreApprovalForm({ ...VALID, email: 'maria@correo' }).errors.email).toBeTruthy()
+      expect(validatePreApprovalForm({ ...VALID, email: 'maria correo.com' }).errors.email).toBeTruthy()
+    })
+
+    it('un correo válido no marca error', () => {
+      const r = validatePreApprovalForm({ ...VALID, email: 'maria.restrepo+test@correo.com.co' })
+      expect(r.errors.email).toBeUndefined()
+    })
+  })
+
   /*
-   * El estudio dejó de necesitar una propiedad: primero te estudias, y con el
-   * tope resultante eliges. Un canon vacío tiene que pasar.
+   * El back confirmó que `canon_mensual_cop` es requerido en `POST
+   * /pre-scoring` (entero > 0): sin él no arma la orden. Un canon vacío ya
+   * no pasa.
    */
-  describe('canon opcional', () => {
-    it('sin canon el formulario es válido', () => {
+  describe('canon obligatorio', () => {
+    it('sin canon el formulario es inválido', () => {
       const r = validatePreApprovalForm({ ...VALID, canon: '' })
-      expect(r.valid).toBe(true)
-      expect(r.errors.canon).toBeUndefined()
+      expect(r.valid).toBe(false)
+      expect(r.errors.canon).toBeTruthy()
       expect(r.canonCop).toBeNull()
     })
 
     it('solo espacios cuenta como vacío', () => {
       const r = validatePreApprovalForm({ ...VALID, canon: '   ' })
-      expect(r.valid).toBe(true)
+      expect(r.valid).toBe(false)
+      expect(r.errors.canon).toBeTruthy()
     })
 
-    it('si lo escribe, tiene que ser un monto válido', () => {
+    it('un monto no numérico también es inválido', () => {
       const r = validatePreApprovalForm({ ...VALID, canon: 'abc' })
       expect(r.valid).toBe(false)
       expect(r.errors.canon).toBeTruthy()
@@ -112,6 +147,13 @@ describe('validatePreApprovalForm', () => {
     it('un canon en cero no pasa por válido', () => {
       const r = validatePreApprovalForm({ ...VALID, canon: '0' })
       expect(r.valid).toBe(false)
+    })
+
+    it('un canon válido pasa y se deriva canonCop', () => {
+      const r = validatePreApprovalForm({ ...VALID, canon: '1.800.000' })
+      expect(r.valid).toBe(true)
+      expect(r.errors.canon).toBeUndefined()
+      expect(r.canonCop).toBe(1_800_000)
     })
   })
 

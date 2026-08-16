@@ -153,11 +153,6 @@ export interface PlanSidebarProps {
   /** Optional workspace logo URL. When a non-empty string, it replaces the
    *  LeasefyMark brand tile in both the expanded brand row and the collapsed rail. */
   workspaceLogoUrl?: string;
-  /** Optional agency brand color as an HSL triplet ("H S% L%", e.g. "227 100% 55%").
-   *  When set, overrides `--primary` ONLY within the sidebar subtree so the active
-   *  nav accent + brand tile adopt the agency color. Must be an HSL triplet because
-   *  the DS consumes primary via `hsl(var(--primary))`. Empty → DS default. */
-  brandPrimaryHsl?: string;
   /** Show the "Invita a tu equipo" footer card (cadence §Navigation). */
   showInvite?: boolean;
   /** Handler for the invite-card button. */
@@ -375,7 +370,6 @@ interface SidebarContentProps {
   searchPlaceholder?: string;
   workspaceName?: string;
   workspaceLogoUrl?: string;
-  brandPrimaryHsl?: string;
   showInvite?: boolean;
   onInvite?: () => void;
 }
@@ -398,7 +392,6 @@ function SidebarContent({
   searchPlaceholder,
   workspaceName,
   workspaceLogoUrl,
-  brandPrimaryHsl,
   showInvite = false,
   onInvite,
 }: SidebarContentProps) {
@@ -431,20 +424,11 @@ function SidebarContent({
   };
 
   return (
-    <div
-      className={cn('flex flex-col h-full bg-bg relative', brandPrimaryHsl && 'tinte-de-marca')}
-      // Tinte de marca de la inmobiliaria: el color entra como `--marca-primary`
-      // y es `.tinte-de-marca` (globals.css) quien decide si manda sobre el
-      // `--primary` del DS. La decisión es por TEMA y por eso vive en CSS: el
-      // color de marca es un solo hex, elegido mirando el panel en claro, y en
-      // oscuro dejaba el sidebar de otro color que el resto del panel.
-      // Solo se aplica cuando el triplete HSL es válido.
-      style={
-        brandPrimaryHsl
-          ? ({ ['--marca-primary']: brandPrimaryHsl } as React.CSSProperties)
-          : undefined
-      }
-    >
+    // El sidebar NO pisa `--primary`: el primario es el del tema y nada más
+    // (2026-08-16, definición de producto). Antes había un tinte de marca que
+    // lo reemplazaba en claro por el hex de la agencia y dejaba dos azules
+    // distintos para el mismo rol en la misma pantalla. Ver globals.css.
+    <div className="flex flex-col h-full bg-bg relative">
       {/* Collapse Button */}
       {showCollapseButton && (
         <button
@@ -497,8 +481,8 @@ function SidebarContent({
       ) : (
         // Firma del PRODUCTO, no del cliente: el lockup de Leasefy solo, sin
         // nombre ni logo de la inmobiliaria. La identidad de la agencia ya vive
-        // en su propio contexto (encabezados, documentos, marca del panel vía
-        // brandPrimaryHsl); repetirla acá arriba solo confundía sobre en qué
+        // en su propio contexto (encabezados, documentos); repetirla acá arriba
+        // solo confundía sobre en qué
         // producto estás parado. Monocromo con `text-fg` → negro en claro,
         // blanco en oscuro, sin ramificar por tema.
         //
@@ -724,7 +708,6 @@ export function PlanSidebar({
   searchPlaceholder,
   workspaceName,
   workspaceLogoUrl,
-  brandPrimaryHsl,
   showInvite = false,
   onInvite,
 }: PlanSidebarProps) {
@@ -769,7 +752,6 @@ export function PlanSidebar({
           searchPlaceholder={searchPlaceholder}
           workspaceName={workspaceName}
           workspaceLogoUrl={workspaceLogoUrl}
-          brandPrimaryHsl={brandPrimaryHsl}
           showInvite={showInvite}
           onInvite={onInvite}
         />
@@ -808,7 +790,6 @@ export function PlanSidebar({
             searchPlaceholder={searchPlaceholder}
             workspaceName={workspaceName}
             workspaceLogoUrl={workspaceLogoUrl}
-            brandPrimaryHsl={brandPrimaryHsl}
             showInvite={showInvite}
             onInvite={
               onInvite

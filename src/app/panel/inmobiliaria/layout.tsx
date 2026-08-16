@@ -126,15 +126,6 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     t('inmobiliaria.common.title');
   const agencyLogoUrl =
     agency?.logoUrl?.trim() || config?.agency?.logoUrl?.trim() || undefined;
-  // Agency brand color (Option A: sidebar accents only). Same all-members source
-  // as name/logo so team members get it too. Converted to an HSL triplet because
-  // PlanSidebar scopes it onto `--primary` (consumed via hsl(var(--primary))).
-  // Invalid/empty → undefined → PlanSidebar keeps the DS default color.
-  const agencyPrimaryColor =
-    agency?.branding?.primaryColor?.trim() ||
-    config?.agency?.branding?.primaryColor?.trim() ||
-    undefined;
-  const brandPrimaryHsl = hexToHslTriplet(agencyPrimaryColor) ?? undefined;
 
   // All nav items with their corresponding permission module (null = always visible).
   // `NavItemWithModule` (imported) extends NavItem with an optional `module`
@@ -387,7 +378,6 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         // cadence §Navigation: static brand row + search-opens-⌘K + footer cards
         workspaceName={agencyName}
         workspaceLogoUrl={agencyLogoUrl}
-        brandPrimaryHsl={brandPrimaryHsl}
         onSearchClick={openCommandPalette}
         searchPlaceholder="Buscar"
         // Punto de partida del panel: con 156 rutas agrupadas por módulo de

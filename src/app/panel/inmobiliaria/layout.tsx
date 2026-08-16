@@ -38,6 +38,7 @@ import {
   HandCoins,
   CurrencyCircleDollar,
   Umbrella,
+  Warning,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AgencySubscriptionGuard } from '@/components/auth/AgencySubscriptionGuard';
@@ -347,6 +348,29 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       icon: Brain,
       module: null,
       ai: true,
+    } as NavItemWithModule,
+    // ── RETENCIÓN (Laura) ── agente de retención de inquilinos.
+    {
+      label: 'Retención',
+      href: '/panel/inmobiliaria/ai/retencion', scope: 'general',
+      icon: Users,
+      module: 'retencion',
+      ai: true,
+      dataTourTarget: 'sidebar-retencion',
+      children: [
+        {
+          label: 'Bandeja de riesgos',
+          href: '/panel/inmobiliaria/ai/retencion/bandeja',
+          icon: Warning,
+          module: 'retencion',
+        } as NavItemWithModule,
+        {
+          label: 'Cola de revisión',
+          href: '/panel/inmobiliaria/ai/retencion/revisiones',
+          icon: ClipboardText,
+          module: 'retencion',
+        } as NavItemWithModule,
+      ],
     } as NavItemWithModule,
     // Configuración → gated on 'configuracion': only ADMIN has it in the matrix
     // (AGENTE/CONTADOR/VIEWER all have configuracion:[]) ⇒ effectively admin-only.

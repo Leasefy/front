@@ -56,6 +56,29 @@ import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 const BASE = '/inmobiliaria';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
+/**
+ * La lista, venga envuelta en `{ data }` o pelada.
+ *
+ * ⚠️ Esto NO es tolerancia por gusto: **cinco tablas del panel decían «todavía
+ * no tenés nada» con los datos ahí**. El código hacía `res.data` sobre lo que
+ * el back devuelve como array pelado, `[].data` es `undefined`, y el hook lo
+ * pinta como lista vacía. Medido en el CRM de Propietarios: la respuesta traía
+ * tres propietarios y la pantalla mostraba «Todavía no tenés propietarios».
+ *
+ * Es la tercera vez que la misma confusión de forma tumba una pantalla, y
+ * ninguna de las tres se cayó: se veía como «no hay datos», que es indistinguible
+ * de la verdad. Un `.data` a secas vuelve a romperse en silencio el día que un
+ * endpoint cambie de forma; esto no.
+ *
+ * Lo que sí falla ruidosamente es una forma que no es ninguna de las dos —
+ * ahí el problema es real y tiene que verse.
+ */
+function lista<T>(res: { data?: T[] } | T[] | null | undefined): T[] {
+  if (Array.isArray(res)) return res;
+  if (res && Array.isArray(res.data)) return res.data;
+  return [];
+}
+
 // Permission response types
 export interface UserPermissionsResponse {
   role: string;
@@ -90,8 +113,8 @@ export const propietariosApi = {
     if (params?.city) query.set('city', params.city);
     if (params?.tags) query.set('tags', params.tags);
     const qs = query.toString();
-    const res = await apiClient.get<{ data: Propietario[] }>(`${BASE}/propietarios${qs ? `?${qs}` : ''}`);
-    return res.data;
+    const res = await apiClient.get<{ data: Propietario[] } | Propietario[]>(`${BASE}/propietarios${qs ? `?${qs}` : ''}`);
+    return lista(res);
   },
 
   async getById(id: string): Promise<Propietario> {
@@ -111,18 +134,18 @@ export const propietariosApi = {
   },
 
   async getConsignaciones(id: string): Promise<Consignacion[]> {
-    const res = await apiClient.get<{ data: Consignacion[] }>(`${BASE}/propietarios/${id}/consignaciones`);
-    return res.data;
+    const res = await apiClient.get<{ data: Consignacion[] } | Consignacion[]>(`${BASE}/propietarios/${id}/consignaciones`);
+    return lista(res);
   },
 
   async getCobros(id: string): Promise<Cobro[]> {
-    const res = await apiClient.get<{ data: Cobro[] }>(`${BASE}/propietarios/${id}/cobros`);
-    return res.data;
+    const res = await apiClient.get<{ data: Cobro[] } | Cobro[]>(`${BASE}/propietarios/${id}/cobros`);
+    return lista(res);
   },
 
   async getDispersiones(id: string): Promise<Dispersion[]> {
-    const res = await apiClient.get<{ data: Dispersion[] }>(`${BASE}/propietarios/${id}/dispersiones`);
-    return res.data;
+    const res = await apiClient.get<{ data: Dispersion[] } | Dispersion[]>(`${BASE}/propietarios/${id}/dispersiones`);
+    return lista(res);
   },
 
   async getExtracto(id: string, month?: string): Promise<ExtractoPropietario> {
@@ -137,8 +160,8 @@ export const propietariosApi = {
 
 export const agentesApi = {
   async getAll(): Promise<Agente[]> {
-    const res = await apiClient.get<{ data: Agente[] }>(`${BASE}/agentes`);
-    return res.data;
+    const res = await apiClient.get<{ data: Agente[] } | Agente[]>(`${BASE}/agentes`);
+    return lista(res);
   },
 
   async getById(id: string): Promise<Agente> {
@@ -158,13 +181,13 @@ export const agentesApi = {
   },
 
   async getConsignaciones(id: string): Promise<Consignacion[]> {
-    const res = await apiClient.get<{ data: Consignacion[] }>(`${BASE}/agentes/${id}/consignaciones`);
-    return res.data;
+    const res = await apiClient.get<{ data: Consignacion[] } | Consignacion[]>(`${BASE}/agentes/${id}/consignaciones`);
+    return lista(res);
   },
 
   async getPipeline(id: string): Promise<PipelineItem[]> {
-    const res = await apiClient.get<{ data: PipelineItem[] }>(`${BASE}/agentes/${id}/pipeline`);
-    return res.data;
+    const res = await apiClient.get<{ data: PipelineItem[] } | PipelineItem[]>(`${BASE}/agentes/${id}/pipeline`);
+    return lista(res);
   },
 
   async getMetrics(id: string): Promise<Agente['metrics']> {
@@ -172,8 +195,8 @@ export const agentesApi = {
   },
 
   async getLeaderboard(): Promise<Agente[]> {
-    const res = await apiClient.get<{ data: Agente[] }>(`${BASE}/agentes/leaderboard`);
-    return res.data;
+    const res = await apiClient.get<{ data: Agente[] } | Agente[]>(`${BASE}/agentes/leaderboard`);
+    return lista(res);
   },
 };
 
@@ -709,8 +732,8 @@ export const mantenimientoApi = {
     if (params?.status) query.set('status', params.status);
     if (params?.consignacionId) query.set('consignacionId', params.consignacionId);
     const qs = query.toString();
-    const res = await apiClient.get<{ data: SolicitudMantenimiento[] }>(`${BASE}/mantenimiento${qs ? `?${qs}` : ''}`);
-    return res.data;
+    const res = await apiClient.get<{ data: SolicitudMantenimiento[] } | SolicitudMantenimiento[]>(`${BASE}/mantenimiento${qs ? `?${qs}` : ''}`);
+    return lista(res);
   },
 
   async getById(id: string): Promise<SolicitudMantenimiento> {
@@ -884,8 +907,8 @@ export const renovacionesApi = {
 
 export const reportesApi = {
   async getDefinitions(): Promise<ReportDefinition[]> {
-    const res = await apiClient.get<{ data: ReportDefinition[] }>(`${BASE}/reports/definitions`);
-    return res.data;
+    const res = await apiClient.get<{ data: ReportDefinition[] } | ReportDefinition[]>(`${BASE}/reports/definitions`);
+    return lista(res);
   },
 
   async getCartera(params?: { startDate?: string; endDate?: string }): Promise<CarteraReport> {
@@ -1016,8 +1039,8 @@ export const analyticsApi = {
 
 export const documentosApi = {
   async getTemplates(): Promise<DocumentTemplate[]> {
-    const res = await apiClient.get<{ data: DocumentTemplate[] }>(`${BASE}/templates`);
-    return res.data;
+    const res = await apiClient.get<{ data: DocumentTemplate[] } | DocumentTemplate[]>(`${BASE}/templates`);
+    return lista(res);
   },
 
   async getDocuments(params?: { consignacionId?: string; category?: string }): Promise<PropertyDocument[]> {
@@ -1025,8 +1048,8 @@ export const documentosApi = {
     if (params?.consignacionId) query.set('consignacionId', params.consignacionId);
     if (params?.category) query.set('category', params.category);
     const qs = query.toString();
-    const res = await apiClient.get<{ data: PropertyDocument[] }>(`${BASE}/documents${qs ? `?${qs}` : ''}`);
-    return res.data;
+    const res = await apiClient.get<{ data: PropertyDocument[] } | PropertyDocument[]>(`${BASE}/documents${qs ? `?${qs}` : ''}`);
+    return lista(res);
   },
 
   async generate(templateId: string, variables: Record<string, string>): Promise<PropertyDocument> {
@@ -1040,8 +1063,8 @@ export const documentosApi = {
 
 export const actasApi = {
   async getAll(): Promise<ActaEntrega[]> {
-    const res = await apiClient.get<{ data: ActaEntrega[] }>(`${BASE}/actas`);
-    return res.data;
+    const res = await apiClient.get<{ data: ActaEntrega[] } | ActaEntrega[]>(`${BASE}/actas`);
+    return lista(res);
   },
 
   async getById(id: string): Promise<ActaEntrega> {
@@ -1106,8 +1129,8 @@ export const inmobiliariaConfigApi = {
   },
 
   async getInvoices(): Promise<BillingInvoice[]> {
-    const res = await apiClient.get<{ data: BillingInvoice[] }>(`${BASE}/config/billing/invoices`);
-    return res.data;
+    const res = await apiClient.get<{ data: BillingInvoice[] } | BillingInvoice[]>(`${BASE}/config/billing/invoices`);
+    return lista(res);
   },
 
   // ==========================================================================

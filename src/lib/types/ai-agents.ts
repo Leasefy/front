@@ -302,9 +302,9 @@ const AGENTS: AIAgentDefinition[] = [
     descriptionEn: 'Repair coordination and vendor management for properties.',
     descriptionEs: 'Coordinación de reparaciones y gestión de proveedores.',
     icon: 'Wrench',
-    color: 'text-neutral-600 dark:text-neutral-300',
-    colorBg: 'bg-neutral-100 dark:bg-neutral-800',
-    status: 'coming-soon',
+    color: 'text-orange-600',
+    colorBg: 'bg-orange-50',
+    status: 'active',
   },
   {
     id: 'retencion',

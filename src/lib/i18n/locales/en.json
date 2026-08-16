@@ -4351,13 +4351,16 @@
         "estudioReglas": "Rules",
         "cotizadorEjecucion": "Execution",
         "cotizadorIntegraciones": "Integrations",
-        "pagosHome": "Payments AI"
+        "pagosHome": "Payments AI",
+        "mantenimiento": "Maintenance",
+        "mantenimientoTickets": "Tickets"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",
         "cobranza": "Collections",
         "cotizador": "Insurability",
-        "detalle": "Detail"
+        "detalle": "Detail",
+        "mantenimiento": "Maintenance"
       },
       "volverA": {
         "casos": "Back to cases",
@@ -5119,7 +5122,169 @@
       "access": {
         "noAccessCobranza": "You don't have access to Collections",
         "noAccessCotizador": "You don't have access to Insurability",
+        "noAccessMantenimiento": "You don't have access to Maintenance",
         "contactAdmin": "Contact your agency administrator to request access."
+      },
+      "mantenimiento": {
+        "overview": {
+          "title": "Maintenance Triage Center",
+          "subtitle": "Operational health of maintenance tickets",
+          "lastUpdated": "Updated",
+          "errorLoading": "Failed to load overview",
+          "antiGamingLabel": "Anti-gaming metrics",
+          "kpis": {
+            "ticketsAbiertos": "Open tickets",
+            "emergenciasActivas": "Active emergencies",
+            "vencidos": "Overdue",
+            "tiempoPrimeraRespuesta": "First response time",
+            "slaCumplido": "SLA met",
+            "reaperturas30d": "Reopens (30d)",
+            "tiempoResolucionReal": "Real resolution time",
+            "costoEstimado": "Estimated open cost",
+            "propietariosEnRiesgo": "Owners at risk",
+            "unitMin": "min",
+            "unitDias": "days"
+          }
+        },
+        "inbox": {
+          "title": "Prioritized inbox",
+          "subtitle": "Tickets sorted by priority score",
+          "empty": "No maintenance tickets",
+          "emptyFiltered": "No tickets match the filters",
+          "sortedByScore": "Sorted by score",
+          "errorLoading": "Failed to load inbox",
+          "card": {
+            "score": "Score",
+            "provider": "Suggested vendor",
+            "proveedorSugerido": "Suggested vendor",
+            "noProvider": "No vendor",
+            "sinProveedor": "No vendor",
+            "needsApproval": "Needs approval",
+            "requiereAprobacion": "Needs approval",
+            "hasPhotos": "Has photos",
+            "reopened": "Reopened",
+            "reabierto": "Reopened",
+            "retentionRisk": "Retention risk",
+            "retencionRiesgo": "Retention risk",
+            "estCost": "Estimated cost",
+            "createdAgo": "Created",
+            "slaDue": "SLA due"
+          }
+        },
+        "filters": {
+          "titulo": "Search",
+          "title": "Filters",
+          "severidad": "Severity",
+          "categoria": "Category",
+          "estado": "State",
+          "sla": "SLA",
+          "proveedor": "Vendor",
+          "propietario": "Owner",
+          "inmueble": "Property",
+          "zona": "Zone",
+          "responsable": "Responsible",
+          "aprobacion": "Approval",
+          "fotos": "Photos",
+          "reabierto": "Reopened",
+          "retencion": "Retention",
+          "costo": "Cost",
+          "todos": "All",
+          "all": "All",
+          "clear": "Clear",
+          "limpiar": "Clear"
+        },
+        "enums": {
+          "severidad": {
+            "emergencia": "Emergency",
+            "alta": "High",
+            "media": "Medium",
+            "baja": "Low",
+            "informativa": "Informational"
+          },
+          "categoria": {
+            "plomeria": "Plumbing",
+            "electricidad": "Electrical",
+            "gas": "Gas",
+            "humedad_filtracion": "Damp / leak",
+            "carpinteria": "Carpentry",
+            "cerrajeria": "Locksmithing",
+            "electrodomesticos": "Appliances",
+            "pintura_acabados": "Paint / finishes",
+            "pisos": "Flooring",
+            "vidrios_ventanas": "Glass / windows",
+            "estructural": "Structural",
+            "zonas_comunes": "Common areas",
+            "preventivo": "Preventive"
+          },
+          "estado": {
+            "recibido": "Received",
+            "en_triage": "In triage",
+            "informacion_incompleta": "Incomplete information",
+            "clasificado": "Classified",
+            "requiere_aprobacion": "Requires approval",
+            "proveedor_sugerido": "Vendor suggested",
+            "proveedor_asignado": "Vendor assigned",
+            "visita_programada": "Visit scheduled",
+            "en_ejecucion": "In progress",
+            "pendiente_cotizacion": "Pending quote",
+            "pendiente_pago": "Pending payment",
+            "resuelto": "Resolved",
+            "validado": "Validated",
+            "cerrado": "Closed",
+            "reabierto": "Reopened",
+            "escalado": "Escalated"
+          },
+          "bucket": {
+            "Bajo": "Low",
+            "Medio": "Medium",
+            "Alto": "High",
+            "Critico": "Critical",
+            "Emergencia": "Emergency"
+          },
+          "responsable": {
+            "propietario": "Owner",
+            "inquilino": "Tenant",
+            "copropiedad": "HOA",
+            "constructor": "Builder",
+            "proveedor_anterior": "Previous vendor",
+            "aseguradora": "Insurer",
+            "no_determinado": "Undetermined"
+          }
+        },
+        "card": {
+          "score": "Score",
+          "proveedorSugerido": "Suggested vendor",
+          "requiereAprobacion": "Needs approval",
+          "reabierto": "Reopened",
+          "retencionRiesgo": "Retention risk",
+          "sinProveedor": "No vendor"
+        },
+        "detalle": {
+          "title": "Ticket detail",
+          "errorLoading": "Failed to load detail",
+          "queEntendi": "What I understood",
+          "clasificacion": "Classification",
+          "imagenes": "Images",
+          "proveedor": "Recommended vendor",
+          "aprobacion": "Approval",
+          "responsableHipotesis": "Responsible hypothesis (not a verdict)",
+          "visionLimite": "Vision analysis limit",
+          "calidadFoto": "Photo quality",
+          "safetyHold": "Safety hold"
+        },
+        "cta": {
+          "asignar": "Assign vendor",
+          "pedirInfo": "Request info",
+          "solicitarAprobacion": "Request approval",
+          "escalarEmergencia": "Escalate emergency",
+          "cerrar": {
+            "label": "Close (not applicable)",
+            "confirmTitle": "Confirm close",
+            "confirmDesc": "Closing requires evidence and confirmation. Do you want to continue?",
+            "confirm": "Confirm close",
+            "cancel": "Cancel"
+          }
+        }
       },
       "cobranza": {
         "resumen": {

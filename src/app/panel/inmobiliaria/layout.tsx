@@ -349,6 +349,23 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       module: null,
       ai: true,
     } as NavItemWithModule,
+    // ── MANTENIMIENTO ── agente de tickets de mantenimiento.
+    {
+      label: t('inmobiliaria.ai.nav.mantenimiento'),
+      href: '/panel/inmobiliaria/ai/mantenimiento', scope: 'general',
+      icon: Wrench,
+      module: 'mantenimiento',
+      ai: true,
+      dataTourTarget: 'sidebar-mantenimiento',
+      children: [
+        {
+          label: t('inmobiliaria.ai.nav.mantenimientoTickets'),
+          href: '/panel/inmobiliaria/ai/mantenimiento/tickets',
+          icon: ClipboardText,
+          module: 'mantenimiento',
+        } as NavItemWithModule,
+      ],
+    } as NavItemWithModule,
     // ── RETENCIÓN (Laura) ── agente de retención de inquilinos.
     {
       label: 'Retención',

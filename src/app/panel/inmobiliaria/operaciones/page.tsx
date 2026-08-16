@@ -555,6 +555,12 @@ function OperacionesContent() {
           <TabsContent value="renovaciones" className="mt-0">
             <RenovacionesTable
               data={renovaciones}
+              /* `renovaciones` es `renovacionesData ?? []`: sin pasarle el
+                 fallo, una petición muerta llegaba acá como lista vacía y la
+                 tabla afirmaba «no hay renovaciones» — cartera al día que
+                 nadie verificó. */
+              error={renovacionesError}
+              onReintentar={refetchRenovaciones}
               onStartRenewal={handleStartRenewal}
               onNotifyTenant={handleNotifyTenant}
               onViewDetails={handleViewRenovacionDetails}

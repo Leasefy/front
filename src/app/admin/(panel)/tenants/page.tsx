@@ -6,7 +6,11 @@ import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { Pagination } from '@/components/admin/screen/Pagination'
+import { useClientPagination } from '@/lib/admin/use-client-pagination'
 import { Pill } from '@/components/admin/Pill'
+
+const PAGE_SIZE = 50
 
 // ---------- Types ----------
 
@@ -25,13 +29,22 @@ interface TenantRow {
 
 // ---------- Page ----------
 
-/** /tenants — agency roster (BACK.md §8.3 · FRONT.md §6.4). Non-paginated bare array. */
+/**
+ * /tenants — agency roster (BACK.md §8.3 · FRONT.md §6.4).
+ *
+ * El endpoint devuelve un arreglo pelado (sin `page`/`limit`, sin `total`), así
+ * que el recorte va en el cliente: el roster crece con cada agencia y sin pie de
+ * paginación la pantalla era un volcado. Cuando `/tenants` exponga contrato
+ * `Paginated<T>`, esto pasa a ser paginado de servidor como `/payments`.
+ */
 export default function TenantsPage() {
   const router = useRouter()
 
   const tenants = useApiQuery<TenantRow[]>(
     (signal) => adminApi('/tenants', { signal }),
   )
+
+  const { page, setPage, total, pageRows } = useClientPagination(tenants.data, PAGE_SIZE)
 
   const columns: Column<TenantRow>[] = [
     {
@@ -92,7 +105,7 @@ export default function TenantsPage() {
 
       <DataTable
         columns={columns}
-        rows={tenants.data}
+        rows={pageRows}
         getKey={(r) => r.agency_id}
         isLoading={tenants.isLoading}
         error={tenants.error}
@@ -100,6 +113,8 @@ export default function TenantsPage() {
         emptyHint="No hay agencias registradas en la base."
         onRowClick={(r) => router.push(`/admin/tenants/${r.tenant_id}`)}
       />
+
+      <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} />
     </div>
   )
 }

@@ -35,6 +35,8 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { useAgencyPlans } from '@/lib/hooks/useSubscription';
 import type { AgencyPlan } from '@/lib/types/subscription';
@@ -71,6 +73,20 @@ export function ConfigFacturacion({
 }: ConfigFacturacionProps) {
   const { t } = useI18n();
   const router = useRouter();
+
+  /**
+   * Paginado de presentación: el histórico de facturas se acumula un renglón
+   * por ciclo y no se depura nunca. Sin filtros en esta tabla ⇒ sin `resetKey`.
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(invoices);
 
   const { currentPlanId, state, isLoading: subLoading, error: subError } =
     useAgencySubscription();
@@ -483,7 +499,7 @@ export function ConfigFacturacion({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.map((invoice) => (
+                {pageItems.map((invoice) => (
                   <TableRow
                     key={invoice.id}
                     className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors"
@@ -527,6 +543,20 @@ export function ConfigFacturacion({
                 ))}
               </TableBody>
             </Table>
+
+            {/* Pie: sólo si hay más de una página. */}
+            {shouldPaginate && (
+              <div className="border-t border-border px-4 py-3">
+                <TablePagination
+                  total={total}
+                  page={page}
+                  pageSize={pageSize}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <div className="py-8 text-center">

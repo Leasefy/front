@@ -31,6 +31,8 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui'
+import { TablePagination } from '@/components/ui/pagination'
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import type { WorkItem, WorkItemAction } from '@/lib/api/work-item'
 
 // ── Clasificación de motivo ──────────────────────────────────────────────────
@@ -223,6 +225,21 @@ function FilaFallido({
 // ── Componente ─────────────────────────────────────────────────────────────────
 
 export function PagoFallidoTabla({ items, onAction, onOpen }: PagoFallidoTablaProps) {
+  /**
+   * Paginado de presentación: la cola de pagos fallidos viene de
+   * `useAgentWorkItems('pagos')` sin `page`/`pageSize` y crece con el volumen
+   * de inquilinos. No hay filtros en este componente ⇒ sin `resetKey`.
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(items)
+
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-card">
       <Table className="min-w-[720px] text-left">
@@ -236,11 +253,25 @@ export function PagoFallidoTabla({ items, onAction, onOpen }: PagoFallidoTablaPr
           </TableRow>
         </TableHeader>
         <TableBody className="[&_td:first-child]:pl-4 [&_td:last-child]:pr-4">
-          {items.map((item) => (
+          {pageItems.map((item) => (
             <FilaFallido key={item.id} item={item} onAction={onAction} onOpen={onOpen} />
           ))}
         </TableBody>
       </Table>
+
+      {/* Pie: sólo si hay más de una página. */}
+      {shouldPaginate && (
+        <div className="border-t border-border px-4 py-3">
+          <TablePagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
+      )}
     </div>
   )
 }

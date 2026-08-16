@@ -22,6 +22,8 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui'
+import { TablePagination } from '@/components/ui/pagination'
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 
 void React
 
@@ -47,6 +49,24 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
   useEffect(() => {
     if (refetchKey > 0) void refetch()
   }, [refetchKey, refetch])
+
+  /**
+   * Paginado de presentación: el historial de llamadas de un deudor se acumula
+   * con cada gestión y el endpoint no acepta page/limit.
+   *
+   * Va ANTES de los early-return de abajo: un hook detrás de un `return`
+   * condicional rompe el orden de hooks de React. Alimenta las dos vistas
+   * (tabla en ≥md, tarjetas en móvil) para que muestren la misma página.
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(data?.calls ?? [])
 
   if (isLoading && !data) {
     return (
@@ -120,7 +140,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-border-faint">
-            {calls.map((c) => (
+            {pageItems.map((c) => (
               <TableRow
                 key={c.id}
                 role="link"
@@ -158,7 +178,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
 
       {/* sm cards */}
       <ul className="md:hidden space-y-2">
-        {calls.map((c) => (
+        {pageItems.map((c) => (
           <li key={c.id}>
             <button
               type="button"
@@ -179,6 +199,20 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
           </li>
         ))}
       </ul>
+
+      {/* Pie único para las dos vistas: sólo si hay más de una página. */}
+      {shouldPaginate && (
+        <div className="mt-3 rounded-md border border-border bg-surface px-4 py-3">
+          <TablePagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
+      )}
     </>
   )
 }

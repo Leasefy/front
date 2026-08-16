@@ -7,6 +7,10 @@ import { fmtCOP } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { Pagination } from '@/components/admin/screen/Pagination'
+import { useClientPagination } from '@/lib/admin/use-client-pagination'
+
+const PAGE_SIZE = 50
 
 /* ── Types (match ADMIN-API-CONTRACT.md — Costs) ────────────────────────── */
 
@@ -115,6 +119,9 @@ export default function CostsPage() {
 
   const mtd = costs.data?.mtd
   const perTenant = costs.data?.perTenant ?? []
+  /* Una fila por agencia ⇒ crece con el negocio. El mix por modelo de abajo NO
+     se pagina: es el conjunto cerrado de modelos LLM en uso. */
+  const perTenantPaging = useClientPagination(perTenant, PAGE_SIZE)
   const daily = costs.data?.dailySeries ?? []
   const modelMix = costs.data?.modelMix ?? []
 
@@ -240,12 +247,19 @@ export default function CostsPage() {
       <div className="mb-6">
         <DataTable
           columns={tenantColumns}
-          rows={perTenant}
+          rows={perTenantPaging.pageRows}
           getKey={(r) => r.tenant_id}
           isLoading={costs.isLoading}
           error={costs.error}
           emptyTitle="Sin datos de costos."
           onRowClick={(r) => router.push(`/admin/tenants/${r.tenant_id}`)}
+        />
+
+        <Pagination
+          page={perTenantPaging.page}
+          total={perTenantPaging.total}
+          pageSize={PAGE_SIZE}
+          onPage={perTenantPaging.setPage}
         />
       </div>
 

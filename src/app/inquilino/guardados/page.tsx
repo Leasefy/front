@@ -14,6 +14,7 @@ import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { IconButton } from '@leasefy/cadence';
 import { Spinner } from '@/components/ui/spinner';
 import type { Property } from '@/lib/types/property';
@@ -24,9 +25,13 @@ export default function GuardadosPage() {
   const { wishlist, removeFromWishlist } = useWishlist();
   // Resolve the actual wishlisted properties directly by ID (no top-100 ceiling,
   // so saved items never vanish just because they fall outside the featured page).
-  const { properties: resolvedProperties } = useWishlistedProperties(
-    isOnboardingComplete ? wishlist : [],
-  );
+  const {
+    properties: resolvedProperties,
+    isLoading: cargandoGuardadas,
+    errorCrudo: errorGuardadas,
+    yaNoDisponibles,
+    refetch: recargarGuardadas,
+  } = useWishlistedProperties(isOnboardingComplete ? wishlist : []);
 
   // Property detail sheet state
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -100,8 +105,29 @@ export default function GuardadosPage() {
           </div>
         </motion.header>
 
-        {/* Content */}
-        {properties.length === 0 ? (
+        {/* Content
+
+            Acá el vacío son TRES cosas distintas, y hay cómo saber cuál es
+            porque la lista de guardados es local (localStorage) y los inmuebles
+            vienen del backend:
+
+              wishlist vacía            → nunca guardaste nada  → salí a mirar
+              wishlist llena + fallo    → no se pudo traer      → reintentar
+              wishlist llena + 404s     → las bajaron           → decilo así
+
+            El tercero se veía como el primero: «No tienes propiedades
+            guardadas» a alguien que guardó cinco y se las despublicaron. */}
+        {cargandoGuardadas && wishlist.length > 0 ? (
+          <div className="flex items-center justify-center py-20">
+            <Spinner size="lg" />
+          </div>
+        ) : errorGuardadas ? (
+          <FalloDeCarga
+            error={errorGuardadas}
+            queEs="tus guardadas"
+            onReintentar={recargarGuardadas}
+          />
+        ) : properties.length === 0 ? (
           /* Empty State */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -121,11 +147,23 @@ export default function GuardadosPage() {
             */}
             <EmptyState
               icon={Heart}
-              title={locale === 'es' ? 'No tienes propiedades guardadas' : 'No saved properties'}
+              title={
+                yaNoDisponibles > 0
+                  ? locale === 'es'
+                    ? 'Las que guardaste ya no están publicadas'
+                    : 'The ones you saved are no longer listed'
+                  : locale === 'es'
+                    ? 'No tienes propiedades guardadas'
+                    : 'No saved properties'
+              }
               description={
-                locale === 'es'
-                  ? 'Toca el corazón en las propiedades que te interesen y las encuentras acá para compararlas.'
-                  : 'Tap the heart on the properties you like and find them here to compare them.'
+                yaNoDisponibles > 0
+                  ? locale === 'es'
+                    ? 'Se arrendaron o las quitaron del catálogo. Buscá otras y volvé a guardar las que te sirvan.'
+                    : 'They were rented or removed from the catalog. Browse others and save the ones you like.'
+                  : locale === 'es'
+                    ? 'Toca el corazón en las propiedades que te interesen y las encuentras acá para compararlas.'
+                    : 'Tap the heart on the properties you like and find them here to compare them.'
               }
               action={{
                 label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me',

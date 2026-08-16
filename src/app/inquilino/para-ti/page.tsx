@@ -33,6 +33,7 @@ import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { formatCurrency } from '@/lib/format';
 import { PlanStatsCard, PlanStatsGrid } from '@/components/ui/plan/PlanStatsCard';
 import { useI18n } from '@/lib/i18n';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 // ============================================================================
 // TextTs & Constants
@@ -69,7 +70,15 @@ export default function ParaTiPage() {
   };
 
   // Get all recommendations from backend (no limit)
-  const { recommendations: allRecommendations, isLoading: recommendationsLoading } = useRecommendations();
+  // `errorCrudo`: sin mirarlo, una consulta caída llegaba como `[]` y la
+  // pantalla ofrecía «Limpiar filtros» —que no arregla un fallo de red— como
+  // única salida.
+  const {
+    recommendations: allRecommendations,
+    isLoading: recommendationsLoading,
+    errorCrudo: errorRecomendaciones,
+    refetch: recargarRecomendaciones,
+  } = useRecommendations();
 
   /*
    * Lo que se pasa del tope NO se muestra. Decisión de negocio (2026-08-09).
@@ -194,6 +203,23 @@ export default function ParaTiPage() {
               ))}
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // El fallo, antes del vacío: el vacío de esta pantalla habla de filtros, y
+  // ofrecer «limpiar filtros» sobre una petición muerta es una salida que no
+  // lleva a ningún lado.
+  if (errorRecomendaciones) {
+    return (
+      <div className="min-h-screen bg-plan-page">
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <FalloDeCarga
+            error={errorRecomendaciones}
+            queEs="las propiedades que te caben"
+            onReintentar={recargarRecomendaciones}
+          />
         </div>
       </div>
     );

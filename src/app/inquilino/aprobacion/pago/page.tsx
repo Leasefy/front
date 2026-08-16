@@ -221,7 +221,8 @@ export default function PagoDeLaAprobacionPage() {
                   error={errorDePago}
                   queEs="el pago"
                   onReintentar={() => void pagar()}
-                  className="mt-6 py-8"
+                  enmarcado={false}
+                  className="mt-6 border-t border-border pt-8 pb-2"
                 />
               )}
 

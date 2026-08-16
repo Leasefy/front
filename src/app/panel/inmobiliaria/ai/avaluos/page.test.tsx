@@ -10,10 +10,22 @@
  * `wizard-url.ts` deja escrito el contrato — "callers must degrade (hide/disable
  * the CTA)" — y `/avaluo/nuevo` ya lo cumplía. Este panel no.
  *
+ * ── Y la pantalla no puede contradecirse a sí misma ───────────────────────
+ *
+ * Hoy la lista falla de verdad (502: el micro de avalúos no responde). Había
+ * DOS bloques leyendo el mismo pedido: «Mis solicitudes» decía «No pudimos
+ * cargar los avalúos» y «Actividad reciente», diez centímetros más abajo,
+ * decía «Aún no hay actividad reciente» — porque no tenía rama de error y
+ * leía la lista vacía que deja `useApiData` cuando algo falla.
+ *
  * Cobertura:
  *   (1) sin origen configurado → banner visible y los DOS botones deshabilitados
  *   (2) sin origen configurado → un clic NO llega a la API (no se firma un token)
  *   (3) con origen configurado → sin banner y los dos botones habilitados
+ *   (4) si la carga falla, NINGUNA parte de la pantalla dice que no hay nada
+ *   (5) el aviso no promete que la lista de abajo sigue funcionando
+ *   (6) vacío CON filtro puesto ≠ vacío sin nada creado
+ *   (7) la sección no se llama como la pestaña de al lado
  */
 
 import * as React from 'react'
@@ -41,16 +53,28 @@ vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ children }: { children: React.ReactNode }) => children,
 }))
 
-// ── Lista vacía: el foco está en los CTA, no en la tabla ──────────────────
+// ── i18n real (es.json), no `t: (k) => k` ─────────────────────────────────
+// Todo el copy de esta pantalla vive ahora en el diccionario. Con el stub que
+// resuelve contra el es.json de verdad, las aserciones en español de abajo
+// dejan de comparar contra literales del componente y pasan a verificar lo que
+// el diccionario efectivamente devuelve — que es lo que ve la agencia.
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'))
+
+// ── La lista, controlable por test ────────────────────────────────────────
+// Misma forma que devuelve `useApiData`: `errorCrudo` es el error TAL CUAL
+// (lo que <EstadoDeDatos> necesita para clasificar), `error` es su mensaje.
+const _lista = {
+  data: null as unknown,
+  avaluos: [] as unknown[],
+  total: 0,
+  pageSize: 100,
+  isLoading: false,
+  error: null as string | null,
+  errorCrudo: null as unknown,
+  refetch: vi.fn(async () => null),
+}
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
-  useAgencyAvaluos: () => ({
-    data: null,
-    avaluos: [],
-    total: 0,
-    pageSize: 100,
-    isLoading: false,
-    error: null,
-  }),
+  useAgencyAvaluos: () => _lista,
 }))
 
 const solicitarMock = vi.fn(async () => ({ wizardUrl: 'http://micro.test/avaluo?agency=t' }))
@@ -64,6 +88,8 @@ vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
 
 // ── La página, DESPUÉS de los mocks ───────────────────────────────────────
 import AvaluosSalaPage from './page'
+// El mismo `t` que usa la página: resuelve contra el es.json real.
+import { t } from '@/lib/i18n/i18n-test-stub'
 
 let container: HTMLDivElement
 let root: Root
@@ -77,6 +103,11 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container)
   _origen = ''
+  _lista.avaluos = []
+  _lista.total = 0
+  _lista.isLoading = false
+  _lista.error = null
+  _lista.errorCrudo = null
 })
 
 afterEach(() => {
@@ -128,5 +159,104 @@ describe('Avalúos — servicio configurado', () => {
     const link = container.querySelector<HTMLButtonElement>(CTA_LINK)
     expect(directo?.disabled).toBe(false)
     expect(link?.disabled).toBe(false)
+  })
+})
+
+describe('Avalúos — la pantalla no se contradice', () => {
+  it('(4) si la carga falla, ninguna parte dice que no hay nada', async () => {
+    // Lo que pasa de verdad hoy: el back no alcanza al micro y sintetiza un 502.
+    // El error llega como Error con `status` (así lo tira `client.ts`), y
+    // `useApiData` guarda el error Y deja la lista en [] — de ahí salía la
+    // mentira: cualquier bloque que sólo mire `length === 0` ve un vacío.
+    _lista.errorCrudo = Object.assign(new Error('Error 502'), { status: 502 })
+    _lista.error = 'Error 502'
+    await montar()
+
+    const texto = container.textContent ?? ''
+
+    // Se dice que falló…
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).not.toBeNull()
+    // …y no se afirma en ningún lado que no haya nada.
+    expect(texto).not.toContain('Aún no hay actividad reciente')
+    expect(texto).not.toContain('Todavía no hay avalúos')
+    expect(container.querySelector('[data-testid="sin-datos"]')).toBeNull()
+
+    // El MENSAJE crudo del backend —en inglés— no se lee: queda sólo en el nodo
+    // `sr-only` de diagnóstico que <FalloDeCarga> reserva para eso.
+    //
+    // La REFERENCIA sí se muestra, y es deliberado: cambió en develop DESPUÉS
+    // de escribirse este test. El copy del cartel dice «escribinos con la
+    // referencia» y no había ninguna en pantalla — pedirle a alguien un dato
+    // que no le mostramos es mandarlo a buscar lo que no existe. Por eso esta
+    // aserción hoy afirma lo contrario de lo que afirmaba antes: la referencia
+    // TIENE que verse. Lo que sigue prohibido es el mensaje crudo.
+    const cartel = container.querySelector('[data-testid="fallo-de-carga"]')!
+    const visible = [...cartel.querySelectorAll('p')].map((p) => p.textContent).join(' ')
+    expect(visible).not.toContain('Error 502')
+    expect(visible).toContain('Referencia')
+    expect(
+      container.querySelector('[data-testid="fallo-detalle-tecnico"]')?.textContent,
+    ).toContain('502')
+  })
+
+  it('(5) el aviso no promete que los avalúos anteriores se siguen viendo', async () => {
+    _lista.errorCrudo = { status: 502, message: 'Avaluo service unreachable' }
+    await montar()
+
+    const aviso = container.querySelector(BANNER)?.textContent ?? ''
+    expect(aviso).not.toContain('más abajo')
+    expect(aviso.length).toBeGreaterThan(0)
+  })
+
+  it('(8) el aviso y el vacío de la cola dicen la MISMA frase', async () => {
+    // Las dos pantallas hablan del mismo servicio caído. Si cada una tuviera su
+    // redacción, se despegarían con el tiempo: una sola clave para las dos.
+    await montar()
+
+    const aviso = container.querySelector(BANNER)?.textContent ?? ''
+    expect(aviso).toContain(t('inmobiliaria.ai.workspace.pages.avaluos.solicitarUnavailable'))
+  })
+
+  it('(6) vacío con un filtro puesto ofrece quitarlo, no «creá el primero»', async () => {
+    await montar()
+
+    // Sin filtro: el vacío de verdad.
+    expect(container.querySelector('[data-testid="sin-datos"]')?.getAttribute('data-caso')).toBe(
+      'vacio',
+    )
+
+    // Con un estado elegido, el mismo cero significa otra cosa.
+    const chipRechazado = [...container.querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'Rechazado',
+    )
+    await act(async () => {
+      chipRechazado?.click()
+    })
+
+    const vacio = container.querySelector('[data-testid="sin-datos"]')
+    expect(vacio?.getAttribute('data-caso')).toBe('filtros')
+    expect(vacio?.textContent).not.toContain('Todavía no hay avalúos')
+  })
+
+  it('(7) la sección no se llama igual que la pestaña de al lado', async () => {
+    // «Mis solicitudes» es la pestaña `./cola`, que muestra los work-items del
+    // agente: otro servicio, otros datos. Dos lugares con el mismo nombre y
+    // contenidos distintos hacen imposible saber cuál estás mirando.
+    _lista.avaluos = [
+      {
+        id: 'av-1',
+        state: 'firmado',
+        ownerName: 'Ana Ruiz',
+        method: 'AVM',
+        valueCop: 350_000_000,
+        createdAt: '2026-08-01T12:00:00.000Z',
+      },
+    ]
+    _lista.total = 1
+    await montar()
+
+    const titulos = [...container.querySelectorAll('h1, h2')].map((h) => h.textContent?.trim())
+    expect(titulos).not.toContain('Mis solicitudes')
+    expect(titulos).toContain('Avalúos de tu inmobiliaria')
   })
 })

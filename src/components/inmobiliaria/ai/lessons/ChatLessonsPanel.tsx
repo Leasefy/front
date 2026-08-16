@@ -15,7 +15,7 @@
  * States mirror the AI hub conventions (use-ai-hub-landing / ai-hub-chat):
  *   - no backend wired      → honest "backend not configured" notice
  *   - loading               → skeletons
- *   - error                 → ErrorState with retry
+ *   - error                 → <FalloDeCarga> con reintento (`refresh` del hook)
  *   - empty                 → "el asistente aprende a medida que lo usás"
  *   - enabled === false     → banner: certified lessons exist but aren't applied
  */
@@ -33,7 +33,7 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { isAgencyManager } from '@/lib/auth/agency-roles'
 import { toast } from '@/components/ui/toast'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ErrorState } from '@/components/ui/error-state'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EmptyState } from '@/components/ui/empty-state'
 import { isAgentConfigured, type CertifyDecision } from '@/lib/api/ai-hub-lessons'
 import { useChatLessons } from '@/lib/hooks/use-chat-lessons'
@@ -61,7 +61,7 @@ export function ChatLessonsPanel() {
   // OPERATOR+ (en este codebase: ADMIN / AGENTE). VIEWER y CONTADOR: solo lectura.
   const canCertify = isAgencyManager({ isAdmin, agencyRole })
 
-  const { lessons, enabled, isLoading, error, certify } = useChatLessons()
+  const { lessons, enabled, isLoading, error, certify, refresh } = useChatLessons()
   const [pendingId, setPendingId] = useState<string | null>(null)
 
   const grouped = useMemo(() => {
@@ -136,10 +136,13 @@ export function ChatLessonsPanel() {
   // ── Error ───────────────────────────────────────────────────────────────────
   if (error && lessons.length === 0) {
     return (
-      <ErrorState
-        title="No pudimos cargar las lecciones"
-        description="El asistente no respondió. Por favor intenta de nuevo."
-        onRetry={() => void window.location.reload()}
+      /* Reintentar recargaba la PÁGINA ENTERA (`window.location.reload()`)
+         para volver a pedir una lista: se perdía todo lo demás que hubiera en
+         pantalla. El hook ya expone `refresh`. */
+      <FalloDeCarga
+        error={error}
+        queEs="las lecciones del asistente"
+        onReintentar={() => void refresh()}
       />
     )
   }

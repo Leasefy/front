@@ -26,39 +26,46 @@ import { join, relative } from 'node:path'
 const RAIZ = process.cwd()
 const CARPETAS = ['src/app', 'src/components']
 
-/** Toma datos de un hook propio (los de `@/lib/hooks` van todos por useApiData). */
-const USA_HOOK_DE_DATOS = /from '@\/lib\/hooks/
+/**
+ * Toma datos de un hook propio (los de `@/lib/hooks` van todos por useApiData).
+ *
+ * ⚠️ `import type` NO cuenta: traerse un tipo del archivo de un hook no es
+ * pedir datos. Sin esta exclusión el test señalaba a `TopScriptsTable` y a
+ * `RecomendacionRail`, que reciben todo por props y no piden nada — y una
+ * lista de deuda con falsos positivos adentro enseña a ignorarla.
+ */
+const USA_HOOK_DE_DATOS = /^import (?!type )[^\n]*from '@\/lib\/hooks/m
 /** Pinta algún estado vacío. */
 const PINTA_VACIO = /EmptyState|Sin .*aún|No hay/
-/** Mira el fallo de alguna forma. */
-const MIRA_EL_ERROR = /\berror\b|isError/
+/**
+ * Mira el fallo de alguna forma: lo desestructura del hook, lo pasa como prop
+ * o lo compara. Lo que sigue después del nombre es lo que distingue leerlo
+ * (`error,` `summaryError:` `error={`) de sólo escribirlo (`console.error(`,
+ * `toast.error(`, `catch (error)`), que no es mirarlo.
+ *
+ * Case-insensitive a propósito: `summaryError` y `errorCrudo` cuentan igual.
+ * Con `/\berror\b/` a secas, `costos/page.tsx` figuraba como deuda teniendo el
+ * fallo resuelto desde siempre.
+ */
+const MIRA_EL_ERROR = /(?<!\()\b(?:\w+[eE]rror|error)(?:Crudo)?\b(?!\s*\()|isError/
 
 /**
  * Pantallas que pintan un vacío sin haber mirado si la petición falló.
  * Un error se ve ahí como «no hay nada».
  *
- * Para sacar una de la lista: tomá `error` (y `isLoading`) del hook y envolvé
- * el contenido en `<EstadoDeDatos>`. Ver `agenda/page.tsx` y
+ * **Vacía desde 2026-08-11.** Si volvés a agregar una, el otro test falla; es
+ * el punto. Para arreglarla: tomá `errorCrudo` (y `isLoading`) del hook y
+ * envolvé el contenido en `<EstadoDeDatos>`. Ver `agenda/page.tsx` y
  * `portafolio/page.tsx`, que fueron las dos primeras.
  */
-const VACIO_SIN_MIRAR_EL_ERROR = [
-  'src/app/inquilino/guardados/page.tsx',
-  'src/app/inquilino/pagos/page.tsx',
-  'src/app/inquilino/para-ti/page.tsx',
-  'src/app/panel/inmobiliaria/ai/asegurabilidad/[quoteId]/RecomendacionRail.tsx',
-  'src/app/panel/inmobiliaria/ai/asegurabilidad/costos/page.tsx',
-  'src/components/tenant/RecommendedProperties.tsx',
-  'src/components/messages/MessagesWidget.tsx',
-  'src/components/lease/LeaseExpandableItem.tsx',
-  'src/components/inmobiliaria/cotizador/WizardStep3Config.tsx',
-  'src/components/inmobiliaria/cobranza/TopScriptsTable.tsx',
-  'src/components/inmobiliaria/cobranza/CobranzaAnaliticaResumen.tsx',
-]
+const VACIO_SIN_MIRAR_EL_ERROR: string[] = []
 
 /**
  * Pantallas que siguen con el `ErrorState` viejo: muestra el mensaje crudo del
  * backend —en inglés— y ofrece «Intentar de nuevo» incluso sobre un 404, que
  * es una promesa falsa. Reemplazo: `<FalloDeCarga>`.
+ *
+ * Queda una, y a propósito.
  */
 const ERROR_STATE_VIEJO = [
   'src/app/inquilino/arriendo/page.tsx',
@@ -67,12 +74,18 @@ const ERROR_STATE_VIEJO = [
   'src/app/panel/inmobiliaria/inmuebles/[id]/candidatos/page.tsx',
   'src/app/panel/inmobiliaria/dashboard/page.tsx',
   'src/app/panel/inmobiliaria/cobros/page.tsx',
+  /**
+   * `ai/error.tsx` NO es un fallo de carga: es el error boundary de Next para
+   * los workspaces de IA. Lo que atrapa es un crash de render —un lookup en un
+   * mapa finito contra una clave que el backend no tenía—, sin status HTTP que
+   * clasificar, y su salida no es «reintentar la petición» sino `reset()` para
+   * volver a renderizar el segmento. Además muestra el `digest`, que es lo
+   * único que sirve cuando alguien escribe a soporte.
+   *
+   * `FalloDeCarga` está hecho para lo otro. Meterlo acá sería usar la
+   * herramienta correcta en el problema equivocado.
+   */
   'src/app/panel/inmobiliaria/ai/error.tsx',
-  'src/app/panel/inmobiliaria/ai/cobranza/llamadas/page.tsx',
-  'src/app/panel/inmobiliaria/renovaciones/page.tsx',
-  'src/app/panel/(landlord)/leases/page.tsx',
-  'src/app/panel/(landlord)/contratos/page.tsx',
-  'src/components/inmobiliaria/ai/lessons/ChatLessonsPanel.tsx',
 ]
 
 function pantallas(dir: string, encontradas: string[] = []): string[] {
@@ -131,7 +144,12 @@ describe('ErrorState viejo', () => {
       if (archivo.endsWith('error-state.tsx') || archivo.endsWith('FalloDeCarga.tsx')) {
         return false
       }
-      return /\bErrorState\b/.test(readFileSync(archivo, 'utf8'))
+      // USARLO, no nombrarlo. Con `/\bErrorState\b/` a secas quedaban marcadas
+      // seis pantallas ya migradas, sólo porque el comentario que explica POR
+      // QUÉ se reemplazó menciona el componente viejo. Una lista de deuda que
+      // castiga documentar el cambio empuja a borrar la explicación.
+      const src = readFileSync(archivo, 'utf8')
+      return /<ErrorState[\s/>]/.test(src) || /^import .*\bErrorState\b/m.test(src)
     }).map(ruta)
 
     const nuevas = encontradas.filter((f) => !ERROR_STATE_VIEJO.includes(f))

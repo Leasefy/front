@@ -476,6 +476,9 @@ function ConsignacionDetailContent() {
       <PedirCitaModal
         isOpen={showCitaModal}
         onClose={() => setShowCitaModal(false)}
+        // Vacío a propósito: esta pantalla no lista citas, así que no hay nada
+        // que recargar. Las citas viven en /panel/inmobiliaria/agenda, que las
+        // relee al montar.
         onCreated={() => {}}
         presetPropertyId={consignacion.propertyId}
         presetPropertyTitle={consignacion.propertyTitle}

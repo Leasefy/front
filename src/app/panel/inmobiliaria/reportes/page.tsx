@@ -2,6 +2,7 @@
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -26,6 +27,7 @@ import { EmptyState } from '@/components/ui';
 import { SegmentedControl } from '@leasefy/cadence';
 import type { ReportDefinition, ReportId, ReportCategory } from '@/lib/types/inmobiliaria';
 import { REPORT_DEFINITIONS } from '@/lib/constants/inmobiliaria-data';
+import { comoSeBaja, sePuedeBajar, nombreDelArchivo } from '@/lib/reportes/exportables';
 import {
   useCarteraReport,
   useOcupacionReport,
@@ -41,7 +43,7 @@ import {
   ReporteViewer,
   type ReporteFiltersState,
 } from '@/components/inmobiliaria';
-import { apiClient } from '@/lib/api/client';
+import { apiClient, ApiError } from '@/lib/api/client';
 import { useAgencyPlan } from '@/lib/hooks/useAgencyPlan';
 import { FeatureGate } from '@/components/inmobiliaria/UpgradePrompt';
 import { OccupancyReport } from '@/components/inmobiliaria/reports/OccupancyReport';
@@ -119,6 +121,7 @@ function saveFavorites(favorites: Set<ReportId>): void {
  */
 function ReportesContent() {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const { hasAdvancedReports } = useAgencyPlan();
 
   // Advanced report tabs
@@ -302,31 +305,65 @@ function ReportesContent() {
     });
   }, [reports, favorites, t]);
 
-  // Handle generate report
-  const handleGenerateReport = useCallback(async (report: ReportDefinition) => {
+  /**
+   * Bajar el reporte. De verdad.
+   *
+   * Esto ANTES era `setTimeout(1500)` + `lastGenerated` en estado local +
+   * `toast.success('Reporte generado')`. Nada salía a la red: la fecha que
+   * quedaba en la tarjeta era la de un archivo que no existía, y se perdía al
+   * recargar. Ver `src/lib/reportes/exportables.ts`.
+   *
+   * `lastGenerated` ahora se estampa SÓLO si el archivo llegó y se descargó.
+   */
+  const bajarReporte = useCallback(async (report: ReportDefinition): Promise<boolean> => {
+    const como = comoSeBaja(report.id as ReportId);
+
+    if (!como.disponible) {
+      toast.info(`${report.title}: todavía no se puede descargar`, {
+        description: como.motivo,
+        action: como.dondeSiHay
+          ? { label: como.dondeSiHay.label, onClick: () => router.push(como.dondeSiHay!.href) }
+          : undefined,
+      });
+      return false;
+    }
+
     setGeneratingReports((prev) => new Set([...prev, report.id]));
+    try {
+      const blob = await apiClient.getBlob(
+        `/inmobiliaria/reports/export?type=${como.tipo}`,
+      );
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nombreDelArchivo(como.tipo, new Date().toISOString().slice(0, 10));
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
 
-    // Simulate report generation
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Update last generated timestamp
-    const now = new Date().toISOString();
-    setReports((prev) =>
-      prev.map((r) =>
-        r.id === report.id ? { ...r, lastGenerated: now } : r
-      )
-    );
-
-    setGeneratingReports((prev) => {
-      const next = new Set(prev);
-      next.delete(report.id);
-      return next;
-    });
-
-    toast.success(t('inmobiliaria.reportes.toasts.reportGenerated'), {
-      description: t('inmobiliaria.reportes.toasts.reportUpdated', { title: report.title }),
-    });
-  }, [t]);
+      const now = new Date().toISOString();
+      setReports((prev) =>
+        prev.map((r) => (r.id === report.id ? { ...r, lastGenerated: now } : r)),
+      );
+      toast.success('Descargado', { description: `${report.title} · CSV` });
+      return true;
+    } catch (error) {
+      toast.error('No pudimos generar el reporte', {
+        description:
+          error instanceof ApiError && error.status === 403
+            ? 'Tu rol no incluye descargar reportes.'
+            : 'Probá de nuevo en un momento.',
+      });
+      return false;
+    } finally {
+      setGeneratingReports((prev) => {
+        const next = new Set(prev);
+        next.delete(report.id);
+        return next;
+      });
+    }
+  }, [router]);
 
   // Handle preview report
   const handlePreviewReport = useCallback((report: ReportDefinition) => {
@@ -334,68 +371,25 @@ function ReportesContent() {
     setIsViewerOpen(true);
   }, []);
 
-  // Handle export report
+  /**
+   * Descargar es lo mismo que generar: el back arma el CSV a pedido, no hay un
+   * archivo guardado que uno «genere» primero y baje después. Tener dos
+   * botones distintos para una sola acción fue lo que dejó lugar a que uno de
+   * los dos mintiera. El `format` que llegaba de la tarjeta ya no decide nada:
+   * lo decide `exportables.ts`, que es lo que el back sabe producir.
+   */
   const handleExportReport = useCallback(
-    async (report: ReportDefinition, format: 'pdf' | 'excel') => {
-      try {
-        if (format === 'excel') {
-          const EXPORT_TYPE_MAP: Partial<Record<ReportId, string>> = {
-            'cartera-edades': 'cartera-edades',
-            'comisiones-agente': 'comisiones-agente',
-            'rendimiento-agentes': 'comisiones-agente',
-            'vencimientos': 'vencimientos',
-            'flujo-caja': 'flujo-caja',
-            'ocupacion-portafolio': 'ocupacion-portafolio',
-          };
-          const exportType = EXPORT_TYPE_MAP[report.id as ReportId];
-          if (!exportType) {
-            toast.error(t('inmobiliaria.reportes.toasts.exportNotAvailable'), {
-              description: t('inmobiliaria.reportes.toasts.excelNotSupported'),
-            });
-            return;
-          }
-          const blob = await apiClient.getBlob(`/inmobiliaria/reports/export?type=${exportType}`);
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `${exportType}-${new Date().toISOString().split('T')[0]}.csv`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        } else {
-          // PDF export - only extractos for now
-          if (report.id === 'extractos-propietarios') {
-            toast.info(t('inmobiliaria.reportes.toasts.selectOwner'), {
-              description: t('inmobiliaria.reportes.toasts.goToDispersions'),
-            });
-            return;
-          }
-
-          // For other reports, show coming soon
-          toast.info(t('inmobiliaria.reportes.toasts.pdfInDevelopment'), {
-            description: t('inmobiliaria.reportes.toasts.useExcel'),
-          });
-          return;
-        }
-
-        toast.success(t('inmobiliaria.reportes.toasts.fileDownloaded'), {
-          description: t('inmobiliaria.reportes.toasts.exportedSuccessfully', { title: report.title }),
-        });
-      } catch (error) {
-        toast.error(t('inmobiliaria.reportes.toasts.exportError'), {
-          description: t('inmobiliaria.reportes.toasts.tryAgainLater'),
-        });
-      }
+    async (report: ReportDefinition) => {
+      await bajarReporte(report);
     },
-    [t]
+    [bajarReporte]
   );
 
   // Handle viewer export
   const handleViewerExport = useCallback(
-    (format: 'pdf' | 'excel') => {
+    () => {
       if (selectedReport) {
-        handleExportReport(selectedReport, format);
+        void handleExportReport(selectedReport);
       }
     },
     [selectedReport, handleExportReport]
@@ -412,38 +406,55 @@ function ReportesContent() {
     setTimeout(() => setSelectedReport(null), 300);
   }, []);
 
-  // Handle generate all
+  /**
+   * Bajar todos los que se pueden bajar.
+   *
+   * También era una simulación: 2 s de espera, `lastGenerated` a TODOS los
+   * filtrados —incluidos los que ni siquiera tienen export— y «N reportes
+   * generados». Ahora se bajan de a uno y el cartel del final dice cuántos
+   * salieron y cuántos no, con nombre y apellido.
+   */
   const handleGenerateAll = useCallback(async () => {
-    const pendingReports = filteredReports.filter(
-      (r) => !generatingReports.has(r.id)
+    const bajables = filteredReports.filter(
+      (r) => !generatingReports.has(r.id) && sePuedeBajar(r.id as ReportId),
     );
+    const noBajables = filteredReports.filter((r) => !sePuedeBajar(r.id as ReportId));
 
-    if (pendingReports.length === 0) return;
+    if (bajables.length === 0) {
+      toast.info('No hay reportes para descargar', {
+        description:
+          noBajables.length > 0
+            ? `${noBajables.length} de los que ves todavía no se generan.`
+            : 'Ajustá los filtros para ver otros reportes.',
+      });
+      return;
+    }
 
-    toast.loading(t('inmobiliaria.reportes.toasts.generatingReports', { count: pendingReports.length }), {
-      id: 'generate-all',
-    });
+    toast.loading(`Descargando ${bajables.length} reportes…`, { id: 'generate-all' });
 
-    setGeneratingReports(new Set(pendingReports.map((r) => r.id)));
+    // Secuencial a propósito: cada descarga dispara un click en un <a>, y el
+    // navegador bloquea la ráfaga si salen todas juntas.
+    let listos = 0;
+    for (const report of bajables) {
+      // eslint-disable-next-line no-await-in-loop
+      if (await bajarReporte(report)) listos += 1;
+    }
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    const now = new Date().toISOString();
-    setReports((prev) =>
-      prev.map((r) =>
-        pendingReports.find((p) => p.id === r.id)
-          ? { ...r, lastGenerated: now }
-          : r
-      )
-    );
-
-    setGeneratingReports(new Set());
-
-    toast.success(t('inmobiliaria.reportes.toasts.reportsGenerated'), {
-      id: 'generate-all',
-      description: t('inmobiliaria.reportes.toasts.reportsUpdated', { count: pendingReports.length }),
-    });
-  }, [filteredReports, generatingReports, t]);
+    const fallaron = bajables.length - listos;
+    if (listos === 0) {
+      toast.error('No pudimos descargar ninguno', { id: 'generate-all' });
+    } else {
+      toast.success(`${listos} ${listos === 1 ? 'reporte descargado' : 'reportes descargados'}`, {
+        id: 'generate-all',
+        description: [
+          fallaron > 0 ? `${fallaron} falló${fallaron === 1 ? '' : 'ron'}` : null,
+          noBajables.length > 0 ? `${noBajables.length} todavía no se generan` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ') || undefined,
+      });
+    }
+  }, [filteredReports, generatingReports, bajarReporte]);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -604,11 +615,10 @@ function ReportesContent() {
                     <ReporteCard
                       report={{ ...report, isFavorite: true }}
                       variant={viewMode === 'list' ? 'compact' : 'default'}
-                      onGenerate={() => handleGenerateReport(report)}
+                      onGenerate={() => void bajarReporte(report)}
+                      descargable={sePuedeBajar(report.id as ReportId)}
                       onPreview={() => handlePreviewReport(report)}
-                      onDownload={() =>
-                        handleExportReport(report, report.format)
-                      }
+                      onDownload={() => void bajarReporte(report)}
                       onToggleFavorite={() => handleToggleFavorite(report.id)}
                       isGenerating={generatingReports.has(report.id)}
                       isLocked={!!report.premium && !hasAdvancedReports}
@@ -654,11 +664,10 @@ function ReportesContent() {
                     <ReporteCard
                       report={{ ...report, isFavorite: false }}
                       variant={viewMode === 'list' ? 'compact' : 'default'}
-                      onGenerate={() => handleGenerateReport(report)}
+                      onGenerate={() => void bajarReporte(report)}
+                      descargable={sePuedeBajar(report.id as ReportId)}
                       onPreview={() => handlePreviewReport(report)}
-                      onDownload={() =>
-                        handleExportReport(report, report.format)
-                      }
+                      onDownload={() => void bajarReporte(report)}
                       onToggleFavorite={() => handleToggleFavorite(report.id)}
                       isGenerating={generatingReports.has(report.id)}
                       isLocked={!!report.premium && !hasAdvancedReports}

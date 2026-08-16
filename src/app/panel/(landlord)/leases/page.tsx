@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { House, CurrencyDollar, Clock, WarningCircle, TrendUp } from '@phosphor-icons/react';
 import { LeaseExpandableItem } from '@/components/lease/LeaseExpandableItem';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ErrorState } from '@/components/ui/error-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Button, Spinner } from '@/components/ui';
 import { PageHeader, KpiCard } from '@leasefy/cadence';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -54,7 +54,7 @@ function ProgressBar({ value, variant }: ProgressBarProps) {
 // ============================================================================
 
 export default function LandlordLeasesPage() {
-  const { leases, stats, isLoading, error, refetch } = useLeases();
+  const { leases, stats, isLoading, error, errorCrudo, refetch } = useLeases();
   const { t, formatCurrency } = useI18n();
 
   const [activeTab, setTab] = useState('all');
@@ -114,7 +114,9 @@ export default function LandlordLeasesPage() {
     return (
       <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <ErrorState description={error} onRetry={refetch} />
+          {/* Mostraba `description={error}`: el mensaje crudo del backend,
+              en inglés, como único texto de la pantalla. */}
+          <FalloDeCarga error={errorCrudo ?? error} queEs="tus arriendos" onReintentar={refetch} />
         </div>
       </div>
     );

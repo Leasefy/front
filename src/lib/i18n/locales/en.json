@@ -736,7 +736,10 @@
       "accountSetDefault": "Account set as default",
       "assignmentsUpdated": "Assignments updated successfully",
       "cannotDeleteDefault": "Cannot delete the default account",
-      "cannotDeleteWithProperties": "This account has assigned properties"
+      "cannotDeleteWithProperties": "This account has assigned properties",
+      "errorAddingAccount": "We could not add the account",
+      "errorDeletingAccount": "We could not delete the account",
+      "errorUpdatingAccount": "We could not update the account"
     },
     "paymentAccounts": {
       "title": "Payment Accounts",
@@ -1602,7 +1605,8 @@
         "editDesc": "Edit form available in the next version",
         "created": "Agent created",
         "createdDesc": "{{name}} has been added to the team",
-        "createdEmailNotDeliveredDesc": "{{name}} was added, but we couldn't send the invitation email. Use \"Resend invitation\"."
+        "createdEmailNotDeliveredDesc": "{{name}} was invited, but the email did not go out. Share the link yourself.",
+        "createdEmailNotConfiguredDesc": "{{name}} was invited. The server has no email configured yet, so nothing was sent: share the link yourself."
       },
       "card": {
         "role": {
@@ -1613,7 +1617,8 @@
         "status": {
           "active": "Active",
           "inactive": "Inactive",
-          "onLeave": "On leave"
+          "onLeave": "On leave",
+          "invited": "Invited"
         },
         "properties": "Properties",
         "leases": "Leases",
@@ -2385,6 +2390,7 @@
       "statusInactive": "Inactive",
       "statusOnLeave": "On leave",
       "statusOnLeaveShort": "Leave",
+      "statusInvited": "Invited",
       "specResidential": "Residential",
       "specCommercial": "Commercial",
       "specBoth": "Both",
@@ -6892,21 +6898,50 @@
             }
           },
           "avaluos": {
-            "eyebrow": "Agent · Appraisals",
             "salaTitulo": "Appraisals",
-            "salaDesc": "Request reference value estimates for your properties without leaving the panel: you mint a link, the property details and online payment are captured, the engine crunches market data and a Leasefy reviewer signs the certificate. It's fully remote, with no physical visit. Track every request here, end to end.",
+            "salaDesc": "A reference value estimate, fully remote and AI-assisted. No physical visit: the certificate is generated from market data and signed by a Leasefy reviewer.",
             "colaTitle": "My appraisal requests",
             "colaDesc": "Every appraisal you requested, end to end: request → market-data estimate → review → signed certificate. You always see the up-to-date status; the review and signature are handled by a Leasefy reviewer. No physical visit is performed.",
             "colaKpiLabel": "Active",
             "colaEmptyTitle": "No requests yet",
             "colaEmptyHint": "Request your first appraisal: mint the link, the estimate is generated and you track every step here until the signed certificate.",
             "casoColaLabel": "My requests",
-            "misSolicitudes": "My requests",
             "solicitarTitle": "Request an appraisal",
-            "solicitarDetalle": "Mint a shareable link; your client enters the property details and pays online. The appraisal is issued in your agency's name.",
             "solicitarCta": "Request appraisal",
-            "solicitarUnavailable": "The request wizard isn't enabled in this environment yet. Reach out to your Leasefy contact to activate it.",
-            "solicitarProximamente": "Coming soon",
+            "solicitarUnavailable": "This environment has no appraisal service connected: we can't open the wizard or mint shareable links. Reach out to your Leasefy contact to activate it.",
+            "desconectadoTitulo": "Appraisal requests are disconnected",
+            "directoDetalle": "Open the wizard and enter the property details yourself.",
+            "abriendoAsistente": "Opening wizard…",
+            "linkCta": "Mint a shareable link",
+            "linkDetalle": "Send the link to your client to fill in; the appraisal is issued in your agency's name.",
+            "generandoLink": "Minting link…",
+            "linkListoDetalle": "Send this link to your client; the appraisal is issued in your agency's name.",
+            "linkAria": "Shareable appraisal link",
+            "copiarLink": "Copy shareable link",
+            "abrirAhora": "Open now",
+            "errorCopiar": "We couldn't copy the link. Copy it manually.",
+            "errorSolicitar": "We couldn't request the appraisal. Try again.",
+            "listaTitulo": "Your agency's appraisals",
+            "queEs": "the appraisals",
+            "queSon": "appraisals",
+            "vacioTitulo": "No appraisals yet",
+            "vacioDesc": "Once you request an appraisal, it shows up here with its status and market value.",
+            "sinNombre": "Owner without a name",
+            "conteoUno": "1 appraisal",
+            "conteo": "{{n}} appraisals",
+            "col": {
+              "estado": "Status",
+              "propietario": "Owner",
+              "valor": "Value",
+              "creado": "Created"
+            },
+            "estados": {
+              "borrador": "Draft",
+              "enRevision": "In review",
+              "firmado": "Signed",
+              "rechazado": "Rejected",
+              "entregado": "Delivered"
+            },
             "comoFunciona": {
               "title": "How does it work?",
               "step1": {
@@ -6926,17 +6961,7 @@
                 "desc": "Download the signed certificate; it also arrives at the agency's email."
               }
             },
-            "firmaNota": "The review and the certificate signature are handled by a Leasefy reviewer. No physical visit to the property is performed.",
-            "estado": {
-              "detectado": "Requested",
-              "sugerido": "In preparation",
-              "en_revision": "Leasefy reviewing",
-              "aprobado": "Approved",
-              "ejecutando": "Estimate underway",
-              "resuelto": "Certificate delivered",
-              "rechazado": "Rejected",
-              "fallo": "Issue detected"
-            }
+            "firmaNota": "The review and the certificate signature are handled by a Leasefy reviewer. No physical visit to the property is performed."
           },
           "cobranza": {
             "salaDesc": "The agent works standard delinquency for you — calls, WhatsApp and letters within the law — and escalates only the critical cases.",

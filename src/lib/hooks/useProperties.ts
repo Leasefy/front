@@ -5,6 +5,7 @@ import { propertiesApi, type PaginatedProperties } from '@/lib/api/properties.se
 import type { PropertyFiltersParams } from '@/lib/api/properties.types';
 import type { Property } from '@/lib/types/property';
 import type { PaginationMeta } from '@/lib/api/properties.types';
+import { esNoExiste } from '@/lib/errores/clasificar';
 import { useRefrescoAutomatico } from './use-refresco-automatico';
 
 /*
@@ -156,19 +157,29 @@ export function useMyProperties() {
 // ============================================================================
 
 /**
- * Resolve an arbitrary list of property IDs to full Property objects.
+ * Resuelve una lista de ids de inmuebles a objetos completos.
  *
- * Unlike intersecting against the featured/top-N list, this fetches each
- * wishlisted property directly by ID, so saved items never silently vanish
- * just because they fall outside the featured page. IDs that fail to resolve
- * (deleted property, 404) are dropped, so `properties.length` is the honest
- * count of what is actually shown.
+ * Los guardados se piden de a uno por id —no cruzando contra el top-N— para
+ * que algo guardado no desaparezca sólo por caerse de la página destacada.
+ *
+ * ⚠️ Acá «no se pudo traer» y «ya no está publicado» son DOS cosas distintas y
+ * antes se trataban igual. Cada pedido llevaba un `.catch(() => null)`, así que
+ * `Promise.all` no podía rechazar nunca: `errorCrudo` era código muerto. Con la
+ * red caída los cinco pedidos morían, la lista quedaba en `[]` y la pantalla
+ * decía **«No tenés propiedades guardadas»** — a alguien que sí las tiene.
+ *
+ * Ahora se mira POR QUÉ falló cada uno:
+ *   404      → el inmueble se bajó. Se descuenta y se cuenta aparte.
+ *   cualquier otra cosa → no se pudo traer. Eso es un fallo y se dice.
  */
 export function useWishlistedProperties(ids: string[]) {
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [errorCrudo, setErrorCrudo] = useState<unknown>(null);
+  /** Guardadas que el backend ya no tiene: las bajaron, no fallaron. */
+  const [yaNoDisponibles, setYaNoDisponibles] = useState(0);
+  const [intento, setIntento] = useState(0);
 
   // Serialize ids to a stable key so the effect only re-runs on real changes.
   const idsKey = ids.join(',');
@@ -181,6 +192,7 @@ export function useWishlistedProperties(ids: string[]) {
       setIsLoading(false);
       setError(null);
       setErrorCrudo(null);
+      setYaNoDisponibles(0);
       return;
     }
 
@@ -190,32 +202,48 @@ export function useWishlistedProperties(ids: string[]) {
     setErrorCrudo(null);
 
     Promise.all(
-      idList.map((id) =>
-        propertiesApi.getById(id).catch(() => null),
-      ),
-    )
-      .then((results) => {
-        if (!cancelled) {
-          // Preserve wishlist order; drop IDs that failed to resolve.
-          setProperties(results.filter((p): p is Property => p !== null));
-          setIsLoading(false);
+      idList.map(async (id) => {
+        try {
+          return { encontrada: await propertiesApi.getById(id) };
+        } catch (err) {
+          return { fallo: err };
         }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setErrorCrudo(err);
-          setError(err instanceof Error ? err.message : 'Error cargando propiedades');
-          setProperties([]);
-          setIsLoading(false);
-        }
-      });
+      }),
+    ).then((resultados) => {
+      if (cancelled) return;
+
+      // Se conserva el orden de la wishlist.
+      const encontradas = resultados
+        .map((r) => ('encontrada' in r ? r.encontrada : null))
+        .filter((p): p is Property => p !== null);
+      const fallos = resultados.flatMap((r) => ('fallo' in r ? [r.fallo] : []));
+      const bajadas = fallos.filter((e) => esNoExiste(e));
+      const caidas = fallos.filter((e) => !esNoExiste(e));
+
+      setProperties(encontradas);
+      setYaNoDisponibles(bajadas.length);
+      // Sólo es un fallo si NO se pudo traer nada: si algo llegó, mostrar lo
+      // que hay es mejor que tapar la lista entera con un cartel.
+      if (caidas.length > 0 && encontradas.length === 0) {
+        setErrorCrudo(caidas[0]);
+        setError(caidas[0] instanceof Error ? caidas[0].message : 'Error cargando propiedades');
+      }
+      setIsLoading(false);
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [idsKey]);
+  }, [idsKey, intento]);
 
-  return { properties, isLoading, error, errorCrudo };
+  return {
+    properties,
+    isLoading,
+    error,
+    errorCrudo,
+    yaNoDisponibles,
+    refetch: () => setIntento((n) => n + 1),
+  };
 }
 
 // ============================================================================

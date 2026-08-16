@@ -5,7 +5,7 @@ import { PageHeader, KpiCard } from '@leasefy/cadence';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ContractExpandableItem } from '@/components/contract/ContractExpandableItem';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ErrorState } from '@/components/ui/error-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Spinner } from '@/components/ui';
 import { useContracts } from '@/lib/hooks/useContracts';
 import { useState, useMemo } from 'react';
@@ -28,7 +28,7 @@ interface TabConfig {
 
 export default function ContratosPage() {
   const { t } = useI18n();
-  const { contracts: allContracts, isLoading, error, refetch } = useContracts();
+  const { contracts: allContracts, isLoading, error, errorCrudo, refetch } = useContracts();
 
   const pendingContracts = useMemo(() =>
     allContracts.filter(c => c.status === 'pending_landlord' || c.status === 'pending_tenant' || c.status === 'draft'),
@@ -79,10 +79,10 @@ export default function ContratosPage() {
     return (
       <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <ErrorState
-            title="Error cargando contratos"
-            description={error}
-            onRetry={refetch}
+          <FalloDeCarga
+            error={errorCrudo ?? error}
+            queEs="tus contratos"
+            onReintentar={refetch}
           />
         </div>
       </div>

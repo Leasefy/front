@@ -17,6 +17,7 @@ import { CadenceChannelMixChart } from '@/components/inmobiliaria/cobranza/Caden
 import { HeatmapGrid24x7 }        from '@/components/inmobiliaria/cobranza/HeatmapGrid24x7'
 import { CostPerPesoKpi }         from '@/components/inmobiliaria/cobranza/CostPerPesoKpi'
 import { TopScriptsTable }        from '@/components/inmobiliaria/cobranza/TopScriptsTable'
+import { FalloDeCarga }           from '@/components/estado/FalloDeCarga'
 
 export default function CobranzaAnaliticaPage() {
   const { t } = useI18n()
@@ -59,20 +60,14 @@ export default function CobranzaAnaliticaPage() {
             {t('inmobiliaria.ai.cobranza.analitica.title')}
           </h1>
         </header>
-        <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-danger">
-            {t('inmobiliaria.ai.cobranza.analitica.errors.loading')}: {error}
-          </p>
-          <Button
-            type="button"
-            variant="link"
-            size="sm"
-            onClick={() => void refetch()}
-            className="shrink-0 text-danger"
-          >
-            {t('inmobiliaria.ai.cobranza.analitica.errors.retry')}
-          </Button>
-        </div>
+        {/* El mensaje crudo del backend —en inglés, con nombres de endpoint—
+            no le sirve a nadie que esté mirando esta pantalla. `FalloDeCarga`
+            lo deja en el DOM para diagnóstico y en pantalla dice qué pasó. */}
+        <FalloDeCarga
+          error={error}
+          queEs="la analítica de cobranza"
+          onReintentar={() => void refetch()}
+        />
       </main>
     )
   }

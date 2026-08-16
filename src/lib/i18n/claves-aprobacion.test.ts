@@ -79,12 +79,22 @@ describe('las claves del recorrido de aprobación existen en los dos idiomas', (
 
   it('el español y el inglés no son el mismo texto (traducción de verdad)', () => {
     // Sin esto, copiar el bloque español a en.json pasaría el test de arriba.
+    //
+    // El umbral era `< todas.length * 0.15`, pensando en coincidencias
+    // legítimas (nombres propios). Medido: hoy son CERO, así que ese 15% no
+    // cubría un caso real — era margen para dejar hasta 6 claves sin traducir
+    // sin que nada saltara. Y el modo de falla que este archivo persigue es
+    // justamente ése: una clave que se olvidaron de traducir no se nota,
+    // porque `tf` cae al español y la pantalla se ve bien.
+    //
+    // Si algún día una clave es legítimamente igual en los dos idiomas, que
+    // este test obligue a decirlo acá con su nombre, en vez de esconderla en
+    // un porcentaje.
     const identicas = todas.filter((c) => {
       const leer = (d: unknown) =>
         c.split('.').reduce<unknown>((a, p) => (a as Record<string, unknown>)?.[p], d)
       return leer(es) === leer(en)
     })
-    // Algunas coinciden legítimamente (nombres propios, "Ciudad"/"Ciudad" no).
-    expect(identicas.length).toBeLessThan(todas.length * 0.15)
+    expect(identicas).toEqual([])
   })
 })

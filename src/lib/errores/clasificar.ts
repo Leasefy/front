@@ -143,3 +143,15 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
 export function esNoExiste(error: unknown): boolean {
   return statusDe(error) === 404
 }
+
+/**
+ * ¿Esto es «no te corresponde»? (403)
+ *
+ * Sirve para las llamadas de apoyo: una pantalla puede pedir algo que sólo el
+ * admin ve —las invitaciones pendientes, por ejemplo— y para el resto del
+ * equipo ese 403 NO es un fallo, es la respuesta correcta. Cualquier otro
+ * error sí lo es y hay que decirlo.
+ */
+export function esSinPermiso(error: unknown): boolean {
+  return statusDe(error) === 403
+}

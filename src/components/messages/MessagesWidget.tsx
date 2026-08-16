@@ -29,6 +29,7 @@ import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { useConversations, useChat } from '@/lib/hooks/useMessages';
 import type { ChatConversation } from '@/lib/api/messages.types';
 
@@ -111,7 +112,13 @@ function MessagesSkeleton() {
 
 export function MessagesWidget({ actor }: MessagesWidgetProps) {
   const { t, locale } = useI18n();
-  const { conversations, totalUnread, isLoading: isLoadingConversations, refetch: refetchConversations } = useConversations();
+  const {
+    conversations,
+    totalUnread,
+    isLoading: isLoadingConversations,
+    errorCrudo: errorConversaciones,
+    refetch: refetchConversations,
+  } = useConversations();
 
   const searchParams = useSearchParams();
   const urlApplicationId = searchParams.get('applicationId');
@@ -281,6 +288,17 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
               <div className="flex-1 overflow-y-auto">
                 {isLoadingConversations ? (
                   <ConversationsSkeleton />
+                ) : errorConversaciones ? (
+                  /* Sin esto, una consulta caída se leía como «Sin
+                     conversaciones»: le decíamos a alguien que nunca habló con
+                     nadie cuando lo que pasó fue que no pudimos preguntar. */
+                  <FalloDeCarga
+                    error={errorConversaciones}
+                    queEs="tus conversaciones"
+                    onReintentar={refetchConversations}
+                    enmarcado={false}
+                    className="py-10"
+                  />
                 ) : filteredConversations.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
                     <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">

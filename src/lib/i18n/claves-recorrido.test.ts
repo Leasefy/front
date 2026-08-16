@@ -84,8 +84,16 @@ describe('las claves del recorrido existen en los dos idiomas', () => {
 
   it('el inglés no es el español copiado', () => {
     // Sin esto, pegar el bloque español en en.json pasaría los dos tests de arriba.
+    //
+    // El umbral era `< TODAS.length * 0.15`. Medido: hoy hay CERO claves
+    // iguales entre los dos idiomas, así que ese 15% no cubría ningún caso
+    // real — era margen para dejar hasta 8 sin traducir sin que saltara nada.
+    // Probado en el bloque de Avalúos: pegando 6 de 50 (12%) el test pasaba.
+    //
+    // Si algún día una clave es legítimamente igual en los dos (un nombre
+    // propio), que este test la nombre acá en vez de esconderla en un %.
     const identicas = TODAS.filter((c) => leer(es, c) === leer(en, c))
-    expect(identicas.length).toBeLessThan(TODAS.length * 0.15)
+    expect(identicas).toEqual([])
   })
 
   it('la clave de progreso interpola los dos números', () => {

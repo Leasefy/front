@@ -37,7 +37,10 @@ export function DocumentReviewQueueClient() {
 
   const [data, setData] = useState<ReviewQueueResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // El error ENTERO, no su mensaje: sin el status, `FalloDeCarga` no puede
+  // distinguir un 404 —donde reintentar es una promesa falsa— de un 401 por
+  // token recién renovado o de un 500. Todo caía en «fue un problema nuestro».
+  const [error, setError] = useState<unknown>(null);
   const [pendingDocId, setPendingDocId] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<RejectTarget | null>(null);
   const [isRejecting, setIsRejecting] = useState(false);
@@ -49,7 +52,7 @@ export function DocumentReviewQueueClient() {
       const res = await documentReviewApi.getReviewQueue();
       setData(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error cargando la cola de revisión');
+      setError(err);
       setData(null);
     } finally {
       setIsLoading(false);

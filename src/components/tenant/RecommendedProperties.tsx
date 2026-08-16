@@ -15,6 +15,7 @@ import {
   getRiskRecommendation,
 } from '@/lib/context/TenantProfileContext';
 import { PropertyMatchCard } from './PropertyMatchCard';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 // ============================================================================
 // TextTs
@@ -39,7 +40,15 @@ export function RecommendedProperties({
   const [scrollPosition, setScrollPosition] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const { recommendations, isLoading: recommendationsLoading } = useRecommendations(limit);
+  // `errorCrudo`: una consulta muerta llegaba como `[]` y esto afirmaba «No
+  // encontramos propiedades … que coincidan con tu perfil actual», echándole
+  // la culpa al perfil de la persona por un fallo nuestro.
+  const {
+    recommendations,
+    isLoading: recommendationsLoading,
+    errorCrudo: errorRecomendaciones,
+    refetch: recargarRecomendaciones,
+  } = useRecommendations(limit);
 
   const loading = isLoading || recommendationsLoading;
 
@@ -111,6 +120,21 @@ export function RecommendedProperties({
             <ArrowUpRight className="w-4 h-4" />
           </Link>
         </div>
+      </section>
+    );
+  }
+
+  // El fallo va antes que el vacío: sin esto, «no encontramos nada que
+  // coincida con tu perfil» era el mensaje de una petición caída.
+  if (errorRecomendaciones) {
+    return (
+      <section className={cn('bg-surface border border-plan-border', className)}>
+        <FalloDeCarga
+          error={errorRecomendaciones}
+          queEs="tus recomendaciones"
+          onReintentar={recargarRecomendaciones}
+          enmarcado={false}
+        />
       </section>
     );
   }

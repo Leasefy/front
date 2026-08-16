@@ -70,13 +70,20 @@ export function useTeamMembers() {
   const [members, setMembers] = useState<TeamMember[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // El error entero además del mensaje: `FalloDeCarga` clasifica por status.
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null)
 
   const refresh = useCallback(async () => {
+    // `setIsLoading(true)` faltaba: al reintentar, la pantalla se quedaba con
+    // el último resultado y sin ninguna señal de que estaba pidiendo de nuevo.
+    setIsLoading(true)
     try {
       const data = await settingsApi.getTeamMembers()
       setMembers(data)
       setError(null)
+      setErrorCrudo(null)
     } catch (err) {
+      setErrorCrudo(err)
       setError((err as Error).message)
     } finally {
       setIsLoading(false)
@@ -104,5 +111,5 @@ export function useTeamMembers() {
     setMembers(prev => prev.filter(m => m.id !== memberId))
   }, [])
 
-  return { members, isLoading, error, invite, update, remove, refresh }
+  return { members, isLoading, error, errorCrudo, invite, update, remove, refresh }
 }

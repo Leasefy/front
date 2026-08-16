@@ -77,21 +77,36 @@ export function PropietarioTable({
   const filteredPropietarios = useMemo(() => {
     let result = [...propietarios];
 
-    // Search filter
+    /*
+     * Buscar no puede tumbar la tabla.
+     *
+     * `email`, `phone` y `documentNumber` llegan en `null` desde el back —un
+     * propietario sin teléfono es normal, no un error— y `null.includes(...)`
+     * revienta el render entero: la pantalla pasa de la tabla a «esta sección
+     * se rompió» en cuanto alguien escribe una letra.
+     *
+     * No se había visto nunca porque la lista llegaba SIEMPRE vacía (el
+     * `res.data` sobre un array pelado), así que no había fila que filtrar.
+     * Arreglar aquello dejó esto al alcance de la primera búsqueda.
+     */
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
+      const contiene = (valor: string | null | undefined) =>
+        (valor ?? '').toLowerCase().includes(query);
       result = result.filter(
         (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.email.toLowerCase().includes(query) ||
-          p.documentNumber.includes(query) ||
-          p.phone.includes(query)
+          contiene(p.name) ||
+          contiene(p.email) ||
+          contiene(p.documentNumber) ||
+          contiene(p.phone)
       );
     }
 
-    // Pending balance filter
+    // Pending balance filter. `pendingBalance` puede no venir: `undefined > 0`
+    // es false, que es lo correcto, pero conviene decirlo en vez de confiar en
+    // la coerción.
     if (filterPending) {
-      result = result.filter((p) => p.pendingBalance > 0);
+      result = result.filter((p) => (p.pendingBalance ?? 0) > 0);
     }
 
     // Type filter

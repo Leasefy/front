@@ -25,34 +25,43 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { toast } from 'sonner';
-import type { Dispersion, Cobro, DispersionItem, DispersionStatus, Propietario, Consignacion } from '@/lib/types/inmobiliaria';
+import type { Dispersion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import {
-  useCobros,
-  usePropietarios,
-  useConsignaciones,
-  useDispersiones,
-} from '@/lib/hooks/useInmobiliaria';
+import { useDispersiones } from '@/lib/hooks/useInmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
 import { ComisionDesglose } from './ComisionDesglose';
+import { nombreDelMes } from '@/lib/utils/mes';
 
 interface DispersionWizardProps {
   initialMonth?: string;
-  onComplete?: (dispersiones: Dispersion[]) => void;
+  /** `month` es el que se acaba de generar: la lista tiene que abrir ahí. */
+  onComplete?: (dispersiones: Dispersion[], month?: string) => void;
   onCancel?: () => void;
 }
 
 interface WizardState {
   month: string;
-  cobrosRecibidos: Cobro[];
   dispersionDrafts: DispersionDraft[];
-  selectedForApproval: string[];
-  generatedDispersiones: Dispersion[];
+  /**
+   * A quiénes se les va a generar, por `propietarioId`.
+   *
+   * Son ids REALES del back, no de objetos fabricados acá: esta lista viaja en
+   * el `POST /dispersiones/generate` y decide a quién se le gira. Antes se
+   * guardaban ids de dispersiones inventadas en el navegador
+   * (`disp-gen-2026-08-1`) y no salían de esta pantalla.
+   */
+  seleccionados: string[];
 }
 
 interface DispersionDraft {
   propietarioId: string;
   propietarioName: string;
+  /** Viene de la vista previa. `null` = sin cuenta registrada, y se dice. */
+  propietarioBankAccount: string | null;
+  /** Lo que el propietario paga: predial, reparaciones a su cargo. */
+  totalConceptosACargo: number;
+  /** Lo que la inmobiliaria le abona: devoluciones, reajustes. */
+  totalConceptosAFavor: number;
   items: {
     cobroId: string;
     propertyTitle: string;
@@ -71,7 +80,9 @@ const STEPS = [
   { id: 2, label: 'Cobros', icon: CurrencyCircleDollar },
   { id: 3, label: 'Comisiones', icon: Percent },
   { id: 4, label: 'Netos', icon: Calculator },
-  { id: 5, label: 'Aprobar', icon: CheckCircle },
+  // «Aprobar» prometía una aprobación que no ocurría en ninguna parte: el paso
+  // elige a quiénes se les genera este mes.
+  { id: 5, label: 'A quién', icon: CheckCircle },
   { id: 6, label: 'Confirmar', icon: PaperPlaneTilt },
 ];
 
@@ -107,65 +118,7 @@ function getRecentMonths(count: number): { value: string; label: string }[] {
  * Format month for display
  */
 function formatMonth(month: string): string {
-  return new Date(month + '-01').toLocaleDateString('es-CL', {
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
-/**
- * Group cobros by propietario and calculate commissions
- */
-function calculateDispersionDrafts(
-  cobros: Cobro[],
-  propietarios: Propietario[],
-  consignaciones: Consignacion[],
-): DispersionDraft[] {
-  // Group paid cobros by propietario
-  const grouped = cobros
-    .filter((c) => c.status === 'paid')
-    .reduce((acc, cobro) => {
-      const key = cobro.propietarioId;
-      if (!acc[key]) {
-        acc[key] = [];
-      }
-      acc[key].push(cobro);
-      return acc;
-    }, {} as Record<string, Cobro[]>);
-
-  // Calculate drafts
-  return Object.entries(grouped).map(([propietarioId, propCobros]) => {
-    const propietario = propietarios.find((p) => p.id === propietarioId);
-
-    const items = propCobros.map((cobro) => {
-      const consignacion = consignaciones.find((c) => c.id === cobro.consignacionId);
-      const commissionPercent = consignacion?.commissionPercent || 10;
-      const commissionAmount = Math.round(cobro.paidAmount * (commissionPercent / 100));
-      const netAmount = cobro.paidAmount - commissionAmount;
-
-      return {
-        cobroId: cobro.id,
-        propertyTitle: cobro.propertyTitle,
-        rentCollected: cobro.paidAmount,
-        commissionPercent,
-        commissionAmount,
-        netAmount,
-      };
-    });
-
-    const totalCollected = items.reduce((sum, i) => sum + i.rentCollected, 0);
-    const totalCommission = items.reduce((sum, i) => sum + i.commissionAmount, 0);
-    const netToPropietario = items.reduce((sum, i) => sum + i.netAmount, 0);
-
-    return {
-      propietarioId,
-      propietarioName: propietario?.name || 'Propietario desconocido',
-      items,
-      totalCollected,
-      totalCommission,
-      netToPropietario,
-    };
-  });
+  return nombreDelMes(month);
 }
 
 /**
@@ -182,31 +135,80 @@ export function DispersionWizard({
 
   const recentMonths = useMemo(() => getRecentMonths(12), []);
 
-  // Fetch data from API
-  const { cobros: allCobros } = useCobros();
-  const { propietarios } = usePropietarios();
-  const { consignaciones } = useConsignaciones();
+  /*
+   * Acá se pedían además cobros, propietarios y consignaciones: eran los
+   * insumos del cálculo que hacía el navegador. Con la cuenta en el back, tres
+   * peticiones que nadie leía — y `usePropietarios` sólo se usaba para sacar
+   * una cuenta bancaria que la vista previa ya trae.
+   */
   const { dispersiones: allDispersiones } = useDispersiones();
 
   // Wizard state
   const [state, setState] = useState<WizardState>({
     month: initialMonth || getCurrentMonth(),
-    cobrosRecibidos: [],
     dispersionDrafts: [],
-    selectedForApproval: [],
-    generatedDispersiones: [],
+    seleccionados: [],
   });
 
-  // Update drafts when data loads or month changes
+  /*
+   * Los borradores los calcula EL BACK, con la misma función que usa al
+   * generar: lo que se ve acá es lo que se va a guardar.
+   *
+   * Antes se calculaban en el navegador y daban otros números — la comisión
+   * sobre lo pagado en vez de sobre el canon, un 10% inventado cuando no
+   * encontraba la consignación, sin descontar los conceptos del propietario, y
+   * el nombre como «Propietario desconocido».
+   */
+  const [cargandoPrevia, setCargandoPrevia] = useState(false);
+  const [errorPrevia, setErrorPrevia] = useState<string | null>(null);
+  /** Cuántas ya existen: sin esto, «no hay nada» tapa «ya se generaron». */
+  const [yaGenerados, setYaGenerados] = useState(0);
+
   useEffect(() => {
-    if (allCobros.length > 0) {
-      const cobrosRecibidos = allCobros.filter(
-        (c) => c.month === state.month && c.status === 'paid'
-      );
-      const dispersionDrafts = calculateDispersionDrafts(cobrosRecibidos, propietarios, consignaciones);
-      setState((prev) => ({ ...prev, cobrosRecibidos, dispersionDrafts }));
-    }
-  }, [allCobros, propietarios, consignaciones, state.month]);
+    let cancelado = false;
+    setCargandoPrevia(true);
+    setErrorPrevia(null);
+
+    dispersionesApi
+      .preview(state.month)
+      .then((previa) => {
+        if (cancelado) return;
+        setYaGenerados(previa.yaGenerados);
+        const borradores = previa.propietarios
+          .filter((p) => !p.yaExiste)
+          .map((p) => ({
+            propietarioId: p.propietarioId,
+            propietarioName: p.propietarioName,
+            propietarioBankAccount: p.propietarioBankAccount,
+            items: p.items,
+            totalCollected: p.totalCollected,
+            totalCommission: p.totalCommission,
+            totalConceptosACargo: p.totalConceptosACargo,
+            totalConceptosAFavor: p.totalConceptosAFavor,
+            netToPropietario: p.netToPropietario,
+          }));
+        setState((prev) => ({
+          ...prev,
+          dispersionDrafts: borradores,
+          // Todos marcados por defecto: lo normal es girarle a todo el mundo, y
+          // el paso 5 está para sacar a alguien, no para tener que armar la
+          // lista desde cero.
+          seleccionados: borradores.map((b) => b.propietarioId),
+        }));
+      })
+      .catch(() => {
+        if (!cancelado) {
+          setErrorPrevia('No pudimos calcular las dispersiones de este mes.');
+        }
+      })
+      .finally(() => {
+        if (!cancelado) setCargandoPrevia(false);
+      });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [state.month]);
 
   // Check if dispersiones already exist for the month
   const existingDispersiones = useMemo(() => {
@@ -215,22 +217,18 @@ export function DispersionWizard({
 
   const hasExistingDispersiones = existingDispersiones.length > 0;
 
-  // Update cobros when month changes
+  /*
+   * Cambiar de mes sólo cambia el mes: el efecto de arriba vuelve a pedirle la
+   * cuenta al back. Antes acá se recalculaba todo en el navegador, con una
+   * fórmula distinta a la del back.
+   */
   const handleMonthChange = useCallback((month: string) => {
-    const cobrosRecibidos = allCobros.filter(
-      (c) => c.month === month && c.status === 'paid'
-    );
-    const dispersionDrafts = calculateDispersionDrafts(cobrosRecibidos, propietarios, consignaciones);
-
     setState((prev) => ({
       ...prev,
       month,
-      cobrosRecibidos,
-      dispersionDrafts,
-      selectedForApproval: [],
-      generatedDispersiones: [],
+      seleccionados: [],
     }));
-  }, [allCobros, propietarios, consignaciones]);
+  }, []);
 
   // Step validation
   const isStepValid = useMemo(() => {
@@ -238,117 +236,82 @@ export function DispersionWizard({
       case 1:
         return Boolean(state.month);
       case 2:
-        return state.cobrosRecibidos.length > 0;
+        return state.dispersionDrafts.length > 0;
       case 3:
         return state.dispersionDrafts.length > 0;
       case 4:
         return state.dispersionDrafts.length > 0;
       case 5:
-        return state.selectedForApproval.length > 0;
+        return state.seleccionados.length > 0;
       case 6:
-        return state.generatedDispersiones.length > 0;
+        return state.seleccionados.length > 0;
       default:
         return false;
     }
   }, [currentStep, state]);
 
-  // Generate dispersiones from drafts
-  const generateDispersiones = useCallback(() => {
-    const newDispersiones: Dispersion[] = state.dispersionDrafts.map((draft, index) => {
-      const propietario = propietarios.find((p) => p.id === draft.propietarioId);
+  /*
+   * Lo que se muestra sale de los MISMOS borradores que se van a mandar: el
+   * total del paso 6 es la suma de los seleccionados, no una cuenta aparte.
+   */
+  const totalSeleccionado = useMemo(
+    () =>
+      state.dispersionDrafts
+        .filter((d) => state.seleccionados.includes(d.propietarioId))
+        .reduce((suma, d) => suma + d.netToPropietario, 0),
+    [state.dispersionDrafts, state.seleccionados],
+  );
 
-      return {
-        id: `disp-gen-${state.month}-${index + 1}`,
-        propietarioId: draft.propietarioId,
-        propietarioName: draft.propietarioName,
-        propietarioBankAccount: propietario?.bankAccount || {
-          bank: 'bancolombia',
-          accountType: 'savings',
-          accountNumber: '****0000',
-          accountHolder: draft.propietarioName,
-        },
-        month: state.month,
-        items: draft.items.map((item) => ({
-          cobroId: item.cobroId,
-          propertyTitle: item.propertyTitle,
-          rentCollected: item.rentCollected,
-          commissionPercent: item.commissionPercent,
-          commissionAmount: item.commissionAmount,
-          netAmount: item.netAmount,
-        })),
-        totalCollected: draft.totalCollected,
-        totalCommission: draft.totalCommission,
-        netToPropietario: draft.netToPropietario,
-        status: 'pending' as DispersionStatus,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-    });
+  const sinSeleccionar =
+    state.dispersionDrafts.length - state.seleccionados.length;
 
+  /* Con la lista vacía no están «todos»: sin esto, un mes sin borradores
+     mostraría el tilde de «todas seleccionadas» sobre cero filas. */
+  const todosSeleccionados =
+    state.dispersionDrafts.length > 0 &&
+    state.seleccionados.length === state.dispersionDrafts.length;
+
+  /*
+   * Acá vivían dos pasos de teatro.
+   *
+   * `generateDispersiones` fabricaba objetos `Dispersion` en el navegador —con
+   * ids inventados (`disp-gen-2026-08-1`) y los conceptos en cero— para que el
+   * paso 5 tuviera algo que listar. No guardaba nada.
+   *
+   * `approveSelected` les ponía `status: 'processing'`, `approvedAt` de ahora y
+   * `approvedBy: 'agent-007'`, un usuario que no existe. Tampoco aprobaba nada
+   * en ninguna parte.
+   *
+   * Lo que se lista en el paso 5 son los borradores que ya mandó el back, con
+   * sus ids de verdad, y lo único que hace el paso es elegir cuáles entran.
+   */
+
+  const alternarSeleccion = useCallback((propietarioId: string) => {
     setState((prev) => ({
       ...prev,
-      generatedDispersiones: newDispersiones,
-      selectedForApproval: newDispersiones.map((d) => d.id),
-    }));
-
-    setCurrentStep(5);
-  }, [state.dispersionDrafts, state.month]);
-
-  // Toggle selection for approval
-  const toggleSelection = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      selectedForApproval: prev.selectedForApproval.includes(id)
-        ? prev.selectedForApproval.filter((s) => s !== id)
-        : [...prev.selectedForApproval, id],
+      seleccionados: prev.seleccionados.includes(propietarioId)
+        ? prev.seleccionados.filter((s) => s !== propietarioId)
+        : [...prev.seleccionados, propietarioId],
     }));
   }, []);
 
-  // Select all
-  const selectAll = useCallback(() => {
+  const seleccionarTodos = useCallback(() => {
     setState((prev) => ({
       ...prev,
-      selectedForApproval: prev.generatedDispersiones.map((d) => d.id),
+      seleccionados: prev.dispersionDrafts.map((d) => d.propietarioId),
     }));
   }, []);
 
-  // Deselect all
-  const deselectAll = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      selectedForApproval: [],
-    }));
-  }, []);
-
-  // Approve selected dispersiones
-  const approveSelected = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      generatedDispersiones: prev.generatedDispersiones.map((d) =>
-        prev.selectedForApproval.includes(d.id)
-          ? {
-              ...d,
-              status: 'processing' as DispersionStatus,
-              approvedAt: new Date().toISOString(),
-              approvedBy: 'agent-007',
-            }
-          : d
-      ),
-    }));
-
-    setCurrentStep(6);
+  const deseleccionarTodos = useCallback(() => {
+    setState((prev) => ({ ...prev, seleccionados: [] }));
   }, []);
 
   // Navigation handlers
   const goToNextStep = useCallback(() => {
-    if (currentStep === 4 && isStepValid) {
-      generateDispersiones();
-    } else if (currentStep === 5 && isStepValid) {
-      approveSelected();
-    } else if (currentStep < 6 && isStepValid) {
+    if (currentStep < 6 && isStepValid) {
       setCurrentStep((prev) => prev + 1);
     }
-  }, [currentStep, isStepValid, generateDispersiones, approveSelected]);
+  }, [currentStep, isStepValid]);
 
   const goToPreviousStep = useCallback(() => {
     if (currentStep > 1) {
@@ -367,39 +330,47 @@ export function DispersionWizard({
     setIsSubmitting(true);
 
     try {
-      // Persist each selected dispersion via the real API. The backend
-      // assigns id/status/transferReference — we never fabricate them here.
-      const toPersist = state.generatedDispersiones.filter((d) =>
-        state.selectedForApproval.includes(d.id)
+      /*
+       * El back genera y calcula. Antes acá se armaba el payload con los
+       * totales YA calculados en el navegador y se posteaba a `POST
+       * /dispersiones` — una ruta que no existe, así que nunca guardó nada.
+       *
+       * Y de haber existido habría sido peor: los montos del cliente no
+       * descuentan lo que paga el propietario ni sacan la administración de la
+       * copropiedad. La cuenta vive en el back, en un solo lugar.
+       */
+      const resultado = await dispersionesApi.generate(
+        state.month,
+        state.seleccionados,
       );
 
-      const completedDispersiones = await Promise.all(
-        toPersist.map((d) => {
-          const payload: Partial<Dispersion> = {
-            propietarioId: d.propietarioId,
-            propietarioName: d.propietarioName,
-            propietarioBankAccount: d.propietarioBankAccount,
-            month: d.month,
-            items: d.items,
-            totalCollected: d.totalCollected,
-            totalCommission: d.totalCommission,
-            netToPropietario: d.netToPropietario,
-          };
-          return dispersionesApi.create(payload);
-        })
-      );
+      if (resultado.created === 0) {
+        toast.info('No se generó ninguna dispersión', {
+          description:
+            resultado.skipped > 0
+              ? `Ya existían las ${resultado.skipped} dispersiones de ${formatMonth(state.month)}.`
+              : `No hay cobros pagados en ${formatMonth(state.month)}.`,
+        });
+      } else {
+        toast.success('Dispersiones generadas correctamente', {
+          description:
+            // Los que quedaron fuera se dicen: sin esto, «se generaron 3» se
+            // lee igual en un mes de 3 propietarios que en uno de 40 donde
+            // alguien destildó 37 sin darse cuenta.
+            resultado.noElegidos > 0
+              ? `${resultado.created} para ${formatMonth(state.month)}. ${resultado.noElegidos} quedaron fuera de la selección.`
+              : `Se generaron ${resultado.created} dispersiones para ${formatMonth(state.month)}`,
+        });
+      }
 
-      toast.success('Dispersiones generadas correctamente', {
-        description: `Se generaron ${completedDispersiones.length} dispersiones para ${formatMonth(state.month)}`,
-      });
-
-      onComplete?.(completedDispersiones);
+      onComplete?.([], state.month);
     } catch {
       toast.error('Error al generar dispersiones');
     } finally {
       setIsSubmitting(false);
     }
-  }, [state.generatedDispersiones, state.selectedForApproval, state.month, onComplete]);
+    // El back hace la cuenta; de acá sólo viajan el mes y a quiénes.
+  }, [state.month, state.seleccionados, onComplete]);
 
   // Cancel handler
   const handleCancel = useCallback(() => {
@@ -509,9 +480,9 @@ export function DispersionWizard({
             {/* Summary Stats */}
             <div className="flex items-center gap-8 pb-4 border-b border-border">
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Total Cobros</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Inmuebles</p>
                 <p className="text-xl font-semibold text-foreground tabular-nums">
-                  {state.cobrosRecibidos.length}
+                  {state.dispersionDrafts.reduce((n, d) => n + d.items.length, 0)}
                 </p>
               </div>
               <div>
@@ -568,18 +539,36 @@ export function DispersionWizard({
             </div>
 
             {/* Empty state */}
-            {state.cobrosRecibidos.length === 0 && (
+            {/* Tres estados, no uno: cargando, error y vacío dicen cosas
+                distintas, y el vacío tiene DOS causas — o nadie pagó, o ya se
+                generaron todas. Meterlas en el mismo cartel manda a buscar el
+                problema donde no está. */}
+            {cargandoPrevia ? (
+              <div className="p-12 text-center rounded-xl border border-dashed border-border">
+                <p className="text-muted-foreground">Calculando…</p>
+              </div>
+            ) : errorPrevia ? (
+              <div className="p-12 text-center rounded-xl border border-dashed border-destructive/40">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  No pudimos calcular este mes
+                </h3>
+                <p className="text-muted-foreground">{errorPrevia}</p>
+              </div>
+            ) : state.dispersionDrafts.length === 0 ? (
               <div className="p-12 text-center rounded-xl border border-dashed border-border">
                 <CurrencyCircleDollar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">
-                  Sin cobros pagados
+                  {yaGenerados > 0
+                    ? 'Ya están generadas'
+                    : 'Sin cobros pagados'}
                 </h3>
                 <p className="text-muted-foreground">
-                  No hay cobros pagados para {formatMonth(state.month)}.
-                  Selecciona otro mes o espera a que se registren pagos.
+                  {yaGenerados > 0
+                    ? `Las ${yaGenerados} dispersiones de ${formatMonth(state.month)} ya existen. Buscalas en la lista.`
+                    : `No hay cobros pagados en ${formatMonth(state.month)}. Elegí otro mes o esperá a que se registren pagos.`}
                 </p>
               </div>
-            )}
+            ) : null}
           </div>
         );
 
@@ -642,6 +631,9 @@ export function DispersionWizard({
                       commissionPercent: i.commissionPercent,
                       commissionAmount: i.commissionAmount,
                       netAmount: i.netAmount,
+                      conceptosAFavor: 0,
+                      conceptosACargo: 0,
+                      deTerceros: 0,
                     }))}
                     variant="compact"
                     showPercentages
@@ -714,6 +706,29 @@ export function DispersionWizard({
                         -{formatCurrency(draft.totalCommission)}
                       </span>
                     </div>
+                    {/* Sin estos renglones la tarjeta se contradice:
+                        1.000.000 − 100.000 no da 0. Un total que no cuadra con
+                        sus partes no se puede defender delante del dueño. */}
+                    {draft.totalConceptosAFavor > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Conceptos a su favor
+                        </span>
+                        <span className="font-medium text-foreground">
+                          {formatCurrency(draft.totalConceptosAFavor)}
+                        </span>
+                      </div>
+                    )}
+                    {draft.totalConceptosACargo > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Conceptos a su cargo
+                        </span>
+                        <span className="font-medium text-destructive">
+                          -{formatCurrency(draft.totalConceptosACargo)}
+                        </span>
+                      </div>
+                    )}
                     <div className="pt-2 border-t border-border flex items-center justify-between">
                       <span className="font-medium text-foreground">Neto</span>
                       <span className="text-lg font-semibold text-foreground tabular-nums">
@@ -732,10 +747,12 @@ export function DispersionWizard({
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                Aprobar Dispersiones
+                ¿A quién le generás este mes?
               </h3>
               <p className="text-sm text-muted-foreground">
-                Selecciona las dispersiones a aprobar para procesamiento
+                Están todos marcados. Destildá a quien quieras dejar para
+                después — un pago que todavía no acredita, una cuenta sin
+                confirmar.
               </p>
             </div>
 
@@ -747,15 +764,11 @@ export function DispersionWizard({
                   size="sm"
                   hideArrow
                   onClick={() =>
-                    state.selectedForApproval.length ===
-                    state.generatedDispersiones.length
-                      ? deselectAll()
-                      : selectAll()
+                    todosSeleccionados ? deseleccionarTodos() : seleccionarTodos()
                   }
                   className="h-auto gap-2 p-0 text-sm font-medium text-foreground hover:bg-transparent hover:text-primary"
                 >
-                  {state.selectedForApproval.length ===
-                  state.generatedDispersiones.length ? (
+                  {todosSeleccionados ? (
                     <CheckSquare
                       className="w-5 h-5 text-primary"
                       weight="fill"
@@ -767,22 +780,23 @@ export function DispersionWizard({
                 </Button>
               </div>
               <span className="text-sm text-muted-foreground">
-                {state.selectedForApproval.length} de{' '}
-                {state.generatedDispersiones.length} seleccionadas
+                {state.seleccionados.length} de{' '}
+                {state.dispersionDrafts.length} seleccionadas
               </span>
             </div>
 
             {/* Dispersion List */}
             <div className="space-y-3">
-              {state.generatedDispersiones.map((dispersion) => {
-                const isSelected = state.selectedForApproval.includes(
-                  dispersion.id
+              {state.dispersionDrafts.map((draft) => {
+                const isSelected = state.seleccionados.includes(
+                  draft.propietarioId
                 );
 
                 return (
                   <motion.button
-                    key={dispersion.id}
-                    onClick={() => toggleSelection(dispersion.id)}
+                    key={draft.propietarioId}
+                    onClick={() => alternarSeleccion(draft.propietarioId)}
+                    aria-pressed={isSelected}
                     className={cn(
                       'w-full p-4 rounded-xl border-2 text-left transition-all',
                       isSelected
@@ -803,19 +817,26 @@ export function DispersionWizard({
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-foreground truncate">
-                          {dispersion.propietarioName}
+                          {draft.propietarioName}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {dispersion.items.length} propiedad
-                          {dispersion.items.length > 1 ? 'es' : ''}
+                          {draft.items.length} propiedad
+                          {draft.items.length > 1 ? 'es' : ''}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-foreground tabular-nums">
-                          {formatCurrency(dispersion.netToPropietario)}
+                          {formatCurrency(draft.netToPropietario)}
                         </p>
+                        {/*
+                          Sin cuenta registrada se dice. Antes se fabricaba una
+                          —banco «bancolombia», cuenta «****0000»—: en una
+                          pantalla sobre A DÓNDE GIRAR PLATA, un dato inventado
+                          se ve igual que uno real.
+                        */}
                         <p className="text-xs text-muted-foreground">
-                          {dispersion.propietarioBankAccount.accountNumber}
+                          {draft.propietarioBankAccount ??
+                            'Sin cuenta registrada'}
                         </p>
                       </div>
                     </div>
@@ -840,12 +861,27 @@ export function DispersionWizard({
                   weight="fill"
                 />
               </motion.div>
+              {/* Este paso es la CONFIRMACIÓN, no el resultado: acá todavía
+                  no se guardó nada. Decía «Se generaron N dispersiones»
+                  antes de que existiera ninguna. */}
               <h3 className="text-xl font-semibold text-foreground mb-2">
-                Dispersiones Listas
+                Todo listo para generar
               </h3>
               <p className="text-muted-foreground">
-                Se generaron {state.selectedForApproval.length} dispersiones
-                para {formatMonth(state.month)}
+                Se van a generar {state.seleccionados.length}{' '}
+                {state.seleccionados.length === 1
+                  ? 'dispersión'
+                  : 'dispersiones'}{' '}
+                para {formatMonth(state.month)}.
+                {sinSeleccionar > 0 && (
+                  <>
+                    {' '}
+                    <span className="text-foreground">
+                      {sinSeleccionar}{' '}
+                      {sinSeleccionar === 1 ? 'queda' : 'quedan'} fuera.
+                    </span>
+                  </>
+                )}
               </p>
             </div>
 
@@ -856,7 +892,7 @@ export function DispersionWizard({
                   Dispersiones
                 </p>
                 <p className="text-3xl font-bold text-foreground tabular-nums">
-                  {state.selectedForApproval.length}
+                  {state.seleccionados.length}
                 </p>
               </div>
               <div className="text-center">
@@ -864,11 +900,7 @@ export function DispersionWizard({
                   Total a Dispersar
                 </p>
                 <p className="text-3xl font-bold text-foreground tabular-nums">
-                  {formatCurrency(
-                    state.generatedDispersiones
-                      .filter((d) => state.selectedForApproval.includes(d.id))
-                      .reduce((sum, d) => sum + d.netToPropietario, 0)
-                  )}
+                  {formatCurrency(totalSeleccionado)}
                 </p>
               </div>
             </div>
@@ -912,13 +944,20 @@ export function DispersionWizard({
                     status === 'upcoming' ? 'cursor-not-allowed' : 'cursor-pointer'
                   )}
                 >
+                  {/*
+                    Tres estados, tres colores, y cada uno significa algo:
+                    verde = hecho, azul = acá estás, gris = todavía no.
+                    Estaban los tres en negro salvo un anillo, así que el paso
+                    actual y los ya cumplidos se leían igual — un indicador de
+                    avance que no indica el avance.
+                  */}
                   <div
                     className={cn(
-                      'w-12 h-12 rounded-full flex items-center justify-center transition-all',
+                      'flex h-12 w-12 items-center justify-center rounded-full transition-all',
                       status === 'completed'
-                        ? 'bg-foreground text-background'
+                        ? 'bg-success text-white'
                         : status === 'current'
-                          ? 'bg-foreground text-background ring-4 ring-foreground/20'
+                          ? 'bg-primary text-primary-foreground ring-4 ring-primary/20'
                           : 'bg-muted text-muted-foreground'
                     )}
                   >
@@ -934,7 +973,7 @@ export function DispersionWizard({
                       status === 'current'
                         ? 'text-primary'
                         : status === 'completed'
-                          ? 'text-fg dark:text-white'
+                          ? 'text-success'
                           : 'text-fg-subtle'
                     )}
                   >
@@ -945,9 +984,9 @@ export function DispersionWizard({
                 {index < STEPS.length - 1 && (
                   <div
                     className={cn(
-                      'flex-1 h-0.5 mx-2',
+                      'mx-2 h-0.5 flex-1',
                       step.id < currentStep
-                        ? 'bg-foreground'
+                        ? 'bg-success'
                         : 'bg-border'
                     )}
                   />
@@ -1026,15 +1065,16 @@ export function DispersionWizard({
                 onClick={goToNextStep}
                 disabled={!isStepValid}
               >
+                {/*
+                  «Generar Dispersiones» y «Aprobar Seleccionadas» prometían dos
+                  cosas que este botón no hace: acá todavía no se genera nada
+                  —eso pasa al confirmar, en el paso 6— y no hay ninguna
+                  aprobación en el flujo. Un botón nombra lo que hace.
+                */}
                 {currentStep === 4 ? (
                   <>
-                    Generar Dispersiones
-                    <Lightning className="w-4 h-4" />
-                  </>
-                ) : currentStep === 5 ? (
-                  <>
-                    Aprobar Seleccionadas
-                    <CheckCircle className="w-4 h-4" />
+                    Elegir a quién
+                    <CaretRight className="w-4 h-4" />
                   </>
                 ) : (
                   <>

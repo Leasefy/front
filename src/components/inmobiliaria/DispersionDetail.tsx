@@ -40,6 +40,7 @@ import type { Dispersion, DispersionStatus } from '@/lib/types/inmobiliaria';
 import { usePropietarios, useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { apiClient } from '@/lib/api/client';
 import { ComisionDesglose } from './ComisionDesglose';
+import { nombreDelMes } from '@/lib/utils/mes';
 
 interface DispersionDetailProps {
   isOpen: boolean;
@@ -317,7 +318,7 @@ export function DispersionDetail({
               </SheetTitle>
               <p className="text-sm text-muted-foreground flex items-center gap-1.5 capitalize">
                 <Calendar className="w-4 h-4" />
-                {formatDate(dispersion.month + '-01', { month: 'long', year: 'numeric' })}
+                {nombreDelMes(dispersion.month)}
               </p>
             </div>
             <StatusBadge status={dispersion.status} label={t(`inmobiliaria.dispersiones.statusLabels.${dispersion.status}`)} />
@@ -388,6 +389,15 @@ export function DispersionDetail({
               {t('inmobiliaria.dispersiones.detailView.bankAccount')}
             </h3>
             <div className="p-4 rounded-xl border border-border bg-muted/30">
+              {!dispersion.propietarioBankAccount ? (
+                /* Un propietario sin cuenta es normal y hay que decirlo: sin
+                   esto no se le puede girar, y en blanco parece un error de
+                   carga en vez de un dato que falta pedirle. */
+                <p className="text-sm text-muted-foreground">
+                  Este propietario no tiene cuenta bancaria registrada. Hay que
+                  pedírsela antes de girarle.
+                </p>
+              ) : (
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.dispersiones.detailView.bank')}</p>
@@ -417,6 +427,7 @@ export function DispersionDetail({
                   </p>
                 </div>
               </div>
+              )}
             </div>
           </motion.section>
 

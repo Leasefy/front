@@ -409,22 +409,22 @@ export function ConfigUsuarios({
           <TableHeader>
             <TableRow className="border-b border-border-faint dark:border-border-strong">
               <TableHead className="text-left p-4">
-                <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
+                <span>
                   {t('inmobiliaria.config.users.tableUser')}
                 </span>
               </TableHead>
               <TableHead className="text-left p-4">
-                <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
+                <span>
                   {t('inmobiliaria.config.users.role')}
                 </span>
               </TableHead>
               <TableHead className="text-left p-4">
-                <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
+                <span>
                   {t('inmobiliaria.config.users.status')}
                 </span>
               </TableHead>
               <TableHead className="text-left p-4 hidden md:table-cell">
-                <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
+                <span>
                   {t('inmobiliaria.config.users.lastAccess')}
                 </span>
               </TableHead>

@@ -1588,6 +1588,25 @@ select:-webkit-autofill:active {
   --info-soft: rgba(42, 111, 176, 0.2);
 }
 
+/* ── Tinte de marca de la inmobiliaria (PlanSidebar) ──────────────────────────
+   La agencia elige UN hex en Configuración → Marca, y un hex sirve para un
+   tema, no para dos: se elige mirando el panel en claro. El panel ya lo asume
+   —el `--primary` de arriba es indigo-500 en claro e indigo-300 en oscuro—,
+   pero el sidebar pisaba `--primary` con el color de marca sin mirar el tema.
+
+   Medido en el panel (marca #4e53a2, L 47%): el botón «Nueva consignación» del
+   sidebar quedaba en #4E53A2 mientras «Nuevo propietario», dos columnas a la
+   derecha, salía #8A9FFF. Y el texto del primario en oscuro es tinta (#14130f),
+   no blanco, porque está pensado para un relleno claro: sobre el color de marca
+   daba 2,73:1 — AA pide 4,5:1. Con el primario del tema da 7,51:1.
+   En claro el problema no existe: ahí el texto es blanco, y sobre la misma
+   marca da 6,81:1.
+
+   En claro manda la marca. En oscuro manda el primario del tema, el mismo que
+   viste al resto del panel (ver el `.dark` de arriba). */
+.tinte-de-marca      { --primary: var(--marca-primary); }
+.dark .tinte-de-marca { --primary: var(--indigo-300); }
+
 /* ── Admin panel scope (see src/app/admin/layout.tsx) ─────────────────────────
    The nest-brandbook admin theme is fixed paper/ink (no light/dark toggle) and
    must never leak into the customer app. tailwind.config.ts's `bg`/`fg` DEFAULT
@@ -1636,3 +1655,42 @@ select:-webkit-autofill:active {
 @media (prefers-reduced-motion: reduce) {
   [style*="lpProgress"], [style*="lpMarquee"], [style*="lpMove"], [style*="lpSheen"] { animation: none !important; }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Grilla de inmuebles: responde a SU ancho, no al de la ventana.
+ *
+ * `/propiedades` parte la pantalla en dos —lista y mapa— así que la grilla
+ * vive en media ventana. Con breakpoints de viewport (`md:grid-cols-2`) medía
+ * lo que no era: a 1024px de pantalla el panel son 512px y las tarjetas
+ * quedaban en **244px**, más angostas que en un teléfono. Y al revés: en una
+ * pantalla ancha se quedaba en dos columnas desperdiciando 1.000px.
+ *
+ * Container queries preguntan por el ancho del contenedor, que es la medida
+ * que de verdad manda. Se usa CSS plano y no el plugin de Tailwind para no
+ * sumar una dependencia por tres reglas.
+ * ───────────────────────────────────────────────────────────────────────── */
+.contenedor-consulta {
+  container-type: inline-size;
+}
+
+.grilla-inmuebles {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Los umbrales salen del ancho MÍNIMO de tarjeta (~300px), no de números
+ * redondos. Con el gap de 24px y el padding de 48px del panel:
+ *   2 columnas piden 300*2 + 24 + 48  ≈ 672px
+ *   3 columnas piden 300*3 + 48 + 48  ≈ 1096px
+ * Puestos más abajo, la grilla salta a dos columnas de 244px — exactamente el
+ * defecto que se venía a arreglar, sólo que a otro tamaño. */
+@container (min-width: 680px) {
+  .grilla-inmuebles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@container (min-width: 1120px) {
+  .grilla-inmuebles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Sin soporte de container queries la grilla se queda en una columna, que es
+   legible en cualquier ancho — nunca en dos columnas de 244px. */

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Navbar } from '@/components/layout/Navbar';
+import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { CTASection } from '@/components/home/CTASection';
@@ -33,7 +33,7 @@ const testimonials = [
     image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop&crop=face&q=80',
   },
   {
-    quote: 'La app móvil me cambió la vida. Recibo notificaciones cuando aplican candidatos y puedo revisar todo desde el celular sin ir a la oficina.',
+    quote: 'La app móvil me cambió la vida. Recibo notificaciones cuando se postulan candidatos y puedo revisar todo desde el celular sin ir a la oficina.',
     author: 'Andrés Gómez',
     role: 'Agente independiente, Barranquilla',
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face&q=80',
@@ -122,7 +122,7 @@ function LinkGeneratorVisual() {
               animate={{ x: ["-100%", "200%"] }}
               transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
             />
-            <code className="text-[10px] text-white/60 font-mono flex-1 truncate relative z-10">arriendo.co/aplicar/ch302-mX9k</code>
+            <code className="text-[10px] text-white/60 font-mono flex-1 truncate relative z-10">leasefy.co/postular/ch302-mX9k</code>
             <motion.button
               whileHover={{ scale: 1.15, backgroundColor: "rgba(255,255,255,0.15)" }}
               whileTap={{ scale: 0.9 }}
@@ -445,7 +445,7 @@ function MobileAppVisual() {
       {/* Notifications list with enhanced animations */}
       <div className="space-y-2">
         {[
-          { icon: "📋", title: "Nueva aplicación", desc: "María González aplicó para Apto 302", time: "Ahora", isNew: true },
+          { icon: "📋", title: "Nueva postulación", desc: "María González se postuló al Apto 302", time: "Ahora", isNew: true },
           { icon: "🏠", title: "Visita confirmada", desc: "Nicolás Ruiz · Apto Chapinero · 3pm", time: "Hace 5 min", isNew: true },
           { icon: "✅", title: "Contrato firmado", desc: "Casa Usaquén · Comisión: $0.5M", time: "Hace 1h", isNew: false },
           { icon: "📊", title: "Reporte listo", desc: "Evaluación de Ana García disponible", time: "Hace 2h", isNew: false },
@@ -657,8 +657,7 @@ export default function AgentesPage() {
   const bentoInView = useInView(bentoRef, { once: true, margin: '-50px' });
 
   return (
-    <>
-      <Navbar />
+    <LandingChrome>
       <main className="overflow-hidden">
         {/* Hero Section */}
         <section className="relative h-[600px] overflow-hidden bg-black">
@@ -1142,14 +1141,14 @@ export default function AgentesPage() {
                     </div>
                     <h3 className="text-foreground text-xl font-mono uppercase font-normal mb-2">App móvil</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed">
-                      Notificaciones en tiempo real cuando alguien aplica. iOS y Android.
+                      Notificaciones en tiempo real cuando alguien se postula. iOS y Android.
                     </p>
                   </div>
                   {/* Visual: Notifications */}
                   <div className="hidden sm:block w-[130px] flex-shrink-0">
                     <div className="space-y-1.5">
                       {[
-                        { text: 'Nueva aplicación', time: 'Ahora' },
+                        { text: 'Nueva postulación', time: 'Ahora' },
                         { text: 'Contrato firmado', time: '1h' },
                         { text: 'Reporte listo', time: '2h' },
                       ].map((notif, i) => (
@@ -1304,6 +1303,6 @@ export default function AgentesPage() {
         <CTASection />
       </main>
       <Footer />
-    </>
+    </LandingChrome>
   );
 }

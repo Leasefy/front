@@ -110,7 +110,7 @@ describe('AgentHeaderBreadcrumb — la ficha tiene cómo volver', () => {
   })
 
   it('fuera de un workspace de agente no se renderiza nada', () => {
-    render('/panel/inmobiliaria/propiedades')
+    render('/panel/inmobiliaria/inmuebles')
     expect(container.textContent).toBe('')
   })
 })

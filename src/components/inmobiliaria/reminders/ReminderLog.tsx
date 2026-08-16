@@ -248,25 +248,25 @@ export function ReminderLog({ entries }: ReminderLogProps) {
         <Table className="min-w-[800px]">
           <TableHeader>
             <TableRow className="border-b border-border">
-              <TableHead className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="text-left p-4">
                 {tryTranslate('inmobiliaria.reminders.colType', 'Tipo')}
               </TableHead>
-              <TableHead className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="text-left p-4">
                 {tryTranslate('inmobiliaria.reminders.colRecipient', 'Destinatario')}
               </TableHead>
-              <TableHead className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="text-left p-4">
                 {tryTranslate('inmobiliaria.reminders.colProperty', 'Inmueble')}
               </TableHead>
-              <TableHead className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="text-left p-4">
                 {tryTranslate('inmobiliaria.reminders.colDate', 'Fecha')}
               </TableHead>
-              <TableHead className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="text-left p-4">
                 {tryTranslate('inmobiliaria.reminders.colStatus', 'Estado')}
               </TableHead>
-              <TableHead className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="text-left p-4">
                 {tryTranslate('inmobiliaria.reminders.colChannel', 'Canal')}
               </TableHead>
-              <TableHead className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <TableHead className="text-right p-4">
                 {tryTranslate('inmobiliaria.reminders.colAmount', 'Monto')}
               </TableHead>
             </TableRow>

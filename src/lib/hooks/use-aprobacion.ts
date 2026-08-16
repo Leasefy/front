@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-import { getAccessToken } from '@/lib/api/client'
+import { useAuth } from '@/lib/auth/use-auth'
 import { leerAprobacionLocal } from '@/lib/api/aprobacion-local'
 import {
   fetchAprobacion,
@@ -37,16 +37,31 @@ export interface UseAprobacionResult {
 }
 
 export function useAprobacion(): UseAprobacionResult {
+  /*
+   * `useAuth`, no `getAccessToken()`.
+   *
+   * El token vive en memoria y lo pone el AuthProvider cuando Supabase le
+   * contesta. Leerlo durante el primer render devuelve null aunque la persona
+   * SÍ tenga sesión — y como esto corría una sola vez, ahí quedaba: nunca se
+   * preguntaba `/tenant/aprobacion`. A alguien aprobado se le mostraba
+   * `sin_estudio` en TODAS partes (catálogo, ficha, botón de postularse) hasta
+   * que navegara a otra pantalla sin recargar.
+   *
+   * "Todavía no sé si hay sesión" no es "no hay sesión". Mientras se resuelve
+   * no se decide nada; en cuanto se resuelve, este efecto vuelve a correr.
+   */
+  const { isAuthenticated, isLoading: resolviendoSesion } = useAuth()
   const [aprobacion, setAprobacion] = useState<Aprobacion | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const cargar = useCallback(async () => {
+    if (resolviendoSesion) return
     setCargando(true)
     setError(null)
     // Sin sesión no hay a quién preguntarle, pero puede haber respaldo local
     // de una consulta reciente hecha sin cuenta.
-    if (!getAccessToken()) {
+    if (!isAuthenticated) {
       setAprobacion(leerAprobacionLocal() ?? SIN_APROBACION)
       setCargando(false)
       return
@@ -80,7 +95,7 @@ export function useAprobacion(): UseAprobacionResult {
     } finally {
       setCargando(false)
     }
-  }, [])
+  }, [isAuthenticated, resolviendoSesion])
 
   useEffect(() => {
     void cargar()
@@ -88,7 +103,9 @@ export function useAprobacion(): UseAprobacionResult {
 
   return {
     aprobacion,
-    cargando,
+    // Mientras la sesión no se resuelva, esto sigue "cargando": quien llame no
+    // debe leer `sin_estudio` como un hecho antes de que haya con qué saberlo.
+    cargando: cargando || resolviendoSesion,
     error,
     vigente: estaVigente(aprobacion),
     recargar: () => void cargar(),

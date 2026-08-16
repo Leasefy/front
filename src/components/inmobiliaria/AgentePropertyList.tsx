@@ -135,7 +135,7 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
                     return (
                       <Link
                         key={consignacion.id}
-                        href={`/panel/inmobiliaria/portafolio/${consignacion.id}`}
+                        href={`/panel/inmobiliaria/inmuebles/${consignacion.id}`}
                         className="flex items-center gap-3 p-3 rounded-xl bg-surface-muted dark:bg-[#14130F] hover:bg-surface-muted dark:hover:bg-ink transition-colors group"
                       >
                         {/* Thumbnail */}

@@ -191,11 +191,14 @@ export function DispersionCard({
               Cuenta de destino
             </p>
             <p className="font-medium text-fg dark:text-white truncate text-sm">
-              {formatBankAccount(
-                dispersion.propietarioBankAccount.bank,
-                dispersion.propietarioBankAccount.accountType,
-                dispersion.propietarioBankAccount.accountNumber
-              )}
+              {/* Sin cuenta se dice, no se inventa: es a dónde va la plata. */}
+              {dispersion.propietarioBankAccount
+                ? formatBankAccount(
+                    dispersion.propietarioBankAccount.bank,
+                    dispersion.propietarioBankAccount.accountType,
+                    dispersion.propietarioBankAccount.accountNumber
+                  )
+                : 'No registrada'}
             </p>
           </div>
         </div>

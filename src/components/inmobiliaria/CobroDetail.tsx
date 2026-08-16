@@ -357,7 +357,7 @@ export function CobroDetail({
                 </div>
                 {consignacion && (
                   <Link
-                    href={`/panel/inmobiliaria/portafolio/${consignacion.id}`}
+                    href={`/panel/inmobiliaria/inmuebles/${consignacion.id}`}
                     onClick={onClose}
                     className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2"
                   >

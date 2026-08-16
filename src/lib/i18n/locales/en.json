@@ -857,11 +857,14 @@
       "dashboard": "Dashboard",
       "aiAgents": "Overview",
       "propietarios": "Owners",
+      "inmuebles": "Properties",
+      "hintInmuebles": "portfolio",
       "portafolio": "Consignments",
       "propiedades": "Properties",
       "pipeline": "Prospecting",
       "agentes": "Agents",
       "cobros": "Manual Collections",
+      "cartera": "Portfolio due",
       "contratos": "Contracts",
       "dispersiones": "Disbursements",
       "renovaciones": "Renewals",
@@ -2019,7 +2022,7 @@
         "retry": "Retry",
         "downloadExtracto": "Download statement",
         "error": "Error",
-        "totalCount": "Total ({{count}} disbursements)",
+        "totalCount": "Total · {{count}}",
         "pendingAbbr": "{{count}} pend.",
         "processingAbbr": "{{count}} proc.",
         "completedAbbr": "{{count}} comp.",
@@ -2467,13 +2470,21 @@
       "confirmReassignment": "Confirm Reassignment",
       "perMonth": "/mo"
     },
+    "inmuebles": {
+      "acciones": {
+        "captura": "Capture with AI",
+        "candidatos": "Candidates",
+        "verAviso": "View public listing",
+        "eliminar": "Remove from portfolio"
+      }
+    },
     "portafolio": {
-      "title": "Portfolio",
-      "subtitle": "Manage the properties in your portfolio",
+      "title": "Properties",
+      "subtitle": "The properties you manage, with their consignment.",
       "search": "Search property...",
-      "addProperty": "New property",
-      "noProperties": "No properties registered",
-      "noPropertiesDesc": "Start by adding your first property",
+      "addProperty": "New consignment",
+      "noProperties": "You don't manage any properties yet",
+      "noPropertiesDesc": "Consign the first one: billing, contracts and owner payouts are all built on that consignment.",
       "filters": {
         "all": "All",
         "rented": "Rented",
@@ -2963,10 +2974,12 @@
           "yesCancel": "Yes, cancel"
         },
         "toasts": {
-          "successTitle": "Consignment created successfully",
-          "successDesc": "\"{{title}}\" has been registered in the portfolio.",
-          "errorTitle": "Error creating consignment",
-          "errorDesc": "An error occurred. Please try again."
+          "successTitle": "Property consigned",
+          "successDesc": "\"{{title}}\" now has its owner, commission and agent.",
+          "errorTitle": "We couldn't create the property",
+          "errorDesc": "Nothing was saved. Try again in a moment.",
+          "mandateErrorTitle": "The property was created; the consignment wasn't",
+          "mandateErrorDesc": "It's in the list, with no owner and no commission. Open it and complete the consignment — don't create it again."
         },
         "step1": {
           "title": "Select Owner",

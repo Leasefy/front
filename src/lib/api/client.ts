@@ -1,3 +1,5 @@
+import { compartirGet, invalidar, recursoDe } from './refresco-de-datos'
+
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
 
 // ============================================================================
@@ -234,6 +236,18 @@ async function request<T>(
     throw new ApiError(res.status, errorBody.message || `Error ${res.status}`)
   }
 
+  /*
+   * La mutación salió bien: quien esté leyendo ese recurso tiene que enterarse.
+   *
+   * Va acá y no en cada pantalla porque acá pasa TODO. Antes cada acción tenía
+   * que acordarse de llamar a su `refetch`, y la mitad no lo hacía: el cambio
+   * quedaba en la base y la tabla seguía mostrando lo de antes hasta que
+   * alguien recargaba. Puesto en el cliente, una acción nueva nace refrescando.
+   */
+  if (method !== 'GET') {
+    invalidar(recursoDe(path))
+  }
+
   // Handle empty responses (204 No Content, 201 with no body, etc.)
   if (res.status === 204) {
     return undefined as T
@@ -259,7 +273,21 @@ async function requestBlob(path: string): Promise<Blob> {
 }
 
 export const apiClient = {
-  get: <T>(path: string, token?: string) => request<T>('GET', path, undefined, token),
+  /**
+   * Los GET idénticos que estén EN VUELO comparten una sola petición.
+   *
+   * Diez componentes pidiendo `/inmobiliaria/config` al montar la pantalla son
+   * diez peticiones que arrancan en el mismo milisegundo y se hacen esperar
+   * entre ellas. Ahora sale una.
+   *
+   * No se comparte cuando viene un `token` explícito: esa forma se usa para
+   * pedir con una sesión distinta de la que hay en memoria, y mezclar dos
+   * identidades en una respuesta es el peor error posible acá.
+   */
+  get: <T>(path: string, token?: string) =>
+    token
+      ? request<T>('GET', path, undefined, token)
+      : compartirGet(path, () => request<T>('GET', path, undefined, undefined)),
   post: <T>(path: string, body?: unknown, token?: string) => request<T>('POST', path, body, token),
   put: <T>(path: string, body?: unknown, token?: string) => request<T>('PUT', path, body, token),
   patch: <T>(path: string, body?: unknown, token?: string) => request<T>('PATCH', path, body, token),

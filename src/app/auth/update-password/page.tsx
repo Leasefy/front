@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { LeasefyLogo } from '@/components/brand';
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, Eye, EyeSlash, CheckCircle, ArrowRight } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { useAuth } from '@/lib/auth';
 import { getAccessToken } from '@/lib/api/client';
+import { sanitizeReturnUrl } from '@/lib/utils';
 
 /**
  * Llama al endpoint REST de Supabase Auth directo con fetch nativo, sin pasar
@@ -43,13 +44,54 @@ async function updatePasswordDirect(newPassword: string): Promise<void> {
       const body = await res.json();
       message = body.msg || body.error_description || body.error || message;
     } catch { /* keep default */ }
-    throw new Error(message);
+    throw new Error(enEspanol(message));
   }
 }
 
-export default function UpdatePasswordPage() {
+/**
+ * Supabase responde en inglés. Esta pantalla la ve un inquilino cuya
+ * inmobiliaria acaba de migrar su contrato: «New password should be different
+ * from the old password» está mal dos veces —el idioma, y hablar de una
+ * contraseña anterior que nunca tuvo—.
+ */
+function enEspanol(mensaje: string): string {
+  const m = mensaje.toLowerCase();
+  if (m.includes('different from the old')) {
+    return 'Esa contraseña ya la usaste antes. Elegí otra.';
+  }
+  if (m.includes('at least') || m.includes('should be at least')) {
+    return 'La contraseña es muy corta: mínimo 8 caracteres.';
+  }
+  if (m.includes('weak') || m.includes('pwned')) {
+    return 'Esa contraseña es muy fácil de adivinar. Elegí una menos común.';
+  }
+  if (m.includes('expired') || m.includes('invalid') || m.includes('jwt')) {
+    return 'El enlace ya no sirve. Pedí que te lo reenvíen.';
+  }
+  return mensaje;
+}
+
+/**
+ * Crear o cambiar la contraseña.
+ *
+ * Sirve para dos cosas que se parecen y no son iguales:
+ *
+ * - **Recuperarla** («olvidé mi contraseña»): la persona ya tenía una.
+ * - **Crearla por primera vez** (`?nuevo=1`): llega de una invitación —por
+ *   ejemplo, un inquilino cuya inmobiliaria acaba de migrar su contrato— y
+ *   nunca tuvo. Decirle «tu contraseña fue cambiada» sería mentirle sobre algo
+ *   que nunca existió, y «el enlace de recuperación expiró» lo mandaría a pedir
+ *   una recuperación de una cuenta que todavía no puede usar.
+ *
+ * `?next=` es a dónde va después: para el inquilino migrado, su contrato.
+ */
+function UpdatePasswordContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isLoading: authLoading, isAuthenticated } = useAuth();
+
+  const esPrimeraVez = searchParams.get('nuevo') === '1';
+  const destino = sanitizeReturnUrl(searchParams.get('next'), '/');
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -73,7 +115,9 @@ export default function UpdatePasswordPage() {
 
     if (!isAuthenticated) {
       setError(
-        'El enlace de recuperación expiró o no es válido. Pedí uno nuevo desde "¿Olvidaste tu contraseña?"',
+        esPrimeraVez
+          ? 'El enlace de la invitación expiró. Pedile a tu inmobiliaria que te la reenvíe.'
+          : 'El enlace de recuperación expiró o no es válido. Pedí uno nuevo desde "¿Olvidaste tu contraseña?"',
       );
       return;
     }
@@ -84,7 +128,7 @@ export default function UpdatePasswordPage() {
     try {
       await updatePasswordDirect(password);
       setSuccess(true);
-      setTimeout(() => router.push('/'), 2000);
+      setTimeout(() => router.push(destino), 2000);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Ocurrió un error. Intenta de nuevo.';
       console.error('[update-password] error:', err);
@@ -111,13 +155,17 @@ export default function UpdatePasswordPage() {
                 <CheckCircle className="h-9 w-9 text-success" weight="fill" />
               </div>
               <h1 className="text-xl font-semibold text-fg mb-2">
-                Contraseña actualizada
+                {esPrimeraVez ? 'Tu cuenta quedó lista' : 'Contraseña actualizada'}
               </h1>
               <p className="text-sm text-fg-muted mb-6">
-                Tu contraseña fue cambiada exitosamente. Redirigiendo...
+                {esPrimeraVez
+                  ? 'Ya podés entrar con tu correo y esta contraseña. Te llevamos a tu arriendo…'
+                  : 'Tu contraseña fue cambiada exitosamente. Redirigiendo...'}
               </p>
-              <Link href="/">
-                <Button className="w-full">Ir al inicio</Button>
+              <Link href={destino}>
+                <Button className="w-full">
+                  {esPrimeraVez ? 'Ver mi arriendo' : 'Ir al inicio'}
+                </Button>
               </Link>
             </div>
           ) : (
@@ -127,10 +175,12 @@ export default function UpdatePasswordPage() {
                   <Lock className="h-5 w-5 text-fg" />
                 </div>
                 <h1 className="text-2xl font-semibold text-fg mb-1">
-                  Nueva contraseña
+                  {esPrimeraVez ? 'Creá tu contraseña' : 'Nueva contraseña'}
                 </h1>
                 <p className="text-sm text-fg-muted">
-                  Elige una contraseña segura para tu cuenta
+                  {esPrimeraVez
+                    ? 'Es lo único que falta para entrar a tu portal de inquilino.'
+                    : 'Elige una contraseña segura para tu cuenta'}
                 </p>
               </div>
 
@@ -211,16 +261,29 @@ export default function UpdatePasswordPage() {
                 </Button>
               </form>
 
-              <p className="text-center text-xs text-fg-muted mt-6">
-                ¿Recordaste tu contraseña?{' '}
-                <Link href="/auth" className="text-fg hover:underline">
-                  Iniciar sesión
-                </Link>
-              </p>
+              {/* A quien nunca tuvo contraseña no se le pregunta si la
+                  recordó. */}
+              {esPrimeraVez ? null : (
+                <p className="text-center text-xs text-fg-muted mt-6">
+                  ¿Recordaste tu contraseña?{' '}
+                  <Link href="/auth" className="text-fg hover:underline">
+                    Iniciar sesión
+                  </Link>
+                </p>
+              )}
             </>
           )}
         </div>
       </div>
     </ForceLightMode>
+  );
+}
+
+export default function UpdatePasswordPage() {
+  // `useSearchParams` obliga a un límite de Suspense en el App Router.
+  return (
+    <Suspense fallback={null}>
+      <UpdatePasswordContent />
+    </Suspense>
   );
 }

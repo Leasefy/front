@@ -170,22 +170,22 @@ function MatrizTable({
       <Table className="w-full text-left border-collapse">
         <TableHeader>
           <TableRow className="border-b border-border bg-surface-muted/60">
-            <TableHead className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+            <TableHead className="px-4 py-2.5">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colAseguradora')}
             </TableHead>
-            <TableHead className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+            <TableHead className="px-4 py-2.5">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colResultado')}
             </TableHead>
-            <TableHead className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+            <TableHead className="px-4 py-2.5">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colCondicion')}
             </TableHead>
-            <TableHead className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-fg-muted">
+            <TableHead className="px-4 py-2.5 text-right">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colCosto')}
             </TableHead>
-            <TableHead className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-fg-muted">
+            <TableHead className="px-4 py-2.5 text-right">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colTiempo')}
             </TableHead>
-            <TableHead className="px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+            <TableHead className="px-4 py-2.5">
               {t('inmobiliaria.ai.cotizador.detail.matriz.colRecomendacion')}
             </TableHead>
             <TableHead className="px-2 py-2.5 w-8" aria-hidden="true" />

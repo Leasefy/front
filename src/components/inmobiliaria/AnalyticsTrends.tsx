@@ -568,22 +568,22 @@ function AnomaliesTable({ anomalies, metricId }: { anomalies: TrendAnomaly[]; me
         <Table className="w-full">
           <TableHeader>
             <TableRow className="border-b border-border-faint dark:border-border-strong">
-              <TableHead className="text-left p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
+              <TableHead className="text-left p-2">
                 {t('inmobiliaria.analytics.trendsComp.date')}
               </TableHead>
-              <TableHead className="text-right p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
+              <TableHead className="text-right p-2">
                 {t('inmobiliaria.analytics.trendsComp.value')}
               </TableHead>
-              <TableHead className="text-right p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
+              <TableHead className="text-right p-2">
                 {t('inmobiliaria.analytics.trendsComp.expected')}
               </TableHead>
-              <TableHead className="text-right p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
+              <TableHead className="text-right p-2">
                 {t('inmobiliaria.analytics.trendsComp.deviation')}
               </TableHead>
-              <TableHead className="text-center p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
+              <TableHead className="text-center p-2">
                 {t('inmobiliaria.analytics.trendsComp.severity')}
               </TableHead>
-              <TableHead className="text-left p-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase">
+              <TableHead className="text-left p-2">
                 {t('inmobiliaria.analytics.trendsComp.description')}
               </TableHead>
             </TableRow>

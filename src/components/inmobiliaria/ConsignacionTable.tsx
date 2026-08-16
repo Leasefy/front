@@ -17,6 +17,9 @@ import {
   User,
   Percent,
   CalendarPlus,
+  ArrowSquareOut,
+  Users,
+  Trash,
 } from '@phosphor-icons/react';
 import { IconButton } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
@@ -48,6 +51,15 @@ interface ConsignacionTableProps {
   onView: (consignacion: Consignacion) => void;
   onEdit: (consignacion: Consignacion) => void;
   onAgendarCita?: (consignacion: Consignacion) => void;
+  /**
+   * Las tres que traía «Inmuebles · catálogo» cuando era una pantalla aparte.
+   * Al fusionar las dos listas tenían que venirse con ella o se perdían.
+   * Opcionales para no obligar a los demás call sites (el detalle del agente,
+   * el del propietario) a inventarse un comportamiento.
+   */
+  onVerAviso?: (consignacion: Consignacion) => void;
+  onCandidatos?: (consignacion: Consignacion) => void;
+  onEliminar?: (consignacion: Consignacion) => void;
 }
 
 // Property type icons
@@ -94,6 +106,9 @@ export function ConsignacionTable({
   onView,
   onEdit,
   onAgendarCita,
+  onVerAviso,
+  onCandidatos,
+  onEliminar,
 }: ConsignacionTableProps) {
   const { t } = useI18n();
   const [sortField, setSortField] = useState<SortField>('propertyTitle');
@@ -383,6 +398,42 @@ export function ConsignacionTable({
                         >
                           <CalendarPlus className="w-4 h-4" />
                           <span className="text-sm">{t('inmobiliaria.agenda.pedirCita')}</span>
+                        </DropdownListItem>
+                      )}
+                      {onCandidatos && (
+                        <DropdownListItem
+                          className="gap-3"
+                          onClick={() => onCandidatos(consignacion)}
+                        >
+                          <Users className="w-4 h-4" />
+                          <span className="text-sm">
+                            {t('inmobiliaria.inmuebles.acciones.candidatos')}
+                          </span>
+                        </DropdownListItem>
+                      )}
+                      {/* El aviso público sólo existe si hay inmueble: un
+                          mandato de la migración de cartera puede no tenerlo
+                          todavía, y un enlace a la nada no es una acción. */}
+                      {onVerAviso && consignacion.propertyId && (
+                        <DropdownListItem
+                          className="gap-3"
+                          onClick={() => onVerAviso(consignacion)}
+                        >
+                          <ArrowSquareOut className="w-4 h-4" />
+                          <span className="text-sm">
+                            {t('inmobiliaria.inmuebles.acciones.verAviso')}
+                          </span>
+                        </DropdownListItem>
+                      )}
+                      {onEliminar && (
+                        <DropdownListItem
+                          className="gap-3 text-danger focus:text-danger"
+                          onClick={() => onEliminar(consignacion)}
+                        >
+                          <Trash className="w-4 h-4" />
+                          <span className="text-sm">
+                            {t('inmobiliaria.inmuebles.acciones.eliminar')}
+                          </span>
                         </DropdownListItem>
                       )}
                     </DropdownListContent>

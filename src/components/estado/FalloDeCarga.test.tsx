@@ -78,10 +78,10 @@ describe('<FalloDeCarga>', () => {
     render(
       <FalloDeCarga
         error={new ApiError(404, 'x')}
-        volverA={{ label: 'Volver a inmuebles', href: '/panel/inmobiliaria/propiedades' }}
+        volverA={{ label: 'Volver a inmuebles', href: '/panel/inmobiliaria/inmuebles' }}
       />,
     )
-    const salida = container.querySelector('a[href="/panel/inmobiliaria/propiedades"]')
+    const salida = container.querySelector('a[href="/panel/inmobiliaria/inmuebles"]')
     expect(salida?.textContent).toContain('Volver a inmuebles')
   })
 

@@ -63,8 +63,8 @@ const VACIO_SIN_MIRAR_EL_ERROR = [
 const ERROR_STATE_VIEJO = [
   'src/app/inquilino/arriendo/page.tsx',
   'src/app/inquilino/aprobacion/page.tsx',
-  'src/app/panel/inmobiliaria/propiedades/page.tsx',
-  'src/app/panel/inmobiliaria/propiedades/[id]/candidatos/page.tsx',
+  'src/app/panel/inmobiliaria/inmuebles/page.tsx',
+  'src/app/panel/inmobiliaria/inmuebles/[id]/candidatos/page.tsx',
   'src/app/panel/inmobiliaria/dashboard/page.tsx',
   'src/app/panel/inmobiliaria/cobros/page.tsx',
   'src/app/panel/inmobiliaria/ai/error.tsx',

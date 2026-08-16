@@ -6,7 +6,11 @@ import { fmtCOP } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { Pagination } from '@/components/admin/screen/Pagination'
+import { useClientPagination } from '@/lib/admin/use-client-pagination'
 import { Pill } from '@/components/admin/Pill'
+
+const PAGE_SIZE = 50
 import type { PillTone } from '@/lib/admin/types'
 
 // ── Types co-located with the screen (BACK.md §8.20 · FRONT.md §6.31) ─────────
@@ -98,6 +102,10 @@ export default function PricingConfigPage() {
     (signal) => adminApi('/pricing-config', { signal }),
     [],
   )
+
+  /* Una fila por agencia: crece con cada alta. Los KPIs y la proyección de
+     abajo siguen contando sobre `rows` entero, no sobre la página visible. */
+  const { page, setPage, total, pageRows } = useClientPagination(rows, PAGE_SIZE)
 
   const byModel = {
     standard:    (rows ?? []).filter((r) => r.billing_model === 'standard').length,
@@ -230,12 +238,14 @@ export default function PricingConfigPage() {
 
       <DataTable
         columns={columns}
-        rows={rows}
+        rows={pageRows}
         getKey={(r) => r.tenant_id}
         isLoading={isLoading}
         error={error}
         emptyTitle="Sin agencias"
       />
+
+      <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} />
 
       {rows && rows.length > 0 && (
         <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle text-right mt-3">

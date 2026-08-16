@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Toaster } from '@/components/ui/toast';
 import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank } from '@phosphor-icons/react';
 // Sparkle import removed — re-add when AI Beta nav item is uncommented
 import { DecisionProvider } from '@/lib/context/DecisionContext';
@@ -176,8 +175,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Toast notifications - Premium style */}
-      <Toaster position="top-right" />
+      {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
+          <ProtectedRoute>: acá adentro se perdía todo toast emitido mientras el guard
+          resuelve. No montés otro: sonner duplica el toast por cada Toaster montado. */}
     </div>
   );
 }

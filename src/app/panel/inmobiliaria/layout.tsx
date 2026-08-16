@@ -2,7 +2,6 @@
 
 import { useMemo, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Toaster } from '@/components/ui/toast';
 import {
   SquaresFour,
   Buildings,
@@ -412,8 +411,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom navigation — hidden at lg+ (where the sidebar appears) */}
       <MobileNavBar navItems={INMOBILIARIA_NAV_ITEMS} />
 
-      {/* Toast notifications - Premium style */}
-      <Toaster position="top-right" />
+      {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
+          <ProtectedRoute>/<AgencySubscriptionGuard>: acá adentro se perdía todo toast
+          emitido mientras los guards resuelven. No montés otro: sonner duplica el toast
+          por cada Toaster montado. */}
     </div>
   );
 }

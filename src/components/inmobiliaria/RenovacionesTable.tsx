@@ -38,6 +38,9 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import {
   DropdownList,
   DropdownListTrigger,
@@ -60,6 +63,17 @@ type StatusFilter = 'all' | RenovacionStatus;
 
 interface RenovacionesTableProps {
   data: Renovacion[];
+  /**
+   * Lo que tiró la carga, si falló.
+   *
+   * Sin esto la tabla afirmaba «no hay renovaciones» sobre una petición muerta:
+   * `operaciones/page.tsx` pasa `renovacionesData ?? []`, así que un fallo
+   * llegaba acá como lista vacía y se pintaba como cartera al día. El vacío son
+   * DOS (nunca hubo / el filtro no encontró) y con red de por medio son TRES.
+   */
+  error?: unknown;
+  /** Para el botón de reintentar del estado de fallo. */
+  onReintentar?: () => void;
   onStartRenewal?: (renovacion: Renovacion) => void;
   onNotifyTenant?: (renovacion: Renovacion) => void;
   onViewDetails?: (renovacion: Renovacion) => void;
@@ -97,6 +111,8 @@ function formatDate(dateStr: string, loc: string): string {
  */
 export function RenovacionesTable({
   data,
+  error,
+  onReintentar,
   onStartRenewal,
   onNotifyTenant,
   onViewDetails,
@@ -183,6 +199,28 @@ export function RenovacionesTable({
 
     return result;
   }, [data, bucketFilter, statusFilter, sortField, sortDirection]);
+
+  /**
+   * Paginado de presentación: `useRenovaciones()` trae todas las renovaciones y
+   * crecen con la cantidad de contratos por vencer.
+   *
+   * `resetKey` sólo con los filtros: ordenar cambia el orden, no el conjunto, y
+   * mandar al usuario a la página 1 por cambiar de columna sería molesto.
+   *
+   * «Seleccionar todo» sigue operando sobre TODO lo filtrado, no sobre la
+   * página visible — la acción masiva es sobre el filtro, no sobre el recorte.
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(filteredAndSortedItems, {
+    resetKey: `${bucketFilter}|${statusFilter}`,
+  });
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -384,7 +422,7 @@ export function RenovacionesTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredAndSortedItems.map((item, index) => {
+            {pageItems.map((item, index) => {
               const isUrgent = item.urgencyBucket === '0-30';
               const isSelected = selectedItems.has(item.id);
               const ipcIncrease = item.proposedRent
@@ -595,8 +633,30 @@ export function RenovacionesTable({
           </TableBody>
         </Table>
 
-        {/* Empty State */}
-        {filteredAndSortedItems.length === 0 && (
+        {/* Pie: sólo si hay más de una página. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
+
+        {/* Falló → vacío, en ese orden: si la petición murió, `data` llega
+            vacía y pintar «no hay renovaciones» sería afirmar que la cartera
+            está al día sin haberlo podido verificar. */}
+        {error ? (
+          <FalloDeCarga
+            error={error}
+            queEs="las renovaciones"
+            onReintentar={onReintentar}
+          />
+        ) : filteredAndSortedItems.length === 0 ? (
           <EmptyState
             icon={CheckSquare}
             title={t('inmobiliaria.finance.renewals.noRenewals')}
@@ -606,7 +666,7 @@ export function RenovacionesTable({
                 : t('inmobiliaria.finance.renewals.noRenewalsFiltered')
             }
           />
-        )}
+        ) : null}
       </div>
       </div>
     </div>

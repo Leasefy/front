@@ -5,7 +5,11 @@ import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
+import { Pagination } from '@/components/admin/screen/Pagination'
+import { useClientPagination } from '@/lib/admin/use-client-pagination'
 import { Pill } from '@/components/admin/Pill'
+
+const PAGE_SIZE = 50
 import type { PillTone } from '@/lib/admin/types'
 
 // ─── Types (co-located, per FRONT.md §6.26) ────────────────────────────────
@@ -75,6 +79,10 @@ export default function AbTestsPage() {
 
   const running = (data ?? []).filter((e) => e.status === 'running').length
 
+  /* Un experimento por fila y no se borran: el registro sólo crece. El contador
+     «N corriendo» del header sigue leyendo `data` entero. */
+  const { page, setPage, total, pageRows } = useClientPagination(data, PAGE_SIZE)
+
   return (
     <div className="p-6 lg:p-8 max-w-6xl">
       <PageHeader
@@ -89,13 +97,15 @@ export default function AbTestsPage() {
 
       <DataTable
         columns={columns}
-        rows={data}
+        rows={pageRows}
         getKey={(r) => r.id}
         isLoading={isLoading}
         error={error}
         emptyTitle="Sin experiments"
         emptyHint="No hay experimentos creados aún."
       />
+
+      <Pagination page={page} total={total} pageSize={PAGE_SIZE} onPage={setPage} />
     </div>
   )
 }

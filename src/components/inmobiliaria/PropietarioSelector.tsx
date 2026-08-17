@@ -49,7 +49,7 @@ export function PropietarioSelector({
     return propietarios.filter(
       (p) =>
         p.name.toLowerCase().includes(query) ||
-        p.email.toLowerCase().includes(query) ||
+        (p.email?.toLowerCase().includes(query) ?? false) ||
         p.documentNumber.includes(query)
     );
   }, [propietarios, search]);

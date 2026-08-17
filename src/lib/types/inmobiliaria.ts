@@ -21,8 +21,10 @@ export interface PropietarioBankAccount {
 export interface Propietario {
   id: string;
   name: string;
-  email: string;
-  phone: string;
+  /** Nullable in the DB (Prisma `String?`) — always guard before use. */
+  email: string | null;
+  /** Nullable in the DB (Prisma `String?`) — always guard before use. */
+  phone: string | null;
   documentType: DocumentType;
   documentNumber: string;
   address?: string;

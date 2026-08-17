@@ -346,32 +346,40 @@ export function DispersionDetail({
                   {propietario && (
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       <Envelope className="w-3.5 h-3.5" />
-                      <span>{propietario.email}</span>
-                      <CopyButton text={propietario.email} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
+                      <span>{propietario.email ?? '—'}</span>
+                      {propietario.email && (
+                        <CopyButton text={propietario.email} toastLabel={t('inmobiliaria.dispersiones.toasts.copiedToClipboard')} tooltip={t('inmobiliaria.dispersiones.detailView.copyTooltip')} />
+                      )}
                     </div>
                   )}
                 </div>
               </div>
               {propietario && (
                 <div className="flex flex-wrap gap-2">
-                  <ContactAction
-                    icon={Phone}
-                    href={`tel:${propietario.phone}`}
-                    label={t('inmobiliaria.dispersiones.detailView.call')}
-                    className="bg-muted hover:bg-muted/80 text-foreground"
-                  />
-                  <ContactAction
-                    icon={WhatsappLogo}
-                    href={`https://wa.me/${propietario.phone.replace(/\D/g, '')}`}
-                    label="WhatsApp"
-                    className="bg-success-soft hover:bg-success-soft text-success dark:bg-success/30 dark:hover:bg-success/50 dark:text-success"
-                  />
-                  <ContactAction
-                    icon={Envelope}
-                    href={`mailto:${propietario.email}`}
-                    label={t('inmobiliaria.dispersiones.detailView.email')}
-                    className="bg-primary-soft hover:bg-primary-soft text-primary dark:bg-primary/30 dark:hover:bg-primary/50 dark:text-primary"
-                  />
+                  {propietario.phone && (
+                    <ContactAction
+                      icon={Phone}
+                      href={`tel:${propietario.phone}`}
+                      label={t('inmobiliaria.dispersiones.detailView.call')}
+                      className="bg-muted hover:bg-muted/80 text-foreground"
+                    />
+                  )}
+                  {propietario.phone && (
+                    <ContactAction
+                      icon={WhatsappLogo}
+                      href={`https://wa.me/${propietario.phone.replace(/\D/g, '')}`}
+                      label="WhatsApp"
+                      className="bg-success-soft hover:bg-success-soft text-success dark:bg-success/30 dark:hover:bg-success/50 dark:text-success"
+                    />
+                  )}
+                  {propietario.email && (
+                    <ContactAction
+                      icon={Envelope}
+                      href={`mailto:${propietario.email}`}
+                      label={t('inmobiliaria.dispersiones.detailView.email')}
+                      className="bg-primary-soft hover:bg-primary-soft text-primary dark:bg-primary/30 dark:hover:bg-primary/50 dark:text-primary"
+                    />
+                  )}
                 </div>
               )}
             </div>

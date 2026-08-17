@@ -357,24 +357,16 @@ export function useConsignaciones(params?: Parameters<typeof consignacionesApi.g
  * paleta iba a `/panel/inmobiliaria/inmuebles/<id>`, una página que **nunca
  * existió**.
  *
- * Como `agencyId + propertyId` es único, buscar por inmueble devuelve cero o
- * uno. Se intenta primero por mandato —que es lo normal— y sólo si no está se
- * pregunta por inmueble: un enlace de esos cuesta una petición extra, y
- * ninguno cae en el vacío.
+ * La resolución vive en `consignacionesApi.getByIdOrPropertyId`, porque la
+ * pantalla de candidatos —que no usa este hook— necesitaba exactamente la
+ * misma y con una copia aparte se quedó sin ella: cada fila de Postulaciones
+ * moría en «No encontramos esa propiedad».
  */
 export function useConsignacion(id: string | undefined) {
   const { data, ...rest } = useApiData(
     async () => {
       if (!id) throw new Error('No ID');
-      try {
-        return await consignacionesApi.getById(id);
-      } catch (error) {
-        const porInmueble = await consignacionesApi.getAll({ propertyId: id });
-        // Si tampoco es un inmueble de esta agencia, el error que vale es el
-        // primero —«no existe esa consignación»—, no «la lista vino vacía».
-        if (porInmueble.length === 0) throw error;
-        return porInmueble[0];
-      }
+      return consignacionesApi.getByIdOrPropertyId(id);
     },
     [id],
     false,

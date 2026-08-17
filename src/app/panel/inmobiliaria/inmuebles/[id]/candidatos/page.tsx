@@ -384,7 +384,10 @@ function CandidatosContent() {
     setIsLoading(true);
     setError(null);
     try {
-      const consignacion = await consignacionesApi.getById(consignacionId);
+      // `getByIdOrPropertyId` y no `getById`: por acá entran enlaces que sólo
+      // tienen el id del INMUEBLE —Postulaciones es uno— y con `getById` caían
+      // en «No encontramos esa propiedad» teniendo el mandato en la base.
+      const consignacion = await consignacionesApi.getByIdOrPropertyId(consignacionId);
       // Un mandato puede no tener inmueble todavía —los de la migración de
       // cartera nacen así—, y sin inmueble no hay a quién postularse. Se dice,
       // en vez de pedir candidatos de `undefined` y pintar «no hay ninguno».

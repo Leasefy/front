@@ -30,6 +30,10 @@ import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { ChatThread } from '@/components/messages/ChatThread';
 import { agentCreditsApi } from '@/lib/api/agent-credits.service';
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
+import {
+  partitionScoreBreakdown,
+  type PartitionedScoreBreakdown,
+} from '@/lib/utils/score-breakdown';
 import { useContractByApplication } from '@/lib/hooks/useContracts';
 import { getAccessToken, ApiError } from '@/lib/api/client';
 import type { DocumentItem } from '@/lib/api/documents.service';
@@ -393,6 +397,19 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
   const levelColor = level ? LEVEL_COLORS[level] : null;
   const recommendation = evaluation?.recommendation ? RECOMMENDATION_LABELS[evaluation.recommendation] : null;
 
+  /**
+   * Las 5 dimensiones reales, con las mitades del crédito aparte.
+   *
+   * `main.length > 0` y no `Object.keys(...)`: un desglose que sólo trajera
+   * `bureau` y `asegurabilidad` dejaría `main` vacío y pintaría el título
+   * «Cómo se compone» sobre la nada.
+   */
+  const particion =
+    evaluation?.score_breakdown && Object.keys(evaluation.score_breakdown).length > 0
+      ? partitionScoreBreakdown(evaluation.score_breakdown)
+      : null;
+  const desglose = particion && particion.main.length > 0 ? particion : null;
+
   const requiresManualReview = evaluation?.requires_manual_review === true;
   const canPreapprove = candidate.status === 'SUBMITTED' || candidate.status === 'UNDER_REVIEW';
 
@@ -537,19 +554,24 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
             </section>
           )}
 
-          {/* AI Scoring Block */}
-          <section className={cn(
-            'rounded-xl border p-5 space-y-4',
-            levelColor ? `${levelColor.bg} ${levelColor.border}` : 'bg-muted border-border'
-          )}>
+          {/*
+            * Análisis del candidato.
+            *
+            * La tarjeta entera se pintaba del color del nivel (`bg-primary-soft`
+            * para un B): un panel lavanda gigante contra el que competía todo lo
+            * de adentro —las barras, las alertas rojas, los montos—. El color
+            * del nivel ahora vive SÓLO en la ficha del nivel, que es lo que
+            * nombra; el resto es una tarjeta neutra como las demás.
+            */}
+          <section className="rounded-xl border border-border bg-card p-5 space-y-5">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-md bg-surface dark:bg-ink flex items-center justify-center">
-                  <Robot className="w-4 h-4 text-primary" />
+                <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center">
+                  <Robot className="w-4 h-4 text-fg-muted" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm text-foreground">Análisis IA · Tenant Scoring</h3>
-                  <p className="text-xs text-fg-muted">Generado por el agente de evaluación de riesgo</p>
+                  <h3 className="font-semibold text-sm text-foreground">Análisis del candidato</h3>
+                  <p className="text-xs text-fg-muted">Hecho por el agente de evaluación de riesgo</p>
                 </div>
               </div>
               {/*
@@ -568,29 +590,9 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 */}
             </div>
 
-            {/* Credits balance chip */}
-            {creditsBalance && (
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5 text-fg-muted">
-                  <Sparkle className="w-3.5 h-3.5" />
-                  <span>
-                    Saldo:{' '}
-                    <span className="font-semibold text-foreground tabular-nums">
-                      {creditsBalance.total}
-                    </span>{' '}
-                    <span className="text-fg-muted">
-                      créditos (1 por evaluación)
-                    </span>
-                  </span>
-                </div>
-                {(creditsBalance.planBalance > 0 || creditsBalance.purchasedBalance > 0) && (
-                  <span className="text-fg-muted">
-                    {creditsBalance.planBalance} del plan
-                    {creditsBalance.purchasedBalance > 0 && ` + ${creditsBalance.purchasedBalance} comprados`}
-                  </span>
-                )}
-              </div>
-            )}
+            {/* El saldo de créditos vivía acá arriba, encima del score: contabilidad
+                de la cuenta en el lugar donde se juzga a una persona. Se fue con
+                el botón de re-evaluar, que era lo único que los gastaba. */}
 
             {reevalMessage && (
               <div className="rounded-md bg-success-soft text-success flex items-center gap-2">
@@ -647,66 +649,106 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
               </div>
             ) : (
               <>
-                {/* Score display */}
+                {/* El score, con el color del nivel sólo en su ficha. */}
                 {level && totalScore !== undefined && levelColor && (
                   <div className="flex items-center gap-4">
-                    <div className={cn('w-16 h-16 rounded-xl flex flex-col items-center justify-center', levelColor.bg, levelColor.border, 'border-2')}>
-                      <span className={cn('text-2xl font-bold uppercase tracking-wide font-mono', levelColor.text)}>
+                    <div
+                      className={cn(
+                        'flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border',
+                        levelColor.bg,
+                        levelColor.border,
+                      )}
+                    >
+                      <span className={cn('font-mono text-2xl font-bold', levelColor.text)}>
                         {level}
                       </span>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-3xl font-bold text-foreground">{totalScore}<span className="text-sm font-normal text-fg-muted">/100</span></p>
-                      <p className="text-xs text-fg-muted mt-0.5">{LEVEL_DESCRIPTIONS[level]}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-mono text-3xl font-semibold leading-none text-foreground tabular-nums">
+                        {totalScore}
+                        <span className="ml-0.5 text-sm font-normal text-fg-muted">/100</span>
+                      </p>
+                      <p className="mt-1.5 text-xs text-fg-muted">{LEVEL_DESCRIPTIONS[level]}</p>
                     </div>
                   </div>
                 )}
 
-                {/* Requires manual review banner */}
+                {/* La misma advertencia va también al pie, junto a los botones.
+                    Acá se dice corto: el detalle está en las alertas de abajo. */}
                 {requiresManualReview && (
-                  <div className="rounded-xl bg-danger-soft border border-danger/30 p-3 flex items-start gap-2">
-                    <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-semibold text-danger">
-                        Revisión manual requerida
-                      </p>
-                      <p className="text-xs text-danger mt-0.5">
-                        Esta evaluación requiere revisión manual antes de tomar una decisión.
-                        Se detectaron inconsistencias que deben ser verificadas.
-                      </p>
+                  <p className="flex items-start gap-2 rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger">
+                    <WarningCircle className="mt-px h-4 w-4 flex-shrink-0" />
+                    <span>
+                      <span className="font-semibold">Pide revisión manual.</span> El agente
+                      encontró inconsistencias entre los documentos — están listadas abajo.
+                    </span>
+                  </p>
+                )}
+
+                {/*
+                  * Cómo se compone el score.
+                  *
+                  * Antes se pintaban las SIETE llaves del agente en una grilla
+                  * pareja, y los pesos sumaban **130%**: `bureau` y
+                  * `asegurabilidad` no son dimensiones, son las dos mitades de
+                  * `credito` (credito = (bureau + asegurabilidad) / 2). Ponerlas
+                  * al lado contaba el crédito dos veces.
+                  *
+                  * `partitionScoreBreakdown` existía desde antes, con su test,
+                  * y no lo usaba nadie: separarlas era el motivo por el que se
+                  * escribió.
+                  */}
+                {desglose && (
+                  <div className="space-y-3">
+                    <p className="text-overline text-fg-subtle">Cómo se compone</p>
+                    <div className="space-y-2.5">
+                      {desglose.main.map(([key, factor]) => (
+                        <FactorDelScore
+                          key={key}
+                          etiqueta={SCORE_BREAKDOWN_LABELS[key] ?? key}
+                          valor={factor.value}
+                          peso={factor.weight}
+                          detalle={
+                            key === 'credito' && desglose.creditDetail ? (
+                              <DetalleDeCredito detalle={desglose.creditDetail} />
+                            ) : null
+                          }
+                        />
+                      ))}
                     </div>
                   </div>
                 )}
 
-                {/* Score breakdown */}
-                {evaluation?.score_breakdown && Object.keys(evaluation.score_breakdown).length > 0 && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {Object.entries(evaluation.score_breakdown).map(([key, factor]) => (
-                      <SubscoreBar
-                        key={key}
-                        label={SCORE_BREAKDOWN_LABELS[key] ?? key}
-                        value={factor.value}
-                        weight={factor.weight}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {/* Fallback: legacy subscores */}
-                {!evaluation?.score_breakdown && evaluation?.subscores && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {evaluation.subscores.financialStability !== undefined && (
-                      <SubscoreBar label="Estabilidad financiera" value={evaluation.subscores.financialStability} />
-                    )}
-                    {evaluation.subscores.rentalHistory !== undefined && (
-                      <SubscoreBar label="Historial de arriendo" value={evaluation.subscores.rentalHistory} />
-                    )}
-                    {evaluation.subscores.documentVerification !== undefined && (
-                      <SubscoreBar label="Verificación de docs" value={evaluation.subscores.documentVerification} />
-                    )}
-                    {evaluation.subscores.personalProfile !== undefined && (
-                      <SubscoreBar label="Perfil personal" value={evaluation.subscores.personalProfile} />
-                    )}
+                {/* Respaldo: evaluaciones viejas, sin `score_breakdown`. */}
+                {!desglose && evaluation?.subscores && (
+                  <div className="space-y-3">
+                    <p className="text-overline text-fg-subtle">Cómo se compone</p>
+                    <div className="space-y-2.5">
+                      {evaluation.subscores.financialStability !== undefined && (
+                        <FactorDelScore
+                          etiqueta="Estabilidad financiera"
+                          valor={evaluation.subscores.financialStability}
+                        />
+                      )}
+                      {evaluation.subscores.rentalHistory !== undefined && (
+                        <FactorDelScore
+                          etiqueta="Historial de arriendo"
+                          valor={evaluation.subscores.rentalHistory}
+                        />
+                      )}
+                      {evaluation.subscores.documentVerification !== undefined && (
+                        <FactorDelScore
+                          etiqueta="Verificación de documentos"
+                          valor={evaluation.subscores.documentVerification}
+                        />
+                      )}
+                      {evaluation.subscores.personalProfile !== undefined && (
+                        <FactorDelScore
+                          etiqueta="Perfil personal"
+                          valor={evaluation.subscores.personalProfile}
+                        />
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -1027,22 +1069,98 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
 // Helpers
 // ============================================================================
 
-function SubscoreBar({ label, value, weight }: { label: string; value: number; weight?: number }) {
-  const color = value >= 75 ? 'bg-success' : value >= 50 ? 'bg-warning' : 'bg-danger';
+function colorDeValor(value: number): string {
+  return value >= 75 ? 'bg-success' : value >= 50 ? 'bg-warning' : 'bg-danger';
+}
+
+/**
+ * Una dimensión del score, en fila.
+ *
+ * Eran siete cajas en una grilla de dos columnas con «15% 0» arrimados en la
+ * esquina: dos números sin decir cuál es cuál, y la barra de un cero se dibuja
+ * de ancho cero — o sea, no se dibuja, y un cero se lee igual que un dato que
+ * no llegó. Acá la pista siempre se ve, el peso dice que es un peso, y el valor
+ * manda por tamaño.
+ */
+function FactorDelScore({
+  etiqueta,
+  valor,
+  peso,
+  detalle,
+}: {
+  etiqueta: string;
+  valor: number;
+  peso?: number;
+  detalle?: React.ReactNode;
+}) {
   return (
-    <div className="rounded-md bg-surface-muted p-2 border border-border">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] text-fg-muted truncate">{label}</span>
-        <div className="flex items-center gap-1.5">
-          {weight !== undefined && (
-            <span className="text-[10px] text-fg-subtle tabular-nums">{weight}%</span>
+    <div>
+      <div className="flex items-baseline gap-3">
+        <span className="min-w-0 flex-1 truncate text-xs text-foreground">{etiqueta}</span>
+        {peso !== undefined && (
+          <span className="shrink-0 text-[11px] text-fg-subtle">
+            pesa <span className="font-mono tabular-nums">{peso}%</span>
+          </span>
+        )}
+        <span className="w-9 shrink-0 text-right font-mono text-sm font-semibold text-foreground tabular-nums">
+          {valor}
+        </span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-muted">
+        <div
+          className={cn('h-full rounded-full transition-all', colorDeValor(valor))}
+          style={{ width: `${Math.max(0, Math.min(100, valor))}%` }}
+        />
+      </div>
+      {detalle}
+    </div>
+  );
+}
+
+/**
+ * Las dos mitades del crédito, colgando de su dimensión.
+ *
+ * Y sobre todo: **un buró que no contestó no es un buró que dio cero.** El
+ * agente marca `source: 'experian_via_fianly_unavailable'` justo para eso, y
+ * la pantalla lo pintaba como un 0 que arrastra el crédito a la mitad. Un cero
+ * inventado le baja el score a una persona por una falla nuestra.
+ */
+function DetalleDeCredito({
+  detalle,
+}: {
+  detalle: NonNullable<PartitionedScoreBreakdown['creditDetail']>;
+}) {
+  const { bureau, asegurabilidad, bureauUnavailable } = detalle;
+  return (
+    <div className="mt-2 ml-3 space-y-1.5 border-l border-border pl-3">
+      {bureau && (
+        <div className="flex items-baseline gap-2">
+          <span className="min-w-0 flex-1 truncate text-[11px] text-fg-muted">Buró de crédito</span>
+          {bureauUnavailable ? (
+            <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning">
+              Sin dato — el buró no respondió
+            </span>
+          ) : (
+            <span className="shrink-0 font-mono text-[11px] tabular-nums text-foreground">
+              {bureau.value}
+            </span>
           )}
-          <span className="text-xs font-semibold text-foreground tabular-nums">{value}</span>
         </div>
-      </div>
-      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-        <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${value}%` }} />
-      </div>
+      )}
+      {asegurabilidad && (
+        <div className="flex items-baseline gap-2">
+          <span className="min-w-0 flex-1 truncate text-[11px] text-fg-muted">Asegurabilidad</span>
+          <span className="shrink-0 font-mono text-[11px] tabular-nums text-foreground">
+            {asegurabilidad.value}
+          </span>
+        </div>
+      )}
+      {bureauUnavailable && (
+        <p className="text-[11px] leading-snug text-warning">
+          El crédito se calculó con la mitad de la información, así que este puntaje está por
+          debajo de lo que le corresponde.
+        </p>
+      )}
     </div>
   );
 }

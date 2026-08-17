@@ -78,8 +78,11 @@ export interface BackendPaymentInfo {
   paymentMethods: Array<{
     id: string;
     bankName: string;
-    accountType: 'AHORROS' | 'CORRIENTE';
-    accountNumber: string;
+    // accountType/accountNumber son nullable desde payment-methods v2: al soportar
+    // billeteras (NEQUI/DAVIPLATA) el back hizo estas columnas nullable. Un método
+    // de tipo billetera puede no tener cuenta bancaria.
+    accountType: 'AHORROS' | 'CORRIENTE' | null;
+    accountNumber: string | null;
     holderName: string;
     phoneNumber: string | null;
     methodType: string;

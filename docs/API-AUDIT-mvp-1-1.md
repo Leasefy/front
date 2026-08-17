@@ -109,6 +109,7 @@ Verificado contra catálogo de paths del back (los reales existen, los llamados 
 - **`466faf2e`** — payment-methods: parche interino wire↔display (lista renderiza + create de banco real; assign no-op, billeteras "próximamente") tras respuesta del back (v2). Falta adoptar tipos generados al deploy.
 - **`f6e5acde`** — `leases` payment-info: `accountType/accountNumber` nullable (efecto de payment-methods v2 / billeteras).
 - **`35d0d843`** — `propietario.email/phone` nullable + guardas en ~14 sitios (evita crash `.replace()` sobre null en dispersiones). Test de regresión.
+- **`726bb560`** — `config.ts`: mock NUNCA en prod (guarda `NODE_ENV`, patrón de funnel). Mantenimiento ya no puede servir datos inventados a usuarios reales.
 - 3 memorias de handoff marcadas resueltas (avalúos-admin, registration-profiles, terms-acceptance).
 
 ### 📤 Handoff al back (esperando contrato)
@@ -135,5 +136,7 @@ Los P0 fixeados (visitas, cobros, mantenimiento, avalúo) SÍ tienen consumidore
 ### ⚠️ Huecos de producto descubiertos (no inventados)
 - **Avalúo — reanudar pago**: si el ciudadano cierra la pestaña sin pagar en el intake, no hay forma de retomar el pago (`paymentUrl` no se persiste; `/pay` y `/wompi-session` muertos).
 - **Avalúo — polling**: `use-avaluo-status.ts` deja de polear al llegar a `firmado`; con `!paid` la UI no auto-refresca al confirmar Wompi (recarga manual).
-- **payment-methods**: `isDefault` / asignación / billeteras sin respaldo en el back (ver handoff).
+- **payment-methods**: `isDefault` / asignación / billeteras sin respaldo en el back (ver handoff). ✅ Respondido — interino shippeado; falta prender al deploy de v2.
+- **Mantenimiento — estado "próximamente"**: con la guarda de prod (`726bb560`), en producción mantenimiento pega al endpoint inexistente y muestra un error crudo (`errorLoading: 404`) en vez de un estado "Próximamente". Polish pendiente en las 3 superficies (overview/inbox/tickets) hasta que el agent exponga los endpoints.
+- **Retención `CaseBundle`** (forward-looking, no urgente): los tipos a mano (`retencion.ts:86-91`) esperan shapes planos pero el contrato real los envuelve (`{guard:{}}`, `{draft,blocked}`, `{plan,note}`, `{profile,…}`). Hoy lo tapa el `try/catch→mock`; cuando retención salga en vivo, rompe en silencio. Requiere desenvolver los envelopes.
 </content>

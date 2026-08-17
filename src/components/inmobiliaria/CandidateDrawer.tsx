@@ -1047,22 +1047,99 @@ function SubscoreBar({ label, value, weight }: { label: string; value: number; w
   );
 }
 
+/** `"3.625.317,5"` (colombiano) → `3625317.5`. */
+function numeroColombiano(s: string): number {
+  return Number(s.replace(/\./g, '').replace(',', '.'));
+}
+
+/** Qué se contrasta, con las dos cifras enfrentadas. */
+export interface CaraACara {
+  izqRotulo: string;
+  izqValor: string;
+  derRotulo: string;
+  derValor: string;
+  brecha?: string;
+}
+
+export interface AlertaExplicada {
+  texto: string;
+  caraACara?: CaraACara;
+}
+
 /**
  * Traduce el detalle técnico de una alerta a algo que se pueda leer.
  *
- * El agente devuelve el hallazgo tal como lo midió:
+ * El agente devuelve el hallazgo tal como lo midió, y está bien que lo haga:
  *
- *     "ModDate posterior a CreationDate por 1623 día(s).
- *      Producer: 'pdf-lib (https://github.com/Hopding/pdf-lib)'."
+ *     "ModDate posterior a CreationDate por 1623 día(s). Producer: 'pdf-lib…'"
+ *     "Diferencia de salario entre contrato (6.419.000) y nómina/certificado
+ *      (3.625.317,5) es del 43.5%, supera el umbral del 10%."
  *
- * Eso es cierto y es inútil para quien tiene que decidir si aprueba a una
- * persona: nombra campos internos de un PDF y una librería de GitHub. Acá se
- * dice qué significa; el texto crudo queda disponible en «Ver detalle
- * técnico», porque para reclamarle a alguien hay que poder citarlo.
+ * Lo que no está bien es que eso sea lo único que se lee. La primera nombra
+ * campos internos de un PDF; la segunda **sí** trae las dos cifras, pero
+ * enterradas en una frase de sesenta palabras — y el titular de arriba decía
+ * sólo «difiere más del 10%», sin decir de cuánto a cuánto.
+ *
+ * Devuelve `null` cuando no sabe traducir. Quien renderiza debe entonces
+ * mostrar el detalle crudo **a la vista**: esconder lo que no reemplazamos
+ * sería perder el dato.
  */
-export function explicarAlerta(flag: IntegrityFlag): string | null {
+export function explicarAlerta(flag: IntegrityFlag): AlertaExplicada | null {
   const d = flag.detail ?? '';
 
+  // ── Salario: el contrato dice una cosa y la nómina otra ──────────────────
+  const salario = d.match(
+    /entre\s+(.+?)\s*\(([\d.,]+)\)\s*y\s+(.+?)(?:\s*\(([\d.,]+)\)|:\s*([\d.,]+))\s*es del\s*([\d.,]+)\s*%/i,
+  );
+  if (salario) {
+    const [, rotA, montoA, rotB, montoBpar, montoBdp, pct] = salario;
+    const montoB = montoBpar ?? montoBdp;
+    const umbral = d.match(/umbral del\s*([\d.,]+)\s*%/i)?.[1];
+    const diferencia = pct.replace('.', ',');
+    return {
+      texto: umbral
+        ? `Las dos cifras se llevan un ${diferencia}%, y el tope aceptado es ${umbral.replace('.', ',')}%. Pedí el soporte que las concilie antes de decidir.`
+        : `Las dos cifras se llevan un ${diferencia}%. Pedí el soporte que las concilie antes de decidir.`,
+      caraACara: {
+        izqRotulo: rotA.trim(),
+        izqValor: formatCurrency(numeroColombiano(montoA)),
+        derRotulo: rotB.trim(),
+        derValor: formatCurrency(numeroColombiano(montoB)),
+        brecha: `${diferencia}% de diferencia`,
+      },
+    };
+  }
+
+  // ── Nombre: mismo humano escrito distinto, o dos humanos distintos ───────
+  const nombre = d.match(
+    /Nombre en\s+(.+?)\s*\('([^']+)'\)\s*no coincide con\s+(.+?)\s*\('([^']+)'\)/i,
+  );
+  if (nombre) {
+    const [, fuenteA, nombreA, fuenteB, nombreB] = nombre;
+    const palabras = (s: string) =>
+      s
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .sort()
+        .join(' ');
+    const mismasPalabras = palabras(nombreA) === palabras(nombreB);
+    return {
+      texto: mismasPalabras
+        ? 'Son las mismas palabras en otro orden —apellidos primero—, no dos personas distintas. Suele pasar cuando la nómina se exporta del sistema de la empresa.'
+        : 'Los nombres no coinciden. Verificá que los documentos sean de la misma persona antes de decidir.',
+      caraACara: {
+        izqRotulo: fuenteA.trim(),
+        izqValor: nombreA,
+        derRotulo: fuenteB.trim(),
+        derValor: nombreB,
+      },
+    };
+  }
+
+  // ── Metadatos del PDF ────────────────────────────────────────────────────
   const dias = d.match(/ModDate posterior a CreationDate por\s+(\d+)\s+d/i)?.[1];
   const herramienta = d.match(/Producer:\s*'([^'(]+)/i)?.[1]?.trim();
 
@@ -1074,13 +1151,17 @@ export function explicarAlerta(flag: IntegrityFlag): string | null {
         : n >= 30
           ? `${Math.floor(n / 30)} mes${Math.floor(n / 30) === 1 ? '' : 'es'} después`
           : `${n} día${n === 1 ? '' : 's'} después`;
-    return herramienta
-      ? `El archivo se guardó otra vez ${cuando} de haberse creado, con ${herramienta}. No prueba que lo hayan alterado, pero conviene pedir el original.`
-      : `El archivo se guardó otra vez ${cuando} de haberse creado. No prueba que lo hayan alterado, pero conviene pedir el original.`;
+    return {
+      texto: herramienta
+        ? `El archivo se guardó otra vez ${cuando} de haberse creado, con ${herramienta}. No prueba que lo hayan alterado, pero conviene pedir el original.`
+        : `El archivo se guardó otra vez ${cuando} de haberse creado. No prueba que lo hayan alterado, pero conviene pedir el original.`,
+    };
   }
 
   if (herramienta) {
-    return `El archivo pasó por ${herramienta}, una herramienta de edición de PDF. Conviene pedir el original al emisor.`;
+    return {
+      texto: `El archivo pasó por ${herramienta}, una herramienta de edición de PDF. Conviene pedir el original al emisor.`,
+    };
   }
 
   return null;
@@ -1108,25 +1189,82 @@ function IntegrityFlagCard({ flag }: { flag: IntegrityFlag }) {
         {docLabel && <span className="font-normal whitespace-nowrap">— {docLabel}</span>}
       </p>
 
-      {explicacion && (
-        <p className={cn('mt-1 ml-5 text-xs font-normal opacity-90', tono.texto)}>{explicacion}</p>
+      {/* Las dos cifras enfrentadas: el titular decía «difiere más del 10%» sin
+          decir nunca de cuánto a cuánto, que es lo único con lo que se puede
+          hacer algo (llamar al empleador, pedir el desprendible que falta). */}
+      {explicacion?.caraACara && (
+        <div className="mt-2 ml-5 flex flex-wrap items-stretch gap-2">
+          <ValorEnfrentado
+            rotulo={explicacion.caraACara.izqRotulo}
+            valor={explicacion.caraACara.izqValor}
+            tono={tono.texto}
+          />
+          <ValorEnfrentado
+            rotulo={explicacion.caraACara.derRotulo}
+            valor={explicacion.caraACara.derValor}
+            tono={tono.texto}
+          />
+          {explicacion.caraACara.brecha && (
+            <span
+              className={cn(
+                'self-center rounded-full border px-2 py-0.5 text-[11px] font-semibold tabular-nums',
+                tono.texto,
+                'border-current/30',
+              )}
+            >
+              {explicacion.caraACara.brecha}
+            </span>
+          )}
+        </div>
       )}
 
-      {hayDetalleCrudo && (
-        <details className="mt-1 ml-5">
-          <summary
-            className={cn(
-              'cursor-pointer list-none text-[11px] underline underline-offset-2 opacity-70',
-              tono.texto,
-            )}
-          >
-            Ver detalle técnico
-          </summary>
-          <p className={cn('mt-1 font-mono text-[11px] leading-relaxed opacity-80', tono.texto)}>
-            {flag.detail}
-          </p>
-        </details>
+      {explicacion && (
+        <p className={cn('mt-1.5 ml-5 text-xs font-normal opacity-90', tono.texto)}>
+          {explicacion.texto}
+        </p>
       )}
+
+      {/* El crudo se esconde SÓLO si arriba se dijo lo mismo en cristiano. Sin
+          traducción se muestra tal cual: tapar lo que no reemplazamos sería
+          perder el dato. */}
+      {hayDetalleCrudo &&
+        (explicacion ? (
+          <details className="mt-1 ml-5">
+            <summary
+              className={cn(
+                'cursor-pointer list-none text-[11px] underline underline-offset-2 opacity-70',
+                tono.texto,
+              )}
+            >
+              Ver detalle técnico
+            </summary>
+            <p className={cn('mt-1 font-mono text-[11px] leading-relaxed opacity-80', tono.texto)}>
+              {flag.detail}
+            </p>
+          </details>
+        ) : (
+          <p className={cn('mt-1 ml-5 text-xs font-normal opacity-90', tono.texto)}>{flag.detail}</p>
+        ))}
+    </div>
+  );
+}
+
+/** Una de las dos cifras que se contrastan. */
+function ValorEnfrentado({
+  rotulo,
+  valor,
+  tono,
+}: {
+  rotulo: string;
+  valor: string;
+  tono: string;
+}) {
+  return (
+    <div className={cn('rounded-md border border-current/20 bg-surface/60 px-2.5 py-1.5', tono)}>
+      {/* Sin `uppercase`: el agente manda rótulos largos («nómina quincenal
+          normalizada a mensual») y en mayúscula con tracking ocupan el doble. */}
+      <p className="text-[10px] leading-tight opacity-70 first-letter:uppercase">{rotulo}</p>
+      <p className="text-xs font-semibold tabular-nums">{valor}</p>
     </div>
   );
 }

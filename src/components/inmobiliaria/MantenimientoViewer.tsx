@@ -18,7 +18,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  X,
   Wrench,
   Lightning,
   Snowflake,
@@ -461,29 +460,23 @@ export function MantenimientoViewer({
           {/* Header */}
           <div className="sticky top-0 z-10 bg-background border-b border-border">
             <SheetHeader className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div
-                    className={cn(
-                      'w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0',
-                      priorityStyle.bg
-                    )}
-                  >
-                    <TypeIcon className={cn('w-5 h-5', priorityStyle.text)} />
-                  </div>
-                  <div>
-                    <SheetTitle className="text-left">{solicitud.title}</SheetTitle>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {typeInfo?.labelEs} · {fmtDate(solicitud.createdAt)}
-                    </p>
-                  </div>
+              {/* `pr-10` reserva el hueco de la ✕ del `SheetContent`, que es la
+                  misma de todo el producto. Acá había una segunda a mano. */}
+              <div className="flex items-start gap-3 pr-10">
+                <div
+                  className={cn(
+                    'w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0',
+                    priorityStyle.bg
+                  )}
+                >
+                  <TypeIcon className={cn('w-5 h-5', priorityStyle.text)} />
                 </div>
-                <IconButton
-                  variant="ghost"
-                  onClick={onClose}
-                  aria-label={t('inmobiliaria.mantenimiento.cancel')}
-                  icon={<X className="w-5 h-5" />}
-                />
+                <div>
+                  <SheetTitle className="text-left">{solicitud.title}</SheetTitle>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {typeInfo?.labelEs} · {fmtDate(solicitud.createdAt)}
+                  </p>
+                </div>
               </div>
 
               {/* Status & Priority Badges */}

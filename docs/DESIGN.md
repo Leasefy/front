@@ -757,10 +757,36 @@ Reglas que NO se negocian, porque son lo que hace que 29 modales se vean igual:
 
 | Regla | Por qué |
 |---|---|
-| **Siempre `<DialogHeader>`** | Es lo único que da el título de 16px, el filete y la ✕. Sin él el modal se ve de otra familia. |
+| **Siempre `<DialogHeader>`** | Es lo único que da el título de 16px, el filete y la ✕ en su sitio. Sin él el modal se ve de otra familia. |
 | **La ✕ vive en la cabecera** | La del DS va `absolute` dentro del contenedor que scrollea: en un modal alto desaparece. |
 | **No toques el tamaño del título** | El del DS es `text-h2` (22px), tamaño de encabezado de PÁGINA. La primitiva lo baja con `[&_h2]:text-base`, por especificidad — un `className="text-base"` NO gana (tailwind-merge no reconoce `text-h2` como tamaño y sobreviven las dos). El color sí se puede cambiar. |
-| **Cabecera `sr-only` ⇒ `hideClose`** | Si no, la ✕ nace `sr-only` también y el modal queda sin cierre visible. |
+| **Cabecera `sr-only` ⇒ `hideClose`** | Si no, la ✕ nace `sr-only` también. Con `hideClose` en la cabecera, el `DialogContent` la pinta flotando arriba a la derecha. |
+
+### La ✕: una sola, y la pone la primitiva
+
+**Ningún call site dibuja una ✕.** Hay UN aspa en todo el producto —chip
+redondo gris, `size-8 rounded-full bg-surface-muted`— y vive en
+`AspaDeCierre` (`src/components/ui/dialog.tsx`). Diálogos y cajones la
+heredan; la ✕ pelada del DS (`rounded-[9px]`, sin fondo) va apagada **siempre**
+en los dos adaptadores.
+
+| Dónde | Quién la pone |
+|---|---|
+| `DialogContent` con `<DialogHeader>` | La cabecera, a la derecha del título |
+| `DialogContent` sin cabecera (o con `hideClose` en ella) | El Content, flotando en `absolute right-4 top-4` |
+| `SheetContent` | El Content, en `right-4 top-4` y `z-20` — por encima de las cabeceras `sticky` |
+| `AlertDialog` | Nadie: se sale por `Cancelar`/`Confirmar`, a propósito |
+
+Para apagarla entera: `hideClose` en `DialogContent`, `hideCloseButton` en
+`SheetContent`. Sólo para un modal que no se debe abandonar a medias.
+
+⚠️ **Un envoltorio de `DialogHeader`/`DialogFooter` tiene que declarar
+`bandaDeModal`.** `DialogContent` reparte a sus hijos leyendo esa marca; antes
+comparaba identidad de componente y `ResponsiveDialogHeader` —que renderiza un
+`DialogHeader` adentro pero *es* otro componente— no calificaba: la cabecera se
+iba al cuerpo con scroll, el pie dejaba de estar fijo y el Content encendía la ✕
+del DS encima de la del chip. Así vivió «Agendar una cita» con dos aspas.
+Ver `responsive-dialog.tsx`.
 
 Una cáscara escrita a mano (`createPortal`) usa **`rounded-[20px]`**, el mismo
 radio que la primitiva. `src/components/ui/modales-alineados.test.ts` verifica

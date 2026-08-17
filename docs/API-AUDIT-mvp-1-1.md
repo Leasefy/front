@@ -105,20 +105,29 @@ Verificado contra catálogo de paths del back (los reales existen, los llamados 
 - **`29449fde`** — 6 P0 triviales de path/verbo (visitas accept, cobros payment/send-reminder, mantenimiento select-quote, documents upload, templates path).
 - **`b4b51f2b`** — Pago de avalúo del ciudadano (pay-at-intake): tipos + consumo de `paymentUrl`, `AvaluoEstadoCard` usa `paid`, eliminados los 2 caminos muertos (`startPayment`→410 y `WompiPayButton`→ruta inexistente).
 - **`b7f83f0a`** — Mantenimiento `updateStatus`: despacho a transiciones reales (`approved→/approve`, `completed→/complete`, `cancelled→/cancel`); estados sin ruta lanzan error. Reemplaza el fantasma `PATCH /mantenimiento/{id}/status`.
+- **`f538baab`** — Eliminado código muerto de documentos (`documentsApi.{getById,upload,delete,getDownloadUrl}` + hooks `useDocumentUpload`/`useDocumentDelete` + su test).
 - 3 memorias de handoff marcadas resueltas (avalúos-admin, registration-profiles, terms-acceptance).
 
 ### 📤 Handoff al back (esperando contrato)
 - **payment-methods** — `docs/backend-handoff-payment-methods.md`: el módulo se hizo contra un mock; el back necesita definir `isDefault`, asignación inmueble→cuenta, soporte de billeteras, y `@ApiResponse` para codegen. Front sin tocar hasta cerrar el contrato.
+- **AI Hub** — `docs/backend-handoff-ai-hub.md`: 3 features con consumidores **vivos** bloqueadas por el back — work-item detalle (fantasma, rompe 5 páginas), métricas (auth server-to-server incompatible con el JWT de usuario), y confirmar-acción del chat (endpoint fantasma + `resolve` no ejecuta).
 
-### 🔎 Corrección de verificación (2ª pasada)
-Al validar callers, **documentos subir/borrar resultaron código muerto** (los hooks `useDocumentUpload`/`useDocumentDelete` no tienen consumidores). El sub-agente los reportó como "prod" sin verificar el consumo — lección: los sub-agentes verificaron existencia del endpoint, no siempre que el caller estuviera vivo. Los demás P0 fixeados (visitas, cobros, mantenimiento approveQuote) SÍ tienen callers vivos confirmados.
+### 🔎 Corrección de verificación (2ª pasada — MUY IMPORTANTE)
+Al validar **consumo** (no solo existencia del endpoint), **tres "P0" resultaron código muerto** — los sub-agentes marcaron "prod" viendo la llamada en un hook, sin verificar que el hook tuviera consumidores:
+- **Documentos subir/borrar** — hooks `useDocumentUpload`/`useDocumentDelete` sin consumidores (ya eliminado, `f538baab`).
+- **Analytics trends/forecast** — `useTrendAnalysis`/`useForecastData` + `analyticsApi.getTrends/getForecasts` + los componentes `AnalyticsTrends`/`AnalyticsForecasting` (solo re-exportados en el barrel, **ningún page los renderiza**). No hay handoff que hacer: es scaffolding sin usar. **NO era un gap de contrato.**
+- **`applications/getByProperty`** — el hook `useApplications` no tiene call-sites (`useApplications(` no aparece en ningún tsx). Scaffolding muerto.
 
-### 📋 P0 pendientes (verificados vivos — necesitan decisión de diseño o backend)
-- **Analytics** (`useInmobiliaria.ts:591,596`): **vivo**; el path se arregla a `/trends/{metricId}` pero el caller no pasa `metricId` — decidir qué métrica(s) mostrar.
-- **`applications/property`** (`useApplications.ts:298`): fantasma sin ruta real — gap de backend (ver postulaciones por propiedad para el landlord).
-- **AI chat confirmar acción** (`ai-hub-chat.ts:392`): ruta real `POST /ai-hub/chat/approvals/{approvalId}/resolve`, pero **`resolve` no ejecuta** (solo aprende) — choque semántico con lo que la UI promete.
-- **AI work-item detalle** (`agent-workspace.ts:200`) y **AI métricas** (`use-agent-metrics.ts:64`): fantasma/auth — dependen del back.
-- **Dead code a limpiar**: `useDocumentUpload`/`useDocumentDelete` + `documentsApi.upload/delete/getById`; `WompiPayButton` ya eliminado.
+Los P0 fixeados (visitas, cobros, mantenimiento, avalúo) SÍ tienen consumidores vivos confirmados. **Lección: la existencia del endpoint la verificaron bien; el consumo vivo, no siempre — siempre validar call-sites antes de invertir en un fix.**
+
+### 📋 P0 pendientes REALES (consumo vivo verificado — dependen del back)
+- **AI work-item detalle** (`agent-workspace.ts:200`): consumido por 5 páginas (`ai/{asegurabilidad,pagos,conciliacion,matching,avaluos}/[id]`) → fantasma, todas vacías. → handoff AI Hub §1.
+- **AI métricas** (`use-agent-metrics.ts:64` → `ai/page.tsx`): auth server-to-server. → handoff §2.
+- **AI chat confirmar acción** (`useBetaChat.ts:1260`): fantasma + `resolve` no ejecuta. → handoff §3.
+
+### 🧹 Dead-code candidato a limpiar (no rompe nada; opcional)
+- Analytics trends/forecast: `useTrendAnalysis`/`useForecastData`, `analyticsApi.getTrends/getForecasts`, `AnalyticsTrends`/`AnalyticsForecasting` + sus exports del barrel.
+- `useApplications` (+ `applicationsApi.getByProperty`) si se confirma sin uso.
 
 ### ⚠️ Huecos de producto descubiertos (no inventados)
 - **Avalúo — reanudar pago**: si el ciudadano cierra la pestaña sin pagar en el intake, no hay forma de retomar el pago (`paymentUrl` no se persiste; `/pay` y `/wompi-session` muertos).

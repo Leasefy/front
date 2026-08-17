@@ -2,7 +2,23 @@
 
 > Origen: API audit `feature/mvp-1-1` (2026-08-17). El módulo de cuentas de pago del landlord
 > (`/panel` → Settings → "Cuentas de pago") se construyó contra un mock y **no coincide con el
-> contrato real** del back. El front **no se va a tocar hasta cerrar el contrato de abajo**.
+> contrato real** del back.
+
+> ## ✅ ESTADO 2026-08-17 — el back respondió (payment-methods v2, commit back `c1b6588`, sin deployar aún)
+> Las 4 decisiones fueron implementadas por el back: (1) `isDefault` + invariante "una principal por
+> landlord" (**es cuenta preferida/display, NO dispersión automática**); (2) `LandlordPayoutAssignment`
+> + endpoints `GET /assignments`, `POST /:id/assign`, `DELETE /:id/assign/:propertyId`; (3) billeteras
+> vía DTO condicional para NEQUI/DAVIPLATA; (4) Response DTOs + `@ApiResponse` (adiós `content: never`).
+> Efecto colateral: `GET /leases/:id/payment-info` devuelve `accountType/accountNumber` como `string | null`.
+>
+> **Front — hecho (interino, front-puro, contra el back desplegado viejo):**
+> - `466faf2e` — mapper wire↔display en `payment-methods.service.ts`: la lista renderiza + create de banco
+>   con el DTO real; `assign/unassign` no-op y billeteras "próximamente" hasta que v2 deploye.
+> - `f6e5acde` — `leases.types.ts`: `accountType/accountNumber` nullable (no se renderizan → solo tipo).
+>
+> **Front — pendiente cuando v2 DEPLOYE:** correr `pnpm api:gen`, adoptar los tipos generados en
+> `payment-methods.service.ts` (reemplazar el mapper interino), y **prender** billeteras + asignación de
+> inmuebles + `isDefault` (quitar los no-op/guards del interino). El contrato de abajo queda como histórico.
 
 ## Estado actual (roto en prod)
 

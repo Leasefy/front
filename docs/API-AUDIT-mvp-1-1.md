@@ -106,6 +106,8 @@ Verificado contra catálogo de paths del back (los reales existen, los llamados 
 - **`b4b51f2b`** — Pago de avalúo del ciudadano (pay-at-intake): tipos + consumo de `paymentUrl`, `AvaluoEstadoCard` usa `paid`, eliminados los 2 caminos muertos (`startPayment`→410 y `WompiPayButton`→ruta inexistente).
 - **`b7f83f0a`** — Mantenimiento `updateStatus`: despacho a transiciones reales (`approved→/approve`, `completed→/complete`, `cancelled→/cancel`); estados sin ruta lanzan error. Reemplaza el fantasma `PATCH /mantenimiento/{id}/status`.
 - **`f538baab`** — Eliminado código muerto de documentos (`documentsApi.{getById,upload,delete,getDownloadUrl}` + hooks `useDocumentUpload`/`useDocumentDelete` + su test).
+- **`466faf2e`** — payment-methods: parche interino wire↔display (lista renderiza + create de banco real; assign no-op, billeteras "próximamente") tras respuesta del back (v2). Falta adoptar tipos generados al deploy.
+- **`f6e5acde`** — `leases` payment-info: `accountType/accountNumber` nullable (efecto de payment-methods v2 / billeteras).
 - 3 memorias de handoff marcadas resueltas (avalúos-admin, registration-profiles, terms-acceptance).
 
 ### 📤 Handoff al back (esperando contrato)

@@ -503,7 +503,7 @@ export const cobrosApi = {
     paymentMethod: string;
     paymentReference?: string;
   }): Promise<Cobro> {
-    return apiClient.patch<Cobro>(`${BASE}/cobros/${id}/pay`, payment);
+    return apiClient.post<Cobro>(`${BASE}/cobros/${id}/payment`, payment);
   },
 
   async getSummary(month: string): Promise<CobroSummary> {
@@ -545,7 +545,7 @@ export const cobrosApi = {
   },
 
   async sendReminder(id: string): Promise<void> {
-    await apiClient.post(`${BASE}/cobros/${id}/reminder`, {});
+    await apiClient.put(`${BASE}/cobros/${id}/send-reminder`);
   },
 };
 
@@ -783,7 +783,7 @@ export const mantenimientoApi = {
   },
 
   async approveQuote(id: string, quoteId: string): Promise<SolicitudMantenimiento> {
-    return apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/approve-quote`, { quoteId });
+    return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/select-quote`, { quoteId });
   },
 
   async getKanban(): Promise<Record<string, SolicitudMantenimiento[]>> {
@@ -1064,7 +1064,7 @@ export const analyticsApi = {
 
 export const documentosApi = {
   async getTemplates(): Promise<DocumentTemplate[]> {
-    const res = await apiClient.get<{ data: DocumentTemplate[] } | DocumentTemplate[]>(`${BASE}/templates`);
+    const res = await apiClient.get<{ data: DocumentTemplate[] } | DocumentTemplate[]>(`${BASE}/documents/templates`);
     return lista(res);
   },
 

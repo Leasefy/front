@@ -101,7 +101,7 @@ export const documentsApi = {
 
     let res: Response;
     try {
-      res = await fetch(`${BACKEND_URL}/documents`, {
+      res = await fetch(`${BACKEND_URL}/documents/upload`, {
         method: 'POST',
         headers,
         body: formData,

@@ -35,13 +35,28 @@ describe('partitionScoreBreakdown', () => {
     expect(total).toBe(100);
   });
 
-  it('orders main dimensions: credito, identidad, solvencia, estabilidad_laboral, consistencia_cruzada', () => {
+  it('orders main dimensions by weight, heaviest first', () => {
+    // Antes era un orden fijo que abría con `credito`: pesa 30 pero suele ser
+    // el puntaje más bajo, así que la lista empezaba con lo peor.
     const { main } = partitionScoreBreakdown(FULL_BREAKDOWN);
     expect(main.map(([k]) => k)).toEqual([
+      'solvencia', // 40
+      'credito', // 30
+      'estabilidad_laboral', // 15
+      'consistencia_cruzada', // 10
+      'identidad', // 5
+    ]);
+  });
+
+  it('breaks weight ties with the known order, so nothing jumps between renders', () => {
+    const empatadas: ScoreBreakdown = {
+      consistencia_cruzada: factor(79, 10, 'cross', 8),
+      identidad: factor(100, 10, 'cedula', 10),
+      credito: factor(13, 10, 'bureau+asegurabilidad', 1),
+    };
+    expect(partitionScoreBreakdown(empatadas).main.map(([k]) => k)).toEqual([
       'credito',
       'identidad',
-      'solvencia',
-      'estabilidad_laboral',
       'consistencia_cruzada',
     ]);
   });

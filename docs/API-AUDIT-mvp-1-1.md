@@ -133,6 +133,25 @@ Los P0 fixeados (visitas, cobros, mantenimiento, avalúo) SÍ tienen consumidore
 - Analytics trends/forecast: `useTrendAnalysis`/`useForecastData`, `analyticsApi.getTrends/getForecasts`, `AnalyticsTrends`/`AnalyticsForecasting` + sus exports del barrel.
 - `useApplications` (+ `applicationsApi.getByProperty`) si se confirma sin uso.
 
+---
+
+## 8. Corrección del equipo del agent (2ª auditoría, agent-side)
+
+El equipo del micro `agent` corrió 4 auditorías propias y corrigió veredictos míos. Correcciones:
+- **Owner Portal**: son **30** endpoints (no 18), todos en snapshot. `Digest.payload` es `z.any()` en el agent (`portal-propietario-danos-digest.ts:83`) → el riesgo de null es **latente** (el único write-path siempre lo llena), no activo. (Igual guardamos el render.)
+- **Cotizador**: `/api/cotizador/consent`, `/evaluate` y `/api/admin/cotizador/prescoring-config` están **vivos pero FUERA del snapshot** (rutas Hono planas). Y la narrativa "pre-scoring no involucra al agent" es **falsa**: el back llama al agent S2S (`pre-scoring-micro.client.ts:99,117`) — el agent ES el motor. Flujo real: front→back→agent(S2S).
+- **Cobranza**: **76 endpoints / 53 hooks** (no ~40), 0 fantasmas, 0 method mismatches. (Bug agent-side: shadowing de rutas `cartera/*/approve` — de ellos.)
+- **Retención**: 🔴 **peor que type-lie** — 3/4 fetches del `CaseBundle` tienen mismatch REAL de envelope (`{plan}`, `{guard}`, `{draft,…}` vs bare en `fetchCaseBundle`), y `bandeja` no devuelve `total`. Con `RETENCION_ENABLED`+`AGENT_URL` la UI se corrompe **en silencio** (el catch solo atrapa HTTP, no forma). → **Acuerdo: el agent devuelve bare** (como ya hace `perfil`) → cero cambio de front.
+- **Clase "Hono-plano"**: arco, ai-hub work-items/overview, chat/stream, cotizador consent/evaluate/admin-prescoring-config, tenant-scoring, etc. → fuera del OpenAPI del agent por diseño ("OPENAPI REGISTRY GRAFT"). El front hand-typea sin red de compilación. El agent los migrará a OpenAPIHono → luego `pnpm api:gen`.
+- **funnel applications**: `useRecorridoPostulaciones` sin importador → **código muerto** (no "demo-only"). Se elimina front-side.
+- **AI Hub** (detalle/métricas/confirmar-acción) y **Mantenimiento** confirmados 🔴 — dependen del agent. Handoffs: `docs/backend-handoff-ai-hub.md`, `docs/backend-handoff-mantenimiento.md`.
+
+### Puntos de coordinación abiertos
+- **Retención**: agent devuelve bare (acordado) → front sin cambios.
+- **Mantenimiento en prod**: (a) "Próximamente" (front) vs (b) mock/demo en prod (agent). Regla del proyecto favorece (a). **Decisión pendiente.**
+- **AI Hub confirmar-acción**: decisión de producto — confirmar = ejecutar (nuevo `actions/execute`) o = registrar (recablear front a `resolve` + cambiar copy).
+- **`/inquilino/aprobacion/pago`**: paso cableado del recorrido pero apunta a endpoints fantasma. ¿Se retira el paso o se re-cablea a `/aprobacion`? Decisión de producto — no se borra a ciegas.
+
 ### ⚠️ Huecos de producto descubiertos (no inventados)
 - **Avalúo — reanudar pago**: si el ciudadano cierra la pestaña sin pagar en el intake, no hay forma de retomar el pago (`paymentUrl` no se persiste; `/pay` y `/wompi-session` muertos).
 - **Avalúo — polling**: `use-avaluo-status.ts` deja de polear al llegar a `firmado`; con `!paid` la UI no auto-refresca al confirmar Wompi (recarga manual).

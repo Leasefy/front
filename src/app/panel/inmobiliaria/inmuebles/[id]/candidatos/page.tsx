@@ -18,12 +18,8 @@ import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { CandidateDrawer } from '@/components/inmobiliaria/CandidateDrawer';
-import {
-  AccionDePostulacion,
-  type ActionType,
-} from '@/components/inmobiliaria/AccionDePostulacion';
-import { ModalAvisarNoElegidos } from '@/components/inmobiliaria/ModalAvisarNoElegidos';
+import { type ActionType } from '@/components/inmobiliaria/AccionDePostulacion';
+import { useDecisionDeCandidato } from '@/components/inmobiliaria/use-decision-de-candidato';
 import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
 import { useContracts } from '@/lib/hooks/useContracts';
 import type { LandlordCandidate, LandlordApplicationStatus } from '@/lib/api/applications.types';
@@ -233,16 +229,9 @@ function CandidatosContent() {
   } = useTablePagination(candidates);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
-  const [actionModal, setActionModal] = useState<{
-    type: ActionType;
-    candidate: LandlordCandidate;
-  } | null>(null);
-  const [selectedCandidate, setSelectedCandidate] = useState<LandlordCandidate | null>(null);
   // Paso 9 del recorrido: comparar. Se limita a 4 porque más no entra sin
   // scroll horizontal, y comparar con scroll no es comparar.
   const [paraComparar, setParaComparar] = useState<Set<string>>(() => new Set());
-  // Paso 10: a quién elegimos, y a quiénes hay que avisarles.
-  const [eligiendo, setEligiendo] = useState<LandlordCandidate | null>(null);
 
   // Cargamos contratos del landlord/agencia para saber cuáles aplicaciones ya tienen contrato.
   // Permite mostrar "Ver contrato" en vez de "Crear contrato" en la fila correspondiente.
@@ -300,6 +289,16 @@ function CandidatosContent() {
   useAutoRefresh(fetchData);
 
   /**
+   * El cajón y las cuatro decisiones — los mismos que monta la tarjeta
+   * «Candidatos» dentro del inmueble. `hermanos` son todos los postulantes de
+   * ESTA propiedad: es lo que hace que aprobar a uno le avise a los demás.
+   */
+  const { abrir, pedirAccion, cajon } = useDecisionDeCandidato({
+    hermanos: candidates,
+    onCambio: fetchData,
+  });
+
+  /**
    * Llegar directo a una persona: `?candidato=<id>` abre su cajón apenas
    * cargan los candidatos.
    *
@@ -318,50 +317,8 @@ function CandidatosContent() {
     const encontrado = candidates.find((c) => c.id === candidatoDeLaUrl);
     if (!encontrado) return;
     abiertoPorUrl.current = true;
-    setSelectedCandidate(encontrado);
-  }, [candidatoDeLaUrl, candidates]);
-
-  const handleAction = useCallback((type: ActionType, candidate: LandlordCandidate) => {
-    // Aprobar a uno tiene una consecuencia sobre los demás: quedan esperando
-    // una respuesta que se les prometió. Cuando hay más gente en juego, la
-    // aprobación pasa por el modal que se hace cargo de eso (paso 10) en vez
-    // del formulario suelto. Con un solo candidato no hay nada que decidir.
-    if (type === 'approve') {
-      const hayOtrosEsperando = candidates.some(
-        (c) =>
-          c.id !== candidate.id &&
-          c.status !== 'REJECTED' &&
-          c.status !== 'WITHDRAWN' &&
-          c.status !== 'APPROVED',
-      );
-      if (hayOtrosEsperando) {
-        setEligiendo(candidate);
-        return;
-      }
-    }
-    setActionModal({ type, candidate });
-  }, [candidates]);
-
-  const handleConfirmAction = useCallback(async (text: string) => {
-    if (!actionModal) return;
-    const { type, candidate } = actionModal;
-    const id = candidate.id;
-    switch (type) {
-      case 'preapprove':
-        await landlordApplicationsApi.preapprove(id, text ? { message: text } : {});
-        break;
-      case 'approve':
-        await landlordApplicationsApi.approve(id, text ? { message: text } : {});
-        break;
-      case 'reject':
-        await landlordApplicationsApi.reject(id, text);
-        break;
-      case 'request-info':
-        await landlordApplicationsApi.requestInfo(id, text);
-        break;
-    }
-    await fetchData();
-  }, [actionModal, fetchData]);
+    abrir(encontrado);
+  }, [candidatoDeLaUrl, candidates, abrir]);
 
   // Stats — solo dos destinos posibles: en revisión o aprobado (docs/VOCABULARIO.md).
   // PREAPPROVED cuenta como "en revisión": no es un estado que el usuario deba distinguir.
@@ -476,7 +433,7 @@ function CandidatosContent() {
                   return (
                     <TableRow
                       key={candidate.id}
-                      onClick={() => setSelectedCandidate(candidate)}
+                      onClick={() => abrir(candidate)}
                       className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
                     >
                       {/* Comparar — el clic acá NO abre la ficha */}
@@ -559,7 +516,7 @@ function CandidatosContent() {
                         <CandidateActions
                           candidate={candidate}
                           existingContract={getContractByApplicationId(candidate.id)}
-                          onAction={handleAction}
+                          onAction={pedirAccion}
                         />
                       </TableCell>
                     </TableRow>
@@ -635,39 +592,8 @@ function CandidatosContent() {
         </div>
       )}
 
-      {/* Paso 10 — elegir a uno y avisarle a los demás */}
-      {eligiendo && (
-        <ModalAvisarNoElegidos
-          elegido={eligiendo}
-          otros={candidates.filter((c) => c.id !== eligiendo.id)}
-          onCerrar={() => setEligiendo(null)}
-          onListo={() => {
-            setEligiendo(null);
-            void fetchData();
-          }}
-        />
-      )}
-
-      {/* Action modal */}
-      {actionModal && (
-        <AccionDePostulacion
-          type={actionModal.type}
-          candidateName={actionModal.candidate.tenantName || actionModal.candidate.id.slice(0, 8)}
-          onConfirm={handleConfirmAction}
-          onClose={() => setActionModal(null)}
-        />
-      )}
-
-      {/* Candidate detail drawer (AI scoring + smart matching) */}
-      <CandidateDrawer
-        candidate={selectedCandidate}
-        onClose={() => setSelectedCandidate(null)}
-        onAction={(type, candidate) => {
-          setSelectedCandidate(null);
-          setActionModal({ type, candidate });
-        }}
-        onReevaluated={fetchData}
-      />
+      {/* El cajón con el análisis, las cuatro acciones y el paso 10 */}
+      {cajon}
     </div>
   );
 }

@@ -9,11 +9,12 @@
  * inmueble no la enlazaba nadie.
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Users, ArrowRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
+import { useDecisionDeCandidato } from '@/components/inmobiliaria/use-decision-de-candidato';
 import type { LandlordCandidate, LandlordApplicationStatus } from '@/lib/api/applications.types';
 
 /** Mismos rótulos que la tabla de Postulaciones: una postulación, un nombre. */
@@ -32,6 +33,9 @@ const ESTADO: Record<LandlordApplicationStatus, { label: string; bg: string; tex
 /** Los que todavía esperan una decisión — es el número que importa. */
 const ESPERANDO: LandlordApplicationStatus[] = ['SUBMITTED', 'UNDER_REVIEW', 'PREAPPROVED', 'NEEDS_INFO'];
 
+/** Cuántos se enseñan acá: la lista entera vive en su pantalla. */
+const CUANTOS_SE_MUESTRAN = 3;
+
 export function CandidatosDelInmueble({
   propertyId,
   consignacionId,
@@ -43,20 +47,62 @@ export function CandidatosDelInmueble({
   const [candidatos, setCandidatos] = useState<LandlordCandidate[] | null>(null);
   const [fallo, setFallo] = useState(false);
 
-  useEffect(() => {
+  /*
+   * Una sola lectura, y la última manda.
+   *
+   * La lista se relee después de decidir sobre alguien, así que puede haber
+   * dos pedidos en vuelo: sin el contador, la respuesta vieja pisa a la nueva
+   * y la tarjeta vuelve a mostrar el estado de antes de la decisión.
+   */
+  const peticion = useRef(0);
+  const cargar = useCallback(async () => {
     if (!propertyId) return;
-    let vivo = true;
-    landlordApplicationsApi
-      .getCandidates(propertyId)
-      .then((c) => vivo && setCandidatos(c))
-      .catch(() => vivo && setFallo(true));
-    return () => {
-      vivo = false;
-    };
+    const mia = ++peticion.current;
+    try {
+      const lista = await landlordApplicationsApi.getCandidates(propertyId);
+      if (peticion.current !== mia) return;
+      setCandidatos(lista);
+      setFallo(false);
+    } catch {
+      if (peticion.current !== mia) return;
+      setFallo(true);
+    }
   }, [propertyId]);
+
+  useEffect(() => {
+    void cargar();
+  }, [cargar]);
+
+  /*
+   * Decidir se puede desde acá mismo.
+   *
+   * Antes las filas eran texto: se veía quién se había postulado y para
+   * abrirlo había que ir a la otra pantalla y buscarlo de nuevo. Como los
+   * candidatos que se listan son todos del MISMO inmueble, se pasan como
+   * `hermanos`: aprobar a uno acá avisa a los demás igual que en la lista
+   * completa, en vez de dejarlos esperando.
+   */
+  const { abrir, cajon } = useDecisionDeCandidato({
+    hermanos: candidatos ?? undefined,
+    onCambio: cargar,
+  });
 
   const href = `/panel/inmobiliaria/inmuebles/${consignacionId}/candidatos`;
   const esperando = candidatos?.filter((c) => ESPERANDO.includes(c.status)).length ?? 0;
+
+  /*
+   * Primero los que esperan decisión.
+   *
+   * El encabezado dice «1 espera tu decisión» y abajo se enseñan tres de
+   * cinco: sin ordenar, esa persona podía quedar fuera de las tres y la
+   * tarjeta pedía una acción sobre alguien que no mostraba. `sort` es estable,
+   * así que dentro de cada grupo se respeta el orden que mandó el servidor.
+   */
+  const ordenados = candidatos
+    ? [...candidatos].sort(
+        (a, b) => Number(ESPERANDO.includes(b.status)) - Number(ESPERANDO.includes(a.status)),
+      )
+    : null;
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -87,35 +133,45 @@ export function CandidatosDelInmueble({
         )}
       </div>
 
-      {candidatos !== null && candidatos.length > 0 && (
+      {ordenados !== null && ordenados.length > 0 && (
         <ul className="divide-y divide-border">
           {/* Tres y el enlace: la lista completa vive en su pantalla, con
               comparador y acciones. Repetirla acá sería tener dos. */}
-          {candidatos.slice(0, 3).map((c) => {
+          {ordenados.slice(0, CUANTOS_SE_MUESTRAN).map((c) => {
             const est = ESTADO[c.status] ?? ESTADO.SUBMITTED;
             return (
-              <li key={c.id} className="flex items-center gap-3 px-5 py-3">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary-soft text-xs font-medium text-primary">
-                  {(c.tenantName || '?').charAt(0).toUpperCase()}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm text-fg">{c.tenantName}</span>
-                  <span className="block truncate text-xs text-fg-muted">{c.tenantEmail}</span>
-                </span>
-                {c.riskScore && (
-                  <span className="shrink-0 font-mono text-xs tabular-nums text-fg-muted">
-                    {c.riskScore.totalScore} · {c.riskScore.level}
-                  </span>
-                )}
-                <span
-                  className={cn(
-                    'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium',
-                    est.bg,
-                    est.text,
-                  )}
+              <li key={c.id}>
+                {/* Un botón y no un `li` con onClick: así se alcanza con
+                    teclado y se anuncia como accionable. El foco lo pinta la
+                    regla global de `focus-visible` (docs/DESIGN.md §Focus). */}
+                <button
+                  type="button"
+                  onClick={() => abrir(c)}
+                  aria-label={`Ver la postulación de ${c.tenantName || 'este candidato'}`}
+                  className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-surface-muted"
                 >
-                  {est.label}
-                </span>
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary-soft text-xs font-medium text-primary">
+                    {(c.tenantName || '?').charAt(0).toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm text-fg">{c.tenantName}</span>
+                    <span className="block truncate text-xs text-fg-muted">{c.tenantEmail}</span>
+                  </span>
+                  {c.riskScore && (
+                    <span className="shrink-0 font-mono text-xs tabular-nums text-fg-muted">
+                      {c.riskScore.totalScore} · {c.riskScore.level}
+                    </span>
+                  )}
+                  <span
+                    className={cn(
+                      'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                      est.bg,
+                      est.text,
+                    )}
+                  >
+                    {est.label}
+                  </span>
+                </button>
               </li>
             );
           })}
@@ -127,12 +183,14 @@ export function CandidatosDelInmueble({
           href={href}
           className="flex items-center justify-center gap-1.5 border-t border-border px-5 py-3 text-sm font-medium text-primary transition-colors hover:bg-surface-muted"
         >
-          {candidatos && candidatos.length > 3
+          {candidatos && candidatos.length > CUANTOS_SE_MUESTRAN
             ? `Ver los ${candidatos.length} candidatos`
             : 'Ver candidatos'}
           <ArrowRight className="h-4 w-4" />
         </Link>
       )}
+
+      {cajon}
     </div>
   );
 }

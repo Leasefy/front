@@ -42,10 +42,15 @@ export function CobranzaDeudoresQuePesan() {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-xs text-fg-muted border-b border-border">
-              <th scope="col" className="px-4 py-2 font-medium">Deudor</th>
-              <th scope="col" className="px-4 py-2 font-medium text-right">Días de mora</th>
-              <th scope="col" className="px-4 py-2 font-medium text-right">Saldo</th>
+            {/*
+              Tabla suelta: los `<th>` copian a mano el encabezado del DS
+              (`TableHead`) — mono 11px en mayúsculas, fg-subtle — para que se
+              lea igual que las demás tablas del panel.
+            */}
+            <tr className="text-left border-b border-border">
+              <th scope="col" className="px-4 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">Deudor</th>
+              <th scope="col" className="px-4 py-2 text-right font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">Días de mora</th>
+              <th scope="col" className="px-4 py-2 text-right font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">Saldo</th>
             </tr>
           </thead>
           <tbody>

@@ -78,16 +78,21 @@ export function TopObjectionsTable({ data }: TopObjectionsTableProps) {
       <table className="w-full text-sm text-left">
         <thead>
           <tr className="border-b border-border">
-            <th className="pb-2 w-8 font-medium text-fg-muted text-xs uppercase tracking-wide">
+            {/*
+              Tabla suelta: ya iba en mayúsculas pero en sans 12px. Se alinea al
+              encabezado del DS (`TableHead`): mono 11px, tracking 0.04em,
+              fg-subtle.
+            */}
+            <th className="pb-2 w-8 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
               #
             </th>
-            <th className="pb-2 pr-4 font-medium text-fg-muted text-xs uppercase tracking-wide">
+            <th className="pb-2 pr-4 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
               {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.column.literal')}
             </th>
-            <th className="pb-2 pr-4 font-medium text-fg-muted text-xs uppercase tracking-wide text-right">
+            <th className="pb-2 pr-4 text-right font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
               {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.column.count')}
             </th>
-            <th className="pb-2 font-medium text-fg-muted text-xs uppercase tracking-wide text-right">
+            <th className="pb-2 text-right font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
               {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.column.pct')}
             </th>
           </tr>

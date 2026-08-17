@@ -12,8 +12,9 @@
  * política). Un acuerdo dice qué ofrecer; el límite, hasta dónde. El techo
  * recorta al acuerdo, nunca al revés.
  *
- * Anatomía canónica del panel: Card ├ cabecera ├ tabla └ (sin paginación —
- * son unos pocos acuerdos, no un listado).
+ * Anatomía canónica del panel: Card ├ cabecera ├ tabla └ paginación. La misma
+ * de `AcuerdosTabla`, que vive en esta misma pantalla: dos tablas apiladas que
+ * se recortan distinto se leen como dos componentes ajenos.
  */
 
 import { useCallback, useState } from 'react'
@@ -32,6 +33,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui'
+import { TablePagination } from '@/components/ui/pagination'
+import {
+  PAGE_SIZE_OPTIONS,
+  useTablePagination,
+} from '@/lib/hooks/use-table-pagination'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import {
   useAcuerdosGenerales,
@@ -48,6 +54,12 @@ export function AcuerdosGeneralesTabla() {
 
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [errorAccion, setErrorAccion] = useState<string | null>(null)
+
+  // Sin `resetKey`: la tabla no tiene filtros ni búsqueda, así que no hay nada
+  // que cambie el conjunto de filas y obligue a volver a la página 1. Si el
+  // total encoge (se borró un acuerdo), el hook reencuadra solo.
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(acuerdos)
 
   const alternar = useCallback(
     async (a: AcuerdoGeneral) => {
@@ -170,7 +182,7 @@ export function AcuerdosGeneralesTabla() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {acuerdos.map((a) => (
+              {pageItems.map((a) => (
                 <TableRow key={a.id} data-testid={`acuerdo-general-${a.id}`}>
                   <TableCell>
                     <span className="font-medium text-fg">{a.name}</span>
@@ -226,6 +238,20 @@ export function AcuerdosGeneralesTabla() {
         <p className="border-t border-border px-4 py-2 text-xs text-fg-muted">
           Si un deudor califica para varios, gana el de mayor prioridad.
         </p>
+      )}
+
+      {/* Un paginador que no pagina es ruido. */}
+      {shouldPaginate && (
+        <div className="border-t border-border px-4 py-3">
+          <TablePagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
       )}
     </Card>
   )

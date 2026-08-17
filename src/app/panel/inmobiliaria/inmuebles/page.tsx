@@ -13,14 +13,18 @@ import {
   HouseSimple,
   Timer,
   Wrench,
-  CaretLeft,
-  CaretRight,
   FileArrowUp,
   Sparkle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
+import { TablePagination } from '@/components/ui/pagination';
+import {
+  useTablePagination,
+  PAGE_SIZE_OPTIONS,
+  DEFAULT_PAGE_SIZE,
+} from '@/lib/hooks/use-table-pagination';
 import { SegmentedControl } from '@leasefy/cadence';
 import { useConsignaciones, usePropietarios, useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
@@ -45,7 +49,6 @@ import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal'
 
 type ViewMode = 'grid' | 'table';
 
-const ITEMS_PER_PAGE = 12;
 
 /**
  * Portafolio Page - Main view for managing all consigned properties
@@ -71,7 +74,6 @@ function PortafolioContent() {
   const { propietarios: allPropietarios } = usePropietarios();
   const { agentes: allAgentes } = useAgentes();
   const [viewMode, setViewMode] = useState<ViewMode>('table');
-  const [currentPage, setCurrentPage] = useState(1);
   const [citaFor, setCitaFor] = useState<Consignacion | null>(null);
   // ⚠️ 'all', no 'available'.
   //
@@ -190,7 +192,7 @@ function PortafolioContent() {
       city: 'all',
       propertyType: 'all',
     });
-    setCurrentPage(1);
+    // La vuelta a la página 1 la hace el `resetKey` del paginador.
   }, []);
 
   // Calculate stats from filtered data
@@ -205,18 +207,30 @@ function PortafolioContent() {
     return { total, available, rented, inProcess, maintenance, totalMonthlyRent };
   }, [filteredConsignaciones]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredConsignaciones.length / ITEMS_PER_PAGE);
-  const paginatedConsignaciones = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    const end = start + ITEMS_PER_PAGE;
-    return filteredConsignaciones.slice(start, end);
-  }, [filteredConsignaciones, currentPage]);
+  // Paginación — el pie canónico del panel (`useTablePagination` +
+  // `TablePagination`). Antes era un prev/next hecho a mano de 12 por página:
+  // sin conteo de filas y sin selector de tamaño, y sólo aparecía a partir del
+  // inmueble 13, así que en una cartera chica la tabla se veía sin paginar.
+  // El `resetKey` lleva los filtros: cambiar uno vuelve a la página 1 en vez de
+  // dejar la tabla vacía sobre un resultado que sí tiene filas.
+  const {
+    pageItems: paginatedConsignaciones,
+    total: totalPaginado,
+    page: currentPage,
+    pageSize,
+    setPage: setCurrentPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(filteredConsignaciones, {
+    // El 12 de antes no está entre las opciones del selector, así que el pie
+    // decía «Filas 10» mientras mostraba 12: el tamaño por defecto tiene que
+    // ser uno de los que el usuario puede elegir.
+    initialPageSize: DEFAULT_PAGE_SIZE,
+    resetKey: JSON.stringify(filters),
+  });
 
-  // Reset page when filters change
   const handleFiltersChange = useCallback((newFilters: ConsignacionFiltersState) => {
     setFilters(newFilters);
-    setCurrentPage(1);
   }, []);
 
   // Handlers
@@ -509,48 +523,17 @@ function PortafolioContent() {
           </EstadoDeDatos>
         </div>
 
-        {/* Pagination Footer */}
-        {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-border flex items-center justify-center gap-2 bg-muted/10">
-            <Button
-              variant="outline"
-              size="icon"
-              hideArrow
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              aria-label="Página anterior"
-            >
-              <CaretLeft className="w-4 h-4" />
-            </Button>
-
-            <div className="flex items-center gap-1 px-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant={page === currentPage ? 'default' : 'ghost'}
-                  size="icon"
-                  hideArrow
-                  onClick={() => setCurrentPage(page)}
-                  className="w-8 h-8 tabular-nums"
-                  aria-label={`Página ${page}`}
-                  aria-current={page === currentPage ? 'page' : undefined}
-                >
-                  {page}
-                </Button>
-              ))}
-            </div>
-
-            <Button
-              variant="outline"
-              size="icon"
-              hideArrow
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              aria-label="Página siguiente"
-            >
-              <CaretRight className="w-4 h-4" />
-            </Button>
-          </div>
+        {/* Pie de tabla — el paginador del design system. */}
+        {shouldPaginate && (
+          <TablePagination
+            className="border-t border-border px-4 py-3"
+            total={totalPaginado}
+            page={currentPage}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
         )}
       </motion.div>
 

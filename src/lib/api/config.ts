@@ -32,7 +32,14 @@ export interface ApiConfig {
  * Defaults to mock mode (useMockApi=true) when NEXT_PUBLIC_USE_MOCK_API is unset.
  */
 export function getApiConfig(): ApiConfig {
-  const useMock = process.env.NEXT_PUBLIC_USE_MOCK_API !== 'false';
+  // Mock mode is NEVER allowed in production (project rule: fabricated data must
+  // never reach real users). In prod we force the real API regardless of the env
+  // flag; outside prod we default to mock unless explicitly disabled. Mirrors the
+  // guard in funnel.service.ts / aprobacion.
+  const useMock =
+    process.env.NODE_ENV === 'production'
+      ? false
+      : process.env.NEXT_PUBLIC_USE_MOCK_API !== 'false';
 
   return {
     baseUrl: process.env.NEXT_PUBLIC_AI_API_URL || '/api/v1/ai',

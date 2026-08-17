@@ -364,6 +364,24 @@ export const consignacionesApi = {
   async delete(id: string): Promise<void> {
     await apiClient.delete(`${BASE}/consignaciones/${id}`);
   },
+
+  /**
+   * Asigna (o reasigna) el agente del mandato.
+   *
+   * Ruta dedicada, no `update`: el whitelist de `PUT /consignaciones/:id`
+   * rechaza el campo. Pide permiso `portafolio:edit`.
+   *
+   * ⚠️ `agenteUserId` es un **`User.id`** — sale de `Agente.userId`, NO de
+   * `Agente.id`, que es un `AgencyMember.id`. Mandar el equivocado devuelve 400
+   * por `IsUUID` sólo si no es UUID; si lo es, asigna a nadie en silencio.
+   */
+  async assignAgent(id: string, agenteUserId: string): Promise<Consignacion> {
+    const raw = await apiClient.put<RawConsignacion>(
+      `${BASE}/consignaciones/${id}/assign-agent`,
+      { agenteUserId },
+    );
+    return normalizeConsignacion(raw);
+  },
 };
 
 // ============================================================================

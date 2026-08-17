@@ -4,7 +4,7 @@
  * /panel/inmobiliaria/avaluos/[id] — agency avalúo detail page.
  *
  * Reuses useAvaluoStatus (polling hook) and AvaluoEstadoCard (status card
- * with WompiPayButton + download link) from plans 34-03/34-04.
+ * with download link) from plans 34-03/34-04.
  *
  * The parent layout provides AuthProvider + agency sidebar — do NOT add
  * ForceLightMode here (panel is not a public light-only route).

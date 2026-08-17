@@ -20,7 +20,6 @@ import {
   type AvaluoFormData,
   type AvaluoStatusResponse,
   type IntakeResponse,
-  type PaymentResponse,
   type PhotoPresignResponse,
 } from '@/lib/types/avaluo'
 
@@ -123,8 +122,10 @@ function extractFieldErrors(
 /**
  * Submits the avalúo intake. Must be called BEFORE uploading photos.
  *
- * Returns {id, token}. Persist the token immediately via persistCapToken —
- * it cannot be recovered later.
+ * Returns {id, token, paymentUrl, paymentProvider}. Persist the token
+ * immediately via persistCapToken — it cannot be recovered later. Payment
+ * now happens AT INTAKE: when paymentProvider is 'wompi', the caller must
+ * redirect to paymentUrl right away.
  */
 export async function submitIntake(
   formData: AvaluoFormData
@@ -288,27 +289,6 @@ export async function getAvaluoStatus(
 }
 
 // ---------------------------------------------------------------------------
-// startPayment — initiate a Wompi checkout for a certificate
-// ---------------------------------------------------------------------------
-
-/**
- * @param certId  The certificate id (from AvaluoStatusResponse.certId).
- *                NOTE: this is NOT the submission id.
- * Certificate must be in 'firmado' state — micro returns 409 otherwise.
- */
-export async function startPayment(certId: string): Promise<PaymentResponse> {
-  const res = await apiFetch(
-    `${AVALUO_API_URL}/api/avaluo/${certId}/pay`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    }
-  )
-
-  return res.json() as Promise<PaymentResponse>
-}
-
-// ---------------------------------------------------------------------------
 // downloadCertificate — fetch the PDF blob
 // ---------------------------------------------------------------------------
 
@@ -397,7 +377,6 @@ export const avaluoService = {
   attachPhotos,
   uploadPhoto,
   getAvaluoStatus,
-  startPayment,
   downloadCertificate,
   downloadMemoria,
   certificateUrl,

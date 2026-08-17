@@ -15,8 +15,8 @@
 
 | # | Feature | Front (file:line) | Llama | Ruta real (back/agent) | Impacto |
 |---|---------|-------------------|-------|------------------------|---------|
-| 1 | Documentos (subir) | `documents.service.ts:104` (`useDocuments.ts:78`) | `POST /documents` | `POST /documents/upload` | Subir documento **rompe** (panel landlord, CandidateDrawer, PostulacionDirecta, ApplicationContext) |
-| 2 | Documentos (borrar) | `documents.service.ts:125` (`useDocuments.ts:103`) | `DELETE /documents/{id}` | `DELETE /applications/{appId}/documents/{docId}` | Borrar documento **rompe**. Fix real: threadear `applicationId` por los callers |
+| ~~1~~ | Documentos (subir) | `documents.service.ts:104` (`useDocumentUpload`) | `POST /documents` → `/documents/upload` | — | **CORRECCIÓN: código muerto.** `useDocumentUpload` no tiene consumidores; el sub-agente afirmó "prod" sin verificar el consumo. Las subidas reales van por el wizard/`applicationsApi`. Path corregido igual **[29449fde]**, pero NO era P0 vivo |
+| ~~2~~ | Documentos (borrar) | `documents.service.ts:125` (`useDocumentDelete`) | `DELETE /documents/{id}` | `DELETE /applications/{appId}/documents/{docId}` | **CORRECCIÓN: código muerto.** `useDocumentDelete` sin consumidores. El borrado real usa `applicationsApi.deleteDocument(appId, docId)` (`StepDocuments.tsx:39`). Candidato a **eliminar** (dead code), no a fixear |
 | 3 | Cuentas de pago (asignar) | `payment-methods.service.ts:48` (`PaymentAccountsSection.tsx:203`) | `POST /landlords/me/payment-methods/{id}/assign` | (no existe) | 404 silencioso en cada "crear cuenta" |
 | 4 | Postulaciones por propiedad | `applications.service.ts:238` (`useApplications.ts:298`) | `GET /applications/property/{propertyId}` | (no existe) | 404 |
 | 5 | Visitas (confirmar) | `visits.service.ts:82` (`useVisits.ts:121`) | `PATCH /visits/{id}/confirm` | `PATCH /visits/{id}/accept` | Confirmar visita rompe |
@@ -109,12 +109,16 @@ Verificado contra catálogo de paths del back (los reales existen, los llamados 
 ### 📤 Handoff al back (esperando contrato)
 - **payment-methods** — `docs/backend-handoff-payment-methods.md`: el módulo se hizo contra un mock; el back necesita definir `isDefault`, asignación inmueble→cuenta, soporte de billeteras, y `@ApiResponse` para codegen. Front sin tocar hasta cerrar el contrato.
 
-### 📋 P0 pendientes (necesitan decisión de diseño o backend)
-- **Documentos borrar** (`documents.service.ts:125`): la ruta real es `DELETE /applications/{appId}/documents/{docId}` — hay que threadear `applicationId` por los callers (`useDocuments.ts`). Refactor real, no one-line.
+### 🔎 Corrección de verificación (2ª pasada)
+Al validar callers, **documentos subir/borrar resultaron código muerto** (los hooks `useDocumentUpload`/`useDocumentDelete` no tienen consumidores). El sub-agente los reportó como "prod" sin verificar el consumo — lección: los sub-agentes verificaron existencia del endpoint, no siempre que el caller estuviera vivo. Los demás P0 fixeados (visitas, cobros, mantenimiento approveQuote) SÍ tienen callers vivos confirmados.
+
+### 📋 P0 pendientes (verificados vivos — necesitan decisión de diseño o backend)
+- **`mantenimiento/{id}/status`** (`operaciones/page.tsx:404`, `updateStatus`): **vivo**, pero `/status` es fantasma; el back solo tiene `approve/complete/cancel`. Requiere **mapear** cada `newStatus` a la transición correcta (decisión de producto).
+- **Analytics** (`useInmobiliaria.ts:591,596`): **vivo**; el path se arregla a `/trends/{metricId}` pero el caller no pasa `metricId` — decidir qué métrica(s) mostrar.
+- **`applications/property`** (`useApplications.ts:298`): fantasma sin ruta real — gap de backend (ver postulaciones por propiedad para el landlord).
 - **AI chat confirmar acción** (`ai-hub-chat.ts:392`): ruta real `POST /ai-hub/chat/approvals/{approvalId}/resolve`, pero **`resolve` no ejecuta** (solo aprende) — choque semántico con lo que la UI promete.
 - **AI work-item detalle** (`agent-workspace.ts:200`) y **AI métricas** (`use-agent-metrics.ts:64`): fantasma/auth — dependen del back.
-- **Analytics** (`inmobiliaria.service.ts:1041`): el path se arregla, pero el caller no pasa `metricId` — necesita decidir qué métrica.
-- **`applications/property`** y **`mantenimiento/status`**: fantasma sin ruta real — decidir reemplazo.
+- **Dead code a limpiar**: `useDocumentUpload`/`useDocumentDelete` + `documentsApi.upload/delete/getById`; `WompiPayButton` ya eliminado.
 
 ### ⚠️ Huecos de producto descubiertos (no inventados)
 - **Avalúo — reanudar pago**: si el ciudadano cierra la pestaña sin pagar en el intake, no hay forma de retomar el pago (`paymentUrl` no se persiste; `/pay` y `/wompi-session` muertos).

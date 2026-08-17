@@ -1,14 +1,16 @@
 /**
  * Documents API service
- * Endpoints for fetching, uploading, downloading, and deleting documents
+ * Read endpoints for application documents.
+ *
+ * NOTE: upload/delete/getById were removed as dead code (their only callers,
+ * `useDocumentUpload`/`useDocumentDelete`, had no consumers). Real document
+ * mutations go through `applicationsApi` (application-scoped routes).
  */
 
-import { apiClient, getAccessToken, ApiError } from './client';
-import type { BackendDocumentFull, UploadDocumentDto } from './documents.types';
+import { apiClient } from './client';
+import type { BackendDocumentFull } from './documents.types';
 import type { BackendDocument, DocumentReviewStatus } from './applications.types';
 import { normalizeReviewStatus } from '@/lib/documents/review-status';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
 // ============================================================================
 // Mapper
@@ -63,12 +65,6 @@ function mapDocument(bd: BackendDocumentFull | BackendDocument): DocumentItem {
 // ============================================================================
 
 export const documentsApi = {
-  /** Get a document by ID */
-  async getById(id: string): Promise<DocumentItem> {
-    const bd = await apiClient.get<BackendDocumentFull>(`/documents/${id}`);
-    return mapDocument(bd);
-  },
-
   /** Get documents for an application */
   async getByApplication(applicationId: string): Promise<DocumentItem[]> {
     const docs = await apiClient.get<BackendDocument[]>(
@@ -84,50 +80,5 @@ export const documentsApi = {
       `/applications/${candidateId}/documents`
     );
     return docs.map(mapDocument);
-  },
-
-  /** Upload a general document (multipart) */
-  async upload(dto: UploadDocumentDto): Promise<DocumentItem> {
-    const token = getAccessToken();
-
-    const formData = new FormData();
-    formData.append('file', dto.file);
-    formData.append('type', dto.type);
-    if (dto.entityType) formData.append('entityType', dto.entityType);
-    if (dto.entityId) formData.append('entityId', dto.entityId);
-
-    const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    let res: Response;
-    try {
-      res = await fetch(`${BACKEND_URL}/documents/upload`, {
-        method: 'POST',
-        headers,
-        body: formData,
-      });
-    } catch (err) {
-      const raw = err instanceof Error ? err.message : String(err);
-      throw new ApiError(0, `No pudimos conectarnos al servidor. ${raw}`);
-    }
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new ApiError(res.status, (body as { message?: string }).message || `Upload failed: ${res.status}`);
-    }
-
-    const bd: BackendDocumentFull = await res.json();
-    return mapDocument(bd);
-  },
-
-  /** Delete a document */
-  async delete(id: string): Promise<void> {
-    await apiClient.delete(`/documents/${id}`);
-  },
-
-  /** Get the download URL for a document */
-  getDownloadUrl(doc: DocumentItem): string {
-    // The URL from the backend is already a valid download URL (Supabase storage)
-    return doc.url;
   },
 };

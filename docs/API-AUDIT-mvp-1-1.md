@@ -108,6 +108,7 @@ Verificado contra catálogo de paths del back (los reales existen, los llamados 
 - **`f538baab`** — Eliminado código muerto de documentos (`documentsApi.{getById,upload,delete,getDownloadUrl}` + hooks `useDocumentUpload`/`useDocumentDelete` + su test).
 - **`466faf2e`** — payment-methods: parche interino wire↔display (lista renderiza + create de banco real; assign no-op, billeteras "próximamente") tras respuesta del back (v2). Falta adoptar tipos generados al deploy.
 - **`f6e5acde`** — `leases` payment-info: `accountType/accountNumber` nullable (efecto de payment-methods v2 / billeteras).
+- **`35d0d843`** — `propietario.email/phone` nullable + guardas en ~14 sitios (evita crash `.replace()` sobre null en dispersiones). Test de regresión.
 - 3 memorias de handoff marcadas resueltas (avalúos-admin, registration-profiles, terms-acceptance).
 
 ### 📤 Handoff al back (esperando contrato)

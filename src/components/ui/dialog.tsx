@@ -113,13 +113,63 @@ function useFrenarLenisMientrasAbierto() {
   // que es el estado REAL del modal y no una suposición sobre el montaje.
 }
 
+// ── La ✕ ────────────────────────────────────────────────────────────────────
+
+/**
+ * La ÚNICA aspa del producto: chip redondo gris.
+ *
+ * La del DS va `absolute` y sin fondo, y queda apagada SIEMPRE (ver
+ * `DialogContent`), así que ésta es la única que un modal puede mostrar.
+ * Vive en un solo lugar para que no vuelva a haber dos dibujos distintos.
+ */
+export const AspaDeCierre = ({ className }: { className?: string }) => (
+  <DialogClose
+    aria-label="Cerrar"
+    data-testid="dialog-close"
+    className={cn(
+      "inline-flex size-8 shrink-0 items-center justify-center rounded-full",
+      "bg-surface-muted text-fg-muted transition-colors",
+      "hover:bg-border hover:text-fg",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+      className
+    )}
+  >
+    <X size={16} weight="bold" aria-hidden="true" />
+  </DialogClose>
+)
+
 // ── Reparto de hijos ────────────────────────────────────────────────────────
+
+/**
+ * En qué banda del modal va un hijo de `DialogContent`.
+ *
+ * Va como marca en el componente y NO como comparación de identidad
+ * (`hijo.type === DialogHeader`). La identidad falla apenas alguien envuelve
+ * la cabecera: `ResponsiveDialogHeader` renderiza un `DialogHeader` adentro
+ * pero ES otro componente, así que la comparación daba falso, la cabecera se
+ * iba al cuerpo con scroll y el Content dejaba encendida la ✕ del DS. Ese fue
+ * exactamente el modal «Agendar una cita» con dos aspas: la pelada del DS en
+ * la esquina y, unos píxeles más abajo, el chip gris de la cabecera.
+ *
+ * Con la marca, cualquier envoltorio la declara y hereda el reparto.
+ */
+type BandaDeModal = "cabecera" | "pie"
+
+export interface ComponenteDeBanda {
+  bandaDeModal?: BandaDeModal
+}
+
+function bandaDe(hijo: React.ReactNode): BandaDeModal | null {
+  if (!React.isValidElement(hijo)) return null
+  if (typeof hijo.type === "string") return null
+  return (hijo.type as ComponenteDeBanda).bandaDeModal ?? null
+}
 
 interface RepartoDeHijos {
   cabecera: React.ReactNode
   cuerpo: React.ReactNode[]
   pie: React.ReactNode
-  /** La cabecera pinta su propia ✕ ⇒ hay que apagar la del DS o salen dos. */
+  /** La cabecera pinta la ✕ ⇒ el Content no debe pintar la suya o salen dos. */
   cabeceraTraeCierre: boolean
 }
 
@@ -130,12 +180,14 @@ function repartirHijos(children: React.ReactNode): RepartoDeHijos {
   const cuerpo: React.ReactNode[] = []
 
   React.Children.forEach(children, (hijo) => {
-    if (React.isValidElement(hijo) && hijo.type === DialogHeader && !cabecera) {
+    const banda = bandaDe(hijo)
+    if (banda === "cabecera" && !cabecera) {
       cabecera = hijo
-      cabeceraTraeCierre = (hijo.props as DialogHeaderProps).hideClose !== true
+      cabeceraTraeCierre =
+        ((hijo as React.ReactElement).props as DialogHeaderProps).hideClose !== true
       return
     }
-    if (React.isValidElement(hijo) && hijo.type === DialogFooter && !pie) {
+    if (banda === "pie" && !pie) {
       pie = hijo
       return
     }
@@ -157,9 +209,10 @@ const DialogContent = React.forwardRef<
       ref={ref}
       overlayClassName={cn(dialogOverlayClasses, overlayClassName)}
       onWheel={(e) => e.stopPropagation()}
-      // La ✕ flotante del DS sólo queda cuando NADIE más pone una: sin
-      // cabecera, o con una cabecera que la apagó a propósito.
-      hideClose={hideClose || cabeceraTraeCierre}
+      // La ✕ del DS —pelada, sin fondo— NUNCA se pinta. Cuando hace falta un
+      // aspa y la cabecera no la trae, la pone este Content con el mismo chip
+      // gris de siempre (ver `aspaFlotante` abajo).
+      hideClose
       className={cn(
         // Columna: cabecera / cuerpo con scroll / pie. El padding vive en cada
         // banda, no acá — por eso `p-0`. `overflow-hidden` recorta a los 20px
@@ -172,6 +225,13 @@ const DialogContent = React.forwardRef<
       )}
       {...props}
     >
+      {/* Sin cabecera que la aloje (o con una que la apagó a propósito), el
+          aspa flota arriba a la derecha —donde iba la del DS— pero con el chip
+          gris del producto. `hideClose` en el Content sigue queriendo decir
+          «este modal no se cierra con una ✕». */}
+      {!hideClose && !cabeceraTraeCierre && (
+        <AspaDeCierre className="absolute right-4 top-4 z-10" />
+      )}
       {cabecera}
       {/* El cuerpo es lo ÚNICO que scrollea. `min-h-0` es obligatorio: sin él
           un hijo flex no baja de su altura de contenido y el scroll se lo come
@@ -188,14 +248,16 @@ const DialogContent = React.forwardRef<
 })
 DialogContent.displayName = "DialogContent"
 
-interface DialogHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface DialogHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
-   * No pintar la ✕ de la cabecera.
+   * No pintar la ✕ DENTRO de la cabecera.
    *
    * Dos usos legítimos: una cabecera `sr-only` que sólo existe para darle
-   * título accesible al diálogo (ahí la ✕ del DS sigue visible), y un modal
-   * que el usuario no debe abandonar a medias —una firma, un pago en curso—,
-   * donde la salida tiene que ser una decisión explícita del pie.
+   * título accesible al diálogo —ahí el aspa no puede ir adentro, porque
+   * nacería `sr-only` también, y el Content la pinta flotando—, y un modal que
+   * el usuario no debe abandonar a medias —una firma, un pago en curso—, donde
+   * la salida tiene que ser una decisión explícita del pie: eso se pide con
+   * `hideClose` en el `DialogContent`, que apaga el aspa entera.
    */
   hideClose?: boolean
 }
@@ -215,23 +277,11 @@ const DialogHeader = ({ className, children, hideClose, ...props }: DialogHeader
     {...props}
   >
     <div className="flex min-w-0 flex-col gap-1">{children}</div>
-    {!hideClose && (
-      <DialogClose
-        aria-label="Cerrar"
-        data-testid="dialog-close"
-        className={cn(
-          "mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full",
-          "bg-surface-muted text-fg-muted transition-colors",
-          "hover:bg-border hover:text-fg",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-        )}
-      >
-        <X size={16} weight="bold" aria-hidden="true" />
-      </DialogClose>
-    )}
+    {!hideClose && <AspaDeCierre className="mt-0.5" />}
   </div>
 )
 DialogHeader.displayName = "DialogHeader"
+DialogHeader.bandaDeModal = "cabecera" as const
 
 /**
  * Banda inferior, simétrica a la cabecera. Fija: sin esto, en un modal alto los
@@ -251,6 +301,7 @@ const DialogFooter = ({
   />
 )
 DialogFooter.displayName = "DialogFooter"
+DialogFooter.bandaDeModal = "pie" as const
 
 const DialogTitle = DSDialogTitle
 

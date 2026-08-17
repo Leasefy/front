@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
   Trophy,
   ChartLineUp,
@@ -19,6 +20,11 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import {
+  PAGE_SIZE_OPTIONS,
+  useTablePagination,
+} from '@/lib/hooks/use-table-pagination';
 import type { AgentPerformanceData } from '@/lib/data/mock-reports';
 
 interface AgentPerformanceReportProps {
@@ -61,8 +67,27 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
   const { agents, teamSummary } = data;
 
   // Sort agents by closings descending for ranking
-  const rankedAgents = [...agents].sort((a, b) => b.closings - a.closings);
+  const rankedAgents = useMemo(
+    () => [...agents].sort((a, b) => b.closings - a.closings),
+    [agents]
+  );
   const topPerformerId = rankedAgents[0]?.id;
+
+  // Sólo se pagina el RANKING. La comparación de barras de abajo es un gráfico:
+  // recortarla dejaría de ser una comparación entre agentes.
+  const {
+    pageItems: agentesDeLaPagina,
+    total: totalAgentes,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(rankedAgents);
+
+  // El puesto es global, no de la página: sin este corrimiento la página 2
+  // vuelve a numerar desde 1 y el sexto agente aparece como primero.
+  const puestoBase = (page - 1) * pageSize;
 
   // Max conversion rate for proportional bar rendering
   const maxConversion = Math.max(...agents.map((a) => a.conversionRate));
@@ -133,7 +158,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rankedAgents.map((agent, index) => {
+              {agentesDeLaPagina.map((agent, index) => {
                 const isTop = agent.id === topPerformerId;
                 const conversionWidth =
                   maxConversion > 0
@@ -160,7 +185,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                           />
                         ) : (
                           <span className="text-muted-foreground font-medium">
-                            {index + 1}
+                            {puestoBase + index + 1}
                           </span>
                         )}
                       </div>
@@ -221,6 +246,20 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
             </TableBody>
           </Table>
         </div>
+
+        {/* Pie: sólo si hay más de una página. */}
+        {shouldPaginate && (
+          <div className="border-t border-border dark:border-border-strong px-4 py-3">
+            <TablePagination
+              total={totalAgentes}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
       </div>
 
       {/* Performance Comparison - Horizontal Bars */}

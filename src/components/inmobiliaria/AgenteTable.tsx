@@ -186,10 +186,14 @@ export function AgenteTable({
     className?: string;
   }) => (
     <TableHead className={cn('text-left p-4', className)}>
-      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
+      {/*
+        allowlist: disparador de orden — no hay primitiva en Cadence. `uppercase`
+        va explícito porque el navegador le pone `text-transform: none` a los
+        controles y el botón perdía las mayúsculas del `TH`. Ver DispersionTable.
+      */}
       <button
         onClick={() => handleSort(field)}
-        className="inline-flex items-center gap-1.5 hover:text-fg"
+        className="inline-flex items-center gap-1.5 uppercase hover:text-fg"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}

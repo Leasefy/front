@@ -57,9 +57,12 @@ const TODOS = archivosTsx(RAIZ)
 // devuelve separadores '\'.
 const rel = (p: string) => relative(RAIZ, p).replace(/\\/g, '/')
 
+// `ResponsiveDialogContent` cuenta: en escritorio ES el `DialogContent` de la
+// primitiva. Dejarlo afuera fue lo que permitió que «Agendar una cita» viviera
+// meses con la cabecera adentro del cuerpo y dos ✕ sin que nada se quejara.
 const usanDialogContent = TODOS.filter((p) => {
   if (rel(p).startsWith('components/ui/')) return false
-  return /<DialogContent[\s>]/.test(readFileSync(p, 'utf8'))
+  return /<(?:Responsive)?DialogContent[\s>]/.test(readFileSync(p, 'utf8'))
 })
 
 describe('modales del panel — una sola cabecera', () => {
@@ -73,7 +76,7 @@ describe('modales del panel — una sola cabecera', () => {
       if (nombre in SIN_CABECERA_JUSTIFICADO) return
       const fuente = readFileSync(ruta, 'utf8')
       expect(
-        /<DialogHeader[\s>]/.test(fuente),
+        /<(?:Responsive)?DialogHeader[\s>]/.test(fuente),
         'Este modal no usa <DialogHeader>, así que se queda sin el título de ' +
           '16px, sin el filete y sin la ✕ del chip: se va a ver distinto al resto. Si de verdad no corresponde, agregalo a ' +
           'SIN_CABECERA_JUSTIFICADO con el motivo.',
@@ -115,8 +118,68 @@ describe('la primitiva conserva lo que la hace única', () => {
     expect(fuente).toMatch(/min-h-0[^\n]*overflow-y-auto|overflow-y-auto[^\n]*min-h-0/)
   })
 
-  it('no deja dos ✕: apaga la del DS cuando la cabecera trae la suya', () => {
-    expect(fuente).toContain('hideClose={hideClose || cabeceraTraeCierre}')
+  // ── La ✕ ─────────────────────────────────────────────────────────────────
+  //
+  // El modal «Agendar una cita» mostraba DOS aspas: la pelada del DS en la
+  // esquina y, unos píxeles más abajo, el chip gris de la cabecera. La causa
+  // no era ese call site: `repartirHijos` reconocía la cabecera comparando
+  // identidad (`hijo.type === DialogHeader`), y `ResponsiveDialogHeader` es
+  // OTRO componente aunque adentro renderice `DialogHeader`. La comparación
+  // daba falso, la cabecera se iba al cuerpo y el Content encendía la ✕ del DS
+  // creyendo que nadie ponía una.
+  it('la ✕ del DS queda apagada SIEMPRE (la pelada nunca se pinta)', () => {
+    expect(fuente).not.toContain('hideClose={hideClose || cabeceraTraeCierre}')
+    expect(fuente).toMatch(/^\s*hideClose$/m)
+  })
+
+  it('hay UN solo dibujo de la ✕ en la primitiva', () => {
+    // Dos `<X` en el archivo = alguien volvió a duplicar el aspa en vez de
+    // reusar `AspaDeCierre`.
+    expect(fuente.match(/<X\s/g) ?? []).toHaveLength(1)
+    expect(fuente).toContain('const AspaDeCierre')
+  })
+
+  it('la ✕ conserva su nombre accesible', () => {
+    expect(fuente).toContain('aria-label="Cerrar"')
+  })
+
+  it('reparte por marca y no por identidad de componente', () => {
+    expect(fuente).toContain('DialogHeader.bandaDeModal')
+    expect(fuente).toContain('DialogFooter.bandaDeModal')
+    expect(fuente).toContain('bandaDe(hijo)')
+    // El comentario que explica por qué ya no se compara identidad cita la
+    // expresión vieja entre backticks: sólo cuenta si vuelve como código.
+    expect(fuente).not.toMatch(/(?<!`)hijo\.type === DialogHeader/)
+  })
+})
+
+describe('los envoltorios de las bandas declaran su marca', () => {
+  // Un envoltorio que no la declara rompe el reparto en silencio: la cabecera
+  // cae al cuerpo con scroll, el pie deja de estar fijo y salen dos ✕.
+  it('responsive-dialog marca cabecera y pie', () => {
+    const fuente = readFileSync(join(RAIZ, 'components/ui/responsive-dialog.tsx'), 'utf8')
+    expect(fuente).toMatch(/Header\.bandaDeModal\s*=\s*"cabecera"/)
+    expect(fuente).toMatch(/Footer\.bandaDeModal\s*=\s*"pie"/)
+  })
+
+  it('no hay otro envoltorio de DialogHeader sin marcar', () => {
+    const sinMarcar: string[] = []
+    for (const ruta of TODOS) {
+      const nombre = rel(ruta)
+      if (nombre === 'components/ui/dialog.tsx') continue
+      const fuente = readFileSync(ruta, 'utf8')
+      // Un envoltorio = renderiza <DialogHeader> y lo publica como componente
+      // propio, en vez de usarlo directo desde una pantalla.
+      const esEnvoltorio =
+        /<DialogHeader[\s>]/.test(fuente) &&
+        /^(export )?const \w+Header\b/m.test(fuente)
+      if (esEnvoltorio && !/\.bandaDeModal\s*=/.test(fuente)) sinMarcar.push(nombre)
+    }
+    expect(
+      sinMarcar,
+      'Estos envuelven la cabecera sin declarar `bandaDeModal`: el modal va a ' +
+        'salir con dos ✕ y la cabecera adentro del cuerpo con scroll.',
+    ).toEqual([])
   })
 })
 

@@ -182,11 +182,16 @@ export function ComisionesTable({
         className
       )}
     >
-      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
+      {/*
+        allowlist: disparador de orden — no hay primitiva en Cadence. Un
+        `<button>` llega con `text-transform: none` del navegador y pierde las
+        mayúsculas del `TH`; por eso las repite y hereda el resto. Canónico:
+        DispersionTable.
+      */}
       <button
         onClick={() => handleSort(field)}
         className={cn(
-          'flex items-center gap-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white',
+          'flex items-center gap-2 font-[inherit] text-[inherit] uppercase tracking-[inherit] text-fg-subtle transition-colors hover:text-fg',
           align === 'center' && 'mx-auto',
           align === 'right' && 'ml-auto'
         )}

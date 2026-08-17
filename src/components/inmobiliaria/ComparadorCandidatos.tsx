@@ -73,7 +73,9 @@ export function ComparadorCandidatos({
               scope="col"
               className="sticky left-0 top-0 z-20 w-[200px] border-b border-border bg-card px-4 py-4 text-left align-bottom"
             >
-              <span className="font-mono text-label uppercase tracking-mono-label text-fg-subtle">
+              {/* Mismo tracking que el encabezado del DS (`TableHead`, 0.04em);
+                  `tracking-mono-label` (0.12em) lo separaba del resto del panel. */}
+              <span className="font-mono text-label uppercase tracking-[0.04em] text-fg-subtle">
                 Comparación
               </span>
             </th>

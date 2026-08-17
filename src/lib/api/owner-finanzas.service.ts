@@ -11,7 +11,6 @@ import type {
   FinanzasInmueble,
   FinanzasInmuebleDetalle,
   FinanzasPagos,
-  FinanzasRecaudo,
   FinanzasRecaudoAnual,
   FinanzasProyeccion,
 } from './owner-finanzas.types';
@@ -40,12 +39,6 @@ export const ownerFinanzasApi = {
     if (opts?.offset != null) qs.set('offset', String(opts.offset));
     const suffix = qs.toString() ? `?${qs}` : '';
     return ownerGet<FinanzasPagos>(agencyId, `/inmuebles/${propertyRef}/pagos${suffix}`);
-  },
-
-  /** GET /recaudo — series de recaudo por mes/inmueble. */
-  getRecaudo: (agencyId: string | null, months?: number): Promise<FinanzasRecaudo | null> => {
-    const suffix = months != null ? `?months=${months}` : '';
-    return ownerGet<FinanzasRecaudo>(agencyId, `/recaudo${suffix}`);
   },
 
   /** GET /recaudo/anual — totales del año por concepto. */

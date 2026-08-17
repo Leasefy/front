@@ -1,18 +1,35 @@
 'use client';
 
 import Link from 'next/link';
-import { CaretLeft } from '@phosphor-icons/react';
+import { Bell, CaretLeft } from '@phosphor-icons/react';
 import { Card } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
+import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
 import type { Digest } from '@/lib/api/owner-novedades.types';
 
 /**
  * Detalle de un digest mensual (F5). Render informativo del `DigestPayload` — numerales mono,
  * montos verbatim, sin alarmismo. El payload ya viene PII-minimizado por el back.
+ *
+ * `payload` viene de `ownerGet<Digest>`, un cast sin validación de runtime sobre la respuesta del
+ * back — el digest puede existir sin que su payload haya terminado de calcularse todavía. Se
+ * degrada honesto a "Próximamente" en vez de crashear (mismo tono que la página cuando
+ * `unavailable || !digest`).
  */
 export function DigestView({ digest }: { digest: Digest }) {
   const { formatCurrency, formatDate } = useI18n();
   const p = digest.payload;
+
+  if (!p) {
+    return (
+      <PortalPlaceholder
+        title="Resumen mensual"
+        subtitle="Tu recaudo, ocupación y novedades del mes."
+        icon={Bell}
+        emptyDescription="Este resumen todavía se está generando. Volvé a intentarlo en unos minutos."
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-bg">

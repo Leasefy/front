@@ -773,13 +773,29 @@ export const mantenimientoApi = {
     return apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}`, data);
   },
 
+  /**
+   * The backend has no generic `/status` route — it exposes explicit transitions
+   * (@Put :id/approve | :id/complete | :id/cancel). Map the target status to the
+   * matching endpoint. Statuses without a backend transition (reported / quoted /
+   * in_progress) cannot be set directly and throw.
+   */
   async changeStatus(id: string, status: string): Promise<SolicitudMantenimiento> {
-    return apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/status`, { status });
+    switch (status) {
+      case 'approved':
+        return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/approve`);
+      case 'completed':
+        // `completionNotes`/`completionPhotoUrls` are optional and not collected here.
+        return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/complete`, {});
+      case 'cancelled':
+        return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/cancel`);
+      default:
+        throw new Error(`Unsupported maintenance status transition: ${status}`);
+    }
   },
 
   /** Alias for changeStatus used by operaciones page */
   async updateStatus(id: string, status: string): Promise<SolicitudMantenimiento> {
-    return apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/status`, { status });
+    return mantenimientoApi.changeStatus(id, status);
   },
 
   async approveQuote(id: string, quoteId: string): Promise<SolicitudMantenimiento> {

@@ -257,6 +257,36 @@ describe('mantenimientoApi.approveQuote — matches backend @Put(:id/select-quot
   });
 });
 
+describe('mantenimientoApi.updateStatus — maps to real backend transitions (no generic /status route)', () => {
+  it("'approved' → PUT :id/approve", async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'APPROVED' });
+    await mantenimientoApi.updateStatus('sol-1', 'approved');
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/approve')).toBe(true);
+    expect(opts.method).toBe('PUT');
+  });
+
+  it("'completed' → PUT :id/complete", async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'COMPLETED' });
+    await mantenimientoApi.updateStatus('sol-1', 'completed');
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/complete')).toBe(true);
+    expect(opts.method).toBe('PUT');
+  });
+
+  it("'cancelled' → PUT :id/cancel", async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'CANCELLED' });
+    await mantenimientoApi.updateStatus('sol-1', 'cancelled');
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/cancel')).toBe(true);
+    expect(opts.method).toBe('PUT');
+  });
+
+  it('throws on a status with no backend transition (reported/quoted/in_progress)', async () => {
+    await expect(mantenimientoApi.updateStatus('sol-1', 'in_progress')).rejects.toThrow();
+  });
+});
+
 describe('documentosApi.getTemplates — matches backend @Controller(inmobiliaria/documents) @Get(templates)', () => {
   it('GETs /inmobiliaria/documents/templates', async () => {
     const fetchMock = mockFetchOnce([{ id: 'tpl-1', name: 'Contrato' }]);

@@ -1,28 +1,28 @@
 'use client';
 
 /**
- * Landlord payment methods — INTERIM service-layer patch.
+ * Landlord payment methods — service-layer mapper (payment-methods v2).
  *
- * The `PaymentAccountsSection.tsx` UI was built against a mock and speaks the
- * `PaymentAccount` display union (`type: 'bank' | 'wallet'`, `accountType:
- * 'savings' | 'checking'`, `accountHolderName`, …). The CURRENTLY-DEPLOYED
- * backend returns the flat `LandlordPaymentMethod` Prisma shape instead
- * (`bankName` free text, `accountType: 'AHORROS' | 'CORRIENTE'`, `holderName`,
- * `methodType`, no `isDefault`/assignment/wallet-create support).
+ * The `PaymentAccountsSection.tsx` UI speaks the `PaymentAccount` display union
+ * (`type: 'bank' | 'wallet'`, `accountType: 'savings' | 'checking'`,
+ * `accountHolderName`, …). The backend returns the flat `LandlordPaymentMethod`
+ * Prisma shape (`bankName` free text, `accountType: 'AHORROS' | 'CORRIENTE' | null`,
+ * `holderName`, `methodType`, `isDefault`, + property-assignment endpoints).
  *
- * This module maps wire↔display so the existing component keeps working
- * unchanged against the real, currently-deployed contract. A v2 backend
- * contract (isDefault, property assignment, wallet creation, generated types)
- * has been defined but is NOT deployed yet — once it ships, this mapper is
- * replaced by the generated types and the temporary guards below
- * (wallet-create rejection, assign/unassign no-ops) are removed.
+ * This module maps wire↔display so the component keeps working unchanged against
+ * the real v2 contract: bank + wallet (NEQUI/DAVIPLATA) create, property
+ * assignment (`GET /assignments`, `POST /:id/assign`, `DELETE /:id/assign/:propertyId`),
+ * and `isDefault` (via `PATCH isDefault:true`, which the backend honours).
  *
- * See docs/backend-handoff-payment-methods.md for the full contract audit.
+ * Follow-up (optional): once the back's `@ApiResponse` DTOs are regenerated into
+ * `generated/back.ts`, replace `LandlordPaymentMethodWire` with the generated type.
+ * See docs/backend-handoff-payment-methods.md.
  */
 
 import { apiClient, ApiError } from './client';
 import type {
   BankAccount,
+  DigitalWallet,
   PaymentAccount,
   PropertyAccountAssignment,
   WalletCode,
@@ -32,7 +32,7 @@ import { COLOMBIAN_BANKS, getWalletByCode } from '@/lib/types/payment-accounts';
 const BASE = '/landlords/me/payment-methods';
 
 // ============================================================================
-// Wire types — the shape the currently-deployed backend actually returns.
+// Wire types — the shape the backend (payment-methods v2) actually returns.
 // ============================================================================
 
 type WireAccountType = 'AHORROS' | 'CORRIENTE';
@@ -41,8 +41,9 @@ type WireMethodType = 'PSE' | 'BANK_TRANSFER' | 'CASH' | 'NEQUI' | 'DAVIPLATA' |
 export interface LandlordPaymentMethodWire {
   id: string;
   bankName: string;
-  accountType: WireAccountType;
-  accountNumber: string;
+  // Nullable for wallet methods (NEQUI/DAVIPLATA) since v2 relaxed the columns.
+  accountType: WireAccountType | null;
+  accountNumber: string | null;
   holderName: string;
   holderDocumentNumber: string | null;
   phoneNumber: string | null;
@@ -51,17 +52,18 @@ export interface LandlordPaymentMethodWire {
   isActive: boolean;
   createdAt: string;
   updatedAt?: string;
-  // Not present until the v2 backend deploys — treat as optional.
   isDefault?: boolean;
 }
 
 interface CreateLandlordPaymentMethodDto {
   bankName: string;
-  accountType: WireAccountType;
-  accountNumber: string;
   holderName: string;
-  holderDocumentNumber: string;
   methodType: WireMethodType;
+  // Required for bank methods, optional for wallets (NEQUI/DAVIPLATA) per the v2
+  // conditional DTO. phoneNumber is required for wallets instead.
+  accountType?: WireAccountType;
+  accountNumber?: string;
+  holderDocumentNumber?: string;
   phoneNumber?: string;
   instructions?: string;
 }
@@ -94,8 +96,8 @@ function wireToDisplay(wire: LandlordPaymentMethodWire): PaymentAccount {
     type: 'bank',
     bankCode,
     bankName: wire.bankName,
-    accountType: wire.accountType === 'AHORROS' ? 'savings' : 'checking',
-    accountNumber: wire.accountNumber,
+    accountType: wire.accountType === 'CORRIENTE' ? 'checking' : 'savings',
+    accountNumber: wire.accountNumber ?? '',
     accountHolderName: wire.holderName,
     accountHolderDocument: wire.holderDocumentNumber ?? '',
     isDefault: wire.isDefault ?? false,
@@ -122,27 +124,42 @@ export const paymentMethodsApi = {
   },
 
   async create(data: Partial<PaymentAccount>): Promise<PaymentAccount> {
-    if (data.type === 'wallet') {
-      // The currently-deployed backend's create DTO is bank-centric
-      // (accountNumber/accountType/holderDocumentNumber are always required)
-      // and cannot represent a wallet-only method yet. This ships with v2.
-      throw new ApiError(400, 'Las billeteras estarán disponibles muy pronto.');
-    }
+    // `Partial<PaymentAccount>` flattens to the fields common to both
+    // BankAccount/DigitalWallet (a mapped type over a union intersects keys), so
+    // after narrowing on `type` we cast to read the branch-specific fields,
+    // mirroring the `as Partial<BankAccount>` the caller applies in
+    // PaymentAccountsSection.tsx.
+    let dto: CreateLandlordPaymentMethodDto;
 
-    // `Partial<PaymentAccount>` flattens to the common BankAccount/DigitalWallet
-    // fields (mapped types over a union intersect keys) — the `type !== 'wallet'`
-    // check above guarantees this is bank data at runtime; cast to read the
-    // bank-specific fields, mirroring the `as Partial<BankAccount>` the caller
-    // already applies in PaymentAccountsSection.tsx.
-    const bank = data as Partial<BankAccount>;
-    const dto: CreateLandlordPaymentMethodDto = {
-      bankName: bank.bankName!,
-      accountType: bank.accountType === 'savings' ? 'AHORROS' : 'CORRIENTE',
-      accountNumber: bank.accountNumber!,
-      holderName: bank.accountHolderName!,
-      holderDocumentNumber: bank.accountHolderDocument!,
-      methodType: 'BANK_TRANSFER',
-    };
+    if (data.type === 'wallet') {
+      const wallet = data as Partial<DigitalWallet>;
+      // v2 only supports NEQUI/DAVIPLATA as wallet methods.
+      const methodType: WireMethodType | null =
+        wallet.walletCode === 'nequi'
+          ? 'NEQUI'
+          : wallet.walletCode === 'daviplata'
+            ? 'DAVIPLATA'
+            : null;
+      if (!methodType) {
+        throw new ApiError(400, 'Por ahora solo se admiten billeteras Nequi y Daviplata.');
+      }
+      dto = {
+        bankName: wallet.walletName ?? (methodType === 'NEQUI' ? 'Nequi' : 'Daviplata'),
+        holderName: wallet.holderName!,
+        methodType,
+        phoneNumber: wallet.phoneNumber!,
+      };
+    } else {
+      const bank = data as Partial<BankAccount>;
+      dto = {
+        bankName: bank.bankName!,
+        accountType: bank.accountType === 'savings' ? 'AHORROS' : 'CORRIENTE',
+        accountNumber: bank.accountNumber!,
+        holderName: bank.accountHolderName!,
+        holderDocumentNumber: bank.accountHolderDocument!,
+        methodType: 'BANK_TRANSFER',
+      };
+    }
 
     const wire = await apiClient.post<LandlordPaymentMethodWire>(BASE, dto);
     return wireToDisplay(wire);
@@ -159,20 +176,20 @@ export const paymentMethodsApi = {
   },
 
   async getAssignments(): Promise<PropertyAccountAssignment[]> {
-    // PENDING FEATURE: the backend does not expose a property-to-account assignments
-    // endpoint yet. This returns [] intentionally — it is NOT a fail-open catch;
-    // no network call is made, no data is silently swallowed.
-    // Follow-up: wire to the real endpoint when it is added to the backend (v2).
-    return [];
+    // GET /assignments → [{ propertyId, accountId }] (v2). 404 = none yet.
+    try {
+      return await apiClient.get<PropertyAccountAssignment[]>(`${BASE}/assignments`);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) return [];
+      throw err;
+    }
   },
 
-  async assignProperty(_accountId: string, _propertyId: string): Promise<void> {
-    // INTERIM NO-OP: `POST /:id/assign` does not exist on the currently-deployed
-    // backend (ships with v2). Resolving without a network call prevents the
-    // create flow — which loops over assignProperty — from 404-failing.
+  async assignProperty(accountId: string, propertyId: string): Promise<void> {
+    await apiClient.post(`${BASE}/${accountId}/assign`, { propertyId });
   },
 
-  async unassignProperty(_accountId: string, _propertyId: string): Promise<void> {
-    // INTERIM NO-OP — see assignProperty above. Ships with v2.
+  async unassignProperty(accountId: string, propertyId: string): Promise<void> {
+    await apiClient.delete(`${BASE}/${accountId}/assign/${propertyId}`);
   },
 };

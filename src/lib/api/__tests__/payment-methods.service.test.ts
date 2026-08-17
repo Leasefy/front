@@ -1,12 +1,11 @@
 /**
- * payment-methods.service — interim wire↔display mapper.
+ * payment-methods.service — wire↔display mapper (payment-methods v2).
  *
- * Contract under test: the currently-deployed backend returns the flat
- * `LandlordPaymentMethod` Prisma shape (bankName, accountType: AHORROS|CORRIENTE,
- * holderName, methodType, etc.) — NOT the front's `PaymentAccount` display union
- * (type: 'bank'|'wallet', accountType: 'savings'|'checking', accountHolderName…).
- * `wireToDisplay` bridges that gap so `PaymentAccountsSection.tsx` keeps working
- * unchanged. See docs/backend-handoff-payment-methods.md for the full contract.
+ * The backend returns the flat `LandlordPaymentMethod` Prisma shape (bankName,
+ * accountType: AHORROS|CORRIENTE|null, holderName, methodType, isDefault, …) —
+ * NOT the front's `PaymentAccount` display union. `wireToDisplay` bridges that gap.
+ * v2 also enables wallet (NEQUI/DAVIPLATA) create and property assignment.
+ * See docs/backend-handoff-payment-methods.md for the full contract.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -66,8 +65,9 @@ const BANK_WIRE_ROW = {
 const NEQUI_WIRE_ROW = {
   id: 'pm-2',
   bankName: 'Nequi',
-  accountType: 'AHORROS' as const,
-  accountNumber: '3001234567',
+  // v2 relaxed these to nullable; a wallet row returns them null.
+  accountType: null,
+  accountNumber: null,
   holderName: 'María López',
   holderDocumentNumber: null,
   phoneNumber: '3001234567',
@@ -138,11 +138,34 @@ describe('paymentMethodsApi.create — display→DTO mapping', () => {
     expect(body).not.toHaveProperty('isDefault')
   })
 
-  it('rejects wallet creation — not supported by the currently-deployed backend', async () => {
+  it('POSTs the wallet DTO for a NEQUI wallet (no bank fields, phoneNumber required)', async () => {
+    postMock.mockResolvedValue(NEQUI_WIRE_ROW)
+
+    await paymentMethodsApi.create({
+      type: 'wallet',
+      walletCode: 'nequi',
+      walletName: 'Nequi',
+      phoneNumber: '3001234567',
+      holderName: 'María López',
+    })
+
+    expect(postMock).toHaveBeenCalledTimes(1)
+    const [, body] = postMock.mock.calls[0]
+    expect(body).toMatchObject({
+      bankName: 'Nequi',
+      holderName: 'María López',
+      methodType: 'NEQUI',
+      phoneNumber: '3001234567',
+    })
+    expect(body).not.toHaveProperty('accountNumber')
+    expect(body).not.toHaveProperty('accountType')
+  })
+
+  it('rejects an unsupported wallet provider (only NEQUI/DAVIPLATA)', async () => {
     await expect(
       paymentMethodsApi.create({
         type: 'wallet',
-        walletCode: 'nequi',
+        walletCode: 'movii',
         phoneNumber: '3001234567',
         holderName: 'María López',
       }),
@@ -151,9 +174,31 @@ describe('paymentMethodsApi.create — display→DTO mapping', () => {
   })
 })
 
-describe('paymentMethodsApi.assignProperty — interim no-op', () => {
-  it('resolves without calling the network', async () => {
-    await expect(paymentMethodsApi.assignProperty('pm-1', 'prop-1')).resolves.toBeUndefined()
-    expect(postMock).not.toHaveBeenCalled()
+describe('paymentMethodsApi — property assignment (v2)', () => {
+  it('assignProperty POSTs /:id/assign with { propertyId }', async () => {
+    postMock.mockResolvedValue({ propertyId: 'prop-1', accountId: 'pm-1' })
+
+    await paymentMethodsApi.assignProperty('pm-1', 'prop-1')
+
+    const [url, body] = postMock.mock.calls[0]
+    expect(url).toBe('/landlords/me/payment-methods/pm-1/assign')
+    expect(body).toEqual({ propertyId: 'prop-1' })
+  })
+
+  it('unassignProperty DELETEs /:id/assign/:propertyId', async () => {
+    deleteMock.mockResolvedValue(undefined)
+
+    await paymentMethodsApi.unassignProperty('pm-1', 'prop-1')
+
+    expect(deleteMock).toHaveBeenCalledWith('/landlords/me/payment-methods/pm-1/assign/prop-1')
+  })
+
+  it('getAssignments GETs /assignments (and returns [] on 404)', async () => {
+    getMock.mockResolvedValue([{ propertyId: 'prop-1', accountId: 'pm-1' }])
+    expect(await paymentMethodsApi.getAssignments()).toEqual([{ propertyId: 'prop-1', accountId: 'pm-1' }])
+    expect(getMock).toHaveBeenCalledWith('/landlords/me/payment-methods/assignments')
+
+    getMock.mockRejectedValue(new ApiError(404, 'Not found'))
+    expect(await paymentMethodsApi.getAssignments()).toEqual([])
   })
 })

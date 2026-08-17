@@ -11,14 +11,18 @@
 > vía DTO condicional para NEQUI/DAVIPLATA; (4) Response DTOs + `@ApiResponse` (adiós `content: never`).
 > Efecto colateral: `GET /leases/:id/payment-info` devuelve `accountType/accountNumber` como `string | null`.
 >
-> **Front — hecho (interino, front-puro, contra el back desplegado viejo):**
-> - `466faf2e` — mapper wire↔display en `payment-methods.service.ts`: la lista renderiza + create de banco
->   con el DTO real; `assign/unassign` no-op y billeteras "próximamente" hasta que v2 deploye.
-> - `f6e5acde` — `leases.types.ts`: `accountType/accountNumber` nullable (no se renderizan → solo tipo).
+> **Front — hecho:**
+> - `466faf2e` — mapper wire↔display en `payment-methods.service.ts` (interino, contra back viejo).
+> - `f6e5acde` — `leases.types.ts`: `accountType/accountNumber` nullable (solo tipo).
+> - `758ba855` — **v2 PRENDIDO** (contra el back v2 local): billeteras NEQUI/DAVIPLATA en create,
+>   `assignProperty`/`unassignProperty`/`getAssignments` cableados a `POST /:id/assign`,
+>   `DELETE /:id/assign/:propertyId`, `GET /assignments`; wire `accountType/accountNumber` nullable;
+>   `set-default` vía `PATCH isDefault:true`. **El front ahora REQUIERE back v2** (co-deploy front+back).
 >
-> **Front — pendiente cuando v2 DEPLOYE:** correr `pnpm api:gen`, adoptar los tipos generados en
-> `payment-methods.service.ts` (reemplazar el mapper interino), y **prender** billeteras + asignación de
-> inmuebles + `isDefault` (quitar los no-op/guards del interino). El contrato de abajo queda como histórico.
+> **Front — pendiente (opcional):** (a) trimear el select de billeteras a Nequi/Daviplata (hoy ofrece 5;
+> dale/movii/rappipay rechazan con toast honesto). (b) Adoptar tipos generados: correr codegen del back
+> desde su `openapi.json` (ahora con `@ApiResponse`) y reemplazar `LandlordPaymentMethodWire` por el tipo
+> generado. Nada de esto bloquea el testing local de v2.
 
 ## Estado actual (roto en prod)
 

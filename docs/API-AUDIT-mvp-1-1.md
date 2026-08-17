@@ -29,7 +29,8 @@
 | 12 | AI chat — confirmar acción | `ai-hub-chat.ts:392` (`useBetaChat.ts:1260`) | `POST /ai-hub/actions/execute` | `POST /ai-hub/chat/approvals/{approvalId}/resolve` (body `{outcome}`, key `approvalId`) | Confirmar acción en el chat = 404 siempre. **+ semántica**: `resolve` NO ejecuta, solo registra señal de aprendizaje |
 | 13 | AI work-item detalle | `agent-workspace.ts:200` (`use-work-item-detail.ts`) | `GET /ai-hub/work-items/{agente}/{id}` | (no existe; solo el list) | 4+ páginas de detalle (matching, conciliación, avalúos…) siempre en `notAvailable` |
 | 14 | AI métricas | `use-agent-metrics.ts:64` (`ai/page.tsx`) | `GET ${AGENT_URL}/metrics` con JWT de usuario | Existe pero `apiKeyAuth('AGENT_API_KEY')` server-to-server | 401/403 perpetuo (el propio comentario lo admite) |
-| 15 | Avalúo — pago ciudadano | `avaluo.service.ts:300` (`AvaluoEstadoCard.tsx:117`) + `submitIntake` drop de `paymentUrl` | `POST /api/avaluo/{certId}/pay` → **410 Gone permanente** | pago movido a `POST /api/avaluo/intake` (devuelve `paymentUrl`) | **No hay camino funcional para que el ciudadano pague**: el CTA clickea a 410 y el front descarta el `paymentUrl` del intake |
+| 15 | Avalúo — pago ciudadano | `avaluo.service.ts:300` (`AvaluoEstadoCard.tsx:117`) + `submitIntake` drop de `paymentUrl` | `POST /api/avaluo/{certId}/pay` → **410 Gone permanente** | pago movido a `POST /api/avaluo/intake` (devuelve `paymentUrl`) | **No hay camino funcional para que el ciudadano pague**: el CTA clickea a 410 y el front descarta el `paymentUrl` del intake. **[FIXED `b4b51f2b`]** |
+| 15b | Avalúo — `WompiPayButton` | `WompiPayButton.tsx` | `POST /api/avaluo/wompi-session` | (no existe en el micro) | **4º camino de pago fantasma** — además no estaba montado (solo en docstrings). **[FIXED `b4b51f2b`: eliminado]** |
 
 Verificado contra catálogo de paths del back (los reales existen, los llamados no) y lectura directa de `documents.service.ts` / `config.ts`.
 
@@ -95,4 +96,28 @@ Verificado contra catálogo de paths del back (los reales existen, los llamados 
 - `use-conciliacion-queue.ts:16`: comentario dice que no hay endpoint de summary; ya existe `/conciliacion/summary` → `deriveQueueSummary` es 2ª fuente de verdad (puede divergir).
 - `ai-hub-chat.ts targetToHref`: caso `'avaluo'` cae al landing genérico en vez de `/ai/avaluos` (singular vs plural en los rosters).
 - Duplicados: `PagosHomeMetrics` en `pagos-home.ts:38` **y** `pagos-home.types.ts:12`; dos `usePagosHome` (`hooks/ai/` vs `hooks/pagos-home/`).
+
+---
+
+## 7. Progreso de remediación
+
+### ✅ Hecho (con tests, en `feature/mvp-1-1`)
+- **`29449fde`** — 6 P0 triviales de path/verbo (visitas accept, cobros payment/send-reminder, mantenimiento select-quote, documents upload, templates path).
+- **`b4b51f2b`** — Pago de avalúo del ciudadano (pay-at-intake): tipos + consumo de `paymentUrl`, `AvaluoEstadoCard` usa `paid`, eliminados los 2 caminos muertos (`startPayment`→410 y `WompiPayButton`→ruta inexistente).
+- 3 memorias de handoff marcadas resueltas (avalúos-admin, registration-profiles, terms-acceptance).
+
+### 📤 Handoff al back (esperando contrato)
+- **payment-methods** — `docs/backend-handoff-payment-methods.md`: el módulo se hizo contra un mock; el back necesita definir `isDefault`, asignación inmueble→cuenta, soporte de billeteras, y `@ApiResponse` para codegen. Front sin tocar hasta cerrar el contrato.
+
+### 📋 P0 pendientes (necesitan decisión de diseño o backend)
+- **Documentos borrar** (`documents.service.ts:125`): la ruta real es `DELETE /applications/{appId}/documents/{docId}` — hay que threadear `applicationId` por los callers (`useDocuments.ts`). Refactor real, no one-line.
+- **AI chat confirmar acción** (`ai-hub-chat.ts:392`): ruta real `POST /ai-hub/chat/approvals/{approvalId}/resolve`, pero **`resolve` no ejecuta** (solo aprende) — choque semántico con lo que la UI promete.
+- **AI work-item detalle** (`agent-workspace.ts:200`) y **AI métricas** (`use-agent-metrics.ts:64`): fantasma/auth — dependen del back.
+- **Analytics** (`inmobiliaria.service.ts:1041`): el path se arregla, pero el caller no pasa `metricId` — necesita decidir qué métrica.
+- **`applications/property`** y **`mantenimiento/status`**: fantasma sin ruta real — decidir reemplazo.
+
+### ⚠️ Huecos de producto descubiertos (no inventados)
+- **Avalúo — reanudar pago**: si el ciudadano cierra la pestaña sin pagar en el intake, no hay forma de retomar el pago (`paymentUrl` no se persiste; `/pay` y `/wompi-session` muertos).
+- **Avalúo — polling**: `use-avaluo-status.ts` deja de polear al llegar a `firmado`; con `!paid` la UI no auto-refresca al confirmar Wompi (recarga manual).
+- **payment-methods**: `isDefault` / asignación / billeteras sin respaldo en el back (ver handoff).
 </content>

@@ -25,6 +25,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { useAgentes } from '@/lib/hooks/useInmobiliaria';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import type { Agente } from '@/lib/types/inmobiliaria';
 
@@ -52,7 +53,11 @@ export function AsignarAgente({
   agenteActualId,
   onAsignado,
 }: AsignarAgenteProps) {
-  const { agentes, isLoading } = useAgentes();
+  /* `errorCrudo` y no `error`: el status distingue «no hay agentes» de «no
+     pudimos preguntar», y sólo uno de los dos se puede reintentar. Sin esto la
+     lista caída se pintaba como «No tenés agentes activos» — un vacío que
+     miente y encima invita a irse a invitar gente que ya existe. */
+  const { agentes, isLoading, errorCrudo, refetch } = useAgentes();
   const [guardando, setGuardando] = useState<string | null>(null);
 
   /* Sólo los que pueden recibir trabajo hoy. Un agente de baja o inactivo en la
@@ -96,21 +101,29 @@ export function AsignarAgente({
           </DialogDescription>
         </DialogHeader>
 
-        {isLoading ? (
-          <div className="space-y-2 py-2">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-14 animate-pulse rounded-lg bg-surface-muted" />
-            ))}
-          </div>
-        ) : disponibles.length === 0 ? (
-          <div className="rounded-lg border border-border bg-surface-muted px-4 py-6 text-center">
-            <Briefcase className="mx-auto mb-2 h-6 w-6 text-fg-subtle" />
-            <p className="text-sm text-fg">No tenés agentes activos</p>
-            <p className="mt-1 text-xs text-fg-muted">
-              Invitá a alguien a tu equipo y después volvé a asignarlo acá.
-            </p>
-          </div>
-        ) : (
+        <EstadoDeDatos
+          cargando={isLoading}
+          error={errorCrudo}
+          vacio={disponibles.length === 0}
+          queEs="tu equipo"
+          onReintentar={() => void refetch()}
+          esqueleto={
+            <div className="space-y-2 py-2">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-14 animate-pulse rounded-lg bg-surface-muted" />
+              ))}
+            </div>
+          }
+          cuandoVacio={
+            <div className="rounded-lg border border-border bg-surface-muted px-4 py-6 text-center">
+              <Briefcase className="mx-auto mb-2 h-6 w-6 text-fg-subtle" />
+              <p className="text-sm text-fg">No tenés agentes activos</p>
+              <p className="mt-1 text-xs text-fg-muted">
+                Invitá a alguien a tu equipo y después volvé a asignarlo acá.
+              </p>
+            </div>
+          }
+        >
           <ul className="max-h-80 space-y-1.5 overflow-y-auto" data-lenis-prevent>
             {disponibles.map((agente) => {
               const esActual = agente.id === agenteActualId;
@@ -152,7 +165,7 @@ export function AsignarAgente({
               );
             })}
           </ul>
-        )}
+        </EstadoDeDatos>
 
         <div className="flex justify-end pt-1">
           <Button variant="secondary" hideArrow onClick={onCerrar}>

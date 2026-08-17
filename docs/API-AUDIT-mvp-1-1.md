@@ -104,6 +104,7 @@ Verificado contra catálogo de paths del back (los reales existen, los llamados 
 ### ✅ Hecho (con tests, en `feature/mvp-1-1`)
 - **`29449fde`** — 6 P0 triviales de path/verbo (visitas accept, cobros payment/send-reminder, mantenimiento select-quote, documents upload, templates path).
 - **`b4b51f2b`** — Pago de avalúo del ciudadano (pay-at-intake): tipos + consumo de `paymentUrl`, `AvaluoEstadoCard` usa `paid`, eliminados los 2 caminos muertos (`startPayment`→410 y `WompiPayButton`→ruta inexistente).
+- **`b7f83f0a`** — Mantenimiento `updateStatus`: despacho a transiciones reales (`approved→/approve`, `completed→/complete`, `cancelled→/cancel`); estados sin ruta lanzan error. Reemplaza el fantasma `PATCH /mantenimiento/{id}/status`.
 - 3 memorias de handoff marcadas resueltas (avalúos-admin, registration-profiles, terms-acceptance).
 
 ### 📤 Handoff al back (esperando contrato)
@@ -113,7 +114,6 @@ Verificado contra catálogo de paths del back (los reales existen, los llamados 
 Al validar callers, **documentos subir/borrar resultaron código muerto** (los hooks `useDocumentUpload`/`useDocumentDelete` no tienen consumidores). El sub-agente los reportó como "prod" sin verificar el consumo — lección: los sub-agentes verificaron existencia del endpoint, no siempre que el caller estuviera vivo. Los demás P0 fixeados (visitas, cobros, mantenimiento approveQuote) SÍ tienen callers vivos confirmados.
 
 ### 📋 P0 pendientes (verificados vivos — necesitan decisión de diseño o backend)
-- **`mantenimiento/{id}/status`** (`operaciones/page.tsx:404`, `updateStatus`): **vivo**, pero `/status` es fantasma; el back solo tiene `approve/complete/cancel`. Requiere **mapear** cada `newStatus` a la transición correcta (decisión de producto).
 - **Analytics** (`useInmobiliaria.ts:591,596`): **vivo**; el path se arregla a `/trends/{metricId}` pero el caller no pasa `metricId` — decidir qué métrica(s) mostrar.
 - **`applications/property`** (`useApplications.ts:298`): fantasma sin ruta real — gap de backend (ver postulaciones por propiedad para el landlord).
 - **AI chat confirmar acción** (`ai-hub-chat.ts:392`): ruta real `POST /ai-hub/chat/approvals/{approvalId}/resolve`, pero **`resolve` no ejecuta** (solo aprende) — choque semántico con lo que la UI promete.

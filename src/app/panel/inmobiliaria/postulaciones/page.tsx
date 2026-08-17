@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   ClipboardText,
   Hourglass,
@@ -23,6 +22,11 @@ import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { IconButton, SegmentedControl } from '@leasefy/cadence'
 import { RecorridoMapa } from '@/components/inmobiliaria/recorrido/RecorridoMapa'
+import { CandidateDrawer } from '@/components/inmobiliaria/CandidateDrawer'
+import {
+  AccionDePostulacion,
+  type ActionType,
+} from '@/components/inmobiliaria/AccionDePostulacion'
 import { landlordApplicationsApi } from '@/lib/api/applications.service'
 import type { AllCandidatesItem, LandlordApplicationStatus } from '@/lib/api/applications.types'
 
@@ -134,10 +138,14 @@ function initials(name: string): string {
 }
 
 export default function PostulacionesPage() {
-  const router = useRouter()
   const [items, setItems] = useState<AllCandidatesItem[]>([])
   const [filter, setFilter] = useState<FilterKey>('ALL')
   const [search, setSearch] = useState('')
+  /** La persona cuyo cajón está abierto. El detalle vive en esta misma pantalla. */
+  const [candidatoAbierto, setCandidatoAbierto] = useState<AllCandidatesItem | null>(null)
+  const [accion, setAccion] = useState<{ type: ActionType; candidate: AllCandidatesItem } | null>(
+    null,
+  )
   const [isLoading, setIsLoading] = useState(true)
   // El error ENTERO, no su mensaje: el status distingue «no existe» de
   // «no pudimos cargar», y sólo uno de los dos se puede reintentar.
@@ -168,18 +176,42 @@ export default function PostulacionesPage() {
   )
 
   /**
-   * Abre la postulación de esa persona, no la lista de su propiedad.
+   * Abre el detalle ACÁ, sin sacar a nadie de la lista.
    *
-   * El destino es la pantalla de candidatos del inmueble —ahí vive el cajón con
-   * el detalle, el scoring y las acciones— y `?candidato=` le dice a cuál abrir.
+   * Antes esto empujaba a `/inmuebles/<id>/candidatos?candidato=<id>`: el clic
+   * en una postulación cambiaba de sección —el sidebar saltaba a «Inmuebles ·
+   * portafolio»—, cargaba la lista de candidatos de esa propiedad y encima de
+   * todo eso abría el cajón. Tres pantallas para ver una persona, y volver
+   * atrás ya no te devolvía a Postulaciones.
+   *
+   * El cajón es el mismo componente; lo único que necesitaba era montarse acá.
    */
-  const abrirCandidato = useCallback(
-    (c: AllCandidatesItem) => {
-      router.push(
-        `/panel/inmobiliaria/inmuebles/${c.propertyId}/candidatos?candidato=${encodeURIComponent(c.id)}`,
-      )
+  const abrirCandidato = useCallback((c: AllCandidatesItem) => {
+    setCandidatoAbierto(c)
+  }, [])
+
+  /** Ejecuta la acción confirmada y vuelve a leer la lista. */
+  const confirmarAccion = useCallback(
+    async (texto: string) => {
+      if (!accion) return
+      const id = accion.candidate.id
+      switch (accion.type) {
+        case 'preapprove':
+          await landlordApplicationsApi.preapprove(id, texto ? { message: texto } : {})
+          break
+        case 'approve':
+          await landlordApplicationsApi.approve(id, texto ? { message: texto } : {})
+          break
+        case 'reject':
+          await landlordApplicationsApi.reject(id, texto)
+          break
+        case 'request-info':
+          await landlordApplicationsApi.requestInfo(id, texto)
+          break
+      }
+      await load()
     },
-    [router],
+    [accion, load],
   )
 
   const visibleItems = useMemo(() => {
@@ -425,6 +457,26 @@ export default function PostulacionesPage() {
             </div>
           </details>
         </>
+      )}
+
+      {/* El detalle, en esta misma pantalla. */}
+      <CandidateDrawer
+        candidate={candidatoAbierto}
+        onClose={() => setCandidatoAbierto(null)}
+        onAction={(type, candidate) => {
+          setCandidatoAbierto(null)
+          setAccion({ type, candidate: candidate as AllCandidatesItem })
+        }}
+        onReevaluated={() => void load()}
+      />
+
+      {accion && (
+        <AccionDePostulacion
+          type={accion.type}
+          candidateName={accion.candidate.tenantName || accion.candidate.id.slice(0, 8)}
+          onConfirm={confirmarAccion}
+          onClose={() => setAccion(null)}
+        />
       )}
     </div>
   )

@@ -65,7 +65,12 @@ const STATUS_LABELS: Record<LandlordApplicationStatus, string> = {
   DRAFT: 'Borrador',
   SUBMITTED: 'Postulado',
   UNDER_REVIEW: 'En revisión',
-  PREAPPROVED: 'Pre-aprobado',
+  // «Pre-aprobado» no significa nada para quien lo lee (docs/VOCABULARIO.md), y
+  // la tabla de Postulaciones ya lo mostraba como «En revisión». Acá seguía
+  // diciendo lo otro: la misma postulación se llamaba distinto en la lista y en
+  // su propio cajón, que es lo que hacía preguntar por qué no se podía aprobar
+  // «algo que está en revisión».
+  PREAPPROVED: 'En revisión',
   APPROVED: 'Aprobado',
   REJECTED: 'Rechazado',
   NEEDS_INFO: 'Pide info',
@@ -104,11 +109,21 @@ const INTEGRITY_FLAG_MESSAGES: Record<string, string> = {
   credit_score_discrepancy: 'El reporte de crédito adjunto difiere del score verificado',
 };
 
+/**
+ * Los factores del score, con el nombre que usa quien los lee.
+ *
+ * Sin entrada acá se pinta la llave cruda del agente: en el panel real salían
+ * «bureau» y «asegurabilidad» en minúscula, mezclados entre etiquetas bien
+ * escritas. La llave es contrato con el agente; el rótulo es nuestro.
+ */
 const SCORE_BREAKDOWN_LABELS: Record<string, string> = {
   solvencia: 'Solvencia',
   credito: 'Crédito',
+  bureau: 'Buró de crédito',
+  asegurabilidad: 'Asegurabilidad',
   estabilidad_laboral: 'Estabilidad laboral',
   consistencia_cruzada: 'Consistencia',
+  consistencia: 'Consistencia',
   identidad: 'Identidad',
 };
 
@@ -128,6 +143,9 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   contrato_laboral: 'Contrato laboral',
   nomina: 'Nómina',
   reporte_credito: 'Reporte de crédito',
+  // No es un documento: es un cruce ENTRE documentos. Sin esta entrada se
+  // pintaba la llave cruda —«cross_validation»— donde va el nombre del papel.
+  cross_validation: 'Entre documentos',
 };
 
 // ============================================================================
@@ -377,9 +395,30 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
 
   const requiresManualReview = evaluation?.requires_manual_review === true;
   const canPreapprove = candidate.status === 'SUBMITTED' || candidate.status === 'UNDER_REVIEW';
-  const canApprove = candidate.status === 'PREAPPROVED' && !requiresManualReview;
+
+  /*
+   * Aprobar se puede desde «en revisión», que es lo que la pantalla dice.
+   *
+   * Antes sólo aparecía en PREAPPROVED **y** encima se dibujaba deshabilitado
+   * cuando la evaluación pedía revisión manual. Dos problemas:
+   *
+   *  1. `PREAPPROVED` se muestra como «En revisión» (docs/VOCABULARIO.md: la
+   *     palabra "pre-aprobado" no significa nada). Así que quien leía «En
+   *     revisión» y no podía aprobar tenía razón en no entender.
+   *  2. El motivo del bloqueo vivía en un `title=` — un tooltip. Un botón
+   *     apagado sin decir por qué no es una salvaguarda, es un callejón.
+   *
+   * Ahora el botón **nunca** sale apagado: las alertas de integridad se
+   * anuncian a la vista, junto al botón, y la confirmación las nombra. La
+   * decisión sigue siendo de la persona, que es de quien siempre fue.
+   */
+  const canApprove =
+    candidate.status === 'PREAPPROVED' ||
+    candidate.status === 'UNDER_REVIEW' ||
+    candidate.status === 'SUBMITTED';
   const canReject = canPreapprove || candidate.status === 'PREAPPROVED';
   const canRequestInfo = canPreapprove;
+  const hayAcciones = canPreapprove || canApprove || canReject || canRequestInfo;
 
   return (
     <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -513,21 +552,20 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                   <p className="text-xs text-fg-muted">Generado por el agente de evaluación de riesgo</p>
                 </div>
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                hideArrow
-                onClick={handleReevaluate}
-                disabled={isReevaluating}
-                className="gap-1.5"
-              >
-                {isReevaluating ? (
-                  <DSSpinner size="xs" variant="current" />
-                ) : (
-                  <ArrowClockwise className="w-3.5 h-3.5" />
-                )}
-                Re-evaluar
-              </Button>
+              {/*
+                * «Re-evaluar» queda comentado por pedido de Nico (2026-08-16):
+                * esta pantalla es para DECIDIR sobre una persona, no para
+                * gastar créditos re-corriendo al agente. La acción sigue viva
+                * —`handleReevaluate` y el saldo de créditos no se tocaron—;
+                * cuando se decida dónde va, se descomenta acá.
+                *
+                * <Button variant="secondary" size="sm" hideArrow
+                *   onClick={handleReevaluate} disabled={isReevaluating} className="gap-1.5">
+                *   {isReevaluating ? <DSSpinner size="xs" variant="current" />
+                *                   : <ArrowClockwise className="w-3.5 h-3.5" />}
+                *   Re-evaluar
+                * </Button>
+                */}
             </div>
 
             {/* Credits balance chip */}
@@ -599,7 +637,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
             ) : noEvaluationYet ? (
               <div className="rounded-xl bg-surface-muted p-3 border border-border">
                 <p className="text-xs text-fg-muted">
-                  Este candidato aún no tiene una evaluación del agente. Haz clic en &ldquo;Re-evaluar&rdquo; para generar la primera.
+                  Este candidato todavía no tiene evaluación del agente.
                 </p>
               </div>
             ) : aiError ? (
@@ -753,9 +791,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 )}
 
                 {!level && !evaluation && !aiError && (
-                  <p className="text-xs text-fg-muted">
-                    Aún no hay análisis disponible. Haz clic en &ldquo;Re-evaluar&rdquo; para generar uno.
-                  </p>
+                  <p className="text-xs text-fg-muted">Aún no hay análisis disponible.</p>
                 )}
               </>
             )}
@@ -914,52 +950,74 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
             <ChatThread applicationId={candidate.id} />
           </section>
 
-          {/* Actions */}
-          <section className="rounded-xl border border-border bg-card p-5 space-y-3">
-            <h3 className="font-semibold text-sm text-foreground">Acciones</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {canPreapprove && (
-                <Button hideArrow onClick={() => onAction('preapprove', candidate)}>
-                  Pre-aprobar
-                </Button>
-              )}
-              {candidate.status === 'PREAPPROVED' && (
-                // success/green: Cadence Button has no success variant (logged gap) — real
-                // Button keeps all DS states; only the fill is overridden for the missing tone.
+        </div>
+
+        {/*
+          * Las acciones, al pie y siempre visibles.
+          *
+          * Estaban al FINAL del cuerpo con scroll, después del scoring, los
+          * documentos y el chat: para decidir había que recorrer el cajón
+          * entero. Decidir es a lo que se viene, así que no se scrollea.
+          */}
+        {hayAcciones && (
+          <div className="flex-none border-t border-border bg-background px-6 py-4 space-y-3">
+            {requiresManualReview && (
+              // El motivo, a la vista. Antes vivía en un `title=`: el botón se
+              // veía apagado y nadie podía saber por qué.
+              <p className="flex items-start gap-2 text-xs text-danger">
+                <WarningCircle className="w-4 h-4 flex-shrink-0 mt-px" />
+                <span>
+                  El análisis marcó inconsistencias en los documentos. Revisá las alertas de
+                  integridad antes de decidir.
+                </span>
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {canReject && (
                 <Button
+                  variant="destructive"
                   hideArrow
-                  onClick={() => !requiresManualReview && onAction('approve', candidate)}
-                  disabled={requiresManualReview}
-                  title={requiresManualReview ? 'Revisa las alertas de integridad antes de aprobar' : undefined}
-                  className="bg-success text-white hover:bg-success/90 disabled:opacity-40 disabled:cursor-not-allowed"
+                  onClick={() => onAction('reject', candidate)}
+                  className="flex-1 min-w-[8rem]"
                 >
-                  Aprobar
+                  Rechazar
                 </Button>
               )}
               {canRequestInfo && (
-                // warning/amber: Cadence Button has no warning variant (logged gap) — real
-                // Button keeps all DS states; only the fill is overridden for the missing tone.
                 <Button
+                  variant="secondary"
                   hideArrow
                   onClick={() => onAction('request-info', candidate)}
-                  className="bg-warning text-white hover:bg-warning/90"
+                  className="flex-1 min-w-[8rem]"
                 >
                   Pedir info
                 </Button>
               )}
-              {canReject && (
-                <Button variant="destructive" hideArrow onClick={() => onAction('reject', candidate)}>
-                  Rechazar
+              {canPreapprove && (
+                <Button
+                  variant="secondary"
+                  hideArrow
+                  onClick={() => onAction('preapprove', candidate)}
+                  className="flex-1 min-w-[8rem]"
+                >
+                  Pasar a revisión
                 </Button>
               )}
-              {!canPreapprove && !canApprove && !canReject && !canRequestInfo && (
-                <p className="col-span-2 text-xs text-fg-muted text-center py-2">
-                  No hay acciones disponibles para este estado.
-                </p>
+              {/* Aprobar, SIEMPRE la última: es la acción que cierra el paso. */}
+              {canApprove && (
+                // success/green: Cadence Button has no success variant (logged gap) — real
+                // Button keeps all DS states; only the fill is overridden for the missing tone.
+                <Button
+                  hideArrow
+                  onClick={() => onAction('approve', candidate)}
+                  className="flex-1 min-w-[8rem] bg-success text-white hover:bg-success/90"
+                >
+                  Aprobar
+                </Button>
               )}
             </div>
-          </section>
-        </div>
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   );
@@ -989,45 +1047,86 @@ function SubscoreBar({ label, value, weight }: { label: string; value: number; w
   );
 }
 
+/**
+ * Traduce el detalle técnico de una alerta a algo que se pueda leer.
+ *
+ * El agente devuelve el hallazgo tal como lo midió:
+ *
+ *     "ModDate posterior a CreationDate por 1623 día(s).
+ *      Producer: 'pdf-lib (https://github.com/Hopding/pdf-lib)'."
+ *
+ * Eso es cierto y es inútil para quien tiene que decidir si aprueba a una
+ * persona: nombra campos internos de un PDF y una librería de GitHub. Acá se
+ * dice qué significa; el texto crudo queda disponible en «Ver detalle
+ * técnico», porque para reclamarle a alguien hay que poder citarlo.
+ */
+export function explicarAlerta(flag: IntegrityFlag): string | null {
+  const d = flag.detail ?? '';
+
+  const dias = d.match(/ModDate posterior a CreationDate por\s+(\d+)\s+d/i)?.[1];
+  const herramienta = d.match(/Producer:\s*'([^'(]+)/i)?.[1]?.trim();
+
+  if (dias) {
+    const n = Number(dias);
+    const cuando =
+      n >= 365
+        ? `${Math.floor(n / 365)} año${Math.floor(n / 365) === 1 ? '' : 's'} después`
+        : n >= 30
+          ? `${Math.floor(n / 30)} mes${Math.floor(n / 30) === 1 ? '' : 'es'} después`
+          : `${n} día${n === 1 ? '' : 's'} después`;
+    return herramienta
+      ? `El archivo se guardó otra vez ${cuando} de haberse creado, con ${herramienta}. No prueba que lo hayan alterado, pero conviene pedir el original.`
+      : `El archivo se guardó otra vez ${cuando} de haberse creado. No prueba que lo hayan alterado, pero conviene pedir el original.`;
+  }
+
+  if (herramienta) {
+    return `El archivo pasó por ${herramienta}, una herramienta de edición de PDF. Conviene pedir el original al emisor.`;
+  }
+
+  return null;
+}
+
 function IntegrityFlagCard({ flag }: { flag: IntegrityFlag }) {
   const message = INTEGRITY_FLAG_MESSAGES[flag.code] ?? flag.detail;
   const docLabel = flag.doc_type ? (DOC_TYPE_LABELS[flag.doc_type] ?? flag.doc_type) : null;
+  const explicacion = explicarAlerta(flag);
+  const hayDetalleCrudo = Boolean(flag.detail) && flag.detail !== message;
 
-  if (flag.severity === 'high') {
-    return (
-      <div className="rounded-md bg-danger-soft border border-danger/30 px-3 py-2">
-        <p className="text-xs font-semibold text-danger flex items-center gap-1.5">
-          <WarningCircle className="w-3.5 h-3.5 flex-shrink-0" />
-          {message}
-          {docLabel && <span className="ml-auto font-normal text-danger">— {docLabel}</span>}
-        </p>
-        {flag.detail !== message && (
-          <p className="text-xs text-danger mt-0.5 ml-5">{flag.detail}</p>
-        )}
-      </div>
-    );
-  }
-  if (flag.severity === 'medium') {
-    return (
-      <div className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2">
-        <p className="text-xs font-semibold text-warning flex items-center gap-1.5">
-          <WarningCircle className="w-3.5 h-3.5 flex-shrink-0" />
-          {message}
-          {docLabel && <span className="ml-auto font-normal text-warning">— {docLabel}</span>}
-        </p>
-        {flag.detail !== message && (
-          <p className="text-xs text-warning mt-0.5 ml-5">{flag.detail}</p>
-        )}
-      </div>
-    );
-  }
+  const tono =
+    flag.severity === 'high'
+      ? { caja: 'bg-danger-soft border-danger/30', texto: 'text-danger', icono: WarningCircle }
+      : flag.severity === 'medium'
+        ? { caja: 'bg-warning-soft border-warning/30', texto: 'text-warning', icono: WarningCircle }
+        : { caja: 'bg-muted border-border', texto: 'text-fg-muted', icono: Info };
+  const Icono = tono.icono;
+
   return (
-    <div className="rounded-md bg-muted border border-border px-3 py-2">
-      <p className="text-xs text-fg-muted flex items-center gap-1.5">
-        <Info className="w-3.5 h-3.5 flex-shrink-0" />
-        {message}
-        {docLabel && <span className="ml-auto">— {docLabel}</span>}
+    <div className={cn('rounded-md border px-3 py-2.5', tono.caja)}>
+      <p className={cn('flex items-start gap-1.5 text-xs font-semibold', tono.texto)}>
+        <Icono className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
+        <span className="flex-1">{message}</span>
+        {docLabel && <span className="font-normal whitespace-nowrap">— {docLabel}</span>}
       </p>
+
+      {explicacion && (
+        <p className={cn('mt-1 ml-5 text-xs font-normal opacity-90', tono.texto)}>{explicacion}</p>
+      )}
+
+      {hayDetalleCrudo && (
+        <details className="mt-1 ml-5">
+          <summary
+            className={cn(
+              'cursor-pointer list-none text-[11px] underline underline-offset-2 opacity-70',
+              tono.texto,
+            )}
+          >
+            Ver detalle técnico
+          </summary>
+          <p className={cn('mt-1 font-mono text-[11px] leading-relaxed opacity-80', tono.texto)}>
+            {flag.detail}
+          </p>
+        </details>
+      )}
     </div>
   );
 }

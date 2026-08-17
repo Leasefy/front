@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Select,
@@ -458,35 +459,21 @@ function NuevoContratoContent() {
                 onChange={(e) => updateForm('endDate', e.target.value)}
               />
             </Field>
+            {/* El monto se agrupa DENTRO del campo. La ayudita de abajo repetía
+                la misma cifra formateada, que es donde nadie mira mientras
+                escribe; ahora sólo queda el mínimo, que sí dice algo. */}
             <Field
               label="Canon mensual (COP)"
               error={validation.monthlyRent}
-              hint={form.monthlyRent ? formatCurrency(Number(form.monthlyRent)) : 'Mínimo 100.000 COP'}
+              hint="Mínimo $ 100.000"
             >
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={100_000}
-                step={1000}
+              <MoneyInput
                 value={form.monthlyRent}
-                onChange={(e) => updateForm('monthlyRent', e.target.value)}
-                className="tabular-nums"
+                onChange={(crudo) => updateForm('monthlyRent', crudo)}
               />
             </Field>
-            <Field
-              label="Depósito (COP)"
-              error={validation.deposit}
-              hint={form.deposit ? formatCurrency(Number(form.deposit)) : undefined}
-            >
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={0}
-                step={1000}
-                value={form.deposit}
-                onChange={(e) => updateForm('deposit', e.target.value)}
-                className="tabular-nums"
-              />
+            <Field label="Depósito (COP)" error={validation.deposit}>
+              <MoneyInput value={form.deposit} onChange={(crudo) => updateForm('deposit', crudo)} />
             </Field>
             <Field label="Día de pago" error={validation.paymentDay} hint="Día del mes (1 a 28)">
               <Input

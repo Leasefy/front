@@ -312,6 +312,32 @@ export const consignacionesApi = {
     return normalizeConsignacion(raw);
   },
 
+  /**
+   * El mandato de `/inmuebles/:id`, venga el id que venga.
+   *
+   * `:id` es un id de CONSIGNACIÓN — así lo dice `docs/VOCABULARIO.md` y así lo
+   * arman las pantallas del portafolio. Pero hay enlaces que sólo tienen el id
+   * del INMUEBLE y entran igual: la paleta de comandos, el matching del
+   * `CandidateDrawer` y —esto se descubrió el 2026-08-16 en el panel real— la
+   * lista de **Postulaciones**, que enlazaba con `c.propertyId` y dejaba a cada
+   * fila muriendo en «No encontramos esa propiedad».
+   *
+   * `agencyId + propertyId` es único, así que preguntar por inmueble devuelve
+   * cero o uno. Se intenta primero por mandato —el caso normal, una sola
+   * petición— y sólo si no está se pregunta por inmueble.
+   */
+  async getByIdOrPropertyId(id: string): Promise<Consignacion> {
+    try {
+      return await this.getById(id);
+    } catch (error) {
+      const porInmueble = await this.getAll({ propertyId: id });
+      // Si tampoco es un inmueble de esta agencia, el error que vale es el
+      // primero —«no existe esa consignación»—, no «la lista vino vacía».
+      if (porInmueble.length === 0) throw error;
+      return porInmueble[0];
+    }
+  },
+
   async create(
     data: ConsignacionFormData & {
       contractDate: string;

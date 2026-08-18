@@ -32,6 +32,11 @@ import {
   TableRow,
   TableFooter,
 } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import {
+  PAGE_SIZE_OPTIONS,
+  useTablePagination,
+} from '@/lib/hooks/use-table-pagination';
 import type { ExtractoPropietario as ExtractoPropietarioType, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getCobroStatusColor } from '@/lib/types/inmobiliaria';
 import { usePropietarios, useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
@@ -180,6 +185,27 @@ export function ExtractoPropietario({
   const propietario = React.useMemo(() => {
     return propietarios.find((p) => p.id === extracto.propietarioId);
   }, [extracto.propietarioId, propietarios]);
+
+  /*
+   * El detalle por inmueble se pagina; los TOTALES no. El pie de la tabla y el
+   * resumen de abajo siguen leyendo `extracto.totals` y `extracto.lineItems`
+   * completos: un extracto que sumara sólo la página que estás mirando estaría
+   * diciendo que al propietario le corresponde menos plata de la que es.
+   *
+   * `resetKey` con propietario + mes: al abrir el extracto de otro propietario
+   * (o de otro mes) se arranca en la página 1, no en la que quedó del anterior.
+   */
+  const {
+    pageItems: lineasDeLaPagina,
+    total: totalLineas,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(extracto.lineItems, {
+    resetKey: `${extracto.propietarioId}|${extracto.month}`,
+  });
 
   // Handle PDF download
   const handleDownloadPDF = async () => {
@@ -338,116 +364,132 @@ export function ExtractoPropietario({
           <Receipt className="w-4 h-4 text-primary" />
           {t('inmobiliaria.propietario.extracto.propertyDetail')}
         </div>
-        <div
-          className="overflow-x-auto rounded-md border border-border"
-          data-lenis-prevent
-        >
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent bg-muted/50">
-                <TableHead className="w-[25%]">{t('inmobiliaria.propietario.extracto.thProperty')}</TableHead>
-                <TableHead>{t('inmobiliaria.propietario.extracto.thTenant')}</TableHead>
-                <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thRent')}</TableHead>
-                <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thAdmin')}</TableHead>
-                <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thCollected')}</TableHead>
-                <TableHead className="text-center">{t('inmobiliaria.propietario.extracto.thStatus')}</TableHead>
-                <TableHead className="text-center">{t('inmobiliaria.propietario.extracto.thCommPct')}</TableHead>
-                <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thCommission')}</TableHead>
-                <TableHead className="text-right">Conceptos</TableHead>
-                <TableHead className="text-right font-semibold">{t('inmobiliaria.propietario.extracto.thNet')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {extracto.lineItems.map((prop, index) => {
-                const estado = aCobroStatus(prop.status);
-                const StatusIcon = getStatusIcon(estado);
-                return (
-                  <motion.tr
-                    key={prop.cobroId}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="hover:bg-muted/30"
-                  >
-                    <TableCell className="font-medium">
-                      <div className="flex flex-col">
-                        <span className="text-foreground text-sm truncate max-w-[180px]">
-                          {prop.propertyTitle}
+        {/* El marco y el scroll horizontal van en capas separadas: si el pie
+            viviera dentro del `overflow-x-auto`, se correría de lado con la
+            tabla en vez de quedarse quieto abajo. */}
+        <div className="rounded-md border border-border">
+          <div className="overflow-x-auto" data-lenis-prevent>
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent bg-muted/50">
+                  <TableHead className="w-[25%]">{t('inmobiliaria.propietario.extracto.thProperty')}</TableHead>
+                  <TableHead>{t('inmobiliaria.propietario.extracto.thTenant')}</TableHead>
+                  <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thRent')}</TableHead>
+                  <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thAdmin')}</TableHead>
+                  <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thCollected')}</TableHead>
+                  <TableHead className="text-center">{t('inmobiliaria.propietario.extracto.thStatus')}</TableHead>
+                  <TableHead className="text-center">{t('inmobiliaria.propietario.extracto.thCommPct')}</TableHead>
+                  <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thCommission')}</TableHead>
+                  <TableHead className="text-right">Conceptos</TableHead>
+                  <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thNet')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {lineasDeLaPagina.map((prop, index) => {
+                  const estado = aCobroStatus(prop.status);
+                  const StatusIcon = getStatusIcon(estado);
+                  return (
+                    <motion.tr
+                      key={prop.cobroId}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="hover:bg-muted/30"
+                    >
+                      <TableCell className="font-medium">
+                        <div className="flex flex-col">
+                          <span className="text-foreground text-sm truncate max-w-[180px]">
+                            {prop.propertyTitle}
+                          </span>
+                          <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                            {prop.propertyAddress}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {prop.tenantName ?? '—'}
+                      </TableCell>
+                      <TableCell className="text-right text-sm">
+                        {formatCurrency(prop.rentAmount)}
+                      </TableCell>
+                      <TableCell className="text-right text-sm text-muted-foreground">
+                        {prop.adminAmount > 0 ? formatCurrency(prop.adminAmount) : '-'}
+                      </TableCell>
+                      <TableCell className="text-right text-sm font-medium">
+                        {/* El canon recaudado, NO todo lo que puso el inquilino:
+                            la administración es de la copropiedad. */}
+                        {formatCurrency(prop.rentCollected)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className={cn(
+                          'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
+                          getCobroStatusColor(estado)
+                        )}>
+                          <StatusIcon className="w-3 h-3" weight="fill" />
+                          {t(STATUS_LABEL_KEYS[estado])}
                         </span>
-                        <span className="text-xs text-muted-foreground truncate max-w-[180px]">
-                          {prop.propertyAddress}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {prop.commissionPercent}%
                         </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {prop.tenantName ?? '—'}
-                    </TableCell>
-                    <TableCell className="text-right text-sm">
-                      {formatCurrency(prop.rentAmount)}
-                    </TableCell>
-                    <TableCell className="text-right text-sm text-muted-foreground">
-                      {prop.adminAmount > 0 ? formatCurrency(prop.adminAmount) : '-'}
-                    </TableCell>
-                    <TableCell className="text-right text-sm font-medium">
-                      {/* El canon recaudado, NO todo lo que puso el inquilino:
-                          la administración es de la copropiedad. */}
-                      {formatCurrency(prop.rentCollected)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className={cn(
-                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
-                        getCobroStatusColor(estado)
-                      )}>
-                        <StatusIcon className="w-3 h-3" weight="fill" />
-                        {t(STATUS_LABEL_KEYS[estado])}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {prop.commissionPercent}%
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right text-sm text-primary">
-                      {formatCurrency(prop.commissionAmount)}
-                    </TableCell>
-                    <TableCell className="text-right text-sm">
-                      <ConceptosDeLaLinea
-                        aFavor={prop.conceptosAFavor}
-                        aCargo={prop.conceptosACargo}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right text-sm font-semibold text-success">
-                      {formatCurrency(prop.netAmount)}
-                    </TableCell>
-                  </motion.tr>
-                );
-              })}
-            </TableBody>
-            <TableFooter>
-              <TableRow className="bg-muted/50 font-semibold">
-                <TableCell colSpan={4} className="text-foreground">
-                  {t('inmobiliaria.propietario.extracto.total')} ({extracto.lineItems.length} {t('inmobiliaria.propietario.extracto.properties')})
-                </TableCell>
-                <TableCell className="text-right text-foreground">
-                  {formatCurrency(extracto.totals.totalNet + extracto.totals.totalCommission + extracto.totals.totalConceptosACargo - extracto.totals.totalConceptosAFavor)}
-                </TableCell>
-                <TableCell />
-                <TableCell />
-                <TableCell className="text-right text-primary">
-                  {formatCurrency(extracto.totals.totalCommission)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <ConceptosDeLaLinea
-                    aFavor={extracto.totals.totalConceptosAFavor}
-                    aCargo={extracto.totals.totalConceptosACargo}
-                  />
-                </TableCell>
-                <TableCell className="text-right text-success">
-                  {formatCurrency(extracto.totals.totalNet)}
-                </TableCell>
-              </TableRow>
-            </TableFooter>
-          </Table>
+                      </TableCell>
+                      <TableCell className="text-right text-sm text-primary">
+                        {formatCurrency(prop.commissionAmount)}
+                      </TableCell>
+                      <TableCell className="text-right text-sm">
+                        <ConceptosDeLaLinea
+                          aFavor={prop.conceptosAFavor}
+                          aCargo={prop.conceptosACargo}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right text-sm font-semibold text-success">
+                        {formatCurrency(prop.netAmount)}
+                      </TableCell>
+                    </motion.tr>
+                  );
+                })}
+              </TableBody>
+              <TableFooter>
+                <TableRow className="bg-muted/50 font-semibold">
+                  <TableCell colSpan={4} className="text-foreground">
+                    {t('inmobiliaria.propietario.extracto.total')} ({extracto.lineItems.length} {t('inmobiliaria.propietario.extracto.properties')})
+                  </TableCell>
+                  <TableCell className="text-right text-foreground">
+                    {formatCurrency(extracto.totals.totalNet + extracto.totals.totalCommission + extracto.totals.totalConceptosACargo - extracto.totals.totalConceptosAFavor)}
+                  </TableCell>
+                  <TableCell />
+                  <TableCell />
+                  <TableCell className="text-right text-primary">
+                    {formatCurrency(extracto.totals.totalCommission)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <ConceptosDeLaLinea
+                      aFavor={extracto.totals.totalConceptosAFavor}
+                      aCargo={extracto.totals.totalConceptosACargo}
+                    />
+                  </TableCell>
+                  <TableCell className="text-right text-success">
+                    {formatCurrency(extracto.totals.totalNet)}
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
+          </div>
+
+          {/* Pie: sólo si hay más de una página. */}
+          {shouldPaginate && (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={totalLineas}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
         </div>
       </div>
 

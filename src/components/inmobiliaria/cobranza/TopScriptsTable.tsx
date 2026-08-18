@@ -76,20 +76,26 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
       <div className="overflow-x-auto rounded-md border border-border bg-surface">
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="text-xs text-fg-muted">
-              <th className="text-left px-3 py-2 font-medium">
+            {/*
+              Tabla suelta (no usa las primitivas del DS), así que los `<th>`
+              llevan a mano el tratamiento de encabezado del `TableHead`: mono
+              11px en mayúsculas, fg-subtle. Antes eran sans 12px en minúsculas
+              y esta tabla se leía distinta del resto del panel.
+            */}
+            <tr>
+              <th className="text-left px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.script')}
               </th>
-              <th className="text-left px-3 py-2 font-medium">
+              <th className="text-left px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.stage')}
               </th>
-              <th className="text-right px-3 py-2 font-medium">
+              <th className="text-right px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.nCalls')}
               </th>
-              <th className="text-right px-3 py-2 font-medium">
+              <th className="text-right px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.conversionRate')}
               </th>
-              <th className="text-right px-3 py-2 font-medium">
+              <th className="text-right px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.lift')}
               </th>
             </tr>

@@ -11,6 +11,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  type DialogHeaderProps,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
@@ -94,14 +95,24 @@ const ResponsiveDialogContent = React.forwardRef<
 })
 ResponsiveDialogContent.displayName = "ResponsiveDialogContent"
 
-const ResponsiveDialogHeader = (
-  props: React.HTMLAttributes<HTMLDivElement>
-) => {
+/**
+ * ⚠️ `bandaDeModal` no es decorativo.
+ *
+ * `DialogContent` reparte a sus hijos —cabecera arriba y fija, cuerpo con
+ * scroll, pie abajo y fijo— y lo hace leyendo esa marca. Antes comparaba la
+ * identidad del componente, y estos envoltorios NO son `DialogHeader`: la
+ * cabecera caía al cuerpo, el pie dejaba de estar fijo y el Content, creyendo
+ * que nadie ponía ✕, encendía la del DS encima de la del chip. De ahí las dos
+ * aspas de «Agendar una cita». Si aparece otro envoltorio de estas bandas,
+ * tiene que declarar la marca igual que éstos.
+ */
+const ResponsiveDialogHeader = (props: DialogHeaderProps) => {
   const { isMobile } = useResponsiveDialog()
   const Header = isMobile ? SheetHeader : DialogHeader
   return <Header {...props} />
 }
 ResponsiveDialogHeader.displayName = "ResponsiveDialogHeader"
+ResponsiveDialogHeader.bandaDeModal = "cabecera" as const
 
 const ResponsiveDialogFooter = (
   props: React.HTMLAttributes<HTMLDivElement>
@@ -111,6 +122,7 @@ const ResponsiveDialogFooter = (
   return <Footer {...props} />
 }
 ResponsiveDialogFooter.displayName = "ResponsiveDialogFooter"
+ResponsiveDialogFooter.bandaDeModal = "pie" as const
 
 const ResponsiveDialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,

@@ -36,7 +36,11 @@ import {
 import { PIIRevealModal } from '@/components/inmobiliaria/cobranza/PIIRevealModal'
 import { Button, Badge } from '@/components/ui'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, MonoLabel } from '@leasefy/cadence'
+import { MonoLabel } from '@leasefy/cadence'
+// El Sheet va por el adaptador local, no crudo del DS: es lo que trae el
+// overlay z-[300], el contrato de Lenis y la ✕ del producto. Importado
+// directo, este cajón era el único con la ✕ pelada del DS.
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 
 import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 import { DebtorSidebar } from './DebtorSidebar'

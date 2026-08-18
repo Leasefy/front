@@ -1588,24 +1588,19 @@ select:-webkit-autofill:active {
   --info-soft: rgba(42, 111, 176, 0.2);
 }
 
-/* ── Tinte de marca de la inmobiliaria (PlanSidebar) ──────────────────────────
-   La agencia elige UN hex en Configuración → Marca, y un hex sirve para un
-   tema, no para dos: se elige mirando el panel en claro. El panel ya lo asume
-   —el `--primary` de arriba es indigo-500 en claro e indigo-300 en oscuro—,
-   pero el sidebar pisaba `--primary` con el color de marca sin mirar el tema.
+/* ── El sidebar NO pisa `--primary` (2026-08-16) ──────────────────────────────
+   Hubo un `.tinte-de-marca` que en claro reemplazaba `--primary` por el hex que
+   la agencia elige en Configuración → Marca, y en oscuro volvía al del tema.
+   Se quitó por definición de producto: **el primario es el del tema y nada
+   más** — indigo-500 en claro, indigo-300 en oscuro, igual que el resto del
+   panel. Medido en vivo antes de sacarlo: el «Nueva consignación» del sidebar
+   salía #4E53A2 mientras «Nuevo propietario», dos columnas a la derecha, salía
+   con el primario del tema. Dos azules distintos para el mismo rol.
 
-   Medido en el panel (marca #4e53a2, L 47%): el botón «Nueva consignación» del
-   sidebar quedaba en #4E53A2 mientras «Nuevo propietario», dos columnas a la
-   derecha, salía #8A9FFF. Y el texto del primario en oscuro es tinta (#14130f),
-   no blanco, porque está pensado para un relleno claro: sobre el color de marca
-   daba 2,73:1 — AA pide 4,5:1. Con el primario del tema da 7,51:1.
-   En claro el problema no existe: ahí el texto es blanco, y sobre la misma
-   marca da 6,81:1.
-
-   En claro manda la marca. En oscuro manda el primario del tema, el mismo que
-   viste al resto del panel (ver el `.dark` de arriba). */
-.tinte-de-marca      { --primary: var(--marca-primary); }
-.dark .tinte-de-marca { --primary: var(--indigo-300); }
+   Si algún día vuelve el tinte de marca, tiene que resolver eso: un solo hex no
+   sirve para los dos temas, y el `--primary-fg` de oscuro es tinta (#14130f),
+   pensada para un relleno claro — sobre un color de marca oscuro daba 2,73:1 y
+   AA pide 4,5:1. */
 
 /* ── Admin panel scope (see src/app/admin/layout.tsx) ─────────────────────────
    The nest-brandbook admin theme is fixed paper/ink (no light/dark toggle) and

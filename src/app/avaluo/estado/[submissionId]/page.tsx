@@ -37,7 +37,14 @@ export default function AvaluoEstadoPage() {
           ? 'El pago fue rechazado. Podés intentarlo nuevamente.'
           : `Estado del pago: ${wompiStatus}`
 
-      toast.info(label, { duration: 6000 })
+      // Un frame de espera, a propósito: React corre los efectos de abajo hacia
+      // arriba, así que en la primera carga este efecto se ejecuta ANTES de que
+      // el <Toaster> del layout raíz se suscriba — y sonner NO reenvía lo que se
+      // publicó antes de la suscripción (subscribe() sólo agrega el listener).
+      // Sin este rAF el toast se emite al vacío: quedaba en toast.getHistory()
+      // pero no lo pintaba nadie.
+      const raf = requestAnimationFrame(() => toast.info(label, { duration: 6000 }))
+      return () => cancelAnimationFrame(raf)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

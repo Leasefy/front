@@ -7,6 +7,8 @@ import { User, Sparkle, ArrowUpRight, Scales, X as XIcon } from '@phosphor-icons
 import { cn } from '@/lib/utils';
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { Button, Textarea, EmptyState, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -340,6 +342,21 @@ function CandidatosContent() {
 
   const [property, setProperty] = useState<Property | null>(null);
   const [candidates, setCandidates] = useState<LandlordCandidate[]>([]);
+  /**
+   * Paginado de presentación: `getCandidates(propertyId)` trae todos los
+   * postulantes del inmueble y un aviso con demanda real junta decenas. Sin
+   * filtros en esta pantalla (la selección para comparar no filtra) ⇒ sin
+   * `resetKey`.
+   */
+  const {
+    pageItems: candidatosPagina,
+    total: totalCandidatos,
+    page: paginaCandidatos,
+    pageSize: porPaginaCandidatos,
+    setPage: setPaginaCandidatos,
+    setPageSize: setPorPaginaCandidatos,
+    shouldPaginate: paginarCandidatos,
+  } = useTablePagination(candidates);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [actionModal, setActionModal] = useState<{
@@ -367,7 +384,10 @@ function CandidatosContent() {
     setIsLoading(true);
     setError(null);
     try {
-      const consignacion = await consignacionesApi.getById(consignacionId);
+      // `getByIdOrPropertyId` y no `getById`: por acá entran enlaces que sólo
+      // tienen el id del INMUEBLE —Postulaciones es uno— y con `getById` caían
+      // en «No encontramos esa propiedad» teniendo el mandato en la base.
+      const consignacion = await consignacionesApi.getByIdOrPropertyId(consignacionId);
       // Un mandato puede no tener inmueble todavía —los de la migración de
       // cartera nacen así—, y sin inmueble no hay a quién postularse. Se dice,
       // en vez de pedir candidatos de `undefined` y pintar «no hay ninguno».
@@ -573,7 +593,7 @@ function CandidatosContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {candidates.map((candidate) => {
+                {candidatosPagina.map((candidate) => {
                   const statusCfg = STATUS_CONFIG[candidate.status] ?? FALLBACK_STATUS;
                   const initials = candidate.tenantName
                     ? candidate.tenantName.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
@@ -673,6 +693,20 @@ function CandidatosContent() {
                 })}
               </TableBody>
             </Table>
+
+            {/* Pie: sólo si hay más de una página. */}
+            {paginarCandidatos && (
+              <div className="border-t border-border px-4 py-3">
+                <TablePagination
+                  total={totalCandidatos}
+                  page={paginaCandidatos}
+                  pageSize={porPaginaCandidatos}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageChange={setPaginaCandidatos}
+                  onPageSizeChange={setPorPaginaCandidatos}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>

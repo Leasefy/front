@@ -619,6 +619,12 @@ function OperacionesContent() {
               tabla como `[]` y la pantalla decía «No hay renovaciones»: el
               vacío tapando el fallo. Lo mismo mientras cargaba. */}
           <TabsContent value="renovaciones" className="mt-0">
+            {/* Las dos ramas arreglaron el MISMO defecto de formas distintas y
+                gana ésta: `EstadoDeDatos` es la forma canónica de ordenar los
+                cuatro estados —lo dice el docblock de `cuatro-estados.test.ts`,
+                escrito justo cuando esa primitiva tenía CERO call sites— y
+                encima suma esqueleto de carga. Pasarle el fallo a mano a la
+                tabla satisfacía el test estático sin usar la primitiva. */}
             <EstadoDeDatos
               cargando={isLoadingRenovaciones}
               error={renovacionesError}

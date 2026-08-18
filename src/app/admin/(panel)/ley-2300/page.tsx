@@ -5,8 +5,12 @@ import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtDateTime } from '@/lib/admin/format'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { KpiCard } from '@/components/admin/screen/KpiCard'
+import { Pagination } from '@/components/admin/screen/Pagination'
+import { useClientPagination } from '@/lib/admin/use-client-pagination'
 import { Pill } from '@/components/admin/Pill'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
+
+const PAGE_SIZE = 50
 
 // ─── Types (co-located, per FRONT.md §6.19) ────────────────────────────────
 
@@ -139,6 +143,9 @@ export default function Ley2300Page() {
   const maxN = Math.max(1, ...Array.from(heatmapMap.values()))
 
   const violations = data?.violations ?? []
+  /* Violaciones de los últimos 30 días: sin tope. El contador del encabezado
+     sigue mostrando el total, no el de la página. */
+  const violationsPaging = useClientPagination(violations, PAGE_SIZE)
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl">
@@ -265,7 +272,7 @@ export default function Ley2300Page() {
                   </tr>
                 </thead>
                 <tbody>
-                  {violations.map((v) => (
+                  {(violationsPaging.pageRows ?? []).map((v) => (
                     <tr key={v.id} className="border-b border-bg-border last:border-0">
                       <td className="px-3 py-2.5 whitespace-nowrap font-mono text-xs text-fg-muted tabular-nums">
                         {fmtDateTime(v.timestamp)}
@@ -294,6 +301,13 @@ export default function Ley2300Page() {
               </table>
             </div>
           )}
+
+          <Pagination
+            page={violationsPaging.page}
+            total={violationsPaging.total}
+            pageSize={PAGE_SIZE}
+            onPage={violationsPaging.setPage}
+          />
         </>
       )}
     </div>

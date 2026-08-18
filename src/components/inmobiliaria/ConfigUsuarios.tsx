@@ -44,6 +44,8 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import {
   DropdownList,
   DropdownListContent,
@@ -281,6 +283,23 @@ export function ConfigUsuarios({
     });
   }, [users, search, filterRole, filterStatus]);
 
+  /**
+   * Paginado de presentación: el equipo de una inmobiliaria grande pasa de una
+   * pantalla. `resetKey` con los tres filtros — sin eso, filtrar desde la
+   * página 3 deja la tabla vacía y se lee como «no hay usuarios».
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(filteredUsers, {
+    resetKey: `${search.trim()}|${filterRole}|${filterStatus}`,
+  });
+
   // Count users by status
   const userCounts = useMemo(() => {
     return {
@@ -414,7 +433,7 @@ export function ConfigUsuarios({
           </TableHeader>
           <TableBody>
             <AnimatePresence mode="popLayout">
-              {filteredUsers.map((user, index) => {
+              {pageItems.map((user, index) => {
                 const initials = getInitials(user.name, user.email);
                 const roleColor = getRoleColor(user.role);
                 const statusColor = getUserStatusColor(user.status);
@@ -574,6 +593,20 @@ export function ConfigUsuarios({
             </AnimatePresence>
           </TableBody>
         </Table>
+
+        {/* Pie: sólo si hay más de una página. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
 
         {/* Empty State */}
         {filteredUsers.length === 0 && (

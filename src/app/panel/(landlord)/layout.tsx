@@ -209,8 +209,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Toast notifications - Premium style */}
-      <Toaster position="top-right" />
+      {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
+          <ProtectedRoute>: acá adentro se perdía todo toast emitido mientras el guard
+          resuelve. No montés otro: sonner duplica el toast por cada Toaster montado. */}
     </div>
   );
 }

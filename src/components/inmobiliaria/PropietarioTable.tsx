@@ -153,10 +153,14 @@ export function PropietarioTable({
     children: React.ReactNode;
   }) => (
     <TableHead className="text-left p-4">
-      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
+      {/*
+        allowlist: disparador de orden — no hay primitiva en Cadence. `uppercase`
+        va explícito porque un `<button>` trae `text-transform: none` del
+        navegador y perdía las mayúsculas del `TH`. Ver DispersionTable.
+      */}
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 hover:text-foreground"
+        className="flex items-center gap-2 uppercase hover:text-foreground"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}

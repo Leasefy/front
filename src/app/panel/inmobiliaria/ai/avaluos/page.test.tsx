@@ -181,11 +181,19 @@ describe('Avalúos — la pantalla no se contradice', () => {
     expect(texto).not.toContain('Todavía no hay avalúos')
     expect(container.querySelector('[data-testid="sin-datos"]')).toBeNull()
 
-    // El código del backend no se LEE: queda sólo en el nodo `sr-only` de
-    // diagnóstico que <FalloDeCarga> reserva para eso, nunca en el cartel.
+    // El MENSAJE crudo del backend —en inglés— no se lee: queda sólo en el nodo
+    // `sr-only` de diagnóstico que <FalloDeCarga> reserva para eso.
+    //
+    // La REFERENCIA sí se muestra, y es deliberado: cambió en develop DESPUÉS
+    // de escribirse este test. El copy del cartel dice «escribinos con la
+    // referencia» y no había ninguna en pantalla — pedirle a alguien un dato
+    // que no le mostramos es mandarlo a buscar lo que no existe. Por eso esta
+    // aserción hoy afirma lo contrario de lo que afirmaba antes: la referencia
+    // TIENE que verse. Lo que sigue prohibido es el mensaje crudo.
     const cartel = container.querySelector('[data-testid="fallo-de-carga"]')!
     const visible = [...cartel.querySelectorAll('p')].map((p) => p.textContent).join(' ')
-    expect(visible).not.toContain('502')
+    expect(visible).not.toContain('Error 502')
+    expect(visible).toContain('Referencia')
     expect(
       container.querySelector('[data-testid="fallo-detalle-tecnico"]')?.textContent,
     ).toContain('502')

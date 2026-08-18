@@ -19,6 +19,8 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { Input } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { TablePagination } from '@/components/ui/pagination'
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { IconButton, SegmentedControl } from '@leasefy/cadence'
 import { RecorridoMapa } from '@/components/inmobiliaria/recorrido/RecorridoMapa'
 import { landlordApplicationsApi } from '@/lib/api/applications.service'
@@ -197,6 +199,21 @@ export default function PostulacionesPage() {
     return result
   }, [items, filter, search])
 
+  /**
+   * Paginado de presentación: `getAllCandidates()` trae todas las postulaciones
+   * de la inmobiliaria. `resetKey` con los filtros — sin eso, filtrar estando en
+   * la página 3 deja la tabla vacía y se lee como «no hay nada».
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(visibleItems, { resetKey: `${filter}|${search.trim()}` })
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -314,7 +331,7 @@ export default function PostulacionesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {visibleItems.map((c) => {
+                  {pageItems.map((c) => {
                     const statusCfg = STATUS_CONFIG[c.status] ?? FALLBACK_STATUS
                     return (
                       <TableRow
@@ -379,6 +396,20 @@ export default function PostulacionesPage() {
                   })}
                 </TableBody>
               </Table>
+            )}
+
+            {/* Pie: sólo si hay más de una página. */}
+            {shouldPaginate && (
+              <div className="border-t border-border px-4 py-3">
+                <TablePagination
+                  total={total}
+                  page={page}
+                  pageSize={pageSize}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </div>
             )}
           </div>
 

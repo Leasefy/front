@@ -200,6 +200,12 @@ function PropietariosContent() {
    * Con el refresco automático el problema se agrava: la pantalla recibe el
    * dato nuevo y lo ignora. Un espejo que no puede vaciarse no es un caché, es
    * una afirmación desactualizada.
+   *
+   * Y tenía un segundo daño, menos visible (visto al integrar #87): los KPI de
+   * arriba —inmuebles, canon, pendiente— se suman de ESTA lista, y esos campos
+   * los calcula el backend. Un objeto recién creado los trae en cero, así que
+   * parchear la copia a mano al crear un propietario **bajaba los totales de la
+   * agencia**. Leer siempre del hook no tiene ninguno de los dos problemas.
    */
   const propietarios = apiPropietarios;
   const [viewMode, setViewMode] = useState<ViewMode>('table');

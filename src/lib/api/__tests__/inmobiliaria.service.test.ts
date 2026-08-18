@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { agencyApi, inmobiliariaConfigApi, permissionsApi } from '../inmobiliaria.service';
+import { agencyApi, inmobiliariaConfigApi, permissionsApi, cobrosApi, mantenimientoApi, documentosApi } from '../inmobiliaria.service';
 import { ApiError, setAccessToken } from '../client';
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {
@@ -207,5 +207,95 @@ describe('team-action HTTP verbs match the backend routes', () => {
       status: 403,
       message: 'Solo un administrador puede cambiar roles',
     });
+  });
+});
+
+// ── (7) audit fixes: verb/path corrections against the real back routes ─────
+
+describe('cobrosApi.registerPayment — matches backend @Post(:id/payment)', () => {
+  it('POSTs to /inmobiliaria/cobros/:id/payment with the payment body', async () => {
+    const fetchMock = mockFetchOnce({ id: 'cobro-1', status: 'PAID' });
+    const payment = {
+      paidAmount: 1_500_000,
+      paymentDate: '2026-08-10',
+      paymentMethod: 'TRANSFER',
+      paymentReference: 'ref-123',
+    };
+
+    await cobrosApi.registerPayment('cobro-1', payment);
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/cobros/cobro-1/payment')).toBe(true);
+    expect(opts.method).toBe('POST');
+    expect(JSON.parse(opts.body as string)).toEqual(payment);
+  });
+});
+
+describe('cobrosApi.sendReminder — matches backend @Put(:id/send-reminder)', () => {
+  it('PUTs to /inmobiliaria/cobros/:id/send-reminder with no body', async () => {
+    const fetchMock = mockFetchOnce({}, { status: 204 });
+
+    await cobrosApi.sendReminder('cobro-1');
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/cobros/cobro-1/send-reminder')).toBe(true);
+    expect(opts.method).toBe('PUT');
+    expect(opts.body).toBeUndefined();
+  });
+});
+
+describe('mantenimientoApi.approveQuote — matches backend @Put(:id/select-quote)', () => {
+  it('PUTs to /inmobiliaria/mantenimiento/:id/select-quote with { quoteId }', async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'IN_PROGRESS' });
+
+    await mantenimientoApi.approveQuote('sol-1', 'quote-9');
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/select-quote')).toBe(true);
+    expect(opts.method).toBe('PUT');
+    expect(JSON.parse(opts.body as string)).toEqual({ quoteId: 'quote-9' });
+  });
+});
+
+describe('mantenimientoApi.updateStatus — maps to real backend transitions (no generic /status route)', () => {
+  it("'approved' → PUT :id/approve", async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'APPROVED' });
+    await mantenimientoApi.updateStatus('sol-1', 'approved');
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/approve')).toBe(true);
+    expect(opts.method).toBe('PUT');
+  });
+
+  it("'completed' → PUT :id/complete", async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'COMPLETED' });
+    await mantenimientoApi.updateStatus('sol-1', 'completed');
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/complete')).toBe(true);
+    expect(opts.method).toBe('PUT');
+  });
+
+  it("'cancelled' → PUT :id/cancel", async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'CANCELLED' });
+    await mantenimientoApi.updateStatus('sol-1', 'cancelled');
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/cancel')).toBe(true);
+    expect(opts.method).toBe('PUT');
+  });
+
+  it('throws on a status with no backend transition (reported/quoted/in_progress)', async () => {
+    await expect(mantenimientoApi.updateStatus('sol-1', 'in_progress')).rejects.toThrow();
+  });
+});
+
+describe('documentosApi.getTemplates — matches backend @Controller(inmobiliaria/documents) @Get(templates)', () => {
+  it('GETs /inmobiliaria/documents/templates', async () => {
+    const fetchMock = mockFetchOnce([{ id: 'tpl-1', name: 'Contrato' }]);
+
+    const result = await documentosApi.getTemplates();
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/documents/templates')).toBe(true);
+    expect(opts.method).toBe('GET');
+    expect(result).toEqual([{ id: 'tpl-1', name: 'Contrato' }]);
   });
 });

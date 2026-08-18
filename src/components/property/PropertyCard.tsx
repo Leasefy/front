@@ -57,22 +57,20 @@ export function PropertyCard({
   const [activeImage, setActiveImage] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  /*
-   * Un inmueble sin fotos no tiene "una foto vacía".
-   *
-   * Esto era `images.length > 0 ? images : [thumbnailUrl]`, y cuando no había
-   * ninguna de las dos quedaba `[undefined]`: se pintaba un `<img src="">` roto,
-   * con el ícono del navegador y el texto alternativo desbordado encima de las
-   * etiquetas. En el catálogo se leía «[demo] Apartamento Chapinero para
-   * comparar - 1» tapando la tarjeta.
-   *
-   * Se descartan las vacías; si no queda ninguna se muestra el vacío a
-   * propósito, que es lo que la sección del marketplace ya hacía.
-   */
-  const allImages = (images && images.length > 0 ? images : [thumbnailUrl]).filter(
-    (src): src is string => typeof src === 'string' && src.trim() !== ''
-  );
-  const sinFotos = allImages.length === 0;
+  // Use images array if available, fallback to thumbnailUrl. Empty strings are
+  // filtered first: demo/incomplete properties can carry a blank thumbnailUrl
+  // or blank entries, and `next/image` warns (and preloads an empty href) on
+  // `src=""`. If nothing usable is left, fall back to the shared placeholder.
+  const PLACEHOLDER = '/placeholder-property.svg';
+  const isNonEmpty = (src: unknown): src is string =>
+    typeof src === 'string' && src.length > 0;
+  const gallery = (images ?? []).filter(isNonEmpty);
+  const allImages =
+    gallery.length > 0
+      ? gallery
+      : isNonEmpty(thumbnailUrl)
+        ? [thumbnailUrl]
+        : [PLACEHOLDER];
 
   const handlePrev = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -129,18 +127,6 @@ export function PropertyCard({
     >
       {/* Image container */}
       <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
-        {/* Sin fotos: el vacío se dice, no se finge con una imagen rota. */}
-        {sinFotos && (
-          <div
-            className="absolute inset-0 flex items-center justify-center bg-muted"
-            data-testid="inmueble-sin-fotos"
-          >
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Sin fotos
-            </span>
-          </div>
-        )}
-
         {/* All images stacked with opacity crossfade */}
         {allImages.map((src, i) => (
           <Image

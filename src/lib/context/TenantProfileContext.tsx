@@ -108,12 +108,6 @@ export interface TenantProfileContextValue {
 const TenantProfileContext = createContext<TenantProfileContextValue | null>(null);
 
 // ============================================================================
-// Storage Key
-// ============================================================================
-
-const STORAGE_KEY_PREFIX = 'arriendo-facil-application-';
-
-// ============================================================================
 // Provider Component
 // ============================================================================
 
@@ -125,95 +119,27 @@ export function TenantProfileProvider({ children }: TenantProfileProviderProps) 
   const [profile, setProfile] = useState<TenantProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Extract profile from localStorage applications
+  /*
+   * Antes esta función armaba un TenantProfile leyendo las aplicaciones
+   * guardadas en localStorage (`arriendo-facil-application-*`) y lo mostraba
+   * en /para-ti como "perfil verificado" (Score A/B/C/D, ingreso disponible,
+   * tipo de contrato, 95% de acceso a propiedades). Nada de eso estaba
+   * verificado: era texto que el propio inquilino tipeó en un form y que el
+   * navegador nunca contrastó con nada. Mostrarlo como "verificado" era un
+   * dato fabricado.
+   *
+   * Hasta que exista un endpoint real de perfil/score del inquilino, el
+   * contexto expone `profile: null` siempre. Los consumidores (`/para-ti`,
+   * `RecommendedProperties`, el layout vía `hasArriendoPass`) ya tienen
+   * estados vacíos para `profile == null` — no fabricamos nada para
+   * "rellenar" la UI.
+   *
+   * TODO(handoff): cablear el endpoint real de perfil/score del inquilino
+   * acá cuando el back lo exponga.
+   */
   const extractProfileFromApplications = () => {
     setIsLoading(true);
-
-    try {
-      // Find all application keys in localStorage
-      const applicationKeys: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key?.startsWith(STORAGE_KEY_PREFIX)) {
-          applicationKeys.push(key);
-        }
-      }
-
-      if (applicationKeys.length === 0) {
-        // No applications yet — no profile. Consumers render their empty state.
-        setProfile(null);
-        setIsLoading(false);
-        return;
-      }
-
-      // Get the most recent application
-      let mostRecentApp = null;
-      let mostRecentDate = new Date(0);
-
-      for (const key of applicationKeys) {
-        try {
-          const stored = localStorage.getItem(key);
-          if (stored) {
-            const app = JSON.parse(stored);
-            const updatedAt = new Date(app.updatedAt || app.createdAt);
-            if (updatedAt > mostRecentDate && app.status === 'submitted') {
-              mostRecentApp = app;
-              mostRecentDate = updatedAt;
-            }
-          }
-        } catch {
-          // Skip invalid entries
-        }
-      }
-
-      if (mostRecentApp) {
-        // Extract profile from application data
-        const extractedProfile: TenantProfile = {
-          fullName: mostRecentApp.personal?.fullName || '',
-          email: mostRecentApp.personal?.email || '',
-          phone: mostRecentApp.personal?.phone || '',
-
-          monthlySalary: mostRecentApp.income?.monthlySalary || 0,
-          additionalIncome: mostRecentApp.income?.additionalIncome || 0,
-          totalIncome: mostRecentApp.income?.totalMonthlyIncome || 0,
-          monthlyObligations: mostRecentApp.income?.monthlyObligations || 0,
-          availableForRent: mostRecentApp.income?.availableForRent || 0,
-
-          employmentStatus: mostRecentApp.employment?.employmentStatus || 'employed',
-          companyName: mostRecentApp.employment?.companyName,
-          timeAtJob: mostRecentApp.employment?.timeAtJob,
-          contractType: mostRecentApp.employment?.contractType,
-
-          // Calculate risk score based on profile
-          riskLevel: calculateRiskLevel(mostRecentApp),
-          numericScore: calculateNumericScore(mostRecentApp),
-
-          // Subscription - from stored subscription data or default to none
-          subscription: mostRecentApp.subscription || { type: 'none' },
-
-          hasIdDocument: !!mostRecentApp.documents?.idDocument?.fileName,
-          hasIncomeProof: !!mostRecentApp.documents?.incomeProof?.fileName,
-          hasEmploymentLetter: !!mostRecentApp.documents?.employmentLetter?.fileName,
-          hasBankStatements: !!mostRecentApp.documents?.bankStatement?.fileName,
-
-          // Infer preferences from applied properties
-          preferredCities: [],
-          preferredBedrooms: null,
-          preferredPropertyTypes: [],
-
-          profileSource: 'application',
-          lastUpdated: mostRecentDate.toISOString(),
-        };
-
-        setProfile(extractedProfile);
-      } else {
-        setProfile(null);
-      }
-    } catch (error) {
-      console.error('Failed to extract tenant profile:', error);
-      setProfile(null);
-    }
-
+    setProfile(null);
     setIsLoading(false);
   };
 
@@ -265,79 +191,6 @@ export function useTenantProfile(): TenantProfileContextValue {
     throw new Error('useTenantProfile must be used within a TenantProfileProvider');
   }
   return context;
-}
-
-// ============================================================================
-// Risk Calculation Helpers
-// ============================================================================
-
-interface ApplicationData {
-  income?: {
-    monthlySalary?: number;
-    totalMonthlyIncome?: number;
-    monthlyObligations?: number;
-    availableForRent?: number;
-  };
-  employment?: {
-    employmentStatus?: EmploymentStatus;
-    timeAtJob?: number;
-    contractType?: ContractType;
-  };
-  documents?: {
-    idDocument?: { fileName?: string };
-    incomeProof?: { fileName?: string };
-    employmentLetter?: { fileName?: string };
-    bankStatement?: { fileName?: string };
-  };
-}
-
-/**
- * Calculate risk level based on application data
- */
-function calculateRiskLevel(app: ApplicationData): RiskLevel {
-  const score = calculateNumericScore(app);
-
-  if (score >= 80) return 'A';
-  if (score >= 65) return 'B';
-  if (score >= 50) return 'C';
-  return 'D';
-}
-
-/**
- * Calculate numeric risk score (0-100)
- */
-function calculateNumericScore(app: ApplicationData): number {
-  let score = 50; // Base score
-
-  // Income stability (+20 max)
-  const income = app.income?.totalMonthlyIncome || 0;
-  const obligations = app.income?.monthlyObligations || 0;
-  const debtToIncome = income > 0 ? obligations / income : 1;
-
-  if (debtToIncome < 0.2) score += 20;
-  else if (debtToIncome < 0.3) score += 15;
-  else if (debtToIncome < 0.4) score += 10;
-  else if (debtToIncome < 0.5) score += 5;
-
-  // Employment stability (+20 max)
-  const timeAtJob = app.employment?.timeAtJob || 0;
-  const contractType = app.employment?.contractType;
-
-  if (contractType === 'indefinite') score += 10;
-  else if (contractType === 'fixed-term') score += 5;
-
-  if (timeAtJob >= 24) score += 10;
-  else if (timeAtJob >= 12) score += 7;
-  else if (timeAtJob >= 6) score += 3;
-
-  // Documentation completeness (+10 max)
-  const docs = app.documents;
-  if (docs?.idDocument?.fileName) score += 2.5;
-  if (docs?.incomeProof?.fileName) score += 2.5;
-  if (docs?.employmentLetter?.fileName) score += 2.5;
-  if (docs?.bankStatement?.fileName) score += 2.5;
-
-  return Math.min(100, Math.max(0, Math.round(score)));
 }
 
 // ============================================================================

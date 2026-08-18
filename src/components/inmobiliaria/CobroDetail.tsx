@@ -441,7 +441,7 @@ export function CobroDetail({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-foreground">{propietario.name}</p>
-                    <p className="text-sm text-muted-foreground">{propietario.email}</p>
+                    <p className="text-sm text-muted-foreground">{propietario.email ?? '—'}</p>
                   </div>
                   <Link
                     href={`/panel/inmobiliaria/propietarios/${propietario.id}`}

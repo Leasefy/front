@@ -308,7 +308,7 @@ export function PropietarioTable({
                           {propietario.name}
                         </p>
                         <p className="text-sm text-muted-foreground truncate">
-                          {propietario.email}
+                          {propietario.email ?? '—'}
                         </p>
                       </div>
                     </div>
@@ -381,24 +381,28 @@ export function PropietarioTable({
                           <PencilSimple className="w-4 h-4" />
                           <span className="text-sm">{t('inmobiliaria.propietario.table.edit')}</span>
                         </DropdownListItem>
-                        <DropdownListItem asChild>
-                          <a
-                            href={`mailto:${propietario.email}`}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Envelope className="w-4 h-4" />
-                            <span className="text-sm">{t('inmobiliaria.propietario.table.sendEmail')}</span>
-                          </a>
-                        </DropdownListItem>
-                        <DropdownListItem asChild>
-                          <a
-                            href={`tel:${propietario.phone}`}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Phone className="w-4 h-4" />
-                            <span className="text-sm">{t('inmobiliaria.propietario.table.call')}</span>
-                          </a>
-                        </DropdownListItem>
+                        {propietario.email && (
+                          <DropdownListItem asChild>
+                            <a
+                              href={`mailto:${propietario.email}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Envelope className="w-4 h-4" />
+                              <span className="text-sm">{t('inmobiliaria.propietario.table.sendEmail')}</span>
+                            </a>
+                          </DropdownListItem>
+                        )}
+                        {propietario.phone && (
+                          <DropdownListItem asChild>
+                            <a
+                              href={`tel:${propietario.phone}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Phone className="w-4 h-4" />
+                              <span className="text-sm">{t('inmobiliaria.propietario.table.call')}</span>
+                            </a>
+                          </DropdownListItem>
+                        )}
                         <DropdownListSeparator />
                         <DropdownListItem
                           onSelect={() => onDelete(propietario)}

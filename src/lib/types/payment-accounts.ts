@@ -30,7 +30,9 @@ export type AccountType = 'savings' | 'checking';
 export interface BankAccount {
   id: string;
   type: 'bank';
-  bankCode: BankCode;
+  // Optional: the real backend stores `bankName` as free text, not an enum —
+  // this is set only when reverse-lookup against COLOMBIAN_BANKS matches.
+  bankCode?: BankCode;
   bankName: string;
   accountType: AccountType;
   accountNumber: string;
@@ -43,7 +45,10 @@ export interface BankAccount {
 export interface DigitalWallet {
   id: string;
   type: 'wallet';
-  walletCode: WalletCode;
+  // Optional to mirror BankAccount.bankCode — see comment there. In practice
+  // wallets always resolve a walletCode (methodType maps 1:1), but keeping
+  // this optional avoids the two branches of PaymentAccount drifting apart.
+  walletCode?: WalletCode;
   walletName: string;
   phoneNumber: string;
   holderName: string;

@@ -54,7 +54,7 @@ export const propietariosSource: SearchSource = {
       sourceId: 'propietarios',
       type: 'propietario',
       title: item.name,
-      subtitle: item.email,
+      subtitle: item.email ?? undefined,
       badges: [
         ...(item.propertyCount > 0
           ? [{ label: `${item.propertyCount} prop`, color: 'neutral' as const }]

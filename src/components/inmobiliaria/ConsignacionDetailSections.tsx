@@ -212,20 +212,24 @@ export function PropietarioSection({ propietario }: PropietarioSectionProps) {
 
         {/* Contact Buttons */}
         <div className="flex items-center gap-2">
-          <a
-            href={`mailto:${propietario.email}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
-          >
-            <Envelope className="w-4 h-4" />
-            {t('inmobiliaria.consignaciones.detail.email')}
-          </a>
-          <a
-            href={`tel:${propietario.phone}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
-          >
-            <Phone className="w-4 h-4" />
-            {t('inmobiliaria.consignaciones.detail.call')}
-          </a>
+          {propietario.email && (
+            <a
+              href={`mailto:${propietario.email}`}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+            >
+              <Envelope className="w-4 h-4" />
+              {t('inmobiliaria.consignaciones.detail.email')}
+            </a>
+          )}
+          {propietario.phone && (
+            <a
+              href={`tel:${propietario.phone}`}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+            >
+              <Phone className="w-4 h-4" />
+              {t('inmobiliaria.consignaciones.detail.call')}
+            </a>
+          )}
         </div>
       </div>
     </SectionCard>

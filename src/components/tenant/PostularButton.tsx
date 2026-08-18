@@ -30,6 +30,7 @@ import {
 import { useLenis } from '@/components/providers/SmoothScroll'
 import { getAccessToken } from '@/lib/api/client'
 import { useAprobacion } from '@/lib/hooks/use-aprobacion'
+import { useAplicacionParaPropiedad } from '@/lib/hooks/use-aplicacion-propiedad'
 import { cabeEnTope, diasParaVencer, estadoVigencia } from '@/lib/api/aprobacion.service'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -62,6 +63,7 @@ export function PostularButton({
   children = 'Postularme',
 }: PostularButtonProps) {
   const { aprobacion, cargando, vigente } = useAprobacion()
+  const { activa } = useAplicacionParaPropiedad(propertyId)
   const [abierto, setAbierto] = useState(false)
 
   /*
@@ -76,6 +78,17 @@ export function PostularButton({
   }, [])
 
   const motivo = motivoDeBloqueo({ aprobacion, vigente, canonCop, haySesion })
+
+  // Prioridad sobre todo lo demás: si ya hay una postulación ACTIVA para esta
+  // propiedad, no se ofrece re-postular (el back lo rechaza con 409). El CTA
+  // lleva a la postulación existente, sin importar el estado de la aprobación.
+  if (activa) {
+    return (
+      <Button asChild className={className} variant={variant} hideArrow={hideArrow}>
+        <Link href={`/inquilino/aplicaciones/${activa.id}`}>Ir a mi postulación</Link>
+      </Button>
+    )
+  }
 
   // Mientras carga se deja pasar: bloquear por una milésima de duda castiga a
   // quien SÍ está aprobado. El wizard de /aplicar valida igual del otro lado.

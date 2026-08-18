@@ -9,16 +9,16 @@
  * Vocabulario: al inquilino esto se le llama **aprobación**, nunca
  * "asegurabilidad" ni "estudio" (ver `docs/VOCABULARIO.md`).
  *
- * Backend: pendiente. Mientras no exista, este cliente sirve un fixture
- * determinista igual que `funnel-applications.service.ts`; el día que el
- * endpoint exista se prende solo, sin tocar la UI.
+ * Fuente real: el pre-scoring del back principal (`GET /pre-scoring/current`,
+ * Slice 2), traducido a este shape por `aprobacion-from-prescoring.ts` y
+ * consumido en `use-aprobacion.ts`. Este archivo NO pega a ningún backend —
+ * solo define el shape, sus parseos defensivos y las reglas de negocio que
+ * operan sobre él (vigencia, referencia de canon, etc.).
  *
  * ⚠️ Regla: `topeAprobadoCop` puede venir en `null`. La UI **dice que falta**,
  * nunca inventa un número — un tope falso manda a alguien a postularse a algo
  * que no puede pagar.
  */
-
-import { ApiError, apiClient } from './client'
 
 /** Días restantes a partir de los cuales la vigencia se muestra como urgente. */
 export const DIAS_POR_VENCER = 3
@@ -72,26 +72,6 @@ export const SIN_APROBACION: Aprobacion = {
   canonConsultadoCop: null,
 }
 
-/**
- * ── El fixture se fue ─────────────────────────────────────────────────────
- *
- * Acá vivía `mockAprobacion()`: aprobado, tope $2.400.000, tres aseguradoras.
- * Se prendía solo cuando faltaba `NEXT_PUBLIC_AGENT_URL` — una env sin poner
- * en el deploy, nada más— y a diferencia del resultado del funnel **no
- * llevaba marca de demo**, así que la pantalla lo mostraba como un hecho y el
- * catálogo filtraba inmuebles reales contra un techo inventado.
- *
- * Existía por una razón sencilla: el endpoint no estaba. `GET
- * /api/tenant/aprobacion` daba 404 en el agente y la carpeta ni siquiera
- * existía en su repo.
- *
- * Ahora existe de verdad, en el BACK (`GET /tenant/aprobacion`,
- * `src/tenant-approval/`), que es donde corresponde: el tope y su vigencia
- * son dato de dominio del inquilino —del mismo orden que su contrato o sus
- * pagos—, no algo que razone un modelo. Sin fixture: si el back no contesta,
- * se dice que no se pudo cargar.
- */
-
 /** Normaliza la respuesta cruda: nunca confía en que el back mande todo. */
 export function parseAprobacion(data: unknown): Aprobacion {
   const d = (data ?? {}) as Partial<Aprobacion>
@@ -116,22 +96,6 @@ export function parseAprobacion(data: unknown): Aprobacion {
       typeof d.canonConsultadoCop === 'number' && Number.isFinite(d.canonConsultadoCop)
         ? d.canonConsultadoCop
         : null,
-  }
-}
-
-export async function fetchAprobacion(): Promise<Aprobacion> {
-  /*
-   * El back ya responde `estado: 'sin_estudio'` con 200 cuando no hay fila —
-   * "todavía no te estudiaste" es el primer estado del recorrido, no un
-   * error—, así que acá no hace falta traducir ningún 404. Se mantiene el
-   * caso por si alguna capa intermedia lo produce: el resultado es el mismo
-   * y NO es una excepción.
-   */
-  try {
-    return parseAprobacion(await apiClient.get<unknown>('/tenant/aprobacion'))
-  } catch (e) {
-    if (e instanceof ApiError && e.status === 404) return SIN_APROBACION
-    throw e
   }
 }
 

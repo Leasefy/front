@@ -350,6 +350,8 @@ function PropietarioDetailContent() {
   }
 
   const isCompany = propietario.documentType === 'NIT';
+  const email = propietario.email;
+  const phone = propietario.phone;
 
   const handleCopy = async (text: string, type: 'email' | 'phone') => {
     try {
@@ -541,21 +543,27 @@ function PropietarioDetailContent() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.email')}</p>
-                    <a
-                      href={`mailto:${propietario.email}`}
-                      className="text-sm text-foreground hover:text-primary transition-colors"
-                    >
-                      {propietario.email}
-                    </a>
+                    {email ? (
+                      <a
+                        href={`mailto:${email}`}
+                        className="text-sm text-foreground hover:text-primary transition-colors"
+                      >
+                        {email}
+                      </a>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">—</p>
+                    )}
                   </div>
                 </div>
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopy(propietario.email, 'email')}
-                  aria-label={t('inmobiliaria.propietarios.detail.copied')}
-                  icon={copiedEmail ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-                />
+                {email && (
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopy(email, 'email')}
+                    aria-label={t('inmobiliaria.propietarios.detail.copied')}
+                    icon={copiedEmail ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                  />
+                )}
               </div>
 
               {/* Phone */}
@@ -566,21 +574,27 @@ function PropietarioDetailContent() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.phone')}</p>
-                    <a
-                      href={`tel:${propietario.phone}`}
-                      className="text-sm text-foreground hover:text-primary transition-colors"
-                    >
-                      {propietario.phone}
-                    </a>
+                    {phone ? (
+                      <a
+                        href={`tel:${phone}`}
+                        className="text-sm text-foreground hover:text-primary transition-colors"
+                      >
+                        {phone}
+                      </a>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">—</p>
+                    )}
                   </div>
                 </div>
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopy(propietario.phone, 'phone')}
-                  aria-label={t('inmobiliaria.propietarios.detail.copied')}
-                  icon={copiedPhone ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-                />
+                {phone && (
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopy(phone, 'phone')}
+                    aria-label={t('inmobiliaria.propietarios.detail.copied')}
+                    icon={copiedPhone ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                  />
+                )}
               </div>
 
               {/* Address */}

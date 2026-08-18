@@ -61,6 +61,14 @@ export interface PendingDecision {
   selectedAt?: Date;
   /** Which agent category this decision relates to */
   category: AgentType;
+  /**
+   * Set when this decision is a BACKEND binding-action approval (the chat
+   * proposed an action it must not auto-execute). Carries the backend approval
+   * id so resolving an option relays the operator's decision to the agent via
+   * POST /ai-hub/chat/approvals/:approvalId/resolve. Absent for local/mock
+   * decisions, which keep their existing follow-up behavior.
+   */
+  approvalId?: string;
 }
 
 // ============================================================================

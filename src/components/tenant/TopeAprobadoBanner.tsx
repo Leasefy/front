@@ -13,7 +13,7 @@
  */
 
 import Link from 'next/link'
-import { Hourglass, SealCheck } from '@phosphor-icons/react'
+import { Hourglass, SealCheck, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { useTf } from '@/lib/i18n/use-tf'
@@ -238,10 +238,38 @@ export function SobreTopeOverlay({ referencia }: { referencia: Referencia | null
     // Superficie sólida, sin `backdrop-blur`: el glass morphism sobre contenido
     // está prohibido en Cadence (DESIGN.md §1 y §9). La marca se lee igual.
     <div className="absolute inset-x-0 bottom-0 z-10 rounded-b-lg border-t border-border bg-surface-muted px-3 py-2">
-      <p className="text-xs font-medium text-fg">
+      <p className="flex items-center gap-1 text-xs font-medium text-fg">
         {esTope
-          ? tf(`${NS}.overlay.sobreTope`, 'Por encima de tu tope')
+          ? tf(`${NS}.overlay.sobreTope`, 'Supera lo que podemos respaldarte')
           : tf(`${NS}.overlay.sobreConsultado`, 'Por encima de lo que consultaste')}
+        {/* El "?" abre la salida real cuando el canon se pasa del tope: que
+            otra persona tome el arriendo. Solo sobre un tope de verdad — sobre
+            un canon consultado la salida es que un asesor lo revise. Es un span
+            (no un button) y vive FUERA del <Link> de la tarjeta (hermano en el
+            grid), así que el hover no navega. */}
+        {esTope && (
+          <span className="group/cod relative inline-flex items-center">
+            <span
+              role="img"
+              aria-label={tf(
+                `${NS}.overlay.codeudorAria`,
+                '¿Cómo puedo postularme igual?',
+              )}
+              className="flex h-3.5 w-3.5 cursor-help items-center justify-center rounded-full border border-warning text-[9px] font-bold leading-none text-warning"
+            >
+              ?
+            </span>
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 w-56 -translate-x-1/2 rounded-md border border-border bg-[hsl(var(--popover))] p-2 text-[11px] font-normal leading-snug text-[hsl(var(--popover-foreground))] opacity-0 shadow-md transition-opacity duration-150 group-hover/cod:opacity-100"
+            >
+              {tf(
+                `${NS}.overlay.codeudorHint`,
+                'Podés postularte con el perfil de otra persona (un codeudor) para que tome el arriendo por vos.',
+              )}
+            </span>
+          </span>
+        )}
       </p>
       {referencia && (
         <p className="text-xs text-fg-muted">
@@ -250,6 +278,61 @@ export function SobreTopeOverlay({ referencia }: { referencia: Referencia | null
           {!esTope && ` — ${tf(`${NS}.overlay.asesorRevisa`, 'un asesor puede revisarlo')}`}
         </p>
       )}
+    </div>
+  )
+}
+
+/**
+ * Alerta prominente para la FICHA de propiedad cuando su canon supera el tope
+ * aprobado. A diferencia del overlay chico de la tarjeta (`SobreTopeOverlay`),
+ * acá hay espacio para explicar la salida real: postularse con el perfil de
+ * otra persona (un codeudor) que sí sea apto para ese valor.
+ *
+ * Solo se muestra sobre un tope REAL (`tipo === 'tope'`) — sobre un canon
+ * consultado la propiedad no está "fuera de alcance", solo sin confirmar, y la
+ * salida es que un asesor lo revise, no un codeudor. Devuelve `null` en
+ * cualquier otro caso, así el llamador la renderiza sin condicionar.
+ */
+export function SobreTopeAlert({
+  monthlyRent,
+  referencia,
+  className,
+}: {
+  monthlyRent: number
+  referencia: Referencia | null
+  className?: string
+}) {
+  const tf = useTf()
+  if (!referencia || referencia.tipo !== 'tope') return null
+
+  return (
+    <div
+      role="alert"
+      className={cn(
+        'flex items-start gap-3 rounded-lg border border-[hsl(var(--warning-500)/0.3)] bg-[hsl(var(--warning-50))] p-4 dark:bg-[hsl(var(--warning-500)/0.12)]',
+        className,
+      )}
+    >
+      <Warning className="mt-0.5 h-5 w-5 shrink-0 text-warning" weight="fill" aria-hidden="true" />
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-warning">
+          {tf(`${NS}.overlay.sobreTope`, 'Supera lo que podemos respaldarte')}
+        </p>
+        <p className="mt-1 text-sm text-fg-muted">
+          {tf(`${NS}.alerta.canon`, 'El canon de esta propiedad')}
+          {' ('}
+          <span className="font-mono tabular-nums">{formatCurrency(monthlyRent)}</span>
+          {tf(`${NS}.porMes`, '/mes')}
+          {') '}
+          {tf(`${NS}.alerta.superaTope`, 'está por encima de tu tope aprobado de')}{' '}
+          <span className="font-mono tabular-nums">{formatCurrency(referencia.valorCop)}</span>
+          {'. '}
+          {tf(
+            `${NS}.alerta.codeudor`,
+            'Podés postularte con el perfil de otra persona (un codeudor) que sí sea apto para este valor.',
+          )}
+        </p>
+      </div>
     </div>
   )
 }

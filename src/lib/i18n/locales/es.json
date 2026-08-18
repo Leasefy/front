@@ -4352,13 +4352,16 @@
         "estudioReglas": "Reglas",
         "cotizadorEjecucion": "Ejecución",
         "cotizadorIntegraciones": "Integraciones",
-        "pagosHome": "Pagos IA"
+        "pagosHome": "Pagos IA",
+        "mantenimiento": "Mantenimiento",
+        "mantenimientoTickets": "Tickets"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",
         "cobranza": "Cobranza",
         "cotizador": "Asegurabilidad",
-        "detalle": "Detalle"
+        "detalle": "Detalle",
+        "mantenimiento": "Mantenimiento"
       },
       "volverA": {
         "casos": "Volver a casos",
@@ -5120,7 +5123,169 @@
       "access": {
         "noAccessCobranza": "No tienes acceso a Cobranza",
         "noAccessCotizador": "No tienes acceso a Asegurabilidad",
+        "noAccessMantenimiento": "No tienes acceso a Mantenimiento",
         "contactAdmin": "Contacta al administrador de tu inmobiliaria para solicitar acceso."
+      },
+      "mantenimiento": {
+        "overview": {
+          "title": "Centro de Triage de Mantenimiento",
+          "subtitle": "Salud operativa de tickets de mantenimiento",
+          "lastUpdated": "Actualizado hace",
+          "errorLoading": "Error al cargar el resumen",
+          "antiGamingLabel": "Métricas anti-gaming",
+          "kpis": {
+            "ticketsAbiertos": "Tickets abiertos",
+            "emergenciasActivas": "Emergencias activas",
+            "vencidos": "Vencidos",
+            "tiempoPrimeraRespuesta": "Tiempo 1ª respuesta",
+            "slaCumplido": "SLA cumplido",
+            "reaperturas30d": "Reaperturas (30d)",
+            "tiempoResolucionReal": "Tiempo resolución real",
+            "costoEstimado": "Costo estimado abierto",
+            "propietariosEnRiesgo": "Propietarios en riesgo",
+            "unitMin": "min",
+            "unitDias": "días"
+          }
+        },
+        "inbox": {
+          "title": "Bandeja priorizada",
+          "subtitle": "Tickets ordenados por score de prioridad",
+          "empty": "No hay tickets de mantenimiento",
+          "emptyFiltered": "Ningún ticket coincide con los filtros",
+          "sortedByScore": "Ordenado por score",
+          "errorLoading": "Error al cargar la bandeja",
+          "card": {
+            "score": "Score",
+            "provider": "Proveedor sugerido",
+            "proveedorSugerido": "Proveedor sugerido",
+            "noProvider": "Sin proveedor",
+            "sinProveedor": "Sin proveedor",
+            "needsApproval": "Requiere aprobación",
+            "requiereAprobacion": "Requiere aprobación",
+            "hasPhotos": "Con fotos",
+            "reopened": "Reabierto",
+            "reabierto": "Reabierto",
+            "retentionRisk": "Riesgo de retención",
+            "retencionRiesgo": "Riesgo de retención",
+            "estCost": "Costo estimado",
+            "createdAgo": "Creado hace",
+            "slaDue": "Vence SLA"
+          }
+        },
+        "filters": {
+          "titulo": "Buscar",
+          "title": "Filtros",
+          "severidad": "Severidad",
+          "categoria": "Categoría",
+          "estado": "Estado",
+          "sla": "SLA",
+          "proveedor": "Proveedor",
+          "propietario": "Propietario",
+          "inmueble": "Inmueble",
+          "zona": "Zona",
+          "responsable": "Responsable",
+          "aprobacion": "Aprobación",
+          "fotos": "Fotos",
+          "reabierto": "Reabierto",
+          "retencion": "Retención",
+          "costo": "Costo",
+          "todos": "Todos",
+          "all": "Todos",
+          "clear": "Limpiar",
+          "limpiar": "Limpiar"
+        },
+        "enums": {
+          "severidad": {
+            "emergencia": "Emergencia",
+            "alta": "Alta",
+            "media": "Media",
+            "baja": "Baja",
+            "informativa": "Informativa"
+          },
+          "categoria": {
+            "plomeria": "Plomería",
+            "electricidad": "Electricidad",
+            "gas": "Gas",
+            "humedad_filtracion": "Humedad / filtración",
+            "carpinteria": "Carpintería",
+            "cerrajeria": "Cerrajería",
+            "electrodomesticos": "Electrodomésticos",
+            "pintura_acabados": "Pintura / acabados",
+            "pisos": "Pisos",
+            "vidrios_ventanas": "Vidrios / ventanas",
+            "estructural": "Estructural",
+            "zonas_comunes": "Zonas comunes",
+            "preventivo": "Preventivo"
+          },
+          "estado": {
+            "recibido": "Recibido",
+            "en_triage": "En triage",
+            "informacion_incompleta": "Información incompleta",
+            "clasificado": "Clasificado",
+            "requiere_aprobacion": "Requiere aprobación",
+            "proveedor_sugerido": "Proveedor sugerido",
+            "proveedor_asignado": "Proveedor asignado",
+            "visita_programada": "Visita programada",
+            "en_ejecucion": "En ejecución",
+            "pendiente_cotizacion": "Pendiente cotización",
+            "pendiente_pago": "Pendiente pago",
+            "resuelto": "Resuelto",
+            "validado": "Validado",
+            "cerrado": "Cerrado",
+            "reabierto": "Reabierto",
+            "escalado": "Escalado"
+          },
+          "bucket": {
+            "Bajo": "Bajo",
+            "Medio": "Medio",
+            "Alto": "Alto",
+            "Critico": "Crítico",
+            "Emergencia": "Emergencia"
+          },
+          "responsable": {
+            "propietario": "Propietario",
+            "inquilino": "Inquilino",
+            "copropiedad": "Copropiedad",
+            "constructor": "Constructor",
+            "proveedor_anterior": "Proveedor anterior",
+            "aseguradora": "Aseguradora",
+            "no_determinado": "No determinado"
+          }
+        },
+        "card": {
+          "score": "Score",
+          "proveedorSugerido": "Proveedor sugerido",
+          "requiereAprobacion": "Requiere aprobación",
+          "reabierto": "Reabierto",
+          "retencionRiesgo": "Riesgo de retención",
+          "sinProveedor": "Sin proveedor"
+        },
+        "detalle": {
+          "title": "Detalle del ticket",
+          "errorLoading": "Error al cargar el detalle",
+          "queEntendi": "Qué entendí",
+          "clasificacion": "Clasificación",
+          "imagenes": "Imágenes",
+          "proveedor": "Proveedor recomendado",
+          "aprobacion": "Aprobación",
+          "responsableHipotesis": "Hipótesis de responsable (no es veredicto)",
+          "visionLimite": "Límite de análisis de visión",
+          "calidadFoto": "Calidad de foto",
+          "safetyHold": "Retención por seguridad"
+        },
+        "cta": {
+          "asignar": "Asignar proveedor",
+          "pedirInfo": "Pedir información",
+          "solicitarAprobacion": "Solicitar aprobación",
+          "escalarEmergencia": "Escalar emergencia",
+          "cerrar": {
+            "label": "Cerrar (no procede)",
+            "confirmTitle": "Confirmar cierre",
+            "confirmDesc": "El cierre requiere evidencia y confirmación. ¿Deseas continuar?",
+            "confirm": "Confirmar cierre",
+            "cancel": "Cancelar"
+          }
+        }
       },
       "cobranza": {
         "resumen": {
@@ -9532,7 +9697,7 @@
       "venceManana": "Vence mañana",
       "venceHoy": "Vence hoy",
       "overlay": {
-        "sobreTope": "Por encima de tu tope",
+        "sobreTope": "Supera lo que podemos respaldarte",
         "sobreConsultado": "Por encima de lo que consultaste",
         "consultaste": "Consultaste",
         "asesorRevisa": "un asesor puede revisarlo"

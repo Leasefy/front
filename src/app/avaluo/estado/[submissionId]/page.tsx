@@ -7,7 +7,8 @@
  * On mount, checks URL search params for Wompi return params
  * (?id= and ?status=) and shows an informational toast.
  *
- * Payment entry is only through AvaluoEstadoCard → WompiPayButton.
+ * Payment now happens at intake, before landing here — see
+ * AvaluoContext.submitAvaluo.
  */
 
 import { useEffect } from 'react'

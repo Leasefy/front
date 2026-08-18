@@ -5,6 +5,12 @@
  * applications (and on extraction errors) the context must expose a null
  * profile so consumers render their real empty states, never a fabricated
  * "verified" profile.
+ *
+ * The context ALSO no longer builds a profile out of localStorage
+ * applications: that data was never verified by anyone, yet it was shown
+ * to the tenant as a "verified profile" (Score A, income, contract type).
+ * Until there's a real backend endpoint for tenant profile/score, the
+ * context must always expose `profile: null`.
  */
 
 import * as React from 'react'
@@ -71,5 +77,36 @@ describe('TenantProfileContext', () => {
     expect(captured!.isLoading).toBe(false)
     expect(captured!.profile).toBeNull()
     expect(captured!.hasVerifiedProfile).toBe(false)
+  })
+
+  it('does not fabricate a profile from a submitted application in localStorage', async () => {
+    localStorage.setItem(
+      'arriendo-facil-application-1',
+      JSON.stringify({
+        status: 'submitted',
+        updatedAt: new Date().toISOString(),
+        personal: { fullName: 'Juan Perez', email: 'juan@example.com', phone: '3000000000' },
+        income: {
+          monthlySalary: 5000000,
+          totalMonthlyIncome: 5000000,
+          monthlyObligations: 500000,
+          availableForRent: 1500000,
+        },
+        employment: { employmentStatus: 'employed', contractType: 'indefinite', timeAtJob: 36 },
+        documents: {
+          idDocument: { fileName: 'cc.pdf' },
+          incomeProof: { fileName: 'income.pdf' },
+          employmentLetter: { fileName: 'letter.pdf' },
+          bankStatement: { fileName: 'bank.pdf' },
+        },
+      }),
+    )
+
+    await renderProvider()
+
+    expect(captured!.isLoading).toBe(false)
+    expect(captured!.profile).toBeNull()
+    expect(captured!.hasVerifiedProfile).toBe(false)
+    expect(captured!.hasArriendoPass).toBe(false)
   })
 })

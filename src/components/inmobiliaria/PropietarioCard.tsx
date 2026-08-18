@@ -149,22 +149,26 @@ export function PropietarioCard({
       {/* Contact */}
       <div className="flex items-center justify-between pt-3 border-t border-border">
         <div className="flex items-center gap-3">
-          <IconButton
-            variant="solid"
-            size="md"
-            onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${propietario.email}`; }}
-            title={t('inmobiliaria.propietarios.card.sendEmail')}
-            aria-label={t('inmobiliaria.propietarios.card.sendEmail')}
-            icon={<Envelope className="w-4 h-4" />}
-          />
-          <IconButton
-            variant="solid"
-            size="md"
-            onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${propietario.phone}`; }}
-            title={t('inmobiliaria.propietarios.card.call')}
-            aria-label={t('inmobiliaria.propietarios.card.call')}
-            icon={<Phone className="w-4 h-4" />}
-          />
+          {propietario.email && (
+            <IconButton
+              variant="solid"
+              size="md"
+              onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${propietario.email}`; }}
+              title={t('inmobiliaria.propietarios.card.sendEmail')}
+              aria-label={t('inmobiliaria.propietarios.card.sendEmail')}
+              icon={<Envelope className="w-4 h-4" />}
+            />
+          )}
+          {propietario.phone && (
+            <IconButton
+              variant="solid"
+              size="md"
+              onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${propietario.phone}`; }}
+              title={t('inmobiliaria.propietarios.card.call')}
+              aria-label={t('inmobiliaria.propietarios.card.call')}
+              icon={<Phone className="w-4 h-4" />}
+            />
+          )}
         </div>
         <div className="flex items-center gap-1 text-sm text-muted-foreground group-hover:text-primary transition-colors">
           {t('inmobiliaria.propietarios.card.viewDetail')}

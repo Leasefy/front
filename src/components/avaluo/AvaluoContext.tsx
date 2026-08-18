@@ -152,10 +152,12 @@ export function AvaluoProvider({ children, initialEmail }: AvaluoProviderProps) 
   // Submission — intake first, photos after
   //
   // Order:
-  //   1. POST /intake (photoKeys: []) → {id, token}
+  //   1. POST /intake (photoKeys: []) → {id, token, paymentUrl, paymentProvider}
   //   2. Persist token to localStorage (avaluo:cap:<id>)
   //   3. Upload each staged File via uploadPhoto (presign → PUT → attach)
-  //   4. Navigate to /avaluo/estado/<id>
+  //   4. Navigate — payment happens AT INTAKE: if paymentProvider is 'wompi'
+  //      and paymentUrl is present, redirect the tab to the Wompi hosted
+  //      checkout. Otherwise (stub / null), go straight to the estado page.
   //
   // If the micro is down, submitIntake throws AvaluoApiError → caught below.
   // Photo upload errors are non-fatal: we navigate anyway (photos optional).
@@ -166,7 +168,7 @@ export function AvaluoProvider({ children, initialEmail }: AvaluoProviderProps) 
     setSubmitError(null)
 
     try {
-      const { id, token } = await submitIntake(formData)
+      const { id, token, paymentUrl, paymentProvider } = await submitIntake(formData)
 
       // Persist capability token — cannot be recovered later
       persistCapToken(id, token)
@@ -181,7 +183,14 @@ export function AvaluoProvider({ children, initialEmail }: AvaluoProviderProps) 
         // those photos. A toast could be added here if visibility is needed.
       }
 
-      router.push(`/avaluo/estado/${id}`)
+      if (paymentProvider === 'wompi' && paymentUrl) {
+        // Pay-at-intake: redirect the whole tab to the Wompi hosted checkout.
+        // The cap token is already persisted, so returning to
+        // /avaluo/estado/<id> after payment still works.
+        window.location.href = paymentUrl
+      } else {
+        router.push(`/avaluo/estado/${id}`)
+      }
     } catch (err) {
       // AvaluoApiError carries a user-facing Spanish message
       const friendlyMessage =

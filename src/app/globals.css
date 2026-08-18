@@ -1708,18 +1708,24 @@ select:-webkit-autofill:active {
   grid-template-columns: minmax(0, 1fr);
 }
 
-/* Los umbrales salen del ancho MÍNIMO de tarjeta (~300px), no de números
- * redondos. Con el gap de 24px y el padding de 48px del panel:
- *   2 columnas piden 300*2 + 24 + 48  ≈ 672px
- *   3 columnas piden 300*3 + 48 + 48  ≈ 1096px
- * Puestos más abajo, la grilla salta a dos columnas de 244px — exactamente el
+/* El contenedor es la grilla misma (`PropertyGrid` lleva `.contenedor-consulta`),
+ * así que los umbrales se miden sobre SU ancho. Salen del ancho MÍNIMO de
+ * tarjeta (~300px) más el gap de 24px, no de números redondos:
+ *   2 columnas piden 300*2 + 24    = 624px
+ *   3 columnas piden 300*3 + 24*2  = 948px
+ *   4 columnas piden 300*4 + 24*3  = 1272px
+ * Puestos más abajo, la grilla salta a columnas de ~244px — exactamente el
  * defecto que se venía a arreglar, sólo que a otro tamaño. */
-@container (min-width: 680px) {
+@container (min-width: 624px) {
   .grilla-inmuebles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-@container (min-width: 1120px) {
+@container (min-width: 948px) {
   .grilla-inmuebles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@container (min-width: 1272px) {
+  .grilla-inmuebles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 /* Sin soporte de container queries la grilla se queda en una columna, que es

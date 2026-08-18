@@ -328,8 +328,8 @@ export function ExtractoPropietario({
                   <p className="text-sm text-muted-foreground">
                     {propietario.documentType}: {propietario.documentNumber}
                   </p>
-                  <p className="text-sm text-muted-foreground">{propietario.email}</p>
-                  <p className="text-sm text-muted-foreground">{propietario.phone}</p>
+                  <p className="text-sm text-muted-foreground">{propietario.email ?? '—'}</p>
+                  <p className="text-sm text-muted-foreground">{propietario.phone ?? '—'}</p>
                 </>
               )}
             </div>

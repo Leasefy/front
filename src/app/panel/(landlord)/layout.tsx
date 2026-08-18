@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank } from '@phosphor-icons/react';
+import { Toaster } from '@/components/ui/toast';
+import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell } from '@phosphor-icons/react';
 // Sparkle import removed — re-add when AI Beta nav item is uncommented
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -59,6 +60,39 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
     href: '/panel/mensajes',
     icon: Chat,
     // Sin `badge`: el 3 estaba escrito a mano, no contaba nada.
+  },
+  // --- Portal del Propietario (post-firma) — capa aditiva v8.0 ---
+  // Shells "Pronto" hasta que cada ola (v8-02..v8-05) los llene con la vista real
+  // cableada al back owner-facing. El `tag` se quita cuando la ola aterriza.
+  {
+    kind: 'section',
+    label: 'Mi arriendo',
+    href: '#sec-mi-arriendo',
+    icon: House,
+  },
+  {
+    label: 'Mi plata',
+    href: '/panel/portafolio',
+    icon: Wallet,
+    tag: 'Pronto',
+  },
+  {
+    label: 'Elegir inquilino',
+    href: '/panel/seleccion',
+    icon: UsersThree,
+    tag: 'Pronto',
+  },
+  {
+    label: 'Solicitudes',
+    href: '/panel/solicitudes',
+    icon: ChatCircleText,
+    tag: 'Pronto',
+  },
+  {
+    label: 'Novedades',
+    href: '/panel/novedades',
+    icon: Bell,
+    tag: 'Pronto',
   },
   // --- AI Beta section (hidden — re-enable when ready) ---
   // {

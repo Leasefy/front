@@ -529,7 +529,7 @@ export const cobrosApi = {
     paymentMethod: string;
     paymentReference?: string;
   }): Promise<Cobro> {
-    return apiClient.patch<Cobro>(`${BASE}/cobros/${id}/pay`, payment);
+    return apiClient.post<Cobro>(`${BASE}/cobros/${id}/payment`, payment);
   },
 
   async getSummary(month: string): Promise<CobroSummary> {
@@ -571,7 +571,7 @@ export const cobrosApi = {
   },
 
   async sendReminder(id: string): Promise<void> {
-    await apiClient.post(`${BASE}/cobros/${id}/reminder`, {});
+    await apiClient.put(`${BASE}/cobros/${id}/send-reminder`);
   },
 };
 
@@ -799,17 +799,33 @@ export const mantenimientoApi = {
     return apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}`, data);
   },
 
+  /**
+   * The backend has no generic `/status` route — it exposes explicit transitions
+   * (@Put :id/approve | :id/complete | :id/cancel). Map the target status to the
+   * matching endpoint. Statuses without a backend transition (reported / quoted /
+   * in_progress) cannot be set directly and throw.
+   */
   async changeStatus(id: string, status: string): Promise<SolicitudMantenimiento> {
-    return apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/status`, { status });
+    switch (status) {
+      case 'approved':
+        return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/approve`);
+      case 'completed':
+        // `completionNotes`/`completionPhotoUrls` are optional and not collected here.
+        return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/complete`, {});
+      case 'cancelled':
+        return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/cancel`);
+      default:
+        throw new Error(`Unsupported maintenance status transition: ${status}`);
+    }
   },
 
   /** Alias for changeStatus used by operaciones page */
   async updateStatus(id: string, status: string): Promise<SolicitudMantenimiento> {
-    return apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/status`, { status });
+    return mantenimientoApi.changeStatus(id, status);
   },
 
   async approveQuote(id: string, quoteId: string): Promise<SolicitudMantenimiento> {
-    return apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/approve-quote`, { quoteId });
+    return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/select-quote`, { quoteId });
   },
 
   async getKanban(): Promise<Record<string, SolicitudMantenimiento[]>> {
@@ -1090,7 +1106,7 @@ export const analyticsApi = {
 
 export const documentosApi = {
   async getTemplates(): Promise<DocumentTemplate[]> {
-    const res = await apiClient.get<{ data: DocumentTemplate[] } | DocumentTemplate[]>(`${BASE}/templates`);
+    const res = await apiClient.get<{ data: DocumentTemplate[] } | DocumentTemplate[]>(`${BASE}/documents/templates`);
     return lista(res);
   },
 

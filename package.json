@@ -16,6 +16,7 @@
     "db:studio": "npx prisma studio",
     "postinstall": "prisma generate",
     "api:gen": "bash scripts/api-gen.sh",
+    "api:gen:back": "node -e \"require('fs').copyFileSync('../back/openapi.json','scripts/back-openapi.json')\" && openapi-typescript scripts/back-openapi.json -o src/lib/api/generated/back.ts",
     "api:check": "bash scripts/api-gen.sh && git diff --exit-code src/lib/api/generated/agent.ts || (echo 'ERROR: Generated types are stale. Run pnpm api:gen and commit.' && exit 1)"
   },
   "prisma": {

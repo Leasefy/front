@@ -104,7 +104,7 @@ export function PropertyGrid({
   // Show skeleton grid when loading
   if (externalLoading) {
     return (
-      <div className="space-y-8" role="status" aria-label="Cargando propiedades">
+      <div className="contenedor-consulta space-y-8" role="status" aria-label="Cargando propiedades">
         <span className="sr-only">Cargando propiedades...</span>
         <div className="grilla-inmuebles gap-6">
           {Array.from({ length: SKELETON_COUNT }).map((_, index) => (
@@ -127,8 +127,11 @@ export function PropertyGrid({
   }
 
   return (
-    <div className="space-y-8">
-      {/* Property Grid - 2 columns for split view */}
+    // `contenedor-consulta` = container-type: inline-size. La grilla mide SU
+    // propio ancho, así que sale responsive en cualquier pantalla que la use
+    // (/propiedades a media ventana, /inquilino/para-ti a ancho completo…)
+    // sin depender de que el padre se acuerde de declarar el contenedor.
+    <div className="contenedor-consulta space-y-8">
       <div className="grilla-inmuebles gap-6">
         {displayedProperties.map((property) => {
           // `=== true` a propósito: `null` es "no sabemos", y no se marca nada

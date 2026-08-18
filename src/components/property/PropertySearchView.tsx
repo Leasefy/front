@@ -281,10 +281,9 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
         {/* Left Panel - Scrollable Content */}
         <div
           className={cn(
-            // `contenedor-consulta` = container-type: inline-size. La grilla de
-            // adentro mide ESTE ancho, no el de la ventana: en media pantalla
-            // los breakpoints de viewport medían lo que no era.
-            'contenedor-consulta w-full lg:w-1/2 2xl:w-3/5',
+            // La grilla de adentro (`PropertyGrid`) trae su propio contenedor
+            // de container query y mide su ancho, no el de la ventana.
+            'w-full lg:w-1/2 2xl:w-3/5',
             embedded ? 'overflow-y-auto' : 'min-h-screen',
             showMap && 'hidden lg:block'
           )}

@@ -96,6 +96,35 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
   );
 }
 
+/**
+ * Los motivos que `session-terminal.ts` puede mandar en `?reason=`. Un valor
+ * desconocido (o inventado a mano en la URL) simplemente no muestra nada.
+ */
+const AVISOS_DE_SESION: Record<string, string> = {
+  expirada: 'Tu sesión expiró. Volvé a entrar para seguir donde estabas.',
+  revocada: 'Cerramos esta sesión porque entraste desde otro dispositivo.',
+  inactividad: 'Cerramos tu sesión por inactividad. Volvé a entrar para continuar.',
+};
+
+/**
+ * Aviso de por qué el usuario terminó acá sin pedirlo.
+ *
+ * Va en `warning` y no en `danger` a propósito: que se venza una sesión no es
+ * un error del usuario ni una falla del sistema, es lo que tiene que pasar. El
+ * rojo del ErrorBanner de abajo queda para lo que sí salió mal.
+ */
+function AvisoBanner({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="px-3.5 py-2.5 rounded-xl bg-warning-soft border border-warning/30"
+    >
+      <p className="text-[12.5px] text-warning">{children}</p>
+    </motion.div>
+  );
+}
+
 /** Brand-critical error banner. */
 function ErrorBanner({ children }: { children: React.ReactNode }) {
   return (
@@ -137,6 +166,14 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   }, []);
 
   const returnUrl = sanitizeReturnUrl(returnUrlProp || searchParams.get('returnUrl'), '/');
+
+  /*
+   * Por qué está acá sin haberlo pedido. `terminarSesion` (session-terminal.ts)
+   * manda el motivo en la URL al sacar a alguien de un panel que ya no puede
+   * cargar nada; sin este cartel, el usuario aparece en el login sin ninguna
+   * explicación y lo natural es pensar que la app se rompió.
+   */
+  const avisoDeSesion = AVISOS_DE_SESION[searchParams.get('reason') ?? ''] ?? null;
   /*
    * Llegar acá con sesión abierta no es un error: pasa cada vez que alguien
    * toca «Postularme» y la puerta lo manda a entrar. Antes veía un formulario
@@ -519,6 +556,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                   </button>
                 </div>
               </div>
+              {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
               <Button
                 type="submit"
@@ -597,6 +635,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 })}
                 error={registerForm.formState.errors.confirmPassword?.message}
               />
+              {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
               <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
                 {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
@@ -663,7 +702,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               })}
               error={forgotPasswordForm.formState.errors.email?.message}
             />
-            {error && <ErrorBanner>{error}</ErrorBanner>}
+            {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
+              {error && <ErrorBanner>{error}</ErrorBanner>}
             <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
               {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando...</>) : 'Enviar enlace de recuperación'}
             </Button>

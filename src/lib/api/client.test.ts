@@ -4,7 +4,9 @@ import {
   ApiError,
   setAccessToken,
   setUnauthorizedHandler,
+  esCodigoDeSesionMuerta,
 } from './client'
+import { resetSessionTerminal, terminarSesion } from '@/lib/auth/session-terminal'
 
 // ---------------------------------------------------------------------------
 // Este archivo llegó a `develop` en 13b40359 CON los marcadores de conflicto
@@ -37,11 +39,13 @@ function stubFetch(status: number, body: unknown) {
 }
 
 beforeEach(() => {
+  resetSessionTerminal()
   setAccessToken('token-abc')
   setUnauthorizedHandler(null)
 })
 
 afterEach(() => {
+  resetSessionTerminal()
   vi.restoreAllMocks()
   setUnauthorizedHandler(null)
   Object.defineProperty(window, 'location', {
@@ -144,4 +148,88 @@ describe('401 durante la renovación del token', () => {
     await expect(apiClient.get('/users/me')).rejects.toBeInstanceOf(ApiError)
     expect(fetchFalso).toHaveBeenCalledTimes(1)
   })
+})
+
+/**
+ * El backend y el micro marcan con `code` los 401 que significan "esta sesión
+ * no vuelve" (contrato: back/docs/contracts/30-auth-error-codes.md). La mitad
+ * importante de estos tests es la NEGATIVA: qué NO tiene que cerrar sesión.
+ */
+describe('401 con código de sesión muerta', () => {
+  it.each(['AUTH_TOKEN_EXPIRED', 'AUTH_TOKEN_INVALID', 'SESSION_SUPERSEDED'])(
+    'avisa al handler global con %s',
+    async (code) => {
+      vi.stubGlobal('fetch', stubFetch(401, { message: 'sesión muerta', code }))
+      const onUnauthorized = vi.fn()
+      setUnauthorizedHandler(onUnauthorized)
+
+      await expect(apiClient.get('/x')).rejects.toMatchObject({ status: 401, code })
+      expect(onUnauthorized).toHaveBeenCalledWith(code)
+    },
+  )
+
+  /**
+   * `AUTH_TOKEN_MISSING` sale cuando una petición le ganó la carrera al arranque
+   * de sesión y viajó sin `Authorization`. Cerrar sesión ahí echaría a alguien
+   * cuya sesión está perfecta — es el bug que estamos evitando, no arreglando.
+   */
+  it('NO cierra sesión con AUTH_TOKEN_MISSING (no es terminal)', async () => {
+    vi.stubGlobal('fetch', stubFetch(401, { message: 'No autorizado', code: 'AUTH_TOKEN_MISSING' }))
+    const onUnauthorized = vi.fn()
+    setUnauthorizedHandler(onUnauthorized)
+
+    await apiClient.get('/x').catch(() => {})
+    expect(onUnauthorized).not.toHaveBeenCalled()
+  })
+
+  /**
+   * Un 401 sin código puede ser una caída del JWKS de Supabase — infra nuestra,
+   * no la sesión del usuario. Si cerráramos sesión ante cualquier 401, un mal
+   * minuto de Supabase desloguearía a todos los usuarios activos a la vez.
+   */
+  it('NO cierra sesión con un 401 sin código', async () => {
+    vi.stubGlobal('fetch', stubFetch(401, { message: 'Unauthorized' }))
+    const onUnauthorized = vi.fn()
+    setUnauthorizedHandler(onUnauthorized)
+
+    await apiClient.get('/x').catch(() => {})
+    expect(onUnauthorized).not.toHaveBeenCalled()
+  })
+
+  /**
+   * El reintento por token renovado (1s de espera) existe para la carrera de la
+   * renovación. Con la sesión muerta no hay token nuevo que esperar: ese
+   * segundo, una vez por cada petición en vuelo, sólo retrasa la salida.
+   */
+  it('no gasta la espera del reintento — sale de una', async () => {
+    vi.stubGlobal('fetch', stubFetch(401, { message: 'expiró', code: 'AUTH_TOKEN_EXPIRED' }))
+    const antes = Date.now()
+    await apiClient.get('/x').catch(() => {})
+    expect(Date.now() - antes).toBeLessThan(200)
+  })
+})
+
+describe('peticiones con la sesión ya declarada muerta', () => {
+  it('ni siquiera sale a la red', async () => {
+    const fetchFalso = vi.fn()
+    vi.stubGlobal('fetch', fetchFalso)
+    terminarSesion('expirada')
+
+    const err = (await apiClient.get('/x').catch((e) => e)) as ApiError
+    expect(fetchFalso).not.toHaveBeenCalled()
+    expect(err).toBeInstanceOf(ApiError)
+    expect(err.status).toBe(401)
+  })
+})
+
+describe('esCodigoDeSesionMuerta', () => {
+  it.each(['AUTH_TOKEN_EXPIRED', 'AUTH_TOKEN_INVALID', 'SESSION_SUPERSEDED'])(
+    'reconoce %s',
+    (code) => expect(esCodigoDeSesionMuerta(code)).toBe(true),
+  )
+
+  it.each([undefined, 'AUTH_TOKEN_MISSING', 'ALGO_NUEVO', ''])(
+    'no reconoce %p',
+    (code) => expect(esCodigoDeSesionMuerta(code)).toBe(false),
+  )
 })

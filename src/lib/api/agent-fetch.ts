@@ -16,47 +16,78 @@
  * falta de permisos— y se reintenta UNA vez con sesión fresca. Si el segundo
  * intento también da 401, ahí sí es un problema real de acceso y se devuelve
  * tal cual para que la UI lo muestre.
+ *
+ * ── Por qué NO renovamos nosotros ───────────────────────────────────────────
+ *
+ * Antes esto llamaba `supabase.auth.refreshSession()` a mano cuando veía un
+ * 401. Parecía inofensivo y era la peor línea del archivo: auth-js ya renueva
+ * solo, así que ese refresh manual corría EN PARALELO al automático, y los dos
+ * usaban el mismo refresh token.
+ *
+ * Con `Detect and revoke potentially compromised refresh tokens` activo en
+ * Supabase y una ventana de reúso de 10s, dos usos del mismo refresh token
+ * fuera de esa ventana no son un error recuperable: Supabase lo interpreta como
+ * un token comprometido y **revoca la familia entera**. O sea que el código
+ * puesto para salvar una sesión vencida era, él mismo, una forma de matarla.
+ *
+ * Ahora esperamos a que aparezca un token DISTINTO —el que pone el AuthProvider
+ * cuando auth-js emite `TOKEN_REFRESHED`— exactamente como hace `api/client.ts`
+ * con el backend. Nadie renueva por su cuenta; hay un solo renovador.
  */
 
-import { getSupabase } from '@/lib/supabase/client'
-import { getAccessToken, setAccessToken } from './client'
+import { getAccessToken, esCodigoDeSesionMuerta } from './client'
 import { agentAuthHeaders } from './agent-auth'
+import { sesionTerminada, terminarSesion } from '@/lib/auth/session-terminal'
 
 /**
- * Refresco en vuelo compartido. Varias pantallas pueden hacer polling a la vez
- * y chocar contra el mismo 401; sin esto dispararían N refreshes simultáneos
- * contra Supabase por la misma sesión vencida.
+ * Cuánto esperamos a que aparezca el token renovado antes de rendirnos.
+ *
+ * Más largo que el equivalente del backend (1s) por una razón concreta: allá el
+ * 401 llega cuando la renovación ya suele estar en vuelo, mientras que acá el
+ * caso típico es la pestaña que vuelve del segundo plano, donde el tick de
+ * auto-refresh de auth-js recién arranca al recuperar visibilidad. Aun así es
+ * un tope corto: pasado eso, el 401 tiene que llegar a la pantalla.
  */
-let inFlightRefresh: Promise<string | null> | null = null
+const ESPERA_DE_TOKEN_NUEVO_MS = 3000
+const INTERVALO_DE_SONDEO_MS = 100
 
-async function refreshAccessToken(): Promise<string | null> {
-  if (inFlightRefresh) return inFlightRefresh
+/**
+ * Espera a que el AuthProvider publique un token distinto del que ya falló.
+ * Devuelve `null` si no aparece ninguno — ahí el 401 es real y sigue su camino.
+ */
+async function esperarUnTokenDistinto(usado: string | null): Promise<string | null> {
+  if (!usado) return null
+  // Lo más común: ya se renovó mientras esta petición viajaba.
+  const actual = getAccessToken()
+  if (actual && actual !== usado) return actual
 
-  inFlightRefresh = (async () => {
-    const supabase = getSupabase()
-    if (!supabase) return null
-    try {
-      // getSession() ya renueva sola si el token venció; refreshSession() queda
-      // como segundo intento cuando la sesión cacheada también está vieja.
-      const { data } = await supabase.auth.getSession()
-      let token = data.session?.access_token ?? null
+  const hasta = Date.now() + ESPERA_DE_TOKEN_NUEVO_MS
+  while (Date.now() < hasta) {
+    // Si la sesión se declaró muerta mientras esperábamos, no hay nada que
+    // esperar: el token nuevo no va a llegar nunca.
+    if (sesionTerminada()) return null
+    await new Promise((resolve) => setTimeout(resolve, INTERVALO_DE_SONDEO_MS))
+    const nuevo = getAccessToken()
+    if (nuevo && nuevo !== usado) return nuevo
+  }
+  return null
+}
 
-      if (!token || token === getAccessToken()) {
-        const { data: refreshed } = await supabase.auth.refreshSession()
-        token = refreshed.session?.access_token ?? token
-      }
-
-      if (token) setAccessToken(token)
-      return token
-    } catch {
-      // Sin sesión recuperable: que el 401 original llegue a la UI.
-      return null
-    } finally {
-      inFlightRefresh = null
-    }
-  })()
-
-  return inFlightRefresh
+/**
+ * Lee el `code` del cuerpo de una respuesta SIN consumirla.
+ *
+ * El `clone()` no es opcional: quien llamó a `agentFetch` va a leer ese mismo
+ * body, y un stream ya consumido le llegaría vacío. Cualquier fallo al parsear
+ * (cuerpo vacío, HTML de un proxy, JSON roto) devuelve `undefined` — un cuerpo
+ * ilegible nunca puede cerrar la sesión de nadie.
+ */
+async function codigoDe(res: Response): Promise<string | undefined> {
+  try {
+    const body = (await res.clone().json()) as { code?: unknown }
+    return typeof body?.code === 'string' ? body.code : undefined
+  } catch {
+    return undefined
+  }
 }
 
 /**
@@ -76,10 +107,18 @@ export async function agentFetch(
 
   if (res.status !== 401) return res
 
-  const tokenBefore = getAccessToken()
-  const token = await refreshAccessToken()
-  // Si no hay token nuevo, reintentar sería mandar exactamente lo mismo.
-  if (!token || token === tokenBefore) return res
+  // El micro marca con `code` los 401 que significan "esta sesión no vuelve"
+  // (contrato: back/docs/contracts/30-auth-error-codes.md). Ahí no hay nada que
+  // reintentar ni token que esperar: se cierra y se sale.
+  if (esCodigoDeSesionMuerta(await codigoDe(res))) {
+    terminarSesion('expirada')
+    return res
+  }
+
+  const tokenUsado = getAccessToken()
+  const tokenNuevo = await esperarUnTokenDistinto(tokenUsado)
+  // Sin token nuevo, reintentar sería mandar exactamente lo mismo.
+  if (!tokenNuevo) return res
 
   return globalThis.fetch(input, {
     ...init,

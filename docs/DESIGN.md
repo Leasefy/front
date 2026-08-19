@@ -847,7 +847,82 @@ And `src/components/ui/plan/` (CRM-specific): `PlanActivityTimeline`, `PlanDetai
 
 ---
 
-## 19. When in Doubt
+## 19. Documento largo consultable (informe de avalúo) — «Panel»
+
+Patrón introducido por `/avaluo/reporte/[slug]`. Aplica a cualquier entregable que hoy
+sea un PDF y pase a leerse en la web: un informe, un acta, un certificado. La dirección
+visual elegida es **panel de producto**: chrome de app, un héroe ink con la cifra, y el
+resto en tarjetas de un bento sin huecos.
+
+**Estructura.** `main#main-content` → banda(s) de estado → `ReportTopbar` (sticky:
+marca · `StatusBadge` de vigencia · chip del sello (ancla) · «Descargar el PDF» ·
+Exportar · tema) → `grid lg:grid-cols-[16.5rem_minmax(0,1fr)]` con `ReportRail` (índice
+sticky con scrollspy y progreso) y un `<article>` con `ReportHero` + `ReportChapter`s.
+Capítulos en `<h2>` con pill numerada; secciones en `<section id={ancla}>` con `<h3>` y
+`scroll-mt-28`. El **layout es declarativo**: `landing-layout.ts` describe cada capítulo
+como `rows` de 12 columnas (celdas `hero | section(+filler) | group | stack`) y un test
+exige que cada fila sume 12 y que las 39 secciones aparezcan exactamente una vez.
+
+| Regla | Por qué |
+|---|---|
+| El índice lista **capítulos**, no secciones | 39 entradas es la tabla de contenidos del PDF con scrollspy encima |
+| `sticky`, nunca `fixed` | `template.tsx` monta `PageTransition`, cuyo `transform` vuelve *containing block* a cualquier `fixed` descendiente (§17 / §8) |
+| Tarjetas hermanas de una fila = **misma altura** | `grid-cols-12 items-stretch` + `h-full flex flex-col`; el hueco se rellena con un dato real (`filler`: anillo de vigencia, gauge de sector, medidor de exposición, dona terreno/construcción, gauge de divergencia) o la fila pasa a «una grande + columna de dos». Nunca dos alturas distintas lado a lado |
+| Plegado ≠ ausente: `<details>` sin `hidden` | Ctrl-F lo encuentra, el export lo lleva y la hoja de impresión lo abre |
+| Un bloque con consecuencia legal **no puede** ir dentro de `<details>` | Se marca en el modelo (`emphasis: 'disclaimer'`) y `ReportCard` lo cierra por id: aunque cambie el layout, «Alcance y limitaciones» es tarjeta de aviso siempre visible |
+| Un hueco de datos se pinta, no se esconde | La tarjeta dice **qué** falta (chips de `gaps`); «datos no disponibles» a secas no informa |
+| Superficies ink **planas** en el héroe y en UNA tarjeta de insight por página | Sin gradiente, sin bloom, sin `BrandMotif`, sin grano: §10.6 se cumple sin excepción. La jerarquía la hace el color del texto (`ink-fg`/`-muted`/`-subtle`), la banda es un instrumento de una sola tinta (`indigo-300`) y el marcador va en blanco. Decisión de producto (2026-08-18, «más minimalista») tras descartar el fondo fotográfico y luego el construido |
+| Motion bajo `useReducedMotion` siempre | Reveal por scroll con stagger por fila, count-up de la cifra, banda que crece, indicador del índice con `layoutId`; con reduced-motion todo aparece al instante y el marcado SSR/cliente es idéntico (un `opacity:0` de servidor sin transición deja la página en blanco) |
+| Tabla ancha → `data-lenis-prevent` + `overscrollBehavior: 'contain'` | Sin eso Lenis secuestra la rueda del mouse (§8) |
+| Numerales siempre `font-mono tabular-nums whitespace-nowrap` | Un «$» huérfano en una línea es el error más visible de una fila estrecha; se parte el label, nunca el número |
+| Cada campo PII lleva `data-pii-field` | `globals.css` ya lo esconde en `@media print` |
+| Hoja de impresión propia | Cadence no trae ninguna utilidad `print:`. Molde: `src/app/avaluo/reporte/report-print.css` (apaga chrome, motion y capas decorativas; abre los `<details>`) |
+
+Referencia: `src/components/avaluo/reporte/` (`ReporteAvaluoShell`, `ReportTopbar`,
+`ReportRail`, `ReportHero`, `ReportChapter`, `ReportCard`, `ReportBlockView` + `blocks/`,
+`charts/` (`ValueBandChart`, `Fillers`, `AnimatedAmount`), `motion/`).
+
+**Vocabulario de bloques.** El contenido no se escribe a mano por sección: llega tipado
+como una unión de once arquetipos (`prose`, `keyValues`, `bulletList`, `table`, `headline`,
+`verdict`, `statChain`, `placeholder`, `media`, `figure`, `seal`) y `ReportBlockView`
+despacha. Una sección nueva cuesta **cero** componentes; un arquetipo nuevo cuesta uno y
+TypeScript lo cobra en el `switch`.
+
+## 20. Sello de verificación
+
+El bloque que dice «este documento es el que se firmó». Va **al final** del documento —es
+el cierre de un argumento— con un ancla desde el encabezado.
+
+- Tarjeta del bento con banner de veredicto (feedback tokens + icono + texto: el estado nunca depende sólo del color) y el QR en marco ink; el héroe y la insight son las otras superficies ink de la página.
+- Contenido mínimo: emisor · fecha de firma · vigencia · método · huella corta en
+  `font-mono tabular-nums` · **enlace al verificador público**.
+- El enlace externo es obligatorio y visible: *un sello que sólo se puede ver dentro de la
+  página que estás validando no prueba nada*.
+- Si el enlace no puede navegar (datos de muestra, slug inexistente) se pinta la
+  referencia en mono y se dice por qué está inactivo. Nunca un enlace roto.
+- El chip del encabezado que lleva al sello es *chrome*: la sección se renderiza **una
+  sola vez**.
+
+Referencia: `SealBlockView` en `src/components/avaluo/reporte/blocks/SealBlock.tsx` (+ `QrMatrix`, `CopyHashButton`, `lib/avaluo/reporte/seal-presentation.ts`). Con un documento servido el sello muestra el veredicto REAL del verificador público (`render.seal`: verificado / alterado / no disponible), la cadena de vigencia y el QR dibujado con `<rect>` desde la matriz que manda el servicio; la muestra sigue declarándose sin verificación real.
+
+## 21. Marca de datos de muestra
+
+Cuando una pantalla se pinta con un juego de datos ficticio, tres capas —cada una sola
+falla:
+
+1. **Banda superior persistente**, ancho completo, `role="status"`, `bg-warning-soft`,
+   **fuera** del `<article>` y no descartable.
+2. **La marca dentro del contenido** que da autoridad (acá, la tarjeta del sello dice que
+   no hay verificación real).
+3. **Marca en los propios datos**: nomenclatura imposible (`# 00-00`), nombres con
+   `(demo)`. Quien se salte la banda igual choca con datos obviamente ficticios.
+
+Más `data-sample="true"` en el `<article>` y `robots: { index: false, follow: false }`.
+El DS tiene además `SampleDataWatermark` para cuando haga falta la marca de agua diagonal.
+
+---
+
+## 22. When in Doubt
 
 1. Find a similar component already in the codebase — copy its pattern.
 2. Canonical references for common needs:

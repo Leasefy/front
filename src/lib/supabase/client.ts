@@ -1,19 +1,8 @@
 import { createBrowserClient } from '@supabase/ssr'
-import type { SupabaseClient, LockFunc } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { crossTabLock } from './cross-tab-lock'
 
 let supabase: SupabaseClient | null = null
-
-/**
- * Custom lock that bypasses navigator.locks. Resolves immediately —
- * runs the callback in-line. Safe acá porque tenemos UN solo cliente
- * Supabase (singleton) y no necesitamos coordinación cross-tab para auth.
- *
- * El lock por defecto de @supabase/auth-js (navigator.locks) tira
- * `AbortError: signal is aborted without reason` cuando dos llamadas auth
- * concurrentes (ej. checkMfaLevel + updateUser) compiten por el lock,
- * y deja al cliente colgado.
- */
-const noopLock: LockFunc = async (_name, _timeout, fn) => fn()
 
 /**
  * Get the Supabase browser client (singleton).
@@ -34,9 +23,14 @@ export function getSupabase(): SupabaseClient | null {
   // isSingleton: false → bypassa el cache interno de @supabase/ssr (que
   // persiste entre hot-reloads y devuelve clientes viejos sin aplicar opciones).
   // Igual mantenemos UN cliente porque getSupabase tiene su propio singleton arriba.
+  //
+  // `lock`: serialización cross-tab REAL. El singleton de arriba es por pestaña,
+  // así que sin esto dos pestañas renuevan el mismo refresh token en paralelo y
+  // Supabase —con reuse detection activo— revoca la familia entera. Ver
+  // `cross-tab-lock.ts` para el detalle y para el defecto de auth-js que arregla.
   supabase = createBrowserClient(url, anonKey, {
     isSingleton: false,
-    auth: { lock: noopLock },
+    auth: { lock: crossTabLock },
   })
   return supabase
 }

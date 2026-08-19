@@ -20,7 +20,8 @@
  * correcta con cero elementos. Va con <EmptyState>.
  */
 
-import { ApiError, getAccessToken } from '@/lib/api/client'
+import { ApiError, getAccessToken, esCodigoDeSesionMuerta } from '@/lib/api/client'
+import { sesionTerminada } from '@/lib/auth/session-terminal'
 
 export type TipoDeFallo = 'noExiste' | 'sinPermiso' | 'sinSesion' | 'red' | 'servidor'
 
@@ -42,8 +43,20 @@ export interface Contexto {
   queEs?: string
 }
 
-/** ¿Hay sesión viva? El token en memoria es la única prueba que tenemos acá. */
-function hayToken(): boolean {
+/**
+ * ¿Hay sesión viva?
+ *
+ * Dos preguntas, no una. `sesionTerminada()` es la respuesta AUTORITATIVA:
+ * cuando el backend contestó con un código de sesión muerta, ya no hay nada que
+ * deducir. El token en memoria es el indicio de segunda mano para todo lo demás.
+ *
+ * El orden importa: al morir el refresh token, `_accessToken` sigue teniendo el
+ * último valor —vencido, pero presente— así que preguntar sólo por el token
+ * daba "sesión viva" justo cuando ya no la había, y la pantalla ofrecía
+ * «Probá de nuevo» para siempre.
+ */
+function haySesionViva(): boolean {
+  if (sesionTerminada()) return false
   return Boolean(getAccessToken())
 }
 
@@ -92,9 +105,24 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     // cartel. Pasó en /postulaciones — `/users/me` daba 200 y la lista 401 en
     // la misma carga, por la carrera del token (ver src/lib/api/client.ts).
     //
-    // Lo único que prueba que no hay sesión es que NO HAYA sesión. Y ese caso
-    // ya lo maneja ProtectedRoute mandando al login: no llega hasta acá.
-    if (hayToken()) {
+    // La EXCEPCIÓN es un 401 que viene marcado: ahí el servidor no está
+    // reportando un tropiezo, está diciendo que la sesión no vuelve. Se chequea
+    // antes que nada porque el cierre global es asíncrono —esta pantalla puede
+    // clasificar su error antes de que la bandera se levante— y mostrar
+    // «Probá de nuevo» en ese hueco es exactamente el bug que se está
+    // arreglando.
+    if (error instanceof ApiError && esCodigoDeSesionMuerta(error.code)) {
+      return {
+        tipo: 'sinSesion',
+        titulo: 'Tu sesión se venció',
+        descripcion: 'Volvé a entrar para seguir donde estabas.',
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
+
+    if (haySesionViva()) {
       return {
         tipo: 'servidor',
         titulo: 'No pudimos cargar esto',

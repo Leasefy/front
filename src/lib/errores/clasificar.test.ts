@@ -1,9 +1,13 @@
 import { describe, it, expect, afterEach } from 'vitest'
+import { resetSessionTerminal, terminarSesion } from '@/lib/auth/session-terminal'
 import { ApiError, setAccessToken } from '@/lib/api/client'
 import { clasificarFallo, esNoExiste } from './clasificar'
 
 describe('clasificarFallo', () => {
-  afterEach(() => setAccessToken(null))
+  afterEach(() => {
+    setAccessToken(null)
+    resetSessionTerminal()
+  })
 
   it('un 404 no se puede reintentar: por más que insistas no va a aparecer', () => {
     const fallo = clasificarFallo(new ApiError(404, 'Property with ID abc not found'))
@@ -83,5 +87,64 @@ describe('clasificarFallo', () => {
     expect(esNoExiste(new ApiError(500, 'x'))).toBe(false)
     expect(esNoExiste(new Error('x'))).toBe(false)
     expect(esNoExiste(null)).toBe(false)
+  })
+})
+
+/**
+ * El caso que este archivo existía para NO cubrir: un 401 que sí prueba que la
+ * sesión murió. Antes todos caían en «Tu sesión sigue abierta; probá de nuevo»
+ * porque `_accessToken` conserva el último token —vencido, pero presente— así
+ * que el chequeo por token respondía "hay sesión" justo cuando ya no la había.
+ */
+describe('clasificarFallo — 401 de sesión muerta', () => {
+  afterEach(() => {
+    setAccessToken(null)
+    resetSessionTerminal()
+  })
+
+  it.each(['AUTH_TOKEN_EXPIRED', 'AUTH_TOKEN_INVALID', 'SESSION_SUPERSEDED'])(
+    'un 401 con %s dice que la sesión se venció y NO ofrece reintentar',
+    (code) => {
+      // El token vencido sigue en memoria: es exactamente el escenario del bug.
+      setAccessToken('token-vencido-pero-presente')
+
+      const fallo = clasificarFallo(new ApiError(401, 'sesión muerta', code))
+
+      expect(fallo.tipo).toBe('sinSesion')
+      expect(fallo.sePuedeReintentar).toBe(false)
+    },
+  )
+
+  it('con la sesión ya declarada muerta, cualquier 401 deja de ofrecer reintento', () => {
+    setAccessToken('token-vencido-pero-presente')
+    terminarSesion('expirada')
+
+    const fallo = clasificarFallo(new ApiError(401, 'lo que sea'))
+
+    expect(fallo.tipo).toBe('sinSesion')
+    expect(fallo.sePuedeReintentar).toBe(false)
+  })
+
+  /**
+   * La contraparte que no se puede romper: un 401 suelto durante la carrera de
+   * la renovación NO es una sesión muerta. Decirlo cuando no es cierto queda
+   * absurdo — el panel entero está renderizado alrededor del cartel.
+   */
+  it('un 401 sin código y con sesión viva sigue siendo un tropiezo reintentable', () => {
+    setAccessToken('token-vivo')
+
+    const fallo = clasificarFallo(new ApiError(401, 'Unauthorized'))
+
+    expect(fallo.tipo).toBe('servidor')
+    expect(fallo.sePuedeReintentar).toBe(true)
+  })
+
+  it('AUTH_TOKEN_MISSING no es sesión muerta (carrera del arranque)', () => {
+    setAccessToken('token-vivo')
+
+    const fallo = clasificarFallo(new ApiError(401, 'No autorizado', 'AUTH_TOKEN_MISSING'))
+
+    expect(fallo.tipo).toBe('servidor')
+    expect(fallo.sePuedeReintentar).toBe(true)
   })
 })

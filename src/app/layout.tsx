@@ -8,6 +8,7 @@ import { WishlistProvider } from "@/lib/stores/wishlist";
 import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 import { PushNotificationHandler } from "@/components/notifications/PushNotificationHandler";
 import { SessionRevocationHandler } from "@/components/auth/SessionRevocationHandler";
+import { IdleSessionGuard } from "@/components/auth/IdleSessionGuard";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 import { Toaster } from "@/components/ui/toast";
 
@@ -129,6 +130,7 @@ export default function RootLayout({
               <RouteAnnouncer />
               <PushNotificationHandler />
               <SessionRevocationHandler />
+              <IdleSessionGuard />
               <SmoothScroll>{children}</SmoothScroll>
             </WishlistProvider>
           </AuthProvider>

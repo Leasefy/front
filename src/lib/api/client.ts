@@ -1,4 +1,5 @@
 import { compartirGet, invalidar, recursoDe } from './refresco-de-datos'
+import { sesionTerminada } from '@/lib/auth/session-terminal'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
 
@@ -106,12 +107,39 @@ async function esperarUnTokenDistinto(usado: string | null): Promise<string | nu
 }
 
 // ============================================================================
-// Unauthorized (session-superseded) handler — the global 401 backstop.
-// Registered by AuthProvider. Fires ONLY when a 401 carries the machine-readable
-// `code: 'SESSION_SUPERSEDED'` (single-session revocation), never on an ordinary
-// 401 such as the onboarding "User not found" case on /users/me. The instant
-// "signed in elsewhere" modal comes via Realtime; this is the guaranteed
-// fallback when the realtime event never arrived.
+// 401 con código: los tres casos en que la sesión NO vuelve.
+//
+// El backend y el micro del agente marcan con `code` los 401 que significan
+// «esta sesión está muerta» (contrato: back/docs/contracts/30-auth-error-codes.md).
+// Sin ese código un 401 es ambiguo —puede ser onboarding pendiente o falta de
+// permiso— y por eso el camino de abajo lo trata como un fallo cualquiera.
+//
+// Ojo con lo que NO está en esta lista:
+//   - `AUTH_TOKEN_MISSING`: sale cuando una petición le ganó la carrera al
+//     arranque de sesión y viajó sin `Authorization`. Cerrar sesión ahí echaría
+//     a un usuario cuya sesión está perfecta.
+//   - un 401 SIN código: puede ser una caída del JWKS de Supabase (infra
+//     nuestra, no la sesión del usuario). Si cerráramos sesión ante cualquier
+//     401, un mal minuto de Supabase desloguearía a todos a la vez.
+// ============================================================================
+
+const CODIGOS_DE_SESION_MUERTA = new Set([
+  'AUTH_TOKEN_EXPIRED',
+  'AUTH_TOKEN_INVALID',
+  'SESSION_SUPERSEDED',
+])
+
+/** ¿Este `code` de un 401 significa que la sesión ya no vuelve? */
+export function esCodigoDeSesionMuerta(code: string | undefined): boolean {
+  return code != null && CODIGOS_DE_SESION_MUERTA.has(code)
+}
+
+// ============================================================================
+// Unauthorized handler — el backstop global de 401.
+// Lo registra el AuthProvider. Dispara SOLO con un `code` de sesión muerta,
+// nunca con un 401 corriente como el de "User not found" en /users/me durante
+// el onboarding. Para `SESSION_SUPERSEDED` el camino instantáneo es el modal de
+// Realtime; esto es la garantía para cuando ese evento no llegó.
 // ============================================================================
 
 type UnauthorizedHandler = (code: string) => void
@@ -155,6 +183,13 @@ async function request<T>(
 ): Promise<T> {
   const url = `${BACKEND_URL}${path}`
 
+  // Con la sesión ya declarada muerta no hay nada que pedir: la app está
+  // navegando a /auth y cada petición que igual saliera sumaría un 401 más
+  // —y un cartel de error más— sobre una pantalla que está por desaparecer.
+  if (sesionTerminada()) {
+    throw new ApiError(401, 'Tu sesión expiró. Volvé a entrar.', 'SESSION_TERMINATED')
+  }
+
   // Si el AuthProvider todavía no contestó, esperamos acá en vez de salir sin
   // Authorization y comerse un 401 que no significa nada. Cuando ya contestó
   // —haya sesión o no— esto no cuesta nada.
@@ -189,10 +224,12 @@ async function request<T>(
     // (onboarding needed) from real auth failures (token invalid/expired).
     const errorBody = await res.json().catch(() => ({}))
     const code = typeof errorBody.code === 'string' ? errorBody.code : undefined
-    // Single-session revocation backstop: only this coded 401 triggers a global
-    // sign-out. The onboarding 401 has no code and must NOT log the user out.
-    if (code === 'SESSION_SUPERSEDED') {
-      _onUnauthorized?.(code)
+    // Sesión muerta: se cierra y se sale. Va ANTES del reintento a propósito —
+    // `esperarUnTokenDistinto` existe para la carrera de la renovación, y con
+    // el refresh token muerto no hay token nuevo que esperar: ese segundo de
+    // espera sólo retrasa la salida, una vez por cada petición en vuelo.
+    if (esCodigoDeSesionMuerta(code)) {
+      _onUnauthorized?.(code as string)
       throw new ApiError(401, errorBody.message || 'No autorizado', code)
     }
 

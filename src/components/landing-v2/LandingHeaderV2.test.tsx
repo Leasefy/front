@@ -14,8 +14,18 @@ import { act } from 'react'
 
 void React
 
+// Estado de sesion mutable: el header ahora decide QUE enlaces muestra segun
+// quien mira, asi que los tests necesitan poder entrar como anonimo, como
+// inquilino y como inmobiliaria sin remontar el modulo.
+const authState: {
+  isAuthenticated: boolean
+  isLoading: boolean
+  user: { role: string } | null
+  activeContext: string | null
+} = { isAuthenticated: false, isLoading: false, user: null, activeContext: null }
+
 vi.mock('@/lib/auth/use-auth', () => ({
-  useAuth: () => ({ isAuthenticated: false, isLoading: false, user: null }),
+  useAuth: () => authState,
 }))
 
 import { LandingHeaderV2 } from './LandingHeaderV2'
@@ -24,6 +34,10 @@ let container: HTMLDivElement
 let root: Root
 
 beforeEach(() => {
+  authState.isAuthenticated = false
+  authState.isLoading = false
+  authState.user = null
+  authState.activeContext = null
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -107,6 +121,69 @@ describe('LandingHeaderV2', () => {
       montar({ activo: 'inmuebles', fxExterno: true })
       const activo = container.querySelector('#mmenu nav a[aria-current="page"]')
       expect(activo?.getAttribute('href')).toBe('/propiedades')
+    })
+  })
+  describe('a quien le sirve "Buscar inmueble"', () => {
+    // El marketplace es para el que BUSCA donde vivir. A una inmobiliaria
+    // ofrecerle "Buscar inmueble" en su propio header es ofrecerle el
+    // inventario de la competencia: no es un enlace de mas, es el enlace
+    // equivocado. Se saca de las DOS navegaciones, no solo de la de escritorio.
+    function entrarComo(role: string, activeContext: string | null = null) {
+      authState.isAuthenticated = true
+      authState.isLoading = false
+      authState.user = { role }
+      authState.activeContext = activeContext
+    }
+
+    it('el visitante anonimo lo ve — es la puerta al marketplace', () => {
+      montar({ fxExterno: true })
+      expect(container.querySelector('nav.main a[href="/propiedades"]')).not.toBeNull()
+      expect(container.querySelector('#mmenu nav a[href="/propiedades"]')).not.toBeNull()
+    })
+
+    it('el inquilino lo ve — es exactamente su caso de uso', () => {
+      entrarComo('tenant')
+      montar({ fxExterno: true })
+      expect(container.querySelector('nav.main a[href="/propiedades"]')).not.toBeNull()
+      expect(container.querySelector('#mmenu nav a[href="/propiedades"]')).not.toBeNull()
+    })
+
+    it('la inmobiliaria NO lo ve, ni en escritorio ni en movil', () => {
+      entrarComo('agency')
+      montar({ fxExterno: true })
+      expect(container.querySelector('nav.main a[href="/propiedades"]')).toBeNull()
+      expect(container.querySelector('#mmenu nav a[href="/propiedades"]')).toBeNull()
+    })
+
+    it('tampoco lo ve quien esta parado en contexto de inmobiliaria', () => {
+      // Cuenta dual: rol personal inquilino + membresia activa en una agencia.
+      // Manda el contexto activo, igual que en getUserHomeRoute.
+      entrarComo('tenant', 'agency')
+      montar({ fxExterno: true })
+      expect(container.querySelector('nav.main a[href="/propiedades"]')).toBeNull()
+    })
+
+    it('mientras la sesion carga no lo esconde — no parpadea el nav', () => {
+      authState.isLoading = true
+      authState.isAuthenticated = false
+      authState.user = null
+      montar({ fxExterno: true })
+      expect(container.querySelector('nav.main a[href="/propiedades"]')).not.toBeNull()
+    })
+
+    it('al esconderlo, el menu movil sigue numerado 01..06 sin huecos', () => {
+      // Los numeros del menu movil son parte del diseno, no decoracion: si
+      // desaparece el 01 y queda 02..07, el menu se lee roto.
+      entrarComo('agency')
+      montar({ fxExterno: true })
+      const numeros = [...container.querySelectorAll('#mmenu nav a .n')].map((n) => n.textContent)
+      expect(numeros).toEqual(['01', '02', '03', '04', '05', '06'])
+    })
+
+    it('para el resto, el menu movil conserva sus 07', () => {
+      montar({ fxExterno: true })
+      const numeros = [...container.querySelectorAll('#mmenu nav a .n')].map((n) => n.textContent)
+      expect(numeros).toEqual(['01', '02', '03', '04', '05', '06', '07'])
     })
   })
 })

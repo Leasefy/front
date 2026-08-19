@@ -182,7 +182,10 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         navItems={LANDLORD_NAV_ITEMS}
         logo={{
           title: 'PLan',
-          href: '/panel',
+          // Mismo criterio que en los otros dos paneles: el logo es la firma
+          // del producto y sale a la landing. El home del panel ya vive en el
+          // nav ("Panel"), no hace falta un segundo enlace al mismo lugar.
+          href: '/',
         }}
         showUpgrade={showUpgrade}
         upgradeHref="/panel/upgrade"

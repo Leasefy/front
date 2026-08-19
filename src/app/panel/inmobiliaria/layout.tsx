@@ -414,7 +414,13 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         loading={permissionsLoading}
         logo={{
           title: agencyName,
-          href: '/panel/inmobiliaria',
+          // El lockup de Leasefy es la firma del PRODUCTO, no un atajo al
+          // panel: el panel ya tiene su "Inicio" en el nav (misma ruta), así
+          // que apuntar acá al panel duplicaba un destino y dejaba sin salida
+          // al sitio público. El logo sale a la landing, como en cualquier
+          // producto con web pública. Ruta relativa a propósito: el host
+          // cambia entre dev (:3001) y producción.
+          href: '/',
         }}
         // cadence §Navigation: static brand row + search-opens-⌘K + footer cards
         workspaceName={agencyName}

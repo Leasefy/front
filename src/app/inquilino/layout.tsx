@@ -119,7 +119,10 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
         navItems={navItems}
         logo={{
           title: 'Arriendo',
-          href: '/inquilino',
+          // Mismo criterio que en los otros dos paneles: el logo es la firma
+          // del producto y sale a la landing. El home del panel ya vive en el
+          // nav ("Panel"), no hace falta un segundo enlace al mismo lugar.
+          href: '/',
         }}
         profileCompletion={isLoaded ? {
           percentage,

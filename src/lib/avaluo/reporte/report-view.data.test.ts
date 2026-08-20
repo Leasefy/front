@@ -196,6 +196,39 @@ describe('getReportView — vista servida', () => {
   })
 })
 
+describe('getReportView — delivery (T-0007)', () => {
+  it('sin delivery en la respuesta ⇒ view.delivery queda undefined (no la tumba el paid-projection ni el media resolve)', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(servedFor(SLUG)))
+    const view = await getReportView({ slug: SLUG, token: TOKEN })
+    expect(view?.delivery).toBeUndefined()
+  })
+
+  it('con delivery en la respuesta ⇒ llega intacto, aunque el pago proyecte la vista', async () => {
+    const delivery = {
+      signoffState: 'en_revisión',
+      released: false,
+      canDownloadPdf: false,
+      canVerify: false,
+      canExport: false,
+      estimateNotice: 'Aviso del productor.',
+    }
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(servedFor(SLUG, { paid: false, delivery })),
+    )
+    const view = await getReportView({ slug: SLUG, token: TOKEN })
+    expect(view?.delivery).toEqual(delivery)
+    // La proyección por pago no lo toca: son ejes distintos.
+    expect(view?.paid).toBe(false)
+  })
+
+  it('render nunca es null en una vista servida (lo exige el validador)', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(servedFor(SLUG)))
+    const view = await getReportView({ slug: SLUG, token: TOKEN })
+    expect(view?.render).not.toBeNull()
+    expect(view?.render.certificateId.length).toBeGreaterThan(0)
+  })
+})
+
 describe('getReportView — sin muestra', () => {
   it('el slug de la muestra va al servicio como cualquier otro (no hay camino de fixture)', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'report not found' }, 404))

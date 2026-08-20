@@ -17,7 +17,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ReporteAvaluoShell } from '@/components/avaluo/reporte/ReporteAvaluoShell'
-import { certificateUrl } from '@/lib/api/avaluo.service'
+import { reportPdfUrl } from '@/lib/api/avaluo.service'
+import { resolveDelivery } from '@/lib/avaluo/reporte/delivery'
 import { buildLandingView } from '@/lib/avaluo/reporte/landing-layout'
 import { getReportView } from '@/lib/avaluo/reporte/report-view.data'
 import '../report-panel.css'
@@ -67,15 +68,25 @@ export default async function ReporteAvaluoPage({ params, searchParams }: PagePr
   // impide usar la respuesta para averiguar si un documento existe.
   if (view === null) notFound()
 
-  // «Descargar el PDF» = el certificado real, con el token del dueño. Se arma
-  // ACÁ (servidor) y baja como prop: el cliente nunca lee el token de la URL.
-  // En la muestra no hay documento emitido ⇒ `null` y el botón va deshabilitado.
+  // El gate (T-0007): `delivery` ausente o roto ⇒ DENIED — nada de PDF, nada
+  // de verificar, nada de exportar, y el aviso de reserva. Es la ÚNICA fuente
+  // de estas capacidades; nada más en esta página las computa.
+  const capabilities = resolveDelivery(view)
+
+  // «Descargar el PDF» = el nuevo informe (E2), con el token del dueño. Se
+  // arma ACÁ (servidor) y baja como prop: el cliente nunca lee el token de la
+  // URL. `null` a menos que la entrega lo permita — offreciendo la URL en el
+  // HTML sin ese permiso sería entregarla gratis aunque el servidor la
+  // rechace (E2 gatea de verdad; esto es defensa en profundidad, no el
+  // control real).
   const downloadHref =
-    view.render !== null && token !== null ? certificateUrl(view.render.certificateId, token) : null
+    capabilities.canDownloadPdf && token !== null ? reportPdfUrl(slug, token) : null
 
   // El reloj de lo temporal (vigencia): con documento servido gana el del
   // servidor (`render.nowIso`); la muestra usa el de esta petición.
   const landing = buildLandingView(view, { nowIso: new Date().toISOString() })
 
-  return <ReporteAvaluoShell view={landing} downloadHref={downloadHref} />
+  return (
+    <ReporteAvaluoShell view={landing} downloadHref={downloadHref} capabilities={capabilities} />
+  )
 }

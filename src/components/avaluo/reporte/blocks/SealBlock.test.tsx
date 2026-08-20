@@ -56,9 +56,14 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function renderSeal(block: SealBlock, render: ReportRender | null, slug = FIXTURE_SLUG) {
+function renderSeal(
+  block: SealBlock,
+  render: ReportRender | null,
+  slug = FIXTURE_SLUG,
+  canVerify = true,
+) {
   act(() => {
-    root.render(<SealBlockView block={block} seal={{ slug, render }} />)
+    root.render(<SealBlockView block={block} seal={{ slug, render, canVerify }} />)
   })
 }
 
@@ -210,6 +215,29 @@ describe('SealBlockView — la muestra (sin render)', () => {
     expect(container.querySelector('a[data-seal-verify-link]')).toBeNull()
     expect(container.querySelector('svg[role="img"]')).toBeNull()
     expect(container.querySelector('button')).toBeNull()
+  })
+})
+
+describe('SealBlockView — canVerify:false (T-0007, delivery denegado)', () => {
+  beforeEach(() => renderSeal(SERVED_BLOCK, servedRender(), FIXTURE_SLUG, false))
+
+  it('no ofrece el enlace al verificador aunque el wire lo traiga habilitado', () => {
+    expect(container.querySelector('a[data-seal-verify-link]')).toBeNull()
+  })
+
+  it('no dibuja el QR', () => {
+    expect(container.querySelector('svg[role="img"]')).toBeNull()
+  })
+
+  it('no ofrece «Copiar» ni el hash completo en el details', () => {
+    expect(container.querySelector('button[aria-label="Copiar la huella completa"]')).toBeNull()
+    expect(container.querySelector('[data-seal-hash-full]')).toBeNull()
+    expect(container.querySelector('details')).toBeNull()
+  })
+
+  it('el veredicto y el hash corto SIGUEN visibles: leer los datos no se gatea', () => {
+    expect(container.textContent).toContain('Verificado: el documento servido coincide con el sello')
+    expect(container.querySelector('[data-seal-hash-short]')?.textContent).toBe(SERVED_HASH.slice(0, 12))
   })
 })
 

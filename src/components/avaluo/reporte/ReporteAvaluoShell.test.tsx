@@ -31,10 +31,11 @@ vi.mock('next/link', () => ({
 
 import { ReporteAvaluoShell } from './ReporteAvaluoShell'
 import { toPaidProjection, toSharedProjection } from '@/lib/avaluo/reporte/audience'
+import { DENIED, type DeliveryCapabilitiesView } from '@/lib/avaluo/reporte/delivery'
 import { FIXTURE_VIEW } from '@/lib/avaluo/reporte/fixture-muestra'
 import { buildLandingView } from '@/lib/avaluo/reporte/landing-layout'
 import { SECTION_ORDER, type ReportWebView, type Scalar, type TableBlock } from '@/lib/avaluo/reporte/report-model'
-import { SERVED_VERIFY_URL, buildServedFixture } from '@/lib/avaluo/reporte/report-serve.fixture'
+import { SERVED_VERIFY_URL, buildServedFixture, servedDelivery } from '@/lib/avaluo/reporte/report-serve.fixture'
 import { parseReportServeResponse } from '@/lib/avaluo/reporte/report-serve.schema'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -101,9 +102,29 @@ function withTable(view: ReportWebView): ReportWebView {
   }
 }
 
-function render(view: Parameters<typeof buildLandingView>[0]) {
+/**
+ * Convención de este archivo (T-0007): salvo que un test diga lo contrario,
+ * se renderiza "todo liberado" — así el helper no obliga a los ~20 tests
+ * preexistentes (de contenido/layout, ajenos al gate) a pasar `capabilities`
+ * cada vez. El componente en sí NO tiene este default: `capabilities` es
+ * obligatorio en `ReporteAvaluoShellProps`, a propósito, para que ningún call
+ * site de producción quede "sin querer" con todo desbloqueado.
+ */
+const RELEASED: DeliveryCapabilitiesView = {
+  signoffState: 'entregado',
+  released: true,
+  canDownloadPdf: true,
+  canVerify: true,
+  canExport: true,
+  estimateNotice: null,
+}
+
+function render(
+  view: Parameters<typeof buildLandingView>[0],
+  capabilities: DeliveryCapabilitiesView = RELEASED,
+) {
   act(() => {
-    root.render(<ReporteAvaluoShell view={buildLandingView(view)} />)
+    root.render(<ReporteAvaluoShell view={buildLandingView(view)} capabilities={capabilities} />)
   })
 }
 
@@ -384,5 +405,46 @@ describe('ReporteAvaluoShell — la fixture compartida con el micro (report-serv
     expect(sello?.querySelector('a[data-seal-verify-link]')?.getAttribute('href')).toBe(
       parsed.view.meta.verifyUrl,
     )
+  })
+})
+
+describe('ReporteAvaluoShell — capabilities (T-0007, observe-only)', () => {
+  it('released:true no muestra el aviso de estimación', () => {
+    render(buildServedFixture({ delivery: servedDelivery() }), RELEASED)
+    expect(container.textContent).not.toContain('Documento preliminar')
+  })
+
+  it('released:false muestra el aviso de estimación de forma prominente, verbatim', () => {
+    const capabilities: DeliveryCapabilitiesView = {
+      signoffState: 'en_revisión',
+      released: false,
+      canDownloadPdf: false,
+      canVerify: false,
+      canExport: false,
+      estimateNotice: 'Aviso de prueba del productor.',
+    }
+    render(buildServedFixture(), capabilities)
+    expect(container.textContent).toContain('Aviso de prueba del productor.')
+  })
+
+  it('delivery ausente (DENIED) ⇒ el fallback pinneado, y ninguna acción de verificación', () => {
+    render(buildServedFixture(), DENIED)
+    expect(container.textContent).toContain(DENIED.estimateNotice)
+    // La acción de verificar queda denegada de punta a punta: sin enlace al
+    // verificador, sin QR, dentro del sello real (render presente).
+    const sello = container.querySelector('section[id="sello-verificacion"]')
+    expect(sello?.querySelector('a[data-seal-verify-link]')).toBeNull()
+    expect(sello?.querySelector('svg[role="img"]')).toBeNull()
+    // Y el chip del sello en la barra superior tampoco se ofrece (el índice
+    // lateral SÍ sigue enlazando a la sección — es navegación, siempre-on).
+    expect(
+      container.querySelector('[data-report-topbar] a[href="#sello-verificacion"]'),
+    ).toBeNull()
+  })
+
+  it('el veredicto y los datos del sello se siguen leyendo aunque canVerify sea false', () => {
+    render(buildServedFixture(), DENIED)
+    const sello = container.querySelector('section[id="sello-verificacion"]')
+    expect(sello?.textContent).toContain('Verificado: el documento servido coincide con el sello')
   })
 })

@@ -234,3 +234,19 @@ export function mapEstadoPreScoring(
   // nada que mostrar. Es el estado que enseña el camino, nunca uno inventado.
   return 'sin_estudio'
 }
+
+/**
+ * ¿Esta persona ya tiene un estudio que el back va a REUSAR?
+ *
+ * Es la contracara exacta del `reused:true` de `POST /pre-scoring`: si el
+ * estudio sigue vigente, el back no cobra ni crea una orden nueva — devuelve
+ * la que ya existe. Mostrarle el formulario de `/aprobacion` a esa persona es
+ * ofrecerle algo que no va a pasar; su lugar es la pantalla de resultado.
+ *
+ * `expirado` y `error` quedan afuera A PROPÓSITO: ahí la ventana ya cerró y
+ * volver a empezar es justamente lo que corresponde, así que el formulario
+ * sigue siendo la pantalla correcta.
+ */
+export function tieneEstudioVigente(estado: EstadoPreScoring): boolean {
+  return estado === 'en_proceso' || estado === 'aprobado' || estado === 'rechazado'
+}

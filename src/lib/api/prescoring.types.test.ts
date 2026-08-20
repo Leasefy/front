@@ -15,6 +15,7 @@ import { describe, it, expect } from 'vitest'
 import {
   mapEstadoPreScoring,
   parsePreScoringCurrent,
+  tieneEstudioVigente,
   type PreScoringCurrent,
 } from './prescoring.types'
 
@@ -346,5 +347,25 @@ describe('parsePreScoringCurrent', () => {
 
   it('order sin status se descarta a null', () => {
     expect(parsePreScoringCurrent({ order: {} }).order).toBeNull()
+  })
+})
+
+describe('tieneEstudioVigente', () => {
+  // La regla existe para una sola pregunta: ¿tiene sentido que esta persona
+  // vea el formulario de /aprobacion? Si el back va a responder `reused:true`
+  // al POST, no: ya hay un estudio y el formulario es un callejón sin salida.
+  it('estados donde el back reusa el estudio: no se puede pedir uno nuevo', () => {
+    expect(tieneEstudioVigente('en_proceso')).toBe(true)
+    expect(tieneEstudioVigente('aprobado')).toBe(true)
+    expect(tieneEstudioVigente('rechazado')).toBe(true)
+  })
+
+  it('sin estudio: el formulario es exactamente lo que corresponde', () => {
+    expect(tieneEstudioVigente('sin_estudio')).toBe(false)
+  })
+
+  it('expirado y error: la ventana ya cerró, se puede volver a empezar', () => {
+    expect(tieneEstudioVigente('expirado')).toBe(false)
+    expect(tieneEstudioVigente('error')).toBe(false)
   })
 })

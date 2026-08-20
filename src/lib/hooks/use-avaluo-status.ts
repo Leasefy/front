@@ -7,12 +7,16 @@
  * - Stops on terminal states (entregado / rechazado).
  * - Also stops when status is 'firmado' AND certId is present (payment ready —
  *   no point polling further until after payment).
+ * - T-0007: also stops once `shouldRedirectToReport` is true — the caller
+ *   (the status page) navigates away as soon as that predicate holds, so
+ *   polling behind an unmounted page would just waste requests.
  * - Exposes error state: if getAvaluoStatus throws, isError=true and polling
  *   continues (transient network errors should self-heal).
  */
 
 import { useState, useEffect } from 'react'
-import { getAvaluoStatus } from '@/lib/api/avaluo.service'
+import { getAvaluoStatus, readCapToken } from '@/lib/api/avaluo.service'
+import { shouldRedirectToReport } from '@/lib/avaluo/reporte/reporte-href'
 import type { AvaluoStatusResponse } from '@/lib/types/avaluo'
 import { TERMINAL_STATUSES } from '@/lib/types/avaluo'
 
@@ -24,12 +28,19 @@ interface UseAvaluoStatusReturn {
   error: Error | null
 }
 
-function shouldStopPolling(data: AvaluoStatusResponse | null): boolean {
+/** Exported for tests only — pure logic, no need for a component harness. */
+export function shouldStopPolling(
+  data: AvaluoStatusResponse | null,
+  capToken: string | null,
+): boolean {
   if (!data) return false
   // Terminal states: no more transitions possible
   if (TERMINAL_STATUSES.includes(data.status)) return true
   // firmado + certId: payment can be initiated; no need to keep polling
   if (data.status === 'firmado' && !!data.certId) return true
+  // T-0007: the caller is about to navigate away to the report — polling
+  // behind that navigation would just be wasted requests.
+  if (shouldRedirectToReport(data.status, data.slug, capToken)) return true
   return false
 }
 
@@ -44,8 +55,10 @@ export function useAvaluoStatus(
   useEffect(() => {
     if (!submissionId) return
 
-    // Stop polling once we reach a stable state
-    if (shouldStopPolling(statusData)) return
+    // Stop polling once we reach a stable state (T-0007: including "about to
+    // redirect to the report" — readCapToken is the same localStorage lookup
+    // the report link and AvaluoEstadoCard already use).
+    if (shouldStopPolling(statusData, readCapToken(submissionId))) return
 
     const poll = async () => {
       try {
@@ -68,7 +81,7 @@ export function useAvaluoStatus(
 
     const id = setInterval(poll, 15_000)
     return () => clearInterval(id)
-  }, [submissionId, statusData?.status, statusData?.certId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [submissionId, statusData?.status, statusData?.certId, statusData?.slug]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return { statusData, isLoading, isError, error }
 }

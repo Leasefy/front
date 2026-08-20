@@ -24,9 +24,11 @@
  */
 
 import Link from "next/link";
+import { SealWarning } from "@phosphor-icons/react/dist/ssr";
 import { SampleDataWatermark } from "@leasefy/cadence";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/format";
+import type { DeliveryCapabilitiesView } from "@/lib/avaluo/reporte/delivery";
 import type { LandingView } from "@/lib/avaluo/reporte/landing-layout";
 import { ReportMotionConfig } from "./motion/ReportMotionConfig";
 import { ReportChapter } from "./ReportChapter";
@@ -116,6 +118,33 @@ function PaywallBanner({ href }: { href: string | null }) {
   );
 }
 
+/**
+ * El aviso de estimación no final (T-0007): documento preliminar generado
+ * por IA, el PDF se habilita recién tras la validación manual. Se pinta
+ * VERBATIM — nunca se re-tipea, traduce ni recorta (T-0007 §3.2.4) — y se
+ * muestra iff `!capabilities.released`. Misma banda persistente ancho
+ * completo que `SampleBanner`/`PaywallBanner` (`docs/DESIGN.md` §21): fuera
+ * del `<article>`, no descartable.
+ */
+function EstimateNoticeBanner({ text }: { text: string }) {
+  return (
+    <div
+      role="status"
+      className="border-b border-warning bg-warning-soft px-4 py-2.5"
+      data-estimate-notice-banner
+    >
+      <div className="mx-auto flex max-w-[1520px] items-start gap-2.5">
+        <SealWarning
+          aria-hidden="true"
+          weight="duotone"
+          className="mt-0.5 size-4 shrink-0 text-warning"
+        />
+        <p className="text-[13px] text-fg">{text}</p>
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // La página
 // ---------------------------------------------------------------------------
@@ -124,6 +153,15 @@ export interface ReporteAvaluoShellProps {
   view: LandingView;
   /** URL de descarga del PDF (con el token del dueño). `null` ⇒ sin documento. */
   downloadHref?: string | null;
+  /**
+   * Capacidades de entrega (T-0007, `resolveDelivery`). Obligatorio a
+   * propósito: no hay default "todo permitido" en este componente — el único
+   * default fail-closed vive en `resolveDelivery` (`DENIED`), y quien llama
+   * a este componente (la página) SIEMPRE lo resuelve explícitamente antes
+   * de renderizar. Gatea «Imprimir», el chip/acciones del sello y muestra el
+   * aviso de estimación cuando `!released`.
+   */
+  capabilities: DeliveryCapabilitiesView;
 }
 
 const ARTICLE_ID = "informe";
@@ -131,6 +169,7 @@ const ARTICLE_ID = "informe";
 export function ReporteAvaluoShell({
   view,
   downloadHref = null,
+  capabilities,
 }: ReporteAvaluoShellProps) {
   const railChapters: RailChapter[] = view.chapters.map((chapter) => ({
     id: chapter.id,
@@ -148,7 +187,7 @@ export function ReporteAvaluoShell({
   // Lo poco que los bloques necesitan de la vista entera. Baja por props: el
   // árbol es de servidor y así queda escrito quién consume qué.
   const ctx: Omit<BlockContext, "sectionId" | "insight" | "compact"> = {
-    seal: { slug: view.meta.slug, render: view.render },
+    seal: { slug: view.meta.slug, render: view.render, canVerify: capabilities.canVerify },
     paywallHref: view.meta.paywallCtaHref,
     sample: view.sample,
   };
@@ -173,6 +212,9 @@ export function ReporteAvaluoShell({
 
         {view.sample && <SampleBanner />}
         {view.shareNotice !== null && <ShareBanner notice={view.shareNotice} />}
+        {!capabilities.released && capabilities.estimateNotice !== null && (
+          <EstimateNoticeBanner text={capabilities.estimateNotice} />
+        )}
         {!view.paid && <PaywallBanner href={view.meta.paywallCtaHref} />}
 
         <ReportPrintOpener />
@@ -183,6 +225,8 @@ export function ReporteAvaluoShell({
           sealAltered={view.render?.seal.state === "altered"}
           downloadHref={downloadHref}
           sample={view.sample}
+          canExport={capabilities.canExport}
+          canVerify={capabilities.canVerify}
         />
 
         <div className="mx-auto max-w-[1520px] px-4 md:px-6">

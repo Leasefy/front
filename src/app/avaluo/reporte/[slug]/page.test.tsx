@@ -28,18 +28,30 @@ vi.mock('next/navigation', () => ({
 }))
 
 vi.mock('@/components/avaluo/reporte/ReporteAvaluoShell', () => ({
-  ReporteAvaluoShell: ({ view }: { view: { chapters: { id: string }[]; paid: boolean } }) => (
+  ReporteAvaluoShell: ({
+    view,
+    downloadHref,
+    capabilities,
+  }: {
+    view: { chapters: { id: string }[]; paid: boolean }
+    downloadHref?: string | null
+    capabilities?: { released: boolean; canDownloadPdf: boolean; estimateNotice: string | null }
+  }) => (
     <div
       data-testid="reporte-shell"
       data-chapters={String(view.chapters.length)}
       data-paid={String(view.paid)}
+      data-download-href={downloadHref ?? ''}
+      data-released={String(capabilities?.released)}
+      data-can-download-pdf={String(capabilities?.canDownloadPdf)}
+      data-estimate-notice={capabilities?.estimateNotice ?? ''}
     />
   ),
 }))
 
 import ReporteAvaluoPage, { metadata } from './page'
 import { FIXTURE_SLUG } from '@/lib/avaluo/reporte/fixture-muestra'
-import { servedFixtureJson } from '@/lib/avaluo/reporte/report-serve.fixture'
+import { servedFixtureJson, servedDelivery } from '@/lib/avaluo/reporte/report-serve.fixture'
 
 let container: HTMLDivElement
 let root: Root
@@ -59,9 +71,12 @@ afterEach(() => {
 })
 
 /** Un servicio que responde el JSON servido para `slug` (mock de `fetch`). */
-function stubService(slug: string): ReturnType<typeof vi.fn> {
+function stubService(
+  slug: string,
+  overrides: Parameters<typeof servedFixtureJson>[0] = {},
+): ReturnType<typeof vi.fn> {
   vi.stubEnv('AVALUO_API_URL', 'https://micro.test')
-  const json = servedFixtureJson() as { meta: { slug: string } }
+  const json = servedFixtureJson(overrides) as { meta: { slug: string } }
   json.meta.slug = slug
   const fetchMock = vi.fn().mockResolvedValue(
     new Response(JSON.stringify(json), {
@@ -161,6 +176,79 @@ describe('/avaluo/reporte/[slug] — siempre encendida, siempre por el servicio'
       expect(
         container.querySelector('[data-testid="reporte-shell"]')?.getAttribute('data-paid'),
       ).toBe('true')
+    } finally {
+      vi.unstubAllGlobals()
+      vi.unstubAllEnvs()
+    }
+  })
+})
+
+describe('/avaluo/reporte/[slug] — capabilities y downloadHref (T-0007)', () => {
+  it('delivery released + canDownloadPdf:true ⇒ downloadHref apunta a la PDF route (E2), no a certificate', async () => {
+    const slug = 'doc-real-0010'
+    stubService(slug, { delivery: servedDelivery() })
+    try {
+      const ui = await call(slug, { token: 'cap-token' })
+      act(() => {
+        root.render(ui)
+      })
+      const shell = container.querySelector('[data-testid="reporte-shell"]')
+      const href = shell?.getAttribute('data-download-href') ?? ''
+      expect(href).toMatch(/\/api\/avaluo\/report\/doc-real-0010\/pdf\?token=cap-token/)
+      expect(href).not.toContain('/certificate')
+      expect(shell?.getAttribute('data-released')).toBe('true')
+    } finally {
+      vi.unstubAllGlobals()
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('delivery ausente ⇒ downloadHref null y capabilities denegadas (fallback pinneado)', async () => {
+    const slug = 'doc-real-0011'
+    stubService(slug)
+    try {
+      const ui = await call(slug, { token: 'cap-token' })
+      act(() => {
+        root.render(ui)
+      })
+      const shell = container.querySelector('[data-testid="reporte-shell"]')
+      expect(shell?.getAttribute('data-download-href')).toBe('')
+      expect(shell?.getAttribute('data-released')).toBe('false')
+      expect(shell?.getAttribute('data-can-download-pdf')).toBe('false')
+      expect(shell?.getAttribute('data-estimate-notice')).toContain('Documento preliminar')
+    } finally {
+      vi.unstubAllGlobals()
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('delivery released pero canDownloadPdf:false (sin pago) ⇒ downloadHref null igual', async () => {
+    const slug = 'doc-real-0012'
+    stubService(slug, { delivery: servedDelivery({ canDownloadPdf: false }) })
+    try {
+      const ui = await call(slug, { token: 'cap-token' })
+      act(() => {
+        root.render(ui)
+      })
+      const shell = container.querySelector('[data-testid="reporte-shell"]')
+      expect(shell?.getAttribute('data-download-href')).toBe('')
+      expect(shell?.getAttribute('data-released')).toBe('true')
+    } finally {
+      vi.unstubAllGlobals()
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('con token pero sin delivery.canDownloadPdf, ningún token viaja en el HTML vía downloadHref', async () => {
+    const slug = 'doc-real-0013'
+    stubService(slug)
+    try {
+      const ui = await call(slug, { token: 'secreto-del-dueno' })
+      act(() => {
+        root.render(ui)
+      })
+      const shell = container.querySelector('[data-testid="reporte-shell"]')
+      expect(shell?.getAttribute('data-download-href') ?? '').not.toContain('secreto-del-dueno')
     } finally {
       vi.unstubAllGlobals()
       vi.unstubAllEnvs()

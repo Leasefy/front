@@ -43,6 +43,16 @@ import {
   type PreScoringCurrent,
 } from '@/lib/api/prescoring.types'
 
+export interface UsePreScoringCurrentOptions {
+  /**
+   * `false` apaga el hook por completo: no pide, no polea y no se queda en
+   * `isLoading`. Existe porque `/aprobacion` es PÚBLICA — quien llega sin
+   * sesión no tiene estudio que consultar y `GET /pre-scoring/current`
+   * respondería 401 en cada visita anónima. Default `true`.
+   */
+  enabled?: boolean
+}
+
 export interface UsePreScoringCurrentResult {
   current: PreScoringCurrent | null
   estado: EstadoPreScoring
@@ -53,9 +63,12 @@ export interface UsePreScoringCurrentResult {
 
 const POLL_INTERVAL_MS = 300_000
 
-export function usePreScoringCurrent(): UsePreScoringCurrentResult {
+export function usePreScoringCurrent(
+  options?: UsePreScoringCurrentOptions,
+): UsePreScoringCurrentResult {
+  const enabled = options?.enabled ?? true
   const [current, setCurrent] = useState<PreScoringCurrent | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
   // No es estado de React a propósito: leerlo dentro del tick del interval
   // necesita el valor más reciente sin forzar que el effect de polling se
@@ -64,6 +77,7 @@ export function usePreScoringCurrent(): UsePreScoringCurrentResult {
 
   // `silencioso` = refresco del polling: no toca `isLoading` (ver cabecera).
   const cargar = useCallback(async (silencioso = false) => {
+    if (!enabled) return
     if (enVueloRef.current) return
     enVueloRef.current = true
     if (!silencioso) setIsLoading(true)
@@ -84,7 +98,7 @@ export function usePreScoringCurrent(): UsePreScoringCurrentResult {
       if (!silencioso) setIsLoading(false)
       enVueloRef.current = false
     }
-  }, [])
+  }, [enabled])
 
   useEffect(() => {
     void cargar()
@@ -98,7 +112,7 @@ export function usePreScoringCurrent(): UsePreScoringCurrentResult {
   // render) pero el propio tick decide si vale la pena pedir de nuevo — así el
   // `useEffect` no necesita `current` en sus deps.
   const enCursoRef = useRef(false)
-  enCursoRef.current = mapEstadoPreScoring(current) === 'en_proceso'
+  enCursoRef.current = enabled && mapEstadoPreScoring(current) === 'en_proceso'
 
   useEffect(() => {
     if (typeof window === 'undefined') return

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { X } from '@phosphor-icons/react'
+import { ArrowsClockwise, X } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
 import { LeasefyLogotype } from '@/components/brand'
@@ -25,6 +25,8 @@ import {
   PreScoringError,
 } from '@/lib/api/estudio-solicitud.service'
 import { EstadoPagoAprobacion } from '@/components/aprobacion/EstadoPagoAprobacion'
+import { usePreScoringCurrent } from '@/lib/hooks/use-prescoring-current'
+import { tieneEstudioVigente } from '@/lib/api/prescoring.types'
 import {
   validatePreApprovalForm,
   type PreApprovalFormFields,
@@ -70,6 +72,37 @@ export default function AprobacionPage() {
   const [pagando, setPagando] = useState(false)
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
   const [popupBlocked, setPopupBlocked] = useState(false)
+
+  /**
+   * Guarda de reingreso: quien YA tiene un estudio no puede ver este
+   * formulario.
+   *
+   * El caso que lo obliga es el cierre de sesión por tiempo. `terminarSesion`
+   * guarda la ruta actual como `returnUrl` (`session-terminal.ts`), así que
+   * quien se quedó en esta pantalla esperando el pago vuelve exactamente acá
+   * después de volver a entrar. Sin esta guarda se encontraba el formulario
+   * vacío —como si nunca hubiera pagado— y el único camino visible era pagar
+   * de nuevo algo que ya tiene. El submit lo terminaba salvando (el back
+   * responde `reused:true` y no cobra), pero recién DESPUÉS de llenar todo el
+   * formulario otra vez: la pantalla mentía hasta el último paso.
+   *
+   * Vale para cualquier forma de llegar acá con un estudio encima —marcador,
+   * botón "atrás", link viejo del asesor—, no solo para el regreso post-login.
+   *
+   * `enabled: Boolean(user)` porque esta ruta es PÚBLICA: sin sesión no hay
+   * estudio que consultar y el GET sería un 401 en cada visita anónima.
+   * `!pagando` deja tranquilo el flujo de pago recién creado en esta misma
+   * carga, que ya tiene su propia pantalla.
+   */
+  const { estado: estadoEstudio, isLoading: estudioCargando } = usePreScoringCurrent({
+    enabled: Boolean(user),
+  })
+  const redirigiendoAEstudio = tieneEstudioVigente(estadoEstudio) && !pagando
+  const resolviendoEstudio = Boolean(user) && (estudioCargando || redirigiendoAEstudio)
+
+  useEffect(() => {
+    if (redirigiendoAEstudio) router.replace('/inquilino/aprobacion')
+  }, [redirigiendoAEstudio, router])
 
   function set<K extends keyof PreApprovalFormFields>(key: K, value: PreApprovalFormFields[K]) {
     setFields((f) => ({ ...f, [key]: value }))
@@ -200,7 +233,17 @@ export default function AprobacionPage() {
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-8">
-        {pagando ? (
+        {resolviendoEstudio ? (
+          // Nunca el formulario mientras no se sepa si esta persona ya tiene
+          // estudio: mostrarlo y sacarlo un instante después es peor que
+          // esperar.
+          <Card>
+            <CardContent className="flex items-center gap-3 py-10">
+              <ArrowsClockwise className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
+              <p className="text-sm text-fg-muted">Revisando tu solicitud...</p>
+            </CardContent>
+          </Card>
+        ) : pagando ? (
           // Reemplaza el form: el pago se abrió en otra pestaña, esta se
           // queda poleando el back en vez de navegar.
           <Card>

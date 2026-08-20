@@ -45,8 +45,23 @@ void React
 // ---------------------------------------------------------------------------
 
 const pushMock = vi.fn()
+const replaceMock = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: pushMock, back: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push: pushMock, back: vi.fn(), replace: replaceMock }),
+}))
+
+// El estado del estudio se mockea: su lógica propia (404 = sin_estudio,
+// polling, mapeo) ya está cubierta en `use-prescoring-current.test.ts`.
+let mockEstudio: { estado: string; isLoading: boolean } = {
+  estado: 'sin_estudio',
+  isLoading: false,
+}
+const preScoringOptionsMock = vi.fn()
+vi.mock('@/lib/hooks/use-prescoring-current', () => ({
+  usePreScoringCurrent: (options?: unknown) => {
+    preScoringOptionsMock(options)
+    return mockEstudio
+  },
 }))
 
 let mockUser: { role: string } | null = null
@@ -147,7 +162,10 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container)
   mockUser = null
+  mockEstudio = { estado: 'sin_estudio', isLoading: false }
   pushMock.mockReset()
+  replaceMock.mockReset()
+  preScoringOptionsMock.mockReset()
   crearOrdenPreScoringMock.mockReset()
   estadoPagoPropsMock.mockReset()
 
@@ -357,5 +375,75 @@ describe('<AprobacionPage> — Slice 1 pre-scoring (pago en otra pestaña)', () 
       expect(crearOrdenPreScoringMock).not.toHaveBeenCalled()
       expect(pushMock).not.toHaveBeenCalled()
     })
+  })
+})
+
+/**
+ * El regreso a /aprobacion con un estudio YA hecho.
+ *
+ * Lo dispara el cierre de sesión por tiempo: `terminarSesion` guarda la ruta
+ * actual como `returnUrl`, así que quien se quedó en esta pantalla esperando
+ * el pago vuelve exactamente acá después de volver a entrar — y se encontraba
+ * el formulario vacío, como si nunca hubiera pagado. El formulario no es una
+ * pantalla neutra: es una invitación a pagar de nuevo algo que ya tiene.
+ */
+describe('<AprobacionPage> — quien ya tiene un estudio no ve el formulario', () => {
+  beforeEach(() => {
+    mockUser = { role: 'tenant' }
+  })
+
+  it('estudio en proceso: manda a /inquilino/aprobacion sin mostrar el formulario', () => {
+    mockEstudio = { estado: 'en_proceso', isLoading: false }
+
+    act(() => {
+      root.render(<AprobacionPage />)
+    })
+
+    expect(replaceMock).toHaveBeenCalledWith('/inquilino/aprobacion')
+    expect(container.querySelector('form')).toBeNull()
+  })
+
+  it('estudio con resultado (aprobado): mismo destino', () => {
+    mockEstudio = { estado: 'aprobado', isLoading: false }
+
+    act(() => {
+      root.render(<AprobacionPage />)
+    })
+
+    expect(replaceMock).toHaveBeenCalledWith('/inquilino/aprobacion')
+  })
+
+  it('mientras se resuelve el estado: no muestra el formulario ni navega todavía', () => {
+    mockEstudio = { estado: 'sin_estudio', isLoading: true }
+
+    act(() => {
+      root.render(<AprobacionPage />)
+    })
+
+    expect(replaceMock).not.toHaveBeenCalled()
+    expect(container.querySelector('form')).toBeNull()
+  })
+
+  it('estudio expirado: la ventana cerró, el formulario SÍ corresponde', () => {
+    mockEstudio = { estado: 'expirado', isLoading: false }
+
+    act(() => {
+      root.render(<AprobacionPage />)
+    })
+
+    expect(replaceMock).not.toHaveBeenCalled()
+    expect(container.querySelector('form')).not.toBeNull()
+  })
+
+  it('sin sesión: no consulta el estudio y muestra el formulario', () => {
+    mockUser = null
+
+    act(() => {
+      root.render(<AprobacionPage />)
+    })
+
+    expect(preScoringOptionsMock).toHaveBeenCalledWith({ enabled: false })
+    expect(replaceMock).not.toHaveBeenCalled()
+    expect(container.querySelector('form')).not.toBeNull()
   })
 })

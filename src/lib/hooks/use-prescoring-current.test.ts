@@ -40,10 +40,10 @@ let root: Root
 
 type Hook = ReturnType<typeof usePreScoringCurrent>
 
-function renderHook(): { get: () => Hook } {
+function renderHook(options?: Parameters<typeof usePreScoringCurrent>[0]): { get: () => Hook } {
   let latest: Hook | null = null
   function Sonda() {
-    latest = usePreScoringCurrent()
+    latest = usePreScoringCurrent(options)
     return null
   }
   act(() => {
@@ -326,5 +326,26 @@ describe('usePreScoringCurrent', () => {
       })
       expect(mockGet).toHaveBeenCalledTimes(2)
     })
+  })
+})
+
+describe('usePreScoringCurrent — enabled', () => {
+  // `/aprobacion` es pública: quien llega sin sesión no tiene a quién
+  // consultarle el estudio. Pedirlo igual sería un 401 garantizado por cada
+  // visita anónima a la landing del pre-scoring.
+  it('enabled:false — no sale a la red y no se queda cargando', () => {
+    const hook = renderHook({ enabled: false })
+
+    expect(mockGet).not.toHaveBeenCalled()
+    expect(hook.get().isLoading).toBe(false)
+    expect(hook.get().estado).toBe('sin_estudio')
+  })
+
+  it('enabled:true es el comportamiento por defecto', () => {
+    mockGet.mockResolvedValue({ order: { status: 'STUDY_STARTED' } })
+
+    renderHook({ enabled: true })
+
+    expect(mockGet).toHaveBeenCalledWith('/pre-scoring/current')
   })
 })

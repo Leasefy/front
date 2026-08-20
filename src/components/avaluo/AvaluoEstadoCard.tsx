@@ -10,8 +10,9 @@
  *                                (payment already happened at intake)
  *   firmado + certId + !paid  → honest pending note + enlace al informe (la
  *                                landing muestra lo público y el estado del pago)
- *   pagado    + certId → "Ver el informe" + "Descargar el PDF"
- *   entregado + certId → same as pagado + "Verificar certificado" link
+ *   entregado + certId → same as firmado+paid + "Verificar certificado" link
+ *   (`pagado` is not a real state — the micro's state machine has five
+ *   members, not six; see `AvaluoStatus` in lib/types/avaluo.ts, T-0007)
  *   rechazado          → destructive note
  *   other              → processing message
  *
@@ -157,7 +158,7 @@ export function AvaluoEstadoCard({
 
   let cta: React.ReactNode = null
 
-  if ((status === 'firmado' && certId && paid) || (status === 'pagado' && certId)) {
+  if (status === 'firmado' && certId && paid) {
     cta = (
       <div className="flex flex-col sm:flex-row gap-3">
         {verInformeButton}

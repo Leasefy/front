@@ -362,6 +362,17 @@ export function certificateUrl(certId: string, token: string): string {
   return `${AVALUO_API_URL}/api/avaluo/${certId}/certificate?token=${encodeURIComponent(token)}`
 }
 
+/**
+ * Builds the URL for the new report PDF (T-0007 E2, `GET
+ * /api/avaluo/report/[slug]/pdf?token=`). Deliberately built on
+ * NEXT_PUBLIC_AVALUO_API_URL (this file's AVALUO_API_URL): the browser
+ * follows this link directly, so the server-only AVALUO_API_URL used by
+ * report-view.data.ts's RSC fetch is not reachable from the client.
+ */
+export function reportPdfUrl(slug: string, token: string): string {
+  return `${AVALUO_API_URL}/api/avaluo/report/${encodeURIComponent(slug)}/pdf?token=${encodeURIComponent(token)}`
+}
+
 /** Builds the memoria download URL with token as query param. */
 export function memoriaUrl(certId: string, token: string): string {
   return `${AVALUO_API_URL}/api/avaluo/${certId}/memoria?token=${encodeURIComponent(token)}`
@@ -380,6 +391,7 @@ export const avaluoService = {
   downloadCertificate,
   downloadMemoria,
   certificateUrl,
+  reportPdfUrl,
   memoriaUrl,
   persistCapToken,
   readCapToken,

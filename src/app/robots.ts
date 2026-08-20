@@ -14,6 +14,7 @@ export default function robots(): MetadataRoute.Robots {
           '/api/',         // API routes
           '/auth/',        // Auth pages
           '/aplicar/',     // Application forms (private data)
+          '/avaluo/reporte/', // Informe con datos del inmueble y de su dueño
         ],
       },
       {

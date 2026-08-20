@@ -43,12 +43,15 @@ export type Finalidad = string
 // Status union — mirrors backend enum
 // ---------------------------------------------------------------------------
 
+// `pagado` NO existe: la máquina de estados real del micro tiene cinco
+// miembros (`avaluo/src/avaluo/signoff/state-machine.ts`), removido por el
+// reorder pay-at-intake (T-0007). El sexto valor era dead code — gateaba una
+// rama de `AvaluoEstadoCard.tsx` que el micro nunca puede producir.
 export type AvaluoStatus =
   | 'borrador'
   | 'en_revisión'
   | 'firmado'
   | 'rechazado'
-  | 'pagado'
   | 'entregado'
 
 /** Statuses that end the lifecycle — no further actions expected. */
@@ -66,7 +69,6 @@ export const STATUS_BADGE: Record<
   en_revisión: { variant: 'warning', label: 'En revisión' },
   firmado: { variant: 'success', label: 'Listo para pago' },
   rechazado: { variant: 'destructive', label: 'Rechazado' },
-  pagado: { variant: 'default', label: 'Pago recibido' },
   entregado: { variant: 'success', label: 'Entregado' },
 }
 

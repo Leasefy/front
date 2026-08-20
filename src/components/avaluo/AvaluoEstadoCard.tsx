@@ -5,14 +5,21 @@
  * and renders the appropriate CTA for each lifecycle state.
  *
  * Status → CTA mapping:
- *   firmado + certId + paid   → "Descargar certificado" (payment already
- *                                happened at intake, before this state)
- *   firmado + certId + !paid  → honest pending note (no button — there is
- *                                no resume-payment route today)
- *   pagado    + certId → "Descargar certificado" (certificateUrl with cap token)
- *   entregado + certId → same as pagado + "Verificar certificado" link
+ *   firmado + certId + paid   → "Ver el informe" (la landing web del informe,
+ *                                el ENTREGABLE principal) + "Descargar el PDF"
+ *                                (payment already happened at intake)
+ *   firmado + certId + !paid  → honest pending note + enlace al informe (la
+ *                                landing muestra lo público y el estado del pago)
+ *   entregado + certId → same as firmado+paid + "Verificar certificado" link
+ *   (`pagado` is not a real state — the micro's state machine has five
+ *   members, not six; see `AvaluoStatus` in lib/types/avaluo.ts, T-0007)
  *   rechazado          → destructive note
  *   other              → processing message
+ *
+ * El informe web (`/avaluo/reporte/[slug]?token=`) es la entrega principal del
+ * avalúo: el capability token viaja en la query como en `certificateUrl` (es
+ * el mismo secreto del dueño y la landing lo canjea server-side contra el
+ * micro). El PDF queda como descarga secundaria.
  *
  * Capability token is read from localStorage (avaluo:cap:<submissionId>).
  */
@@ -22,6 +29,7 @@ import {
   ArrowDown,
   ArrowSquareOut,
   ArrowsClockwise,
+  FileText,
   SealCheck,
   WarningCircle,
 } from '@phosphor-icons/react'
@@ -32,6 +40,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { TERMINAL_STATUSES, STATUS_BADGE } from '@/lib/types/avaluo'
 import type { AvaluoStatusResponse } from '@/lib/types/avaluo'
 import { certificateUrl, readCapToken } from '@/lib/api/avaluo.service'
+import { reporteAvaluoHref } from '@/lib/avaluo/reporte/reporte-href'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -119,6 +128,30 @@ export function AvaluoEstadoCard({
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
+  // El informe web: la entrega principal. Necesita el slug (viaja con el
+  // certId en el status) y el capability token del dueño.
+  const reportHref = slug && capToken ? reporteAvaluoHref(slug, capToken) : null
+
+  const verInformeButton = reportHref !== null && (
+    <Button asChild size="lg" className="inline-flex items-center gap-2">
+      <a href={reportHref} target="_blank" rel="noopener noreferrer">
+        <FileText className="w-4 h-4" />
+        Ver el informe
+      </a>
+    </Button>
+  )
+  const descargarPdfButton = (
+    <Button
+      size="lg"
+      variant="outline"
+      onClick={handleDownloadCertificate}
+      className="inline-flex items-center gap-2"
+    >
+      <ArrowDown className="w-4 h-4" />
+      Descargar el PDF
+    </Button>
+  )
+
   // ---------------------------------------------------------------------------
   // CTA section per status
   // ---------------------------------------------------------------------------
@@ -127,47 +160,36 @@ export function AvaluoEstadoCard({
 
   if (status === 'firmado' && certId && paid) {
     cta = (
-      <Button
-        size="lg"
-        variant="outline"
-        onClick={handleDownloadCertificate}
-        className="w-full sm:w-auto inline-flex items-center gap-2"
-      >
-        <ArrowDown className="w-4 h-4" />
-        Descargar certificado
-      </Button>
+      <div className="flex flex-col sm:flex-row gap-3">
+        {verInformeButton}
+        {descargarPdfButton}
+      </div>
     )
   } else if (status === 'firmado' && certId && !paid) {
     cta = (
-      <div className="flex items-center gap-2 text-sm text-fg-muted">
-        <SealCheck className="w-4 h-4 flex-none" />
-        <span>Estamos confirmando tu pago.</span>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2 text-sm text-fg-muted">
+          <SealCheck className="w-4 h-4 flex-none" />
+          <span>Estamos confirmando tu pago.</span>
+        </div>
+        {reportHref !== null && (
+          <a
+            href={reportHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+          >
+            <ArrowSquareOut className="w-4 h-4" />
+            Ver el avance del informe
+          </a>
+        )}
       </div>
-    )
-  } else if (status === 'pagado' && certId) {
-    cta = (
-      <Button
-        size="lg"
-        variant="outline"
-        onClick={handleDownloadCertificate}
-        className="w-full sm:w-auto inline-flex items-center gap-2"
-      >
-        <ArrowDown className="w-4 h-4" />
-        Descargar certificado
-      </Button>
     )
   } else if (status === 'entregado' && certId) {
     cta = (
       <div className="flex flex-col sm:flex-row gap-3">
-        <Button
-          size="lg"
-          variant="outline"
-          onClick={handleDownloadCertificate}
-          className="inline-flex items-center gap-2"
-        >
-          <ArrowDown className="w-4 h-4" />
-          Descargar certificado
-        </Button>
+        {verInformeButton}
+        {descargarPdfButton}
         {slug && (
           <a
             href={`/avaluo/verificar/${slug}`}

@@ -69,15 +69,66 @@ interface ReportServeResponse extends ReportWebView {
                                          // con <rect> (nunca inyecta SVG del servidor).
     photos: { key: string; url: string; expiresAtIso: string }[]  // URLs presignadas de S3 del anexo (TTL corto). [] si no hay.
   }
+  // OPCIONAL a nivel de tope (T-0007). Ausente o con forma inválida ⇒ el
+  // consumidor asume el modo MÁS restrictivo — ver «delivery» abajo. NUNCA
+  // parcial: presente y completo, o ausente.
+  delivery?: {
+    signoffState: string          // uno de los 5 estados de sign-off. Diagnóstico/display SOLO — nunca se rama comportamiento sobre esto.
+    released: boolean             // true ⇔ signoffState es 'firmado' o 'entregado'
+    canDownloadPdf: boolean       // released && paid
+    canVerify: boolean            // released
+    canExport: boolean            // released
+    estimateNotice: string | null // null ⇔ released; si no, el aviso de estimación IA no final
+  }
 }
 ```
 
 Errores: `404 {"error":"report not found"}` · `429 {"error":"unavailable"}` · `503 {"error":"database unavailable"}`. Nunca 500 con stack.
 
+## `delivery` — capacidades de entrega (T-0007)
+
+Lo que el dueño de este informe puede HACER, derivado server-side de `AvaluoCertificate.state` y el pago. El front NUNCA lo calcula ni lo sobreescribe.
+
+**Regla de fail-closed, la más importante de este contrato:** `delivery` ausente, o con una forma que el validador no reconoce, significa `released:false`, `canDownloadPdf:false`, `canVerify:false`, `canExport:false`, y el aviso de reserva pinneado (`FALLBACK_ESTIMATE_NOTICE`, `delivery-copy.ts`). Nunca al revés — ausencia nunca desbloquea.
+
+- `front/src/lib/avaluo/reporte/report-serve.schema.ts` parsea `delivery` en modo strip, `optional().catch(undefined)`: un `delivery` roto degrada a `undefined`, NUNCA nulea el resto del informe. `signoffState` se valida como `z.string()`, no `z.enum` — un valor de estado futuro no reconocido no puede tumbar el parseo.
+- `front/src/lib/avaluo/reporte/delivery.ts` es el ÚNICO lugar que resuelve las capacidades finales (`resolveDelivery`). Nadie más lee `ReportServeResponse['delivery']` directamente. `released:false` re-clampa las tres capacidades a `false` aunque el productor mandara alguna en `true`; `released:true` recorta `canVerify` con el AND de `meta.verifyUrlEnabled` (defensa en profundidad — el eco propio del productor).
+- `meta.verifyUrlEnabled` **cambió de valor** (no de forma): antes hardcodeado `true`, ahora es `delivery.canVerify`. El gate real del consumidor sigue siendo `delivery`; esto es sólo un segundo cinturón.
+- Inventario completo de qué gatea cada capacidad en la UI del front: `«Descargar el PDF» / «Descargar PDF»` (topbar + menú Exportar) → `canDownloadPdf`; `«Imprimir»` → `canExport`; `«Abrir el verificador»`, `«Copiar la huella»`, `«Ver la huella completa»`, el QR y el chip del sello en la barra → `canVerify`. Leer el veredicto y los datos del sello (no las acciones) NUNCA se gatea.
+
+## `GET .../report/[slug]/pdf?token=<capability>` (E2, T-0007)
+
+El nuevo PDF, generado con `@react-pdf/renderer` sobre el mismo `ReportV1` que la web — NO el certificado legado. El front lo linkea con `reportPdfUrl(slug, token)` (`src/lib/api/avaluo.service.ts`), construido **sobre `NEXT_PUBLIC_AVALUO_API_URL`** porque el navegador sigue ese enlace directamente (el `AVALUO_API_URL` server-only del fetch RSC no es alcanzable desde el cliente).
+
+Auth y postura idénticas a E1: mismo capability token en `?token=`, mismo 404 simétrico, mismo throttle por IP antes de tocar la DB.
+
+| Condición | Código | Body | El front lo trata como |
+| --- | --- | --- | --- |
+| autorizado, `signoffState` no liberado | `409` | `{"error":"not_released"}` | muestra el aviso de estimación; nunca reintenta en loop |
+| autorizado, liberado, sin pago aprobado | `409` | `{"error":"payment_required"}` | rutea al CTA de pago existente |
+| slug desconocido / token inválido o de otra submission | `404` | `{"error":"report not found"}` | enlace muerto, byte-idéntico al 404 de E1 |
+| `!prisma` | `503` | `{"error":"database unavailable"}` | transitorio |
+| throw inesperado | `503` | `{"error":"unavailable"}` | transitorio, nunca 500 con stack |
+
+El front NUNCA construye este enlace sin `capabilities.canDownloadPdf` — ofrecerlo en el HTML sin el permiso sería entregarlo gratis, aunque E2 lo vaya a rechazar igual. Ver `downloadHref` en `src/app/avaluo/reporte/[slug]/page.tsx`.
+
 ## Determinismo / invariantes
 - El modelo sale de `buildReportV1(ctx)` con `ctx` armado desde la DB por el MISMO ensamblado que la ruta del certificado (`toDocumentProps(args)` → `fromDocumentProps(props)`), para que web == PDF servido (INV-02). NO se toca `renderCertificate` ni nada que mueva bytes del PDF; los goldens de `tests/golden/` tienen que seguir verdes.
 - Nada de reloj/RNG dentro de `src/avaluo/report/` (los grep-gates lo prohíben): `nowIso`, presign, tamper y chainStatus viven en `src/avaluo/report/serve/` (nuevo dir) o en la ruta, nunca en builders/toBlocks.
 - PII: `signedBy` sólo para owner; el resto de PII del propietario (dirección, fotos) va porque la audiencia es el dueño autenticado por capability token.
+
+## Pantalla de espera → informe (T-0007, sin cambio de wire)
+
+`GET /api/avaluo/[id]/status` no gana ningún campo nuevo. `slug` ya era parte de su respuesta y es el discriminador: `status` solo no distingue "pipeline corriendo" de "en revisión" (los dos valen `'en_revisión'`). El predicado, frozen, vive en `front/src/lib/avaluo/reporte/reporte-href.ts` (`shouldRedirectToReport`):
+
+```
+redirect a /avaluo/reporte/<slug>?token=<capToken>
+  iff   status.slug != null
+   &&   status.status !== 'rechazado'
+   &&   capToken != null
+```
+
+`rechazado` queda excluido a propósito: una solicitud rechazada está reembolsada y no se la manda a un informe.
 
 ## Fixture compartida
 El micro escribe `report-serve.sample.json` (`npx tsx scripts/write-report-serve-sample.ts <ruta>`; la copia canónica vive junto a este contrato en `src/avaluo/report-serve/report-serve.sample.json`) generado desde `src/avaluo/report/fixtures/sample-report.ts` + `toWebView` + un `render` sintético (state 'valid', chain 'VIGENTE', qr real de la verifyUrl de la fixture, photos []). El front lo copia tal cual y lo usa como fixture de su test de adaptación/validación. Trae las 39 secciones del orden de arriba.

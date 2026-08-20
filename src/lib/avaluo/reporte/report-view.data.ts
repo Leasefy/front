@@ -188,10 +188,17 @@ export function resolveMediaUrls(view: ReportWebView): ReportWebView {
  * `null` es deliberadamente **un solo resultado para todos los casos**: la
  * página no debe decir cuál falló. La simetría es lo que impide usar la
  * respuesta para averiguar si un slug existe.
+ *
+ * El tipo de retorno es `ReportServeResponse`, no `ReportWebView`: una vista
+ * servida SIEMPRE trae `render` (no `null`, lo exige el validador) y puede
+ * traer `delivery` (T-0007, opcional en el wire). `delivery` es ortogonal al
+ * pipeline de pago/fotos — no lo tocan `toPaidProjection` ni
+ * `resolveMediaUrls` — así que se vuelve a adjuntar al final desde `served`,
+ * junto con `render` para restaurar el tipo no-nulo.
  */
 export async function getReportView(
   params: GetReportViewParams,
-): Promise<ReportWebView | null> {
+): Promise<ReportServeResponse | null> {
   // No hay camino de muestra ni overrides por URL: TODO informe sale del
   // servicio, con el token del dueño. La fixture (`fixture-muestra.ts`) vive
   // sólo en los tests.
@@ -206,7 +213,8 @@ export async function getReportView(
   // `paid`. Si dijo `paid:false`, ningún peso sale de acá aunque él lo dejara.
   const projected = served.paid ? served : toPaidProjection(served, false)
 
-  return resolveMediaUrls(withPaywallCta(projected))
+  const finalView = resolveMediaUrls(withPaywallCta(projected))
+  return { ...finalView, render: served.render, delivery: served.delivery }
 }
 
 /**

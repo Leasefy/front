@@ -49,6 +49,13 @@ export interface ReportTopbarProps {
   sealAltered?: boolean
   downloadHref: string | null
   sample: boolean
+  /**
+   * Capacidades de entrega (T-0007). `canExport` gatea «Imprimir»;
+   * `canVerify` gatea el chip del sello. `canDownloadPdf` ya se gatea aparte
+   * con `downloadHref` (`null` ⇒ deshabilitado) — no hace falta acá.
+   */
+  canExport: boolean
+  canVerify: boolean
 }
 
 function ThemeToggle() {
@@ -78,6 +85,8 @@ export function ReportTopbar({
   sealAltered = false,
   downloadHref,
   sample,
+  canExport,
+  canVerify,
 }: ReportTopbarProps) {
   const canDownload = downloadHref !== null
   const downloadTip = sample ? 'Sin documento emitido en la muestra' : 'Sin documento emitido'
@@ -136,7 +145,7 @@ export function ReportTopbar({
           >
             {status.label}
           </StatusBadge>
-          {hashShort !== null && (
+          {hashShort !== null && canVerify && (
             <a
               href="#sello-verificacion"
               data-seal-chip={sealAltered ? 'altered' : 'ok'}
@@ -163,10 +172,12 @@ export function ReportTopbar({
                 </Button>
               </DropdownListTrigger>
               <DropdownListContent align="end" className="min-w-[220px]">
-                <DropdownListItem onSelect={() => window.print()}>
-                  <Printer className="mr-2 size-4" aria-hidden="true" />
-                  Imprimir
-                </DropdownListItem>
+                {canExport && (
+                  <DropdownListItem onSelect={() => window.print()}>
+                    <Printer className="mr-2 size-4" aria-hidden="true" />
+                    Imprimir
+                  </DropdownListItem>
+                )}
                 <DropdownListItem
                   disabled={!canDownload}
                   onSelect={() => {
@@ -210,11 +221,13 @@ export function ReportTopbar({
                   <DownloadSimple className="mr-2 size-4" aria-hidden="true" />
                   {canDownload ? 'Descargar el PDF' : `Descargar el PDF — ${downloadTip.toLowerCase()}`}
                 </DropdownListItem>
-                <DropdownListItem onSelect={() => window.print()}>
-                  <Printer className="mr-2 size-4" aria-hidden="true" />
-                  Imprimir
-                </DropdownListItem>
-                {hashShort !== null && (
+                {canExport && (
+                  <DropdownListItem onSelect={() => window.print()}>
+                    <Printer className="mr-2 size-4" aria-hidden="true" />
+                    Imprimir
+                  </DropdownListItem>
+                )}
+                {hashShort !== null && canVerify && (
                   <DropdownListItem asChild>
                     <a href="#sello-verificacion" className={cn('flex items-center')}>
                       <SealCheck className="mr-2 size-4" aria-hidden="true" weight="duotone" />

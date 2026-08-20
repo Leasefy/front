@@ -38,6 +38,15 @@ import { QrMatrix } from './QrMatrix'
 export interface SealContext {
   readonly slug: string
   readonly render: ReportRender | null
+  /**
+   * `delivery.canVerify` resuelto (T-0007, `resolveDelivery`). `false` ⇒ el
+   * veredicto y los datos del sello siguen visibles (leerlos no se gatea),
+   * pero NINGUNA acción de verificación se ofrece: ni el enlace, ni «Copiar»,
+   * ni el hash completo, ni el QR. El enlace además queda gateado por su
+   * propio `verifyUrlEnabled` del wire — esto es la segunda cerradura,
+   * independiente de lo que el productor haya mandado.
+   */
+  readonly canVerify: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -223,11 +232,11 @@ export function SealBlockView({ block, seal }: { block: SealBlock; seal: SealCon
                 >
                   {p.hashShort}
                 </code>
-                {p.hashFull !== null && (
+                {p.hashFull !== null && seal.canVerify && (
                   <CopyHashButton value={p.hashFull} className="print:hidden" />
                 )}
               </span>
-              {p.hashFull !== null && (
+              {p.hashFull !== null && seal.canVerify && (
                 <details className="mt-1.5">
                   <summary className="cursor-pointer text-caption text-fg-muted underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                     Ver la huella completa
@@ -245,7 +254,7 @@ export function SealBlockView({ block, seal }: { block: SealBlock; seal: SealCon
         </dl>
 
         <div className="flex flex-col items-stretch gap-3">
-          {seal.render !== null && (
+          {seal.render !== null && seal.canVerify && (
             <figure className="m-0 rounded-md border border-ink-border bg-ink p-3 text-center shadow-glow">
               <QrMatrix
                 qr={seal.render.qr}
@@ -257,7 +266,7 @@ export function SealBlockView({ block, seal }: { block: SealBlock; seal: SealCon
               </figcaption>
             </figure>
           )}
-          {p.verifyUrlEnabled ? (
+          {p.verifyUrlEnabled && seal.canVerify ? (
             <a
               href={p.verifyUrl}
               target="_blank"

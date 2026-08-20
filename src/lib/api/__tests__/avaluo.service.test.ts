@@ -65,6 +65,19 @@ describe('submitIntake', () => {
   })
 })
 
+describe('reportPdfUrl (T-0007 E2)', () => {
+  it('arma la URL de descarga del PDF servido, con el slug y el token escapados', () => {
+    const url = avaluoService.reportPdfUrl('doc-real-0001', 'cap.token/with=chars')
+    expect(url).toMatch(/\/api\/avaluo\/report\/doc-real-0001\/pdf\?token=/)
+    expect(url).toContain(encodeURIComponent('cap.token/with=chars'))
+  })
+
+  it('escapa el slug también', () => {
+    const url = avaluoService.reportPdfUrl('slug con espacio', 'tok')
+    expect(url).toContain(encodeURIComponent('slug con espacio'))
+  })
+})
+
 describe('startPayment removal', () => {
   it('is no longer exported — POST /:certId/pay is a dead 410 route', () => {
     expect((avaluoService as Record<string, unknown>).startPayment).toBeUndefined()

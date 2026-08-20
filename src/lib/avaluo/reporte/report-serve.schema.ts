@@ -502,6 +502,61 @@ const renderSchema = z.object({
 })
 const _render: z.ZodType<ReportRender> = renderSchema
 
+// ---------------------------------------------------------------------------
+// delivery — capacidades de entrega (T-0007)
+// ---------------------------------------------------------------------------
+
+/**
+ * Los cinco estados de sign-off (`avaluo/src/avaluo/signoff/state-machine.ts`).
+ * SÓLO diagnóstico/display — nunca se rama comportamiento sobre esto (T-0007
+ * §3.2). Por eso el schema lo valida como `z.string()`, NO como `z.enum`: un
+ * valor futuro no reconocido no puede tumbar el parseo entero.
+ */
+export type DeliverySignoffState =
+  | 'borrador'
+  | 'en_revisión'
+  | 'firmado'
+  | 'rechazado'
+  | 'entregado'
+
+/**
+ * Lo que el dueño de este informe puede HACER. Lo deriva el micro
+ * server-side a partir del estado del certificado y el pago; el front NUNCA
+ * lo calcula ni lo sobreescribe — sólo lo lee (o, si falta o llega roto, lo
+ * niega todo: ver `resolveDelivery` en `delivery.ts`).
+ *
+ * `signoffState` viaja como `string`, NO como `DeliverySignoffState`: el
+ * productor emite siempre uno de los cinco valores conocidos, pero el
+ * consumidor lo valida laxo a propósito (ver `deliverySchema` abajo) para que
+ * un estado futuro no reconocido no tumbe el parseo. `DeliverySignoffState`
+ * queda exportado sólo como referencia de los valores esperados hoy.
+ */
+export interface DeliveryCapabilities {
+  readonly signoffState: string
+  /** true ⇔ signoffState es 'firmado' o 'entregado'. */
+  readonly released: boolean
+  /** released && paid. */
+  readonly canDownloadPdf: boolean
+  /** released. */
+  readonly canVerify: boolean
+  /** released. */
+  readonly canExport: boolean
+  /** El aviso de estimación IA no final. `null` ⇔ released. */
+  readonly estimateNotice: string | null
+}
+
+const deliverySchema = z.object({
+  // NO z.enum — un valor de estado futuro no reconocido no puede anular todo
+  // el payload (`report-view.data.ts` convierte cualquier fallo de parseo en
+  // `notFound()`). Ver T-0007 §3.2.3.
+  signoffState: z.string(),
+  released: z.boolean(),
+  canDownloadPdf: z.boolean(),
+  canVerify: z.boolean(),
+  canExport: z.boolean(),
+  estimateNotice: z.string().nullable(),
+}) satisfies z.ZodType<DeliveryCapabilities, z.ZodTypeDef, unknown>
+
 /**
  * La respuesta 200 de report-serve v1. `render` es obligatorio. `sample` lo
  * declara el servidor (un documento real es `false`; la fixture compartida
@@ -509,6 +564,12 @@ const _render: z.ZodType<ReportRender> = renderSchema
  * micro) y la landing lo respeta tal cual — lo que NUNCA hace es aplicar los
  * overrides de desarrollo a una vista servida, venga marcada como venga
  * (`report-view.data.ts`).
+ *
+ * `delivery` es OPCIONAL a nivel de tope (T-0007 §3.2): un micro viejo que
+ * todavía no lo manda, o un valor con forma inválida, degradan a `undefined`
+ * vía `.catch()` — NUNCA a un parseo fallido de todo el payload. El consumidor
+ * (`resolveDelivery`, `delivery.ts`) trata `undefined` como el modo más
+ * restrictivo: nada de PDF, nada de verificación, nada de exportar.
  */
 export const reportServeResponseSchema = z.object({
   schema: z.literal('report-v1'),
@@ -520,11 +581,17 @@ export const reportServeResponseSchema = z.object({
   order: orderSchema,
   sections: sectionsSchema,
   render: renderSchema,
+  delivery: deliverySchema.optional().catch(undefined),
 })
 
 /** El tipo de una vista servida: un `ReportWebView` con `render` presente. */
 export interface ReportServeResponse extends ReportWebView {
   readonly render: ReportRender
+  /**
+   * OPCIONAL en el wire (T-0007 §3.2). Ausente o roto ⇒ modo más restrictivo
+   * en el consumidor. Presente y completo, o ausente — nunca a medias.
+   */
+  readonly delivery?: DeliveryCapabilities
 }
 
 // Comprobación en compilación (sin `as`): lo que sale del parser ES una vista.

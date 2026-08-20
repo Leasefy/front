@@ -125,6 +125,79 @@ describe('parseReportServeResponse — la respuesta sintética', () => {
   })
 })
 
+describe('parseReportServeResponse — delivery (T-0007)', () => {
+  it('sin delivery en el JSON ⇒ parsea igual, delivery queda undefined', () => {
+    const json = withPath(servedFixtureJson(), ['delivery'], undefined)
+    const result = parseReportServeResponse(json)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.view.delivery).toBeUndefined()
+  })
+
+  it('con delivery completo y released:true ⇒ lo parsea tal cual', () => {
+    const delivery = {
+      signoffState: 'entregado',
+      released: true,
+      canDownloadPdf: true,
+      canVerify: true,
+      canExport: true,
+      estimateNotice: null,
+    }
+    const json = withPath(servedFixtureJson(), ['delivery'], delivery)
+    const result = parseReportServeResponse(json)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.view.delivery).toEqual(delivery)
+  })
+
+  it('con delivery completo y released:false ⇒ lo parsea con el aviso', () => {
+    const delivery = {
+      signoffState: 'en_revisión',
+      released: false,
+      canDownloadPdf: false,
+      canVerify: false,
+      canExport: false,
+      estimateNotice: 'Documento preliminar.',
+    }
+    const json = withPath(servedFixtureJson(), ['delivery'], delivery)
+    const result = parseReportServeResponse(json)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.view.delivery).toEqual(delivery)
+  })
+
+  it('signoffState con un valor futuro no reconocido NO tumba el parseo (no es z.enum)', () => {
+    const delivery = {
+      signoffState: 'un-estado-que-todavia-no-existe',
+      released: false,
+      canDownloadPdf: false,
+      canVerify: false,
+      canExport: false,
+      estimateNotice: 'x',
+    }
+    const json = withPath(servedFixtureJson(), ['delivery'], delivery)
+    const result = parseReportServeResponse(json)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.view.delivery?.signoffState).toBe('un-estado-que-todavia-no-existe')
+  })
+
+  it.each([
+    ['released no booleano', { ...{ signoffState: 'firmado', released: 'sí', canDownloadPdf: false, canVerify: false, canExport: false, estimateNotice: null } }],
+    ['falta canVerify', { signoffState: 'firmado', released: true, canDownloadPdf: true, canExport: true, estimateNotice: null }],
+    ['delivery no es un objeto', 'released'],
+  ])('delivery roto (%s) ⇒ degrada a undefined, NUNCA tumba el resto del payload', (_label, broken) => {
+    const json = withPath(servedFixtureJson(), ['delivery'], broken)
+    const result = parseReportServeResponse(json)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.view.delivery).toBeUndefined()
+    // El resto del payload sigue intacto: esto NUNCA es un 404 de todo el informe.
+    expect(result.view.meta.slug.length).toBeGreaterThan(0)
+    expect(Object.keys(result.view.sections)).toHaveLength(39)
+  })
+})
+
 describe('report-serve.sample.json — la fixture compartida con el micro', () => {
   const exists = existsSync(SAMPLE_JSON_PATH)
 
@@ -149,6 +222,16 @@ describe('report-serve.sample.json — la fixture compartida con el micro', () =
       .find((s) => s.node.id === 'sello-verificacion')
     expect(sealSection?.node.blocks.some((b) => b.kind === 'seal')).toBe(true)
   })
+
+  it.skipIf(!exists)(
+    'no trae `delivery` (T-0007): regresión fail-closed — es la fixture de referencia de que un micro sin delivery deja el informe en modo más restrictivo',
+    () => {
+      const json: unknown = JSON.parse(readFileSync(SAMPLE_JSON_PATH, 'utf8'))
+      const result = parseReportServeResponse(json)
+      if (!result.ok) throw new Error(`report-serve.sample.json no valida:\n${result.issues.join('\n')}`)
+      expect(result.view.delivery).toBeUndefined()
+    },
+  )
 
   if (!exists) {
     it('todavía no existe: se salta el test de adaptación', () => {

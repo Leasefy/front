@@ -23,7 +23,7 @@ import type {
   SealBlock,
   SectionId,
 } from './report-model'
-import type { ReportServeResponse } from './report-serve.schema'
+import type { DeliveryCapabilities, ReportServeResponse } from './report-serve.schema'
 
 export const SERVED_VERIFY_BASE = 'https://verify.portofino.test/verify'
 export const SERVED_VERIFY_URL = `${SERVED_VERIFY_BASE}/${FIXTURE_SLUG}`
@@ -102,15 +102,36 @@ function withRealSeal(node: ReportSectionNode): ReportSectionNode {
 }
 
 /**
+ * Un `delivery` (T-0007) listo para las pruebas: released, todo permitido,
+ * sin aviso. Acepta overrides — p. ej. `servedDelivery({ released: false, ... })`
+ * para el modo observe-only.
+ */
+export function servedDelivery(overrides: Partial<DeliveryCapabilities> = {}): DeliveryCapabilities {
+  return {
+    signoffState: 'entregado',
+    released: true,
+    canDownloadPdf: true,
+    canVerify: true,
+    canExport: true,
+    estimateNotice: null,
+    ...overrides,
+  }
+}
+
+/**
  * La vista de muestra servida «de verdad»: `sample:false`, sello habilitado y
- * `render` presente. Acepta overrides de primer nivel y de `render`.
+ * `render` presente. Acepta overrides de primer nivel, de `render` y de
+ * `delivery` (T-0007) — `delivery` NO es parte de `ReportWebView` (D-1), así
+ * que se trata aparte igual que `render`. Sin override queda `undefined`
+ * (ausente), el mismo estado que la fixture compartida `report-serve.sample.json`.
  */
 export function buildServedFixture(
   overrides: Partial<Omit<ReportWebView, 'render'>> & {
     readonly render?: Partial<ReportRender>
+    readonly delivery?: DeliveryCapabilities
   } = {},
 ): ReportServeResponse {
-  const { render, ...rest } = overrides
+  const { render, delivery, ...rest } = overrides
   const sections: Record<SectionId, ReportSectionNode> = {
     ...FIXTURE_VIEW.sections,
     'sello-verificacion': withRealSeal(FIXTURE_VIEW.sections['sello-verificacion']),
@@ -127,6 +148,7 @@ export function buildServedFixture(
     sections,
     ...rest,
     render: servedRender(render),
+    delivery,
   }
 }
 

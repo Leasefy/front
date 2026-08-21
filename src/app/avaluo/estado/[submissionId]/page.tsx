@@ -22,7 +22,7 @@ import { Eyebrow } from '@leasefy/cadence'
 import { useAvaluoStatus } from '@/lib/hooks/use-avaluo-status'
 import { AvaluoEstadoCard } from '@/components/avaluo/AvaluoEstadoCard'
 import { readCapToken } from '@/lib/api/avaluo.service'
-import { reporteAvaluoHref, shouldRedirectToReport } from '@/lib/avaluo/reporte/reporte-href'
+import { reporteAvaluoHref, shouldRedirectToReport } from '@/lib/avaluo/reporte-href'
 
 export default function AvaluoEstadoPage() {
   const params = useParams<{ submissionId: string }>()

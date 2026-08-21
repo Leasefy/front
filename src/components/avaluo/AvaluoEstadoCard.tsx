@@ -40,7 +40,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { TERMINAL_STATUSES, STATUS_BADGE } from '@/lib/types/avaluo'
 import type { AvaluoStatusResponse } from '@/lib/types/avaluo'
 import { certificateUrl, readCapToken } from '@/lib/api/avaluo.service'
-import { reporteAvaluoHref } from '@/lib/avaluo/reporte/reporte-href'
+import { reporteAvaluoHref } from '@/lib/avaluo/reporte-href'
 
 // ---------------------------------------------------------------------------
 // Props

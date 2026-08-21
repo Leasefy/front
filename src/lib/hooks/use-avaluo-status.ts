@@ -16,7 +16,7 @@
 
 import { useState, useEffect } from 'react'
 import { getAvaluoStatus, readCapToken } from '@/lib/api/avaluo.service'
-import { shouldRedirectToReport } from '@/lib/avaluo/reporte/reporte-href'
+import { shouldRedirectToReport } from '@/lib/avaluo/reporte-href'
 import type { AvaluoStatusResponse } from '@/lib/types/avaluo'
 import { TERMINAL_STATUSES } from '@/lib/types/avaluo'
 

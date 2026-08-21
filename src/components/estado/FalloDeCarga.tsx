@@ -49,9 +49,9 @@ export interface FalloDeCargaProps {
    * reintento prende la bandera de carga del hook, el padre cambia al
    * esqueleto y este cartel se desmonta. Medido en Propietarios: el spinner
    * aparece a los 2 ms. Donde sí importa es en los carteles que quedan
-   * montados dentro de un formulario —`/inquilino/aprobacion/pago`—, porque
-   * ahí `onReintentar` inicia un pago PSE y `pagar()` no corta si ya está
-   * enviando: dos clics rápidos eran dos intentos de cobro.
+   * montados dentro de un formulario de pago, porque ahí `onReintentar`
+   * inicia un cobro y si la función que dispara no corta cuando ya está
+   * enviando, dos clics rápidos son dos intentos de cobro.
    */
   onReintentar?: () => void | Promise<unknown>
   /** A dónde volver cuando reintentar no tiene sentido. */

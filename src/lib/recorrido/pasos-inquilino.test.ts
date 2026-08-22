@@ -90,7 +90,13 @@ describe('navegación', () => {
   it('el pago cuelga de la aprobación, que es lo que enciende el sidebar', () => {
     // El sidebar marca activo con `pathname.startsWith(href)`. Fuera de esta
     // rama, el panel entero queda apagado.
-    expect(pasoInquilinoPorKey('pago')?.href).toBe('/inquilino/aprobacion/pago')
+    //
+    // T-0010: la pantalla de pago vieja apuntaba a un endpoint que el back
+    // nunca expuso y se eliminó. El pago vivo está adentro del mismo
+    // formulario que pide la aprobación, así que «pago» y «asegurabilidad»
+    // comparten literalmente el mismo destino.
+    expect(pasoInquilinoPorKey('pago')?.href).toBe('/inquilino/aprobacion')
+    expect(pasoInquilinoPorKey('pago')?.href).toBe(pasoInquilinoPorKey('asegurabilidad')?.href)
     expect(pasoInquilinoPorKey('pago')?.href.startsWith('/inquilino/aprobacion')).toBe(true)
   })
 })

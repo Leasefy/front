@@ -78,7 +78,13 @@ const DECLARADO: Record<PasoKey, Declaracion | null> = {
     turno: 'tuyo',
     label: 'Pagas',
     desc: 'Un solo pago que te sirve para todas las propiedades que te interesen.',
-    href: '/inquilino/aprobacion/pago',
+    // El pago vivo está adentro del mismo formulario que pide la aprobación
+    // (T-0010): no hay una pantalla de cobro aparte, así que este paso apunta
+    // al mismo destino que «asegurabilidad». Se conserva como paso propio
+    // porque la etiqueta y el turno describen una acción real del inquilino
+    // (pagar), aunque hoy comparta pantalla con pedir la aprobación — ver
+    // reporte de T-0010/WU-1 sobre si conviene fusionarlos.
+    href: '/inquilino/aprobacion',
   },
   aseguradoras: {
     turno: 'nuestro',

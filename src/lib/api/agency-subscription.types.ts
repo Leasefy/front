@@ -8,7 +8,14 @@
  *   POST /inmobiliaria/subscription/charges/:chargeId/pse-checkout → ChargePseCheckoutResponse
  *
  * Plan behaviour: STARTER → ACTIVE, no charge (free). FLEX → ACTIVE, no upfront charge
- * (postpaid). PRO → PAST_DUE + a PENDING charge that must be paid via PSE.
+ * (postpaid). An UP move on the ladder (e.g. → PRO) is pay-first: `subscription.status`
+ * stays ACTIVE on the OLD tier and a PENDING charge is created; the tier only flips once
+ * the charge is confirmed (see `AgencySubscriptionCharge.targetPlanTier` below). The back
+ * never assigns PAST_DUE from this lifecycle — confirmed against
+ * `agency-subscription-access.policy.ts` (dunning goes ACTIVE → SUSPENDED once the grace
+ * period expires); this comment previously said PRO selection set PAST_DUE, which does not
+ * match current backend behaviour and misled the front into treating subscription.status
+ * as a payment signal (T-0012).
  * Bank list is reused from `pseCheckoutApi.getFinancialInstitutions()`.
  */
 
@@ -40,6 +47,14 @@ export interface AgencySubscriptionCharge {
   dueDate?: string;
   periodStart?: string;
   periodEnd?: string;
+  /**
+   * The plan slug this charge unlocks once confirmed (pay-first — see
+   * `agency-subscription.service.ts`'s `confirmChargeFromWebhook`). The ONLY reliable
+   * "purchase paid" signal: `subscription.status` stays ACTIVE on the OLD tier for the
+   * entire time the charge is PENDING, so it must never be read as a payment signal.
+   * Null for a RENEWAL charge (same plan, fresh period).
+   */
+  targetPlanTier?: string | null;
 }
 
 /** GET /inmobiliaria/subscription — current state; poll target after checkout. */

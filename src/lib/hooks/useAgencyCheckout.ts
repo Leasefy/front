@@ -44,6 +44,13 @@ export interface UseAgencyCheckout {
   pay: (planId: string) => Promise<void>;
   /** Manual reconcile against Wompi if the webhook is slow. */
   verifyNow: () => Promise<void>;
+  /**
+   * Resume `awaiting` for a charge that was already `PENDING` before this hook
+   * mounted (e.g. the user left `/upgrade` before the webhook confirmed and came
+   * back). No-op unless the current state is `idle` — never clobbers a flow
+   * already started by `pay()`/`activate()`.
+   */
+  resume: (targetPlanTier: string) => void;
   /** Reset back to idle (e.g. to close the overlay after an error). */
   reset: () => void;
 }
@@ -62,6 +69,13 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     onSuccessRef.current = onSuccess;
   }, [onSuccess]);
 
+  // The tier this in-flight charge unlocks once confirmed — captured from
+  // `charge.targetPlanTier` in `pay()`, or passed in directly by `resume()`.
+  // `checkStatus` only resolves 'active' once the subscription is actually ON
+  // this tier; `subscription.status === 'ACTIVE'` is NEVER a payment signal —
+  // the agency's free starter plan is ACTIVE from the very first millisecond.
+  const targetTierRef = useRef<string | null>(null);
+
   // Enter success, then fire onSuccess after a short delay so the caller shows
   // the success state before navigating.
   const succeed = useCallback(() => {
@@ -72,13 +86,24 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
   // Resolve the current payment outcome from the agency subscription state.
   // verify() reconciles the open charge against Wompi (self-heals a missing
   // webhook) and returns fresh state — so awaiting resolves without the webhook.
+  //
+  // Success = the subscription tier actually advanced to the charge's
+  // targetPlanTier (the only signal `confirmChargeFromWebhook` ever writes on
+  // confirmation). Failure = a genuine gateway rejection, OR the open charge
+  // vanished (went terminal) while the tier never advanced — that can only mean
+  // it was superseded/cancelled, since a SUCCESS charge always leaves the
+  // subscription on the target tier. Everything else keeps waiting.
   const checkStatus = useCallback(async (): Promise<StatusOutcome> => {
     try {
       const s = await agencySubscriptionApi.verify();
       if (!s) return 'pending';
+      const target = targetTierRef.current;
+      const advanced =
+        !!target && s.subscription?.planTier?.toLowerCase() === target.toLowerCase();
+      if (advanced) return 'active';
       const gw = (s.openCharge?.gatewayStatus ?? '').toUpperCase();
-      if (s.status === 'ACTIVE') return 'active';
-      if (!s.openCharge || gw === 'DECLINED' || gw === 'ERROR' || gw === 'VOIDED') return 'failed';
+      if (gw === 'DECLINED' || gw === 'ERROR' || gw === 'VOIDED') return 'failed';
+      if (!s.openCharge) return 'failed';
       return 'pending';
     } catch {
       return 'error';
@@ -167,6 +192,9 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
         setState('error');
         return;
       }
+      // Capture the tier this charge unlocks on confirmation — falls back to
+      // the requested planId if the back ever omits it (should not happen).
+      targetTierRef.current = charge.targetPlanTier ?? planId;
       const { url } = await agencySubscriptionApi.chargePaymentLink(charge.id);
       setPaymentUrl(url);
       if (payTab && !payTab.closed) {
@@ -183,12 +211,21 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     }
   }, []);
 
+  // Resume awaiting for a charge that was already PENDING before mount — e.g.
+  // the user left `/upgrade` before the webhook confirmed and came back. Guarded
+  // so it never clobbers a flow `pay()`/`activate()` already started.
+  const resume = useCallback((targetPlanTier: string) => {
+    targetTierRef.current = targetPlanTier;
+    setState((prev) => (prev === 'idle' ? 'awaiting' : prev));
+  }, []);
+
   const reset = useCallback(() => {
     setState('idle');
     setError(null);
     setPaymentUrl(null);
     setPopupBlocked(false);
     setPollError(null);
+    targetTierRef.current = null;
   }, []);
 
   return {
@@ -200,6 +237,7 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     activate,
     pay,
     verifyNow,
+    resume,
     reset,
   };
 }

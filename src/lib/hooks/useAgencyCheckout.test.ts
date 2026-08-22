@@ -7,8 +7,18 @@
  *   (2) pay(): no charge returned → closes the tab, `error`.
  *   (3) pay(): pre-open blocked (window.open → null) → popupBlocked, awaiting.
  *   (4) activate(): free/percentage → success, onSuccess fires after the delay.
- *   (5) awaiting poll: verify() → ACTIVE → success + onSuccess.
- *   (6) verifyNow(): still pending → surfaces the "todavía no vemos" message.
+ *   (5) awaiting poll — success predicate: only the subscription tier actually
+ *       advancing to the charge's `targetPlanTier` resolves `active`.
+ *       `subscription.status === 'ACTIVE'` on the OLD tier is never enough
+ *       (that status means "not suspended", not "purchase paid" — the agency's
+ *       free starter plan is ACTIVE from the very first millisecond).
+ *   (6) awaiting poll — failure predicate: a genuine gateway rejection, or a
+ *       vanished `openCharge` while the tier never advanced. A vanished
+ *       `openCharge` on the SUCCESS path (tier did advance) must NOT be
+ *       reported as a failure.
+ *   (7) resume(): pick a `PENDING` charge back up (e.g. the user left
+ *       `/upgrade` and came back) without going through pay() again.
+ *   (8) verifyNow(): still pending → surfaces the "todavía no vemos" message.
  */
 
 import * as React from 'react';
@@ -56,6 +66,21 @@ async function flush() {
   await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+function fakeTab() {
+  return { closed: false, location: { href: '' }, close: vi.fn() };
+}
+
+/** Start a `pay()` flow through to `awaiting`, capturing `targetPlanTier`. */
+async function payToAwaiting(planId = 'pro') {
+  vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
+  mockSelectPlan.mockResolvedValue({ charge: { id: 'ch_1', targetPlanTier: planId } });
+  mockChargePaymentLink.mockResolvedValue({ url: 'https://checkout.wompi.co/l/abc' });
+  await act(async () => {
+    await hook.pay(planId);
   });
 }
 
@@ -78,8 +103,8 @@ describe('useAgencyCheckout — pay (paid FLAT)', () => {
   it('opens the tab synchronously before any await, then redirects it', async () => {
     await mount();
 
-    const fakeTab = { closed: false, location: { href: '' }, close: vi.fn() };
-    const openSpy = vi.spyOn(window, 'open').mockReturnValue(fakeTab as unknown as Window);
+    const tab = fakeTab();
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
 
     // selectPlan resolves only when we let it — proves window.open ran first.
     let resolveSelect: (v: unknown) => void = () => {};
@@ -95,12 +120,12 @@ describe('useAgencyCheckout — pay (paid FLAT)', () => {
 
     mockChargePaymentLink.mockResolvedValue({ url: 'https://checkout.wompi.co/l/abc' });
     await act(async () => {
-      resolveSelect({ charge: { id: 'ch_1' } });
+      resolveSelect({ charge: { id: 'ch_1', targetPlanTier: 'pro' } });
       await Promise.resolve();
     });
     await flush();
 
-    expect(fakeTab.location.href).toBe('https://checkout.wompi.co/l/abc');
+    expect(tab.location.href).toBe('https://checkout.wompi.co/l/abc');
     expect(hook.state).toBe('awaiting');
     expect(hook.paymentUrl).toBe('https://checkout.wompi.co/l/abc');
     expect(hook.popupBlocked).toBe(false);
@@ -108,8 +133,8 @@ describe('useAgencyCheckout — pay (paid FLAT)', () => {
 
   it('closes the tab and errors when no charge is returned', async () => {
     await mount();
-    const fakeTab = { closed: false, location: { href: '' }, close: vi.fn() };
-    vi.spyOn(window, 'open').mockReturnValue(fakeTab as unknown as Window);
+    const tab = fakeTab();
+    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
     mockSelectPlan.mockResolvedValue({ charge: null });
 
     await act(async () => {
@@ -117,7 +142,7 @@ describe('useAgencyCheckout — pay (paid FLAT)', () => {
     });
     await flush();
 
-    expect(fakeTab.close).toHaveBeenCalled();
+    expect(tab.close).toHaveBeenCalled();
     expect(hook.state).toBe('error');
     expect(mockChargePaymentLink).not.toHaveBeenCalled();
   });
@@ -125,7 +150,7 @@ describe('useAgencyCheckout — pay (paid FLAT)', () => {
   it('flags popupBlocked when the pre-open is blocked (window.open → null)', async () => {
     await mount();
     vi.spyOn(window, 'open').mockReturnValue(null);
-    mockSelectPlan.mockResolvedValue({ charge: { id: 'ch_1' } });
+    mockSelectPlan.mockResolvedValue({ charge: { id: 'ch_1', targetPlanTier: 'pro' } });
     mockChargePaymentLink.mockResolvedValue({ url: 'https://checkout.wompi.co/l/abc' });
 
     await act(async () => {
@@ -160,20 +185,34 @@ describe('useAgencyCheckout — activate (free / percentage)', () => {
   });
 });
 
-describe('useAgencyCheckout — awaiting poll', () => {
-  it('reaches success when verify() reports ACTIVE', async () => {
+describe('useAgencyCheckout — awaiting poll: success predicate', () => {
+  it('stays awaiting when the subscription is still ACTIVE on the OLD tier', async () => {
+    await mount();
+    // The captured production trace: agency's free starter plan reads ACTIVE
+    // from the first millisecond, WHILE the pro charge is still PENDING.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+
+    await payToAwaiting('pro');
+    await flush();
+
+    expect(hook.state).toBe('awaiting');
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it('reaches success exactly once the subscription tier actually advances to targetPlanTier', async () => {
     vi.useFakeTimers();
     await mount();
-    const fakeTab = { closed: false, location: { href: '' }, close: vi.fn() };
-    vi.spyOn(window, 'open').mockReturnValue(fakeTab as unknown as Window);
-    mockSelectPlan.mockResolvedValue({ charge: { id: 'ch_1' } });
-    mockChargePaymentLink.mockResolvedValue({ url: 'https://checkout.wompi.co/l/abc' });
-    // The awaiting effect runs an immediate check on mount → make it ACTIVE up front.
-    mockVerify.mockResolvedValue({ status: 'ACTIVE', openCharge: null });
-
-    await act(async () => {
-      await hook.pay('pro');
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'ACTIVE' },
+      openCharge: null, // terminal once the webhook confirms — SUCCESS charges are no longer "open"
+      status: 'ACTIVE',
     });
+
+    await payToAwaiting('pro');
     // Flush the immediate poll run() kicked off by the awaiting effect.
     await act(async () => {
       await Promise.resolve();
@@ -186,6 +225,90 @@ describe('useAgencyCheckout — awaiting poll', () => {
       vi.advanceTimersByTime(2500);
     });
     expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useAgencyCheckout — awaiting poll: failure predicate', () => {
+  it('fails when the open charge vanished but the tier never advanced', async () => {
+    await mount();
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+
+    await payToAwaiting('pro');
+    await flush();
+
+    expect(hook.state).toBe('error');
+    expect(hook.error).toContain('rechazado');
+  });
+
+  it.each(['DECLINED', 'ERROR', 'VOIDED'])(
+    'fails immediately on gateway status %s',
+    async (gatewayStatus) => {
+      await mount();
+      mockVerify.mockResolvedValue({
+        subscription: { planTier: 'starter', status: 'ACTIVE' },
+        openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus },
+        status: 'ACTIVE',
+      });
+
+      await payToAwaiting('pro');
+      await flush();
+
+      expect(hook.state).toBe('error');
+    },
+  );
+});
+
+describe('useAgencyCheckout — resume', () => {
+  it('picks a PENDING charge back up and reaches success once the tier advances', async () => {
+    vi.useFakeTimers();
+    await mount();
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+
+    act(() => {
+      hook.resume('pro');
+    });
+    expect(hook.state).toBe('awaiting');
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(hook.state).toBe('success');
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not clobber a flow already in progress', async () => {
+    await mount();
+    vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
+    let resolveSelect: (v: unknown) => void = () => {};
+    mockSelectPlan.mockReturnValue(new Promise((r) => { resolveSelect = r; }));
+
+    await act(async () => {
+      void hook.pay('pro');
+    });
+    expect(hook.state).toBe('processing');
+
+    act(() => {
+      hook.resume('starter');
+    });
+    expect(hook.state).toBe('processing');
+
+    await act(async () => {
+      resolveSelect({ charge: null });
+    });
   });
 });
 

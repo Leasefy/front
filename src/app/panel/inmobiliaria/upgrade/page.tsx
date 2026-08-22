@@ -1,7 +1,7 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle, Shield, Sparkle, Lock, Crown, Robot, ChartBar, Buildings, WarningCircle, ArrowCounterClockwise } from '@phosphor-icons/react';
 import { BackButton } from '@/components/ui/back-button';
@@ -18,7 +18,12 @@ import type { AgencyPlanId } from '@/lib/types/subscription';
  */
 function AgencyUpgradeContent() {
   const router = useRouter();
-  const { currentPlanId: agencyPlanId, error: subscriptionError, refetch: subscriptionRefetch } = useAgencySubscription();
+  const {
+    currentPlanId: agencyPlanId,
+    error: subscriptionError,
+    refetch: subscriptionRefetch,
+    state: subscriptionState,
+  } = useAgencySubscription();
   const { plans, isLoading } = useAgencyPlans();
 
   // Read the REAL agency subscription (not the legacy /subscriptions/me). On error,
@@ -37,8 +42,25 @@ function AgencyUpgradeContent() {
 
   // Direct-to-Wompi checkout (avaluo-style, no intermediate page). On success the
   // subscription is ACTIVE → go to the panel; the overlay shows success first.
-  const { state, error, paymentUrl, popupBlocked, pollError, activate, pay, verifyNow, reset } =
+  const { state, error, paymentUrl, popupBlocked, pollError, activate, pay, verifyNow, resume, reset } =
     useAgencyCheckout(() => router.push('/panel/inmobiliaria'));
+
+  // Resume: if the agency already has a PENDING charge from a previous visit
+  // (e.g. the owner left before Wompi confirmed and came back), pick the
+  // awaiting overlay back up instead of showing a fresh idle purchase screen.
+  // Checked exactly once per mount, right after the subscription snapshot
+  // first loads — a real page revisit remounts this component (fresh ref),
+  // so a stale PENDING charge is re-checked against the backend every time.
+  const hasCheckedResumeRef = useRef(false);
+  useEffect(() => {
+    if (hasCheckedResumeRef.current || !subscriptionState) return;
+    hasCheckedResumeRef.current = true;
+    const openCharge = subscriptionState.openCharge;
+    if (state === 'idle' && openCharge?.status === 'PENDING' && openCharge.targetPlanTier) {
+      setSelectedPlan(openCharge.targetPlanTier as AgencyPlanId);
+      resume(openCharge.targetPlanTier);
+    }
+  }, [subscriptionState, state, resume]);
 
   // Tocar "Seleccionar plan" en la card va DIRECTO al pago, sin paso intermedio
   // (la info del plan ya está en la card). FLAT abre Wompi al toque —`pay()` abre

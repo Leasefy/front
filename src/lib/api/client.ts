@@ -281,7 +281,12 @@ async function request<T>(
 
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}))
-    throw new ApiError(res.status, errorBody.message || `Error ${res.status}`)
+    // Forwarded generally — not a special case for any one endpoint. 401
+    // already reads `code` above; this makes every other non-2xx status do
+    // the same, so a caller can branch on a machine-readable code instead of
+    // pattern-matching a human `.message` string.
+    const code = typeof errorBody.code === 'string' ? errorBody.code : undefined
+    throw new ApiError(res.status, errorBody.message || `Error ${res.status}`, code)
   }
 
   /*

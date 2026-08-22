@@ -28,6 +28,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { agencySubscriptionApi } from '@/lib/api/agency-subscription.service';
+import { ApiError } from '@/lib/api/client';
 
 export type AgencyCheckoutState = 'idle' | 'processing' | 'awaiting' | 'success' | 'error';
 
@@ -254,10 +255,45 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
       setState('awaiting');
     } catch (err) {
       payTab?.close();
+
+      // `select-plan` found the agency's previous open charge already
+      // APPROVED at Wompi, confirmed it server-side, and refused to open a
+      // new one — the money was already honoured and the plan HAS been
+      // granted (to whichever tier that older charge targeted, which is
+      // this same pay() attempt's plan in the realistic retry case this
+      // guards). The wrong thing here is a plain failure toast. Re-read
+      // fresh state and only then decide: `checkStatus()` is the SAME
+      // predicate `awaiting` polls with — a real tier advance is still
+      // required, never assumed from the status code alone.
+      if (err instanceof ApiError && err.status === 409 && err.code === 'PENDING_CHARGE_ALREADY_PAID') {
+        targetTierRef.current = planId;
+        const r = await checkStatus();
+        if (r === 'active') {
+          succeed();
+        } else {
+          setError(
+            'Tu cargo pendiente ya se confirmó, pero todavía no vemos tu plan actualizado. Actualizá la página en unos segundos.',
+          );
+          setState('error');
+        }
+        return;
+      }
+
+      // Wompi was unreachable, so the back refused to touch the pending
+      // charge rather than risk cancelling one that might already be paid.
+      // Nothing failed — this is transient, retrying shortly is correct.
+      if (err instanceof ApiError && err.status === 503 && err.code === 'payment_verification_unavailable') {
+        setError(
+          'No pudimos verificar tu cargo pendiente con la pasarela de pago en este momento. Intentá de nuevo en unos segundos.',
+        );
+        setState('error');
+        return;
+      }
+
       setError(err instanceof Error ? err.message : 'No se pudo iniciar el pago.');
       setState('error');
     }
-  }, []);
+  }, [checkStatus, succeed]);
 
   // Resume awaiting for a charge that was already PENDING before mount — e.g.
   // the user left `/upgrade` before the webhook confirmed and came back.

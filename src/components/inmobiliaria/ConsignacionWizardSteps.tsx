@@ -8,7 +8,6 @@ import {
   HouseLine,
   CurrencyDollar,
   Percent,
-  CalendarBlank,
   Clock,
   UserCircle,
   Camera,
@@ -426,22 +425,6 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
               />
             ))}
           </RadioCardGroup>
-        </div>
-
-        {/* Contract Start Date */}
-        <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
-            {t('inmobiliaria.consignaciones.wizard.step3.contractStartLabel')}
-          </label>
-          <div className="relative">
-            <CalendarBlank className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
-            <Input
-              type="date"
-              value={formData.contractStartDate || ''}
-              onChange={(e) => updateFormData({ contractStartDate: e.target.value })}
-              className="w-full pl-10"
-            />
-          </div>
         </div>
       </div>
     </div>

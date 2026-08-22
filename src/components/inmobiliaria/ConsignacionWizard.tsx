@@ -22,7 +22,9 @@ import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/lib/auth/use-auth';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
+import { TYPE_TO_BACKEND } from '@/lib/api/properties.mapper';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
+import type { PropertyType } from '@/lib/types/property';
 import type { Propietario, Agente, InventoryItem } from '@/lib/types/inmobiliaria';
 import {
   StepSelectPropietario,
@@ -52,8 +54,6 @@ const STEPS = [
  * ConsignacionWizard - 6-step wizard for creating new property consignments
  * Used at /panel/inmobiliaria/inmuebles/nuevo
  */
-// PropertyType values supported by the backend
-const SUPPORTED_TYPES = ['apartment', 'house', 'studio', 'room'] as const;
 
 export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizardProps) {
   const router = useRouter();
@@ -178,16 +178,25 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     setIsSubmitting(true);
 
     try {
-      // Map wizard type to backend-supported values
-      const rawType = formData.propertyType ?? 'apartment';
-      const type = (SUPPORTED_TYPES as readonly string[]).includes(rawType)
-        ? (rawType as typeof SUPPORTED_TYPES[number])
-        : 'apartment';
+      /**
+       * Contract.md §3.2 (T-0011) — no silent coercion. The wizard's 6 UI
+       * options (apartment/house/studio/commercial/office/warehouse) all
+       * have an entry in TYPE_TO_BACKEND; an unmapped value is a bug that
+       * must surface as an error, not get quietly rewritten to 'apartment'
+       * the way it used to (a consigned warehouse was stored as an
+       * apartment).
+       */
+      const wizardType = formData.propertyType as PropertyType | undefined;
+      if (!wizardType || !(wizardType in TYPE_TO_BACKEND)) {
+        throw new Error(
+          `Tipo de inmueble no soportado: "${wizardType ?? ''}". Volvé al paso 2 y elegí un tipo válido.`,
+        );
+      }
 
       const property = await propertiesApi.create({
         title:        formData.propertyTitle ?? '',
         description:  formData.propertyTitle ?? '', // wizard has no description field
-        type,
+        type:         wizardType,
         city:         formData.propertyCity ?? '',
         neighborhood: formData.propertyZone ?? '',
         address:      formData.propertyAddress ?? '',

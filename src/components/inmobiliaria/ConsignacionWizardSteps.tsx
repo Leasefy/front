@@ -101,7 +101,15 @@ const INVENTORY_CONDITIONS: { value: InventoryItem['condition']; labelKey: strin
 // Step 1: Select Propietario
 // ============================================================================
 
-export function StepSelectPropietario({ formData, updateFormData, propietarios }: StepProps) {
+export function StepSelectPropietario({
+  formData,
+  updateFormData,
+  propietarios,
+  ownerServerError,
+}: StepProps & {
+  /** Set by ConsignacionWizard when persisting the owner on "Siguiente" fails — see contract.md §3.3. */
+  ownerServerError?: { field: keyof PropietarioFormData; message: string } | null;
+}) {
   const { t } = useI18n();
 
   return (
@@ -125,6 +133,7 @@ export function StepSelectPropietario({ formData, updateFormData, propietarios }
           });
         }}
         newPropietarioData={formData.newPropietarioData}
+        serverError={ownerServerError}
       />
     </div>
   );

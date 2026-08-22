@@ -24,9 +24,9 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { ApiError } from '@/lib/api/client';
 import { TYPE_TO_BACKEND } from '@/lib/api/properties.mapper';
-import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
+import { consignacionesApi, propietariosApi } from '@/lib/api/inmobiliaria.service';
 import type { PropertyType } from '@/lib/types/property';
-import type { Propietario, Agente, InventoryItem } from '@/lib/types/inmobiliaria';
+import type { Propietario, Agente, InventoryItem, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import {
   StepSelectPropietario,
   StepPropertyData,
@@ -144,11 +144,72 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     return prev;
   }, [isAgentRole]);
 
-  const goToNextStep = useCallback(() => {
-    if (currentStep < 6 && isStepValid) {
-      setCurrentStep(getNextStep(currentStep));
+  // ── Step 1 → 2: persist the propietario on "Siguiente" ────────────────────
+  const [isPersistingOwner, setIsPersistingOwner] = useState(false);
+  const [ownerServerError, setOwnerServerError] = useState<
+    { field: keyof PropietarioFormData; message: string } | null
+  >(null);
+
+  /**
+   * "quiero que apenas le de a continuar cree el propietario" — the owner is
+   * persisted the moment the user advances past step 1, not when the inner
+   * "Crear propietario" form submits (that button only stages the data
+   * locally — see PropietarioSelector.handleNewPropietarioSubmit).
+   *
+   * `propietarioId` doubles as the persistence marker: a `new-<timestamp>`
+   * id means nothing has been sent yet (POST); a real id with
+   * `newPropietarioData` still attached means this is OUR OWN
+   * already-created owner potentially edited again via "Editar" (PUT, same
+   * id — never a second POST, never a duplicate). A real id with no
+   * `newPropietarioData` means an EXISTING propietario was picked from the
+   * list — nothing to persist.
+   *
+   * Returns whether it's safe to advance.
+   */
+  const persistOwnerIfNeeded = useCallback(async (): Promise<boolean> => {
+    const propietarioId = formData.propietarioId ?? '';
+    const isTempId = propietarioId.startsWith('new-');
+    const isOwnRecord = !isTempId && Boolean(propietarioId) && Boolean(formData.newPropietarioData);
+    if (!isTempId && !isOwnRecord) return true;
+
+    setIsPersistingOwner(true);
+    setOwnerServerError(null);
+    try {
+      if (isTempId) {
+        const created = await propietariosApi.create(formData.newPropietarioData!);
+        updateFormData({ propietarioId: created.id });
+      } else {
+        await propietariosApi.update(propietarioId, formData.newPropietarioData!);
+      }
+      return true;
+    } catch (error) {
+      // 409 — contract.md §3.3: duplicate documentNumber in this agency.
+      // Named on the field the user can actually fix; MUST NOT retry blindly.
+      if (error instanceof ApiError && error.status === 409) {
+        setOwnerServerError({ field: 'documentNumber', message: error.message });
+      } else {
+        const description =
+          error instanceof Error && error.message
+            ? error.message
+            : t('inmobiliaria.consignaciones.wizard.toasts.errorDesc');
+        toast.error(t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'), { description });
+      }
+      return false;
+    } finally {
+      setIsPersistingOwner(false);
     }
-  }, [currentStep, isStepValid, getNextStep]);
+  }, [formData.propietarioId, formData.newPropietarioData, updateFormData, t]);
+
+  const goToNextStep = useCallback(async () => {
+    if (currentStep >= 6 || !isStepValid || isPersistingOwner) return;
+
+    if (currentStep === 1) {
+      const ok = await persistOwnerIfNeeded();
+      if (!ok) return; // stay on step 1, error is surfaced by persistOwnerIfNeeded
+    }
+
+    setCurrentStep(getNextStep(currentStep));
+  }, [currentStep, isStepValid, isPersistingOwner, persistOwnerIfNeeded, getNextStep]);
 
   const goToPreviousStep = useCallback(() => {
     if (currentStep > 1) {
@@ -310,7 +371,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
 
     switch (currentStep) {
       case 1:
-        return <StepSelectPropietario {...stepProps} />;
+        return <StepSelectPropietario {...stepProps} ownerServerError={ownerServerError} />;
       case 2:
         return <StepPropertyData {...stepProps} />;
       case 3:
@@ -475,7 +536,8 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                 type="button"
                 hideArrow
                 onClick={goToNextStep}
-                disabled={!isStepValid}
+                disabled={!isStepValid || isPersistingOwner}
+                isLoading={isPersistingOwner}
               >
                 {t('inmobiliaria.consignaciones.wizard.next')}
                 <CaretRight className="w-4 h-4" />

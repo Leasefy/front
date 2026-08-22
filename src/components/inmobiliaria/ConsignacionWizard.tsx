@@ -88,14 +88,22 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         // Must have selected or created a propietario
         return Boolean(formData.propietarioId);
       case 2:
-        // Must have property details
+        // Must have property details — thresholds mirror CreatePropertyDto
+        // (contract.md §3.2): bedrooms 0-20, bathrooms 1-10, area 10-10000 m²,
+        // description 20-5000 chars.
         return Boolean(
           formData.propertyTitle &&
           formData.propertyAddress &&
           formData.propertyCity &&
           formData.propertyZone &&
           formData.propertyType &&
-          formData.monthlyRent && formData.monthlyRent > 0
+          formData.monthlyRent && formData.monthlyRent > 0 &&
+          formData.bedrooms != null && formData.bedrooms >= 0 && formData.bedrooms <= 20 &&
+          formData.bathrooms != null && formData.bathrooms >= 1 && formData.bathrooms <= 10 &&
+          formData.area != null && formData.area >= 10 && formData.area <= 10000 &&
+          formData.propertyDescription &&
+          formData.propertyDescription.length >= 20 &&
+          formData.propertyDescription.length <= 5000
         );
       case 3:
         // Commission terms always valid with defaults
@@ -195,7 +203,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
 
       const property = await propertiesApi.create({
         title:        formData.propertyTitle ?? '',
-        description:  formData.propertyTitle ?? '', // wizard has no description field
+        description:  formData.propertyDescription ?? '',
         type:         wizardType,
         city:         formData.propertyCity ?? '',
         neighborhood: formData.propertyZone ?? '',
@@ -203,9 +211,9 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         latitude:     formData.propertyLatitude,
         longitude:    formData.propertyLongitude,
         monthlyRent:  formData.monthlyRent ?? 0,
-        bedrooms:     0, // wizard doesn't collect this — update after creation
-        bathrooms:    0,
-        area:         0,
+        bedrooms:     formData.bedrooms ?? 0,
+        bathrooms:    formData.bathrooms ?? 1,
+        area:         formData.area ?? 10,
         adminFee:     formData.adminFee,
       });
 

@@ -3008,12 +3008,22 @@
           "monthlyRentPlaceholder": "2.500.000",
           "adminFeeLabel": "Administracion (opcional)",
           "adminFeePlaceholder": "450.000",
+          "bedroomsLabel": "Habitaciones",
+          "bathroomsLabel": "Banos",
+          "areaLabel": "Area (m2)",
+          "descriptionLabel": "Descripcion",
+          "descriptionPlaceholder": "Describe el inmueble: distribucion, acabados, estado, cercanias...",
+          "descriptionCounter": "{{count}}/{{max}} caracteres (minimo {{min}})",
           "validation": {
             "titleRequired": "El titulo es requerido",
             "addressRequired": "La direccion es requerida",
             "cityRequired": "La ciudad es requerida",
             "zoneRequired": "La zona es requerida",
-            "rentRequired": "El canon es requerido"
+            "rentRequired": "El canon es requerido",
+            "bedroomsRequired": "Las habitaciones deben estar entre 0 y 20",
+            "bathroomsRequired": "Los banos deben estar entre 1 y 10",
+            "areaRequired": "El area debe estar entre 10 y 10.000 m2",
+            "descriptionRequired": "La descripcion debe tener entre 20 y 5.000 caracteres"
           }
         },
         "step3": {

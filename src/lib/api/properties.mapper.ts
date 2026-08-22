@@ -12,6 +12,9 @@ const TYPE_MAP: Record<string, PropertyType> = {
   HOUSE: 'house',
   STUDIO: 'studio',
   ROOM: 'room',
+  COMMERCIAL: 'commercial',
+  OFFICE: 'office',
+  WAREHOUSE: 'warehouse',
 };
 
 const STATUS_MAP: Record<string, PropertyStatus> = {
@@ -27,6 +30,9 @@ export const TYPE_TO_BACKEND: Record<PropertyType, string> = {
   house: 'HOUSE',
   studio: 'STUDIO',
   room: 'ROOM',
+  commercial: 'COMMERCIAL',
+  office: 'OFFICE',
+  warehouse: 'WAREHOUSE',
 };
 
 // Amenity ID -> PropertyAmenity object lookup

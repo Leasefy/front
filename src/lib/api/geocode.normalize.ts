@@ -102,3 +102,46 @@ export function normalizeAutocompleteResults(raw: unknown): GeocodeSuggestion[] 
 
   return suggestions;
 }
+
+/**
+ * Normalizes a single LocationIQ `/v1/reverse` result (an object, not an
+ * array like `/v1/autocomplete`) into a GeocodeSuggestion. Fail-closed:
+ * returns null on anything malformed/incomplete rather than surfacing
+ * fabricated data — mirrors normalizeAutocompleteResults' per-entry rules.
+ */
+export function normalizeReverseResult(raw: unknown): GeocodeSuggestion | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const result = raw as LocationIqResult;
+
+  const lat = toFiniteNumber(result.lat);
+  const lon = toFiniteNumber(result.lon);
+  if (lat === null || lon === null) return null;
+
+  const label = toNonEmptyString(result.display_name) ?? toNonEmptyString(result.display_place);
+  if (!label) return null;
+
+  const placeId = toNonEmptyString(
+    typeof result.place_id === 'number' ? String(result.place_id) : result.place_id,
+  );
+  if (!placeId) return null;
+
+  const address: LocationIqAddress =
+    result.address && typeof result.address === 'object' ? (result.address as LocationIqAddress) : {};
+
+  const city = toNonEmptyString(address.city) ?? toNonEmptyString(address.town) ?? toNonEmptyString(address.village);
+  const neighborhood =
+    toNonEmptyString(address.neighbourhood) ??
+    toNonEmptyString(address.suburb) ??
+    toNonEmptyString(address.city_district);
+  const road = toNonEmptyString(address.road);
+
+  return {
+    label,
+    lat,
+    lon,
+    placeId,
+    ...(city ? { city } : {}),
+    ...(neighborhood ? { neighborhood } : {}),
+    ...(road ? { road } : {}),
+  };
+}

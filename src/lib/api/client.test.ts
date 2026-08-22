@@ -222,6 +222,43 @@ describe('peticiones con la sesión ya declarada muerta', () => {
   })
 })
 
+/**
+ * T-0011 — the global ValidationPipe returns `message` as a string[] on a
+ * 400 (contract.md §3.3). `Error`'s constructor coerces a non-string message
+ * via ToString, which for an array means `Array.prototype.join(',')` — so a
+ * naive `new ApiError(400, errorBody.message)` silently turned
+ * `['a', 'b']` into the string `"a,b"`. ApiError now preserves the original
+ * array on `.messages` so callers can render a real list instead.
+ */
+describe('ApiError — 400 con message: string[] (contract.md §3.3)', () => {
+  it('preserves the array on .messages instead of losing it to ToString coercion', async () => {
+    vi.stubGlobal(
+      'fetch',
+      stubFetch(400, { statusCode: 400, message: ['El titulo es requerido', 'El area debe ser mayor a 10'] }),
+    )
+
+    const err = (await apiClient.post('/properties', {}).catch((e) => e)) as ApiError
+    expect(err).toBeInstanceOf(ApiError)
+    expect(err.status).toBe(400)
+    expect(err.messages).toEqual(['El titulo es requerido', 'El area debe ser mayor a 10'])
+  })
+
+  it('joins the array into .message for callers that only read a string', async () => {
+    vi.stubGlobal('fetch', stubFetch(400, { statusCode: 400, message: ['a', 'b'] }))
+
+    const err = (await apiClient.post('/properties', {}).catch((e) => e)) as ApiError
+    expect(err.message).toBe('a · b')
+  })
+
+  it('leaves a plain string message untouched (.messages stays undefined)', async () => {
+    vi.stubGlobal('fetch', stubFetch(400, { statusCode: 400, message: 'Ya existe ese numero de documento' }))
+
+    const err = (await apiClient.post('/properties', {}).catch((e) => e)) as ApiError
+    expect(err.message).toBe('Ya existe ese numero de documento')
+    expect(err.messages).toBeUndefined()
+  })
+})
+
 describe('esCodigoDeSesionMuerta', () => {
   it.each(['AUTH_TOKEN_EXPIRED', 'AUTH_TOKEN_INVALID', 'SESSION_SUPERSEDED'])(
     'reconoce %s',

@@ -22,8 +22,11 @@ import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/lib/auth/use-auth';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
-import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
-import type { Propietario, Agente, InventoryItem } from '@/lib/types/inmobiliaria';
+import { ApiError } from '@/lib/api/client';
+import { TYPE_TO_BACKEND } from '@/lib/api/properties.mapper';
+import { consignacionesApi, propietariosApi } from '@/lib/api/inmobiliaria.service';
+import type { PropertyType } from '@/lib/types/property';
+import type { Propietario, Agente, InventoryItem, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import {
   StepSelectPropietario,
   StepPropertyData,
@@ -52,8 +55,6 @@ const STEPS = [
  * ConsignacionWizard - 6-step wizard for creating new property consignments
  * Used at /panel/inmobiliaria/inmuebles/nuevo
  */
-// PropertyType values supported by the backend
-const SUPPORTED_TYPES = ['apartment', 'house', 'studio', 'room'] as const;
 
 export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizardProps) {
   const router = useRouter();
@@ -88,14 +89,22 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         // Must have selected or created a propietario
         return Boolean(formData.propietarioId);
       case 2:
-        // Must have property details
+        // Must have property details — thresholds mirror CreatePropertyDto
+        // (contract.md §3.2): bedrooms 0-20, bathrooms 1-10, area 10-10000 m²,
+        // description 20-5000 chars.
         return Boolean(
           formData.propertyTitle &&
           formData.propertyAddress &&
           formData.propertyCity &&
           formData.propertyZone &&
           formData.propertyType &&
-          formData.monthlyRent && formData.monthlyRent > 0
+          formData.monthlyRent && formData.monthlyRent > 0 &&
+          formData.bedrooms != null && formData.bedrooms >= 0 && formData.bedrooms <= 20 &&
+          formData.bathrooms != null && formData.bathrooms >= 1 && formData.bathrooms <= 10 &&
+          formData.area != null && formData.area >= 10 && formData.area <= 10000 &&
+          formData.propertyDescription &&
+          formData.propertyDescription.length >= 20 &&
+          formData.propertyDescription.length <= 5000
         );
       case 3:
         // Commission terms always valid with defaults
@@ -135,11 +144,72 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     return prev;
   }, [isAgentRole]);
 
-  const goToNextStep = useCallback(() => {
-    if (currentStep < 6 && isStepValid) {
-      setCurrentStep(getNextStep(currentStep));
+  // ── Step 1 → 2: persist the propietario on "Siguiente" ────────────────────
+  const [isPersistingOwner, setIsPersistingOwner] = useState(false);
+  const [ownerServerError, setOwnerServerError] = useState<
+    { field: keyof PropietarioFormData; message: string } | null
+  >(null);
+
+  /**
+   * "quiero que apenas le de a continuar cree el propietario" — the owner is
+   * persisted the moment the user advances past step 1, not when the inner
+   * "Crear propietario" form submits (that button only stages the data
+   * locally — see PropietarioSelector.handleNewPropietarioSubmit).
+   *
+   * `propietarioId` doubles as the persistence marker: a `new-<timestamp>`
+   * id means nothing has been sent yet (POST); a real id with
+   * `newPropietarioData` still attached means this is OUR OWN
+   * already-created owner potentially edited again via "Editar" (PUT, same
+   * id — never a second POST, never a duplicate). A real id with no
+   * `newPropietarioData` means an EXISTING propietario was picked from the
+   * list — nothing to persist.
+   *
+   * Returns whether it's safe to advance.
+   */
+  const persistOwnerIfNeeded = useCallback(async (): Promise<boolean> => {
+    const propietarioId = formData.propietarioId ?? '';
+    const isTempId = propietarioId.startsWith('new-');
+    const isOwnRecord = !isTempId && Boolean(propietarioId) && Boolean(formData.newPropietarioData);
+    if (!isTempId && !isOwnRecord) return true;
+
+    setIsPersistingOwner(true);
+    setOwnerServerError(null);
+    try {
+      if (isTempId) {
+        const created = await propietariosApi.create(formData.newPropietarioData!);
+        updateFormData({ propietarioId: created.id });
+      } else {
+        await propietariosApi.update(propietarioId, formData.newPropietarioData!);
+      }
+      return true;
+    } catch (error) {
+      // 409 — contract.md §3.3: duplicate documentNumber in this agency.
+      // Named on the field the user can actually fix; MUST NOT retry blindly.
+      if (error instanceof ApiError && error.status === 409) {
+        setOwnerServerError({ field: 'documentNumber', message: error.message });
+      } else {
+        const description =
+          error instanceof Error && error.message
+            ? error.message
+            : t('inmobiliaria.consignaciones.wizard.toasts.errorDesc');
+        toast.error(t('inmobiliaria.consignaciones.wizard.toasts.ownerErrorTitle'), { description });
+      }
+      return false;
+    } finally {
+      setIsPersistingOwner(false);
     }
-  }, [currentStep, isStepValid, getNextStep]);
+  }, [formData.propietarioId, formData.newPropietarioData, updateFormData, t]);
+
+  const goToNextStep = useCallback(async () => {
+    if (currentStep >= 6 || !isStepValid || isPersistingOwner) return;
+
+    if (currentStep === 1) {
+      const ok = await persistOwnerIfNeeded();
+      if (!ok) return; // stay on step 1, error is surfaced by persistOwnerIfNeeded
+    }
+
+    setCurrentStep(getNextStep(currentStep));
+  }, [currentStep, isStepValid, isPersistingOwner, persistOwnerIfNeeded, getNextStep]);
 
   const goToPreviousStep = useCallback(() => {
     if (currentStep > 1) {
@@ -178,25 +248,34 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     setIsSubmitting(true);
 
     try {
-      // Map wizard type to backend-supported values
-      const rawType = formData.propertyType ?? 'apartment';
-      const type = (SUPPORTED_TYPES as readonly string[]).includes(rawType)
-        ? (rawType as typeof SUPPORTED_TYPES[number])
-        : 'apartment';
+      /**
+       * Contract.md §3.2 (T-0011) — no silent coercion. The wizard's 6 UI
+       * options (apartment/house/studio/commercial/office/warehouse) all
+       * have an entry in TYPE_TO_BACKEND; an unmapped value is a bug that
+       * must surface as an error, not get quietly rewritten to 'apartment'
+       * the way it used to (a consigned warehouse was stored as an
+       * apartment).
+       */
+      const wizardType = formData.propertyType as PropertyType | undefined;
+      if (!wizardType || !(wizardType in TYPE_TO_BACKEND)) {
+        throw new Error(
+          `Tipo de inmueble no soportado: "${wizardType ?? ''}". Volvé al paso 2 y elegí un tipo válido.`,
+        );
+      }
 
       const property = await propertiesApi.create({
         title:        formData.propertyTitle ?? '',
-        description:  formData.propertyTitle ?? '', // wizard has no description field
-        type,
+        description:  formData.propertyDescription ?? '',
+        type:         wizardType,
         city:         formData.propertyCity ?? '',
         neighborhood: formData.propertyZone ?? '',
         address:      formData.propertyAddress ?? '',
         latitude:     formData.propertyLatitude,
         longitude:    formData.propertyLongitude,
         monthlyRent:  formData.monthlyRent ?? 0,
-        bedrooms:     0, // wizard doesn't collect this — update after creation
-        bathrooms:    0,
-        area:         0,
+        bedrooms:     formData.bedrooms ?? 0,
+        bathrooms:    formData.bathrooms ?? 1,
+        area:         formData.area ?? 10,
         adminFee:     formData.adminFee,
       });
 
@@ -251,9 +330,22 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
       router.push('/panel/inmobiliaria/inmuebles');
     } catch (error) {
       console.error('Error creating property:', error);
-      toast.error(t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'), {
-        description: t('inmobiliaria.consignaciones.wizard.toasts.errorDesc'),
-      });
+      /**
+       * Contract.md §3.3 — a 400 from the global ValidationPipe carries
+       * `message` as a string[]. Before this, the fixed generic toast below
+       * ran unconditionally and the real reason only ever showed up in
+       * `console.error`, which is why the user had to open the network tab
+       * to find out what was wrong. `ApiError.messages` (see client.ts)
+       * preserves the array instead of losing it to `String(err.message)`
+       * (which would render `"a,b,c"`).
+       */
+      const description =
+        error instanceof ApiError && error.messages
+          ? error.messages.join(' · ')
+          : error instanceof Error && error.message
+            ? error.message
+            : t('inmobiliaria.consignaciones.wizard.toasts.errorDesc');
+      toast.error(t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'), { description });
     } finally {
       setIsSubmitting(false);
     }
@@ -279,7 +371,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
 
     switch (currentStep) {
       case 1:
-        return <StepSelectPropietario {...stepProps} />;
+        return <StepSelectPropietario {...stepProps} ownerServerError={ownerServerError} />;
       case 2:
         return <StepPropertyData {...stepProps} />;
       case 3:
@@ -444,7 +536,8 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                 type="button"
                 hideArrow
                 onClick={goToNextStep}
-                disabled={!isStepValid}
+                disabled={!isStepValid || isPersistingOwner}
+                isLoading={isPersistingOwner}
               >
                 {t('inmobiliaria.consignaciones.wizard.next')}
                 <CaretRight className="w-4 h-4" />

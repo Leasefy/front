@@ -2985,7 +2985,8 @@
           "errorTitle": "We couldn't create the property",
           "errorDesc": "Nothing was saved. Try again in a moment.",
           "mandateErrorTitle": "The property was created; the consignment wasn't",
-          "mandateErrorDesc": "It's in the list, with no owner and no commission. Open it and complete the consignment — don't create it again."
+          "mandateErrorDesc": "It's in the list, with no owner and no commission. Open it and complete the consignment — don't create it again.",
+          "ownerErrorTitle": "We couldn't save the owner"
         },
         "step1": {
           "title": "Select Owner",
@@ -3007,12 +3008,22 @@
           "monthlyRentPlaceholder": "2,500,000",
           "adminFeeLabel": "Admin fee (optional)",
           "adminFeePlaceholder": "450,000",
+          "bedroomsLabel": "Bedrooms",
+          "bathroomsLabel": "Bathrooms",
+          "areaLabel": "Area (m2)",
+          "descriptionLabel": "Description",
+          "descriptionPlaceholder": "Describe the property: layout, finishes, condition, nearby places...",
+          "descriptionCounter": "{{count}}/{{max}} characters (minimum {{min}})",
           "validation": {
             "titleRequired": "Title is required",
             "addressRequired": "Address is required",
             "cityRequired": "City is required",
             "zoneRequired": "Zone is required",
-            "rentRequired": "Monthly rent is required"
+            "rentRequired": "Monthly rent is required",
+            "bedroomsRequired": "Bedrooms must be between 0 and 20",
+            "bathroomsRequired": "Bathrooms must be between 1 and 10",
+            "areaRequired": "Area must be between 10 and 10,000 m2",
+            "descriptionRequired": "Description must be between 20 and 5,000 characters"
           }
         },
         "step3": {

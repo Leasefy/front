@@ -192,7 +192,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
           error instanceof Error && error.message
             ? error.message
             : t('inmobiliaria.consignaciones.wizard.toasts.errorDesc');
-        toast.error(t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'), { description });
+        toast.error(t('inmobiliaria.consignaciones.wizard.toasts.ownerErrorTitle'), { description });
       }
       return false;
     } finally {

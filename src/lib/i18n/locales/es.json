@@ -2986,7 +2986,8 @@
           "errorTitle": "No pudimos crear el inmueble",
           "errorDesc": "No se guardó nada. Volvé a intentar en un momento.",
           "mandateErrorTitle": "El inmueble quedó creado; la consignación no",
-          "mandateErrorDesc": "Está en la lista, sin propietario ni comisión. Abrilo y completá la consignación — no lo cargues de nuevo."
+          "mandateErrorDesc": "Está en la lista, sin propietario ni comisión. Abrilo y completá la consignación — no lo cargues de nuevo.",
+          "ownerErrorTitle": "No pudimos guardar el propietario"
         },
         "step1": {
           "title": "Seleccionar Propietario",

@@ -2985,7 +2985,8 @@
           "errorTitle": "We couldn't create the property",
           "errorDesc": "Nothing was saved. Try again in a moment.",
           "mandateErrorTitle": "The property was created; the consignment wasn't",
-          "mandateErrorDesc": "It's in the list, with no owner and no commission. Open it and complete the consignment — don't create it again."
+          "mandateErrorDesc": "It's in the list, with no owner and no commission. Open it and complete the consignment — don't create it again.",
+          "ownerErrorTitle": "We couldn't save the owner"
         },
         "step1": {
           "title": "Select Owner",

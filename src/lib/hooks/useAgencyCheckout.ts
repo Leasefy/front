@@ -14,6 +14,14 @@
  *     `window.open` issued after an `await`), selectPlan → PENDING charge →
  *     hosted Wompi payment link, then redirects the pre-opened tab and polls.
  *
+ * A third entry point resumes a charge that was already `PENDING` before this
+ * hook mounted:
+ *   - `resume(chargeId, targetPlanTier)` — fetches a FRESH payment link for the
+ *     already-open charge (the original tab/link may be long gone), via the
+ *     same `.../payment-link` endpoint `pay()` uses, THEN enters `awaiting`.
+ *     Fires once — never on a poll loop, since the endpoint increments
+ *     `attempts` server-side.
+ *
  * `onSuccess` fires once the subscription reaches ACTIVE, AFTER a ~2.5s delay so
  * the caller can show the success state first (same UX as the old checkout).
  */
@@ -26,6 +34,17 @@ export type AgencyCheckoutState = 'idle' | 'processing' | 'awaiting' | 'success'
 const POLL_INTERVAL_MS = 5_000;
 /** Delay before firing onSuccess so the success state is visible first. */
 const SUCCESS_REDIRECT_DELAY_MS = 2_500;
+/**
+ * How long `awaiting` can run with no confirmation before it stops implying
+ * an active, ongoing wait and admits the payment was not completed. PSE
+ * approvals routinely take a couple of minutes at the payer's bank, so this
+ * must not be short enough to interrupt a legitimate slow payment — 10
+ * minutes is generous for that while still ending the "spins forever" trap
+ * for a genuinely abandoned one. Polling and the manual `verifyNow` escape
+ * hatch both keep working past this point: it only changes what the overlay
+ * SAYS, never what it does or whether it can still resolve to success.
+ */
+const AWAITING_TIMEOUT_MS = 10 * 60_000;
 
 type StatusOutcome = 'active' | 'failed' | 'pending' | 'error';
 
@@ -38,6 +57,15 @@ export interface UseAgencyCheckout {
   popupBlocked: boolean;
   /** Transient polling message (verifying / retrying). */
   pollError: string | null;
+  /** True while `resume()` is fetching a fresh payment link for an already-open charge. */
+  resuming: boolean;
+  /**
+   * True once `awaiting` has run past `AWAITING_TIMEOUT_MS` with no
+   * confirmation. The overlay must stop implying an active, ongoing wait once
+   * this flips — polling and `verifyNow` both keep working regardless, and a
+   * genuine late confirmation still resolves to `success` normally.
+   */
+  awaitingTimedOut: boolean;
   /** Free / percentage (USAGE_CANON): activate without an upfront charge. */
   activate: (planId: string) => Promise<void>;
   /** Paid FLAT: pre-open tab + selectPlan + payment link + redirect + poll. */
@@ -46,12 +74,20 @@ export interface UseAgencyCheckout {
   verifyNow: () => Promise<void>;
   /**
    * Resume `awaiting` for a charge that was already `PENDING` before this hook
-   * mounted (e.g. the user left `/upgrade` before the webhook confirmed and came
-   * back). No-op unless the current state is `idle` — never clobbers a flow
-   * already started by `pay()`/`activate()`.
+   * mounted (e.g. the user left `/upgrade` before the webhook confirmed and
+   * came back). Fetches a fresh payment link for `chargeId` first — the
+   * original tab may be closed — then enters `awaiting`; if the fetch fails,
+   * still enters `awaiting` with `paymentUrl` null so the panel shows an
+   * honest "couldn't get a link" state instead of a fabricated one. No-op
+   * unless the current state is `idle` — never clobbers a flow already
+   * started by `pay()`/`activate()`.
    */
-  resume: (targetPlanTier: string) => void;
-  /** Reset back to idle (e.g. to close the overlay after an error). */
+  resume: (chargeId: string, targetPlanTier: string) => void;
+  /**
+   * Reset back to idle — e.g. to close the overlay after an error, or to let
+   * the owner leave an abandoned `awaiting` session. The server-side charge
+   * stays `PENDING`; that is correct and this hook does not touch it.
+   */
   reset: () => void;
 }
 
@@ -61,6 +97,8 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [popupBlocked, setPopupBlocked] = useState(false);
   const [pollError, setPollError] = useState<string | null>(null);
+  const [resuming, setResuming] = useState(false);
+  const [awaitingTimedOut, setAwaitingTimedOut] = useState(false);
 
   // Keep onSuccess in a ref so an inline arrow from the caller doesn't reshuffle
   // the memoized callbacks / the success timer on every render.
@@ -127,6 +165,10 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
   );
 
   // Poll the agency subscription until the charge resolves (paid → ACTIVE).
+  // Also arms a one-shot timeout: if nothing resolves within
+  // AWAITING_TIMEOUT_MS, flip `awaitingTimedOut` so the overlay stops implying
+  // an active wait — polling and verifyNow keep running regardless, so a late
+  // confirmation still resolves normally.
   useEffect(() => {
     if (state !== 'awaiting') return;
     let cancelled = false;
@@ -135,13 +177,17 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
       if (!cancelled) applyStatus(r);
     };
     run();
-    const id = setInterval(run, POLL_INTERVAL_MS);
+    const pollId = setInterval(run, POLL_INTERVAL_MS);
     // Background tabs throttle setInterval — re-check immediately when the user
     // returns from the Wompi payment tab.
     window.addEventListener('focus', run);
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) setAwaitingTimedOut(true);
+    }, AWAITING_TIMEOUT_MS);
     return () => {
       cancelled = true;
-      clearInterval(id);
+      clearInterval(pollId);
+      clearTimeout(timeoutId);
       window.removeEventListener('focus', run);
     };
   }, [state, checkStatus, applyStatus]);
@@ -184,6 +230,8 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     setState('processing');
     setError(null);
     setPopupBlocked(false);
+    setAwaitingTimedOut(false);
+    setResuming(false);
     try {
       const { charge } = await agencySubscriptionApi.selectPlan(planId);
       if (!charge) {
@@ -212,12 +260,43 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
   }, []);
 
   // Resume awaiting for a charge that was already PENDING before mount — e.g.
-  // the user left `/upgrade` before the webhook confirmed and came back. Guarded
-  // so it never clobbers a flow `pay()`/`activate()` already started.
-  const resume = useCallback((targetPlanTier: string) => {
-    targetTierRef.current = targetPlanTier;
-    setState((prev) => (prev === 'idle' ? 'awaiting' : prev));
-  }, []);
+  // the user left `/upgrade` before the webhook confirmed and came back.
+  // Fetches a FRESH payment link first (the original tab/link may be gone),
+  // via `processing` — that state's copy is literally accurate here, which is
+  // what keeps `awaiting`'s subtitle from ever having to claim a link is being
+  // generated. Guarded so it never clobbers a flow `pay()`/`activate()` — or a
+  // previous `resume()` — already started; fires the network call exactly
+  // once per resume, never on the poll loop.
+  const resume = useCallback(
+    (chargeId: string, targetPlanTier: string) => {
+      if (state !== 'idle') return;
+      targetTierRef.current = targetPlanTier;
+      setError(null);
+      setPaymentUrl(null);
+      setPopupBlocked(false);
+      setPollError(null);
+      setAwaitingTimedOut(false);
+      setResuming(true);
+      setState('processing');
+      void (async () => {
+        try {
+          const { url } = await agencySubscriptionApi.chargePaymentLink(chargeId);
+          setPaymentUrl(url);
+        } catch {
+          // No link this time — `awaiting` below renders the honest "couldn't
+          // retrieve it" copy instead of a fabricated or contradictory one.
+          // The owner can still verify (in case the payment landed anyway via
+          // the original link) or leave and re-select the plan to mint a
+          // fresh charge + link.
+          setPaymentUrl(null);
+        } finally {
+          setResuming(false);
+          setState('awaiting');
+        }
+      })();
+    },
+    [state],
+  );
 
   const reset = useCallback(() => {
     setState('idle');
@@ -225,6 +304,8 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     setPaymentUrl(null);
     setPopupBlocked(false);
     setPollError(null);
+    setResuming(false);
+    setAwaitingTimedOut(false);
     targetTierRef.current = null;
   }, []);
 
@@ -234,6 +315,8 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
     paymentUrl,
     popupBlocked,
     pollError,
+    resuming,
+    awaitingTimedOut,
     activate,
     pay,
     verifyNow,

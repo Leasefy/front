@@ -58,7 +58,7 @@ function AgencyUpgradeContent() {
     const openCharge = subscriptionState.openCharge;
     if (state === 'idle' && openCharge?.status === 'PENDING' && openCharge.targetPlanTier) {
       setSelectedPlan(openCharge.targetPlanTier as AgencyPlanId);
-      resume(openCharge.targetPlanTier);
+      resume(openCharge.id, openCharge.targetPlanTier);
     }
   }, [subscriptionState, state, resume]);
 

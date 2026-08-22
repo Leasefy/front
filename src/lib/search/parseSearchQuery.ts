@@ -40,6 +40,9 @@ const typePatterns: Record<PropertyType, RegExp> = {
   house: /\b(casa)\b/i,
   studio: /\b(estudio|loft)\b/i,
   room: /\b(habitaci[oó]n|cuarto|pieza)\b/i,
+  commercial: /\b(local\s*comercial|local)\b/i,
+  office: /\b(oficina)\b/i,
+  warehouse: /\b(bodega)\b/i,
 };
 
 // Amenity patterns mapping to amenity IDs
@@ -248,6 +251,9 @@ export function generateFilterDescription(filters: {
       house: 'Casa',
       studio: 'Estudio',
       room: 'Habitacion',
+      commercial: 'Local comercial',
+      office: 'Oficina',
+      warehouse: 'Bodega',
     };
     parts.push(typeNames[filters.propertyType]);
   }

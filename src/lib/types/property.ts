@@ -4,7 +4,19 @@
  */
 
 export type PropertyStatus = 'available' | 'rented' | 'pending';
-export type PropertyType = 'apartment' | 'house' | 'studio' | 'room';
+/**
+ * Mirrors the backend `PropertyType` Prisma enum (contract.md §3.2, T-0011).
+ * Wire values are the same names UPPERCASE — see `TYPE_TO_BACKEND` /
+ * `TYPE_MAP` in `src/lib/api/properties.mapper.ts`.
+ */
+export type PropertyType =
+  | 'apartment'
+  | 'house'
+  | 'studio'
+  | 'room'
+  | 'commercial'
+  | 'office'
+  | 'warehouse';
 
 export interface PropertyAmenity {
   id: string;

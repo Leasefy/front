@@ -22,6 +22,7 @@ import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/lib/auth/use-auth';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
+import { ApiError } from '@/lib/api/client';
 import { TYPE_TO_BACKEND } from '@/lib/api/properties.mapper';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import type { PropertyType } from '@/lib/types/property';
@@ -268,9 +269,22 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
       router.push('/panel/inmobiliaria/inmuebles');
     } catch (error) {
       console.error('Error creating property:', error);
-      toast.error(t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'), {
-        description: t('inmobiliaria.consignaciones.wizard.toasts.errorDesc'),
-      });
+      /**
+       * Contract.md §3.3 — a 400 from the global ValidationPipe carries
+       * `message` as a string[]. Before this, the fixed generic toast below
+       * ran unconditionally and the real reason only ever showed up in
+       * `console.error`, which is why the user had to open the network tab
+       * to find out what was wrong. `ApiError.messages` (see client.ts)
+       * preserves the array instead of losing it to `String(err.message)`
+       * (which would render `"a,b,c"`).
+       */
+      const description =
+        error instanceof ApiError && error.messages
+          ? error.messages.join(' · ')
+          : error instanceof Error && error.message
+            ? error.message
+            : t('inmobiliaria.consignaciones.wizard.toasts.errorDesc');
+      toast.error(t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'), { description });
     } finally {
       setIsSubmitting(false);
     }

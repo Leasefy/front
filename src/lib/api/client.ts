@@ -150,14 +150,25 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
 }
 
 export class ApiError extends Error {
+  /**
+   * When the backend's global ValidationPipe returns `message` as a
+   * string[] (a 400 — contract.md §3.3), the individual messages are
+   * preserved here for callers that want to render a real list. `.message`
+   * (from `Error`) is always a string — `Error`'s constructor would silently
+   * coerce an array via `Array.prototype.toString` (`"a,b,c"`) if passed
+   * directly, so it's joined here instead.
+   */
+  public messages?: string[]
+
   constructor(
     public status: number,
-    message: string,
+    message: string | string[],
     /** Optional machine-readable code forwarded by the backend (e.g. SESSION_SUPERSEDED). */
     public code?: string,
   ) {
-    super(message)
+    super(Array.isArray(message) ? message.join(' · ') : message)
     this.name = 'ApiError'
+    if (Array.isArray(message)) this.messages = message
   }
 }
 

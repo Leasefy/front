@@ -110,21 +110,22 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         // Commission terms always valid with defaults
         return true;
       case 4:
-        // Agents skip this step; admins must assign an agent
-        if (isAgentRole) return true;
-        return Boolean(formData.agenteId);
+        // Agents skip this step. Admins may leave it unassigned too — an
+        // unassigned consignment falls back to the creating user's own
+        // profile in handleSubmit, so nothing here should block "Siguiente".
+        return true;
       case 5:
         // Inventory is optional
         return true;
       case 6:
-        // Confirmation step - agenteId not required for agents (auto-assigned)
+        // Confirmation step - agenteId is never required: an unassigned
+        // consignment defaults to the profile that created it.
         return Boolean(
           formData.propietarioId &&
           formData.propertyTitle &&
           formData.propertyAddress &&
           formData.propertyCity &&
-          formData.propertyZone &&
-          (isAgentRole || formData.agenteId)
+          formData.propertyZone
         );
       default:
         return false;
@@ -291,7 +292,13 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
 
       // El mandato. `agenteUserId` es un User.id: el `Agente.id` del front es
       // un AgencyMember.id y mandarlo acá no falla, asigna a nadie.
-      const agenteUserId = isAgentRole ? user?.id : selectedAgente?.userId;
+      //
+      // Sin agente elegido — porque el rol agente saltea el paso 4, o porque
+      // el admin no seleccionó ninguno — el mandato cae en el mismo perfil
+      // que lo está creando. No hace falta un assignAgent adicional acá:
+      // properties.service.ts (back) ya le da PropertyAccess al creador
+      // dentro de la misma transacción del create() de la propiedad.
+      const agenteUserId = selectedAgente?.userId ?? user?.id;
       try {
         await consignacionesApi.create({
           propietarioId: formData.propietarioId ?? '',

@@ -2988,6 +2988,9 @@
           "mandateErrorTitle": "The property was created; the consignment wasn't",
           "mandateErrorDesc": "It's in the list, with no owner and no commission. Open it and complete the consignment — don't create it again.",
           "ownerErrorTitle": "We couldn't save the owner",
+          "publishErrorTitle": "The property and the consignment were created; publishing failed",
+          "publishErrorDesc": "{{reason}} Open it from the list and publish it whenever you're ready — don't create it again.",
+          "publishErrorFallbackReason": "We couldn't publish it.",
           "photosPartialTitle": "Some photos didn't upload",
           "photosPartialDesc": "{{uploaded}} of {{total}} uploaded. You can add the rest from the property."
         },

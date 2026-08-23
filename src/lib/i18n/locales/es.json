@@ -2973,6 +2973,7 @@
         "previous": "Anterior",
         "next": "Siguiente",
         "creating": "Creando...",
+        "uploadingPhotos": "Subiendo fotos...",
         "confirmConsignment": "Confirmar Consignación",
         "cancelDialog": {
           "title": "Cancelar consignacion?",
@@ -2987,7 +2988,9 @@
           "errorDesc": "No se guardó nada. Volvé a intentar en un momento.",
           "mandateErrorTitle": "El inmueble quedó creado; la consignación no",
           "mandateErrorDesc": "Está en la lista, sin propietario ni comisión. Abrilo y completá la consignación — no lo cargues de nuevo.",
-          "ownerErrorTitle": "No pudimos guardar el propietario"
+          "ownerErrorTitle": "No pudimos guardar el propietario",
+          "photosPartialTitle": "Algunas fotos no se subieron",
+          "photosPartialDesc": "Se subieron {{uploaded}} de {{total}}. Podés agregar las que faltan desde el inmueble."
         },
         "step1": {
           "title": "Seleccionar Propietario",
@@ -3058,10 +3061,7 @@
           "additionalNotes": "Notas adicionales...",
           "emptyInventory": "No hay items en el inventario",
           "addFirstItem": "Agregar primer item",
-          "photosTitle": "Fotografias del inmueble",
-          "photosDropzone": "Arrastra fotos aqui o haz clic para seleccionar",
-          "photosFormats": "JPG, PNG hasta 10MB cada una",
-          "photosSoon": "Proximamente",
+          "photosTitle": "Fotografías del inmueble",
           "generalNotes": "Observaciones generales",
           "generalNotesPlaceholder": "Estado general del inmueble, detalles adicionales...",
           "conditionExcellent": "Excelente",

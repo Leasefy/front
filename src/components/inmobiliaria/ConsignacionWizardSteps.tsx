@@ -10,7 +10,6 @@ import {
   Percent,
   Clock,
   UserCircle,
-  Camera,
   Plus,
   Trash,
   Package,
@@ -37,6 +36,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { PropietarioSelector } from './PropietarioSelector';
 import { AgenteSelector } from './AgenteSelector';
 import { PropertyLocationField, type PropertyLocationValue } from '@/components/publicar/PropertyLocationField';
+import { PropertyPhotoPicker } from './PropertyPhotoPicker';
 
 // ============================================================================
 // Shared Types
@@ -61,6 +61,13 @@ export interface WizardFormData extends ConsignacionFormData {
   bedrooms: number;
   bathrooms: number;
   area: number;
+  /**
+   * Deferred upload: the property doesn't exist yet while the wizard is
+   * open, so photos stay as `File`s in memory and only reach
+   * `POST /properties/:id/images` from `ConsignacionWizard.handleSubmit`,
+   * after the property is created.
+   */
+  photos: File[];
 }
 
 export interface StepProps {
@@ -748,30 +755,15 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
         )}
       </div>
 
-      {/* Photo Upload Placeholder */}
+      {/* Property Photos */}
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-fg dark:text-fg-subtle">
           {t('inmobiliaria.consignaciones.wizard.step5.photosTitle')}
         </h3>
-        <div className="p-8 text-center rounded-xl border border-dashed border-border dark:border-border-strong bg-surface-muted dark:bg-[#14130F]">
-          <Camera className="w-12 h-12 mx-auto mb-3 text-fg-subtle dark:text-fg-muted" />
-          <p className="text-fg-muted dark:text-fg-subtle mb-1">
-            {t('inmobiliaria.consignaciones.wizard.step5.photosDropzone')}
-          </p>
-          <p className="text-xs text-fg-subtle dark:text-fg-muted">
-            {t('inmobiliaria.consignaciones.wizard.step5.photosFormats')}
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            hideArrow
-            disabled
-            className="mt-4"
-          >
-            <Camera className="w-4 h-4" />
-            {t('inmobiliaria.consignaciones.wizard.step5.photosSoon')}
-          </Button>
-        </div>
+        <PropertyPhotoPicker
+          photos={formData.photos ?? []}
+          onChange={(photos) => updateFormData({ photos })}
+        />
       </div>
 
       {/* General Notes */}

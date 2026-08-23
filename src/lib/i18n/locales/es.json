@@ -3046,7 +3046,7 @@
         "step4": {
           "title": "Asignar Agente",
           "subtitle": "Selecciona el agente responsable de esta propiedad (opcional)",
-          "selfAssignNotice": "Si no seleccionas un agente, la consignacion queda a cargo del mismo perfil que la esta creando."
+          "selfAssignNotice": "Si no seleccionas un agente, la consignación queda a cargo del mismo perfil que la está creando."
         },
         "step5": {
           "title": "Acta de Entrega",
@@ -3089,7 +3089,7 @@
           "monthlyCommission": "Comision mensual",
           "ownerNetLabel": "Neto propietario",
           "agentCommission": "comision",
-          "selfAssigned": "A cargo del perfil que crea la consignacion (sin agente asignado)",
+          "selfAssigned": "A cargo del perfil que crea la consignación (sin agente asignado)",
           "itemsRegistered": "{{count}} item registrado",
           "itemsRegisteredPlural": "{{count}} items registrados",
           "noName": "Sin nombre",

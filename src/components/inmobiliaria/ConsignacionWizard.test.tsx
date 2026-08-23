@@ -29,8 +29,16 @@ import type { Propietario, Agente } from '@/lib/types/inmobiliaria'
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { authState, permissionsState, pushMock, propertiesApiMock, consignacionesApiMock, propietariosApiMock } =
-  vi.hoisted(() => ({
+const {
+  authState,
+  permissionsState,
+  pushMock,
+  propertiesApiMock,
+  consignacionesApiMock,
+  propietariosApiMock,
+  uploadPropertyPhotosMock,
+  stepFivePhotosHolder,
+} = vi.hoisted(() => ({
     authState: {
       user: { id: 'user-1', email: 'user1@test.com', name: 'Test User' } as
         | { id: string; email: string; name: string }
@@ -50,6 +58,13 @@ const { authState, permissionsState, pushMock, propertiesApiMock, consignaciones
       create: vi.fn(),
       update: vi.fn(),
     },
+    uploadPropertyPhotosMock: vi.fn(),
+    // Mutable holder step 5's mock reads from on mount — lets individual
+    // tests seed `formData.photos` before rendering without needing a
+    // per-test vi.mock override (the module mock below is hoisted once for
+    // the whole file, same constraint step1/step2's self-fill pattern
+    // already works around).
+    stepFivePhotosHolder: { photos: [] as File[] },
   }))
 
 vi.mock('@/lib/i18n', () => ({
@@ -76,11 +91,15 @@ vi.mock('@/lib/hooks/usePermissions', () => ({
 }))
 
 vi.mock('@/components/ui/toast', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
+  toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }))
 
 vi.mock('@/lib/api/properties.service', () => ({
   propertiesApi: propertiesApiMock,
+}))
+
+vi.mock('@/lib/api/property-photos', () => ({
+  uploadPropertyPhotos: uploadPropertyPhotosMock,
 }))
 
 vi.mock('@/lib/api/inmobiliaria.service', () => ({
@@ -169,7 +188,15 @@ vi.mock('./ConsignacionWizardSteps', () => ({
   StepCommissionTerms: () => React.createElement('div', { 'data-testid': 'step-3' }),
   StepAssignAgent: ({ formData }: { formData: { agenteId?: string } }) =>
     React.createElement('div', { 'data-testid': 'step-4' }, formData.agenteId ?? 'no-agent'),
-  StepActaEntrega: () => React.createElement('div', { 'data-testid': 'step-5' }),
+  StepActaEntrega: ({ updateFormData }: { updateFormData: (d: Record<string, unknown>) => void }) => {
+    React.useEffect(() => {
+      if (stepFivePhotosHolder.photos.length > 0) {
+        updateFormData({ photos: stepFivePhotosHolder.photos })
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+    return React.createElement('div', { 'data-testid': 'step-5' })
+  },
   StepConfirmation: () => React.createElement('div', { 'data-testid': 'step-6' }),
 }))
 
@@ -217,6 +244,8 @@ beforeEach(() => {
   consignacionesApiMock.create.mockReset().mockResolvedValue({ id: 'consignacion-1' })
   propietariosApiMock.create.mockReset()
   propietariosApiMock.update.mockReset()
+  uploadPropertyPhotosMock.mockReset().mockResolvedValue({ uploaded: 0, failed: [] })
+  stepFivePhotosHolder.photos = []
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -378,6 +407,81 @@ describe('<ConsignacionWizard> — publishes the property after the mandate (T-0
     // The property and the mandate already exist — same as the mandate-failure
     // catch, the wizard navigates away instead of stranding the user on a
     // now-stale form.
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
+  })
+})
+
+describe('<ConsignacionWizard> — property photos (T-0017)', () => {
+  // Admin path: goes through all 6 steps (step 4 isn't skipped), picking no
+  // agent — same setup as the "agent assignment is optional" tests above.
+  async function submitAsAdmin() {
+    await renderWizard(AGENTE_LIST)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment'))
+  }
+
+  it('never calls uploadPropertyPhotos when the user added no photos', async () => {
+    stepFivePhotosHolder.photos = []
+
+    await submitAsAdmin()
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(uploadPropertyPhotosMock).not.toHaveBeenCalled()
+    expect(consignacionesApiMock.create).toHaveBeenCalledTimes(1)
+  })
+
+  it('uploads photos to the just-created property, after propertiesApi.create resolves', async () => {
+    const photos = [
+      new File(['a'], 'a.jpg', { type: 'image/jpeg' }),
+      new File(['b'], 'b.jpg', { type: 'image/jpeg' }),
+    ]
+    stepFivePhotosHolder.photos = photos
+    uploadPropertyPhotosMock.mockResolvedValue({ uploaded: 2, failed: [] })
+
+    await submitAsAdmin()
+
+    expect(uploadPropertyPhotosMock).toHaveBeenCalledWith('property-1', photos)
+    // The consignment still completes and reports plain success — no photo
+    // failures to mention.
+    expect(consignacionesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
+    expect(toast.warning).not.toHaveBeenCalled()
+  })
+
+  it('warns about partial photo failures without aborting the rest of the flow', async () => {
+    const photos = [new File(['a'], 'a.jpg', { type: 'image/jpeg' })]
+    stepFivePhotosHolder.photos = photos
+    uploadPropertyPhotosMock.mockResolvedValue({
+      uploaded: 0,
+      failed: [{ name: 'a.jpg', reason: 'Upload failed: 500' }],
+    })
+
+    await submitAsAdmin()
+
+    expect(toast.warning).toHaveBeenCalledWith(
+      'inmobiliaria.consignaciones.wizard.toasts.photosPartialTitle',
+      expect.objectContaining({
+        // The shared `useI18n` mock above (hoisted vi.mock("@/lib/i18n", ...))
+        // appends `::${JSON.stringify(params)}` to the returned key whenever
+        // params are passed to `t()`, added by T-0018 so a raw backend error
+        // message can be asserted reaching a toast description. This call
+        // always passes `{ uploaded, total }`, so the rendered description
+        // carries that suffix. Match on the key with `stringContaining`
+        // instead of an exact string: it must keep proving THIS SPECIFIC
+        // key was used, without re-breaking the next time the mock's
+        // params behaviour changes. Do not loosen this to `expect.any(String)`.
+        description: expect.stringContaining(
+          'inmobiliaria.consignaciones.wizard.toasts.photosPartialDesc',
+        ),
+      }),
+    )
+    // The property and the mandate both went through — a failed photo must
+    // never read as a failed consignment.
+    expect(consignacionesApiMock.create).toHaveBeenCalledTimes(1)
     expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
   })
 })

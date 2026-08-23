@@ -2972,6 +2972,7 @@
         "previous": "Previous",
         "next": "Next",
         "creating": "Creating...",
+        "uploadingPhotos": "Uploading photos...",
         "confirmConsignment": "Confirm Consignment",
         "cancelDialog": {
           "title": "Cancel consignment?",
@@ -2989,7 +2990,9 @@
           "ownerErrorTitle": "We couldn't save the owner",
           "publishErrorTitle": "The property and the consignment were created; publishing failed",
           "publishErrorDesc": "{{reason}} Open it from the list and publish it whenever you're ready — don't create it again.",
-          "publishErrorFallbackReason": "We couldn't publish it."
+          "publishErrorFallbackReason": "We couldn't publish it.",
+          "photosPartialTitle": "Some photos didn't upload",
+          "photosPartialDesc": "{{uploaded}} of {{total}} uploaded. You can add the rest from the property."
         },
         "step1": {
           "title": "Select Owner",
@@ -3061,9 +3064,6 @@
           "emptyInventory": "No items in inventory",
           "addFirstItem": "Add first item",
           "photosTitle": "Property photos",
-          "photosDropzone": "Drag photos here or click to select",
-          "photosFormats": "JPG, PNG up to 10MB each",
-          "photosSoon": "Coming soon",
           "generalNotes": "General observations",
           "generalNotesPlaceholder": "General condition of the property, additional details...",
           "conditionExcellent": "Excellent",

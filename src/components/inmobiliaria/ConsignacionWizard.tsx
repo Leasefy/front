@@ -22,6 +22,7 @@ import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/lib/auth/use-auth';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
+import { uploadPropertyPhotos } from '@/lib/api/property-photos';
 import { ApiError } from '@/lib/api/client';
 import { TYPE_TO_BACKEND } from '@/lib/api/properties.mapper';
 import { consignacionesApi, propietariosApi } from '@/lib/api/inmobiliaria.service';
@@ -65,6 +66,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
   const isAgentRole = !isAdmin;
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   // Form data state
@@ -75,6 +77,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     inventoryItems: [],
     inventoryNotes: '',
     contractStartDate: new Date().toISOString().split('T')[0],
+    photos: [],
   });
 
   // Update form data helper
@@ -279,6 +282,32 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         area:         formData.area ?? 10,
         adminFee:     formData.adminFee,
       });
+
+      // Photos are best-effort: the property already exists at this point,
+      // so a failed upload must never abort the rest of the flow (same
+      // partial-failure handling as PropertyEditModal.tsx). Unlike that
+      // modal, a partial photo failure here gets its own toast instead of
+      // replacing the final one below — the consignment's success message
+      // carries owner/commission/agent info that a photo-only message
+      // would otherwise bury, and "some photos didn't upload" must not
+      // read as "the consignment failed".
+      const photosToUpload = formData.photos ?? [];
+      if (photosToUpload.length > 0) {
+        setIsUploadingPhotos(true);
+        try {
+          const { uploaded, failed } = await uploadPropertyPhotos(property.id, photosToUpload);
+          if (failed.length > 0) {
+            toast.warning(t('inmobiliaria.consignaciones.wizard.toasts.photosPartialTitle'), {
+              description: t('inmobiliaria.consignaciones.wizard.toasts.photosPartialDesc', {
+                uploaded,
+                total: photosToUpload.length,
+              }),
+            });
+          }
+        } finally {
+          setIsUploadingPhotos(false);
+        }
+      }
 
       // Assign agent
       const selectedAgente = agentes.find((a) => a.id === formData.agenteId);
@@ -589,7 +618,9 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
                 isLoading={isSubmitting}
               >
                 {isSubmitting ? (
-                  t('inmobiliaria.consignaciones.wizard.creating')
+                  isUploadingPhotos
+                    ? t('inmobiliaria.consignaciones.wizard.uploadingPhotos')
+                    : t('inmobiliaria.consignaciones.wizard.creating')
                 ) : (
                   <>
                     <Check className="w-4 h-4" weight="bold" />

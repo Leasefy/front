@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { ArrowSquareOut, CheckCircle, WarningCircle } from '@phosphor-icons/react';
+import { ArrowSquareOut, CheckCircle, Clock, WarningCircle } from '@phosphor-icons/react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui';
@@ -18,16 +18,41 @@ interface AgencyCheckoutOverlayProps {
   paymentUrl: string | null;
   popupBlocked: boolean;
   pollError: string | null;
+  /** True once `awaiting` has run long enough with no confirmation that the
+   * overlay must stop implying an active, ongoing wait (T-0012 WU-3). */
+  awaitingTimedOut: boolean;
+  /** True while `resume()` is fetching a fresh payment link (processing copy). */
+  resuming?: boolean;
   onVerify: () => void;
-  /** Reset + close — only honored while not mid-payment. */
+  /** Reset + close — honored while not mid-payment (idle/error), and while
+   * `awaiting` so an abandoned session is never a dead end. The server-side
+   * charge stays PENDING; that is correct and this component does not touch it. */
   onClose: () => void;
+}
+
+/** Awaiting's subtitle — the single place this copy is decided, so it can
+ * never drift out of sync with the heading above it (T-0012 WU-3 defect B:
+ * a stale "estamos generando el enlace de pago" line used to render under
+ * "esperando la confirmación de tu pago…", which is nonsensical — you cannot
+ * be confirming a payment for a link that does not exist yet). */
+function awaitingSubtitle(paymentUrl: string | null, awaitingTimedOut: boolean): string {
+  if (!paymentUrl) {
+    return 'No pudimos recuperar el enlace de pago. Podés salir e intentarlo de nuevo, o verificar si ya pagaste.';
+  }
+  return awaitingTimedOut
+    ? 'Si ya pagaste, puede demorar unos minutos más en confirmarse. Si no, podés salir e intentarlo de nuevo.'
+    : 'Completá el pago en la pestaña que abrimos. Esta pantalla se actualiza sola.';
 }
 
 /**
  * AgencyCheckoutOverlay — the direct-to-Wompi checkout status modal rendered on
  * top of `/upgrade` (no intermediate page). Mirrors the state panel that used to
- * live in `checkout/page.tsx`. Non-dismissable while processing/awaiting/success
- * so the payment isn't interrupted; on error the user can close and retry.
+ * live in `checkout/page.tsx`. `processing`/`success` stay truly non-dismissable
+ * (the DS's own close button is hidden too, per DESIGN.md's `hideClose` — "only
+ * for a modal that must not be abandoned halfway") since those windows are
+ * milliseconds. `awaiting` is escapable — an abandoned payment must not be a
+ * dead end — via an explicit "Salir sin pagar" action, Escape, or the backdrop;
+ * `error` keeps its existing close-and-retry.
  *
  * Follows DESIGN.md modal rules: Radix Dialog (z-[300], scroll lock) + Lenis
  * stop() while open.
@@ -40,6 +65,8 @@ export function AgencyCheckoutOverlay({
   paymentUrl,
   popupBlocked,
   pollError,
+  awaitingTimedOut,
+  resuming = false,
   onVerify,
   onClose,
 }: AgencyCheckoutOverlayProps) {
@@ -53,14 +80,17 @@ export function AgencyCheckoutOverlay({
     return () => lenis.start();
   }, [open, lenis]);
 
-  // Only allow closing (Escape / outside / X) when the payment is NOT in flight.
+  // Only allow closing (Escape / outside / X / the explicit "Salir" action)
+  // when the payment is NOT actively in flight. `awaiting` is included — an
+  // abandoned payment must have a way out; the server-side charge simply stays
+  // PENDING, which is correct.
   const handleOpenChange = (next: boolean) => {
-    if (!next && (state === 'error' || state === 'idle')) onClose();
+    if (!next && (state === 'error' || state === 'idle' || state === 'awaiting')) onClose();
   };
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm" hideClose={state === 'processing' || state === 'success'}>
         {/* Success */}
         {state === 'success' && (
           <div className="flex flex-col items-center text-center gap-2 py-2">
@@ -77,14 +107,18 @@ export function AgencyCheckoutOverlay({
         {/* Awaiting payment — hosted Wompi tab */}
         {state === 'awaiting' && (
           <div className="flex flex-col items-center text-center gap-3 py-2">
-            <Spinner size="lg" variant="current" className="text-primary" />
+            {awaitingTimedOut ? (
+              <Clock className="w-12 h-12 text-warning" weight="fill" />
+            ) : (
+              <Spinner size="lg" variant="current" className="text-primary" />
+            )}
             <DialogTitle className="font-medium text-fg">
-              Esperando la confirmación de tu pago…
+              {awaitingTimedOut
+                ? 'Todavía no confirmamos tu pago'
+                : 'Esperando la confirmación de tu pago…'}
             </DialogTitle>
             <DialogDescription className="text-xs text-fg-muted">
-              {paymentUrl
-                ? 'Completá el pago en la pestaña que abrimos. Esta pantalla se actualiza sola.'
-                : 'Estamos generando el enlace de pago.'}
+              {awaitingSubtitle(paymentUrl, awaitingTimedOut)}
             </DialogDescription>
             {paymentUrl && (
               <a
@@ -100,18 +134,27 @@ export function AgencyCheckoutOverlay({
               </a>
             )}
             {pollError && <p className="text-xs text-fg-muted">{pollError}</p>}
-            <Button variant="ghost" size="sm" hideArrow onClick={onVerify} className="mt-1">
-              Ya pagué — Verificar estado
-            </Button>
+            <div className="flex items-center justify-center gap-2 mt-1">
+              <Button variant="ghost" size="sm" hideArrow onClick={onVerify}>
+                Ya pagué — Verificar estado
+              </Button>
+              <Button variant="ghost" size="sm" hideArrow onClick={onClose} className="text-fg-muted">
+                Salir sin pagar
+              </Button>
+            </div>
           </div>
         )}
 
-        {/* Processing — selectPlan / generating the link */}
+        {/* Processing — selectPlan / generating (or resume(): retrieving) the link */}
         {state === 'processing' && (
           <div className="flex flex-col items-center text-center gap-3 py-2">
             <Spinner size="lg" variant="current" className="text-primary" />
             <DialogTitle className="font-medium text-fg">
-              {isPaid ? 'Generando el pago…' : `Activando el plan ${planName}…`}
+              {resuming
+                ? 'Recuperando tu pago…'
+                : isPaid
+                  ? 'Generando el pago…'
+                  : `Activando el plan ${planName}…`}
             </DialogTitle>
             <DialogDescription className="text-xs text-fg-muted">
               Un momento, por favor.

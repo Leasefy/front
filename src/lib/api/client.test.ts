@@ -259,6 +259,53 @@ describe('ApiError — 400 con message: string[] (contract.md §3.3)', () => {
   })
 })
 
+/**
+ * T-0012 WU-5 — the generic non-2xx branch only ever forwarded `message`,
+ * never `code`. That's fine for statuses the client special-cases (401/402/403,
+ * which already read `code` themselves), but any OTHER status that starts
+ * carrying a machine-readable `code` (e.g. the back's 409
+ * PENDING_CHARGE_ALREADY_PAID / 503 payment_verification_unavailable on
+ * select-plan) silently lost it — callers could only pattern-match on
+ * `.message`, a human string never meant to be parsed. This is general
+ * plumbing, not a special case for one endpoint.
+ */
+describe('ApiError — `code` forwarding on the generic non-2xx branch', () => {
+  it('forwards `code` from the response body on a 409', async () => {
+    vi.stubGlobal(
+      'fetch',
+      stubFetch(409, { message: 'ya pagado', code: 'PENDING_CHARGE_ALREADY_PAID' }),
+    )
+
+    const err = (await apiClient
+      .post('/inmobiliaria/subscription/select-plan', {})
+      .catch((e) => e)) as ApiError
+    expect(err).toBeInstanceOf(ApiError)
+    expect(err.status).toBe(409)
+    expect(err.code).toBe('PENDING_CHARGE_ALREADY_PAID')
+    expect(err.message).toBe('ya pagado')
+  })
+
+  it('forwards `code` from the response body on a 503', async () => {
+    vi.stubGlobal(
+      'fetch',
+      stubFetch(503, { message: 'no se pudo verificar', code: 'payment_verification_unavailable' }),
+    )
+
+    const err = (await apiClient
+      .post('/inmobiliaria/subscription/select-plan', {})
+      .catch((e) => e)) as ApiError
+    expect(err.status).toBe(503)
+    expect(err.code).toBe('payment_verification_unavailable')
+  })
+
+  it('leaves `code` undefined when the body carries none', async () => {
+    vi.stubGlobal('fetch', stubFetch(500, { message: 'boom' }))
+
+    const err = (await apiClient.get('/x').catch((e) => e)) as ApiError
+    expect(err.code).toBeUndefined()
+  })
+})
+
 describe('esCodigoDeSesionMuerta', () => {
   it.each(['AUTH_TOKEN_EXPIRED', 'AUTH_TOKEN_INVALID', 'SESSION_SUPERSEDED'])(
     'reconoce %s',

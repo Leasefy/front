@@ -42,8 +42,20 @@ function AgencyUpgradeContent() {
 
   // Direct-to-Wompi checkout (avaluo-style, no intermediate page). On success the
   // subscription is ACTIVE → go to the panel; the overlay shows success first.
-  const { state, error, paymentUrl, popupBlocked, pollError, activate, pay, verifyNow, resume, reset } =
-    useAgencyCheckout(() => router.push('/panel/inmobiliaria'));
+  const {
+    state,
+    error,
+    paymentUrl,
+    popupBlocked,
+    pollError,
+    awaitingTimedOut,
+    resuming,
+    activate,
+    pay,
+    verifyNow,
+    resume,
+    reset,
+  } = useAgencyCheckout(() => router.push('/panel/inmobiliaria'));
 
   // Resume: if the agency already has a PENDING charge from a previous visit
   // (e.g. the owner left before Wompi confirmed and came back), pick the
@@ -58,7 +70,7 @@ function AgencyUpgradeContent() {
     const openCharge = subscriptionState.openCharge;
     if (state === 'idle' && openCharge?.status === 'PENDING' && openCharge.targetPlanTier) {
       setSelectedPlan(openCharge.targetPlanTier as AgencyPlanId);
-      resume(openCharge.targetPlanTier);
+      resume(openCharge.id, openCharge.targetPlanTier);
     }
   }, [subscriptionState, state, resume]);
 
@@ -196,6 +208,8 @@ function AgencyUpgradeContent() {
           paymentUrl={paymentUrl}
           popupBlocked={popupBlocked}
           pollError={pollError}
+          awaitingTimedOut={awaitingTimedOut}
+          resuming={resuming}
           onVerify={verifyNow}
           onClose={reset}
         />

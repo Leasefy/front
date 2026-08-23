@@ -17,14 +17,23 @@
  *       `openCharge` on the SUCCESS path (tier did advance) must NOT be
  *       reported as a failure.
  *   (7) resume(): pick a `PENDING` charge back up (e.g. the user left
- *       `/upgrade` and came back) without going through pay() again.
+ *       `/upgrade` and came back) without going through pay() again — fetches
+ *       a FRESH payment link for the charge (the original tab may be gone)
+ *       before entering `awaiting`, so the resumed session has a usable link
+ *       (T-0012 WU-3, defect A).
  *   (8) verifyNow(): still pending → surfaces the "todavía no vemos" message.
+ *   (9) resume() link-fetch failure: stays in `awaiting` with `paymentUrl`
+ *       null — never traps the user, never fabricates a link (WU-3 defect A/B).
+ *   (10) awaitingTimedOut: flips after a sustained wait with no confirmation;
+ *        polling and verifyNow keep working; never resolves success on its
+ *        own (WU-3 defect D + the "never a false success" regression guard).
  */
 
 import * as React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
+import { ApiError } from '@/lib/api/client';
 
 void React; // jsx-preserve
 
@@ -263,24 +272,45 @@ describe('useAgencyCheckout — awaiting poll: failure predicate', () => {
 });
 
 describe('useAgencyCheckout — resume', () => {
-  it('picks a PENDING charge back up and reaches success once the tier advances', async () => {
+  it('fetches a fresh payment link for the open charge, then reaches success once the tier advances', async () => {
     vi.useFakeTimers();
     await mount();
+    mockChargePaymentLink.mockResolvedValue({ url: 'https://checkout.wompi.co/l/resumed' });
+    // Still genuinely open/unpaid — the resumed session must not fake success.
     mockVerify.mockResolvedValue({
-      subscription: { planTier: 'pro', status: 'ACTIVE' },
-      openCharge: null,
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
       status: 'ACTIVE',
     });
 
     act(() => {
-      hook.resume('pro');
+      hook.resume('ch_1', 'pro');
     });
-    expect(hook.state).toBe('awaiting');
+    // processing is literally accurate here — we ARE fetching the link — so
+    // awaiting never has to lie about it (defect B).
+    expect(hook.state).toBe('processing');
+    expect(hook.resuming).toBe(true);
 
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
+    });
+
+    expect(mockChargePaymentLink).toHaveBeenCalledWith('ch_1');
+    expect(hook.paymentUrl).toBe('https://checkout.wompi.co/l/resumed');
+    expect(hook.resuming).toBe(false);
+    expect(hook.state).toBe('awaiting');
+    expect(onSuccess).not.toHaveBeenCalled();
+
+    // Now the tier genuinely advances — success only follows the real signal.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+    await act(async () => {
+      await hook.verifyNow();
     });
     expect(hook.state).toBe('success');
 
@@ -290,7 +320,7 @@ describe('useAgencyCheckout — resume', () => {
     expect(onSuccess).toHaveBeenCalledTimes(1);
   });
 
-  it('does not clobber a flow already in progress', async () => {
+  it('does not clobber a flow already in progress, and never fetches a link for it', async () => {
     await mount();
     vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
     let resolveSelect: (v: unknown) => void = () => {};
@@ -302,13 +332,301 @@ describe('useAgencyCheckout — resume', () => {
     expect(hook.state).toBe('processing');
 
     act(() => {
-      hook.resume('starter');
+      hook.resume('ch_2', 'starter');
     });
     expect(hook.state).toBe('processing');
+    expect(mockChargePaymentLink).not.toHaveBeenCalled();
 
     await act(async () => {
       resolveSelect({ charge: null });
     });
+  });
+
+  it('reaches an honest, usable awaiting state (no paymentUrl) when the link fetch fails — never traps the user', async () => {
+    await mount();
+    mockChargePaymentLink.mockRejectedValue(new Error('network'));
+    // Still genuinely open/unpaid — the poll must not misread the failed link
+    // fetch as a gateway rejection.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+
+    act(() => {
+      hook.resume('ch_1', 'pro');
+    });
+    expect(hook.state).toBe('processing');
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(hook.state).toBe('awaiting');
+    expect(hook.paymentUrl).toBeNull();
+    expect(hook.resuming).toBe(false);
+    // Not fabricated as an error/success — still an honest, escapable awaiting.
+    expect(hook.error).toBeNull();
+  });
+
+  it('is a no-op while idle-guard fails to hold — resume only fires from idle', async () => {
+    await mount();
+    mockChargePaymentLink.mockResolvedValue({ url: 'https://checkout.wompi.co/l/x' });
+    // Still genuinely open/unpaid — matches charge 'ch_1' passed to resume().
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+
+    // First resume from idle succeeds normally.
+    act(() => {
+      hook.resume('ch_1', 'pro');
+    });
+    expect(hook.state).toBe('processing');
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(hook.state).toBe('awaiting');
+
+    // A second resume call while already awaiting must not re-fetch the link
+    // (payment-link increments `attempts` server-side — must not poll it).
+    act(() => {
+      hook.resume('ch_1', 'pro');
+    });
+    expect(mockChargePaymentLink).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useAgencyCheckout — awaiting timeout (abandoned payment)', () => {
+  it('flags awaitingTimedOut after a sustained wait with no confirmation, without leaving awaiting or faking success', async () => {
+    vi.useFakeTimers();
+    await mount();
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+
+    await payToAwaiting('pro');
+    expect(hook.state).toBe('awaiting');
+    expect(hook.awaitingTimedOut).toBe(false);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+    });
+
+    expect(hook.awaitingTimedOut).toBe(true);
+    // Still honest: no confirmation ever arrived, so it stays in awaiting —
+    // never silently promoted to success just because time passed.
+    expect(hook.state).toBe('awaiting');
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it('keeps verifyNow working after the timeout flips', async () => {
+    vi.useFakeTimers();
+    await mount();
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+
+    await payToAwaiting('pro');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+    });
+    expect(hook.awaitingTimedOut).toBe(true);
+
+    await act(async () => {
+      await hook.verifyNow();
+    });
+    expect(hook.pollError).toContain('Todavía no vemos');
+    expect(hook.state).toBe('awaiting');
+  });
+
+  it('still reaches real success via a poll after the timeout flips, if confirmation lands late', async () => {
+    vi.useFakeTimers();
+    await mount();
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+
+    await payToAwaiting('pro');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+    });
+    expect(hook.awaitingTimedOut).toBe(true);
+
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+    await act(async () => {
+      await hook.verifyNow();
+    });
+    expect(hook.state).toBe('success');
+  });
+
+  it('resets on reset() (leaving the overlay)', async () => {
+    vi.useFakeTimers();
+    await mount();
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+
+    await payToAwaiting('pro');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+    });
+    expect(hook.awaitingTimedOut).toBe(true);
+
+    act(() => {
+      hook.reset();
+    });
+    expect(hook.state).toBe('idle');
+    expect(hook.awaitingTimedOut).toBe(false);
+  });
+});
+
+describe('useAgencyCheckout — pay: select-plan 409 PENDING_CHARGE_ALREADY_PAID (T-0012 WU-5)', () => {
+  // The back found the agency's previous open charge already APPROVED at
+  // Wompi, confirmed it server-side, and refused to open a new one. The
+  // money was already honoured — the UI must land the owner on the plan
+  // they already paid for, not tell them the payment failed.
+
+  it('lands on the upgraded plan with no error once the refetched tier matches', async () => {
+    vi.useFakeTimers();
+    await mount();
+    vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
+    mockSelectPlan.mockRejectedValue(
+      new ApiError(409, 'El cargo pendiente ya había sido pagado', 'PENDING_CHARGE_ALREADY_PAID'),
+    );
+    // Fresh read after the 409: the back already confirmed the OLD charge,
+    // granting the tier the owner just tried to (re)select.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'pro', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+
+    await act(async () => {
+      await hook.pay('pro');
+    });
+    await flush();
+
+    expect(hook.state).toBe('success');
+    expect(hook.error).toBeNull();
+
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT claim success when the refetched tier has not actually advanced', async () => {
+    await mount();
+    vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
+    mockSelectPlan.mockRejectedValue(
+      new ApiError(409, 'El cargo pendiente ya había sido pagado', 'PENDING_CHARGE_ALREADY_PAID'),
+    );
+    // The refetch still shows the OLD tier — WU-1's predicate must not be
+    // bypassed just because the back said 409.
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: null,
+      status: 'ACTIVE',
+    });
+
+    await act(async () => {
+      await hook.pay('pro');
+    });
+    await flush();
+
+    expect(hook.state).toBe('error');
+    expect(hook.error).not.toBeNull();
+    // Honest, not a "your payment was rejected" lie in the other direction —
+    // the back's own message says it already confirmed something.
+    expect(hook.error).not.toContain('rechazado');
+  });
+});
+
+describe('useAgencyCheckout — pay: select-plan 503 payment_verification_unavailable (T-0012 WU-5)', () => {
+  it('surfaces a transient retry message, never a failure', async () => {
+    await mount();
+    vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
+    mockSelectPlan.mockRejectedValue(
+      new ApiError(503, 'No se pudo verificar el estado del cargo', 'payment_verification_unavailable'),
+    );
+
+    await act(async () => {
+      await hook.pay('pro');
+    });
+    await flush();
+
+    expect(hook.state).toBe('error');
+    expect(hook.error).not.toBeNull();
+    expect(hook.error).not.toContain('rechazado');
+    expect(hook.error).not.toMatch(/no se pudo iniciar el pago/i);
+    // Wompi was unreachable — nothing to reconcile against yet, so this must
+    // not trigger a refetch.
+    expect(mockVerify).not.toHaveBeenCalled();
+  });
+});
+
+describe('useAgencyCheckout — pay: unrelated select-plan errors (T-0012 WU-5 regression guard)', () => {
+  it('keeps the existing generic error handling for an error that is not the 409/503 pair', async () => {
+    await mount();
+    vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
+    mockSelectPlan.mockRejectedValue(new Error('boom'));
+
+    await act(async () => {
+      await hook.pay('pro');
+    });
+    await flush();
+
+    expect(hook.state).toBe('error');
+    expect(hook.error).toBe('boom');
+    expect(mockVerify).not.toHaveBeenCalled();
+  });
+
+  it('an ApiError 409 with a DIFFERENT code stays generic (not treated as PENDING_CHARGE_ALREADY_PAID)', async () => {
+    await mount();
+    vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
+    mockSelectPlan.mockRejectedValue(new ApiError(409, 'plan ya activo', 'NO_CHANGE'));
+
+    await act(async () => {
+      await hook.pay('pro');
+    });
+    await flush();
+
+    expect(hook.state).toBe('error');
+    expect(hook.error).toBe('plan ya activo');
+    expect(mockVerify).not.toHaveBeenCalled();
+  });
+
+  it("regression: WU-1's fresh-charge success predicate (awaiting → active only on real tier advance) is untouched", async () => {
+    await mount();
+    mockVerify.mockResolvedValue({
+      subscription: { planTier: 'starter', status: 'ACTIVE' },
+      openCharge: { id: 'ch_1', status: 'PENDING', targetPlanTier: 'pro', gatewayStatus: null },
+      status: 'ACTIVE',
+    });
+
+    await payToAwaiting('pro');
+    await flush();
+
+    expect(hook.state).toBe('awaiting');
+    expect(onSuccess).not.toHaveBeenCalled();
   });
 });
 

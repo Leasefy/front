@@ -23,6 +23,7 @@ import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
+import { ApiError } from '@/lib/api/client'
 import type { Propietario, Agente } from '@/lib/types/inmobiliaria'
 
 void React
@@ -40,6 +41,7 @@ const { authState, permissionsState, pushMock, propertiesApiMock, consignaciones
     propertiesApiMock: {
       create: vi.fn(),
       assignAgent: vi.fn(),
+      update: vi.fn(),
     },
     consignacionesApiMock: {
       create: vi.fn(),
@@ -51,7 +53,14 @@ const { authState, permissionsState, pushMock, propertiesApiMock, consignaciones
   }))
 
 vi.mock('@/lib/i18n', () => ({
-  useI18n: () => ({ t: (k: string) => k, locale: 'es' }),
+  // Params are appended (not truly interpolated) so a test can still assert
+  // that a dynamic value — e.g. a raw backend error message — reached a
+  // translated string, without this mock re-implementing the real
+  // {{param}} substitution from i18n-context.tsx.
+  useI18n: () => ({
+    t: (k: string, params?: Record<string, unknown>) => (params ? `${k}::${JSON.stringify(params)}` : k),
+    locale: 'es',
+  }),
 }))
 
 vi.mock('next/navigation', () => ({
@@ -165,6 +174,7 @@ vi.mock('./ConsignacionWizardSteps', () => ({
 }))
 
 import { ConsignacionWizard } from './ConsignacionWizard'
+import { toast } from '@/components/ui/toast'
 
 const PROPIETARIOS: Propietario[] = []
 const AGENTE_LIST: Agente[] = [
@@ -203,6 +213,7 @@ beforeEach(() => {
   pushMock.mockClear()
   propertiesApiMock.create.mockReset().mockResolvedValue({ id: 'property-1' })
   propertiesApiMock.assignAgent.mockReset().mockResolvedValue(undefined)
+  propertiesApiMock.update.mockReset().mockResolvedValue({ id: 'property-1', status: 'AVAILABLE' })
   consignacionesApiMock.create.mockReset().mockResolvedValue({ id: 'consignacion-1' })
   propietariosApiMock.create.mockReset()
   propietariosApiMock.update.mockReset()
@@ -296,5 +307,77 @@ describe('<ConsignacionWizard> — agent assignment is optional', () => {
     expect(propertiesApiMock.assignAgent).toHaveBeenCalledWith('property-1', 'agente1@test.com')
     const payload = consignacionesApiMock.create.mock.calls[0][0]
     expect(payload.agenteUserId).toBe('agent-user-1')
+  })
+})
+
+/**
+ * <ConsignacionWizard> — publish the property after the mandate (T-0018).
+ *
+ * Before this fix, `handleSubmit` created the property WITHOUT `status`, so
+ * it was born DRAFT (back/prisma/schema.prisma:611) and never reached the
+ * tenant marketplace (`status: { not: DRAFT }` at
+ * back/src/properties/properties.service.ts:429-431) — a consigned
+ * property was never visible, and no tenant could ever apply to it.
+ *
+ * contract.md §3.4 fixes this with a fourth, binding step run LAST, only
+ * once the mandate exists: `PATCH /properties/:id { status: 'AVAILABLE' }`.
+ * Publishing earlier would show tenants a property with no mandate behind
+ * it. These tests lock:
+ *  1. The happy path — the PATCH fires with `status: 'AVAILABLE'` strictly
+ *     after `consignacionesApi.create` resolves, and the success toast
+ *     still fires.
+ *  2. The failure path — a rejected PATCH (contract.md §3.3, e.g. a 402
+ *     plan-cap) must NOT show the success toast, must surface the backend
+ *     message, and must still navigate away (the property and the mandate
+ *     already exist — same reasoning as the pre-existing mandate-failure
+ *     catch).
+ */
+describe('<ConsignacionWizard> — publishes the property after the mandate (T-0018)', () => {
+  async function driveToStep6ThenSubmit() {
+    await renderWizard(AGENTE_LIST)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    const submitBtn = findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment')
+    await clickButton(submitBtn)
+  }
+
+  it('PATCHes status AVAILABLE after the mandate is created, then shows success', async () => {
+    const callOrder: string[] = []
+    consignacionesApiMock.create.mockImplementation(async () => {
+      callOrder.push('consignacion')
+      return { id: 'consignacion-1' }
+    })
+    propertiesApiMock.update.mockImplementation(async () => {
+      callOrder.push('publish')
+      return { id: 'property-1', status: 'AVAILABLE' }
+    })
+
+    await driveToStep6ThenSubmit()
+
+    expect(propertiesApiMock.update).toHaveBeenCalledTimes(1)
+    expect(propertiesApiMock.update).toHaveBeenCalledWith('property-1', { status: 'AVAILABLE' })
+    expect(callOrder).toEqual(['consignacion', 'publish'])
+    expect(toast.success).toHaveBeenCalled()
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('does not show the success toast when the publish PATCH fails, and surfaces the backend message', async () => {
+    const backendMessage = 'Alcanzaste el límite de propiedades de tu plan. Subí de plan para agregar más.'
+    propertiesApiMock.update.mockRejectedValueOnce(new ApiError(402, backendMessage))
+
+    await driveToStep6ThenSubmit()
+
+    expect(propertiesApiMock.update).toHaveBeenCalledWith('property-1', { status: 'AVAILABLE' })
+    expect(toast.success).not.toHaveBeenCalled()
+    expect(toast.error).toHaveBeenCalledTimes(1)
+    const [, options] = (toast.error as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(options.description).toContain(backendMessage)
+    // The property and the mandate already exist — same as the mandate-failure
+    // catch, the wizard navigates away instead of stranding the user on a
+    // now-stale form.
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
   })
 })

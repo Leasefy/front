@@ -328,6 +328,37 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         return;
       }
 
+      /**
+       * Contract.md §3.4 (T-0018) — publish LAST, only once the mandate
+       * exists. `POST /properties` above still creates the property as
+       * DRAFT (unchanged); this step is what makes it visible to tenants
+       * (`status: { not: DRAFT }` at
+       * back/src/properties/properties.service.ts:429-431). Publishing any
+       * earlier would show a property to tenants with no mandate behind it.
+       */
+      try {
+        await propertiesApi.update(property.id, { status: 'AVAILABLE' });
+      } catch (error) {
+        // The property AND the mandate already exist — only the publish
+        // step failed (most commonly a 402 plan-cap). Never claim success
+        // here, and never fall back to DRAFT silently (contract.md §3.3
+        // prohibits exactly that): say what happened and how to finish it,
+        // the same reasoning the mandate-failure catch above already
+        // applies.
+        console.error('Error publishing property:', error);
+        const reason =
+          error instanceof ApiError && error.messages
+            ? error.messages.join(' · ')
+            : error instanceof Error && error.message
+              ? error.message
+              : t('inmobiliaria.consignaciones.wizard.toasts.publishErrorFallbackReason');
+        toast.error(t('inmobiliaria.consignaciones.wizard.toasts.publishErrorTitle'), {
+          description: t('inmobiliaria.consignaciones.wizard.toasts.publishErrorDesc', { reason }),
+        });
+        router.push('/panel/inmobiliaria/inmuebles');
+        return;
+      }
+
       toast.success(t('inmobiliaria.consignaciones.wizard.toasts.successTitle'), {
         description: t('inmobiliaria.consignaciones.wizard.toasts.successDesc', {
           title: formData.propertyTitle || '',

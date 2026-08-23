@@ -79,27 +79,53 @@ vi.mock('@/lib/api/inmobiliaria.service', () => ({
   propietariosApi: propietariosApiMock,
 }))
 
-vi.mock('framer-motion', () => ({
-  motion: new Proxy(
+// Memoized per-tag, unlike the repo's usual inline Proxy mock (see
+// CobroCard.test.tsx): that version's `get` trap returns a brand-new
+// function component on every `motion.div` access, which is harmless for
+// components that don't call anything effect-driven on mount, but is a real
+// bug here. ConsignacionWizard re-renders `motion.div` on every
+// `setFormData`, so a fresh component identity each time forces React to
+// unmount+remount the whole step subtree every render. The mocked step
+// components below call `updateFormData` from a mount `useEffect` — remount
+// -> effect fires -> updateFormData -> re-render -> new `motion.div`
+// identity -> remount again, forever. It's a synchronous loop, so it
+// blocks the event loop entirely and even `--testTimeout` can't interrupt
+// it (confirmed by reproducing the exact "Worker exited unexpectedly" /
+// "tests 0ms" hang with the unmemoized version, and confirming this fixed
+// version resolves it in <100ms). Memoizing gives `motion.div` a stable
+// component identity across renders, matching real framer-motion's
+// behavior closely enough for this test.
+vi.mock('framer-motion', () => {
+  const motionTagCache = new Map<string, (props: Record<string, unknown>) => React.ReactElement>()
+  const motion = new Proxy(
     {},
     {
-      get:
-        (_target, tag: string) =>
-        ({
-          children,
-          whileHover,
-          whileTap,
-          initial,
-          animate,
-          exit,
-          transition,
-          ...rest
-        }: Record<string, unknown> & { children?: React.ReactNode }) =>
-          React.createElement(tag, rest, children),
+      get: (_target, tag: string) => {
+        if (!motionTagCache.has(tag)) {
+          motionTagCache.set(
+            tag,
+            ({
+              children,
+              whileHover,
+              whileTap,
+              initial,
+              animate,
+              exit,
+              transition,
+              ...rest
+            }: Record<string, unknown> & { children?: React.ReactNode }) =>
+              React.createElement(tag, rest, children),
+          )
+        }
+        return motionTagCache.get(tag)
+      },
     },
-  ),
-  AnimatePresence: ({ children }: { children?: React.ReactNode }) => children,
-}))
+  )
+  return {
+    motion,
+    AnimatePresence: ({ children }: { children?: React.ReactNode }) => children,
+  }
+})
 
 // Steps 1 and 2 self-fill the minimum valid data on mount so the test can
 // drive real "Siguiente" clicks through the real ConsignacionWizard

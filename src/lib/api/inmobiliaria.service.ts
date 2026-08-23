@@ -52,6 +52,7 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import { adaptarDispersion, type DispersionDelBack } from './dispersion-adapter';
 import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
+import type { BankCode, AccountType } from '@/lib/types/payment-accounts';
 
 const BASE = '/inmobiliaria';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
@@ -104,6 +105,96 @@ export interface MemberPermissionsResponse {
 // Propietarios
 // ============================================================================
 
+/**
+ * contract.md §3.2 (T-0014) — front slug -> backend `ColombianBank` wire code.
+ * NOT a `.toUpperCase()` of the slug: `colpatria` -> `SCOTIABANK` and
+ * `cajasocial` -> `BANCO_CAJA_SOCIAL` break that assumption. Values come from
+ * `back/src/common/enums/colombian-banks.enum.ts` (read-only reference — that
+ * enum is owned by the back and is not touched here).
+ */
+const BANK_CODE_TO_WIRE: Record<BankCode, string> = {
+  bancolombia: 'BANCOLOMBIA',
+  davivienda: 'DAVIVIENDA',
+  bbva: 'BBVA',
+  bogota: 'BANCO_BOGOTA',
+  popular: 'BANCO_POPULAR',
+  occidente: 'BANCO_OCCIDENTE',
+  colpatria: 'SCOTIABANK',
+  cajasocial: 'BANCO_CAJA_SOCIAL',
+  falabella: 'BANCO_FALABELLA',
+  itau: 'ITAU',
+  avvillas: 'BANCO_AV_VILLAS',
+  bancoomeva: 'BANCOOMEVA',
+  pichincha: 'BANCO_PICHINCHA',
+};
+
+/** contract.md §3.3 (T-0014) — front account type -> backend enum. */
+const ACCOUNT_TYPE_TO_WIRE: Record<AccountType, string> = {
+  savings: 'AHORROS',
+  checking: 'CORRIENTE',
+};
+
+/**
+ * Translates a front `BankCode` slug to the backend's `ColombianBank` code.
+ * No coercion, no default — an unmapped slug is a bug (a new bank added to
+ * `COLOMBIAN_BANKS` without a wire entry here) and must surface loudly, the
+ * same rule T-0011 established for `PropertyType` (see
+ * `properties.mapper.ts` / `ConsignacionWizard.tsx`'s `TYPE_TO_BACKEND` throw).
+ */
+function mapBankCodeToWire(code: BankCode): string {
+  const wire = BANK_CODE_TO_WIRE[code];
+  if (!wire) {
+    throw new Error(
+      `Banco no soportado: "${code}". Este banco no tiene un código válido del backend — revisá BANK_CODE_TO_WIRE en inmobiliaria.service.ts.`,
+    );
+  }
+  return wire;
+}
+
+/** Translates a front account type to the backend's `AHORROS`/`CORRIENTE` enum. */
+function mapAccountTypeToWire(type: AccountType): string {
+  const wire = ACCOUNT_TYPE_TO_WIRE[type];
+  if (!wire) {
+    throw new Error(`Tipo de cuenta no soportado: "${type}".`);
+  }
+  return wire;
+}
+
+/**
+ * Maps the front's bank fields (`bankCode`, `accountType`, `accountNumber`,
+ * `accountHolder`) onto the backend DTO's wire fields (`bankCode`,
+ * `bankAccountType`, `bankAccountNumber`, `bankAccountHolder`).
+ *
+ * Renaming alone is not enough — contract.md §1: the back runs
+ * `forbidNonWhitelisted: true`, so the front's field names 400 on their own,
+ * AND the *values* (bank slug, account type) don't line up 1:1 with the
+ * backend enums either. `bankName` is never sent: the back derives it from
+ * `bankCode` server-side (contract.md §3.1) and it is a free-text field that
+ * gets printed verbatim on the owner's payout document — a stale/typo'd
+ * front value must never reach it.
+ */
+function mapPropietarioBankFields<T extends Partial<PropietarioFormData>>(
+  data: T,
+): Omit<T, 'bankCode' | 'accountType' | 'accountNumber' | 'accountHolder'> & Record<string, unknown> {
+  const { bankCode, accountType, accountNumber, accountHolder, ...rest } = data;
+  const payload: Record<string, unknown> = { ...rest };
+
+  if (bankCode) {
+    payload.bankCode = mapBankCodeToWire(bankCode);
+  }
+  if (accountType) {
+    payload.bankAccountType = mapAccountTypeToWire(accountType);
+  }
+  if (accountNumber !== undefined) {
+    payload.bankAccountNumber = accountNumber;
+  }
+  if (accountHolder !== undefined) {
+    payload.bankAccountHolder = accountHolder;
+  }
+
+  return payload as Omit<T, 'bankCode' | 'accountType' | 'accountNumber' | 'accountHolder'> & Record<string, unknown>;
+}
+
 export const propietariosApi = {
   async getAll(params?: { page?: number; limit?: number; search?: string; city?: string; tags?: string }): Promise<Propietario[]> {
     const query = new URLSearchParams();
@@ -122,11 +213,11 @@ export const propietariosApi = {
   },
 
   async create(data: PropietarioFormData): Promise<Propietario> {
-    return apiClient.post<Propietario>(`${BASE}/propietarios`, data);
+    return apiClient.post<Propietario>(`${BASE}/propietarios`, mapPropietarioBankFields(data));
   },
 
   async update(id: string, data: Partial<PropietarioFormData>): Promise<Propietario> {
-    return apiClient.patch<Propietario>(`${BASE}/propietarios/${id}`, data);
+    return apiClient.patch<Propietario>(`${BASE}/propietarios/${id}`, mapPropietarioBankFields(data));
   },
 
   async delete(id: string): Promise<void> {

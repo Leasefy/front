@@ -3044,7 +3044,8 @@
         },
         "step4": {
           "title": "Assign Agent",
-          "subtitle": "Select the agent responsible for this property (optional)"
+          "subtitle": "Select the agent responsible for this property (optional)",
+          "selfAssignNotice": "If you don't select an agent, the consignment stays under the same profile that's creating it."
         },
         "step5": {
           "title": "Handover Report",
@@ -3087,7 +3088,7 @@
           "monthlyCommission": "Monthly commission",
           "ownerNetLabel": "Owner net",
           "agentCommission": "commission",
-          "notAssigned": "Not assigned",
+          "selfAssigned": "Owned by the profile creating the consignment (no agent assigned)",
           "itemsRegistered": "{{count}} item registered",
           "itemsRegisteredPlural": "{{count}} items registered",
           "noName": "No name",

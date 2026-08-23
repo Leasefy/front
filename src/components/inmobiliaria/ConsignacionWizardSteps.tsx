@@ -575,6 +575,15 @@ export function StepAssignAgent({ formData, updateFormData, agentes }: StepProps
         onChange={(id) => updateFormData({ agenteId: id || undefined })}
         allowNoAgent
       />
+
+      {!formData.agenteId && (
+        <div className="flex items-start gap-3 p-4 rounded-xl border border-border dark:border-border-strong bg-surface-muted dark:bg-[#14130F]">
+          <UserCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            {t('inmobiliaria.consignaciones.wizard.step4.selfAssignNotice')}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -951,7 +960,7 @@ export function StepConfirmation({
               </div>
             </div>
           ) : (
-            <p className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.wizard.step6.notAssigned')}</p>
+            <p className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.wizard.step6.selfAssigned')}</p>
           )}
         </div>
 

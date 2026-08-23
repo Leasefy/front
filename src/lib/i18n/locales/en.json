@@ -2972,6 +2972,7 @@
         "previous": "Previous",
         "next": "Next",
         "creating": "Creating...",
+        "uploadingPhotos": "Uploading photos...",
         "confirmConsignment": "Confirm Consignment",
         "cancelDialog": {
           "title": "Cancel consignment?",
@@ -2986,7 +2987,9 @@
           "errorDesc": "Nothing was saved. Try again in a moment.",
           "mandateErrorTitle": "The property was created; the consignment wasn't",
           "mandateErrorDesc": "It's in the list, with no owner and no commission. Open it and complete the consignment — don't create it again.",
-          "ownerErrorTitle": "We couldn't save the owner"
+          "ownerErrorTitle": "We couldn't save the owner",
+          "photosPartialTitle": "Some photos didn't upload",
+          "photosPartialDesc": "{{uploaded}} of {{total}} uploaded. You can add the rest from the property."
         },
         "step1": {
           "title": "Select Owner",
@@ -3058,9 +3061,6 @@
           "emptyInventory": "No items in inventory",
           "addFirstItem": "Add first item",
           "photosTitle": "Property photos",
-          "photosDropzone": "Drag photos here or click to select",
-          "photosFormats": "JPG, PNG up to 10MB each",
-          "photosSoon": "Coming soon",
           "generalNotes": "General observations",
           "generalNotesPlaceholder": "General condition of the property, additional details...",
           "conditionExcellent": "Excellent",

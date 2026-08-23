@@ -43,7 +43,25 @@ vi.mock('@/components/publicar/PropertyLocationField', () => ({
   PropertyLocationField: () => React.createElement('div', { 'data-testid': 'property-location-field' }),
 }))
 
-import { StepAssignAgent, StepConfirmation } from './ConsignacionWizardSteps'
+// PropertyPhotoPicker has its own test suite (PropertyPhotoPicker.test.tsx)
+// covering validation/preview behavior. Here we only need to verify
+// StepActaEntrega wires `formData.photos` and `onChange` correctly.
+vi.mock('./PropertyPhotoPicker', () => ({
+  PropertyPhotoPicker: ({
+    photos,
+    onChange,
+  }: {
+    photos: File[]
+    onChange: (photos: File[]) => void
+  }) =>
+    React.createElement('div', {
+      'data-testid': 'property-photo-picker',
+      'data-count': String(photos.length),
+      onClick: () => onChange([...photos, new File(['x'], 'added.jpg', { type: 'image/jpeg' })]),
+    }),
+}))
+
+import { StepAssignAgent, StepConfirmation, StepActaEntrega } from './ConsignacionWizardSteps'
 
 const AGENTE: Agente = {
   id: 'member-1',
@@ -158,5 +176,50 @@ describe('<StepConfirmation> — agent section', () => {
 
     expect(container.textContent).toContain('Agente Uno')
     expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step6.selfAssigned')
+  })
+})
+
+describe('<StepActaEntrega> — property photos (T-0017)', () => {
+  it('renders the photo picker wired to formData.photos and forwards its onChange to updateFormData', async () => {
+    const updateFormData = vi.fn()
+    const existing = new File(['x'], 'existing.jpg', { type: 'image/jpeg' })
+
+    await act(async () => {
+      root.render(
+        React.createElement(StepActaEntrega, {
+          formData: { inventoryItems: [], photos: [existing] },
+          updateFormData,
+          propietarios: PROPIETARIOS,
+          agentes: [],
+        }),
+      )
+    })
+
+    const picker = container.querySelector('[data-testid="property-photo-picker"]') as HTMLDivElement
+    expect(picker).toBeTruthy()
+    expect(picker.dataset.count).toBe('1')
+
+    await act(async () => {
+      picker.click()
+    })
+
+    expect(updateFormData).toHaveBeenCalledWith({ photos: [existing, expect.any(File)] })
+  })
+
+  it('no longer shows the disabled "coming soon" placeholder', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(StepActaEntrega, {
+          formData: { inventoryItems: [] },
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [],
+        }),
+      )
+    })
+
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.photosTitle')
+    const disabledButtons = Array.from(container.querySelectorAll('button[disabled]'))
+    expect(disabledButtons).toHaveLength(0)
   })
 })

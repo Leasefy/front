@@ -415,9 +415,37 @@ export interface EvaluationResult {
 // Wizard prefill — GET /applications/prefill
 // ============================================================================
 
+/**
+ * Identidad derivada del estudio de pre-scoring vigente del tenant
+ * (`.orchestration/tasks/T-0001-prescoring-prefill/contract.md` §3.2).
+ *
+ * Presente en AMBOS miembros de la unión `ApplicationPrefill` — es ortogonal a
+ * `hasPreviousApplication`: alguien sin postulación previa puede tener un
+ * estudio vigente y de todas formas debe ver su identidad precargada y
+ * bloqueada.
+ *
+ * `orderId` es sólo para correlación/telemetría en el front — NUNCA se manda
+ * de vuelta en ningún body.
+ */
+export interface PreScoringIdentity {
+  orderId: string;
+  fullName: string | null;
+  documentType: 'cc';
+  documentNumber: string;
+  email: string | null;
+  /**
+   * Los campos que el front debe bloquear. El set de bloqueo se DERIVA de
+   * este array — nunca de una lista fija — porque es lo que mantiene
+   * sincronizados el bloqueo de UI y la enforcement del back (contract §3.2).
+   */
+  lockedFields?: Array<'fullName' | 'documentType' | 'documentNumber' | 'email'>;
+}
+
 /** Returned when the tenant has no previous application to prefill from */
 export interface ApplicationPrefillEmpty {
   hasPreviousApplication: false;
+  /** Absent or null → front locks nothing, prefills nothing from this block. */
+  preScoringIdentity?: PreScoringIdentity | null;
 }
 
 /**
@@ -503,6 +531,8 @@ export interface ApplicationPrefillData {
    * lee como "no hay ninguno reutilizable", que es el comportamiento de antes.
    */
   documents?: DocumentoReutilizable[];
+  /** Absent or null → front locks nothing, prefills nothing from this block. */
+  preScoringIdentity?: PreScoringIdentity | null;
 }
 
 /** Discriminated union returned by GET /applications/prefill */

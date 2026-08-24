@@ -30,9 +30,8 @@ import {
 import { StorageManager } from '@/lib/utils/storage';
 import { contextLogger } from '@/lib/utils/logger';
 import { applicationsApi } from '@/lib/api/applications.service';
-import { getAccessToken } from '@/lib/api/client';
+import { getAccessToken, ApiError } from '@/lib/api/client';
 import { getConsentText, type ConsentTextResponse } from '@/lib/api/legal.service';
-import type { ApplicationPrefillData } from '@/lib/api/applications.types';
 import { aplicarPrefill } from '@/lib/tenant/prefill-a-postulacion';
 
 // ============================================================================
@@ -287,9 +286,11 @@ export function ApplicationProvider({
     applicationsApi.getPrefill()
       .then((prefill) => {
         if (cancelled) return;
-        if (!prefill.hasPreviousApplication) return;
-
-        const data = prefill as ApplicationPrefillData;
+        // `preScoringIdentity` es ORTOGONAL a `hasPreviousApplication` — alguien
+        // sin postulación previa puede tener un estudio vigente y de todas
+        // formas debe ver su identidad precargada y bloqueada. Sólo si NINGUNA
+        // de las dos cosas está presente no hay nada que prefillear.
+        if (!prefill.hasPreviousApplication && !prefill.preScoringIdentity) return;
 
         setApplication((prev) => {
           // If the state is no longer pristine (user typed something), bail out.
@@ -301,7 +302,7 @@ export function ApplicationProvider({
           // tenemos todo" sobre datos que la otra considera incompletos.
           // Los datos traídos NO cuentan como confirmados: los pasos siguen sin
           // marcar y el wizard muestra el aviso de revisarlos.
-          return aplicarPrefill(prev, data);
+          return aplicarPrefill(prev, prefill);
         });
       })
       .catch(() => {
@@ -472,10 +473,6 @@ export function ApplicationProvider({
       const staleSlots = [
         docs.idDocument,
         docs.bankStatement,
-        docs.incomeProof,
-        docs.employmentLetter,
-        docs.payStub,
-        docs.creditReport,
       ];
       const hasStaleSlot = staleSlots.some(
         (slot) => slot?.fileName && !slot?.file && !slot?.reusable,
@@ -507,12 +504,6 @@ export function ApplicationProvider({
       // Employment
       employmentStatus: application.employment.employmentStatus,
       companyName: application.employment.companyName,
-      industry: application.employment.industry,
-      position: application.employment.position,
-      contractType: application.employment.contractType,
-      timeAtJob: application.employment.timeAtJob,
-      employerPhone: application.employment.employerPhone,
-      employerAddress: application.employment.employerAddress,
       // Income
       monthlySalary: application.income.monthlySalary,
       additionalIncome: application.income.additionalIncome,
@@ -560,12 +551,6 @@ export function ApplicationProvider({
         await applicationsApi.updateStep(existingApplicationId, 2, {
           employmentStatus: application.employment.employmentStatus,
           companyName: application.employment.companyName,
-          industry: application.employment.industry,
-          position: application.employment.position,
-          contractType: application.employment.contractType,
-          timeAtJob: application.employment.timeAtJob,
-          employerPhone: application.employment.employerPhone,
-          employerAddress: application.employment.employerAddress,
         });
 
         // Step 3 — Income
@@ -590,10 +575,6 @@ export function ApplicationProvider({
         const docEntries: Array<{ file: File | null | undefined; type: string }> = [
           { file: docs.idDocument?.file, type: 'ID_DOCUMENT' },
           { file: docs.bankStatement?.file, type: 'BANK_STATEMENT' },
-          { file: docs.incomeProof?.file, type: 'INCOME_PROOF' },
-          { file: docs.employmentLetter?.file, type: 'EMPLOYMENT_LETTER' },
-          { file: docs.payStub?.file, type: 'PAY_STUB' },
-          { file: docs.creditReport?.file, type: 'CREDIT_REPORT' },
         ];
         for (const { file, type } of docEntries) {
           if (file) {
@@ -622,10 +603,6 @@ export function ApplicationProvider({
         const docEntries: Array<{ file: File | null | undefined; type: string }> = [
           { file: docs.idDocument?.file, type: 'ID_DOCUMENT' },
           { file: docs.bankStatement?.file, type: 'BANK_STATEMENT' },
-          { file: docs.incomeProof?.file, type: 'INCOME_PROOF' },
-          { file: docs.employmentLetter?.file, type: 'EMPLOYMENT_LETTER' },
-          { file: docs.payStub?.file, type: 'PAY_STUB' },
-          { file: docs.creditReport?.file, type: 'CREDIT_REPORT' },
         ];
         for (const { file, type } of docEntries) {
           if (file) {
@@ -652,10 +629,6 @@ export function ApplicationProvider({
         const hayReusables = [
           docs.idDocument,
           docs.bankStatement,
-          docs.incomeProof,
-          docs.employmentLetter,
-          docs.payStub,
-          docs.creditReport,
         ].some((slot) => slot?.reusable);
         if (hayReusables) {
           try {
@@ -690,8 +663,19 @@ export function ApplicationProvider({
         },
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al enviar la aplicación';
-      setSubmissionError(message);
+      // El back rechaza el envío cuando la identidad contradice el estudio de
+      // pre-scoring vigente (contract.md T-0001 §3.3). Es un control del
+      // servidor, no del front — el bloqueo de UI en el paso 1 es sólo UX.
+      // Mensaje accionable, sin diff de campos (el wire no lo trae) y sin
+      // reintento automático.
+      if (err instanceof ApiError && err.code === 'IDENTIDAD_NO_COINCIDE') {
+        setSubmissionError(
+          'Tu postulación debe presentarse con la identidad de tu estudio de arrendamiento vigente. Recargá la página para traer tus datos actualizados e intentá de nuevo.',
+        );
+      } else {
+        const message = err instanceof Error ? err.message : 'Error al enviar la aplicación';
+        setSubmissionError(message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -883,39 +867,11 @@ function sanitizeDocumentsForStorage(
       uploadedAt: documents.idDocument.uploadedAt,
     };
   }
-  if (documents.incomeProof) {
-    sanitized.incomeProof = {
-      file: null,
-      fileName: documents.incomeProof.fileName,
-      uploadedAt: documents.incomeProof.uploadedAt,
-    };
-  }
-  if (documents.employmentLetter) {
-    sanitized.employmentLetter = {
-      file: null,
-      fileName: documents.employmentLetter.fileName,
-      uploadedAt: documents.employmentLetter.uploadedAt,
-    };
-  }
   if (documents.bankStatement) {
     sanitized.bankStatement = {
       file: null,
       fileName: documents.bankStatement.fileName,
       uploadedAt: documents.bankStatement.uploadedAt,
-    };
-  }
-  if (documents.payStub) {
-    sanitized.payStub = {
-      file: null,
-      fileName: documents.payStub.fileName,
-      uploadedAt: documents.payStub.uploadedAt,
-    };
-  }
-  if (documents.creditReport) {
-    sanitized.creditReport = {
-      file: null,
-      fileName: documents.creditReport.fileName,
-      uploadedAt: documents.creditReport.uploadedAt,
     };
   }
 
@@ -970,11 +926,13 @@ function getDataCompleteSteps(application: Application): number[] {
     completed.push(3);
   }
 
-  // Step 4: References - has at least one reference
+  // Step 4: References - Arrendadores Anteriores and Referencias Laborales
+  // both keep their min-1 rule (validateReferencesStep); Referencias
+  // Personales was removed (T-0020) so it no longer counts here.
   const refs = application.references;
   if (
-    (refs.previousLandlords && refs.previousLandlords.length > 0) ||
-    (refs.personalReferences && refs.personalReferences.length > 0)
+    refs.previousLandlords && refs.previousLandlords.length > 0 &&
+    refs.employmentReferences && refs.employmentReferences.length > 0
   ) {
     completed.push(4);
   }

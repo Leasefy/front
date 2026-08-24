@@ -83,12 +83,6 @@ export interface PersonalInfo {
 export interface EmploymentInfo {
   employmentStatus: EmploymentStatus;
   companyName?: string;
-  industry?: string;
-  position?: string;
-  contractType?: ContractType;
-  timeAtJob?: number; // months (stability indicator)
-  employerPhone?: string;
-  employerAddress?: string;
 }
 
 // ============================================================================
@@ -123,16 +117,9 @@ export interface EmploymentReference {
   relationship: string;
 }
 
-export interface PersonalReference {
-  name: string;
-  phone: string;
-  relationship: string;
-}
-
 export interface ReferenceInfo {
   previousLandlords: PreviousLandlordReference[];
   employmentReferences: EmploymentReference[];
-  personalReferences: PersonalReference[];
 }
 
 // ============================================================================
@@ -166,13 +153,6 @@ export interface DocumentInfo {
   idDocument: DocumentUpload | null;
   /** Required — extracto bancario (últimos 3 meses) */
   bankStatement: DocumentUpload | null;
-  /** One of incomeProof / employmentLetter is required */
-  incomeProof?: DocumentUpload | null;
-  /** One of incomeProof / employmentLetter is required */
-  employmentLetter?: DocumentUpload | null;
-  /** Optional — colilla de nómina */
-  payStub?: DocumentUpload | null;
-  creditReport?: DocumentUpload | null; // optional self-provided
 }
 
 // ============================================================================
@@ -209,6 +189,18 @@ export interface Application {
   prefilledAt?: string;
   /** True once the user dismissed the prefill notice. */
   prefillNoticeDismissed?: boolean;
+  /**
+   * Identidad derivada del estudio de pre-scoring vigente
+   * (`.orchestration/tasks/T-0001-prescoring-prefill/contract.md` §3.2).
+   * Sólo para correlación/telemetría — NUNCA se manda de vuelta en un body.
+   */
+  preScoringOrderId?: string;
+  /** Campos de `personal` que vienen del estudio y el front debe bloquear. */
+  preScoringLockedFields?: Array<'fullName' | 'documentType' | 'documentNumber' | 'email'>;
+  /** true cuando la identidad de este envío viene del estudio de pre-scoring. */
+  preScoringIdentityApplied?: boolean;
+  /** true cuando (además o en cambio) se precargaron datos de una postulación anterior. */
+  previousApplicationDataApplied?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -264,7 +256,6 @@ export function createEmptyApplication(propertyId: string): Application {
     references: {
       previousLandlords: [],
       employmentReferences: [],
-      personalReferences: [],
     },
     documents: {},
     hasCoSigner: false,

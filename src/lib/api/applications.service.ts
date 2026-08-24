@@ -102,12 +102,6 @@ export function mapBackendApplication(ba: BackendApplication): Application {
     employment: {
       employmentStatus: ba.employmentStatus as Application['employment']['employmentStatus'],
       companyName: ba.companyName,
-      industry: ba.industry,
-      position: ba.position,
-      contractType: ba.contractType as Application['employment']['contractType'],
-      timeAtJob: ba.timeAtJob,
-      employerPhone: ba.employerPhone,
-      employerAddress: ba.employerAddress,
     },
     income: {
       monthlySalary: ba.monthlySalary ?? 0,
@@ -117,10 +111,12 @@ export function mapBackendApplication(ba: BackendApplication): Application {
       monthlyObligations: ba.monthlyObligations ?? 0,
       availableForRent: ba.availableForRent ?? 0,
     },
-    references: ba.references ?? {
-      previousLandlords: [],
-      employmentReferences: [],
-      personalReferences: [],
+    // Reconstruido campo a campo — el back todavía puede mandar
+    // `personalReferences` en el JSON legado y ese campo ya no existe en
+    // `ReferenceInfo` (T-0020).
+    references: {
+      previousLandlords: ba.references?.previousLandlords ?? [],
+      employmentReferences: ba.references?.employmentReferences ?? [],
     },
     documents: {},
     hasCoSigner: ba.hasCoSigner ?? false,

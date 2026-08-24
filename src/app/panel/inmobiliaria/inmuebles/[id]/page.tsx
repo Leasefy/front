@@ -28,6 +28,7 @@ import {
   usePropietario,
   useAgente,
 } from '@/lib/hooks/useInmobiliaria';
+import { useProperty } from '@/lib/hooks/useProperties';
 import type { PropertyAvailability, ConsignacionFormData, Consignacion } from '@/lib/types/inmobiliaria';
 
 // Components
@@ -181,6 +182,11 @@ function ConsignacionDetailContent() {
 
   const { propietario } = usePropietario(consignacion?.propietarioId);
   const { agente } = useAgente(consignacion?.agenteId);
+  // The photos live on the Property entity, not on the consignación
+  // (consignacion.propertyThumbnail is never populated by the back — see
+  // ledger §2.1). A failed/loading fetch just leaves `property` unset, which
+  // ConsignacionHeader already renders as its placeholder icon.
+  const { property } = useProperty(consignacion?.propertyId);
 
   // Handlers
   const handleEdit = useCallback(() => {
@@ -339,6 +345,7 @@ function ConsignacionDetailContent() {
       >
         <ConsignacionHeader
           consignacion={consignacion}
+          propertyThumbnailUrl={property?.thumbnailUrl}
           onEdit={handleEdit}
           onViewPortal={handleViewPortal}
           onChangeStatus={handleChangeStatus}

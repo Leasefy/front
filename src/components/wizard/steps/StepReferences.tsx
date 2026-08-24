@@ -2,14 +2,12 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { Plus, TrashSimple, Buildings, Briefcase, User, Phone, MapPin, Clock, Users } from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
 import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import type {
   PreviousLandlordReference,
   EmploymentReference,
-  PersonalReference,
 } from '@/lib/types/application';
 import {
   FormField,
@@ -34,12 +32,6 @@ const EMPTY_EMPLOYMENT: EmploymentReference = {
   name: '',
   phone: '',
   company: '',
-  relationship: '',
-};
-
-const EMPTY_PERSONAL: PersonalReference = {
-  name: '',
-  phone: '',
   relationship: '',
 };
 
@@ -72,13 +64,6 @@ export function StepReferences() {
         ? references.employmentReferences
         : [{ ...EMPTY_EMPLOYMENT }],
     [references.employmentReferences]
-  );
-  const personalRefs = useMemo(
-    () =>
-      references.personalReferences?.length
-        ? references.personalReferences
-        : [{ ...EMPTY_PERSONAL }],
-    [references.personalReferences]
   );
 
   // Mark field as touched on blur
@@ -189,35 +174,6 @@ export function StepReferences() {
       }
     },
     [employmentRefs, updateReferences]
-  );
-
-  // ========================================================================
-  // Personal reference handlers
-  // ========================================================================
-
-  const handlePersonalChange = useCallback(
-    (index: number, field: keyof PersonalReference, value: string) => {
-      const updated = [...personalRefs];
-      updated[index] = { ...updated[index], [field]: value };
-      updateReferences({ personalReferences: updated });
-    },
-    [personalRefs, updateReferences]
-  );
-
-  const addPersonalRef = useCallback(() => {
-    if (personalRefs.length < MAX_REFERENCES) {
-      updateReferences({ personalReferences: [...personalRefs, { ...EMPTY_PERSONAL }] });
-    }
-  }, [personalRefs, updateReferences]);
-
-  const removePersonalRef = useCallback(
-    (index: number) => {
-      if (personalRefs.length > 1) {
-        const updated = personalRefs.filter((_, i) => i !== index);
-        updateReferences({ personalReferences: updated });
-      }
-    },
-    [personalRefs, updateReferences]
   );
 
   return (
@@ -465,106 +421,6 @@ export function StepReferences() {
         </div>
       </section>
 
-      {/* Personal References Section */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <User className="h-5 w-5 text-muted-foreground" />
-          <h3 className="text-sm font-medium text-foreground">
-            Referencias Personales
-          </h3>
-          <span className="text-xs text-muted-foreground">(min. 1)</span>
-        </div>
-
-        <div className="space-y-4">
-          {personalRefs.map((ref, index) => (
-            <div
-              key={index}
-              className="p-4 bg-black/[0.02] border border-border rounded-sm space-y-4"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground/70">
-                  Referencia {index + 1}
-                </span>
-                {personalRefs.length > 1 && (
-                  <IconButton
-                    variant="ghost"
-                    aria-label="Eliminar"
-                    onClick={() => removePersonalRef(index)}
-                    icon={<TrashSimple className="h-4 w-4" />}
-                    className="h-8 w-8 rounded-sm text-muted-foreground hover:text-danger hover:bg-danger-soft"
-                  />
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  label="Nombre"
-                  htmlFor={`personal-${index}-name`}
-                  error={getError(`personal-${index}-name`, ref.name)}
-                  required
-                >
-                  <LightInput
-                    id={`personal-${index}-name`}
-                    placeholder="Nombre completo"
-                    value={ref.name}
-                    onChange={(e) => handlePersonalChange(index, 'name', e.target.value)}
-                    onBlur={() => handleBlur(`personal-${index}-name`)}
-                    icon={<User className="h-4 w-4" />}
-                    hasError={!!getError(`personal-${index}-name`, ref.name)}
-                  />
-                </FormField>
-
-                <FormField
-                  label="Teléfono"
-                  htmlFor={`personal-${index}-phone`}
-                  error={getError(`personal-${index}-phone`, ref.phone)}
-                  required
-                >
-                  <LightInput
-                    id={`personal-${index}-phone`}
-                    type="tel"
-                    placeholder="3XX XXX XXXX"
-                    value={ref.phone}
-                    onChange={(e) =>
-                      handlePersonalChange(
-                        index,
-                        'phone',
-                        e.target.value.replace(/\D/g, '').slice(0, 10)
-                      )
-                    }
-                    onBlur={() => handleBlur(`personal-${index}-phone`)}
-                    icon={<Phone className="h-4 w-4" />}
-                    hasError={!!getError(`personal-${index}-phone`, ref.phone)}
-                  />
-                </FormField>
-
-                <FormField
-                  label="Relación"
-                  htmlFor={`personal-${index}-relationship`}
-                  error={getError(`personal-${index}-relationship`, ref.relationship)}
-                  required
-                >
-                  <LightInput
-                    id={`personal-${index}-relationship`}
-                    placeholder="Ej: Amigo, Familiar, Vecino"
-                    value={ref.relationship}
-                    onChange={(e) =>
-                      handlePersonalChange(index, 'relationship', e.target.value)
-                    }
-                    onBlur={() => handleBlur(`personal-${index}-relationship`)}
-                    icon={<Users className="h-4 w-4" />}
-                    hasError={!!getError(`personal-${index}-relationship`, ref.relationship)}
-                  />
-                </FormField>
-              </div>
-            </div>
-          ))}
-
-          {personalRefs.length < MAX_REFERENCES && (
-            <AddButton onClick={addPersonalRef} label="Agregar otra referencia" />
-          )}
-        </div>
-      </section>
     </div>
   );
 }

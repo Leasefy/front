@@ -179,6 +179,16 @@ describe('evaluarPostulacionDirecta', () => {
       expect(evaluar({ prefill: conIngresos })).toEqual({ directa: true })
     })
 
+    it('sin contrato laboral NI certificado de ingresos, igual es directa (T-0020: ya no se pide)', () => {
+      const sinNinguno = {
+        ...PREFILL_COMPLETO,
+        documents: PREFILL_COMPLETO.documents!.filter(
+          (d) => d.type !== 'EMPLOYMENT_LETTER' && d.type !== 'INCOME_PROOF',
+        ),
+      }
+      expect(evaluar({ prefill: sinNinguno })).toEqual({ directa: true })
+    })
+
     it('sin referencias, al formulario', () => {
       const sinRefs = { ...PREFILL_COMPLETO, references: null }
       expect(evaluar({ prefill: sinRefs })).toMatchObject({
@@ -217,11 +227,15 @@ describe('evaluarPostulacionDirecta', () => {
 })
 
 describe('documentosEnRanuras', () => {
-  it('traduce los tipos del back a las ranuras del formulario', () => {
+  it('traduce los tipos del back a las ranuras del formulario — sólo cédula y extracto (T-0020)', () => {
     const r = documentosEnRanuras(PREFILL_COMPLETO.documents)
     expect(r.idDocument?.fileName).toBe('cedula.pdf')
     expect(r.bankStatement?.fileName).toBe('extracto.pdf')
-    expect(r.employmentLetter?.fileName).toBe('contrato.pdf')
+  })
+
+  it('EMPLOYMENT_LETTER ya no tiene ranura — se ignora igual que un tipo desconocido', () => {
+    const r = documentosEnRanuras(PREFILL_COMPLETO.documents)
+    expect(Object.keys(r)).toEqual(['idDocument', 'bankStatement'])
   })
 
   it('un documento ya subido entra con file en null y su nombre real', () => {

@@ -1,6 +1,7 @@
 'use client';
 
 import { type ReactNode, type InputHTMLAttributes, forwardRef } from 'react';
+import { LockSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import {
@@ -135,6 +136,38 @@ interface FieldSelectProps {
   className?: string;
   id?: string;
   onBlur?: () => void;
+}
+
+// ============================================================================
+// LockedField - value sourced from an external system (e.g. the tenant's
+// pre-scoring study), read-only by design — not disabled, not broken.
+// ============================================================================
+
+interface LockedFieldProps {
+  id?: string;
+  value: string;
+  /** Visible reason the field can't be edited here — never an inert grey box. */
+  reason: string;
+  icon?: ReactNode;
+  className?: string;
+}
+
+export function LockedField({ id, value, reason, icon, className }: LockedFieldProps) {
+  return (
+    <div className={cn('space-y-1.5', className)}>
+      <div
+        id={id}
+        role="group"
+        aria-label={`${value || 'sin dato'} — ${reason}`}
+        className="relative flex h-12 items-center gap-3 rounded-md border border-border bg-surface-muted px-4"
+      >
+        {icon && <span className="flex-shrink-0 text-fg-muted" aria-hidden="true">{icon}</span>}
+        <span className="flex-1 truncate text-sm text-fg" aria-hidden="true">{value || '—'}</span>
+        <LockSimple className="h-4 w-4 flex-shrink-0 text-fg-muted" aria-hidden="true" />
+      </div>
+      <p className="text-xs text-fg-muted">{reason}</p>
+    </div>
+  );
 }
 
 export function LightSelect({

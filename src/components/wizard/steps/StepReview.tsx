@@ -11,7 +11,6 @@ import {
   DOCUMENT_TYPES,
   MARITAL_STATUS_OPTIONS,
   EMPLOYMENT_STATUS_OPTIONS,
-  CONTRACT_TYPE_OPTIONS,
 } from '@/lib/types/application';
 
 // ============================================================================
@@ -55,7 +54,6 @@ export function StepReview() {
   // Count references
   const landlordCount = references.previousLandlords?.length || 0;
   const employmentRefCount = references.employmentReferences?.length || 0;
-  const personalRefCount = references.personalReferences?.length || 0;
 
   const handleTermsChange = useCallback(
     (checked: boolean) => {
@@ -120,19 +118,9 @@ export function StepReview() {
         <div className="space-y-1.5 text-sm">
           <p className="font-medium text-foreground">
             {getOptionLabel(EMPLOYMENT_STATUS_OPTIONS, employment.employmentStatus)}
-            {employment.contractType &&
-              ` - ${getOptionLabel(CONTRACT_TYPE_OPTIONS, employment.contractType)}`}
           </p>
           {employment.companyName && (
             <p className="text-muted-foreground">{employment.companyName}</p>
-          )}
-          {employment.position && (
-            <p className="text-muted-foreground">{employment.position}</p>
-          )}
-          {employment.timeAtJob !== undefined && employment.timeAtJob > 0 && (
-            <p className="text-muted-foreground text-xs">
-              {employment.timeAtJob} meses de antigüedad
-            </p>
           )}
         </div>
       </SummaryCard>
@@ -192,11 +180,6 @@ export function StepReview() {
             {employmentRefCount} referencia{employmentRefCount !== 1 ? 's' : ''} laboral
             {employmentRefCount !== 1 ? 'es' : ''}
           </p>
-          <p className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-success" />
-            {personalRefCount} referencia{personalRefCount !== 1 ? 's' : ''} personal
-            {personalRefCount !== 1 ? 'es' : ''}
-          </p>
         </div>
       </SummaryCard>
 
@@ -220,30 +203,6 @@ export function StepReview() {
               ? (!!documents.bankStatement?.fileName || !!documents.bankStatement?.file)
               : !!documents.bankStatement?.file}
             required
-          />
-          <DocumentStatus
-            label="Contrato laboral"
-            uploaded={mode === 'update'
-              ? (!!documents.employmentLetter?.fileName || !!documents.employmentLetter?.file)
-              : !!documents.employmentLetter?.file}
-          />
-          <DocumentStatus
-            label="Certificado de ingresos"
-            uploaded={mode === 'update'
-              ? (!!documents.incomeProof?.fileName || !!documents.incomeProof?.file)
-              : !!documents.incomeProof?.file}
-          />
-          <DocumentStatus
-            label="Colilla de nómina"
-            uploaded={mode === 'update'
-              ? (!!documents.payStub?.fileName || !!documents.payStub?.file)
-              : !!documents.payStub?.file}
-          />
-          <DocumentStatus
-            label="Reporte de crédito"
-            uploaded={mode === 'update'
-              ? (!!documents.creditReport?.fileName || !!documents.creditReport?.file)
-              : !!documents.creditReport?.file}
           />
         </div>
       </SummaryCard>

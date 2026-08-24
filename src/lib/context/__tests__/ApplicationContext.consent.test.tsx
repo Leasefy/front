@@ -67,7 +67,7 @@ vi.mock('@/lib/api/client', () => ({
   getAccessToken: () => (_isAuthenticated ? 'fake-token' : null),
   setAccessToken: vi.fn(),
   ApiError: class ApiError extends Error {
-    constructor(public status: number, msg: string) { super(msg); }
+    constructor(public status: number, msg: string, public code?: string) { super(msg); }
   },
 }));
 
@@ -77,6 +77,7 @@ vi.mock('@/lib/utils/logger', () => ({
 }));
 
 import { ApplicationProvider, useApplication } from '@/lib/context/ApplicationContext';
+import { ApiError } from '@/lib/api/client';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -97,7 +98,9 @@ const SAMPLE_CONSENT = {
  * step 1: fullName + documentNumber
  * step 2: employmentStatus
  * step 3: monthlySalary > 0
- * step 4: previousLandlords.length > 0
+ * step 4: previousLandlords.length > 0 AND employmentReferences.length > 0
+ *   (Referencias Personales was removed in T-0020 — Arrendadores Anteriores
+ *   and Referencias Laborales both keep their min-1 rule)
  * step 5: idDocument.fileName
  */
 function makeMinimalApplication() {
@@ -122,8 +125,7 @@ function makeMinimalApplication() {
     },
     references: {
       previousLandlords: [{ name: 'Luis', phone: '123', address: 'Calle 1', duration: 12, relationship: 'landlord' }],
-      employmentReferences: [],
-      personalReferences: [],
+      employmentReferences: [{ name: 'Ana', phone: '3001234567', company: 'Acme', relationship: 'Jefe' }],
     },
     documents: {
       idDocument: { fileName: 'cedula.pdf', file: new File(['x'], 'cedula.pdf', { type: 'application/pdf' }), uploadedAt: new Date().toISOString() },
@@ -300,6 +302,43 @@ describe('ApplicationContext — submit blocked when consent text unavailable', 
 
     expect(getCtx().authorizationVersion).toBeUndefined();
     expect(getCtx().canSubmit).toBe(false);
+  });
+});
+
+// ── IDENTIDAD_NO_COINCIDE — pre-scoring identity mismatch (T-0001/T-0020) ──
+//
+// The backend rejects a submission whose identity contradicts the tenant's
+// vigent pre-scoring study with 409 { code: 'IDENTIDAD_NO_COINCIDE' }
+// (contract.md T-0001 §3.3). The front must show an actionable message that
+// offers reloading — never a raw error, never a field-level diff.
+
+describe('ApplicationContext — IDENTIDAD_NO_COINCIDE handling', () => {
+  it('shows an actionable message and does not leak the raw backend error', async () => {
+    mockGetConsentText.mockResolvedValueOnce(SAMPLE_CONSENT);
+    mockCreate.mockRejectedValueOnce(new ApiError(409, 'Conflict', 'IDENTIDAD_NO_COINCIDE'));
+
+    const { getCtx } = await renderProvider({ mode: 'create' });
+
+    await act(async () => { getCtx().setAcceptTerms(true); });
+    await act(async () => { getCtx().setAuthorizeVerification(true); });
+    await act(async () => { await getCtx().submitApplication(); });
+
+    expect(getCtx().submissionError).toBeTruthy();
+    expect(getCtx().submissionError).toMatch(/estudio de arrendamiento/i);
+    expect(getCtx().submissionError).not.toMatch(/Conflict/);
+  });
+
+  it('other 409 codes still surface their own message unchanged', async () => {
+    mockGetConsentText.mockResolvedValueOnce(SAMPLE_CONSENT);
+    mockCreate.mockRejectedValueOnce(new ApiError(409, 'Ya tenes una postulación activa', 'POSTULACION_ACTIVA'));
+
+    const { getCtx } = await renderProvider({ mode: 'create' });
+
+    await act(async () => { getCtx().setAcceptTerms(true); });
+    await act(async () => { getCtx().setAuthorizeVerification(true); });
+    await act(async () => { await getCtx().submitApplication(); });
+
+    expect(getCtx().submissionError).toBe('Ya tenes una postulación activa');
   });
 });
 

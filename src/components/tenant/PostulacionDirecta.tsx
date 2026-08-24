@@ -28,6 +28,7 @@ import {
   Briefcase,
   CheckCircle,
   FileText,
+  LockSimple,
   MapPin,
   User,
   Warning,
@@ -36,10 +37,12 @@ import {
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { applicationsApi } from '@/lib/api/applications.service'
+import { ApiError } from '@/lib/api/client'
 import { formatCurrency } from '@/lib/format'
 import type { ApplicationPrefillData, DocumentoReutilizable } from '@/lib/api/applications.types'
 import type { ConsentTextResponse } from '@/lib/api/legal.service'
 import { DOCUMENT_TYPES } from '@/lib/types/application'
+import { identidadEfectiva } from '@/lib/tenant/prefill-a-postulacion'
 import type { Property } from '@/lib/types/property'
 
 /** Los tipos del back con el nombre que la persona reconoce. */
@@ -52,9 +55,8 @@ const NOMBRE_DE_DOCUMENTO: Record<string, string> = {
   CREDIT_REPORT: 'Reporte de crédito',
 }
 
-/** Sin estos tres, la inmobiliaria no puede evaluar. Igual que en el wizard. */
+/** Sin estos dos, la inmobiliaria no puede evaluar. Igual que en el wizard (T-0020). */
 const REQUERIDOS = ['ID_DOCUMENT', 'BANK_STATEMENT']
-const UNO_DE = ['EMPLOYMENT_LETTER', 'INCOME_PROOF']
 
 /**
  * `cc` es cómo lo guarda la base, no cómo se llama. La misma lista que usa el
@@ -100,6 +102,14 @@ export function PostulacionDirecta({
   )
 
   /*
+   * La identidad del estudio de pre-scoring vigente gana, campo a campo,
+   * sobre los valores de la postulación anterior (contract.md T-0001 §3.2).
+   * Mismo mapeo que usa el wizard — `identidadEfectiva` — para que las dos
+   * pantallas nunca desacuerden sobre qué identidad se está enviando.
+   */
+  const identidad = useMemo(() => identidadEfectiva(prefill), [prefill])
+
+  /*
    * El back exige la versión del texto legal junto al consentimiento: sin ella
    * rechaza el envío. Si el texto no cargó, no se puede registrar una
    * autorización válida — y entonces no se ofrece marcarla.
@@ -115,31 +125,31 @@ export function PostulacionDirecta({
     try {
       const creada = await applicationsApi.create({
         propertyId: property.id,
-        fullName: prefill.fullName ?? '',
-        documentType: prefill.documentType ?? undefined,
-        documentNumber: prefill.documentNumber ?? '',
+        // La identidad viene de `identidadEfectiva`: el estudio de pre-scoring
+        // vigente gana sobre la postulación anterior, campo a campo — el
+        // mismo mapeo que usa el wizard.
+        fullName: identidad.fullName ?? '',
+        documentType: identidad.documentType ?? undefined,
+        documentNumber: identidad.documentNumber ?? '',
         dateOfBirth: prefill.dateOfBirth ?? '',
         phone: prefill.phone ?? '',
-        email: prefill.email ?? '',
+        email: identidad.email ?? '',
         currentAddress: prefill.currentAddress ?? '',
         timeAtCurrentAddress: prefill.timeAtCurrentAddress ?? undefined,
         maritalStatus: prefill.maritalStatus ?? undefined,
         dependents: prefill.dependents ?? undefined,
         employmentStatus: prefill.employmentStatus ?? undefined,
         companyName: prefill.companyName ?? '',
-        industry: prefill.industry ?? '',
-        position: prefill.position ?? '',
-        contractType: prefill.contractType ?? undefined,
-        timeAtJob: prefill.timeAtJob ?? undefined,
-        employerPhone: prefill.employerPhone ?? '',
-        employerAddress: prefill.employerAddress ?? '',
         monthlySalary: prefill.monthlySalary ?? 0,
         additionalIncome: prefill.additionalIncome ?? 0,
         additionalIncomeSource: prefill.additionalIncomeSource ?? '',
         totalMonthlyIncome: prefill.totalMonthlyIncome ?? 0,
         monthlyObligations: prefill.monthlyObligations ?? 0,
         availableForRent: prefill.availableForRent ?? 0,
-        references: (prefill.references ?? {}) as Record<string, unknown>,
+        references: {
+          previousLandlords: prefill.references?.previousLandlords ?? [],
+          employmentReferences: prefill.references?.employmentReferences ?? [],
+        } as Record<string, unknown>,
         hasCoSigner: prefill.hasCoSigner ?? false,
         coSigner: prefill.coSigner ?? undefined,
         habeasDataConsent: true,
@@ -157,10 +167,7 @@ export function PostulacionDirecta({
         ...reuso.copiados.map((d) => d.type),
         ...reuso.yaEstaban,
       ])
-      const faltan = [
-        ...REQUERIDOS.filter((t) => !adjuntos.has(t)),
-        ...(UNO_DE.some((t) => adjuntos.has(t)) ? [] : ['INCOME_PROOF']),
-      ]
+      const faltan = REQUERIDOS.filter((t) => !adjuntos.has(t))
 
       if (faltan.length > 0) {
         setError(
@@ -174,12 +181,21 @@ export function PostulacionDirecta({
 
       onPostulada(creada.id)
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : 'No pudimos enviar tu postulación. Intentá de nuevo.',
-      )
+      // El back rechaza el envío cuando la identidad contradice el estudio de
+      // pre-scoring vigente (contract.md T-0001 §3.3). Mensaje accionable,
+      // sin diff de campos y sin reintento automático.
+      if (e instanceof ApiError && e.code === 'IDENTIDAD_NO_COINCIDE') {
+        setError(
+          'Tu postulación debe presentarse con la identidad de tu estudio de arrendamiento vigente. Recargá la página para traer tus datos actualizados e intentá de nuevo.',
+        )
+      } else {
+        setError(
+          e instanceof Error ? e.message : 'No pudimos enviar tu postulación. Intentá de nuevo.',
+        )
+      }
       setEnviando(false)
     }
-  }, [puedeEnviar, property.id, prefill, consentText, onPostulada])
+  }, [puedeEnviar, property.id, prefill, identidad, consentText, onPostulada])
 
   return (
     <div className="min-h-screen bg-muted py-8 px-4">
@@ -230,22 +246,27 @@ export function PostulacionDirecta({
           {/* Qué se manda */}
           <div className="space-y-5 p-6">
             <Bloque icono={User} titulo="Tus datos">
-              <Dato etiqueta="Nombre" valor={prefill.fullName} />
+              {identidad.vieneDelEstudio ? (
+                <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                  <LockSimple className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  Tu nombre y documento vienen de tu estudio de arrendamiento vigente.
+                </p>
+              ) : null}
+              <Dato etiqueta="Nombre" valor={identidad.fullName} />
               <Dato
                 etiqueta="Documento"
                 valor={
-                  prefill.documentNumber
-                    ? `${etiquetaDeDocumento(prefill.documentType)} ${prefill.documentNumber}`.trim()
+                  identidad.documentNumber
+                    ? `${etiquetaDeDocumento(identidad.documentType)} ${identidad.documentNumber}`.trim()
                     : null
                 }
               />
               <Dato etiqueta="Teléfono" valor={prefill.phone} />
-              <Dato etiqueta="Correo" valor={prefill.email} />
+              <Dato etiqueta="Correo" valor={identidad.email} />
             </Bloque>
 
             <Bloque icono={Briefcase} titulo="Trabajo e ingresos">
               <Dato etiqueta="Empresa" valor={prefill.companyName} />
-              <Dato etiqueta="Cargo" valor={prefill.position} />
               <Dato
                 etiqueta="Ingreso mensual"
                 valor={

@@ -195,10 +195,16 @@ export interface LandlordRiskScore {
 /**
  * Per-carrier viability from the candidate's Fianly pre-scoring study.
  * See PreScoringStudy for the full shape (T-0024 contract §3.2).
+ *
+ * `maxAsegurableCop` is nullable — contract §3.1 / §9 amendment 2. The back
+ * legitimately emits `null` for a carrier that will not back the tenant.
+ * MUST NOT be pushed through a currency formatter unguarded: that turns
+ * "no cover" into a false "$0" figure, which is worse than showing no
+ * number at all.
  */
 export interface PreScoringCarrierResult {
   name: string;
-  maxAsegurableCop: number;
+  maxAsegurableCop: number | null;
   viable: boolean;
 }
 

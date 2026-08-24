@@ -104,4 +104,34 @@ describe('<PreScoringStudyPanel>', () => {
     expect(container.querySelectorAll('[data-testid="prescoring-carrier-row"]').length).toBe(1);
     expect(container.querySelector('[data-testid="prescoring-panel-full"]')?.textContent).toContain('2.800.000');
   });
+
+  it('never renders "$0" for a carrier with a null ceiling — reads as no coverage instead', () => {
+    render({
+      status: 'COMPLETED',
+      completedAt: '2026-08-01T00:00:00.000Z',
+      maxAsegurableCop: 3_000_000,
+      carriers: [
+        { name: 'Sura', maxAsegurableCop: 3_000_000, viable: true },
+        // The back legitimately emits null for a carrier that will not back
+        // the tenant (contract §3.1/§9 amendment 2) — never a real 0.
+        { name: 'Bolivar', maxAsegurableCop: null, viable: false },
+      ],
+    });
+    const panel = container.querySelector('[data-testid="prescoring-panel-full"]');
+    expect(panel).toBeTruthy();
+
+    const rows = container.querySelectorAll('[data-testid="prescoring-carrier-row"]');
+    expect(rows.length).toBe(2);
+
+    // Nowhere in the panel does the null ceiling render as a currency figure.
+    expect(panel?.textContent).not.toContain('$ 0');
+    expect(panel?.textContent).not.toContain('$0');
+
+    const noCover = container.querySelector('[data-testid="prescoring-carrier-no-cover"]');
+    expect(noCover).toBeTruthy();
+    expect(noCover?.textContent).toMatch(/sin cobertura/i);
+
+    // The carrier WITH a real ceiling still renders its currency figure normally.
+    expect(panel?.textContent).toContain('3.000.000');
+  });
 });

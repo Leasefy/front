@@ -893,9 +893,23 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
             >
               <span className="text-xs text-foreground truncate">{carrier.name}</span>
               <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="text-xs font-semibold text-foreground tabular-nums font-mono">
-                  {formatCurrency(carrier.maxAsegurableCop)}
-                </span>
+                {carrier.maxAsegurableCop != null ? (
+                  <span className="text-xs font-semibold text-foreground tabular-nums font-mono">
+                    {formatCurrency(carrier.maxAsegurableCop)}
+                  </span>
+                ) : (
+                  // Nullable per contract §3.1/§9 amendment 2 — the back emits `null` for a
+                  // carrier that will not back the tenant. MUST NOT fall through to
+                  // formatCurrency: it null-coalesces to 0 and renders a false "$0" ceiling,
+                  // which reads as "will back you for zero pesos" instead of "will not back you".
+                  <span
+                    className="inline-flex items-center gap-1 text-xs font-medium text-danger"
+                    data-testid="prescoring-carrier-no-cover"
+                  >
+                    <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                    Sin cobertura
+                  </span>
+                )}
                 <span className={cn('inline-flex items-center gap-1 text-xs font-medium', carrier.viable ? 'text-success' : 'text-danger')}>
                   {carrier.viable ? (
                     <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />

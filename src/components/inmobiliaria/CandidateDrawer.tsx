@@ -7,7 +7,6 @@ import {
   X,
   Robot,
   Sparkle,
-  ArrowClockwise,
   MagnifyingGlass,
   ShieldCheck,
   WarningCircle,
@@ -28,7 +27,6 @@ import { IconButton } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { ChatThread } from '@/components/messages/ChatThread';
-import { agentCreditsApi } from '@/lib/api/agent-credits.service';
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
 import { useContractByApplication } from '@/lib/hooks/useContracts';
 import { getAccessToken, ApiError } from '@/lib/api/client';
@@ -41,8 +39,8 @@ import type {
   Observation,
   ScoreBreakdown,
   SmartMatchingResponse,
+  PreScoringStudy,
 } from '@/lib/api/applications.types';
-import type { AgentCreditsBalance } from '@/lib/api/agent-credits.service';
 
 // ============================================================================
 // Props
@@ -54,6 +52,12 @@ interface CandidateDrawerProps {
   candidate: LandlordCandidate | null;
   onClose: () => void;
   onAction: (type: CandidateAction, candidate: LandlordCandidate) => void;
+  /**
+   * Kept for caller compatibility; no longer invoked. The drawer used to call
+   * this after triggering a fresh AI re-evaluation — that trigger was removed
+   * in T-0024 (the panel now reads the pre-scoring study the candidate
+   * already paid for, instead of dispatching a new one).
+   */
   onReevaluated?: () => void;
 }
 
@@ -134,22 +138,15 @@ const DOC_TYPE_LABELS: Record<string, string> = {
 // Drawer component
 // ============================================================================
 
-export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }: CandidateDrawerProps) {
+export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawerProps) {
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [noEvaluationYet, setNoEvaluationYet] = useState(false);
 
-  const [isReevaluating, setIsReevaluating] = useState(false);
-  const [reevalMessage, setReevalMessage] = useState<string | null>(null);
-  const [reevalError, setReevalError] = useState<string | null>(null);
-  const [creditsExhausted, setCreditsExhausted] = useState(false);
-
   const [isMatching, setIsMatching] = useState(false);
   const [matchingResults, setMatchingResults] = useState<SmartMatchingResponse | null>(null);
   const [matchingError, setMatchingError] = useState<string | null>(null);
-
-  const [creditsBalance, setCreditsBalance] = useState<AgentCreditsBalance | null>(null);
 
   const { documents, isLoading: isLoadingDocs, error: docsError } = useCandidateDocuments(candidate?.id);
   // Only relevant when the candidate was approved — we skip the request otherwise
@@ -191,15 +188,6 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
     return () => stopPolling();
   }, [candidate, stopPolling]);
 
-  const refreshCreditsBalance = useCallback(async () => {
-    try {
-      const balance = await agentCreditsApi.getBalance();
-      setCreditsBalance(balance);
-    } catch {
-      // Silently fail — we show 'saldo: -' in that case
-    }
-  }, []);
-
   // Fetch consolidated evaluation result when a candidate is opened.
   // Landlords/agencies use /evaluations/:id/result — NOT /scoring/* (tenant-only).
   useEffect(() => {
@@ -235,8 +223,9 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
               }
             } catch (err) {
               if (err instanceof ApiError && err.status === 503) {
-                // Agent micro unreachable — backend 503. No credit deducted, evaluation state intact.
-                // Stop polling and surface the error; user can retry via "Re-evaluar".
+                // Agent micro unreachable — backend 503. Evaluation state intact.
+                // Stop polling and surface the error; there is no re-trigger from
+                // this drawer (T-0024 removed the front-side trigger).
                 setAiError('Servicio temporalmente no disponible. Reintenta en unos minutos.');
                 setIsLoadingAI(false);
                 stopPolling();
@@ -270,85 +259,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
   useEffect(() => {
     setMatchingResults(null);
     setMatchingError(null);
-    setReevalMessage(null);
-    setReevalError(null);
-    setCreditsExhausted(false);
   }, [candidate]);
-
-  // Load credits balance when the drawer opens
-  useEffect(() => {
-    if (!candidate) return;
-    refreshCreditsBalance();
-  }, [candidate, refreshCreditsBalance]);
-
-  const handleReevaluate = useCallback(async () => {
-    if (!candidate) return;
-    setIsReevaluating(true);
-    setReevalMessage(null);
-    setReevalError(null);
-    setCreditsExhausted(false);
-    try {
-      const res = await landlordApplicationsApi.triggerReevaluation(candidate.id);
-      const triggerTime = Date.now();
-      const expectedRunId = res.runId;
-
-      setReevalMessage('Re-evaluación en curso. Esperando nuevo resultado...');
-      onReevaluated?.();
-      refreshCreditsBalance();
-
-      // Clear the stale result and start polling for the new one
-      setEvaluation(null);
-      setNoEvaluationYet(false);
-      setAiError(null);
-      setIsLoadingAI(true);
-      setIsPolling(true);
-
-      pollingRef.current = setInterval(async () => {
-        try {
-          const result = await landlordApplicationsApi.getEvaluationResult(candidate.id);
-
-          // If the agent explicitly failed, stop and show error
-          if (result.status === 'failed') {
-            setAiError('El agente no pudo completar la evaluación. Intentá de nuevo.');
-            setIsLoadingAI(false);
-            stopPolling();
-            return;
-          }
-
-          // Accept result if runId matches OR if completedAt is newer than trigger
-          const isNew =
-            (expectedRunId && result.runId === expectedRunId) ||
-            (result.completedAt && new Date(result.completedAt).getTime() > triggerTime);
-          if (isNew) {
-            setEvaluation(result);
-            setIsLoadingAI(false);
-            setReevalMessage('Re-evaluación completada.');
-            stopPolling();
-          }
-        } catch (err) {
-          if (err instanceof ApiError && err.status === 503) {
-            // Agent micro unreachable — backend 503. No credit deducted, evaluation state intact.
-            // Stop polling and surface the error; user can retry via "Re-evaluar".
-            setReevalError('Servicio temporalmente no disponible. Reintenta en unos minutos.');
-            setIsLoadingAI(false);
-            stopPolling();
-            return;
-          }
-          // Keep polling on other transient errors.
-        }
-      }, 3000);
-    } catch (err) {
-      const raw = err instanceof Error ? err.message : 'Error al disparar la re-evaluación';
-      if (/cr[eé]ditos?\s+insuficient|saldo.*insuficient/i.test(raw)) {
-        setCreditsExhausted(true);
-        setReevalError('No tienes créditos disponibles para ejecutar el agente.');
-      } else {
-        setReevalError(raw);
-      }
-    } finally {
-      setIsReevaluating(false);
-    }
-  }, [candidate, onReevaluated, stopPolling, refreshCreditsBalance]);
 
   const handleSmartMatching = useCallback(async () => {
     if (!candidate) return;
@@ -498,99 +409,40 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
             </section>
           )}
 
+          {/*
+            Pre-scoring study — the candidate already paid for and completed
+            this study (Fianly) when they applied. The panel reads the result
+            pinned to THIS application (never the tenant's currently vigent
+            order — that's a back-side invariant, see contract.md §3.2) and
+            never triggers a new one. T-0024.
+          */}
+          <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-md bg-primary-soft flex items-center justify-center">
+                <ShieldCheck className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm text-foreground">Estudio de preescoring</h3>
+                <p className="text-xs text-fg-muted">Resultado del estudio de asegurabilidad que ya pagó el candidato</p>
+              </div>
+            </div>
+            <PreScoringStudyPanel study={candidate.preScoringStudy} />
+          </section>
+
           {/* AI Scoring Block */}
           <section className={cn(
             'rounded-xl border p-5 space-y-4',
             levelColor ? `${levelColor.bg} ${levelColor.border}` : 'bg-muted border-border'
           )}>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-md bg-surface dark:bg-ink flex items-center justify-center">
-                  <Robot className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-foreground">Análisis IA · Tenant Scoring</h3>
-                  <p className="text-xs text-fg-muted">Generado por el agente de evaluación de riesgo</p>
-                </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-md bg-surface dark:bg-ink flex items-center justify-center">
+                <Robot className="w-4 h-4 text-primary" />
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                hideArrow
-                onClick={handleReevaluate}
-                disabled={isReevaluating}
-                className="gap-1.5"
-              >
-                {isReevaluating ? (
-                  <DSSpinner size="xs" variant="current" />
-                ) : (
-                  <ArrowClockwise className="w-3.5 h-3.5" />
-                )}
-                Re-evaluar
-              </Button>
+              <div>
+                <h3 className="font-semibold text-sm text-foreground">Análisis IA · Tenant Scoring</h3>
+                <p className="text-xs text-fg-muted">Generado por el agente de evaluación de riesgo</p>
+              </div>
             </div>
-
-            {/* Credits balance chip */}
-            {creditsBalance && (
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5 text-fg-muted">
-                  <Sparkle className="w-3.5 h-3.5" />
-                  <span>
-                    Saldo:{' '}
-                    <span className="font-semibold text-foreground tabular-nums">
-                      {creditsBalance.total}
-                    </span>{' '}
-                    <span className="text-fg-muted">
-                      créditos (1 por evaluación)
-                    </span>
-                  </span>
-                </div>
-                {(creditsBalance.planBalance > 0 || creditsBalance.purchasedBalance > 0) && (
-                  <span className="text-fg-muted">
-                    {creditsBalance.planBalance} del plan
-                    {creditsBalance.purchasedBalance > 0 && ` + ${creditsBalance.purchasedBalance} comprados`}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {reevalMessage && (
-              <div className="rounded-md bg-success-soft text-success flex items-center gap-2">
-                {isPolling && <DSSpinner size="xs" variant="current" className="flex-shrink-0" />}
-                {reevalMessage}
-              </div>
-            )}
-
-            {creditsExhausted ? (
-              <div className="rounded-xl bg-danger-soft border border-danger/30 p-3 space-y-2">
-                <p className="text-xs font-semibold text-danger flex items-center gap-1.5">
-                  <WarningCircle className="w-4 h-4" />
-                  Créditos de evaluación agotados
-                </p>
-                <p className="text-xs text-danger">
-                  Cada evaluación del agente consume un crédito. Podés comprar un pack extra —
-                  los créditos comprados no expiran.
-                </p>
-                <div className="flex items-center gap-2">
-                  <Link
-                    href="/panel/inmobiliaria/creditos"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-danger hover:opacity-90 text-white text-xs font-medium transition-colors"
-                  >
-                    Comprar créditos
-                  </Link>
-                  <Link
-                    href="/panel/inmobiliaria/upgrade"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-danger/30 text-danger text-xs font-medium hover:bg-danger-soft transition-colors"
-                  >
-                    Ver planes
-                  </Link>
-                </div>
-              </div>
-            ) : reevalError ? (
-              <div className="rounded-md bg-danger-soft text-danger">
-                {reevalError}
-              </div>
-            ) : null}
 
             {isLoadingAI ? (
               <div className="flex items-center justify-center py-6">
@@ -599,7 +451,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
             ) : noEvaluationYet ? (
               <div className="rounded-xl bg-surface-muted p-3 border border-border">
                 <p className="text-xs text-fg-muted">
-                  Este candidato aún no tiene una evaluación del agente. Haz clic en &ldquo;Re-evaluar&rdquo; para generar la primera.
+                  Este candidato aún no tiene un análisis de IA generado por el agente.
                 </p>
               </div>
             ) : aiError ? (
@@ -754,7 +606,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
 
                 {!level && !evaluation && !aiError && (
                   <p className="text-xs text-fg-muted">
-                    Aún no hay análisis disponible. Haz clic en &ldquo;Re-evaluar&rdquo; para generar uno.
+                    Aún no hay análisis disponible.
                   </p>
                 )}
               </>
@@ -968,6 +820,102 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
 // ============================================================================
 // Helpers
 // ============================================================================
+
+/**
+ * Renders the candidate's Fianly pre-scoring study, already paid for at
+ * application time (T-0024 contract.md §3.2). Four states, none of which may
+ * render a blank panel:
+ *  - `study` null/absent → an honest "no study" state.
+ *  - `carriers: []` with `maxAsegurableCop` present → ceiling-only, the
+ *    common case for every order that predates the per-carrier column. Must
+ *    NOT look like "no study".
+ *  - `status: 'EXPIRED'` → still shown, labeled — the study stayed valid for
+ *    the application it was filed under.
+ *  - Full result → verdict-adjacent ceiling + per-carrier viability rows.
+ *
+ * Exported for direct unit testing (see CandidateDrawer.test.tsx).
+ */
+export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null | undefined }) {
+  if (!study) {
+    return (
+      <div className="rounded-xl bg-surface-muted p-3 border border-border" data-testid="prescoring-panel-empty">
+        <p className="text-xs text-fg-muted">
+          Este candidato no tiene un estudio de preescoring registrado para esta postulación.
+        </p>
+      </div>
+    );
+  }
+
+  const carriers = study.carriers ?? [];
+  const isExpired = study.status === 'EXPIRED';
+
+  return (
+    <div className="space-y-3" data-testid="prescoring-panel-full">
+      {isExpired && (
+        <div className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2 flex items-start gap-2" data-testid="prescoring-expired-badge">
+          <Info className="w-3.5 h-3.5 text-warning flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <p className="text-xs text-warning">
+            El estudio venció, pero el resultado sigue siendo válido para esta postulación.
+          </p>
+        </div>
+      )}
+
+      {study.maxAsegurableCop != null ? (
+        <div>
+          <p className="text-xs text-fg-muted">Monto máximo asegurable</p>
+          <p className="text-2xl font-bold text-foreground font-mono tabular-nums">
+            {formatCurrency(study.maxAsegurableCop)}
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-fg-muted">Este estudio no registró un monto máximo asegurable.</p>
+      )}
+
+      {study.completedAt && (
+        <p className="text-xs text-fg-muted">
+          Completado el{' '}
+          {new Date(study.completedAt).toLocaleDateString('es-CO', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })}
+        </p>
+      )}
+
+      {carriers.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-foreground">Aseguradoras evaluadas</p>
+          {carriers.map((carrier) => (
+            <div
+              key={carrier.name}
+              className="flex items-center justify-between gap-3 rounded-md bg-surface-muted p-2.5 border border-border"
+              data-testid="prescoring-carrier-row"
+            >
+              <span className="text-xs text-foreground truncate">{carrier.name}</span>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <span className="text-xs font-semibold text-foreground tabular-nums font-mono">
+                  {formatCurrency(carrier.maxAsegurableCop)}
+                </span>
+                <span className={cn('inline-flex items-center gap-1 text-xs font-medium', carrier.viable ? 'text-success' : 'text-danger')}>
+                  {carrier.viable ? (
+                    <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                  ) : (
+                    <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                  )}
+                  {carrier.viable ? 'Viable' : 'No viable'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-fg-muted" data-testid="prescoring-ceiling-only-note">
+          El detalle por aseguradora no está disponible para este estudio; se muestra el monto máximo asegurable global.
+        </p>
+      )}
+    </div>
+  );
+}
 
 function SubscoreBar({ label, value, weight }: { label: string; value: number; weight?: number }) {
   const color = value >= 75 ? 'bg-success' : value >= 50 ? 'bg-warning' : 'bg-danger';

@@ -192,6 +192,47 @@ export interface LandlordRiskScore {
   level: 'A' | 'B' | 'C' | 'D';
 }
 
+/**
+ * Per-carrier viability from the candidate's Fianly pre-scoring study.
+ * See PreScoringStudy for the full shape (T-0024 contract §3.2).
+ */
+export interface PreScoringCarrierResult {
+  name: string;
+  maxAsegurableCop: number;
+  viable: boolean;
+}
+
+/**
+ * Known values include 'COMPLETED' | 'EXPIRED' | 'STUDY_STARTED'; the backend
+ * may return other pre-scoring order statuses, so this stays a plain string
+ * rather than a closed union — the UI must not fail on an unrecognized one.
+ */
+export type PreScoringStudyStatus = string;
+
+/**
+ * Fianly pre-scoring study result, resolved through the application's
+ * PINNED order (`Application.preScoringOrderId`) — never the tenant's
+ * currently vigent order. T-0024 contract §3.2.
+ *
+ * `carriers` is empty for orders that predate the per-carrier snapshot
+ * column; `maxAsegurableCop` still comes through in that case (it was
+ * already persisted), so the UI renders "ceiling only", never "no study".
+ * A `status: 'EXPIRED'` study still returns this block — the study stays
+ * valid for the application it was filed under.
+ */
+export interface PreScoringStudy {
+  status: PreScoringStudyStatus;
+  /** Optional per contract §3.2 — the backend may omit the key entirely, not
+   *  just send null. Both degrade to the same UI: hide the date. */
+  completedAt?: string | null;
+  /** Optional per contract §3.2. Absent, like null, means "no ceiling
+   *  recorded" — the panel shows the explanatory line instead of a number. */
+  maxAsegurableCop?: number | null;
+  /** Optional per contract §3.2 — absent (older backend) degrades exactly
+   *  like an empty array: ceiling-only, never "no study". */
+  carriers?: PreScoringCarrierResult[];
+}
+
 /** Shape returned by GET /landlord/properties/:id/candidates */
 export interface LandlordCandidate {
   id: string;
@@ -201,6 +242,12 @@ export interface LandlordCandidate {
   submittedAt: string;
   riskScore?: LandlordRiskScore;
   privateNote?: string | null;
+  /**
+   * `null` when no pre-scoring study exists for this application; absent on
+   * responses from a backend that predates this field. Both degrade to the
+   * same "no study" UI state — never a blank panel. See PreScoringStudy.
+   */
+  preScoringStudy?: PreScoringStudy | null;
 }
 
 /** Item of GET /landlord/candidates — candidate plus its property context */

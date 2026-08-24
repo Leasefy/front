@@ -141,8 +141,6 @@ export function getApplicationStatus(status: string): PlanStatusType {
     'documentation': 'in_progress',
     'final_review': 'in_progress',
     'accepted': 'accepted',
-    'pre_approved': 'in_progress',
-    'pre-approved': 'in_progress',
     'active': 'in_progress',
     'ending_soon': 'important',
     'ended': 'completed',

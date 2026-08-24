@@ -4,7 +4,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, Sparkle, PaperPlaneTilt, SealCheck, Eye, ThumbsUp, Confetti, PenNib, Warning, ArrowClockwise } from '@phosphor-icons/react';
+import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, Sparkle, PaperPlaneTilt, SealCheck, Eye, Confetti, PenNib, Warning, ArrowClockwise } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -97,19 +97,6 @@ function generateTimelineFromStatus(
     description: locale === 'es' ? 'El propietario está revisando tu solicitud' : 'Landlord is reviewing your application',
   });
   if (status === 'under_review') return events;
-
-  // Pre-approved
-  if (status === 'pre_approved' || status === 'approved') {
-    const d = new Date(baseDate);
-    d.setDate(d.getDate() + 3);
-    events.push({
-      id: `evt-${eventId++}`,
-      type: 'pre_approved',
-      timestamp: d.toISOString(),
-      description: locale === 'es' ? 'Pre-aprobación otorgada' : 'Pre-approval granted',
-    });
-  }
-  if (status === 'pre_approved') return events;
 
   if (status === 'approved') {
     const d = new Date(baseDate);
@@ -236,7 +223,6 @@ export default function ApplicationDetailPage() {
     submitted: { label: locale === 'es' ? 'Enviada' : 'Submitted', color: 'text-primary', bgColor: 'bg-primary-soft', icon: PaperPlaneTilt },
     under_review: { label: locale === 'es' ? 'En revisión' : 'Under review', color: 'text-warning', bgColor: 'bg-warning-soft', icon: Eye },
     needs_info: { label: locale === 'es' ? 'Info. requerida' : 'Info required', color: 'text-warning', bgColor: 'bg-warning-soft', icon: Warning },
-    pre_approved: { label: locale === 'es' ? 'Pre-aprobada' : 'Pre-approved', color: 'text-primary', bgColor: 'bg-primary-soft', icon: ThumbsUp },
     approved: { label: locale === 'es' ? 'Aprobada' : 'Approved', color: 'text-success', bgColor: 'bg-success-soft', icon: Confetti },
     rejected: { label: locale === 'es' ? 'Rechazada' : 'Rejected', color: 'text-danger', bgColor: 'bg-danger-soft', icon: XCircle },
     withdrawn: { label: locale === 'es' ? 'Retirada' : 'Withdrawn', color: 'text-fg-muted', bgColor: 'bg-surface-muted', icon: XCircle },
@@ -245,12 +231,11 @@ export default function ApplicationDetailPage() {
   const progressSteps = [
     { key: 'submitted', label: locale === 'es' ? 'Enviada' : 'Submitted', icon: PaperPlaneTilt },
     { key: 'under_review', label: locale === 'es' ? 'En revisión' : 'Under review', icon: Eye },
-    { key: 'pre_approved', label: locale === 'es' ? 'Pre-aprobada' : 'Pre-approved', icon: ThumbsUp },
     { key: 'approved', label: locale === 'es' ? 'Aprobada' : 'Approved', icon: Confetti },
   ];
 
   const getCurrentStepIndex = () => {
-    const statusOrder = ['submitted', 'under_review', 'pre_approved', 'approved'];
+    const statusOrder = ['submitted', 'under_review', 'approved'];
     if (application.status === 'needs_info') return 0; // stays at "submitted" in the stepper
     return statusOrder.indexOf(application.status);
   };
@@ -291,8 +276,6 @@ export default function ApplicationDetailPage() {
         return Warning;
       case 'documents_verified':
         return SealCheck;
-      case 'pre_approved':
-        return ThumbsUp;
       case 'approved':
         return Confetti;
       case 'rejected':
@@ -1013,31 +996,6 @@ export default function ApplicationDetailPage() {
                       {locale === 'es'
                         ? 'El propietario está evaluando tu postulación. Normalmente toma entre 24-48 horas.'
                         : 'The landlord is evaluating your application. This typically takes 24-48 hours.'}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {application.status === 'pre_approved' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 }}
-                className="rounded-xl bg-primary-soft border border-primary/30 p-6"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center flex-shrink-0">
-                    <ThumbsUp className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-primary mb-1">
-                      {locale === 'es' ? '¡Vas muy bien!' : 'Looking good!'}
-                    </p>
-                    <p className="text-sm text-primary">
-                      {locale === 'es'
-                        ? 'El propietario está interesado en tu perfil. Espera la confirmación final.'
-                        : 'The landlord is interested in your profile. Await final confirmation.'}
                     </p>
                   </div>
                 </div>

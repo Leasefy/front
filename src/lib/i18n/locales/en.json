@@ -2578,8 +2578,6 @@
         "toasts": {
           "propertyUpdated": "Property updated successfully",
           "changesSaved": "Changes have been saved successfully",
-          "viewPortalSoon": "View on portal coming soon",
-          "viewPortalDesc": "This property will be shown on the public portal",
           "statusChanged": "Status changed to: {{status}}",
           "autoSave": "Changes will be saved automatically",
           "terminateConsignment": "Terminate consignment",
@@ -2838,6 +2836,7 @@
         "months": "months",
         "edit": "Edit",
         "viewOnPortal": "View on Portal",
+        "viewOnPortalUnavailable": "This property has no linked listing",
         "comingSoon": "Coming soon",
         "changeStatus": "Change status",
         "renewConsignment": "Renew consignment",

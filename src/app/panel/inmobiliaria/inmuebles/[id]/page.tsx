@@ -224,11 +224,13 @@ function ConsignacionDetailContent() {
     }
   }, [consignacion, t]);
 
+  // The header disables the button whenever propertyId is missing, but the
+  // guard is repeated here in case that ever stops being true — a click that
+  // opens a blank/broken tab is worse than one that silently does nothing.
   const handleViewPortal = useCallback(() => {
-    toast.info(t('inmobiliaria.portafolio.detail.toasts.viewPortalSoon'), {
-      description: t('inmobiliaria.portafolio.detail.toasts.viewPortalDesc'),
-    });
-  }, [t]);
+    if (!consignacion?.propertyId) return;
+    window.open(`/propiedades/${consignacion.propertyId}`, '_blank', 'noopener,noreferrer');
+  }, [consignacion]);
 
   const handleChangeStatus = useCallback(async (newStatus: PropertyAvailability) => {
     if (!consignacion) return;

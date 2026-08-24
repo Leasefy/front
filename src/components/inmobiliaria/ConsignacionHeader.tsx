@@ -134,6 +134,7 @@ export function ConsignacionHeader({
   const status = STATUS_STYLES[consignacion.status];
   const AvailabilityIcon = availability.icon;
   const thumbnailUrl = propertyThumbnailUrl || consignacion.propertyThumbnail;
+  const canViewPortal = !!consignacion.propertyId;
 
   return (
     <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
@@ -241,8 +242,8 @@ export function ConsignacionHeader({
               variant="secondary"
               hideArrow
               onClick={onViewPortal}
-              disabled
-              title={t('inmobiliaria.consignaciones.header.comingSoon')}
+              disabled={!canViewPortal}
+              title={canViewPortal ? undefined : t('inmobiliaria.consignaciones.header.viewOnPortalUnavailable')}
             >
               <Eye className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.header.viewOnPortal')}

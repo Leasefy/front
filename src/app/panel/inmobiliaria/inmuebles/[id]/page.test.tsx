@@ -1,13 +1,14 @@
 /**
  * page.test.tsx — consignacion detail page wires the property's real photo
- * into the header.
+ * and opens the public ficha from "Ver en Portal".
  *
  * T-0022 WU-1: the page used to read `consignacion.propertyThumbnail` (never
- * populated by the back). It now fetches the Property via
- * `useProperty(consignacion.propertyId)` and forwards its thumbnail.
- * `ConsignacionHeader` is mocked here — its own thumbnail contract is
- * covered by ConsignacionHeader.test.tsx; this file only checks the wiring
- * between the page and that contract.
+ * populated by the back) and fire a "coming soon" toast on "Ver en Portal".
+ * It now fetches the Property via `useProperty(consignacion.propertyId)` and
+ * routes to `/propiedades/:propertyId` in a new tab. `ConsignacionHeader` is
+ * mocked here — its own thumbnail/disabled-state contract is covered by
+ * ConsignacionHeader.test.tsx; this file only checks the wiring between the
+ * page and that contract.
  */
 
 import * as React from 'react';
@@ -73,12 +74,15 @@ vi.mock('@/lib/hooks/useProperties', () => ({
 vi.mock('@/components/inmobiliaria/ConsignacionHeader', () => ({
   ConsignacionHeader: ({
     propertyThumbnailUrl,
+    onViewPortal,
   }: {
     propertyThumbnailUrl?: string;
+    onViewPortal?: () => void;
   }) =>
     React.createElement('button', {
       'data-testid': 'view-portal-stub',
       'data-thumbnail': propertyThumbnailUrl ?? '',
+      onClick: onViewPortal,
     }),
 }));
 
@@ -127,6 +131,7 @@ const BASE_PROPERTY = { thumbnailUrl: 'https://cdn.test/foto.jpg' } as unknown a
 
 let container: HTMLDivElement;
 let root: Root;
+let openSpy: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   container = document.createElement('div');
@@ -135,11 +140,14 @@ beforeEach(() => {
   usePropietarioMock.mockReturnValue({ propietario: undefined });
   useAgenteMock.mockReturnValue({ agente: undefined });
   usePropertyMock.mockReturnValue({ property: BASE_PROPERTY, isLoading: false, error: null, errorCrudo: null });
+  openSpy = vi.fn();
+  vi.stubGlobal('open', openSpy);
 });
 
 afterEach(() => {
   act(() => { root.unmount(); });
   container.remove();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -155,5 +163,27 @@ describe('<ConsignacionDetailPage> — property photo wiring', () => {
     expect(usePropertyMock).toHaveBeenCalledWith('prop-1');
     const stub = container.querySelector('[data-testid="view-portal-stub"]');
     expect(stub?.getAttribute('data-thumbnail')).toBe('https://cdn.test/foto.jpg');
+  });
+});
+
+describe('<ConsignacionDetailPage> — Ver en Portal', () => {
+  it('opens the public ficha for the property in a new tab', () => {
+    useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
+    renderPage();
+
+    const stub = container.querySelector('[data-testid="view-portal-stub"]') as HTMLButtonElement;
+    act(() => { stub.click(); });
+
+    expect(openSpy).toHaveBeenCalledWith('/propiedades/prop-1', '_blank', 'noopener,noreferrer');
+  });
+
+  it('does not navigate when the consignacion has no propertyId', () => {
+    useConsignacionMock.mockReturnValue({ consignacion: { ...BASE_CONSIGNACION, propertyId: '' } });
+    renderPage();
+
+    const stub = container.querySelector('[data-testid="view-portal-stub"]') as HTMLButtonElement;
+    act(() => { stub.click(); });
+
+    expect(openSpy).not.toHaveBeenCalled();
   });
 });

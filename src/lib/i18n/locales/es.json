@@ -2579,8 +2579,6 @@
         "toasts": {
           "propertyUpdated": "Inmueble actualizado correctamente",
           "changesSaved": "Los cambios se han guardado exitosamente",
-          "viewPortalSoon": "Ver en portal próximamente",
-          "viewPortalDesc": "Esta propiedad se mostrará en el portal público",
           "statusChanged": "Estado cambiado a: {{status}}",
           "autoSave": "Los cambios se guardarán automáticamente",
           "terminateConsignment": "Terminar consignación",
@@ -2839,6 +2837,7 @@
         "months": "meses",
         "edit": "Editar",
         "viewOnPortal": "Ver en Portal",
+        "viewOnPortalUnavailable": "Este inmueble no tiene una propiedad vinculada",
         "comingSoon": "Próximamente",
         "changeStatus": "Cambiar estado",
         "renewConsignment": "Renovar consignación",

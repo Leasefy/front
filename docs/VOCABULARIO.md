@@ -117,7 +117,7 @@ Dos reglas que salen de esto:
 
 | Muere | Por qué | Qué se usa |
 |---|---|---|
-| **"Pre-aprobado"** | *"pero preaprobar qué"* (Juan). Estado interno filtrado al usuario | **"En revisión"** mientras el backend siga mandando `PREAPPROVED`; el arreglo real es que deje de emitirlo |
+| **"Pre-aprobado"** | *"pero preaprobar qué"* (Juan). Estado interno filtrado al usuario. Resuelto en T-0023: el backend ya no tiene `PREAPPROVED` — no es solo la copy la que murió, el estado en sí dejó de existir | **"En revisión"** (`UNDER_REVIEW`) |
 | **"Reevaluar"** | Acción con costo real y etiqueta que nadie supo explicar | Nada — desaparece del inmueble (D10) |
 | **"Aplicación"** (es) | Se lee como *app* | **"Postulación"** |
 | **"Estudio"** | Nombra tres cosas | **"aprobación"** · **"evaluación"** · **"apartaestudio"** según cuál |
@@ -130,13 +130,10 @@ Dos reglas que salen de esto:
 - El módulo de asegurabilidad vive bajo el namespace **`cotizador`** (`inmobiliaria.ai.cotizador.*`,
   `use-carrier-registry`, rutas `/ai/asegurabilidad`). Interno y ya divergido de la etiqueta.
   Renombrarlo es mecánico y toca muchos archivos: **no se hace ahora**, se anota.
-- `PREAPPROVED` sigue existiendo como valor del backend en `applications.types.ts`. Acá solo se
-  cambia la etiqueta; sacarlo del contrato es del lado de Víctor.
-- **El panel de propietario (`panel/(landlord)`) quedó sin tocar a propósito.** Ahí
-  "Pre-aprobados" es una pestaña dentro de un embudo coherente
-  (Pendientes → Pre-aprobados → Aprobados) y renombrarla a "En revisión" chocaría con
-  "Pendientes". Es otra audiencia y otra superficie: la reunión fue sobre la inmobiliaria.
-  Decidirlo aparte, con el mismo criterio.
+- **El panel de propietario (`panel/(landlord)`) ya no tiene la pestaña "Pre-aprobados".**
+  T-0023 quitó el estado del backend, así que el embudo (Pendientes → Pre-aprobados →
+  Aprobados) que existía ahí quedó sin tercer estado que mostrar; el embudo pasa a ser
+  Pendientes → Aprobados, igual que en inmobiliaria.
 
 ## Cómo se aplica
 

@@ -17,7 +17,6 @@ import type { Property } from '@/lib/types/property';
 import { StepPersonal } from '@/components/wizard/steps/StepPersonal';
 import { StepEmployment } from '@/components/wizard/steps/StepEmployment';
 import { StepIncome } from '@/components/wizard/steps/StepIncome';
-import { StepReferences } from '@/components/wizard/steps/StepReferences';
 import { StepDocuments } from '@/components/wizard/steps/StepDocuments';
 import { StepReview } from '@/components/wizard/steps/StepReview';
 
@@ -311,9 +310,8 @@ function UpdateStepContent({ onSubmissionComplete }: { onSubmissionComplete: () 
       {currentStep === 1 && <StepPersonal />}
       {currentStep === 2 && <StepEmployment />}
       {currentStep === 3 && <StepIncome />}
-      {currentStep === 4 && <StepReferences />}
-      {currentStep === 5 && <StepDocuments />}
-      {currentStep === 6 && <StepReview />}
+      {currentStep === 4 && <StepDocuments />}
+      {currentStep === 5 && <StepReview />}
     </div>
   );
 }

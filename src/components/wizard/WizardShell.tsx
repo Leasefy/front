@@ -33,9 +33,8 @@ const STEP_DESCRIPTIONS: Record<number, string> = {
   1: 'Ingresa tu información personal básica',
   2: 'Cuéntanos sobre tu situación laboral',
   3: 'Detalla tus ingresos mensuales',
-  4: 'Proporciona referencias de contacto',
-  5: 'Sube los documentos requeridos',
-  6: 'Revisa toda la información',
+  4: 'Sube los documentos requeridos',
+  5: 'Revisa toda la información',
 };
 
 // ============================================================================

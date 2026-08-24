@@ -39,7 +39,7 @@ export interface Veredicto {
   directa: boolean
   /** Presente sólo cuando `directa` es false. */
   motivo?: MotivoDeFormulario
-  /** Qué pasos del formulario quedaron incompletos (1..5). Sólo con 'faltan_datos'. */
+  /** Qué pasos del formulario quedaron incompletos (1..4). Sólo con 'faltan_datos'. */
   pasosIncompletos?: number[]
 }
 
@@ -52,8 +52,12 @@ interface Entrada {
   canonCop: number | undefined
 }
 
-/** Los cinco pasos con datos. El 6 es la revisión: no aporta información. */
-const PASOS_CON_DATOS = [1, 2, 3, 4, 5]
+/**
+ * Los cuatro pasos con datos. El 5 es la revisión: no aporta información.
+ * T-0025 eliminó el paso de referencias (era el 4; documentos se corrió del
+ * 5 al 4) — ya no se valida acá tampoco.
+ */
+const PASOS_CON_DATOS = [1, 2, 3, 4]
 
 export function evaluarPostulacionDirecta({
   haySesion,
@@ -94,7 +98,6 @@ export function evaluarPostulacionDirecta({
           personal: postulacion.personal,
           employment: postulacion.employment,
           income: postulacion.income,
-          references: postulacion.references,
           documents: postulacion.documents,
         },
         // El consentimiento se otorga en la pantalla, no viene del prefill:

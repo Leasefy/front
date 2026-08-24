@@ -253,62 +253,11 @@ export function validateIncomeStep(data: Partial<IncomeInfo>): ValidationResult 
 }
 
 // ============================================================================
-// Step 4: References Validation
-// ============================================================================
-
-import type { ReferenceInfo, PreviousLandlordReference, EmploymentReference } from '@/lib/types/application';
-
-function isValidLandlordRef(ref: Partial<PreviousLandlordReference>): boolean {
-  return !!(
-    ref.name && ref.name.trim().length >= 2 &&
-    ref.phone && isValidColombianPhone(ref.phone) &&
-    ref.address && ref.address.trim().length >= 5 &&
-    ref.duration && ref.duration > 0
-  );
-}
-
-function isValidEmploymentRef(ref: Partial<EmploymentReference>): boolean {
-  return !!(
-    ref.name && ref.name.trim().length >= 2 &&
-    ref.phone && isValidColombianPhone(ref.phone) &&
-    ref.company && ref.company.trim().length >= 2 &&
-    ref.relationship && ref.relationship.trim().length >= 2
-  );
-}
-
-export function validateReferencesStep(data: Partial<ReferenceInfo>): ValidationResult {
-  const errors: Record<string, string> = {};
-
-  // Check landlord references (min 1)
-  const landlords = data.previousLandlords || [];
-  if (landlords.length === 0) {
-    errors.previousLandlords = 'Agrega al menos un arrendador anterior';
-  } else {
-    const invalidLandlords = landlords.filter((ref, idx) => !isValidLandlordRef(ref));
-    if (invalidLandlords.length > 0) {
-      errors.previousLandlords = 'Completa todos los campos de los arrendadores anteriores';
-    }
-  }
-
-  // Check employment references (min 1)
-  const employmentRefs = data.employmentReferences || [];
-  if (employmentRefs.length === 0) {
-    errors.employmentReferences = 'Agrega al menos una referencia laboral';
-  } else {
-    const invalidEmployment = employmentRefs.filter((ref, idx) => !isValidEmploymentRef(ref));
-    if (invalidEmployment.length > 0) {
-      errors.employmentReferences = 'Completa todos los campos de las referencias laborales';
-    }
-  }
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors,
-  };
-}
-
-// ============================================================================
-// Step 5: Documents Validation
+// Step 4: Documents Validation
+//
+// T-0025 dropped the references step entirely (Arrendadores Anteriores /
+// Referencias Laborales) — `validateReferencesStep` and its helpers are gone.
+// Documents moved from step 5 to step 4.
 // ============================================================================
 
 import type { DocumentInfo, DocumentUpload } from '@/lib/types/application';
@@ -337,7 +286,7 @@ export function validateDocumentsStep(data: Partial<DocumentInfo>): ValidationRe
 }
 
 // ============================================================================
-// Step 6: Review Validation (terms acceptance)
+// Step 5: Review Validation (terms acceptance)
 // ============================================================================
 
 export function validateReviewStep(acceptTerms: boolean, authorizeVerification: boolean): ValidationResult {
@@ -367,7 +316,6 @@ export function validateStep(
     personal: Partial<PersonalInfo>;
     employment: Partial<EmploymentInfo>;
     income: Partial<IncomeInfo>;
-    references: Partial<ReferenceInfo>;
     documents: Partial<DocumentInfo>;
   },
   terms?: { acceptTerms: boolean; authorizeVerification: boolean }
@@ -380,10 +328,8 @@ export function validateStep(
     case 3:
       return validateIncomeStep(data.income);
     case 4:
-      return validateReferencesStep(data.references);
-    case 5:
       return validateDocumentsStep(data.documents);
-    case 6:
+    case 5:
       return terms
         ? validateReviewStep(terms.acceptTerms, terms.authorizeVerification)
         : { isValid: false, errors: { general: 'Faltan terminos' } };
@@ -414,9 +360,6 @@ export function getMissingFieldsList(step: number, errors: Record<string, string
     monthlySalary: 'Salario mensual',
     additionalIncomeSource: 'Fuente de ingreso adicional',
     monthlyObligations: 'Obligaciones mensuales',
-    // References
-    previousLandlords: 'Arrendadores anteriores',
-    employmentReferences: 'Referencias laborales',
     // Documents
     idDocument: 'Documento de identidad',
     bankStatement: 'Extracto bancario',

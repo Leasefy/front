@@ -155,7 +155,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const filteredCandidates = useMemo(() => {
     if (activeTab === 'all') return candidates;
     if (activeTab === 'pending') return candidates.filter(c => c.status === 'pending');
-    if (activeTab === 'pre-approved') return candidates.filter(c => c.status === 'pre-approved');
     if (activeTab === 'approved') return candidates.filter(c => c.status === 'approved');
     if (activeTab === 'rejected') return candidates.filter(c => c.status === 'rejected');
     return candidates;
@@ -165,7 +164,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const counts = useMemo(() => ({
     all: candidates.length,
     pending: candidates.filter(c => c.status === 'pending').length,
-    preApproved: candidates.filter(c => c.status === 'pre-approved').length,
     approved: candidates.filter(c => c.status === 'approved').length,
     rejected: candidates.filter(c => c.status === 'rejected').length,
   }), [candidates]);
@@ -174,7 +172,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const tabs: PlanTab[] = [
     { id: 'all', label: 'Todos', count: counts.all },
     { id: 'pending', label: 'Pendientes', count: counts.pending },
-    { id: 'pre-approved', label: 'Pre-aprobados', count: counts.preApproved },
     { id: 'approved', label: 'Aprobados', count: counts.approved },
     { id: 'rejected', label: 'Rechazados', count: counts.rejected },
     { id: 'visits', label: 'Visitas', count: propertyVisits.length },
@@ -192,7 +189,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const getStatusType = (status: LandlordCandidateStatus): PlanStatusType => {
     const map: Record<LandlordCandidateStatus, PlanStatusType> = {
       'pending': 'new',
-      'pre-approved': 'in_progress',
       'approved': 'accepted',
       'rejected': 'rejected',
       'more-info': 'pending',
@@ -204,7 +200,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const getStatusLabel = (status: LandlordCandidateStatus): string => {
     const map: Record<LandlordCandidateStatus, string> = {
       'pending': 'Pendiente',
-      'pre-approved': 'Pre-aprobado',
       'approved': 'Aprobado',
       'rejected': 'Rechazado',
       'more-info': 'Requiere info',
@@ -308,9 +303,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       const candidate = candidates.find(c => c.id === candidateId);
 
       // Map to API decision format
-      const decisionMap: Record<LandlordCandidateStatus, 'pre-approved' | 'approved' | 'rejected' | 'more-info'> = {
+      const decisionMap: Record<LandlordCandidateStatus, 'approved' | 'rejected' | 'more-info'> = {
         'pending': 'more-info',
-        'pre-approved': 'pre-approved',
         'approved': 'approved',
         'rejected': 'rejected',
         'more-info': 'more-info',
@@ -334,12 +328,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             description: `Iniciando proceso de contrato con ${candidate?.fullName}`,
           });
           router.push(`/panel/${propertyId}/contract/${candidateId}?new=true`);
-        } else if (newStatus === 'pre-approved') {
-          handleCloseDetail();
-          toast.success('Candidato pre-aprobado', {
-            description: `${candidate?.fullName} ha sido pre-aprobado. Puedes continuar revisando otros candidatos o aprobar definitivamente.`,
-            duration: 5000,
-          });
         } else if (newStatus === 'rejected') {
           handleCloseDetail();
           toast('Candidato rechazado', {
@@ -569,15 +557,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       title: 'Acciones',
       content: (
         <div className="space-y-2">
-          <Button
-            variant="secondary"
-            hideArrow
-            onClick={() => handleDecision(selectedCandidate.id, 'pre-approved')}
-            className="w-full bg-plan-status-blue-bg text-primary rounded-sm hover:bg-primary-soft"
-          >
-            <Clock className="w-4 h-4" />
-            Pre-aprobar
-          </Button>
           <Button
             variant="secondary"
             hideArrow
@@ -1045,7 +1024,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         ) : (
           <>
             {/* Stats Row - Compact Style */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               <Card className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
@@ -1065,17 +1044,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                   <div>
                     <p className="text-2xl font-bold text-fg">{counts.pending}</p>
                     <p className="text-xs text-fg-muted">Pendientes</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary-soft dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                    <Eye className="w-5 h-5 text-primary dark:text-[#5570FF]" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-fg">{counts.preApproved}</p>
-                    <p className="text-xs text-fg-muted">Pre-aprobados</p>
                   </div>
                 </div>
               </Card>

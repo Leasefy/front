@@ -151,7 +151,7 @@ describe('evaluarPostulacionDirecta', () => {
       }
       expect(evaluar({ prefill: sinCedula })).toMatchObject({
         motivo: 'faltan_datos',
-        pasosIncompletos: [5],
+        pasosIncompletos: [4],
       })
     })
 
@@ -159,7 +159,7 @@ describe('evaluarPostulacionDirecta', () => {
       const sinDocs = { ...PREFILL_COMPLETO, documents: undefined }
       expect(evaluar({ prefill: sinDocs })).toMatchObject({
         motivo: 'faltan_datos',
-        pasosIncompletos: [5],
+        pasosIncompletos: [4],
       })
     })
 
@@ -189,12 +189,9 @@ describe('evaluarPostulacionDirecta', () => {
       expect(evaluar({ prefill: sinNinguno })).toEqual({ directa: true })
     })
 
-    it('sin referencias, al formulario', () => {
+    it('sin referencias, igual es directa (T-0025: ya no se pide)', () => {
       const sinRefs = { ...PREFILL_COMPLETO, references: null }
-      expect(evaluar({ prefill: sinRefs })).toMatchObject({
-        motivo: 'faltan_datos',
-        pasosIncompletos: [4],
-      })
+      expect(evaluar({ prefill: sinRefs })).toEqual({ directa: true })
     })
 
     it('un teléfono que no es colombiano invalida el paso 1', () => {
@@ -218,10 +215,12 @@ describe('evaluarPostulacionDirecta', () => {
         ...PREFILL_COMPLETO,
         fullName: null,
         employmentStatus: null,
+        // references: null a propósito — T-0025 dejó de validarlo, así que NO
+        // debe aparecer en pasosIncompletos aunque esté ausente.
         references: null,
       }
       const r = evaluar({ prefill: casiVacio })
-      expect(r.pasosIncompletos).toEqual([1, 2, 4])
+      expect(r.pasosIncompletos).toEqual([1, 2])
     })
   })
 })

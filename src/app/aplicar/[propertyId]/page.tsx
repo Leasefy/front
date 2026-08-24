@@ -18,7 +18,6 @@ import type { Property } from '@/lib/types/property';
 import { StepPersonal } from '@/components/wizard/steps/StepPersonal';
 import { StepEmployment } from '@/components/wizard/steps/StepEmployment';
 import { StepIncome } from '@/components/wizard/steps/StepIncome';
-import { StepReferences } from '@/components/wizard/steps/StepReferences';
 import { StepDocuments } from '@/components/wizard/steps/StepDocuments';
 import { StepReview } from '@/components/wizard/steps/StepReview';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -382,14 +381,11 @@ function WizardStepContent({ onSubmissionComplete }: WizardStepContentProps) {
       {/* Step 3: Income Information */}
       {currentStep === 3 && <StepIncome />}
 
-      {/* Step 4: References */}
-      {currentStep === 4 && <StepReferences />}
+      {/* Step 4: Documents */}
+      {currentStep === 4 && <StepDocuments />}
 
-      {/* Step 5: Documents */}
-      {currentStep === 5 && <StepDocuments />}
-
-      {/* Step 6: Review */}
-      {currentStep === 6 && <StepReview />}
+      {/* Step 5: Review */}
+      {currentStep === 5 && <StepReview />}
     </div>
   );
 }

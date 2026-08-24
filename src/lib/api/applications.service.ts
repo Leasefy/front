@@ -86,7 +86,7 @@ export function mapBackendApplication(ba: BackendApplication): Application {
     id: ba.id,
     propertyId: ba.propertyId,
     status: STATUS_MAP[ba.status] ?? 'draft',
-    currentStep: 6, // Backend applications are always complete
+    currentStep: 5, // Backend applications are always complete (wizard has 5 steps since T-0025)
     personal: {
       fullName: ba.fullName,
       documentType: ba.documentType as Application['personal']['documentType'],
@@ -240,11 +240,16 @@ export const applicationsApi = {
 
   /**
    * Update a single step of an application (NEEDS_INFO / DRAFT flow)
-   * Step 1 → personal, 2 → employment, 3 → income, 4 → references
+   * Step 1 → personal, 2 → employment, 3 → income.
+   *
+   * T-0025 dropped the references step from the wizard — the front no longer
+   * calls `steps/4` (references). The backend keeps accepting it for
+   * back-compat with older/in-flight clients (`contract.md` T-0025 §3.1), but
+   * this client's type no longer offers it.
    */
   async updateStep(
     id: string,
-    step: 1 | 2 | 3 | 4,
+    step: 1 | 2 | 3,
     data: Record<string, unknown>
   ): Promise<void> {
     await apiClient.patch(`/applications/${id}/steps/${step}`, data);

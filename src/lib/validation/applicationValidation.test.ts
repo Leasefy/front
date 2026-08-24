@@ -3,17 +3,18 @@
  * tenant application wizard.
  *
  * Step 2 (employment) keeps only employmentStatus + companyName; step 4
- * (references) drops the personalReferences min-1 rule; step 5 (documents)
- * drops the employmentLetter/incomeProof "one of two" requirement and the
- * payStub/creditReport optional slots. Arrendadores Anteriores and
- * Referencias Laborales keep their min-1 rule untouched.
+ * (documents, since T-0025 dropped the references step) drops the
+ * employmentLetter/incomeProof "one of two" requirement and the
+ * payStub/creditReport optional slots.
+ *
+ * T-0025 removed the references step (Arrendadores Anteriores / Referencias
+ * Laborales) entirely — `validateReferencesStep` no longer exists.
  */
 
 import { describe, it, expect } from 'vitest';
 
 import {
   validateEmploymentStep,
-  validateReferencesStep,
   validateDocumentsStep,
 } from './applicationValidation';
 
@@ -66,56 +67,6 @@ describe('validateEmploymentStep — slimmed to employmentStatus + companyName',
     const result = validateEmploymentStep({});
     expect(result.isValid).toBe(false);
     expect(result.errors.employmentStatus).toBeTruthy();
-  });
-});
-
-describe('validateReferencesStep — Referencias Personales removed', () => {
-  const validLandlord = {
-    name: 'Jorge Pérez',
-    phone: '3125551234',
-    address: 'Calle 100 # 10-10',
-    duration: 24,
-    relationship: 'Arrendador',
-  };
-  const validEmploymentRef = {
-    name: 'Ana Gómez',
-    phone: '3135551234',
-    company: 'Acme SAS',
-    relationship: 'Jefe',
-  };
-
-  it('is valid with only a landlord and an employment reference — no personal reference needed', () => {
-    const result = validateReferencesStep({
-      previousLandlords: [validLandlord],
-      employmentReferences: [validEmploymentRef],
-    });
-    expect(result).toEqual({ isValid: true, errors: {} });
-  });
-
-  it('never produces a personalReferences error — the field no longer exists', () => {
-    const result = validateReferencesStep({
-      previousLandlords: [],
-      employmentReferences: [],
-    });
-    expect(result.errors).not.toHaveProperty('personalReferences');
-  });
-
-  it('still requires at least one previous landlord (min-1 intact)', () => {
-    const result = validateReferencesStep({
-      previousLandlords: [],
-      employmentReferences: [validEmploymentRef],
-    });
-    expect(result.isValid).toBe(false);
-    expect(result.errors.previousLandlords).toBeTruthy();
-  });
-
-  it('still requires at least one employment reference (min-1 intact)', () => {
-    const result = validateReferencesStep({
-      previousLandlords: [validLandlord],
-      employmentReferences: [],
-    });
-    expect(result.isValid).toBe(false);
-    expect(result.errors.employmentReferences).toBeTruthy();
   });
 });
 

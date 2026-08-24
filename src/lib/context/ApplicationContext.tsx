@@ -14,7 +14,6 @@ import {
   PersonalInfo,
   EmploymentInfo,
   IncomeInfo,
-  ReferenceInfo,
   DocumentInfo,
   CoSignerInfo,
   createEmptyApplication,
@@ -74,7 +73,6 @@ interface ApplicationContextValue {
   updatePersonal: (data: Partial<PersonalInfo>) => void;
   updateEmployment: (data: Partial<EmploymentInfo>) => void;
   updateIncome: (data: Partial<IncomeInfo>) => void;
-  updateReferences: (data: Partial<ReferenceInfo>) => void;
   updateDocuments: (data: Partial<DocumentInfo>) => void;
 
   // Co-signer
@@ -438,14 +436,6 @@ export function ApplicationProvider({
     });
   }, []);
 
-  const updateReferences = useCallback((data: Partial<ReferenceInfo>) => {
-    setApplication((prev) => ({
-      ...prev,
-      references: { ...prev.references, ...data },
-      updatedAt: new Date().toISOString(),
-    }));
-  }, []);
-
   const updateDocuments = useCallback((data: Partial<DocumentInfo>) => {
     setApplication((prev) => ({
       ...prev,
@@ -560,7 +550,13 @@ export function ApplicationProvider({
       totalMonthlyIncome: application.income.totalMonthlyIncome,
       monthlyObligations: application.income.monthlyObligations,
       availableForRent: application.income.availableForRent,
-      // References
+      // References — T-0025 dropped the wizard step; `application.references`
+      // is now always the empty seed from `createEmptyApplication` (or a
+      // previous application's data carried by prefill). Left in the one-shot
+      // create/guest payload on purpose: `CreateApplicationDto.references` is
+      // optional and the backend already tolerates/ignores it either way
+      // (`contract.md` T-0025 §2.1) — this is NOT the `steps/4` PATCH call
+      // that was removed below.
       references: application.references as Record<string, unknown>,
       // Co-signer
       hasCoSigner: application.hasCoSigner,
@@ -610,11 +606,6 @@ export function ApplicationProvider({
           totalMonthlyIncome: application.income.totalMonthlyIncome,
           monthlyObligations: application.income.monthlyObligations,
           availableForRent: application.income.availableForRent,
-        });
-
-        // Step 4 — References
-        await applicationsApi.updateStep(existingApplicationId, 4, {
-          references: application.references as Record<string, unknown>,
         });
 
         // Upload any new documents — in update mode we do NOT silently swallow
@@ -767,7 +758,6 @@ export function ApplicationProvider({
         personal: application.personal,
         employment: application.employment,
         income: application.income,
-        references: application.references,
         documents: application.documents,
       },
       { acceptTerms, authorizeVerification }
@@ -817,7 +807,7 @@ export function ApplicationProvider({
   // backend rejects a consent without its version, so the legal text must have
   // loaded before submit is allowed.
   const canSubmit =
-    completedSteps.length >= 5 &&
+    completedSteps.length >= 4 &&
     acceptTerms &&
     authorizeVerification &&
     !!authorizationVersion;
@@ -844,7 +834,6 @@ export function ApplicationProvider({
     updatePersonal,
     updateEmployment,
     updateIncome,
-    updateReferences,
     updateDocuments,
 
     setHasCoSigner,
@@ -932,15 +921,19 @@ function sanitizeDocumentsForStorage(
  * through the step (confirmedSteps) AND its data must still be present. Data
  * presence alone is NOT enough — prefilled data requires user review, so a
  * freshly prefilled wizard starts with zero completed steps.
+ *
+ * T-0025 dropped the references step entirely — the wizard went from 6 steps
+ * to 5. Documents moved from step 5 to step 4; Review moved from step 6 to
+ * step 5.
  */
 function getCompletedSteps(application: Application): number[] {
   const confirmed = application.confirmedSteps ?? [];
   const dataComplete = getDataCompleteSteps(application);
-  const completed = dataComplete.filter((step) => step < 6 && confirmed.includes(step));
+  const completed = dataComplete.filter((step) => step < 5 && confirmed.includes(step));
 
-  // Step 6: Review - all previous steps confirmed with their data intact
-  if (completed.length === 5) {
-    completed.push(6);
+  // Step 5: Review - all previous steps confirmed with their data intact
+  if (completed.length === 4) {
+    completed.push(5);
   }
 
   return completed;
@@ -975,28 +968,17 @@ function getDataCompleteSteps(application: Application): number[] {
     completed.push(3);
   }
 
-  // Step 4: References - Arrendadores Anteriores and Referencias Laborales
-  // both keep their min-1 rule (validateReferencesStep); Referencias
-  // Personales was removed (T-0020) so it no longer counts here.
-  const refs = application.references;
-  if (
-    refs.previousLandlords && refs.previousLandlords.length > 0 &&
-    refs.employmentReferences && refs.employmentReferences.length > 0
-  ) {
-    completed.push(4);
-  }
-
-  // Step 5: Documents - has ID document
+  // Step 4: Documents - has ID document
   if (
     application.documents.idDocument?.fileName ||
     application.documents.idDocument?.file
   ) {
-    completed.push(5);
+    completed.push(4);
   }
 
-  // Step 6: Review - all previous steps completed
-  if (completed.length === 5) {
-    completed.push(6);
+  // Step 5: Review - all previous steps completed
+  if (completed.length === 4) {
+    completed.push(5);
   }
 
   return completed;

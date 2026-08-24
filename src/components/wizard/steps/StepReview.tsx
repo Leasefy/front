@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import { User, Briefcase, CurrencyDollar, Users, FileText, Pencil, Check, WarningCircle } from '@phosphor-icons/react';
+import { User, Briefcase, CurrencyDollar, FileText, Pencil, Check, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,8 @@ import {
 // ============================================================================
 
 /**
- * StepReview - Step 6 of application wizard
+ * StepReview - Step 5 of application wizard (T-0025: was step 6 before the
+ * references step was dropped)
  * Luxterra-style summary with edit capability and terms acceptance
  */
 export function StepReview() {
@@ -33,15 +34,14 @@ export function StepReview() {
     consentText,
     mode,
   } = useApplication();
-  const { personal, employment, income, references, documents } = application;
+  const { personal, employment, income, documents } = application;
 
   // Check if all required steps are complete
   const allStepsComplete =
     isStepCompleted(1) &&
     isStepCompleted(2) &&
     isStepCompleted(3) &&
-    isStepCompleted(4) &&
-    isStepCompleted(5);
+    isStepCompleted(4);
 
   // Get label from options
   const getOptionLabel = (
@@ -50,10 +50,6 @@ export function StepReview() {
   ): string => {
     return options.find((o) => o.value === value)?.label || value || '-';
   };
-
-  // Count references
-  const landlordCount = references.previousLandlords?.length || 0;
-  const employmentRefCount = references.employmentReferences?.length || 0;
 
   const handleTermsChange = useCallback(
     (checked: boolean) => {
@@ -163,31 +159,11 @@ export function StepReview() {
         </div>
       </SummaryCard>
 
-      {/* References Summary */}
-      <SummaryCard
-        icon={<Users className="h-5 w-5 text-muted-foreground" />}
-        title="Referencias"
-        onEdit={() => goToStep(4)}
-      >
-        <div className="space-y-1.5 text-sm text-muted-foreground">
-          <p className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-success" />
-            {landlordCount} arrendador{landlordCount !== 1 ? 'es' : ''} anterior
-            {landlordCount !== 1 ? 'es' : ''}
-          </p>
-          <p className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-success" />
-            {employmentRefCount} referencia{employmentRefCount !== 1 ? 's' : ''} laboral
-            {employmentRefCount !== 1 ? 'es' : ''}
-          </p>
-        </div>
-      </SummaryCard>
-
       {/* Documents Summary */}
       <SummaryCard
         icon={<FileText className="h-5 w-5 text-muted-foreground" />}
         title="Documentos"
-        onEdit={() => goToStep(5)}
+        onEdit={() => goToStep(4)}
       >
         <div className="space-y-1.5 text-sm text-muted-foreground">
           <DocumentStatus
@@ -343,8 +319,7 @@ export function useReviewValidation() {
     isStepCompleted(1) &&
     isStepCompleted(2) &&
     isStepCompleted(3) &&
-    isStepCompleted(4) &&
-    isStepCompleted(5);
+    isStepCompleted(4);
 
   return { allStepsComplete };
 }

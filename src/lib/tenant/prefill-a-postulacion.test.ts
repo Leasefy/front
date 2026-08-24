@@ -10,7 +10,12 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { aplicarPrefill, documentosEnRanuras, identidadEfectiva } from './prefill-a-postulacion';
+import {
+  aplicarPrefill,
+  aplicarIdentidadDelEstudio,
+  documentosEnRanuras,
+  identidadEfectiva,
+} from './prefill-a-postulacion';
 import { createEmptyApplication } from '@/lib/types/application';
 import type {
   ApplicationPrefill,
@@ -183,3 +188,103 @@ describe('documentosEnRanuras — sólo cédula y extracto tienen ranura', () =>
     expect(r).toEqual({});
   });
 });
+
+describe('aplicarIdentidadDelEstudio — flujo de corrección (modo update, NEEDS_INFO)', () => {
+  it('bloquea y sobrescribe los 4 campos de identidad sobre una postulación EXISTENTE', () => {
+    const existente = {
+      ...createEmptyApplication('prop-1'),
+      personal: {
+        fullName: 'Nombre Mal Tipeado',
+        documentType: 'ce' as const,
+        documentNumber: '000000',
+        email: 'otro@ejemplo.co',
+        phone: '3009998877',
+        currentAddress: 'Calle 1 # 2-3',
+      },
+    };
+
+    const app = aplicarIdentidadDelEstudio(existente, {
+      hasPreviousApplication: false,
+      preScoringIdentity: IDENTIDAD,
+    });
+
+    expect(app.personal.fullName).toBe('María Fernanda Ruiz');
+    expect(app.personal.documentType).toBe('cc');
+    expect(app.personal.documentNumber).toBe('1020304050');
+    expect(app.personal.email).toBe('maria@ejemplo.co');
+    expect(app.preScoringIdentityApplied).toBe(true);
+    expect(app.preScoringLockedFields).toEqual(['fullName', 'documentType', 'documentNumber', 'email']);
+    expect(app.preScoringOrderId).toBe('order-1');
+  });
+
+  it('NUNCA usa el fallback a la postulación anterior — sólo el bloque del estudio', () => {
+    const existente = {
+      ...createEmptyApplication('prop-1'),
+      personal: { fullName: 'Lo Que Ya Había', phone: '3001112233', currentAddress: 'Calle Real 100' },
+    };
+
+    // PREVIA trae hasPreviousApplication: true con datos de OTRA persona/postulación.
+    // aplicarIdentidadDelEstudio debe ignorarlos por completo — sólo preScoringIdentity puede ganar.
+    const app = aplicarIdentidadDelEstudio(existente, { ...PREVIA, preScoringIdentity: IDENTIDAD });
+
+    expect(app.personal.fullName).toBe('María Fernanda Ruiz'); // del estudio, no de PREVIA
+    expect(app.personal.phone).toBe('3001112233'); // intacto — PREVIA.phone NUNCA se aplica acá
+    expect(app.personal.currentAddress).toBe('Calle Real 100'); // intacto
+  });
+
+  it('no toca employment/income/references/documents — sólo los 4 campos de identidad', () => {
+    const existente = {
+      ...createEmptyApplication('prop-1'),
+      employment: { employmentStatus: 'employed' as const, companyName: 'Mi Empresa' },
+      income: { monthlySalary: 5_000_000, totalMonthlyIncome: 5_000_000, monthlyObligations: 0, availableForRent: 5_000_000 },
+    };
+
+    const app = aplicarIdentidadDelEstudio(existente, {
+      hasPreviousApplication: false,
+      preScoringIdentity: IDENTIDAD,
+    });
+
+    expect(app.employment).toEqual(existente.employment);
+    expect(app.income).toEqual(existente.income);
+    expect(app.references).toEqual(existente.references);
+    expect(app.documents).toEqual(existente.documents);
+  });
+
+  it('sin preScoringIdentity, la postulación no cambia en absoluto', () => {
+    const existente = {
+      ...createEmptyApplication('prop-1'),
+      personal: { fullName: 'Nombre Real', documentNumber: '123456' },
+    };
+
+    const app = aplicarIdentidadDelEstudio(existente, PREVIA); // PREVIA no trae preScoringIdentity
+
+    expect(app).toBe(existente); // no-op real, ni siquiera un objeto nuevo
+  });
+
+  it('un campo null en la identidad no borra lo que ya había en el formulario', () => {
+    const existente = {
+      ...createEmptyApplication('prop-1'),
+      personal: { fullName: 'Nombre Que Ya Estaba', email: 'correo@ejemplo.co' },
+    };
+
+    const app = aplicarIdentidadDelEstudio(existente, {
+      hasPreviousApplication: false,
+      preScoringIdentity: { ...IDENTIDAD, fullName: null, email: null },
+    });
+
+    expect(app.personal.fullName).toBe('Nombre Que Ya Estaba');
+    expect(app.personal.email).toBe('correo@ejemplo.co');
+    // documentNumber/documentType sí vienen del estudio (no eran null)
+    expect(app.personal.documentNumber).toBe('1020304050');
+  });
+
+  it('no marca prefilledAt — eso es sólo del prefill de postulación anterior en modo create', () => {
+    const existente = createEmptyApplication('prop-1');
+    const app = aplicarIdentidadDelEstudio(existente, {
+      hasPreviousApplication: false,
+      preScoringIdentity: IDENTIDAD,
+    });
+    expect(app.prefilledAt).toBeUndefined();
+  });
+});
+

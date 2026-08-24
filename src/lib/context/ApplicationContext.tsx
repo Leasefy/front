@@ -32,7 +32,7 @@ import { contextLogger } from '@/lib/utils/logger';
 import { applicationsApi } from '@/lib/api/applications.service';
 import { getAccessToken, ApiError } from '@/lib/api/client';
 import { getConsentText, type ConsentTextResponse } from '@/lib/api/legal.service';
-import { aplicarPrefill } from '@/lib/tenant/prefill-a-postulacion';
+import { aplicarPrefill, aplicarIdentidadDelEstudio } from '@/lib/tenant/prefill-a-postulacion';
 
 // ============================================================================
 // Local storage key
@@ -314,6 +314,55 @@ export function ApplicationProvider({
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, propertyId]);
+
+  // ========================================================================
+  // Pre-scoring identity lock — ALSO in update mode (NEEDS_INFO correction)
+  // ========================================================================
+  //
+  // Unlike the effect above, this one is NOT gated to create mode. Contract
+  // T-0001 §8.2 names `PATCH /applications/:id/steps/1` (which this is —
+  // submitApplication's update branch) as a live identity-write vector,
+  // explicitly reachable in `mode === 'update'`. Leaving it unlocked here
+  // let a tenant in the correction flow retype a different name and hit a
+  // 409 IDENTIDAD_NO_COINCIDE with no idea why the front never warned them.
+  //
+  // Deliberately does NOT reuse `aplicarPrefill` — that would also apply
+  // `hasPreviousApplication` data, resurrecting an unrelated previous
+  // application's values over what the tenant is actively correcting in
+  // THIS one. `aplicarIdentidadDelEstudio` touches only the four identity
+  // fields, sourced only from `preScoringIdentity`, never from
+  // `hasPreviousApplication`.
+  //
+  // Race-condition guard: same shape as the effect above — `cancelled` for
+  // unmount, and the functional-update form of `setApplication` so the
+  // identity is layered onto whatever the latest state is, not a stale
+  // closure. There is no pristine/dirty check here on purpose: the identity
+  // is meant to WIN over whatever is currently typed in the locked fields
+  // (contract §3.2) — that is what makes it a correction, not a suggestion.
+
+  useEffect(() => {
+    if (mode !== 'update') return;
+    if (!getAccessToken()) return;
+
+    let cancelled = false;
+
+    applicationsApi.getPrefill()
+      .then((prefill) => {
+        if (cancelled) return;
+        if (!prefill.preScoringIdentity) return;
+
+        setApplication((prev) => aplicarIdentidadDelEstudio(prev, prefill));
+      })
+      .catch(() => {
+        // Identity lock is best-effort here too: the back still enforces on
+        // submit (409 IDENTIDAD_NO_COINCIDE) regardless — this UI lock is UX,
+        // not the control.
+        contextLogger.warn('Pre-scoring identity fetch failed in update mode — form stays editable');
+      });
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, existingApplicationId]);
 
   // ========================================================================
   // Compass helpers

@@ -97,18 +97,39 @@ export interface IdentidadEfectiva {
  * pero con estudio vigente) es exactamente el caso que este task viene a
  * arreglar.
  */
-export function identidadEfectiva(prefill: ApplicationPrefill): IdentidadEfectiva {
+/**
+ * Sólo el bloque `preScoringIdentity`, SIN el fallback a la postulación
+ * anterior. Es lo que necesita el flujo de corrección (modo update): ahí no
+ * hay 'postulación anterior' en el sentido de `aplicarPrefill` — sólo la
+ * postulación que la persona ya presentó y está corrigiendo, y traer datos
+ * de OTRA postulación distinta la pisaría.
+ */
+export function identidadDelEstudio(prefill: ApplicationPrefill): IdentidadEfectiva {
   const identidad = prefill.preScoringIdentity ?? null
-  const previa = prefill.hasPreviousApplication ? prefill : null
 
   return {
-    fullName: identidad?.fullName ?? previa?.fullName ?? null,
-    documentType: identidad?.documentType ?? previa?.documentType ?? null,
-    documentNumber: identidad?.documentNumber ?? previa?.documentNumber ?? null,
-    email: identidad?.email ?? previa?.email ?? null,
+    fullName: identidad?.fullName ?? null,
+    documentType: identidad?.documentType ?? null,
+    documentNumber: identidad?.documentNumber ?? null,
+    email: identidad?.email ?? null,
     lockedFields: new Set(identidad?.lockedFields ?? []),
     vieneDelEstudio: !!identidad,
     orderId: identidad?.orderId ?? null,
+  }
+}
+
+export function identidadEfectiva(prefill: ApplicationPrefill): IdentidadEfectiva {
+  const soloEstudio = identidadDelEstudio(prefill)
+  const previa = prefill.hasPreviousApplication ? prefill : null
+
+  return {
+    fullName: soloEstudio.fullName ?? previa?.fullName ?? null,
+    documentType: soloEstudio.documentType ?? previa?.documentType ?? null,
+    documentNumber: soloEstudio.documentNumber ?? previa?.documentNumber ?? null,
+    email: soloEstudio.email ?? previa?.email ?? null,
+    lockedFields: soloEstudio.lockedFields,
+    vieneDelEstudio: soloEstudio.vieneDelEstudio,
+    orderId: soloEstudio.orderId,
   }
 }
 
@@ -188,6 +209,52 @@ export function aplicarPrefill(prev: Application, prefill: ApplicationPrefill): 
     preScoringIdentityApplied: identidad.vieneDelEstudio,
     previousApplicationDataApplied: !!previa,
     prefilledAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+/**
+ * Aplica SOLO la identidad del estudio de pre-scoring sobre una postulación
+ * que ya existe — el flujo de corrección (modo `update`, `NEEDS_INFO`,
+ * `completar/page.tsx`).
+ *
+ * A diferencia de `aplicarPrefill`, NUNCA usa el fallback a la postulación
+ * anterior (`identidadDelEstudio`, no `identidadEfectiva`): en modo update la
+ * persona está corrigiendo datos que YA escribió en ESTA postulación, y traer
+ * valores de una postulación anterior DISTINTA pisaría lo que está
+ * corrigiendo. Sólo el bloque `preScoringIdentity` puede ganar acá — y sí
+ * gana, campo a campo, sobre lo que ya hay en el formulario: si la persona
+ * tipeó algo que no coincide con el estudio, el campo bloqueado vuelve a
+ * mostrar el valor correcto (`contract.md` T-0001 §3.2, §8.2 — es la misma
+ * postura que ya toma el back en `PATCH /applications/:id/steps/1`).
+ *
+ * No toca `employment`, `income`, `references` ni `documents` — sólo los
+ * cuatro campos de identidad en `personal` — y no marca `prefilledAt`: esa
+ * marca es, a propósito, sólo del prefill de postulación anterior en modo
+ * create (dispara el aviso "revisa tus datos"); acá no hay nada nuevo que
+ * revisar salvo el bloqueo mismo, que ya se explica solo en `LockedField`.
+ *
+ * Sin `preScoringIdentity` en la respuesta, es un no-op real: devuelve `prev`
+ * tal cual, sin crear un objeto nuevo.
+ */
+export function aplicarIdentidadDelEstudio(prev: Application, prefill: ApplicationPrefill): Application {
+  const identidad = identidadDelEstudio(prefill)
+  if (!identidad.vieneDelEstudio) return prev
+
+  return {
+    ...prev,
+    personal: {
+      ...prev.personal,
+      fullName: identidad.fullName ?? prev.personal.fullName,
+      documentType:
+        (identidad.documentType as Application['personal']['documentType']) ??
+        prev.personal.documentType,
+      documentNumber: identidad.documentNumber ?? prev.personal.documentNumber,
+      email: identidad.email ?? prev.personal.email,
+    },
+    preScoringOrderId: identidad.orderId ?? prev.preScoringOrderId,
+    preScoringLockedFields: Array.from(identidad.lockedFields),
+    preScoringIdentityApplied: true,
     updatedAt: new Date().toISOString(),
   }
 }

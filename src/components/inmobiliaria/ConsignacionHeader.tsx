@@ -35,6 +35,16 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 
 interface ConsignacionHeaderProps {
   consignacion: Consignacion;
+  /**
+   * First photo of the linked `Property` (from `properties.mapper.ts` →
+   * `thumbnailUrl`). `consignacion.propertyThumbnail` is never populated by
+   * the back — the consignaciones endpoint doesn't own property photos, the
+   * Property entity does (T-0022 WU-1). Falls back to
+   * `consignacion.propertyThumbnail` only in case the back ever starts
+   * sending it directly; falsy/empty renders the placeholder icon, which is
+   * also the correct state while the property is loading or its fetch failed.
+   */
+  propertyThumbnailUrl?: string;
   onEdit?: () => void;
   onViewPortal?: () => void;
   onChangeStatus?: (status: PropertyAvailability) => void;
@@ -110,6 +120,7 @@ const STATUS_STYLES: Record<ConsignacionStatus, { bg: string; text: string; labe
  */
 export function ConsignacionHeader({
   consignacion,
+  propertyThumbnailUrl,
   onEdit,
   onViewPortal,
   onChangeStatus,
@@ -122,15 +133,17 @@ export function ConsignacionHeader({
   const availability = AVAILABILITY_STYLES[consignacion.availability];
   const status = STATUS_STYLES[consignacion.status];
   const AvailabilityIcon = availability.icon;
+  const thumbnailUrl = propertyThumbnailUrl || consignacion.propertyThumbnail;
+  const canViewPortal = !!consignacion.propertyId;
 
   return (
     <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex flex-col lg:flex-row rounded-xl">
         {/* Image/Thumbnail Section */}
         <div className="relative w-full lg:w-80 xl:w-96 h-48 lg:h-auto shrink-0 bg-surface-muted dark:bg-ink overflow-hidden rounded-t-xl lg:rounded-t-none lg:rounded-l-xl">
-          {consignacion.propertyThumbnail ? (
+          {thumbnailUrl ? (
             <img
-              src={consignacion.propertyThumbnail}
+              src={thumbnailUrl}
               alt={consignacion.propertyTitle}
               className="w-full h-full object-cover"
             />
@@ -229,8 +242,8 @@ export function ConsignacionHeader({
               variant="secondary"
               hideArrow
               onClick={onViewPortal}
-              disabled
-              title={t('inmobiliaria.consignaciones.header.comingSoon')}
+              disabled={!canViewPortal}
+              title={canViewPortal ? undefined : t('inmobiliaria.consignaciones.header.viewOnPortalUnavailable')}
             >
               <Eye className="w-4 h-4" />
               {t('inmobiliaria.consignaciones.header.viewOnPortal')}

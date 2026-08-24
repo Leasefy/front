@@ -42,7 +42,6 @@ describe('postulacionesElegibles', () => {
         'DRAFT',
         'SUBMITTED',
         'UNDER_REVIEW',
-        'PREAPPROVED',
         'APPROVED',
         'REJECTED',
         'NEEDS_INFO',

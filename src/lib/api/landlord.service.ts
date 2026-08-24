@@ -37,13 +37,11 @@ const CANDIDATE_STATUS_MAP: Record<string, LandlordCandidateStatus> = {
   SUBMITTED: 'pending',
   UNDER_REVIEW: 'pending',
   NEEDS_INFO: 'more-info',
-  PREAPPROVED: 'pre-approved',
   APPROVED: 'approved',
   REJECTED: 'rejected',
   WITHDRAWN: 'rejected',
   // Legacy mappings (in case backend uses these)
   PENDING: 'pending',
-  PRE_APPROVED: 'pre-approved',
   MORE_INFO: 'more-info',
 };
 
@@ -158,7 +156,6 @@ function mapLandlordProperty(blp: BackendLandlordProperty): LandlordProperty {
     ...baseProperty,
     candidateCount: blp.candidateCount,
     pendingCount: blp.pendingCount,
-    preApprovedCount: blp.preApprovedCount,
     approvedCount: blp.approvedCount,
     candidates: blp.candidates?.map(mapLandlordCandidate),
   };
@@ -501,7 +498,6 @@ export const landlordApi = {
     // Backend has separate endpoints per action:
     // POST /landlord/applications/:id/approve   { message? }
     // POST /landlord/applications/:id/reject    { reason }
-    // POST /landlord/applications/:id/preapprove { message? }
     // POST /landlord/applications/:id/request-info { message }
     let endpoint: string;
     let body: Record<string, unknown>;
@@ -514,10 +510,6 @@ export const landlordApi = {
       case 'rejected':
         endpoint = `/landlord/applications/${id}/reject`;
         body = { reason: decision.notes || 'Rechazado por el propietario' };
-        break;
-      case 'pre-approved':
-        endpoint = `/landlord/applications/${id}/preapprove`;
-        body = { message: decision.notes };
         break;
       case 'more-info':
         endpoint = `/landlord/applications/${id}/request-info`;

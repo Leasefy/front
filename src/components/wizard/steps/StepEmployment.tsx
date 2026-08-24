@@ -1,12 +1,10 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Briefcase, Buildings, Factory, FileText, Clock, Phone, MapPin } from '@phosphor-icons/react';
+import { Briefcase, Buildings } from '@phosphor-icons/react';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import {
   EMPLOYMENT_STATUS_OPTIONS,
-  CONTRACT_TYPE_OPTIONS,
-  INDUSTRY_OPTIONS,
   type EmploymentStatus,
 } from '@/lib/types/application';
 import {
@@ -25,7 +23,8 @@ import {
 
 /**
  * StepEmployment - Step 2 of application wizard
- * Collects employment information with Luxterra-style inputs
+ * Collects employment information: only employmentStatus + companyName
+ * (T-0020 — the rest of the job-detail fields were removed).
  */
 export function StepEmployment() {
   const { application, updateEmployment, attemptedAdvance } = useApplication();
@@ -61,7 +60,7 @@ export function StepEmployment() {
     [updateEmployment]
   );
 
-  // Handle employment status change - clears job fields if not needed
+  // Handle employment status change - clears company name if not needed
   const handleStatusChange = useCallback(
     (value: string) => {
       const status = value as EmploymentStatus;
@@ -70,18 +69,7 @@ export function StepEmployment() {
 
       updateEmployment({
         employmentStatus: status,
-        // Reset job fields when switching to non-employed status
-        ...(shouldClearFields
-          ? {
-              companyName: undefined,
-              industry: undefined,
-              position: undefined,
-              contractType: undefined,
-              timeAtJob: undefined,
-              employerPhone: undefined,
-              employerAddress: undefined,
-            }
-          : {}),
+        ...(shouldClearFields ? { companyName: undefined } : {}),
       });
     },
     [updateEmployment]
@@ -161,142 +149,6 @@ export function StepEmployment() {
               hasError={!!getError('companyName')}
             />
           </FormField>
-
-          {/* Industry and Position - Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField
-              label="Industria"
-              htmlFor="industry"
-              error={getError('industry')}
-              required
-            >
-              <LightSelect
-                id="industry"
-                value={employment.industry || ''}
-                onChange={(value) => handleInputChange('industry', value)}
-                onBlur={() => handleBlur('industry')}
-                options={INDUSTRY_OPTIONS}
-                placeholder="Seleccionar"
-                icon={<Factory className="h-4 w-4" />}
-                hasError={!!getError('industry')}
-              />
-            </FormField>
-
-            <FormField
-              label="Cargo"
-              htmlFor="position"
-              error={getError('position')}
-              required
-            >
-              <LightInput
-                id="position"
-                placeholder="Tu cargo actual"
-                value={employment.position || ''}
-                onChange={(e) => handleInputChange('position', e.target.value)}
-                onBlur={() => handleBlur('position')}
-                icon={<FileText className="h-4 w-4" />}
-                hasError={!!getError('position')}
-              />
-            </FormField>
-          </div>
-
-          {/* Contract TextT and Time at Job - Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {employment.employmentStatus === 'employed' && (
-              <FormField
-                label="Tipo de contrato"
-                htmlFor="contractType"
-                error={getError('contractType')}
-                required
-              >
-                <LightSelect
-                  id="contractType"
-                  value={employment.contractType || ''}
-                  onChange={(value) => handleInputChange('contractType', value)}
-                  onBlur={() => handleBlur('contractType')}
-                  options={CONTRACT_TYPE_OPTIONS}
-                  placeholder="Seleccionar"
-                  hasError={!!getError('contractType')}
-                />
-              </FormField>
-            )}
-
-            <FormField
-              label="Antigüedad en el trabajo"
-              htmlFor="timeAtJob"
-              error={getError('timeAtJob')}
-              hint="En meses"
-            >
-              <LightInput
-                id="timeAtJob"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                placeholder="Ej: 12"
-                value={employment.timeAtJob ?? ''}
-                onChange={(e) => {
-                  const digits = e.target.value.replace(/\D/g, '');
-                  handleInputChange(
-                    'timeAtJob',
-                    digits ? parseInt(digits, 10) : undefined
-                  );
-                }}
-                onBlur={() => handleBlur('timeAtJob')}
-                icon={<Clock className="h-4 w-4" />}
-                hasError={!!getError('timeAtJob')}
-                className="max-w-[180px]"
-              />
-            </FormField>
-          </div>
-
-          {/* Employer Contact - Optional */}
-          <div className="border-t border-border pt-6">
-            <h3 className="text-sm font-medium text-foreground mb-1">
-              Contacto del empleador
-            </h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Opcional - para verificación de empleo
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField
-              label="Teléfono del empleador"
-              htmlFor="employerPhone"
-              error={getError('employerPhone')}
-            >
-              <LightInput
-                id="employerPhone"
-                type="tel"
-                placeholder="3XX XXX XXXX"
-                value={employment.employerPhone || ''}
-                onChange={(e) =>
-                  handleInputChange(
-                    'employerPhone',
-                    e.target.value.replace(/\D/g, '').slice(0, 10)
-                  )
-                }
-                onBlur={() => handleBlur('employerPhone')}
-                icon={<Phone className="h-4 w-4" />}
-                hasError={!!getError('employerPhone')}
-              />
-            </FormField>
-
-            <FormField
-              label="Dirección del empleador"
-              htmlFor="employerAddress"
-              error={getError('employerAddress')}
-            >
-              <LightInput
-                id="employerAddress"
-                placeholder="Ciudad, dirección"
-                value={employment.employerAddress || ''}
-                onChange={(e) => handleInputChange('employerAddress', e.target.value)}
-                onBlur={() => handleBlur('employerAddress')}
-                icon={<MapPin className="h-4 w-4" />}
-                hasError={!!getError('employerAddress')}
-              />
-            </FormField>
-          </div>
         </>
       )}
     </div>

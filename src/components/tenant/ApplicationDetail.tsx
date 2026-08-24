@@ -35,7 +35,6 @@ import type { Property } from '@/lib/types/property';
 const STATUS_EXPLANATIONS: Record<string, string> = {
   submitted: 'Tu aplicación ha sido recibida y está en cola para revisión.',
   under_review: 'El propietario está revisando tu aplicación.',
-  pre_approved: '¡El propietario está interesado! Te contactarán pronto.',
   approved: '¡Felicitaciones! Tu aplicación ha sido aprobada.',
   rejected: 'Lo sentimos, tu aplicación no fue aprobada esta vez.',
   withdrawn: 'Has retirado esta aplicación.',
@@ -226,7 +225,7 @@ export function ApplicationDetail({
                       status === 'approved' && 'bg-success',
                       status === 'rejected' && 'bg-danger',
                       status === 'withdrawn' && 'bg-fg-subtle',
-                      ['submitted', 'under_review', 'pre_approved'].includes(status) && 'bg-primary'
+                      ['submitted', 'under_review'].includes(status) && 'bg-primary'
                     )}
                     style={{ width: `${progress}%` }}
                   />

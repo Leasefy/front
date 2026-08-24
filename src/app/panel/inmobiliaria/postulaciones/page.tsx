@@ -6,7 +6,6 @@ import {
   ClipboardText,
   Hourglass,
   WarningCircle,
-  SealCheck,
   CheckCircle,
   XCircle,
   MagnifyingGlass,
@@ -35,9 +34,6 @@ const STATUS_CONFIG: Record<
   DRAFT:           { label: 'Borrador',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
   SUBMITTED:       { label: 'Postulado',         bg: 'bg-primary-soft',   text: 'text-primary' },
   UNDER_REVIEW:    { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
-  // "Pre-aprobado" no significa nada para quien lo lee (ver docs/VOCABULARIO.md):
-  // mientras el backend siga emitiendo PREAPPROVED, se muestra como "En revisión".
-  PREAPPROVED:     { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
   APPROVED:        { label: 'Aprobado',          bg: 'bg-success-soft',   text: 'text-success' },
   REJECTED:        { label: 'Rechazado',         bg: 'bg-danger-soft',    text: 'text-danger' },
   NEEDS_INFO:      { label: 'Pide info',         bg: 'bg-warning-soft',   text: 'text-warning' },
@@ -56,7 +52,7 @@ const SCORE_COLORS: Record<string, string> = {
 
 // ─── Clickable stat tiles (same visual language as propiedades StatTile) ──────
 
-type FilterKey = 'ALL' | 'IN_REVIEW' | 'NEEDS_INFO' | 'PREAPPROVED' | 'APPROVED' | 'REJECTED'
+type FilterKey = 'ALL' | 'IN_REVIEW' | 'NEEDS_INFO' | 'APPROVED' | 'REJECTED'
 
 const TILE_TONES = {
   neutral: 'bg-surface-muted text-fg-muted',
@@ -76,7 +72,6 @@ const FILTERS: {
   { key: 'ALL',         label: 'Total',         tone: 'neutral', icon: ClipboardText, statuses: null },
   { key: 'IN_REVIEW',   label: 'En revisión',   tone: 'info',    icon: Hourglass,     statuses: ['SUBMITTED', 'UNDER_REVIEW'] },
   { key: 'NEEDS_INFO',  label: 'Pide info',     tone: 'warn',    icon: WarningCircle, statuses: ['NEEDS_INFO'] },
-  { key: 'PREAPPROVED', label: 'Pre-aprobadas', tone: 'neutral', icon: SealCheck,     statuses: ['PREAPPROVED'] },
   { key: 'APPROVED',    label: 'Aprobadas',     tone: 'ok',      icon: CheckCircle,   statuses: ['APPROVED'] },
   { key: 'REJECTED',    label: 'Rechazadas',    tone: 'bad',     icon: XCircle,       statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED'] },
 ];

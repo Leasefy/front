@@ -46,7 +46,7 @@ import type {
 // Props
 // ============================================================================
 
-export type CandidateAction = 'preapprove' | 'approve' | 'reject' | 'request-info';
+export type CandidateAction = 'approve' | 'reject' | 'request-info';
 
 interface CandidateDrawerProps {
   candidate: LandlordCandidate | null;
@@ -69,7 +69,6 @@ const STATUS_LABELS: Record<LandlordApplicationStatus, string> = {
   DRAFT: 'Borrador',
   SUBMITTED: 'Postulado',
   UNDER_REVIEW: 'En revisión',
-  PREAPPROVED: 'Pre-aprobado',
   APPROVED: 'Aprobado',
   REJECTED: 'Rechazado',
   NEEDS_INFO: 'Pide info',
@@ -287,10 +286,10 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
   const recommendation = evaluation?.recommendation ? RECOMMENDATION_LABELS[evaluation.recommendation] : null;
 
   const requiresManualReview = evaluation?.requires_manual_review === true;
-  const canPreapprove = candidate.status === 'SUBMITTED' || candidate.status === 'UNDER_REVIEW';
-  const canApprove = candidate.status === 'PREAPPROVED' && !requiresManualReview;
-  const canReject = canPreapprove || candidate.status === 'PREAPPROVED';
-  const canRequestInfo = canPreapprove;
+  const isOpenForDecision = candidate.status === 'SUBMITTED' || candidate.status === 'UNDER_REVIEW';
+  const canApprove = candidate.status === 'UNDER_REVIEW' && !requiresManualReview;
+  const canReject = isOpenForDecision;
+  const canRequestInfo = isOpenForDecision;
 
   return (
     <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -770,12 +769,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
           <section className="rounded-xl border border-border bg-card p-5 space-y-3">
             <h3 className="font-semibold text-sm text-foreground">Acciones</h3>
             <div className="grid grid-cols-2 gap-2">
-              {canPreapprove && (
-                <Button hideArrow onClick={() => onAction('preapprove', candidate)}>
-                  Pre-aprobar
-                </Button>
-              )}
-              {candidate.status === 'PREAPPROVED' && (
+              {candidate.status === 'UNDER_REVIEW' && (
                 // success/green: Cadence Button has no success variant (logged gap) — real
                 // Button keeps all DS states; only the fill is overridden for the missing tone.
                 <Button
@@ -804,7 +798,7 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
                   Rechazar
                 </Button>
               )}
-              {!canPreapprove && !canApprove && !canReject && !canRequestInfo && (
+              {!isOpenForDecision && !canApprove && !canReject && !canRequestInfo && (
                 <p className="col-span-2 text-xs text-fg-muted text-center py-2">
                   No hay acciones disponibles para este estado.
                 </p>

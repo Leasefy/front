@@ -12,7 +12,7 @@ export interface BackendCandidate {
   applicationId: string;
   propertyId: string;
   propertyTitle?: string;
-  status: string; // PENDING, PRE_APPROVED, APPROVED, REJECTED, MORE_INFO, WITHDRAWN
+  status: string; // PENDING, APPROVED, REJECTED, MORE_INFO, WITHDRAWN
   fullName: string;
   photo?: string;
   age: number;
@@ -122,7 +122,6 @@ export interface BackendLandlordProperty {
   images?: { id: string; url: string; order: number }[];
   candidateCount: number;
   pendingCount: number;
-  preApprovedCount: number;
   approvedCount: number;
   candidates?: BackendCandidate[];
   createdAt?: string;
@@ -251,7 +250,7 @@ export interface BackendCandidateNote {
 // ============================================================================
 
 export interface CandidateDecisionDto {
-  decision: 'pre-approved' | 'approved' | 'rejected' | 'more-info';
+  decision: 'approved' | 'rejected' | 'more-info';
   notes?: string;
   conditions?: string[];
 }

@@ -146,7 +146,7 @@ export default function AplicacionesPage() {
   const router = useRouter();
   // Statuses where scheduling a property visit still makes sense.
   const canScheduleVisit = (s: string) =>
-    ['submitted', 'under_review', 'needs_info', 'pre_approved'].includes(s);
+    ['submitted', 'under_review', 'needs_info'].includes(s);
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
   const { active: activeApplications, completed: completedApplications, contractsByApp, isLoading: isAppsLoading, error, errorCrudo, refetch: recargarPostulaciones } = useTenantApplications();
 
@@ -166,25 +166,19 @@ export default function AplicacionesPage() {
       label: t('applications.steps.submitted'),
       color: 'bg-primary-soft text-primary',
       icon: Clock,
-      progress: 25
+      progress: 20
     },
     under_review: {
       label: t('applications.steps.review'),
       color: 'bg-warning-soft text-warning',
       icon: Clock,
-      progress: 50
+      progress: 60
     },
     needs_info: {
       label: locale === 'es' ? 'Info. requerida' : 'Info required',
       color: 'bg-warning-soft text-warning',
       icon: Warning,
       progress: 30
-    },
-    pre_approved: {
-      label: locale === 'es' ? 'Pre-aprobada' : 'Pre-approved',
-      color: 'bg-success-soft text-success',
-      icon: CheckCircle,
-      progress: 75
     },
     approved: {
       label: t('applications.steps.approved'),
@@ -515,7 +509,7 @@ export default function AplicacionesPage() {
                                         "h-full rounded-full transition-all duration-500",
                                         application.status === 'rejected' || application.status === 'withdrawn' || application.status === 'contract_failed'
                                           ? "bg-danger"
-                                          : application.status === 'approved' || application.status === 'pre_approved'
+                                          : application.status === 'approved'
                                           ? "bg-success"
                                           : application.status === 'needs_info'
                                           ? "bg-warning"
@@ -542,7 +536,6 @@ export default function AplicacionesPage() {
                                         {application.status === 'submitted' && (locale === 'es' ? 'Esperando revisión' : 'Waiting for review')}
                                         {application.status === 'under_review' && (locale === 'es' ? 'En evaluación de documentos' : 'Document evaluation')}
                                         {application.status === 'needs_info' && (locale === 'es' ? '⚠ Completar información solicitada' : '⚠ Complete requested information')}
-                                        {application.status === 'pre_approved' && (locale === 'es' ? 'Agendar visita' : 'Schedule visit')}
                                         {application.status === 'approved' && nextStepForApproved(contractsByApp[application.id], locale)}
                                         {application.status === 'rejected' && (locale === 'es' ? 'Proceso cerrado — explorá alternativas' : 'Process closed — explore alternatives')}
                                         {application.status === 'withdrawn' && (locale === 'es' ? 'Postulación cerrada' : 'Application closed')}
@@ -650,7 +643,7 @@ export default function AplicacionesPage() {
                                         "h-full rounded-full transition-all duration-500",
                                         application.status === 'rejected' || application.status === 'withdrawn' || application.status === 'contract_failed'
                                           ? "bg-danger"
-                                          : application.status === 'approved' || application.status === 'pre_approved'
+                                          : application.status === 'approved'
                                           ? "bg-success"
                                           : application.status === 'needs_info'
                                           ? "bg-warning"

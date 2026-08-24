@@ -56,8 +56,6 @@ const STATUS_MAP: Record<string, Application['status']> = {
   UNDER_REVIEW: 'under_review',
   INFO_REQUESTED: 'under_review',
   NEEDS_INFO: 'under_review',
-  PREAPPROVED: 'under_review',
-  PRE_APPROVED: 'under_review',
   APPROVED: 'approved',
   REJECTED: 'rejected',
   WITHDRAWN: 'rejected',
@@ -69,8 +67,6 @@ const STATUS_TO_TENANT_MAP: Record<string, TenantApplicationStatus> = {
   UNDER_REVIEW: 'under_review',
   INFO_REQUESTED: 'needs_info',
   NEEDS_INFO: 'needs_info',
-  PREAPPROVED: 'pre_approved',
-  PRE_APPROVED: 'pre_approved',
   APPROVED: 'approved',
   REJECTED: 'rejected',
   WITHDRAWN: 'withdrawn',
@@ -367,14 +363,6 @@ export const landlordApplicationsApi = {
   async getDetail(applicationId: string): Promise<LandlordApplicationDetail> {
     return apiClient.get<LandlordApplicationDetail>(
       `/landlord/applications/${applicationId}`
-    );
-  },
-
-  /** POST /landlord/applications/:id/preapprove */
-  async preapprove(applicationId: string, data?: object): Promise<void> {
-    await apiClient.post(
-      `/landlord/applications/${applicationId}/preapprove`,
-      data ?? {}
     );
   },
 

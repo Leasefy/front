@@ -15,7 +15,6 @@ describe('isActiveApplicationStatus', () => {
     'SUBMITTED',
     'UNDER_REVIEW',
     'NEEDS_INFO',
-    'PREAPPROVED',
     'APPROVED',
     'CONTRACT_FAILED',
   ])('%s bloquea re-postular (activa)', (status) => {

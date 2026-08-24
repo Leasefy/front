@@ -31,24 +31,20 @@ import { Spinner } from '@/components/ui/spinner';
 
 function mapDocumentsToDocumentInfo(docs: BackendDocument[]): Partial<DocumentInfo> {
   const result: Partial<DocumentInfo> = {};
-  // Backend emits canonical UPPER_SNAKE types (ID_DOCUMENT, EMPLOYMENT_LETTER, etc.)
-  // plus some legacy lowercase variants. Support both.
+  // Backend emits canonical UPPER_SNAKE types (ID_DOCUMENT, BANK_STATEMENT, etc.)
+  // plus some legacy lowercase variants. Support both. Only cédula and
+  // extracto bancario have a slot in `DocumentInfo` since T-0020 — a legacy
+  // document of any other type (EMPLOYMENT_LETTER, INCOME_PROOF, PAY_STUB,
+  // CREDIT_REPORT) has nowhere to go and is silently ignored, same as an
+  // unrecognized type.
   const typeMap: Record<string, keyof DocumentInfo> = {
     ID_DOCUMENT: 'idDocument',
     BANK_STATEMENT: 'bankStatement',
     BANK_STATEMENTS: 'bankStatement', // legacy fallback
-    INCOME_PROOF: 'incomeProof',
-    EMPLOYMENT_LETTER: 'employmentLetter',
-    PAY_STUB: 'payStub',
-    CREDIT_REPORT: 'creditReport',
     // Legacy lowercase
     id_document: 'idDocument',
     bank_statement: 'bankStatement',
     bank_statements: 'bankStatement', // legacy fallback
-    income_proof: 'incomeProof',
-    employment_letter: 'employmentLetter',
-    pay_stub: 'payStub',
-    credit_report: 'creditReport',
   };
   for (const doc of docs) {
     const key = typeMap[doc.type];

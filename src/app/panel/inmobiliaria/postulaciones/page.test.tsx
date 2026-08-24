@@ -209,13 +209,13 @@ describe('PostulacionesPage', () => {
     expect(container.textContent).toContain('Pide info')
   })
 
-  it('renders the six clickable stat tiles with their counts', async () => {
+  it('renders the five clickable stat tiles with their counts', async () => {
     getAllCandidatesMock.mockResolvedValue(RESPONSE)
 
     await renderPage()
 
     const allTiles = tiles()
-    expect(allTiles.length).toBe(6)
+    expect(allTiles.length).toBe(5)
 
     const total = allTiles.find((b) => b.textContent?.includes('Total'))
     expect(total?.textContent).toContain('2')

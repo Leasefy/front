@@ -35,9 +35,6 @@ const STATUS_CONFIG: Record<
   DRAFT:           { label: 'Borrador',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
   SUBMITTED:       { label: 'Postulado',         bg: 'bg-primary-soft',   text: 'text-primary' },
   UNDER_REVIEW:    { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
-  // "Pre-aprobado" no significa nada para quien lo lee (ver docs/VOCABULARIO.md):
-  // mientras el backend siga emitiendo PREAPPROVED, se muestra como "En revisión".
-  PREAPPROVED:     { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
   APPROVED:        { label: 'Aprobado',          bg: 'bg-success-soft',   text: 'text-success' },
   REJECTED:        { label: 'Rechazado',         bg: 'bg-danger-soft',    text: 'text-danger' },
   NEEDS_INFO:      { label: 'Pide info',         bg: 'bg-warning-soft',   text: 'text-warning' },
@@ -55,7 +52,6 @@ const STATUS_VARIANT: Record<
   DRAFT: 'secondary',
   SUBMITTED: 'default',
   UNDER_REVIEW: 'default',
-  PREAPPROVED: 'secondary',
   APPROVED: 'success',
   REJECTED: 'destructive',
   NEEDS_INFO: 'warning',
@@ -72,7 +68,7 @@ const SCORE_COLORS: Record<string, string> = {
 
 // ─── Action modal ─────────────────────────────────────────────────────────────
 
-type ActionType = 'preapprove' | 'approve' | 'reject' | 'request-info';
+type ActionType = 'approve' | 'reject' | 'request-info';
 
 type ConfirmVariant = 'default' | 'destructive';
 
@@ -80,18 +76,6 @@ const ACTION_CONFIG: Record<
   ActionType,
   { title: string; label: string; placeholder: string; required: boolean; confirmLabel: string; confirmVariant: ConfirmVariant }
 > = {
-  // "Pre-aprobar" es palabra muerta (docs/VOCABULARIO.md): *"pero preaprobar
-  // qué"*. El estado que produce ya se muestra como "En revisión" — la acción
-  // que lo produce ahora dice lo mismo, así el par acción/estado concuerda.
-  // El identificador `preapprove` no cambia: es contrato con el backend.
-  preapprove: {
-    title: 'Pasar candidato a revisión',
-    label: 'Mensaje al candidato (opcional)',
-    placeholder: 'Mensaje que verá el candidato...',
-    required: false,
-    confirmLabel: 'Pasar a revisión',
-    confirmVariant: 'default',
-  },
   approve: {
     title: 'Aprobar candidato',
     label: 'Mensaje al candidato (opcional)',
@@ -220,18 +204,11 @@ function CandidateActions({
 }) {
   const { status } = candidate;
 
-  if (status === 'SUBMITTED' || status === 'UNDER_REVIEW') {
+  // SUBMITTED cannot legally move to APPROVED (application-state-machine.ts) — no
+  // "Aprobar" chip here. Same affordances as before, minus the deleted preapprove chip.
+  if (status === 'SUBMITTED') {
     return (
       <div className="flex items-center gap-1 flex-wrap">
-        <Button
-          variant="ghost"
-          size="sm"
-          hideArrow
-          onClick={() => onAction('preapprove', candidate)}
-          className={cn(COARSE_HIT_AREA, 'bg-primary-soft text-primary hover:bg-primary-soft/80 whitespace-nowrap')}
-        >
-          Pasar a revisión
-        </Button>
         <Button
           variant="ghost"
           size="sm"
@@ -254,9 +231,9 @@ function CandidateActions({
     );
   }
 
-  if (status === 'PREAPPROVED') {
+  if (status === 'UNDER_REVIEW') {
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 flex-wrap">
         <Button
           variant="ghost"
           size="sm"
@@ -265,6 +242,15 @@ function CandidateActions({
           className={cn(COARSE_HIT_AREA, 'bg-success-soft text-success hover:bg-success-soft/80 whitespace-nowrap')}
         >
           Aprobar
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          hideArrow
+          onClick={() => onAction('request-info', candidate)}
+          className={cn(COARSE_HIT_AREA, 'bg-warning-soft text-warning hover:bg-warning-soft/80 whitespace-nowrap')}
+        >
+          Pedir info
         </Button>
         <Button
           variant="ghost"
@@ -473,9 +459,6 @@ function CandidatosContent() {
     const { type, candidate } = actionModal;
     const id = candidate.id;
     switch (type) {
-      case 'preapprove':
-        await landlordApplicationsApi.preapprove(id, text ? { message: text } : {});
-        break;
       case 'approve':
         await landlordApplicationsApi.approve(id, text ? { message: text } : {});
         break;
@@ -490,9 +473,8 @@ function CandidatosContent() {
   }, [actionModal, fetchData]);
 
   // Stats — solo dos destinos posibles: en revisión o aprobado (docs/VOCABULARIO.md).
-  // PREAPPROVED cuenta como "en revisión": no es un estado que el usuario deba distinguir.
   const activeCount   = candidates.filter(
-    (c) => c.status === 'SUBMITTED' || c.status === 'UNDER_REVIEW' || c.status === 'PREAPPROVED',
+    (c) => c.status === 'SUBMITTED' || c.status === 'UNDER_REVIEW',
   ).length;
   const approvedCount = candidates.filter((c) => c.status === 'APPROVED').length;
 

@@ -67,6 +67,7 @@ export function WizardShell({
   const router = useRouter();
 
   const {
+    application,
     currentStep,
     totalSteps,
     completedSteps,
@@ -84,6 +85,14 @@ export function WizardShell({
     showPrefillNotice,
     dismissPrefillNotice,
   } = useApplication();
+
+  // La identidad del estudio es ortogonal a los datos de una postulación
+  // anterior — el aviso no puede mentir en ninguna de las dos combinaciones.
+  const prefillNoticeCopy = application.preScoringIdentityApplied
+    ? application.previousApplicationDataApplied
+      ? 'Tu nombre y documento vienen de tu estudio de arrendamiento vigente y no se pueden editar. El resto de tus datos los precargamos de tu postulación anterior — revisa cada paso antes de enviar.'
+      : 'Tu nombre y documento vienen de tu estudio de arrendamiento vigente y no se pueden editar. Revisa el resto de los datos antes de enviar.'
+    : 'Precargamos los datos de tu postulación anterior. Revisa cada paso antes de enviar.';
 
   const currentStepConfig = WIZARD_STEPS[currentStep - 1];
 
@@ -305,8 +314,7 @@ export function WizardShell({
               >
                 <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                 <p className="flex-1 text-sm text-fg">
-                  Precargamos los datos de tu postulación anterior. Revisa cada paso
-                  antes de enviar.
+                  {prefillNoticeCopy}
                 </p>
                 <button
                   type="button"

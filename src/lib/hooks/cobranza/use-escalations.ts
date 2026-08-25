@@ -29,6 +29,8 @@ export interface Escalation {
   id: string
   debtor_id: string
   debtor_id_masked?: string
+  /** Nombre del deudor — lo manda el agente desde 75a2e7a0; null si el deudor fue borrado. */
+  debtor_name?: string | null
   call_id?: string | null
   reason: string
   urgency: UrgencyLevel

@@ -6756,6 +6756,12 @@
           "debtor_id": {
             "type": "string"
           },
+          "debtor_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "call_id": {
             "type": [
               "string",
@@ -6790,6 +6796,7 @@
         "required": [
           "id",
           "debtor_id",
+          "debtor_name",
           "call_id",
           "urgency",
           "status",
@@ -6868,6 +6875,12 @@
           "debtor_id": {
             "type": "string"
           },
+          "debtor_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "linked_call_id": {
             "type": [
               "string",
@@ -6920,6 +6933,7 @@
           "status",
           "reason",
           "debtor_id",
+          "debtor_name",
           "linked_call_id",
           "assignee_user_id",
           "assignee_email",

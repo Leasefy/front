@@ -19,6 +19,7 @@ import { useMemo } from 'react'
 import { Clock, UserPlus, CheckCircle, Hand } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
+import { escalationReasonLabel } from '@/lib/cobranza/call-vocab'
 import { Button } from '@/components/ui'
 import type { Escalation } from '@/lib/hooks/cobranza/use-escalations'
 import type { UrgencyLevel } from '@/lib/constants/cobranza/escalation-templates'
@@ -88,7 +89,10 @@ export function EscalationCard({
   const { t, locale } = useI18n()
 
   const urgencyClass = URGENCY_TOKEN[escalation.urgency]
-  const debtorLabel = escalation.debtor_id_masked ?? escalation.debtor_id
+  // El nombre de la persona; el UUID queda de último recurso para deudores
+  // borrados (una traza sin nombre sigue siendo mejor que una tarjeta vacía).
+  const debtorLabel =
+    escalation.debtor_name ?? escalation.debtor_id_masked ?? escalation.debtor_id
   const isAssignedToMe =
     currentUserEmail !== null && escalation.assignee_user_id === currentUserEmail
   const isUnassigned = escalation.assignee_user_id === null
@@ -132,7 +136,8 @@ export function EscalationCard({
           {debtorLabel}
         </p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          {truncate(escalation.reason, 80)}
+          {/* La razón en palabras, no el slug (forced_transition_escalate_human). */}
+          {escalationReasonLabel(escalation.reason) ?? truncate(escalation.reason, 80)}
         </p>
         {escalation.assignee_email && (
           <p className="text-[11px] text-muted-foreground italic">

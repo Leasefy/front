@@ -9632,6 +9632,7 @@ export interface components {
         CobranzaEscalationCard: {
             id: string;
             debtor_id: string;
+            debtor_name: string | null;
             call_id: string | null;
             urgency: string;
             status: string;
@@ -9657,6 +9658,7 @@ export interface components {
             reason: string;
             state_trace_json?: unknown;
             debtor_id: string;
+            debtor_name: string | null;
             linked_call_id: string | null;
             assignee_user_id: string | null;
             assignee_email: string | null;

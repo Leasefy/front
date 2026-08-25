@@ -3,12 +3,17 @@
 /**
  * LlamadasTab — Phase 31 plan 31-09.
  *
- * md+: table of calls; sm: stacked card list. Row click → call detail page.
+ * md+: table of calls; sm: stacked card list.
+ *
+ * Row click → CAJÓN con el detalle completo (LlamadaDetalleSheet), no la
+ * página. Pedido de Nico 2026-08-25: navegar a la página perdía el contexto
+ * del caso, y en dev el primer clic moría compilando la ruta («da un error y
+ * no pasa nada»). La página completa sigue existiendo — el pie del cajón la
+ * enlaza.
  */
 
 import * as React from 'react'
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 import { useI18n } from '@/lib/i18n'
 import { useDebtorCalls } from '@/lib/hooks/cobranza/use-debtor-calls'
@@ -24,6 +29,7 @@ import {
 } from '@/components/ui'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
+import { LlamadaDetalleSheet } from '@/components/inmobiliaria/cobranza/LlamadaDetalleSheet'
 
 void React
 
@@ -42,8 +48,11 @@ function formatDuration(sec: number | null): string {
 
 export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
   const { t, locale } = useI18n()
-  const router = useRouter()
   const { data, isLoading, error, refetch } = useDebtorCalls({ debtorId })
+
+  // La llamada abierta en el cajón. Vive ANTES de los early-return: un hook
+  // detrás de un `return` condicional rompe el orden de hooks de React.
+  const [llamadaAbierta, setLlamadaAbierta] = useState<string | null>(null)
 
   // Realtime-driven refetch (D-31-18 single refetch per event).
   useEffect(() => {
@@ -111,9 +120,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
     )
   }
 
-  const navigate = (callId: string) => {
-    router.push(`/panel/inmobiliaria/ai/cobranza/llamadas/${callId}`)
-  }
+  const abrir = (callId: string) => setLlamadaAbierta(callId)
 
   return (
     <>
@@ -143,11 +150,11 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
             {pageItems.map((c) => (
               <TableRow
                 key={c.id}
-                role="link"
+                role="button"
                 tabIndex={0}
-                onClick={() => navigate(c.id)}
+                onClick={() => abrir(c.id)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') navigate(c.id)
+                  if (e.key === 'Enter') abrir(c.id)
                 }}
                 className="hover:bg-surface-muted cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
               >
@@ -182,7 +189,7 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
           <li key={c.id}>
             <button
               type="button"
-              onClick={() => navigate(c.id)}
+              onClick={() => abrir(c.id)}
               className="w-full text-left rounded-sm border border-border bg-surface px-3 py-2"
             >
               <p className="text-xs text-fg-muted">
@@ -199,6 +206,11 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
           </li>
         ))}
       </ul>
+
+      <LlamadaDetalleSheet
+        callId={llamadaAbierta}
+        onClose={() => setLlamadaAbierta(null)}
+      />
 
       {/* Pie único para las dos vistas: sólo si hay más de una página. */}
       {shouldPaginate && (

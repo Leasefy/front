@@ -18,7 +18,6 @@ import CallAudioPlayer from '@/components/inmobiliaria/cobranza/call/CallAudioPl
 import CallTranscript from '@/components/inmobiliaria/cobranza/call/CallTranscript'
 import CallQAPanel from '@/components/inmobiliaria/cobranza/call/CallQAPanel'
 import CallStateTracePanel from '@/components/inmobiliaria/cobranza/call/CallStateTracePanel'
-import CallCostPanel from '@/components/inmobiliaria/cobranza/call/CallCostPanel'
 import CallSummaryPanel from '@/components/inmobiliaria/cobranza/call/CallSummaryPanel'
 import {
   callOutcomeLabel,
@@ -339,7 +338,12 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
           <CallSummaryPanel summary={data.summary} />
           <CallQAPanel qa={data.qa} />
           <CallStateTracePanel stateTrace={data.stateTrace} />
-          <CallCostPanel cost={data.cost} />
+          {/*
+            Costos: FUERA del panel por decisión de producto (Nico, 2026-08-24
+            — «no debemos mostrar los costos a los usuarios»). Lo que cuesta la
+            llamada es dato interno de Leasefy, no de la inmobiliaria. El API
+            sigue exponiendo `cost` para uso interno; solo se quita la tarjeta.
+          */}
         </aside>
       </div>
     </main>

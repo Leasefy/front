@@ -29,7 +29,6 @@
  */
 
 import { useMemo } from 'react'
-import Link from 'next/link'
 import {
   Briefcase,
   ChatCircleText,
@@ -39,7 +38,6 @@ import {
   FileText,
   Handshake,
   PhoneCall,
-  Scales,
   TrendDown,
   TrendUp,
   Warning,
@@ -47,13 +45,10 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
-import { Button } from '@/components/ui'
 import { KpiCard } from '@leasefy/cadence'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { useRecovery } from '@/lib/hooks/cobranza/use-recovery'
 import type { CarteraOverviewResponse } from '@/lib/hooks/cobranza/use-cartera-overview'
-
-const BASE = '/panel/inmobiliaria/ai/cobranza'
 
 interface Metrica {
   key: string
@@ -115,8 +110,10 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
         key: 'promesas-cumplidas',
         label: 'Promesas cumplidas',
         icon: Handshake,
+        // «0 / 0» no es una métrica: es la tarjeta diciendo que no tiene nada
+        // que decir. Con total 0 no se monta (regla de la casa, ver docblock).
         value:
-          promesasKept != null
+          promesasKept != null && promesasTotal !== 0
             ? promesasTotal != null
               ? `${formatNumber(promesasKept)} / ${formatNumber(promesasTotal)}`
               : formatNumber(promesasKept)
@@ -181,8 +178,9 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
         key: 'acuerdos-cumplidos',
         label: 'Acuerdos cumplidos',
         icon: FileText,
+        // Misma regla que promesas: sin planes de pago no hay razón que mostrar.
         value:
-          acuerdosKept != null
+          acuerdosKept != null && acuerdosTotal !== 0
             ? acuerdosTotal != null
               ? `${formatNumber(acuerdosKept)} / ${formatNumber(acuerdosTotal)}`
               : formatNumber(acuerdosKept)
@@ -206,20 +204,11 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
 
   return (
     <section aria-label="Cómo va el agente" className="space-y-3">
-      {/* Sin título propio: la sección que lo contiene ya se llama «Lo que hizo
-          el agente». Dos encabezados seguidos diciendo lo mismo hacían perder
-          la jerarquía justo donde había que leerla. */}
-      <div className="flex justify-end">
-        {/* Solo el reporte diario: la analítica se fusionó en esta misma
-            pantalla, así que enlazarla sería mandar a la gente a donde ya está. */}
-        <Button asChild variant="secondary" size="sm" hideArrow>
-          <Link href={`${BASE}/reporte`}>
-            <Scales className="w-4 h-4" aria-hidden="true" />
-            Ver reporte diario
-          </Link>
-        </Button>
-      </div>
-
+      {/* Sin título ni botón propios: la sección que lo contiene ya se llama
+          «Lo que hizo el agente» y ella carga el enlace al reporte diario en
+          la fila del título. Cuando esta rejilla vivía con una fila propia
+          `justify-end` para el botón, quedaba una franja casi vacía entre el
+          título y las tarjetas. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
         {metricas.map((m) => {
           const MetricaIcon = m.icon

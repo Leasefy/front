@@ -5471,6 +5471,61 @@
           "body"
         ]
       },
+      "CobranzaDebtorCompromisoPaymentPromise": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "amount_cop": {
+            "type": "number"
+          },
+          "due_date": {
+            "type": "string"
+          },
+          "channel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "conditions": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "call_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "resolved_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "amount_cop",
+          "due_date",
+          "channel",
+          "conditions",
+          "call_id",
+          "created_at",
+          "resolved_at"
+        ]
+      },
       "CobranzaDebtorCompromisoPaymentPlan": {
         "type": "object",
         "properties": {
@@ -5635,6 +5690,12 @@
       "CobranzaDebtorCompromisosResponse": {
         "type": "object",
         "properties": {
+          "paymentPromises": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CobranzaDebtorCompromisoPaymentPromise"
+            }
+          },
           "paymentPlans": {
             "type": "array",
             "items": {
@@ -5658,6 +5719,7 @@
           }
         },
         "required": [
+          "paymentPromises",
           "paymentPlans",
           "insuranceClaims",
           "legalArtifacts",

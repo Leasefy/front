@@ -9360,6 +9360,17 @@ export interface components {
             /** @example Habló al fijo de la oficina: promete pagar el viernes. */
             body: string;
         };
+        CobranzaDebtorCompromisoPaymentPromise: {
+            id: string;
+            status: string;
+            amount_cop: number;
+            due_date: string;
+            channel: string | null;
+            conditions: string | null;
+            call_id: string | null;
+            created_at: string;
+            resolved_at: string | null;
+        };
         CobranzaDebtorCompromisoPaymentPlan: {
             id: string;
             status: string;
@@ -9393,6 +9404,7 @@ export interface components {
             physical_send_method: string | null;
         };
         CobranzaDebtorCompromisosResponse: {
+            paymentPromises: components["schemas"]["CobranzaDebtorCompromisoPaymentPromise"][];
             paymentPlans: components["schemas"]["CobranzaDebtorCompromisoPaymentPlan"][];
             insuranceClaims: components["schemas"]["CobranzaDebtorCompromisoInsuranceClaim"][];
             legalArtifacts: components["schemas"]["CobranzaDebtorCompromisoLegalArtifact"][];

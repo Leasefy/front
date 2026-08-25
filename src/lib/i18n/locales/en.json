@@ -5659,23 +5659,11 @@
           "qa": {
             "title": "Call quality",
             "overall": "Overall",
-            "empatia": "Empathy",
-            "claridad": "Clarity",
-            "adherencia": "Script adherence",
-            "objeciones": "Objection handling",
-            "empty": "QA pending.",
-            "cappedNote": "Overall score capped by a compliance failure:",
-            "quality": "Conversation quality",
-            "violations": {
-              "habeas_data_noticed": "Habeas Data notice not given",
-              "ai_disclosed": "AI disclosure missing",
-              "consent_to_record": "Recording notice missing",
-              "schedule_violations_zero": "Call outside legal hours",
-              "frequency_violations_zero": "Daily contact cap exceeded",
-              "opt_out_respected": "Opt-out request not honored",
-              "actor_type_saas_orchestrator": "Unauthorized actor in collection"
-            },
-            "cappedUnknown": "rule not recorded (call predates detail)"
+            "rapport": "Rapport",
+            "compliance": "Compliance",
+            "resolution": "Resolution",
+            "sentiment": "Sentiment",
+            "empty": "QA pending."
           },
           "stateTrace": {
             "title": "State trace",

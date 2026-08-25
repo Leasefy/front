@@ -5660,23 +5660,11 @@
           "qa": {
             "title": "Calidad de la llamada",
             "overall": "General",
-            "empatia": "Empatía",
-            "claridad": "Claridad",
-            "adherencia": "Adherencia al guion",
-            "objeciones": "Manejo de objeciones",
-            "empty": "QA pendiente.",
-            "cappedNote": "Puntaje general capado por incumplimiento:",
-            "quality": "Calidad conversacional",
-            "violations": {
-              "habeas_data_noticed": "Aviso de Habeas Data no dado",
-              "ai_disclosed": "No se avisó que es un sistema de IA",
-              "consent_to_record": "No se avisó la grabación",
-              "schedule_violations_zero": "Llamada fuera del horario legal",
-              "frequency_violations_zero": "Tope de contactos del día excedido",
-              "opt_out_respected": "No se respetó la solicitud de exclusión",
-              "actor_type_saas_orchestrator": "Actor no autorizado en la gestión"
-            },
-            "cappedUnknown": "regla no registrada (llamada anterior al detalle)"
+            "rapport": "Trato",
+            "compliance": "Cumplimiento",
+            "resolution": "Resolución",
+            "sentiment": "Sentimiento",
+            "empty": "QA pendiente."
           },
           "stateTrace": {
             "title": "Trazabilidad de estado",

@@ -10,8 +10,8 @@
  *
  *   el front decía            el agente manda
  *   ─────────────────────     ──────────────────────────────────────────
- *   qa.{overall,tone,          qaDimensions.{rapport,compliance,
- *       recovery,clarity}                    resolution,sentiment}
+ *   qa.{overall,tone,          qaDimensions.{empatia,claridad,
+ *       recovery,clarity}                    adherencia,objeciones}
  *   durationSec                durationSeconds
  *   cost                       costBreakdown
  *   debtorNameRedacted         (no existe — el detalle NO expone PII del deudor)
@@ -29,9 +29,25 @@
  *
  * ── Escala de QA ─────────────────────────────────────────────────────────────
  *
- * Las dimensiones vienen 0-100 (la base lo garantiza:
- * `calls_qa_score_decimal_range`). El código viejo las trataba como 0-1 y las
- * multiplicaba por 100, así que un 88 real se dibujaba como 8800%.
+ * Las dimensiones llegan 0-100. El agente hace la conversión desde la escala
+ * del evaluador (enteros 0-5) en `shared/qa-dimensions.ts`; acá NO se
+ * reescala nada.
+ *
+ * ── Nombres de las dimensiones ───────────────────────────────────────────────
+ *
+ * Segunda pasada del mismo bug: el contrato decía
+ * `{ rapport, compliance, resolution, sentiment }` y el evaluador
+ * (`qa-scorer.ts`) escribe `{ empatia, claridad, adherencia, objeciones }`.
+ * Los cuatro campos llegaban en `null` y la tarjeta «Calidad de la llamada»
+ * decía siempre «QA pendiente» aun con el puntaje en la base. Mandan los
+ * nombres del evaluador: son las dimensiones que de verdad se miden en una
+ * cobranza.
+ *
+ * Las llamadas viejas con las claves antiguas (siembra de demo del 2026-08-08)
+ * llegan con las cuatro en `null` — el agente las ignora a propósito, ver
+ * `src/server/routes/shared/qa-dimensions.ts`. La pantalla no se rompe: `null`
+ * ya era un valor válido para las cuatro, y esas llamadas muestran
+ * «QA pendiente», que es literalmente cierto.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -55,13 +71,29 @@ export type CallAiSummaryDetail = CallDetailApiResponse['summary']
 
 export type CallOutcome = string
 
-/** Dimensiones reales de QA, en escala 0-100. `overall` es el promedio. */
+/**
+ * Dimensiones reales de QA, en escala 0-100. `overall` es el promedio.
+ *
+ * Las claves son las del evaluador. Las etiquetas en español las pone
+ * `CallQAPanel` vía i18n: Empatía · Claridad · Adherencia al guion ·
+ * Manejo de objeciones.
+ */
 export interface CallQAScores {
   overall: number | null
-  rapport: number | null
-  compliance: number | null
-  resolution: number | null
-  sentiment: number | null
+  empatia: number | null
+  claridad: number | null
+  adherencia: number | null
+  objeciones: number | null
+  /**
+   * false = alguna regla dura de cumplimiento falló y `overall` quedó capado
+   * a 40 (fórmula del evaluador: `min(calidad, 40)`). `null` = llamada
+   * anterior a que el agente expusiera el campo.
+   */
+  compliance: boolean | null
+  /** Slugs de las reglas violadas (`qa_details.violations` del agente). */
+  violations: string[]
+  /** Calidad conversacional 0-100 SIN capar (la suma de dimensiones). */
+  quality: number | null
 }
 
 /**
@@ -137,12 +169,20 @@ function averageOf(values: Array<number | null>): number | null {
 export function normalizeCallDetail(raw: CallDetailApiResponse): CallDetail {
   const d = raw.qaDimensions
 
+  const promedio = averageOf([d.empatia, d.claridad, d.adherencia, d.objeciones])
   const qa: CallQAScores = {
-    overall: averageOf([d.rapport, d.compliance, d.resolution, d.sentiment]),
-    rapport: d.rapport,
-    compliance: d.compliance,
-    resolution: d.resolution,
-    sentiment: d.sentiment,
+    // «General» es el puntaje OPERATIVO (combinado con cumplimiento), no el
+    // promedio del juez: mostrar 80 cuando la base dice 40 era contar dos
+    // verdades distintas con el mismo nombre (llamada 01a03712). El promedio
+    // queda de respaldo para llamadas anteriores al campo.
+    overall: raw.qaScore ?? promedio,
+    empatia: d.empatia,
+    claridad: d.claridad,
+    adherencia: d.adherencia,
+    objeciones: d.objeciones,
+    compliance: raw.qaCompliance ?? null,
+    violations: raw.qaViolations ?? [],
+    quality: raw.qaQuality ?? promedio,
   }
 
   return {

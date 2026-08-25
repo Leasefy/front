@@ -12,9 +12,9 @@ interface CallQAPanelProps {
 }
 
 /**
- * Las puntuaciones vienen en escala 0-100 (la base lo garantiza:
- * `calls_qa_score_decimal_range`). Antes se comparaban contra 0,8 / 0,6 —de
- * una escala 0-1 que nunca existió— así que TODA llamada caía en rojo y el
+ * Las puntuaciones llegan en escala 0-100: el agente convierte ahí la escala
+ * del evaluador (enteros 0-5). Antes se comparaban contra 0,8 / 0,6 —de una
+ * escala 0-1 que nunca existió— así que TODA llamada caía en rojo y el
  * porcentaje se calculaba ×100 sobre un número que ya era porcentaje.
  */
 function tone(score: number | null): {
@@ -76,13 +76,46 @@ function ScoreRow({
   )
 }
 
+
+/**
+ * Etiqueta en el idioma del panel para cada regla de cumplimiento violada.
+ * Claves ESTÁTICAS (el tipado de `t` no admite claves dinámicas); un slug
+ * desconocido se muestra tal cual — mejor crudo que invisible.
+ */
+function etiquetaDeViolacion(t: ReturnType<typeof useI18n>['t']) {
+  return (slug: string): string => {
+    switch (slug) {
+      case 'habeas_data_noticed':
+        return t('inmobiliaria.ai.cobranza.call.qa.violations.habeas_data_noticed')
+      case 'ai_disclosed':
+        return t('inmobiliaria.ai.cobranza.call.qa.violations.ai_disclosed')
+      case 'consent_to_record':
+        return t('inmobiliaria.ai.cobranza.call.qa.violations.consent_to_record')
+      case 'schedule_violations_zero':
+        return t('inmobiliaria.ai.cobranza.call.qa.violations.schedule_violations_zero')
+      case 'frequency_violations_zero':
+        return t('inmobiliaria.ai.cobranza.call.qa.violations.frequency_violations_zero')
+      case 'opt_out_respected':
+        return t('inmobiliaria.ai.cobranza.call.qa.violations.opt_out_respected')
+      case 'actor_type_saas_orchestrator':
+        return t('inmobiliaria.ai.cobranza.call.qa.violations.actor_type_saas_orchestrator')
+      default:
+        return slug
+    }
+  }
+}
+
 export default function CallQAPanel({ qa }: CallQAPanelProps) {
   const { t } = useI18n()
+  // Las cuatro dimensiones que el evaluador califica de verdad. Antes esto
+  // miraba `rapport`/`compliance`/`resolution`/`sentiment`, cuatro claves que
+  // ningún productor escribe: `allNull` daba siempre `true` y la tarjeta decía
+  // «QA pendiente» aun con el puntaje guardado.
   const allNull =
-    qa.rapport == null &&
-    qa.compliance == null &&
-    qa.resolution == null &&
-    qa.sentiment == null
+    qa.empatia == null &&
+    qa.claridad == null &&
+    qa.adherencia == null &&
+    qa.objeciones == null
   return (
     <section
       aria-label={t('inmobiliaria.ai.cobranza.call.qa.title')}
@@ -102,25 +135,42 @@ export default function CallQAPanel({ qa }: CallQAPanelProps) {
             score={qa.overall}
           />
           {/*
-            Las cuatro dimensiones que el QaScorer realmente califica. Las que
-            estaban antes (tono / recuperación / claridad) no existen en
-            ningún lado: se inventaron junto con el contrato.
+            El «General» es el puntaje operativo: la calidad del juez CAPADA a
+            40 cuando una regla dura falló. Sin esta nota, la tarjeta muestra
+            dimensiones altas junto a un General bajo y parece un bug
+            (llamada 01a03712: 4/4/4/4 del juez, capada por Habeas Data).
+          */}
+          {qa.compliance === false && (
+            <p className="text-xs text-fg-subtle -mt-1">
+              {t('inmobiliaria.ai.cobranza.call.qa.cappedNote')}{' '}
+              <span className="text-warning font-medium">
+                {qa.violations.length > 0
+                  ? qa.violations.map(etiquetaDeViolacion(t)).join(' · ')
+                  : t('inmobiliaria.ai.cobranza.call.qa.cappedUnknown')}
+              </span>
+            </p>
+          )}
+          {/*
+            Las cuatro dimensiones que el QaScorer realmente califica, en el
+            orden en que las evalúa. Los nombres son los del evaluador porque
+            son los que se miden en una cobranza; las etiquetas en español
+            viven en i18n.
           */}
           <ScoreRow
-            label={t('inmobiliaria.ai.cobranza.call.qa.rapport')}
-            score={qa.rapport}
+            label={t('inmobiliaria.ai.cobranza.call.qa.empatia')}
+            score={qa.empatia}
           />
           <ScoreRow
-            label={t('inmobiliaria.ai.cobranza.call.qa.compliance')}
-            score={qa.compliance}
+            label={t('inmobiliaria.ai.cobranza.call.qa.claridad')}
+            score={qa.claridad}
           />
           <ScoreRow
-            label={t('inmobiliaria.ai.cobranza.call.qa.resolution')}
-            score={qa.resolution}
+            label={t('inmobiliaria.ai.cobranza.call.qa.adherencia')}
+            score={qa.adherencia}
           />
           <ScoreRow
-            label={t('inmobiliaria.ai.cobranza.call.qa.sentiment')}
-            score={qa.sentiment}
+            label={t('inmobiliaria.ai.cobranza.call.qa.objeciones')}
+            score={qa.objeciones}
           />
         </div>
       )}

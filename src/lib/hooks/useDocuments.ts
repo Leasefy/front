@@ -63,3 +63,48 @@ export function useCandidateDocuments(candidateId: string | undefined) {
 
   return { documents, isLoading, error, refetch: fetch };
 }
+
+// ============================================================================
+// useSignedDocUrl - load the signed URL for GET /documents/:id/signed-url
+// ============================================================================
+
+/**
+ * Carga la signed URL de un documento vía GET /documents/:id/signed-url —
+ * `{ url, expiresAt }` de corta duración, verificada por el backend (anti-IDOR).
+ *
+ * Clonado 1:1 de `useSignedPdfUrl` ({@link file://src/lib/hooks/useContracts.ts})
+ * y consume `documentsApi.getSignedUrl`.
+ *
+ * Usá `enabled` para pedir la signed URL solo al abrir/descargar (no para cada card
+ * en el mount): el gate evita firmar N URLs que el usuario nunca va a usar.
+ */
+export function useSignedDocUrl(
+  docId: string | null | undefined,
+  { enabled }: { enabled: boolean }
+) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!docId || !enabled) {
+      setUrl(null);
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await documentsApi.getSignedUrl(docId);
+      setUrl(result.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo cargar el documento');
+      setUrl(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [docId, enabled]);
+
+  useEffect(() => { load(); }, [load]);
+
+  return { url, isLoading, error, refetch: load };
+}

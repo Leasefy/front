@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck, Target } from '@phosphor-icons/react';
+import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck, Target, Bell, UserCircle, Gear, ClipboardText, Lifebuoy, Scroll } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { TenantProfileProvider, useTenantProfile } from '@/lib/context/TenantProfileContext';
+import { useUnreadMessages } from '@/lib/hooks/useMessages';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ const ONBOARDING_STORAGE_KEY = 'plan_onboarding_tenant';
  */
 function useTenantNavItems() {
   const { t, locale } = useI18n();
+  const { unreadCount } = useUnreadMessages();
 
   return [
     { label: t('nav.panel'), href: '/inquilino', icon: SquaresFour, exact: true },
@@ -39,10 +41,16 @@ function useTenantNavItems() {
     { label: t('nav.applications'), href: '/inquilino/aplicaciones', icon: FileMagnifyingGlass },
     { label: t('nav.contracts'), href: '/inquilino/contratos', icon: Handshake },
     { label: t('nav.payments'), href: '/inquilino/pagos', icon: CreditCard },
+    { label: locale === 'es' ? 'Acuerdos' : 'Agreements', href: '/inquilino/acuerdos', icon: Scroll },
+    { label: locale === 'es' ? 'Mis casos' : 'My cases', href: '/inquilino/casos', icon: ClipboardText },
+    { label: locale === 'es' ? 'Solicitudes' : 'Requests', href: '/inquilino/solicitudes', icon: Lifebuoy },
     { label: t('nav.documents'), href: '/inquilino/documentos', icon: FileText },
-    // Sin `badge`: el 2 estaba escrito a mano. La pantalla de Mensajes dice
-    // "Sin conversaciones" mientras el sidebar prometía dos sin leer.
-    { label: t('nav.messages'), href: '/inquilino/mensajes', icon: Chat },
+    // Sin badge fijo: el 2 estaba escrito a mano. Ahora el conteo sale de
+    // useUnreadMessages (polling), así el sidebar nunca promete no-leídos falsos.
+    { label: t('nav.messages'), href: '/inquilino/mensajes', icon: Chat, badge: unreadCount > 0 ? unreadCount : undefined },
+    { label: locale === 'es' ? 'Notificaciones' : 'Notifications', href: '/inquilino/notificaciones', icon: Bell },
+    { label: t('nav.profile'), href: '/inquilino/perfil', icon: UserCircle },
+    { label: t('nav.settings'), href: '/inquilino/configuracion', icon: Gear },
   ];
 }
 

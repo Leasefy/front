@@ -5,7 +5,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, CheckCircle, Check, ArrowRight, Lightbulb } from '@phosphor-icons/react';
+import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, CheckCircle, Check, ArrowRight, Lightbulb, ClipboardText } from '@phosphor-icons/react';
 
 import { useFeaturedProperties } from '@/lib/hooks/useProperties';
 import { useAuth } from '@/lib/auth';
@@ -13,6 +13,7 @@ import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
 import { useEvaluation } from '@/lib/hooks/useEvaluation';
 import { useTenantApplications } from '@/lib/hooks/useApplications';
 import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
+import { useTenantCases } from '@/lib/hooks/use-tenant-cases';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { TenantDashboardEmpty } from '@/components/tenant/TenantDashboardEmpty';
 import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
@@ -210,6 +211,12 @@ export default function InquilinoPage() {
    */
   const isNewUser = activeLeases.length === 0 && activeApplications.length === 0;
 
+  // Casos abiertos — conteo REAL (proyección de las fuentes ya cargadas; ver
+  // use-tenant-cases). La tarjeta sólo aparece cuando cuenta algo (>0), igual
+  // que el resto de contadores de este grid.
+  const { openCasesCount } = useTenantCases();
+  const hayCasos = !isNewUser && openCasesCount > 0;
+
   return (
     <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
@@ -270,7 +277,11 @@ export default function InquilinoPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
           className={`grid gap-4 mb-8 ${
-            isNewUser ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 lg:grid-cols-4'
+            isNewUser
+              ? 'grid-cols-1 sm:grid-cols-2'
+              : hayCasos
+                ? 'grid-cols-2 lg:grid-cols-5'
+                : 'grid-cols-2 lg:grid-cols-4'
           }`}
         >
           {/* Trust Score - Always show */}
@@ -314,6 +325,23 @@ export default function InquilinoPage() {
               </p>
             </div>
           </Link>
+
+          {/* Casos abiertos — conteo real con deep-link al hub /inquilino/casos.
+              Sólo cuando hay casos: "Casos 0" no resume nada (misma regla del grid). */}
+          {hayCasos && (
+            <Link href="/inquilino/casos" className="group">
+              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+                  <ClipboardText className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
+                </div>
+                <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Casos' : 'Cases'}</p>
+                <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">{openCasesCount}</p>
+                <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
+                  {locale === 'es' ? 'Abiertos' : 'Open'}
+                </p>
+              </div>
+            </Link>
+          )}
           </>
           )}
 

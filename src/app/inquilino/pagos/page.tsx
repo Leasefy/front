@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Check, Clock, WarningCircle, CreditCard, CurrencyDollar, CurrencyCircleDollar, Calendar, Buildings, ArrowUpRight, CaretRight, Receipt, Prohibit, XCircle } from '@phosphor-icons/react';
+import { toast } from 'sonner';
+import { Check, Clock, WarningCircle, CreditCard, CurrencyDollar, CurrencyCircleDollar, Calendar, Buildings, ArrowUpRight, CaretRight, Receipt, Prohibit, XCircle, Download } from '@phosphor-icons/react';
 
 import { useLeases, useMyPaymentRequests, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
 import { cn } from '@/lib/utils';
@@ -17,6 +19,8 @@ import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import { Progress } from '@/components/ui/progress';
 import { PayRentModal } from '@/components/tenant/PayRentModal';
+import { AutopagoSection } from '@/components/tenant/AutopagoSection';
+import { tenantPaymentRequestsApi } from '@/lib/api/tenant-payment-requests.service';
 import type {
   BackendTenantPaymentRequest,
   TenantPaymentRequestStatus,
@@ -39,9 +43,27 @@ const MONTH_NAMES_EN = [
 
 /**
  * Tenant Payments Page - Landing Style (matching brand aesthetic)
+ *
+ * Wrapped in <Suspense> because it reads Wompi return params via useSearchParams
+ * (Next requires a suspense boundary for search params on a static route).
  */
 export default function PagosPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-bg flex items-center justify-center">
+          <Spinner size="lg" />
+        </div>
+      }
+    >
+      <PagosPageContent />
+    </Suspense>
+  );
+}
+
+function PagosPageContent() {
   const { t, locale, formatCurrency: formatCurrencyI18n } = useI18n();
+  const searchParams = useSearchParams();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
   // `errorCrudo`: sin esto, una consulta muerta entraba como `[]` y la
@@ -102,7 +124,7 @@ export default function PagosPage() {
   const nextAmount = showNextPaymentCta ? paymentInfo!.monthlyRent : 0;
 
   const formatShortDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'short',
     });
@@ -137,6 +159,61 @@ export default function PagosPage() {
   const handlePaid = () => {
     refetchRequests();
     refetchPaymentInfo();
+  };
+
+  // Retorno de Wompi (sin éxito prematuro). Wompi puede volver acá con ?id / ?status,
+  // parámetros controlados por el cliente: NUNCA son fuente de verdad ni ramifican la
+  // UI. Solo un toast neutral de "confirmando" + refetch de la fuente real; el estado
+  // pasa a pagado únicamente vía webhook del backend + validación del arrendador.
+  useEffect(() => {
+    const wompiId = searchParams.get('id');
+    const wompiStatus = searchParams.get('status');
+    if (wompiId && wompiStatus) {
+      toast.info(
+        locale === 'es'
+          ? 'Estamos confirmando tu pago. Vas a ver la confirmación en tu historial cuando termine.'
+          : 'We are confirming your payment. You will see the confirmation in your history when it completes.',
+        { duration: 6000 },
+      );
+      refetchRequests();
+      refetchPaymentInfo();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Comprobante interno (PAGO-03). Pide una URL firmada por el backend y descarga como
+  // blob (oculta la URL de storage). Sin endpoint aún → getReceiptUrl devuelve null →
+  // "Próximamente" honesto. Es un comprobante INTERNO, nunca una "factura" DIAN.
+  const handleDownloadReceipt = async (request: RequestRow) => {
+    let blobUrl: string | null = null;
+    try {
+      const receipt = await tenantPaymentRequestsApi.getReceiptUrl(request.id);
+      if (!receipt) {
+        toast.info(
+          locale === 'es'
+            ? 'El comprobante interno estará disponible próximamente.'
+            : 'The internal receipt will be available soon.',
+        );
+        return;
+      }
+      const response = await fetch(receipt.url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `comprobante-${request.id.slice(0, 8)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      toast.error(
+        locale === 'es'
+          ? 'No pudimos descargar el comprobante interno.'
+          : 'We could not download the internal receipt.',
+      );
+    } finally {
+      if (blobUrl) setTimeout(() => URL.revokeObjectURL(blobUrl!), 1000);
+    }
   };
 
   const getStatusConfig = (status: TenantPaymentRequestStatus) => {
@@ -403,22 +480,36 @@ export default function PagosPage() {
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-faint">
-                              <span className="text-sm text-fg-muted">
+                            <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-border-faint">
+                              <span className="text-sm text-fg-muted min-w-0 truncate">
                                 {dateLabel}
                                 {request.bankName && <span className="ml-1">· {request.bankName}</span>}
                               </span>
-                              {(request.status === 'REJECTED' || request.status === 'DISPUTED') && (
-                                <Button
-                                  variant="link"
-                                  size="sm"
-                                  onClick={handlePayNow}
-                                  className="h-auto gap-1 p-0"
-                                >
-                                  {locale === 'es' ? 'Reintentar' : 'Retry'}
-                                  <ArrowUpRight className="w-4 h-4" />
-                                </Button>
-                              )}
+                              <div className="flex items-center gap-3 flex-shrink-0">
+                                {(request.status === 'APPROVED' || request.status === 'PENDING_VALIDATION') &&
+                                  request.hasReceipt && (
+                                    <Button
+                                      variant="link"
+                                      size="sm"
+                                      onClick={() => handleDownloadReceipt(request)}
+                                      className="h-auto gap-1 p-0"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                      {locale === 'es' ? 'Comprobante interno' : 'Internal receipt'}
+                                    </Button>
+                                  )}
+                                {(request.status === 'REJECTED' || request.status === 'DISPUTED') && (
+                                  <Button
+                                    variant="link"
+                                    size="sm"
+                                    onClick={handlePayNow}
+                                    className="h-auto gap-1 p-0"
+                                  >
+                                    {locale === 'es' ? 'Reintentar' : 'Retry'}
+                                    <ArrowUpRight className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
 
                             {request.rejectionReason && (
@@ -443,6 +534,13 @@ export default function PagosPage() {
                     />
                   </div>
                 )}
+
+                {/* Comprobante interno vs. factura electrónica (DIAN) — disclosure honesto, una vez. */}
+                <p className="mt-4 text-xs text-fg-muted">
+                  {locale === 'es'
+                    ? 'Los comprobantes son de uso interno; la factura electrónica (DIAN) estará disponible más adelante.'
+                    : 'Receipts are for internal use; the DIAN electronic invoice will be available later.'}
+                </p>
               </>
             ) : (
               <EmptyState
@@ -506,6 +604,10 @@ export default function PagosPage() {
                 ))}
               </div>
             </div>
+
+            {/* Autopago (domiciliación tokenizada) — PAGO-04. Backend-gated: muestra un
+                "Próximamente" honesto hasta que existan tokenización Wompi + scheduler. */}
+            <AutopagoSection leaseId={primaryLease?.id ?? null} />
           </motion.div>
         </div>
       </div>

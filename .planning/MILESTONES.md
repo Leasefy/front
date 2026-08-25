@@ -37,10 +37,24 @@
 **Key insight:** Flex plans include AI agents as differentiator — agencies should prefer per-lease pricing.
 **Status at pause:** Phases 1–33 complete. Deferred items: Automatic Reminders, Contract Expiry Reminders.
 
-## v6.0 — Backoffice Unificado ERP·CRM·Autopilot (🚧 PLANNING 2026-05-29)
+## v6.0 — Backoffice Unificado ERP·CRM·Autopilot (✅ COMPLETE 2026-05-30)
 
-**Started:** 2026-05-29
-**Phases:** v6-01..v6-08 (frontend-first; namespace `v6-NN` para no colisionar con el stream `agent` v2.1-frontend que commitea frontend en mvp con `3x-xx`). v6-01 ✅ done.
+**Started:** 2026-05-29 · **Shipped:** 2026-05-30
+**Phases:** v6-01..v6-08 (8/8, frontend-first; namespace `v6-NN` para no colisionar con el stream `agent` v2.1-frontend que commitea frontend en mvp con `3x-xx`).
 **Goal:** Que TODAS las secciones de un ERP inmobiliario existan en el panel (facturación, conciliación bancaria, egresos/tesorería, informes contables, PQRS, agenda) de forma **aditiva y sin romper el CRM existente**, más los momentos autopilot (insights proactivos, creación de terceros por IA, captura de propiedad por foto+audio). Es el arranque **frontend-first** de un programa multi-repo de 6 milestones (ERP engine en `back-main`, AI en `agent`).
 **Backbone:** `.planning/ERP-CRM-AUTOPILOT-PROGRAM.md` · **Gap analysis:** `.planning/research/ERP-VISION/GAP-ANALYSIS.md` · **Detalle:** `milestones/v6.0-{REQUIREMENTS,ROADMAP}.md`
 **Key insight:** El diferencial no son más módulos, es que el sistema opere la inmobiliaria. v6.0 deja el FRENTE del ERP+CRM+Autopilot completo; los motores (DIAN, conciliación real, posteo contable) llegan en M2–M3.
+
+## avaluos-ui — Avalúos UI Public Valuation Flow (✅ COMPLETE 2026-06-03)
+
+**Phase 34 (5 plans):** landing pública `/avaluo`, ruta Wompi session (hash de integridad server-side), wizard 4 pasos, confirmación + polling, páginas de panel agencia (list/nuevo/detail).
+
+## v7.0 — Portal del Inquilino (🚧 IN PROGRESS 2026-07-16)
+
+**Started:** 2026-07-16
+**Phases:** v7-01..v7-07 (7, frontend-first; namespace `v7-NN`). Rama de planning: `plan/v7.0-portal-inquilino` (off `feat/leasefy-ds-redesign`, no toca `main`).
+**Problema (P1):** después de firmar, el inquilino solo tiene a quién escribir si hay un problema; el producto cierra pero no opera la relación → mora, quejas, menor renovación.
+**Goal:** El portal `/inquilino` ya existe (~55-60% real, funnel de adquisición con firma OTP) pero sin capa de operación post-firma. v7.0 **suma** esa capa (Estado de casos, Solicitudes/PQRS, Acuerdos de pago), **sube parcial→real** 3 pilares (Pagos Wompi, Documentos del arriendo, Comunicación) y **limpia** superficies fake (dashboard/perfil/config). Aditivo, frontend-first.
+**Backbone:** `.planning/research/portal-inquilino/GAP-ANALYSIS.md` · **Detalle:** `REQUIREMENTS.md` + `ROADMAP.md`
+**Guardrails legales:** Ley 2300/2023, T-323/2024 + SIC 001/2025, Habeas Data 1581/2012, SLA PQRS 15 días — codificados como success criteria.
+**Key insight:** El portal ya existe; el milestone no es construirlo sino darle al inquilino cómo **operar** la relación (pedir, seguir, acordar, pagar, comunicar) en vez de solo quejarse.

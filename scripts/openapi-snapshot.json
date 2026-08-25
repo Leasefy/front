@@ -150,6 +150,22 @@
     {
       "name": "mantenimiento",
       "description": "Fixi (mantenimiento): dashboard de triage IA — overview KPIs, bandeja priorizada, detalle de ticket. Agent-owned reasoning over back-owned ticket state (S2S). Ships flag-OFF (MANTENIMIENTO_ENABLED)."
+    },
+    {
+      "name": "inspeccion",
+      "description": "Vidi (inspecciones): sesiones de entrada/salida, captura de fotos con presign S3, acta generada, comparación entrada↔salida con costos de reparación, firma con OTP y paquete de evidencia. Agency-scoped (JWT + RLS FORCE). Flag: INSPECCION_ENABLED."
+    },
+    {
+      "name": "prospectos",
+      "description": "Imana (prospectos): leads de arriendo, disponibilidad de asesores, propuesta/confirmación de visitas, asistencia, tareas y métricas de asesor. Agency-scoped (JWT + RLS FORCE). Flag: PROSPECTOS_ENABLED."
+    },
+    {
+      "name": "calidad-publicacion",
+      "description": "Gaby (calidad de publicación): auditoría de fichas publicadas, propuestas de corrección con decisión humana, estado y configuración por agencia, e ingreso de la respuesta del propietario. Flag: CALIDAD_PUBLICACION_ENABLED."
+    },
+    {
+      "name": "portal-propietario",
+      "description": "Portal del propietario: procesos de postulación y elección de candidato, portafolio/finanzas (recaudo, proyección, informe PDF), solicitudes con llamados de atención, daños y digests. Dos superficies — `/api/portal/{agencyId}/propietario/*` (JWT del propietario) y `/api/agency/{agencyId}/portal-propietario/*` (JWT de agencia, la agencia SIEMPRE intermedia)."
     }
   ],
   "components": {
@@ -5439,6 +5455,20 @@
         },
         "required": [
           "error"
+        ]
+      },
+      "CobranzaDebtorMemoCreateBody": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "example": "Habló al fijo de la oficina: promete pagar el viernes."
+          }
+        },
+        "required": [
+          "body"
         ]
       },
       "CobranzaDebtorCompromisoPaymentPlan": {
@@ -28871,6 +28901,114 @@
           },
           "403": {
             "description": "cobranza:view required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaDebtorMemosError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Debtor not found (or cross-tenant)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaDebtorMemosError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database unavailable (stub mode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaDebtorMemosError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCobranzaDebtorMemo",
+        "summary": "Create a manual debtor memo (nota del equipo)",
+        "description": "Manual operator note on a debtor — persisted as a DebtorMemo without a Call row. Requires cobranza:intervene.",
+        "tags": [
+          "agency",
+          "cobranza"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
+            },
+            "required": true,
+            "name": "debtorId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CobranzaDebtorMemoCreateBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created memo, in the same shape the list returns.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaDebtorMemoItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body (empty or too long).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaDebtorMemosError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing / invalid bearer JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaDebtorMemosError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "cobranza:intervene required",
             "content": {
               "application/json": {
                 "schema": {

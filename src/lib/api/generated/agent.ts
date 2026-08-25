@@ -3289,7 +3289,11 @@ export interface paths {
          */
         get: operations["getCobranzaDebtorMemos"];
         put?: never;
-        post?: never;
+        /**
+         * Create a manual debtor memo (nota del equipo)
+         * @description Manual operator note on a debtor — persisted as a DebtorMemo without a Call row. Requires cobranza:intervene.
+         */
+        post: operations["createCobranzaDebtorMemo"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9351,6 +9355,10 @@ export interface components {
         };
         CobranzaDebtorMemosError: {
             error: string;
+        };
+        CobranzaDebtorMemoCreateBody: {
+            /** @example Habló al fijo de la oficina: promete pagar el viernes. */
+            body: string;
         };
         CobranzaDebtorCompromisoPaymentPlan: {
             id: string;
@@ -15617,6 +15625,78 @@ export interface operations {
                 };
             };
             /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+            /** @description Debtor not found (or cross-tenant) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+        };
+    };
+    createCobranzaDebtorMemo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaDebtorMemoCreateBody"];
+            };
+        };
+        responses: {
+            /** @description The created memo, in the same shape the list returns. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemoItem"];
+                };
+            };
+            /** @description Invalid body (empty or too long). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+            /** @description cobranza:intervene required */
             403: {
                 headers: {
                     [name: string]: unknown;

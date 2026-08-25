@@ -4596,7 +4596,7 @@ export interface paths {
             cookie?: never;
         };
         /** List the agency's avalúos (records by state) */
-        get: operations["AvaluosController_list"];
+        get: operations["AvaluosController_list__get_inmobiliaria_avaluos"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4613,7 +4613,7 @@ export interface paths {
             cookie?: never;
         };
         /** Stream the agency's own signed certificate PDF (scoped to the agency) */
-        get: operations["AvaluosController_certificate"];
+        get: operations["AvaluosController_certificate__get_inmobiliaria_avaluos_id_certificate"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5728,7 +5728,7 @@ export interface paths {
             cookie?: never;
         };
         /** Enabled signup registration profiles (tenant/landlord/agency) */
-        get: operations["RegistrationProfilesController_list"];
+        get: operations["RegistrationProfilesController_list__get_config_registration_profiles"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6377,7 +6377,7 @@ export interface paths {
             cookie?: never;
         };
         /** The 3 signup registration profiles with full metadata (key, enabled, updated_at, updated_by). */
-        get: operations["RegistrationProfilesController_list"];
+        get: operations["RegistrationProfilesController_list__get_api_v1_admin_registration_profiles"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6687,7 +6687,7 @@ export interface paths {
             cookie?: never;
         };
         /** Proxy: GET micro /:id/certificate — streams the certificate PDF passthrough */
-        get: operations["AvaluosController_certificate"];
+        get: operations["AvaluosController_certificate__get_api_v1_admin_avaluos_id_certificate"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6738,7 +6738,7 @@ export interface paths {
             cookie?: never;
         };
         /** Proxy: GET micro /list/all?state=&page= — general list by state */
-        get: operations["AvaluosController_list"];
+        get: operations["AvaluosController_list__get_api_v1_admin_avaluos"];
         put?: never;
         post?: never;
         delete?: never;
@@ -19460,7 +19460,7 @@ export interface operations {
             };
         };
     };
-    AvaluosController_list: {
+    AvaluosController_list__get_inmobiliaria_avaluos: {
         parameters: {
             query?: {
                 page?: unknown;
@@ -19481,7 +19481,7 @@ export interface operations {
             };
         };
     };
-    AvaluosController_certificate: {
+    AvaluosController_certificate__get_inmobiliaria_avaluos_id_certificate: {
         parameters: {
             query?: never;
             header?: never;
@@ -21230,7 +21230,7 @@ export interface operations {
             };
         };
     };
-    RegistrationProfilesController_list: {
+    RegistrationProfilesController_list__get_config_registration_profiles: {
         parameters: {
             query?: never;
             header?: never;
@@ -22044,7 +22044,7 @@ export interface operations {
             };
         };
     };
-    RegistrationProfilesController_list: {
+    RegistrationProfilesController_list__get_api_v1_admin_registration_profiles: {
         parameters: {
             query?: never;
             header?: never;
@@ -22438,7 +22438,7 @@ export interface operations {
             };
         };
     };
-    AvaluosController_certificate: {
+    AvaluosController_certificate__get_api_v1_admin_avaluos_id_certificate: {
         parameters: {
             query?: never;
             header?: never;
@@ -22495,7 +22495,7 @@ export interface operations {
             };
         };
     };
-    AvaluosController_list: {
+    AvaluosController_list__get_api_v1_admin_avaluos: {
         parameters: {
             query?: never;
             header?: never;

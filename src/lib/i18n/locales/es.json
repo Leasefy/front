@@ -9726,7 +9726,9 @@
         "sobreTope": "Supera lo que podemos respaldarte",
         "sobreConsultado": "Por encima de lo que consultaste",
         "consultaste": "Consultaste",
-        "asesorRevisa": "un asesor puede revisarlo"
+        "asesorRevisa": "un asesor puede revisarlo",
+        "codeudorAria": "¿Cómo puedo postularme igual?",
+        "codeudorHint": "Podés postularte con el perfil de otra persona (un codeudor) para que tome el arriendo por vos."
       },
       "porMes": "/mes",
       "proceso": {
@@ -9736,6 +9738,11 @@
       "rechazado": {
         "titulo": "Por ahora no podemos aprobarte",
         "texto": "No es un no definitivo. Hay caminos para seguir adelante."
+      },
+      "alerta": {
+        "canon": "El canon de esta propiedad",
+        "superaTope": "está por encima de tu tope aprobado de",
+        "codeudor": "Podés postularte con el perfil de otra persona (un codeudor) que sí sea apto para este valor."
       }
     },
     "resultado": {

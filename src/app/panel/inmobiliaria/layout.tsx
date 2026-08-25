@@ -16,6 +16,9 @@ import {
   Calculator,
   ChartLineUp,
   Wrench,
+  Toolbox,
+  Ticket,
+  Queue,
   ArrowsClockwise,
   UserCircle,
   PaperPlaneTilt,
@@ -343,7 +346,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     {
       label: t('inmobiliaria.ai.nav.mantenimiento'),
       href: '/panel/inmobiliaria/ai/mantenimiento', scope: 'general',
-      icon: Wrench,
+      icon: Toolbox,
       module: 'mantenimiento',
       ai: true,
       dataTourTarget: 'sidebar-mantenimiento',
@@ -351,7 +354,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         {
           label: t('inmobiliaria.ai.nav.mantenimientoTickets'),
           href: '/panel/inmobiliaria/ai/mantenimiento/tickets',
-          icon: ClipboardText,
+          icon: Ticket,
           module: 'mantenimiento',
         } as NavItemWithModule,
       ],
@@ -374,7 +377,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
         {
           label: 'Cola de revisión',
           href: '/panel/inmobiliaria/ai/retencion/revisiones',
-          icon: ClipboardText,
+          icon: Queue,
           module: 'retencion',
         } as NavItemWithModule,
       ],

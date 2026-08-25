@@ -5,31 +5,33 @@
  * algo. Va primero y es la sección con más peso visual; todo lo demás es
  * información.
  *
- * ── Por qué un tablero y no una pila de tarjetas ────────────────────────────
- * La versión anterior apilaba dos banners y hasta seis tarjetas, cada una con
- * su pastilla ALTA. Con 14 pendientes todo gritaba a la vez y nada decía por
- * dónde empezar (medido con la cartera demo: 2 siniestros + 6 tarjetas ALTA
- * idénticas, la misma persona repetida tres veces sin agrupar).
+ * ── Un tablero LITERAL, no un filtro ────────────────────────────────────────
+ * Primer intento (2026-08-25 mañana): celdas-resumen que filtraban una lista
+ * de abajo. Nico lo devolvió el mismo día: «cuando yo te decía tablero era
+ * literal un tablero encerradito más bonito, con tooodas las alertas». La
+ * celda seleccionada escondía el resto y las piezas sueltas (celdas, alerta
+ * de umbral, leyenda, lista) flotaban sin marco.
  *
- * Ahora la sección se lee en dos tiempos:
- *   1. El TABLERO: cuatro celdas con el conteo por urgencia. Una mirada dice
- *      cuánto hay y de qué gravedad. La celda seleccionada filtra la lista.
- *   2. La LISTA: solo la urgencia elegida, agrupada por tipo de trámite, sin
- *      repetir la pastilla de prioridad en cada fila (la celda ya lo dijo).
+ * Ahora es UN recuadro con columnas por urgencia —estilo tablero de trabajo—
+ * y TODO visible a la vez: nada se esconde detrás de un clic. Una columna
+ * larga scrollea dentro de sí misma (con `data-lenis-prevent`, porque Lenis
+ * se roba el scroll de los contenedores anidados).
  *
- * ── El orden de las celdas no es estético ───────────────────────────────────
+ * ── El orden de las columnas no es estético ─────────────────────────────────
  * 1. Siniestros: los únicos que bloquean plata. La base no deja radicar sin
  *    firma humana; mientras nadie apruebe, la reclamación no se presenta ante
- *    la aseguradora. Por eso tienen celda propia y van primero.
+ *    la aseguradora. Por eso tienen columna propia y van primero.
  * 2. Urgente (alta) → 3. Puede esperar (media) → 4. Sin afán (baja).
  *
+ * Dentro de cada columna, el que MÁS lleva esperando va arriba: es una cola
+ * de trabajo, no un feed de novedades.
+ *
  * Las alertas de umbral del reporte diario (morosidad sobre el límite, etc.)
- * son información, no trabajo: van compactas en una línea, no en un banner.
+ * son información, no trabajo: van al pie del tablero, en una línea.
  */
 
-import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, CheckCircle, Clock, Siren, Warning } from '@phosphor-icons/react'
+import { CheckCircle, Clock, Siren, Warning } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui'
@@ -38,58 +40,29 @@ import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 
 const NS = 'inmobiliaria.ai.cobranza.pendientes'
 const PENDIENTES_HREF = '/panel/inmobiliaria/ai/cobranza/pendientes'
-const SINIESTROS_HREF = '/panel/inmobiliaria/ai/cobranza/siniestros'
 
-/** Cuántas filas de la urgencia elegida se muestran acá. El resto, en su pantalla. */
-const TOPE = 6
+// ── Columnas del tablero ─────────────────────────────────────────────────────
 
-// ── Celdas del tablero ───────────────────────────────────────────────────────
+type ColumnaId = 'siniestros' | 'alta' | 'media' | 'baja'
 
-type CeldaId = 'siniestros' | 'alta' | 'media' | 'baja'
-
-const CELDAS: Array<{
-  id: CeldaId
-  label: string
-  /** Clases cuando la celda está seleccionada (fondo suave + anillo). */
-  activa: string
-  /** Color del punto/valor. */
-  tinte: string
-}> = [
-  { id: 'siniestros', label: 'Bloquean plata', activa: 'bg-danger-soft ring-2 ring-danger', tinte: 'text-danger' },
-  { id: 'alta', label: 'Urgente', activa: 'bg-danger-soft ring-2 ring-danger', tinte: 'text-danger' },
-  { id: 'media', label: 'Puede esperar', activa: 'bg-warning-soft ring-2 ring-warning', tinte: 'text-warning' },
-  { id: 'baja', label: 'Sin afán', activa: 'bg-success-soft ring-2 ring-success', tinte: 'text-success' },
+const COLUMNAS: Array<{ id: ColumnaId; label: string; tinte: string; punto: string }> = [
+  { id: 'siniestros', label: 'Bloquean plata', tinte: 'text-danger', punto: 'bg-danger' },
+  { id: 'alta', label: 'Urgente', tinte: 'text-danger', punto: 'bg-danger' },
+  { id: 'media', label: 'Puede esperar', tinte: 'text-warning', punto: 'bg-warning' },
+  { id: 'baja', label: 'Sin afán', tinte: 'text-success', punto: 'bg-success' },
 ]
 
-/** Encabezados de grupo dentro de la lista (plural: encabezan varias filas). */
-const GRUPO_TITULO: Record<string, string> = {
-  escalaciones: 'Escalaciones',
-  cartas: 'Cartas prejurídicas',
-  siniestros: 'Siniestros por firmar',
-  planes: 'Planes de pago',
-  promesas: 'Promesas de pago',
-  conversaciones: 'WhatsApp — el agente te lo pasó',
+/** Qué trámite es cada ficha — la columna mezcla tipos y hay que distinguirlos. */
+const TIPO_FICHA: Record<string, string> = {
+  escalaciones: 'Escalación',
+  cartas: 'Carta prejurídica',
+  siniestros: 'Siniestro',
+  planes: 'Plan de pago',
+  promesas: 'Promesa de pago',
+  conversaciones: 'WhatsApp',
 }
-
-/** Sustantivo corto para el desglose dentro de la celda («2 cartas · 1 escalación»). */
-const GRUPO_CORTO: Record<string, [singular: string, plural: string]> = {
-  escalaciones: ['escalación', 'escalaciones'],
-  cartas: ['carta', 'cartas'],
-  siniestros: ['siniestro', 'siniestros'],
-  planes: ['plan', 'planes'],
-  promesas: ['promesa', 'promesas'],
-  conversaciones: ['WhatsApp', 'WhatsApp'],
-}
-
-/** Orden fijo de los grupos en la lista: primero lo que decide, luego lo que acompaña. */
-const GRUPO_ORDEN = ['siniestros', 'escalaciones', 'conversaciones', 'cartas', 'planes', 'promesas']
 
 // ── Utilidades ───────────────────────────────────────────────────────────────
-
-/** Días enteros transcurridos desde una fecha ISO. */
-function diasDesde(iso: string): number {
-  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000))
-}
 
 function haceCuanto(iso: string): string {
   const seg = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000))
@@ -107,56 +80,39 @@ const COP = new Intl.NumberFormat('es-CO', {
   maximumFractionDigits: 0,
 })
 
-/** «2 cartas · 2 WhatsApp · 1 escalación» — top 3 por tamaño. */
-function desglose(items: PendienteItem[]): string {
-  const porGrupo = new Map<string, number>()
-  for (const i of items) porGrupo.set(i.grupo, (porGrupo.get(i.grupo) ?? 0) + 1)
-  return [...porGrupo.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([grupo, n]) => {
-      const [sing, plu] = GRUPO_CORTO[grupo] ?? [grupo, grupo]
-      return `${n} ${n === 1 ? sing : plu}`
-    })
-    .join(' · ')
-}
+// ── Fichas del tablero ───────────────────────────────────────────────────────
 
-// ── Filas de la lista ────────────────────────────────────────────────────────
-
-function Fila({ item }: { item: PendienteItem }) {
-  const grupo = GRUPO_TITULO[item.grupo] ?? item.grupo
+function Ficha({ item }: { item: PendienteItem }) {
+  const tipo = TIPO_FICHA[item.grupo] ?? item.grupo
   // El título es la persona. Cuando el dato no trae nombre —un deudor
-  // borrado, una escalación sin masked id— el motivo o el grupo suben al
+  // borrado, una escalación sin masked id— el motivo o el tipo suben al
   // título y no se repiten abajo.
-  const titulo = item.titulo || item.reason || grupo
-  // Segunda línea: el motivo dinámico (reason de la escalación, último
-  // mensaje del deudor). El grupo ya no se repite acá: lo dice el encabezado.
-  const subtitulo = item.titulo && item.reason ? item.reason : null
+  const titulo = item.titulo || item.reason || tipo
+  const meta = [
+    tipo,
+    item.montoCop != null ? COP.format(item.montoCop) : null,
+  ].filter(Boolean)
 
   return (
     <li>
       <Link
         href={item.href}
         data-testid={`te-toca-${item.key}`}
-        className="group flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-surface-muted"
+        className="group block rounded-lg border border-border bg-card px-2.5 py-2 transition-colors hover:bg-surface-muted"
       >
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-fg truncate">{titulo}</p>
-          {subtitulo && <p className="text-xs text-fg-muted truncate">{subtitulo}</p>}
-        </div>
-        {item.montoCop != null && (
-          <span className="hidden sm:inline text-xs font-mono tabular-nums text-fg-muted shrink-0">
-            {COP.format(item.montoCop)}
+        <p className="text-sm font-medium text-fg truncate">{titulo}</p>
+        <p className="flex items-center gap-1 text-xs text-fg-muted truncate">
+          <span className="truncate">{meta.join(' · ')}</span>
+          <span className="ml-auto inline-flex items-center gap-1 tabular-nums shrink-0">
+            <Clock className="w-3 h-3" aria-hidden="true" />
+            {haceCuanto(item.fecha)}
           </span>
+        </p>
+        {/* El motivo textual (lo último que escribió el deudor, la razón de la
+            escalación) — solo cuando no es ya el título. */}
+        {item.titulo && item.reason && (
+          <p className="text-xs text-fg-muted truncate mt-0.5">{item.reason}</p>
         )}
-        <span className="hidden sm:inline-flex items-center gap-1 text-xs text-fg-muted tabular-nums shrink-0">
-          <Clock className="w-3 h-3" aria-hidden="true" />
-          {haceCuanto(item.fecha)}
-        </span>
-        <ArrowRight
-          className="w-4 h-4 text-fg-muted shrink-0 transition-transform group-hover:translate-x-0.5"
-          aria-hidden="true"
-        />
       </Link>
     </li>
   )
@@ -182,45 +138,22 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
   // propio. Con dos llamadas al mismo endpoint las respuestas llegaban
   // distintas: el tablero decía una cifra y la lista otra. Una pantalla, una
   // fuente.
-  const porCelda = useMemo<Record<CeldaId, PendienteItem[]>>(() => {
-    const c: Record<CeldaId, PendienteItem[]> = { siniestros: [], alta: [], media: [], baja: [] }
-    for (const i of items) {
-      if (i.grupo === 'siniestros') c.siniestros.push(i)
-      else c[i.prioridad].push(i)
-    }
-    return c
-  }, [items])
+  const porColumna: Record<ColumnaId, PendienteItem[]> = {
+    siniestros: [],
+    alta: [],
+    media: [],
+    baja: [],
+  }
+  for (const i of items) {
+    if (i.grupo === 'siniestros') porColumna.siniestros.push(i)
+    else porColumna[i.prioridad].push(i)
+  }
+  // Cola de trabajo: el que MÁS lleva esperando, arriba.
+  for (const col of Object.values(porColumna)) {
+    col.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+  }
 
   const totalQueEspera = items.length
-
-  // La celda elegida. `null` = automática: la primera con contenido, en el
-  // orden del tablero (siniestros primero porque bloquean plata). Si lo que
-  // el usuario eligió se queda vacío tras un refetch, vuelve a la automática
-  // en vez de mostrar una lista vacía con celdas llenas al lado.
-  const [elegida, setElegida] = useState<CeldaId | null>(null)
-  const celdaActiva: CeldaId | null =
-    elegida && porCelda[elegida].length > 0
-      ? elegida
-      : (CELDAS.find((c) => porCelda[c.id].length > 0)?.id ?? null)
-
-  const filasDeCelda = celdaActiva ? porCelda[celdaActiva] : []
-
-  // Agrupar por tipo de trámite, en orden fijo; el tope corta por grupos
-  // enteros ya empezados (nunca más de TOPE filas).
-  const grupos = useMemo(() => {
-    const out: Array<{ grupo: string; filas: PendienteItem[] }> = []
-    let usadas = 0
-    for (const g of GRUPO_ORDEN) {
-      if (usadas >= TOPE) break
-      const filas = filasDeCelda.filter((i) => i.grupo === g).slice(0, TOPE - usadas)
-      if (filas.length === 0) continue
-      usadas += filas.length
-      out.push({ grupo: g, filas })
-    }
-    return out
-  }, [filasDeCelda])
-
-  const ocultas = Math.max(0, filasDeCelda.length - grupos.reduce((n, g) => n + g.filas.length, 0))
 
   // Mientras todavía se está contando NO se afirma nada. «Nada espera tu
   // aprobación» sobre una lista que aún no llegó es una afirmación falsa
@@ -232,11 +165,6 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
     : totalQueEspera === 0
       ? 'Nada espera tu aprobación.'
       : `${totalQueEspera} ${totalQueEspera === 1 ? 'decisión espera' : 'decisiones esperan'} tu aprobación.`
-
-  const diasSiniestroMasViejo = porCelda.siniestros.reduce(
-    (m, c) => Math.max(m, diasDesde(c.fecha)),
-    0,
-  )
 
   return (
     <section className="space-y-3" data-testid="cobranza-te-toca">
@@ -250,87 +178,20 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
         </p>
       </div>
 
-      {/* El tablero: una celda por urgencia. La seleccionada filtra la lista. */}
-      {totalQueEspera > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2" data-testid="te-toca-tablero">
-          {CELDAS.map((celda) => {
-            const filas = porCelda[celda.id]
-            const vacia = filas.length === 0
-            const seleccionada = celdaActiva === celda.id
-            return (
-              <button
-                key={celda.id}
-                type="button"
-                disabled={vacia}
-                aria-pressed={seleccionada}
-                onClick={() => setElegida(celda.id)}
-                data-testid={`te-toca-celda-${celda.id}`}
-                className={[
-                  'rounded-xl border p-3 text-left transition-colors',
-                  seleccionada
-                    ? `border-transparent ${celda.activa}`
-                    : 'border-border bg-card hover:bg-surface-muted',
-                  vacia ? 'opacity-50 cursor-default hover:bg-card' : '',
-                ].join(' ')}
-              >
-                <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
-                  {celda.id === 'siniestros' && (
-                    <Siren className={`w-3.5 h-3.5 ${vacia ? '' : celda.tinte}`} weight="fill" aria-hidden="true" />
-                  )}
-                  {celda.label}
-                </p>
-                <p className={`text-2xl font-semibold tabular-nums ${vacia ? 'text-fg-muted' : celda.tinte}`}>
-                  {filas.length}
-                </p>
-                <p className="text-xs text-fg-muted truncate">
-                  {vacia
-                    ? 'Nada'
-                    : celda.id === 'siniestros'
-                      ? diasSiniestroMasViejo > 0
-                        ? `el más viejo lleva ${diasSiniestroMasViejo} ${diasSiniestroMasViejo === 1 ? 'día' : 'días'}`
-                        : 'esperan tu firma'
-                      : desglose(filas)}
-                </p>
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Alertas de umbral del reporte diario: información, no trabajo — una
-          línea compacta cada una, no un banner. `message_es` viene redactado
-          del agente. */}
-      {alertas.map((a, i) => (
-        <p
-          key={`${a.code}-${i}`}
-          role="alert"
-          className={[
-            'flex items-center gap-2 text-xs px-1',
-            a.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
-          ].join(' ')}
-        >
-          <Warning className="w-3.5 h-3.5 shrink-0" weight="fill" aria-hidden="true" />
-          {a.message_es}
-        </p>
-      ))}
-
-      {/* Cargando, falló y «no hay» son tres cosas distintas. */}
       {contando && (
-        <div className="space-y-2" aria-hidden="true">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-20 rounded-xl border border-border bg-card animate-pulse" />
-            ))}
-          </div>
-          {[0, 1].map((i) => (
-            <div key={i} className="h-12 rounded-lg border border-border bg-card animate-pulse" />
+        <div
+          className="rounded-2xl border border-border bg-card p-4 grid grid-cols-2 lg:grid-cols-4 gap-3"
+          aria-hidden="true"
+        >
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-40 rounded-xl bg-surface-muted animate-pulse" />
           ))}
         </div>
       )}
 
       {/* Un fallo PARCIAL no es un fallo total: `usePendientes` junta seis
           fuentes y sigue rindiendo las que sí respondieron. Decir «no pudimos
-          cargar tus pendientes» encima de un tablero con cifras es falso de
+          cargar tus pendientes» encima de un tablero con fichas es falso de
           las dos maneras — ni cargó todo, ni falló todo. */}
       {error && !isLoading && (
         <div
@@ -361,38 +222,96 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
         </div>
       )}
 
-      {/* La lista de la celda elegida, agrupada por tipo de trámite. */}
-      {grupos.length > 0 && (
-        <div className="space-y-3">
-          {celdaActiva === 'siniestros' && (
-            <p className="text-xs text-fg-muted px-1">
-              Hasta que los apruebes no se radican ante la aseguradora.
-            </p>
-          )}
-          {grupos.map(({ grupo, filas }) => (
-            <div key={grupo} className="space-y-1.5">
-              <p className="text-xs font-medium uppercase tracking-wide text-fg-muted px-1">
-                {GRUPO_TITULO[grupo] ?? grupo}
-                <span className="ml-1.5 font-mono tabular-nums normal-case">({filas.length})</span>
-              </p>
-              <ul className="space-y-1.5">
-                {filas.map((item) => (
-                  <Fila key={item.key} item={item} />
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* El tablero: un recuadro, cuatro columnas, todo visible. */}
+      {totalQueEspera > 0 && (
+        <div
+          data-testid="te-toca-tablero"
+          className="rounded-2xl border border-border bg-card p-3 sm:p-4 space-y-3"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start">
+            {COLUMNAS.map((col) => {
+              const fichas = porColumna[col.id]
+              const vacia = fichas.length === 0
+              return (
+                <div
+                  key={col.id}
+                  data-testid={`te-toca-col-${col.id}`}
+                  className="rounded-xl bg-surface-muted p-2.5 space-y-2 min-w-0"
+                >
+                  <p className="flex items-center gap-1.5 px-0.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+                    {col.id === 'siniestros' ? (
+                      <Siren
+                        className={`w-3.5 h-3.5 ${vacia ? '' : col.tinte}`}
+                        weight="fill"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <span
+                        className={`inline-block w-1.5 h-1.5 rounded-full ${vacia ? 'bg-border-strong' : col.punto}`}
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span className="truncate">{col.label}</span>
+                    <span
+                      className={`ml-auto font-mono tabular-nums text-sm ${vacia ? 'text-fg-muted' : col.tinte}`}
+                    >
+                      {fichas.length}
+                    </span>
+                  </p>
 
-      {(ocultas > 0 || totalQueEspera > TOPE) && (
-        <Button asChild variant="outline" size="sm" hideArrow className="w-full sm:w-auto">
-          <Link href={celdaActiva === 'siniestros' ? SINIESTROS_HREF : PENDIENTES_HREF}>
-            {ocultas > 0
-              ? `Ver ${ocultas} ${ocultas === 1 ? 'pendiente más' : 'pendientes más'} de esta urgencia`
-              : `Ver los ${totalQueEspera} pendientes`}
-          </Link>
-        </Button>
+                  {col.id === 'siniestros' && !vacia && (
+                    <p className="px-0.5 text-xs text-fg-muted">
+                      Sin tu firma no se radican ante la aseguradora.
+                    </p>
+                  )}
+
+                  {vacia ? (
+                    <p className="px-0.5 py-6 text-center text-xs text-fg-muted">
+                      Nada pendiente
+                    </p>
+                  ) : (
+                    <ul
+                      data-lenis-prevent
+                      className="space-y-1.5 max-h-96 overflow-y-auto pr-0.5"
+                      style={{ overscrollBehavior: 'contain' }}
+                    >
+                      {fichas.map((item) => (
+                        <Ficha key={item.key} item={item} />
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Alertas de umbral del reporte diario: información, no trabajo —
+              una línea al pie, no un banner. `message_es` viene redactado del
+              agente. */}
+          {alertas.length > 0 && (
+            <div className="space-y-1 border-t border-border pt-2.5">
+              {alertas.map((a, i) => (
+                <p
+                  key={`${a.code}-${i}`}
+                  role="alert"
+                  className={[
+                    'flex items-center gap-2 text-xs px-1',
+                    a.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
+                  ].join(' ')}
+                >
+                  <Warning className="w-3.5 h-3.5 shrink-0" weight="fill" aria-hidden="true" />
+                  {a.message_es}
+                </p>
+              ))}
+            </div>
+          )}
+
+          <Button asChild variant="outline" size="sm" hideArrow className="w-full sm:w-auto">
+            <Link href={PENDIENTES_HREF}>
+              Ver los {totalQueEspera} pendientes
+            </Link>
+          </Button>
+        </div>
       )}
     </section>
   )

@@ -1,14 +1,16 @@
 /**
- * CobranzaTeTocaATi — el tablero de urgencias.
+ * CobranzaTeTocaATi — el tablero de urgencias (encerradito, todo visible).
  *
  * Reglas que se protegen acá:
- *  · las celdas cuentan bien: siniestros aparte, el resto por prioridad
- *  · la celda automática es la primera con contenido (siniestros primero,
- *    porque bloquean plata) y trae su leyenda de radicación
- *  · elegir otra celda filtra la lista y la agrupa por tipo de trámite,
- *    SIN pastillas ALTA repetidas (la celda ya dijo la urgencia)
- *  · el tope corta la lista y el botón dice cuántas quedaron ocultas
- *  · sin pendientes → estado vacío honesto (keys i18n)
+ *  · las columnas cuentan bien: siniestros aparte, el resto por prioridad
+ *  · TODO visible a la vez — nada se esconde detrás de un clic (pedido
+ *    explícito de Nico: «con tooodas las alertas»)
+ *  · dentro de cada columna, el que más lleva esperando va arriba
+ *  · la columna de siniestros trae su leyenda de radicación; la vacía dice
+ *    «Nada pendiente»
+ *  · sin pastillas ALTA repetidas (la columna ya dice la urgencia)
+ *  · sin pendientes → estado vacío honesto (keys i18n); cargando → sin
+ *    afirmaciones falsas
  */
 
 import * as React from 'react'
@@ -54,7 +56,7 @@ vi.mock('@/components/ui', () => ({
 import { CobranzaTeTocaATi } from './CobranzaTeTocaATi'
 import type { PendienteItem } from '@/lib/hooks/cobranza/use-pendientes'
 
-const AYER = new Date(Date.now() - 86_400_000).toISOString()
+const hace = (dias: number) => new Date(Date.now() - dias * 86_400_000).toISOString()
 
 function item(over: Partial<PendienteItem> & Pick<PendienteItem, 'key' | 'grupo'>): PendienteItem {
   return {
@@ -64,7 +66,7 @@ function item(over: Partial<PendienteItem> & Pick<PendienteItem, 'key' | 'grupo'
     kind: null,
     montoCop: null,
     dueDate: null,
-    fecha: AYER,
+    fecha: hace(1),
     href: '/panel/inmobiliaria/ai/cobranza/pendientes',
     cta: 'revisar',
     ...over,
@@ -105,84 +107,76 @@ function render() {
   })
 }
 
-function celda(id: string): HTMLButtonElement {
-  const el = container.querySelector(`[data-testid="te-toca-celda-${id}"]`)
+function columna(id: string): HTMLElement {
+  const el = container.querySelector(`[data-testid="te-toca-col-${id}"]`)
   expect(el).not.toBeNull()
-  return el as HTMLButtonElement
+  return el as HTMLElement
 }
 
 const CARTERA: PendienteItem[] = [
-  item({ key: 'sin-1', grupo: 'siniestros', titulo: 'María Fernanda Restrepo' }),
-  item({ key: 'sin-2', grupo: 'siniestros', titulo: 'Carlos Andrés Zapata' }),
-  item({ key: 'carta-1', grupo: 'cartas' }),
-  item({ key: 'carta-2', grupo: 'cartas' }),
-  item({ key: 'esc-1', grupo: 'escalaciones', titulo: '', reason: 'El agente pidió pasar a una persona' }),
-  item({ key: 'ptp-1', grupo: 'promesas', prioridad: 'media', titulo: 'Johan', montoCop: 1_850_000 }),
+  item({ key: 'sin-1', grupo: 'siniestros', titulo: 'María Fernanda Restrepo', fecha: hace(22) }),
+  item({ key: 'sin-2', grupo: 'siniestros', titulo: 'Nicolás García', fecha: hace(20) }),
+  item({ key: 'carta-1', grupo: 'cartas', fecha: hace(15) }),
+  item({ key: 'carta-2', grupo: 'cartas', fecha: hace(17) }),
+  item({ key: 'esc-1', grupo: 'escalaciones', titulo: '', reason: 'El agente pidió pasar a una persona', fecha: hace(1) }),
+  item({ key: 'hilo-1', grupo: 'conversaciones', titulo: 'María Fernanda', reason: 'no puedo pagar este mes', fecha: hace(2) }),
+  item({ key: 'ptp-1', grupo: 'promesas', prioridad: 'media', titulo: 'Johan', montoCop: 1_850_000, fecha: hace(0) }),
 ]
 
-describe('CobranzaTeTocaATi — tablero', () => {
-  it('cuenta por celda: siniestros aparte, el resto por prioridad', () => {
+describe('CobranzaTeTocaATi — tablero encerrado', () => {
+  it('cuenta por columna: siniestros aparte, el resto por prioridad', () => {
     conPendientes(CARTERA)
     render()
 
-    expect(celda('siniestros').textContent).toContain('2')
-    expect(celda('alta').textContent).toContain('3')
-    expect(celda('media').textContent).toContain('1')
-    // La vacía queda deshabilitada y dice «Nada».
-    expect(celda('baja').disabled).toBe(true)
-    expect(celda('baja').textContent).toContain('Nada')
-    // La frase suma TODO lo que espera (siniestros incluidos).
-    expect(container.textContent).toContain('6 decisiones esperan tu aprobación.')
+    expect(columna('siniestros').textContent).toContain('2')
+    expect(columna('alta').textContent).toContain('4')
+    expect(columna('media').textContent).toContain('1')
+    expect(columna('baja').textContent).toContain('Nada pendiente')
+    expect(container.textContent).toContain('7 decisiones esperan tu aprobación.')
   })
 
-  it('arranca en siniestros (bloquean plata) con su leyenda de radicación', () => {
+  it('TODO visible a la vez: siniestros, cartas y promesas en el mismo render', () => {
     conPendientes(CARTERA)
     render()
 
-    expect(celda('siniestros').getAttribute('aria-pressed')).toBe('true')
-    expect(container.textContent).toContain('Siniestros por firmar')
-    expect(container.textContent).toContain('no se radican ante la aseguradora')
-    // Las cartas (celda alta) NO están en la lista todavía.
-    expect(container.querySelector('[data-testid="te-toca-carta-1"]')).toBeNull()
+    for (const key of ['sin-1', 'sin-2', 'carta-1', 'carta-2', 'esc-1', 'hilo-1', 'ptp-1']) {
+      expect(container.querySelector(`[data-testid="te-toca-${key}"]`), key).not.toBeNull()
+    }
+    // Y todo dentro de UN recuadro.
+    const tablero = container.querySelector('[data-testid="te-toca-tablero"]')
+    expect(tablero).not.toBeNull()
+    expect(tablero?.querySelectorAll('[data-testid^="te-toca-col-"]').length).toBe(4)
   })
 
-  it('elegir otra celda filtra la lista y la agrupa por trámite, sin pastillas ALTA', () => {
+  it('dentro de la columna, el que más lleva esperando va arriba', () => {
     conPendientes(CARTERA)
     render()
 
-    act(() => {
-      celda('alta').click()
-    })
+    const fichas = [...columna('alta').querySelectorAll('[data-testid^="te-toca-"]')]
+      .map((el) => el.getAttribute('data-testid'))
+      .filter((id) => id !== 'te-toca-col-alta')
+    // 17d > 15d > 2d > 1d
+    expect(fichas).toEqual(['te-toca-carta-2', 'te-toca-carta-1', 'te-toca-hilo-1', 'te-toca-esc-1'])
+  })
 
-    expect(celda('alta').getAttribute('aria-pressed')).toBe('true')
-    expect(container.textContent).toContain('Cartas prejurídicas')
-    expect(container.textContent).toContain('Escalaciones')
-    expect(container.querySelector('[data-testid="te-toca-carta-1"]')).not.toBeNull()
-    // Los siniestros y su leyenda salieron de la lista.
-    expect(container.querySelector('[data-testid="te-toca-sin-1"]')).toBeNull()
-    expect(container.textContent).not.toContain('no se radican ante la aseguradora')
-    // Nada de pastillas de prioridad repetidas por fila.
+  it('la columna de siniestros trae su leyenda; el motivo textual acompaña la ficha', () => {
+    conPendientes(CARTERA)
+    render()
+
+    expect(columna('siniestros').textContent).toContain('no se radican ante la aseguradora')
+    // El último mensaje del deudor viaja con la ficha de WhatsApp.
+    expect(columna('alta').textContent).toContain('no puedo pagar este mes')
+    // La promesa muestra el monto.
+    expect(columna('media').textContent).toContain('1.850.000')
+    // Nada de pastillas de prioridad repetidas por ficha.
     expect(container.textContent).not.toContain('ALTA')
   })
 
-  it('sin siniestros, arranca en la primera celda con contenido', () => {
-    conPendientes(CARTERA.filter((i) => i.grupo !== 'siniestros'))
+  it('el pie enlaza a la pantalla de pendientes con el total', () => {
+    conPendientes(CARTERA)
     render()
 
-    expect(celda('alta').getAttribute('aria-pressed')).toBe('true')
-    expect(container.textContent).not.toContain('no se radican ante la aseguradora')
-  })
-
-  it('el tope corta la lista y el botón dice cuántas quedaron ocultas', () => {
-    conPendientes(
-      Array.from({ length: 8 }, (_, i) =>
-        item({ key: `carta-${i}`, grupo: 'cartas', titulo: `Deudor ${i}` }),
-      ),
-    )
-    render()
-
-    expect(container.querySelectorAll('li').length).toBe(6)
-    expect(container.textContent).toContain('Ver 2 pendientes más de esta urgencia')
+    expect(container.textContent).toContain('Ver los 7 pendientes')
   })
 
   it('sin pendientes → estado vacío honesto, sin tablero', () => {
@@ -202,7 +196,7 @@ describe('CobranzaTeTocaATi — tablero', () => {
     expect(container.querySelector('[data-testid="te-toca-tablero"]')).toBeNull()
   })
 
-  it('las alertas de umbral van en una línea compacta, no en banner', () => {
+  it('las alertas de umbral van al pie del tablero, en una línea', () => {
     conPendientes(CARTERA)
     reporteMock.mockReturnValue({
       data: {
@@ -211,7 +205,7 @@ describe('CobranzaTeTocaATi — tablero', () => {
     })
     render()
 
-    const alerta = container.querySelector('p[role="alert"]')
+    const alerta = container.querySelector('[data-testid="te-toca-tablero"] p[role="alert"]')
     expect(alerta).not.toBeNull()
     expect(alerta?.textContent).toContain('Índice de morosidad')
   })

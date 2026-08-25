@@ -26,6 +26,8 @@ import { Clock, ShieldCheck } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { TablePagination } from '@/components/ui/pagination'
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { Chip, SearchInput } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { useEstudiosList } from '@/lib/hooks/estudio/use-estudios-list'
@@ -106,6 +108,26 @@ export default function EstudiosListClient() {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       })
   }, [items, severidades, estados, flags, searchInput])
+
+  /**
+   * Paginado de presentación: `useEstudiosList()` trae la bandeja completa.
+   * `resetKey` con TODOS los filtros — sin eso, filtrar desde la página 3 deja
+   * la lista vacía y se lee como «no hay nada».
+   *
+   * `pageItems` alimenta las dos vistas (tabla en ≥md, tarjetas en móvil) para
+   * que ambas muestren exactamente la misma página.
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(filtered, {
+    resetKey: `${severidades.join()}|${estados.join()}|${flags.join()}|${searchInput.trim()}`,
+  })
 
   const hasActiveFilters =
     severidades.length > 0 ||
@@ -305,7 +327,7 @@ export default function EstudiosListClient() {
                     </TableCell>
                   </TableRow>
                 )}
-                {filtered.map((it) => {
+                {pageItems.map((it) => {
                   const sev = SEVERIDAD_TOKEN[it.severidad] ?? SEVERIDAD_TOKEN.media
                   return (
                     <TableRow
@@ -384,7 +406,7 @@ export default function EstudiosListClient() {
               </div>
             ) : (
               <ul className="space-y-2">
-                {filtered.map((it) => {
+                {pageItems.map((it) => {
                   const sev = SEVERIDAD_TOKEN[it.severidad] ?? SEVERIDAD_TOKEN.media
                   return (
                     <li key={it.id}>
@@ -437,6 +459,20 @@ export default function EstudiosListClient() {
               </ul>
             )}
           </div>
+
+          {/* Pie único para las dos vistas: sólo si hay más de una página. */}
+          {shouldPaginate && (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
         </section>
       </div>
     </main>

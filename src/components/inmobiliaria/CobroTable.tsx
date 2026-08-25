@@ -175,10 +175,14 @@ export function CobroTable({
 
   const SortableHeader = ({ field, children, className }: { field: SortField; children: React.ReactNode; className?: string }) => (
     <TableHead className={cn('text-left p-4', className)}>
-      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
+      {/*
+        allowlist: disparador de orden — no hay primitiva en Cadence. `uppercase`
+        va explícito: el navegador fuerza `text-transform: none` en los controles,
+        así que el botón no heredaba las mayúsculas del `TH`. Ver DispersionTable.
+      */}
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 hover:text-foreground"
+        className="flex items-center gap-2 uppercase hover:text-foreground"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -218,7 +222,7 @@ export function CobroTable({
                 {/* Property */}
                 <TableCell className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-md bg-surface-brand flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center shrink-0">
                       <HouseLine className="w-5 h-5 text-primary" />
                     </div>
                     <div className="min-w-0">

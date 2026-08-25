@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
   Trophy,
   ChartLineUp,
@@ -19,6 +20,11 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import {
+  PAGE_SIZE_OPTIONS,
+  useTablePagination,
+} from '@/lib/hooks/use-table-pagination';
 import type { AgentPerformanceData } from '@/lib/data/mock-reports';
 
 interface AgentPerformanceReportProps {
@@ -61,8 +67,27 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
   const { agents, teamSummary } = data;
 
   // Sort agents by closings descending for ranking
-  const rankedAgents = [...agents].sort((a, b) => b.closings - a.closings);
+  const rankedAgents = useMemo(
+    () => [...agents].sort((a, b) => b.closings - a.closings),
+    [agents]
+  );
   const topPerformerId = rankedAgents[0]?.id;
+
+  // Sólo se pagina el RANKING. La comparación de barras de abajo es un gráfico:
+  // recortarla dejaría de ser una comparación entre agentes.
+  const {
+    pageItems: agentesDeLaPagina,
+    total: totalAgentes,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(rankedAgents);
+
+  // El puesto es global, no de la página: sin este corrimiento la página 2
+  // vuelve a numerar desde 1 y el sexto agente aparece como primero.
+  const puestoBase = (page - 1) * pageSize;
 
   // Max conversion rate for proportional bar rendering
   const maxConversion = Math.max(...agents.map((a) => a.conversionRate));
@@ -98,8 +123,8 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
       </div>
 
       {/* Agent Ranking Table */}
-      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
-        <div className="p-4 border-b border-border dark:border-strong">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
+        <div className="p-4 border-b border-border dark:border-border-strong">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Users className="w-4 h-4 text-fg-muted" />
             Ranking de agentes
@@ -108,7 +133,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader>
-              <TableRow className="border-b border-faint dark:border-strong">
+              <TableRow className="border-b border-border-faint dark:border-border-strong">
                 <TableHead className="text-left py-3 px-4 w-12">
                   #
                 </TableHead>
@@ -133,7 +158,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rankedAgents.map((agent, index) => {
+              {agentesDeLaPagina.map((agent, index) => {
                 const isTop = agent.id === topPerformerId;
                 const conversionWidth =
                   maxConversion > 0
@@ -144,10 +169,10 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                   <TableRow
                     key={agent.id}
                     className={cn(
-                      'border-b border-faint dark:border-strong/50 transition-colors',
+                      'border-b border-border-faint dark:border-border-strong/50 transition-colors',
                       isTop
                         ? 'bg-warning-soft/50 dark:bg-warning/10 hover:bg-warning-soft'
-                        : 'hover:bg-surface-muted dark:hover:bg-ink/30'
+                        : 'hover:bg-surface-muted dark:hover:bg-ink'
                     )}
                   >
                     {/* Rank */}
@@ -160,7 +185,7 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
                           />
                         ) : (
                           <span className="text-muted-foreground font-medium">
-                            {index + 1}
+                            {puestoBase + index + 1}
                           </span>
                         )}
                       </div>
@@ -221,10 +246,24 @@ export function AgentPerformanceReport({ data }: AgentPerformanceReportProps) {
             </TableBody>
           </Table>
         </div>
+
+        {/* Pie: sólo si hay más de una página. */}
+        {shouldPaginate && (
+          <div className="border-t border-border dark:border-border-strong px-4 py-3">
+            <TablePagination
+              total={totalAgentes}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
       </div>
 
       {/* Performance Comparison - Horizontal Bars */}
-      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-5">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
           <ChartLineUp className="w-4 h-4 text-fg-muted" />
           Tasa de conversion por agente
@@ -283,7 +322,7 @@ function KPICard({
 }) {
   const colors = COLOR_MAP[color];
   return (
-    <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center gap-3">
         <div
           className={cn(

@@ -158,3 +158,87 @@ describe('useMySubscription — refetch', () => {
     expect(hook.get().subscription).toEqual(MOCK_SUBSCRIPTION)
   })
 })
+
+// ── mergeBackendIntoAgencyPlan — planes que el front no conoce ───────────────
+//
+// La base tiene 5 planes de inmobiliaria (starter, pro, pro-plus, ultra, flex)
+// y `AGENCY_PLANS` sólo define 4 (starter, pro, flex, enterprise). El fallback
+// era `?? AGENCY_PLANS[0]` —Starter—, así que `pro-plus` y `ultra` salían con
+// el nombre, la descripción, las features Y EL ID de Starter, conservando sólo
+// el precio: «STARTER · 999.000/mes · Scoring básico · Dashboard limitado».
+
+import { mergeBackendIntoAgencyPlan } from './useSubscription'
+
+function backendPlan(over: Record<string, unknown> = {}) {
+  return {
+    id: 'uuid-1',
+    planType: 'AGENCY' as const,
+    tier: 'ultra',
+    name: 'Ultra',
+    monthlyPrice: 999000,
+    annualPrice: 0,
+    maxProperties: -1,
+    maxUsers: -1,
+    maxScoringViews: -1,
+    monthlyEvalCap: -1,
+    monthlyCreditGrant: 0,
+    billingMode: 'FLAT' as const,
+    usageFeeBps: 0,
+    scoringIncluded: true,
+    hasPremiumScoring: true,
+    hasApiAccess: false,
+    scoringViewPrice: 0,
+    evaluationCreditPrice: 0,
+    isDefault: false,
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ...over,
+  }
+}
+
+describe('mergeBackendIntoAgencyPlan — un plan desconocido no se disfraza de Starter', () => {
+  it('conserva el nombre real que manda el back', () => {
+    expect(mergeBackendIntoAgencyPlan(backendPlan()).name).toBe('Ultra')
+    expect(
+      mergeBackendIntoAgencyPlan(
+        backendPlan({ tier: 'pro-plus', name: 'Pro Plus', monthlyPrice: 599000 }),
+      ).name,
+    ).toBe('Pro Plus')
+  })
+
+  it('NO hereda el id de Starter — era lo que encendía tres «SELECCIONADO»', () => {
+    // `PricingTable` marca la tarjeta con `plan.id === currentPlanId`. Con
+    // todos en 'starter', un usuario en Starter veía tres seleccionadas.
+    const ids = ['ultra', 'pro-plus'].map(
+      (tier) => mergeBackendIntoAgencyPlan(backendPlan({ tier })).id,
+    )
+    expect(ids).toEqual(['ultra', 'pro-plus'])
+    expect(ids).not.toContain('starter')
+  })
+
+  it('NO hereda las features estáticas de Starter — las deriva de sus columnas', () => {
+    const p = mergeBackendIntoAgencyPlan(backendPlan())
+    // Planes dinámicos (contrato 29): las bullets salen SIEMPRE de las columnas
+    // del back, no de la copia estática. Antes esto exigía features vacías para
+    // un plan desconocido; ahora exige que estén DERIVADAS (no vacías) y que
+    // nunca arrastren la copia de Starter.
+    expect(p.features.length).toBeGreaterThan(0)
+    expect(p.features).not.toContain('Dashboard limitado')
+    expect(p.features).not.toContain('Scoring básico')
+    expect(p.price.monthly).toBe(999000)
+  })
+
+  it('un tier CONOCIDO conserva su id real y precio del back', () => {
+    const p = mergeBackendIntoAgencyPlan(
+      backendPlan({ tier: 'pro', name: 'Pro', monthlyPrice: 349000, maxProperties: 100 }),
+    )
+    expect(p.id).toBe('pro')
+    expect(p.price.monthly).toBe(349000) // precio del back
+    expect(p.features.length).toBeGreaterThan(0) // derivadas de las columnas del back
+  })
+
+  it('maxProperties -1 sigue significando ilimitado', () => {
+    expect(mergeBackendIntoAgencyPlan(backendPlan()).limits.properties).toBeNull()
+  })
+})

@@ -334,16 +334,16 @@ export function ActaEntregaViewer({
                   <Table className="w-full">
                     <TableHeader>
                       <TableRow className="border-b border-border">
-                        <TableHead className="text-left py-2 px-4 text-xs font-medium text-fg-muted uppercase">
+                        <TableHead className="text-left py-2 px-4">
                           {t('inmobiliaria.acta.thItem')}
                         </TableHead>
-                        <TableHead className="text-center py-2 px-4 text-xs font-medium text-fg-muted uppercase">
+                        <TableHead className="text-center py-2 px-4">
                           {t('inmobiliaria.acta.thQty')}
                         </TableHead>
-                        <TableHead className="text-center py-2 px-4 text-xs font-medium text-fg-muted uppercase">
+                        <TableHead className="text-center py-2 px-4">
                           {t('inmobiliaria.acta.thCondition')}
                         </TableHead>
-                        <TableHead className="text-left py-2 px-4 text-xs font-medium text-fg-muted uppercase">
+                        <TableHead className="text-left py-2 px-4">
                           {t('inmobiliaria.acta.thNotes')}
                         </TableHead>
                       </TableRow>
@@ -352,7 +352,7 @@ export function ActaEntregaViewer({
                       {roomItems.map((item) => (
                         <TableRow
                           key={item.id}
-                          className="border-b border-faint dark:border-strong/50 last:border-0"
+                          className="border-b border-border-faint dark:border-border-strong/50 last:border-0"
                         >
                           <TableCell className="py-3 px-4">
                             <span className="font-medium text-foreground text-sm">

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, ShareNetwork, VideoCamera, MapPin, TrendUp, Clock, Check, Calendar } from '@phosphor-icons/react';
+import { Heart, ShareNetwork, VideoCamera, MapPin, TrendUp, Clock, Check, Calendar, Copy } from '@phosphor-icons/react';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { SegmentedControl } from '@leasefy/cadence';
@@ -14,6 +14,9 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { visitsApi } from '@/lib/api/visits.service';
 import { ApiError } from '@/lib/api/client';
 import type { VisitSlot } from '@/lib/api/visits.types';
+import { PostularButton } from '@/components/tenant/PostularButton';
+import { useAprobacion } from '@/lib/hooks/use-aprobacion';
+import { seLePuedePrometerSinCodeudor } from '@/lib/api/aprobacion.service';
 
 interface StickyCTAProps {
   propertyId: string;
@@ -60,14 +63,16 @@ function addDays(n: number): string {
   return d.toISOString().split('T')[0];
 }
 
-// Generate mock stats based on propertyId (social proof only, unchanged)
-function generateMockStats(propertyId: string) {
-  const seed = propertyId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return {
-    viewingNow: (seed % 8) + 3,
-    demandLevel: seed % 3 === 0 ? 'alta' : seed % 3 === 1 ? 'muy-alta' : 'media',
-  };
-}
+/*
+ * Acá vivía `generateMockStats(propertyId)`: sumaba los códigos de las letras
+ * del id y de ahí salían "N personas viendo ahora" —con un punto latiendo y un
+ * contador que subía o bajaba solo cada 10 segundos— y una insignia de "Muy
+ * solicitado". Nada de eso se medía.
+ *
+ * Iba en el panel pegado al botón de postularse: el peor lugar posible para
+ * urgencia inventada, porque es exactamente donde la persona decide. Fuera
+ * hasta que haya visitas de verdad que contar.
+ */
 
 // ─── Error messages ──────────────────────────────────────────────────────────
 
@@ -96,9 +101,27 @@ export function StickyCTA({
   onWishlistToggle,
   className,
 }: StickyCTAProps) {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, hasActiveAgencyMembership } = useAuth();
   const router = useRouter();
+
+  /*
+   * ¿Podemos decirle que se postula sin codeudor?
+   *
+   * `null` = no sabemos, y entonces no se afirma nada. Sin aprobación resuelta
+   * no hay forma de saber si la aseguradora le va a pedir codeudor, y una
+   * promesa sobre el trato es de las peores cosas que se pueden inventar: la
+   * descubre cuando ya se ilusionó.
+   */
+  const { aprobacion } = useAprobacion();
+  const sinCodeudor = seLePuedePrometerSinCodeudor(aprobacion);
   const pathname = usePathname();
+
+  // An inmobiliaria/agent viewing a property is NOT a prospective tenant: they
+  // must not apply or schedule a visit. Instead they get a "share this property"
+  // panel (copy link). Covers agency owners, invited agents (backendRole AGENT),
+  // and personal-role users with an active agency membership.
+  const isAgencyViewer =
+    !!user && (user.role === 'agency' || user.backendRole === 'AGENT' || hasActiveAgencyMembership);
 
   const [ctaMode, setCtaMode] = useState<'apply' | 'visit'>('apply');
   const [visitTextT, setVisitType] = useState<'presencial' | 'virtual'>('presencial');
@@ -112,21 +135,31 @@ export function StickyCTA({
   const [slotsByDate, setSlotsByDate] = useState<SlotsByDate>({});
   const [slotsLoading, setSlotsLoading] = useState(false);
 
-  // Social proof (mock, visual only)
-  const [stats, setStats] = useState<ReturnType<typeof generateMockStats> | null>(null);
-  const [currentViewers, setCurrentViewers] = useState(0);
 
-  // ─── Social proof ──────────────────────────────────────────────────────────
+  // Shareable public URL of this property (built client-side to avoid an SSR
+  // hydration mismatch). Used by the header share button and the agency panel.
+  const [shareUrl, setShareUrl] = useState('');
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
-    const mockStats = generateMockStats(propertyId);
-    setStats(mockStats);
-    setCurrentViewers(mockStats.viewingNow);
-
-    const interval = setInterval(() => {
-      setCurrentViewers((prev) => Math.max(2, Math.min(12, prev + (Math.random() > 0.5 ? 1 : -1))));
-    }, 10000);
-    return () => clearInterval(interval);
+    if (typeof window !== 'undefined') {
+      setShareUrl(`${window.location.origin}/propiedades/${propertyId}`);
+    }
   }, [propertyId]);
+
+  const handleCopyShare = async () => {
+    const url = shareUrl || (typeof window !== 'undefined' ? `${window.location.origin}/propiedades/${propertyId}` : '');
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard can fail (permissions/insecure context) — the link stays
+      // visible in the input for the user to select and copy manually.
+    }
+  };
+
 
   // ─── Fetch slots when visit tab opens ─────────────────────────────────────
   useEffect(() => {
@@ -202,28 +235,7 @@ export function StickyCTA({
   return (
     <div className={cn('lg:sticky lg:top-28', className)}>
       <Card className="overflow-hidden rounded-xl border-border shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
-        {/* Urgency Banner */}
-        {stats && stats.demandLevel !== 'media' && (
-          <div className="px-5 py-3 flex items-center justify-center gap-2.5 text-[13px] font-semibold bg-primary text-primary-foreground">
-            <TrendUp className="w-4 h-4" />
-            {stats.demandLevel === 'muy-alta'
-              ? 'Muy solicitado — No te quedes sin verlo'
-              : 'Popular esta semana'}
-          </div>
-        )}
-
         <div className="p-6">
-          {/* Live viewers */}
-          <div className="flex items-center gap-2.5 mb-5">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success-500))] opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[hsl(var(--success-500))]" />
-            </span>
-            <span className="text-[13px] text-muted-foreground">
-              <span className="font-semibold text-foreground">{currentViewers} personas</span> viendo ahora
-            </span>
-          </div>
-
           {/* Header */}
           <div className="flex items-start justify-between mb-6">
             <div>
@@ -258,10 +270,16 @@ export function StickyCTA({
                 type="button"
                 size="icon"
                 variant="outline"
+                onClick={handleCopyShare}
                 className="h-10 w-10 hover:bg-surface-muted text-muted-foreground"
-                aria-label="Compartir"
+                aria-label={copied ? 'Enlace copiado' : 'Compartir'}
+                data-testid="share-copy-header"
               >
-                <ShareNetwork className="w-[18px] h-[18px]" />
+                {copied ? (
+                  <Check className="w-[18px] h-[18px] text-[hsl(var(--success-500))]" />
+                ) : (
+                  <ShareNetwork className="w-[18px] h-[18px]" />
+                )}
               </Button>
             </div>
           </div>
@@ -281,6 +299,53 @@ export function StickyCTA({
             )}
           </div>
 
+          {isAgencyViewer ? (
+            /* ── Agency/agent viewer: share panel (no apply / no visit) ── */
+            <div data-testid="agency-share-panel">
+              <div className="flex items-start gap-2.5 mb-4">
+                <ShareNetwork className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                <p className="text-[13px] text-muted-foreground">
+                  Compartí esta propiedad con un interesado por el canal que prefieras.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-muted px-3 h-11 mb-3">
+                <input
+                  readOnly
+                  value={shareUrl}
+                  aria-label="Enlace de la propiedad"
+                  data-testid="agency-share-url"
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="flex-1 min-w-0 bg-transparent text-[13px] text-fg-muted outline-none truncate"
+                />
+              </div>
+
+              <Button
+                type="button"
+                onClick={handleCopyShare}
+                hideArrow
+                className="w-full gap-2"
+                data-testid="agency-share-copy"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Enlace copiado
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    Copiar enlace
+                  </>
+                )}
+              </Button>
+
+              <p className="text-[11px] text-muted-foreground text-center mt-3">
+                Como inmobiliaria no aplicas ni agendas visitas — compartí el enlace con tus clientes.
+              </p>
+            </div>
+          ) : (
+          <>
           {/* Tab selector */}
           <div className="mb-6">
             <SegmentedControl<'apply' | 'visit'>
@@ -300,12 +365,37 @@ export function StickyCTA({
             /* ── Apply tab ── */
             <div>
               <div className="space-y-2.5 mb-6">
-                <div className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-[hsl(var(--success-500))] flex-shrink-0" strokeWidth={3} />
-                  <p className="text-[13px] text-muted-foreground">
-                    <span className="font-semibold text-foreground">Sin codeudor</span> — aplica solo con tu información
-                  </p>
-                </div>
+                {/*
+                  «Sin codeudor» estaba fijo en toda propiedad, y es una promesa
+                  sobre el trato que el propio producto desmiente: una aprobación
+                  condicionada «normalmente pide un codeudor o un depósito
+                  adicional» (ResultadoAprobacion). Se lo prometíamos justo a
+                  quien iba a tener que conseguirlo.
+
+                  Ahora sale de SU aprobación, la misma que usa la puerta de
+                  postularse, y con `null` no se afirma nada: no saber no es
+                  poder prometer. Y se dice "te postulas", no "aplicas"
+                  (docs/VOCABULARIO.md).
+                */}
+                {sinCodeudor !== null && (
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-[hsl(var(--success-500))] flex-shrink-0" strokeWidth={3} />
+                    <p className="text-[13px] text-muted-foreground">
+                      {sinCodeudor ? (
+                        <>
+                          <span className="font-semibold text-foreground">Sin codeudor</span> — te
+                          postulas solo con tu información
+                        </>
+                      ) : (
+                        <>
+                          Tu aprobación quedó{' '}
+                          <span className="font-semibold text-foreground">con condiciones</span> — la
+                          aseguradora puede pedirte codeudor
+                        </>
+                      )}
+                    </p>
+                  </div>
+                )}
                 <div className="flex items-center gap-2.5">
                   <Clock className="w-4 h-4 text-muted-foreground/60 flex-shrink-0" />
                   <p className="text-[13px] text-muted-foreground">
@@ -313,9 +403,9 @@ export function StickyCTA({
                   </p>
                 </div>
               </div>
-              <Link href={`/aplicar/${propertyId}`} className="block">
-                <Button className="w-full">Postularme a esta propiedad</Button>
-              </Link>
+              <PostularButton propertyId={propertyId} canonCop={price} className="w-full">
+                Postularme a esta propiedad
+              </PostularButton>
               <p className="text-[11px] text-muted-foreground text-center mt-3">
                 Completa tu solicitud en minutos
               </p>
@@ -493,15 +583,19 @@ export function StickyCTA({
               </p>
             </div>
           )}
+          </>
+          )}
         </div>
 
-        {/* Activity footer */}
-        <div className="px-6 py-3.5 bg-surface-muted border-t border-border">
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <span className="w-2 h-2 rounded-full bg-[hsl(var(--success-500))] animate-pulse" />
-            <span>Última postulación hace <span className="font-semibold text-foreground">12 minutos</span></span>
-          </div>
-        </div>
+        {/*
+          Acá iba «Última postulación hace 12 minutos», con un punto verde
+          pulsando para que pareciera un dato en vivo. Estaba escrito a mano:
+          los mismos 12 minutos en TODAS las propiedades, para siempre, incluso
+          en una que nadie tocó nunca. Urgencia inventada.
+
+          No se reemplaza por otro número: el back no expone la actividad de una
+          propiedad. Cuando la exponga, este es el lugar.
+        */}
       </Card>
     </div>
   );
@@ -521,20 +615,25 @@ export function MobileStickyCTA({
   propertyId: string;
   price: number;
 }) {
-  const [stats, setStats] = useState<ReturnType<typeof generateMockStats> | null>(null);
+  const { user, hasActiveAgencyMembership } = useAuth();
+  const isAgencyViewer =
+    !!user && (user.role === 'agency' || user.backendRole === 'AGENT' || hasActiveAgencyMembership);
 
-  useEffect(() => {
-    setStats(generateMockStats(propertyId));
-  }, [propertyId]);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyShare = async () => {
+    if (typeof window === 'undefined') return;
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/propiedades/${propertyId}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard can fail silently (permissions/insecure context).
+    }
+  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-xl border-t border-border lg:hidden z-30">
-      {stats && stats.demandLevel !== 'media' && (
-        <div className="px-4 py-2 bg-primary text-primary-foreground text-[11px] font-semibold text-center flex items-center justify-center gap-1.5">
-          <TrendUp className="w-3.5 h-3.5" />
-          {stats.demandLevel === 'muy-alta' ? 'Muy solicitado' : 'Popular esta semana'}
-        </div>
-      )}
       <div className="p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -542,21 +641,30 @@ export function MobileStickyCTA({
               {formatCurrency(price)}
               <span className="text-[13px] font-medium text-muted-foreground font-sans">/mes</span>
             </p>
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--success-500))] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[hsl(var(--success-500))]" />
-              </span>
-              {stats?.viewingNow || 0} personas viendo
-            </p>
           </div>
           <div className="flex gap-2">
-            <Button asChild hideArrow>
-              <Link href={`/aplicar/${propertyId}`}>Postularme</Link>
-            </Button>
-            <Button variant="outline" hideArrow>
-              Visita
-            </Button>
+            {isAgencyViewer ? (
+              <Button type="button" onClick={handleCopyShare} hideArrow className="gap-2" data-testid="mobile-agency-share">
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Copiado
+                  </>
+                ) : (
+                  <>
+                    <ShareNetwork className="w-4 h-4" />
+                    Compartir
+                  </>
+                )}
+              </Button>
+            ) : (
+              <>
+                <PostularButton propertyId={propertyId} canonCop={price} hideArrow />
+                <Button variant="outline" hideArrow>
+                  Visita
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

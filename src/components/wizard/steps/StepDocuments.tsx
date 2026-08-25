@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import { Warning, FileText, FolderOpen, ArrowsHorizontal } from '@phosphor-icons/react';
+import { Warning, FileText } from '@phosphor-icons/react';
 import { DocumentUpload } from '@/components/wizard/DocumentUpload';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import { validateDocumentsStep } from '@/lib/validation/applicationValidation';
@@ -14,16 +14,15 @@ import type { DocumentUpload as DocumentUploadT } from '@/lib/types/application'
 
 /**
  * StepDocuments - Step 5 of application wizard
- * 6 document types:
- *   - REQUIRED: idDocument, bankStatement
- *   - ONE OF (required): employmentLetter OR incomeProof
- *   - OPTIONAL: payStub, creditReport
+ * Only 2 document types, both REQUIRED (T-0020 slimming):
+ *   - idDocument (cédula)
+ *   - bankStatement (extracto bancario)
  */
 export function StepDocuments() {
   const { application, updateDocuments, attemptedAdvance, mode, existingApplicationId } = useApplication();
   const documents = application.documents;
 
-  type DocField = 'idDocument' | 'bankStatement' | 'incomeProof' | 'employmentLetter' | 'payStub' | 'creditReport';
+  type DocField = 'idDocument' | 'bankStatement';
 
   const handleRemoteDelete = useCallback(
     async (field: DocField, remoteId: string): Promise<boolean> => {
@@ -70,19 +69,6 @@ export function StepDocuments() {
     [updateDocuments]
   );
 
-  // In create mode, only a real File object counts — a fileName-only slot means
-  // the file was lost during page reload (stale localStorage). In update mode,
-  // fileName without a file means the document already lives on the server.
-  const hasEmploymentOrIncome = mode === 'update'
-    ? (!!(documents.employmentLetter?.file || documents.employmentLetter?.fileName) ||
-       !!(documents.incomeProof?.file || documents.incomeProof?.fileName))
-    : (!!(documents.employmentLetter?.file) || !!(documents.incomeProof?.file));
-
-  const oneOfError =
-    attemptedAdvance && !hasEmploymentOrIncome
-      ? 'Debés subir al menos uno: contrato laboral o certificado de ingresos'
-      : undefined;
-
   // Shown above a document slot when the file was lost on page reload (create mode only).
   const StaleDocWarning = () => (
     <div className="flex items-start gap-2 p-3 bg-warning-soft border border-warning/30 rounded-sm">
@@ -109,7 +95,7 @@ export function StepDocuments() {
         </div>
       </div>
 
-      {/* Section 1 — Always required */}
+      {/* Documentos obligatorios */}
       <section>
         <div className="flex items-center gap-2 mb-4">
           <FileText className="h-5 w-5 text-muted-foreground" />
@@ -151,101 +137,6 @@ export function StepDocuments() {
               onDelete={buildOnDelete('bankStatement')}
               hint="Últimos 3 meses de tu cuenta principal"
               error={getDocumentError('bankStatement')}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Section 2 — One of two required */}
-      <section>
-        <div className="flex items-center gap-2 mb-1">
-          <ArrowsHorizontal className="h-5 w-5 text-muted-foreground" />
-          <h3 className="text-sm font-medium text-foreground">
-            Uno de los dos obligatorio
-          </h3>
-          <span className="text-xs text-danger">*</span>
-        </div>
-        <p className="text-xs text-muted-foreground mb-4 ml-7">
-          Subí el contrato laboral o el certificado de ingresos — basta con uno.
-        </p>
-
-        {oneOfError && (
-          <p className="text-xs text-danger mb-3">{oneOfError}</p>
-        )}
-
-        <div className="space-y-6">
-          <div>
-            {mode !== 'update' && documents.employmentLetter?.fileName && !documents.employmentLetter?.file && (
-              <div className="mb-2"><StaleDocWarning /></div>
-            )}
-            <DocumentUpload
-              label="Contrato laboral"
-              accept=".pdf"
-              maxSizeMB={5}
-              value={documents.employmentLetter || null}
-              onChange={(data) => handleDocumentChange('employmentLetter', data)}
-              onDelete={buildOnDelete('employmentLetter')}
-              hint="Carta con fecha reciente indicando cargo y salario"
-            />
-          </div>
-
-          <div>
-            {mode !== 'update' && documents.incomeProof?.fileName && !documents.incomeProof?.file && (
-              <div className="mb-2"><StaleDocWarning /></div>
-            )}
-            <DocumentUpload
-              label="Certificado de ingresos"
-              accept=".pdf,.jpg,.jpeg,.png"
-              maxSizeMB={5}
-              value={documents.incomeProof || null}
-              onChange={(data) => handleDocumentChange('incomeProof', data)}
-              onDelete={buildOnDelete('incomeProof')}
-              hint="Últimos 3 desprendibles de nómina o declaración de renta"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Section 3 — Optional */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <FolderOpen className="h-5 w-5 text-muted-foreground" />
-          <h3 className="text-sm font-medium text-foreground">
-            Documentos opcionales
-          </h3>
-          <span className="text-xs text-muted-foreground ml-1">
-            (mejoran tu perfil)
-          </span>
-        </div>
-
-        <div className="space-y-6">
-          <div>
-            {mode !== 'update' && documents.payStub?.fileName && !documents.payStub?.file && (
-              <div className="mb-2"><StaleDocWarning /></div>
-            )}
-            <DocumentUpload
-              label="Colilla de nómina"
-              accept=".pdf,.jpg,.jpeg,.png"
-              maxSizeMB={5}
-              value={documents.payStub || null}
-              onChange={(data) => handleDocumentChange('payStub', data)}
-              onDelete={buildOnDelete('payStub')}
-              hint="Último desprendible de pago de tu empleador"
-            />
-          </div>
-
-          <div>
-            {mode !== 'update' && documents.creditReport?.fileName && !documents.creditReport?.file && (
-              <div className="mb-2"><StaleDocWarning /></div>
-            )}
-            <DocumentUpload
-              label="Reporte de crédito"
-              accept=".pdf"
-              maxSizeMB={5}
-              value={documents.creditReport || null}
-              onChange={(data) => handleDocumentChange('creditReport', data)}
-              onDelete={buildOnDelete('creditReport')}
-              hint="Descarga gratuita de Datacrédito o TransUnion"
             />
           </div>
         </div>

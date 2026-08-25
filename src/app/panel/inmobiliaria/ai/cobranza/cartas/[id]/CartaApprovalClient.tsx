@@ -20,7 +20,7 @@ import { useRouter } from 'next/navigation'
 
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Input } from '@/components/ui'
@@ -54,6 +54,9 @@ const SEND_METHOD_I18N: Record<CartaPhysicalSendMethod, string> = {
   email_only: 'emailOnly',
   operator_manual: 'operatorManual',
 }
+
+/** Enlaza el botón deshabilitado con el texto que dice por qué lo está. */
+const PISTA_CAMPOS_ID = 'carta-required-hint'
 
 interface Props {
   artifactId: string
@@ -121,7 +124,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
     setPdfBlobUrl(null)
     void (async () => {
       try {
-        const res = await globalThis.fetch(pdfSrc, { headers: agentAuthHeaders() })
+        const res = await agentFetch(pdfSrc)
         if (!res.ok) throw new Error(`pdf ${res.status}`)
         const blob = await res.blob()
         if (cancelled) return
@@ -158,12 +161,12 @@ export default function CartaApprovalClient({ artifactId }: Props) {
     )
   }
 
+  // Los dos campos del envío físico son obligatorios para aprobar. Se separa
+  // del resto de `aprobarDisabled` porque es la ÚNICA causa que el usuario
+  // puede resolver por su cuenta, y por tanto la única que hay que explicar.
+  const faltanCampos = !sendMethod || !sentToAddress.trim()
   const aprobarDisabled =
-    !canApprove ||
-    !sendMethod ||
-    !sentToAddress.trim() ||
-    isApproving ||
-    approveResult !== null
+    !canApprove || faltanCampos || isApproving || approveResult !== null
   const rechazarDisabled = !canApprove || isRejecting || rejectResult?.ok === true
 
   const handleAprobar = async (): Promise<void> => {
@@ -197,7 +200,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
         </Button>
       </div>
       <header>
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+        <h1 className="text-2xl font-semibold text-fg">
           {t('inmobiliaria.ai.cobranza.cartas.title')}
         </h1>
       </header>
@@ -207,7 +210,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
         aria-label={t('inmobiliaria.ai.cobranza.cartas.pdfPreview.title')}
         className="space-y-2"
       >
-        <h2 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+        <h2 className="text-sm font-medium text-fg-muted">
           {t('inmobiliaria.ai.cobranza.cartas.pdfPreview.title')}
         </h2>
         <iframe
@@ -215,7 +218,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           title={t('inmobiliaria.ai.cobranza.cartas.pdfPreview.title')}
           src={pdfBlobUrl ?? 'about:blank'}
           loading="lazy"
-          className="w-full h-96 rounded border border-neutral-200 dark:border-neutral-800"
+          className="w-full h-96 rounded border border-border"
         />
         {pdfError && (
           <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
@@ -225,17 +228,26 @@ export default function CartaApprovalClient({ artifactId }: Props) {
       </section>
 
       {/* Pre-approve form */}
-      <section className="space-y-3 rounded-md border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+      {/* `bg-white` fijo: en oscuro era una caja blanca en medio de la
+          pantalla, sobre la que además hay que decidir si se manda una carta
+          prejurídica. `bg-card` sigue el tema. */}
+      <section className="space-y-3 rounded-md border border-border bg-card p-4">
         <div className="space-y-1">
-          <span className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
-            {t('inmobiliaria.ai.cobranza.cartas.physicalSend.label')}
+          <span className="block text-sm font-medium text-fg-muted">
+            {t('inmobiliaria.ai.cobranza.cartas.physicalSend.label')}{' '}
+            <span
+              className="text-danger"
+              aria-label={t('inmobiliaria.ai.cobranza.cartas.requiredMark')}
+            >
+              *
+            </span>
           </span>
           <Select
             value={sendMethod || undefined}
             onValueChange={(v) => setSendMethod(v as CartaPhysicalSendMethod)}
             disabled={approveResult !== null}
           >
-            <SelectTrigger data-testid="carta-send-method">
+            <SelectTrigger data-testid="carta-send-method" aria-required="true">
               <SelectValue
                 placeholder={t('inmobiliaria.ai.cobranza.cartas.physicalSend.placeholder')}
               />
@@ -252,8 +264,14 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           </Select>
         </div>
 
-        <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-200">
-          {t('inmobiliaria.ai.cobranza.cartas.sentToAddress.label')}
+        <label className="block text-sm font-medium text-fg-muted">
+          {t('inmobiliaria.ai.cobranza.cartas.sentToAddress.label')}{' '}
+          <span
+            className="text-danger"
+            aria-label={t('inmobiliaria.ai.cobranza.cartas.requiredMark')}
+          >
+            *
+          </span>
           <Input
             type="text"
             data-testid="carta-sent-to-address"
@@ -263,9 +281,24 @@ export default function CartaApprovalClient({ artifactId }: Props) {
               'inmobiliaria.ai.cobranza.cartas.sentToAddress.placeholder',
             )}
             disabled={approveResult !== null}
+            aria-required="true"
             className="mt-1 block w-full"
           />
         </label>
+
+        {/* Un botón muerto sin motivo se lee como «está roto». `title` sólo
+            cubría el caso de permisos, así que cuando faltaban estos dos
+            campos —lo habitual al entrar— no había NINGUNA explicación.
+            `aria-describedby` en el botón lo hace audible, no sólo visible. */}
+        {faltanCampos && (
+          <p
+            id={PISTA_CAMPOS_ID}
+            data-testid="carta-required-hint"
+            className="text-sm text-fg-muted"
+          >
+            {t('inmobiliaria.ai.cobranza.cartas.requiredHint')}
+          </p>
+        )}
       </section>
 
       {/* Action buttons */}
@@ -277,10 +310,13 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           disabled={aprobarDisabled}
           isLoading={isApproving}
           hideArrow
+          aria-describedby={faltanCampos ? PISTA_CAMPOS_ID : undefined}
           title={
             !canApprove
               ? t('inmobiliaria.ai.cobranza.cartas.permissionTooltip')
-              : undefined
+              : faltanCampos
+                ? t('inmobiliaria.ai.cobranza.cartas.requiredHint')
+                : undefined
           }
         >
           {isApproving

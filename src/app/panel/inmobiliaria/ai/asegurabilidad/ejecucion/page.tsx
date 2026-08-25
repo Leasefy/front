@@ -73,7 +73,7 @@ const ESTADOS: EstadoDef[] = [
     defLabel: 'No consultada',
     defDesc: 'Aún no se ha enviado la solicitud a esta aseguradora.',
     chip: CHIP_NEUTRAL,
-    dot: 'bg-fg-muted/50',
+    dot: 'bg-surface-muted',
   },
   {
     key: 'consultando',
@@ -145,7 +145,7 @@ const ESTADOS: EstadoDef[] = [
     defLabel: 'Portal no disponible',
     defDesc: 'El portal o API de la aseguradora no está respondiendo.',
     chip: CHIP_NEUTRAL,
-    dot: 'bg-fg-muted',
+    dot: 'bg-surface-muted',
   },
   {
     key: 'error',
@@ -161,7 +161,7 @@ const ESTADOS: EstadoDef[] = [
     defLabel: 'Resultado vencido',
     defDesc: 'La respuesta caducó; debe volver a consultarse.',
     chip: CHIP_NEUTRAL,
-    dot: 'bg-fg-muted',
+    dot: 'bg-surface-muted',
   },
 ]
 

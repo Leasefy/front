@@ -47,7 +47,8 @@ const PROPERTY_TYPES: { value: Consignacion['propertyType']; labelKey: string; i
   { value: 'warehouse', labelKey: 'inmobiliaria.consignaciones.propertyType.warehouse', icon: Warehouse },
 ];
 
-// Zones in Bogotá
+// Sugerencias de barrio, no la lista completa: son sólo de Bogotá y el campo
+// es de texto libre. Ver el <datalist> más abajo.
 const ZONES = [
   'Chicó',
   'Chapinero',
@@ -283,25 +284,28 @@ export function ConsignacionEditForm({
             />
           </InputWrapper>
 
+          {/* El barrio se escribe; la lista de Bogotá queda como SUGERENCIA.
+              Era un <Select> cerrado con barrios de Bogotá únicamente: una
+              inmobiliaria de Medellín no podía elegir el suyo, y un inmueble
+              en El Poblado abría el formulario con el campo en blanco —
+              guardar desde ahí le cambiaba el barrio o se lo borraba. */}
           <InputWrapper label={t('inmobiliaria.consignaciones.editForm.zone')} required error={errors.propertyZone}>
-            <Select
-              value={formData.propertyZone || undefined}
-              onValueChange={(v) => {
+            <Input
+              value={formData.propertyZone || ''}
+              list="zonas-sugeridas"
+              placeholder={t('inmobiliaria.consignaciones.editForm.selectZone')}
+              onChange={(e) => {
+                const v = e.target.value;
                 setFormData((prev) => ({ ...prev, propertyZone: v }));
                 if (errors.propertyZone) setErrors((prev) => ({ ...prev, propertyZone: '' }));
               }}
-            >
-              <SelectTrigger className={cn('w-full', errors.propertyZone && 'border-danger/30')}>
-                <SelectValue placeholder={t('inmobiliaria.consignaciones.editForm.selectZone')} />
-              </SelectTrigger>
-              <SelectContent>
-                {ZONES.map((zone) => (
-                  <SelectItem key={zone} value={zone}>
-                    {zone}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              className={cn('w-full', errors.propertyZone && 'border-danger/30')}
+            />
+            <datalist id="zonas-sugeridas">
+              {ZONES.map((zone) => (
+                <option key={zone} value={zone} />
+              ))}
+            </datalist>
           </InputWrapper>
         </div>
       </div>
@@ -460,7 +464,7 @@ export function ConsignacionEditForm({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3 pt-4 border-t border-faint dark:border-strong">
+      <div className="flex items-center gap-3 pt-4 border-t border-border-faint dark:border-border-strong">
         <Button
           type="button"
           variant="secondary"

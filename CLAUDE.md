@@ -60,7 +60,12 @@ activity feed, execution panel).
 - **Agent** (`NEXT_PUBLIC_AGENT_URL`): tipos generados en `src/lib/api/generated/agent.ts`.
   NUNCA editar a mano — regenerar con `pnpm api:gen`. Validá frescura con `pnpm api:check`
   **a mano antes de PR**: el CI NO lo corre (ver §Gates manuales).
-- Mock mode del agente: activo salvo `NEXT_PUBLIC_USE_MOCK_API=false` (el cliente chequea `!== 'false'`).
+- Mock mode: **apagado por defecto y NUNCA en producción**. Sólo lo tienen 3 servicios
+  (`funnel`, `funnel-applications`, `aprobacion`), los tres con la misma guarda:
+  `NODE_ENV === 'production'` → false; si no, `NEXT_PUBLIC_USE_MOCK_API === 'true'` (opt-in
+  explícito) o falta `NEXT_PUBLIC_AGENT_URL`. **Cobranza y cotizador no tienen mock: siempre
+  pegan al agente.** (Acá decía «activo salvo `!== 'false'`»; ese patrón no existe en el código
+  y hacía pensar que el panel servía datos inventados.)
 - ⚠️ `ANTHROPIC_API_KEY`, `INNGEST_*`, las keys de proveedores → viven en el `.env` del agent, NO acá.
 
 ## Auth y permisos

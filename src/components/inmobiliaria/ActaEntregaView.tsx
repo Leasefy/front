@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Package,
@@ -28,6 +28,11 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import {
+  PAGE_SIZE_OPTIONS,
+  useTablePagination,
+} from '@/lib/hooks/use-table-pagination';
 import { IconButton } from '@leasefy/cadence';
 import type { InventoryItem } from '@/lib/types/inmobiliaria';
 
@@ -98,11 +103,25 @@ export function ActaEntregaView({
   const hasItems = inventoryItems && inventoryItems.length > 0;
 
   // Filter items by search term
-  const filteredItems = hasItems
-    ? inventoryItems.filter((item) =>
+  const filteredItems = useMemo(
+    () =>
+      inventoryItems?.filter((item) =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : [];
+      ) ?? [],
+    [inventoryItems, searchTerm]
+  );
+
+  // `resetKey` con la búsqueda: buscar estando en la página 3 dejaría la tabla
+  // en blanco sobre un resultado que sí tiene ítems.
+  const {
+    pageItems,
+    total: totalFiltrado,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(filteredItems, { resetKey: searchTerm });
 
   // Count by condition
   const conditionCounts = hasItems
@@ -195,25 +214,25 @@ export function ActaEntregaView({
               <Table className="w-full">
                 <TableHeader>
                   <TableRow className="border-b border-border">
-                    <TableHead className="text-left py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
+                    <TableHead className="text-left py-3 px-2">
                       {t('inmobiliaria.acta.thItem')}
                     </TableHead>
-                    <TableHead className="text-center py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
+                    <TableHead className="text-center py-3 px-2">
                       {t('inmobiliaria.acta.thQty')}
                     </TableHead>
-                    <TableHead className="text-center py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
+                    <TableHead className="text-center py-3 px-2">
                       {t('inmobiliaria.acta.thCondition')}
                     </TableHead>
-                    <TableHead className="text-left py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
+                    <TableHead className="text-left py-3 px-2">
                       {t('inmobiliaria.acta.thNotes')}
                     </TableHead>
-                    <TableHead className="text-center py-3 px-2 text-xs font-medium text-muted-foreground uppercase">
+                    <TableHead className="text-center py-3 px-2">
                       {t('inmobiliaria.acta.thPhoto')}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredItems.map((item, index) => {
+                  {pageItems.map((item, index) => {
                     const style = CONDITION_STYLES[item.condition];
                     const Icon = style.icon;
                     return (
@@ -279,9 +298,11 @@ export function ActaEntregaView({
               </Table>
             </div>
 
-            {/* Mobile Cards */}
+            {/* Mobile Cards — la misma página que la tabla de escritorio: si
+                cada uno recortara distinto, el pie contaría otra cosa según el
+                ancho de la ventana. */}
             <div className="md:hidden space-y-3">
-              {filteredItems.map((item, index) => {
+              {pageItems.map((item, index) => {
                 const style = CONDITION_STYLES[item.condition];
                 const Icon = style.icon;
                 return (
@@ -329,10 +350,24 @@ export function ActaEntregaView({
               })}
             </div>
 
-            {/* Total Count */}
+            {/* Pie: sólo si hay más de una página. */}
+            {shouldPaginate && (
+              <div className="pt-3 border-t border-border">
+                <TablePagination
+                  total={totalFiltrado}
+                  page={page}
+                  pageSize={pageSize}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </div>
+            )}
+
+            {/* Total Count — el total del filtro completo, no el de la página. */}
             <div className="flex items-center justify-between pt-3 border-t border-border">
               <span className="text-sm text-muted-foreground">
-                {t('inmobiliaria.acta.total')}: {filteredItems.length} items
+                {t('inmobiliaria.acta.total')}: {totalFiltrado} items
               </span>
               <Button
                 variant="link"

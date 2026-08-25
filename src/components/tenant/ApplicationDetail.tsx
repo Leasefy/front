@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { MapPin, Hash, Warning, X } from '@phosphor-icons/react';
+import { MapPin, Hash, Warning } from '@phosphor-icons/react';
 import { MonoLabel } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
@@ -12,7 +12,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetClose,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,7 +35,6 @@ import type { Property } from '@/lib/types/property';
 const STATUS_EXPLANATIONS: Record<string, string> = {
   submitted: 'Tu aplicación ha sido recibida y está en cola para revisión.',
   under_review: 'El propietario está revisando tu aplicación.',
-  pre_approved: '¡El propietario está interesado! Te contactarán pronto.',
   approved: '¡Felicitaciones! Tu aplicación ha sido aprobada.',
   rejected: 'Lo sentimos, tu aplicación no fue aprobada esta vez.',
   withdrawn: 'Has retirado esta aplicación.',
@@ -144,18 +142,8 @@ export function ApplicationDetail({
     <>
       <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
         <SheetContent className="flex w-full flex-col overflow-hidden p-0 sm:max-w-xl">
-          {/* Close Button */}
-          <SheetClose asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-4 top-4 z-10 rounded-full bg-surface/80 backdrop-blur-sm"
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Cerrar</span>
-            </Button>
-          </SheetClose>
-
+          {/* La ✕ la pone `SheetContent`, en esta misma esquina. Acá había una
+              segunda a mano, exactamente encima. */}
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto">
             {/* Property Header with Image */}
@@ -237,7 +225,7 @@ export function ApplicationDetail({
                       status === 'approved' && 'bg-success',
                       status === 'rejected' && 'bg-danger',
                       status === 'withdrawn' && 'bg-fg-subtle',
-                      ['submitted', 'under_review', 'pre_approved'].includes(status) && 'bg-primary'
+                      ['submitted', 'under_review'].includes(status) && 'bg-primary'
                     )}
                     style={{ width: `${progress}%` }}
                   />
@@ -273,7 +261,7 @@ export function ApplicationDetail({
                 onClick={handleWithdrawClick}
               >
                 <Warning className="h-4 w-4 mr-2" />
-                Retirar aplicación
+                Retirar postulación
               </Button>
             </div>
           )}

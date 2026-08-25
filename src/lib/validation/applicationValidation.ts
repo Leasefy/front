@@ -198,36 +198,10 @@ export function validateEmploymentStep(data: Partial<EmploymentInfo>): Validatio
     errors.employmentStatus = 'Selecciona tu situacion laboral';
   }
 
-  // If employed or self-employed, require additional fields
+  // If employed or self-employed, require the company name
   if (requiresJobDetails(data.employmentStatus)) {
-    // Company name - required
     if (!data.companyName || data.companyName.trim().length < 2) {
       errors.companyName = 'Nombre de empresa requerido';
-    }
-
-    // Industry - required
-    if (!data.industry) {
-      errors.industry = 'Selecciona una industria';
-    }
-
-    // Position - required
-    if (!data.position || data.position.trim().length < 2) {
-      errors.position = 'Cargo requerido';
-    }
-
-    // Contract type - required for employed
-    if (data.employmentStatus === 'employed' && !data.contractType) {
-      errors.contractType = 'Selecciona tipo de contrato';
-    }
-
-    // Time at job - optional but if provided must be >= 0
-    if (data.timeAtJob !== undefined && data.timeAtJob < 0) {
-      errors.timeAtJob = 'El tiempo no puede ser negativo';
-    }
-
-    // Employer phone - optional but if provided must be valid
-    if (data.employerPhone && !isValidColombianPhone(data.employerPhone)) {
-      errors.employerPhone = 'Telefono invalido';
     }
   }
 
@@ -279,81 +253,11 @@ export function validateIncomeStep(data: Partial<IncomeInfo>): ValidationResult 
 }
 
 // ============================================================================
-// Step 4: References Validation
-// ============================================================================
-
-import type { ReferenceInfo, PreviousLandlordReference, EmploymentReference, PersonalReference } from '@/lib/types/application';
-
-function isValidLandlordRef(ref: Partial<PreviousLandlordReference>): boolean {
-  return !!(
-    ref.name && ref.name.trim().length >= 2 &&
-    ref.phone && isValidColombianPhone(ref.phone) &&
-    ref.address && ref.address.trim().length >= 5 &&
-    ref.duration && ref.duration > 0
-  );
-}
-
-function isValidEmploymentRef(ref: Partial<EmploymentReference>): boolean {
-  return !!(
-    ref.name && ref.name.trim().length >= 2 &&
-    ref.phone && isValidColombianPhone(ref.phone) &&
-    ref.company && ref.company.trim().length >= 2 &&
-    ref.relationship && ref.relationship.trim().length >= 2
-  );
-}
-
-function isValidPersonalRef(ref: Partial<PersonalReference>): boolean {
-  return !!(
-    ref.name && ref.name.trim().length >= 2 &&
-    ref.phone && isValidColombianPhone(ref.phone) &&
-    ref.relationship && ref.relationship.trim().length >= 2
-  );
-}
-
-export function validateReferencesStep(data: Partial<ReferenceInfo>): ValidationResult {
-  const errors: Record<string, string> = {};
-
-  // Check landlord references (min 1)
-  const landlords = data.previousLandlords || [];
-  if (landlords.length === 0) {
-    errors.previousLandlords = 'Agrega al menos un arrendador anterior';
-  } else {
-    const invalidLandlords = landlords.filter((ref, idx) => !isValidLandlordRef(ref));
-    if (invalidLandlords.length > 0) {
-      errors.previousLandlords = 'Completa todos los campos de los arrendadores anteriores';
-    }
-  }
-
-  // Check employment references (min 1)
-  const employmentRefs = data.employmentReferences || [];
-  if (employmentRefs.length === 0) {
-    errors.employmentReferences = 'Agrega al menos una referencia laboral';
-  } else {
-    const invalidEmployment = employmentRefs.filter((ref, idx) => !isValidEmploymentRef(ref));
-    if (invalidEmployment.length > 0) {
-      errors.employmentReferences = 'Completa todos los campos de las referencias laborales';
-    }
-  }
-
-  // Check personal references (min 1)
-  const personalRefs = data.personalReferences || [];
-  if (personalRefs.length === 0) {
-    errors.personalReferences = 'Agrega al menos una referencia personal';
-  } else {
-    const invalidPersonal = personalRefs.filter((ref, idx) => !isValidPersonalRef(ref));
-    if (invalidPersonal.length > 0) {
-      errors.personalReferences = 'Completa todos los campos de las referencias personales';
-    }
-  }
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors,
-  };
-}
-
-// ============================================================================
-// Step 5: Documents Validation
+// Step 4: Documents Validation
+//
+// T-0025 dropped the references step entirely (Arrendadores Anteriores /
+// Referencias Laborales) — `validateReferencesStep` and its helpers are gone.
+// Documents moved from step 5 to step 4.
 // ============================================================================
 
 import type { DocumentInfo, DocumentUpload } from '@/lib/types/application';
@@ -370,14 +274,9 @@ export function validateDocumentsStep(data: Partial<DocumentInfo>): ValidationRe
     errors.idDocument = 'Documento de identidad es requerido';
   }
 
-  // Bank statement - required (new)
+  // Bank statement - required
   if (!hasDocument(data.bankStatement)) {
     errors.bankStatement = 'El extracto bancario es requerido para la evaluación';
-  }
-
-  // Employment letter OR income proof — at least one required
-  if (!hasDocument(data.employmentLetter) && !hasDocument(data.incomeProof)) {
-    errors.incomeProof = 'Debés subir al menos uno: contrato laboral o certificado de ingresos';
   }
 
   return {
@@ -387,7 +286,7 @@ export function validateDocumentsStep(data: Partial<DocumentInfo>): ValidationRe
 }
 
 // ============================================================================
-// Step 6: Review Validation (terms acceptance)
+// Step 5: Review Validation (terms acceptance)
 // ============================================================================
 
 export function validateReviewStep(acceptTerms: boolean, authorizeVerification: boolean): ValidationResult {
@@ -417,7 +316,6 @@ export function validateStep(
     personal: Partial<PersonalInfo>;
     employment: Partial<EmploymentInfo>;
     income: Partial<IncomeInfo>;
-    references: Partial<ReferenceInfo>;
     documents: Partial<DocumentInfo>;
   },
   terms?: { acceptTerms: boolean; authorizeVerification: boolean }
@@ -430,10 +328,8 @@ export function validateStep(
     case 3:
       return validateIncomeStep(data.income);
     case 4:
-      return validateReferencesStep(data.references);
-    case 5:
       return validateDocumentsStep(data.documents);
-    case 6:
+    case 5:
       return terms
         ? validateReviewStep(terms.acceptTerms, terms.authorizeVerification)
         : { isValid: false, errors: { general: 'Faltan terminos' } };
@@ -460,21 +356,13 @@ export function getMissingFieldsList(step: number, errors: Record<string, string
     // Employment
     employmentStatus: 'Situacion laboral',
     companyName: 'Nombre de la empresa',
-    industry: 'Industria',
-    position: 'Cargo',
-    contractType: 'Tipo de contrato',
     // Income
     monthlySalary: 'Salario mensual',
     additionalIncomeSource: 'Fuente de ingreso adicional',
     monthlyObligations: 'Obligaciones mensuales',
-    // References
-    previousLandlords: 'Arrendadores anteriores',
-    employmentReferences: 'Referencias laborales',
-    personalReferences: 'Referencias personales',
     // Documents
     idDocument: 'Documento de identidad',
     bankStatement: 'Extracto bancario',
-    incomeProof: 'Contrato laboral o certificado de ingresos',
     // Review
     acceptTerms: 'Terminos y condiciones',
     authorizeVerification: 'Autorizacion de verificacion',

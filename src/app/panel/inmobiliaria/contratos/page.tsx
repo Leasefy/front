@@ -13,10 +13,10 @@
  * CONTRACT_STATUS_COLORS already ship dark variants).
  */
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   FileText,
-  Plus,
   Warning,
   CaretRight,
   House,
@@ -29,9 +29,12 @@ import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@leasefy/cadence';
-import { EmptyState } from '@/components/ui/empty-state';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { useContracts } from '@/lib/hooks/useContracts';
+import { NuevoContratoBoton } from '@/components/inmobiliaria/SelectorPostulacion';
 import {
   CONTRACT_STATUS_LABELS,
   CONTRACT_STATUS_COLORS,
@@ -104,6 +107,21 @@ function ContratosContent() {
 
   useAutoRefresh(refetch);
 
+  /**
+   * Paginado de presentación: `useContracts()` trae el portafolio entero y una
+   * inmobiliaria real tiene cientos de contratos. No hay filtros en esta
+   * pantalla, así que no hace falta `resetKey`.
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(contracts);
+
   const COLUMNS = [
     tx('Inquilino', 'Tenant'),
     tx('Propiedad', 'Property'),
@@ -129,14 +147,23 @@ function ContratosContent() {
             )}
           </p>
         </div>
-        <Button
-          onClick={() => router.push('/panel/inmobiliaria/contratos/nuevo')}
-          hideArrow
-          className="shrink-0 gap-2"
-        >
-          <Plus className="w-4 h-4" weight="bold" />
-          {tx('Nuevo contrato', 'New contract')}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" asChild hideArrow>
+            <Link href="/panel/inmobiliaria/contratos/migrar">
+              {tx('Migrar', 'Migrate')}
+            </Link>
+          </Button>
+          <Button variant="outline" asChild hideArrow>
+            <Link href="/panel/inmobiliaria/contratos/conceptos">
+              {tx('Conceptos', 'Concepts')}
+            </Link>
+          </Button>
+          {/* Antes navegaba a /contratos/nuevo a secas, y esa pantalla exige
+              `?applicationId=`: el botón principal de Contratos mostraba
+              "Falta el parámetro applicationId" en vez de crear nada. Ahora
+              pregunta sobre qué postulación aprobada se arma el contrato. */}
+          <NuevoContratoBoton />
+        </div>
       </header>
 
       {/* Stats */}
@@ -205,19 +232,31 @@ function ContratosContent() {
             {!isLoading && !error && contracts.length === 0 && (
               <TableRow>
                 <TableCell colSpan={COLUMNS.length} className="p-0">
-                  <EmptyState
-                    icon={FileText}
-                    title={tx('Sin contratos aún', 'No contracts yet')}
-                    description={tx(
-                      'Crea tu primer contrato de arrendamiento para empezar.',
-                      'Create your first rental contract to get started.',
+                  {/* No hay filtros en esta pantalla: un vacío acá siempre
+                      significa «todavía no hay ninguno», y lo útil es poder
+                      crear el primero desde el mismo lugar donde falta. */}
+                  <SinDatos
+                    queSon="contratos"
+                    icono={FileText}
+                    titulo={tx('Sin contratos aún', 'No contracts yet')}
+                    descripcion={tx(
+                      'Cuando cierres un arriendo, su contrato aparece acá con su estado y sus fechas.',
+                      "When you close a lease, its contract shows up here with its status and dates.",
                     )}
+                    /* ⚠️ Acá había un enlace a `/contratos/nuevo` a secas, y esa
+                       pantalla EXIGE `?applicationId=`: el botón mostraba
+                       «Falta el parámetro applicationId» en vez de crear nada.
+                       Es el mismo defecto que ya estaba resuelto arriba con
+                       `NuevoContratoBoton`, que pregunta sobre qué postulación
+                       aprobada se arma el contrato. Un contrato no se crea de
+                       cero: nace de una postulación. */
+                    accion={<NuevoContratoBoton />}
                   />
                 </TableCell>
               </TableRow>
             )}
 
-            {contracts.map((c) => (
+            {pageItems.map((c) => (
                 <TableRow
                   key={c.id}
                   onClick={() => openContract(c)}
@@ -266,6 +305,20 @@ function ContratosContent() {
               ))}
           </TableBody>
         </Table>
+
+        {/* Pie: sólo si hay más de una página. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
       </section>
     </div>
   );

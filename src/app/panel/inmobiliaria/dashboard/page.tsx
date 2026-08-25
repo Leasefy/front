@@ -22,7 +22,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { EmptyState, Spinner } from '@/components/ui';
-import { ErrorState } from '@/components/ui/error-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { MonoLabel, BrandDot, BrandContour } from '@/components/brand';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -131,7 +131,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
         <div className="h-5" />
       )}
       {href && (
-        <CaretRight className="absolute bottom-4 right-4 h-3.5 w-3.5 text-fg-muted/50 group-hover:text-primary transition-colors" weight="bold" />
+        <CaretRight className="absolute bottom-4 right-4 h-3.5 w-3.5 text-fg-subtle group-hover:text-primary transition-colors" weight="bold" />
       )}
     </div>
   );
@@ -184,7 +184,7 @@ function QuickAction({ title, description, href, icon: Icon }: QuickActionProps)
         <p className="text-sm font-medium text-fg">{title}</p>
         <p className="text-xs text-fg-muted">{description}</p>
       </div>
-      <CaretRight className="h-3.5 w-3.5 text-fg-muted/50 group-hover:text-primary transition-colors" weight="bold" />
+      <CaretRight className="h-3.5 w-3.5 text-fg-subtle group-hover:text-primary transition-colors" weight="bold" />
     </Link>
   );
 }
@@ -256,7 +256,7 @@ export default function InmobiliariaDashboardPage() {
   const {
     kpis: kpisData,
     isLoading: kpisLoading,
-    error: kpisError,
+    errorCrudo: kpisError,
     refetch: refetchKpis,
   } = useInmobiliariaDashboard({
     skip: permLoading || !canAccess('analytics', 'view'),
@@ -312,10 +312,13 @@ export default function InmobiliariaDashboardPage() {
   if (kpisError && !kpisData) {
     return (
       <div className="p-6 lg:p-8">
-        <ErrorState
-          title={t('inmobiliaria.dashboard.title')}
-          description="No pudimos cargar los indicadores de la agencia. Verificá tu conexión e intentá de nuevo."
-          onRetry={refetchKpis}
+        {/* `ErrorState` no distingue un 404 de un corte de red: ofrecía
+            reintentar siempre y describía todo igual. `FalloDeCarga` lo decide
+            por el status. */}
+        <FalloDeCarga
+          error={kpisError}
+          queEs="los indicadores de la agencia"
+          onReintentar={refetchKpis}
         />
       </div>
     );
@@ -352,7 +355,7 @@ export default function InmobiliariaDashboardPage() {
           value={kpis.totalProperties}
           subtitle={t('inmobiliaria.dashboard.kpi.rentedAndAvailable', { rented: kpis.propertiesRented, available: kpis.propertiesAvailable })}
           icon={Buildings}
-          href="/panel/inmobiliaria/portafolio"
+          href="/panel/inmobiliaria/inmuebles"
         />
         <KPICard
           title={t('inmobiliaria.dashboard.kpi.commissions')}
@@ -458,7 +461,7 @@ export default function InmobiliariaDashboardPage() {
           <QuickAction
             title={t('inmobiliaria.dashboard.quickActions.newConsignment')}
             description={t('inmobiliaria.dashboard.quickActions.newConsignmentDesc')}
-            href="/panel/inmobiliaria/portafolio/nuevo"
+            href="/panel/inmobiliaria/inmuebles/nuevo"
             icon={Buildings}
           />
           <QuickAction

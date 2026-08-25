@@ -77,6 +77,11 @@ export function AgenteCard({
       text: 'text-warning',
       label: t('inmobiliaria.agentes.card.status.onLeave'),
     },
+    invited: {
+      bg: 'bg-warning-soft',
+      text: 'text-warning',
+      label: t('inmobiliaria.agentes.card.status.invited'),
+    },
   }), [t]);
 
   const role = ROLE_COLORS[agente.role];

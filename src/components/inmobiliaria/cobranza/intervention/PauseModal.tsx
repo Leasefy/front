@@ -10,7 +10,7 @@
 import * as React from 'react'
 import { useEffect, useState } from 'react'
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
@@ -28,6 +28,13 @@ import {
 void React
 
 interface PauseModalProps {
+  /**
+   * `reanudar` manda `paused_until: null`, que es como el agente entiende
+   * «volvé a trabajar este caso». Es la MISMA puerta que pausar —mismo
+   * endpoint, mismo permiso, mismo motivo obligatorio— porque las dos son la
+   * misma decisión y las dos tienen que quedar en la bitácora.
+   */
+  modo?: 'pausar' | 'reanudar'
   open: boolean
   onClose: () => void
   debtorId: string
@@ -41,7 +48,13 @@ function defaultPausedUntil(): string {
   return d.toISOString().slice(0, 10)
 }
 
-export function PauseModal({ open, onClose, debtorId, onSuccess }: PauseModalProps) {
+export function PauseModal({
+  modo = 'pausar',
+  open,
+  onClose,
+  debtorId,
+  onSuccess,
+}: PauseModalProps) {
   const { t } = useI18n()
   const { agency } = useAuth()
   const agencyId = agency?.id ?? null
@@ -74,13 +87,16 @@ export function PauseModal({ open, onClose, debtorId, onSuccess }: PauseModalPro
     }
     setSubmitting(true)
     try {
-      const res = await globalThis.fetch(
+      const res = await agentFetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}/pause`,
         {
           method: 'POST',
-          headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
-            paused_until: new Date(pausedUntil + 'T00:00:00').toISOString(),
+            paused_until:
+              modo === 'reanudar'
+                ? null
+                : new Date(pausedUntil + 'T00:00:00').toISOString(),
             reason: reason.trim(),
           }),
         },
@@ -107,10 +123,18 @@ export function PauseModal({ open, onClose, debtorId, onSuccess }: PauseModalPro
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {t('inmobiliaria.ai.cobranza.detail.acciones.pause.modalTitle')}
+            {t(
+              modo === 'reanudar'
+                ? 'inmobiliaria.ai.cobranza.detail.acciones.resume.modalTitle'
+                : 'inmobiliaria.ai.cobranza.detail.acciones.pause.modalTitle',
+            )}
           </DialogTitle>
           <DialogDescription>
-            {t('inmobiliaria.ai.cobranza.detail.acciones.pause.modalDescription')}
+            {t(
+              modo === 'reanudar'
+                ? 'inmobiliaria.ai.cobranza.detail.acciones.resume.modalDescription'
+                : 'inmobiliaria.ai.cobranza.detail.acciones.pause.modalDescription',
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -120,17 +144,20 @@ export function PauseModal({ open, onClose, debtorId, onSuccess }: PauseModalPro
           </p>
         ) : (
           <div className="space-y-3">
-            <label className="block">
-              <span className="text-xs font-medium text-fg-subtle">
-                {t('inmobiliaria.ai.cobranza.detail.acciones.pause.untilLabel')}
-              </span>
-              <Input
-                type="date"
-                value={pausedUntil}
-                onChange={(e) => setPausedUntil(e.target.value)}
-                className="mt-1 w-full"
-              />
-            </label>
+            {/* Reanudar no tiene «hasta cuándo»: la pausa se levanta y ya. */}
+            {modo === 'pausar' && (
+              <label className="block">
+                <span className="text-xs font-medium text-fg-subtle">
+                  {t('inmobiliaria.ai.cobranza.detail.acciones.pause.untilLabel')}
+                </span>
+                <Input
+                  type="date"
+                  value={pausedUntil}
+                  onChange={(e) => setPausedUntil(e.target.value)}
+                  className="mt-1 w-full"
+                />
+              </label>
+            )}
             <label className="block">
               <span className="text-xs font-medium text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.detail.acciones.pause.reasonLabel')}
@@ -168,7 +195,11 @@ export function PauseModal({ open, onClose, debtorId, onSuccess }: PauseModalPro
           >
             {submitting
               ? t('inmobiliaria.ai.cobranza.detail.acciones.pause.confirming')
-              : t('inmobiliaria.ai.cobranza.detail.acciones.pause.confirm')}
+              : t(
+                  modo === 'reanudar'
+                    ? 'inmobiliaria.ai.cobranza.detail.acciones.resume.confirm'
+                    : 'inmobiliaria.ai.cobranza.detail.acciones.pause.confirm',
+                )}
           </Button>
         </DialogFooter>
       </DialogContent>

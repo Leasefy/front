@@ -1019,15 +1019,28 @@
     animation: fade-in 0.4s ease-out forwards;
   }
 
-  /* Scale in animation for badges */
+  /* Scale in animation for badges.
+   *
+   * ⚠️ Anima `scale`, NO `transform` — y no es un detalle de estilo.
+   *
+   * Se escribió para badges, pero `animate-scale-in` es la animación que el DS
+   * le pone a TODOS sus diálogos, y esos se centran con
+   * `left-1/2 -translate-x-1/2`. Con `transform: scale(...)` + `forwards`, la
+   * animación pisa el translate y lo deja pisado para siempre: el diálogo queda
+   * con su borde izquierdo en la mitad de la pantalla. Medido antes del
+   * arreglo: viewport 1600, diálogo de 1024 → left 800, right 1824 (se salía).
+   *
+   * `scale` es una propiedad independiente: compone con `transform` en vez de
+   * reemplazarlo. Se ve igual y el centrado sobrevive.
+   */
   @keyframes scale-in {
     from {
       opacity: 0;
-      transform: scale(0.8);
+      scale: 0.8;
     }
     to {
       opacity: 1;
-      transform: scale(1);
+      scale: 1;
     }
   }
 
@@ -1555,7 +1568,14 @@ select:-webkit-autofill:active {
   --border-strong: #403c33;
   --fg: #fbfaf9;
   --fg-muted: #b3aea5;
-  --fg-subtle: #7e7a72;
+  /* Era #7e7a72 → 3.72:1 sobre la superficie de tabla (#24221c, medido).
+     WCAG AA pide 4.5:1 para texto de menos de 18px, y este token viste las
+     cabeceras de tabla del DS — `TableHead` de @leasefy/cadence trae horneado
+     `text-label text-fg-subtle`, o sea 74 archivos del panel a 11px con
+     contraste insuficiente. #8d8980 es el MISMO matiz aclarado hasta el
+     mínimo que cumple: 4.54:1. En claro el token ya cumplía; esto era un
+     defecto sólo del tema oscuro. */
+  --fg-subtle: #8d8980;
   --primary-hover: #3b5bff;
   /* Dark primary = light periwinkle fill → text must be dark ink (not white).
      Was missing here, so it inherited :root's #fff → white text on periwinkle. */
@@ -1568,6 +1588,20 @@ select:-webkit-autofill:active {
   --info-soft: rgba(42, 111, 176, 0.2);
 }
 
+/* ── El sidebar NO pisa `--primary` (2026-08-16) ──────────────────────────────
+   Hubo un `.tinte-de-marca` que en claro reemplazaba `--primary` por el hex que
+   la agencia elige en Configuración → Marca, y en oscuro volvía al del tema.
+   Se quitó por definición de producto: **el primario es el del tema y nada
+   más** — indigo-500 en claro, indigo-300 en oscuro, igual que el resto del
+   panel. Medido en vivo antes de sacarlo: el «Nueva consignación» del sidebar
+   salía #4E53A2 mientras «Nuevo propietario», dos columnas a la derecha, salía
+   con el primario del tema. Dos azules distintos para el mismo rol.
+
+   Si algún día vuelve el tinte de marca, tiene que resolver eso: un solo hex no
+   sirve para los dos temas, y el `--primary-fg` de oscuro es tinta (#14130f),
+   pensada para un relleno claro — sobre un color de marca oscuro daba 2,73:1 y
+   AA pide 4,5:1. */
+
 /* ── Admin panel scope (see src/app/admin/layout.tsx) ─────────────────────────
    The nest-brandbook admin theme is fixed paper/ink (no light/dark toggle) and
    must never leak into the customer app. tailwind.config.ts's `bg`/`fg` DEFAULT
@@ -1577,6 +1611,41 @@ select:-webkit-autofill:active {
 .admin-scope {
   --bg: #F7F7F5;
   --fg: #0A1B2E;
+}
+
+/* ── Toasts: la ESTRUCTURA que `unstyled` se llevó puesta ────────────────────
+   Ver src/components/ui/toast.tsx, que monta el Toaster con
+   `toastOptions={{ unstyled: true }}` para que la piel del DS no la pise la
+   hoja que sonner inyecta en runtime.
+
+   `unstyled` no saca sólo la piel: saca TODO, incluida la maquetación. Y las
+   clases del DS están escritas para ir ARRIBA de la base de sonner: describen
+   color, radio y padding, pero nunca declararon el layout — nunca hizo falta.
+   Medido en el toast con acción:
+
+     botón  76×57 px · white-space: normal · flex-shrink: 1
+     → «Copiar enlace» partido en tres renglones
+
+   Lo que sonner daba y nadie volvió a declarar:
+     [data-button]  → display:flex; align-items:center; flex-shrink:0
+     [data-content] → display:flex; flex-direction:column; gap:2px
+
+   Va acá y no en el shim porque el merge del DS es plano
+   (`{ ...las suyas, ...las tuyas }`): pasar `actionButton` REEMPLAZA su piel en
+   vez de sumarle. Sólo se declara lo que el DS no toca, así que no hay pelea
+   de especificidad con sus clases. */
+[data-sonner-toast] [data-content] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0; /* que se ajuste el texto, no el botón */
+}
+
+[data-sonner-toast] [data-button] {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* ── Landing "nueva": seamless section bands ──────────────────────────────────
@@ -1616,3 +1685,48 @@ select:-webkit-autofill:active {
 @media (prefers-reduced-motion: reduce) {
   [style*="lpProgress"], [style*="lpMarquee"], [style*="lpMove"], [style*="lpSheen"] { animation: none !important; }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Grilla de inmuebles: responde a SU ancho, no al de la ventana.
+ *
+ * `/propiedades` parte la pantalla en dos —lista y mapa— así que la grilla
+ * vive en media ventana. Con breakpoints de viewport (`md:grid-cols-2`) medía
+ * lo que no era: a 1024px de pantalla el panel son 512px y las tarjetas
+ * quedaban en **244px**, más angostas que en un teléfono. Y al revés: en una
+ * pantalla ancha se quedaba en dos columnas desperdiciando 1.000px.
+ *
+ * Container queries preguntan por el ancho del contenedor, que es la medida
+ * que de verdad manda. Se usa CSS plano y no el plugin de Tailwind para no
+ * sumar una dependencia por tres reglas.
+ * ───────────────────────────────────────────────────────────────────────── */
+.contenedor-consulta {
+  container-type: inline-size;
+}
+
+.grilla-inmuebles {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* El contenedor es la grilla misma (`PropertyGrid` lleva `.contenedor-consulta`),
+ * así que los umbrales se miden sobre SU ancho. Salen del ancho MÍNIMO de
+ * tarjeta (~300px) más el gap de 24px, no de números redondos:
+ *   2 columnas piden 300*2 + 24    = 624px
+ *   3 columnas piden 300*3 + 24*2  = 948px
+ *   4 columnas piden 300*4 + 24*3  = 1272px
+ * Puestos más abajo, la grilla salta a columnas de ~244px — exactamente el
+ * defecto que se venía a arreglar, sólo que a otro tamaño. */
+@container (min-width: 624px) {
+  .grilla-inmuebles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@container (min-width: 948px) {
+  .grilla-inmuebles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@container (min-width: 1272px) {
+  .grilla-inmuebles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* Sin soporte de container queries la grilla se queda en una columna, que es
+   legible en cualquier ancho — nunca en dos columnas de 244px. */

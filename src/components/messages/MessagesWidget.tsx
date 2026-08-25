@@ -29,6 +29,7 @@ import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { useConversations, useChat } from '@/lib/hooks/useMessages';
 import type { ChatConversation } from '@/lib/api/messages.types';
 
@@ -111,7 +112,13 @@ function MessagesSkeleton() {
 
 export function MessagesWidget({ actor }: MessagesWidgetProps) {
   const { t, locale } = useI18n();
-  const { conversations, totalUnread, isLoading: isLoadingConversations, refetch: refetchConversations } = useConversations();
+  const {
+    conversations,
+    totalUnread,
+    isLoading: isLoadingConversations,
+    errorCrudo: errorConversaciones,
+    refetch: refetchConversations,
+  } = useConversations();
 
   const searchParams = useSearchParams();
   const urlApplicationId = searchParams.get('applicationId');
@@ -270,8 +277,8 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={locale === 'es' ? 'Buscar conversacion...' : 'Search conversation...'}
-                    aria-label={locale === 'es' ? 'Buscar conversacion' : 'Search conversation'}
+                    placeholder={locale === 'es' ? 'Buscar conversación...' : 'Search conversation...'}
+                    aria-label={locale === 'es' ? 'Buscar conversación' : 'Search conversation'}
                     className="h-11 pl-11 rounded-full bg-muted"
                   />
                 </div>
@@ -281,6 +288,17 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
               <div className="flex-1 overflow-y-auto">
                 {isLoadingConversations ? (
                   <ConversationsSkeleton />
+                ) : errorConversaciones ? (
+                  /* Sin esto, una consulta caída se leía como «Sin
+                     conversaciones»: le decíamos a alguien que nunca habló con
+                     nadie cuando lo que pasó fue que no pudimos preguntar. */
+                  <FalloDeCarga
+                    error={errorConversaciones}
+                    queEs="tus conversaciones"
+                    onReintentar={refetchConversations}
+                    enmarcado={false}
+                    className="py-10"
+                  />
                 ) : filteredConversations.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
                     <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
@@ -293,7 +311,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                       {searchQuery
                         ? (locale === 'es' ? 'No se encontraron conversaciones' : 'No conversations found')
                         : (locale === 'es'
-                            ? `Cuando te comuniques con ${otherParty}, tus conversaciones apareceran aqui.`
+                            ? `Cuando te comuniques con ${otherParty}, tus conversaciones aparecerán aquí.`
                             : `When you communicate with ${otherParty}, your conversations will appear here.`)}
                     </p>
                   </div>
@@ -374,7 +392,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                   <EmptyState
                     icon={ChatCircle}
                     title={locale === 'es' ? 'Sin mensajes' : 'No messages'}
-                    description={locale === 'es' ? 'Selecciona una conversacion para ver los mensajes.' : 'Select a conversation to view messages.'}
+                    description={locale === 'es' ? 'Selecciona una conversación para ver los mensajes.' : 'Select a conversation to view messages.'}
                   />
                 </div>
               ) : (
@@ -444,7 +462,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                               >
                                 <Archive className="w-4 h-4 text-muted-foreground" />
-                                {locale === 'es' ? 'Archivar conversacion' : 'Archive conversation'}
+                                {locale === 'es' ? 'Archivar conversación' : 'Archive conversation'}
                               </button>
                               <button
                                 onClick={handleMute}
@@ -484,7 +502,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                             </p>
                             <p className="text-sm text-muted-foreground max-w-xs">
                               {locale === 'es'
-                                ? 'Envia un mensaje para iniciar la conversacion.'
+                                ? 'Envía un mensaje para iniciar la conversación.'
                                 : 'Send a message to start the conversation.'}
                             </p>
                           </div>
@@ -670,7 +688,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted rounded-xl transition-colors"
                                 >
                                   <Archive className="w-4 h-4 text-muted-foreground" />
-                                  {locale === 'es' ? 'Archivar conversacion' : 'Archive conversation'}
+                                  {locale === 'es' ? 'Archivar conversación' : 'Archive conversation'}
                                 </button>
                               </div>
                             </div>

@@ -14,6 +14,7 @@ import {
 } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
+import { AspaDeCierre } from "@/components/ui/dialog"
 
 /**
  * ADAPTER fino sobre el Sheet de @leasefy/cadence que preserva la API local del mvp:
@@ -71,11 +72,20 @@ interface SheetContentProps extends Omit<DSSheetContentProps, "hideClose"> {
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof DSSheetContent>,
   SheetContentProps
->(({ side = "right", className, overlayClassName, children, hideCloseButton = false, ...props }, ref) => (
+>(({ side = "right", className, overlayClassName, children, hideCloseButton = false, ...props }, ref) => {
+  // Lenis escucha la rueda en `window`, así que el scroll-lock de Radix no lo
+  // frena: con un cajón abierto, la rueda movía el fondo. Antes se frenaba acá
+  // al montar, asumiendo que el Content sólo existe mientras el cajón está
+  // abierto — falso: en el panel se monta cerrado y dejaba la página congelada.
+  // Ahora lo decide `SmoothScroll` mirando `data-state="open"`.
+  return (
   <DSSheetContent
     ref={ref}
     side={side}
-    hideClose={hideCloseButton}
+    // La ✕ del DS —pelada, `rounded-md`, sin fondo— no se pinta nunca: acá
+    // abajo va el mismo chip gris que en los modales. Un cajón y un diálogo no
+    // pueden cerrarse con dos dibujos distintos.
+    hideClose
     overlayClassName={cn(sheetOverlayClasses, overlayClassName)}
     onWheel={(e) => e.stopPropagation()}
     className={cn(
@@ -90,14 +100,35 @@ const SheetContent = React.forwardRef<
     {...props}
   >
     {children}
+    {/* `hideCloseButton` sigue significando «este cajón trae su propio cierre».
+        Sin eso el aspa la pone el Content, donde iba la del DS.
+        Va DESPUÉS de los hijos y en `z-20` a propósito: media docena de cajones
+        tienen la cabecera `sticky top-0 z-10` con fondo opaco, y la del DS
+        —que se pintaba antes que los hijos y en el mismo z— les quedaba
+        debajo. Por eso varios se habían dibujado su propia ✕ adentro de la
+        cabecera: no era gusto, era que la otra no se veía. */}
+    {!hideCloseButton && <AspaDeCierre className="absolute right-4 top-4 z-20" />}
   </DSSheetContent>
-))
+  )
+})
 SheetContent.displayName = "SheetContent"
+
+interface SheetHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+  /**
+   * Existe sólo para que `ResponsiveDialogHeader` —que es el MISMO call site
+   * en móvil y en escritorio— pueda pedir `hideClose` sin que el prop termine
+   * escupido en el `<div>`. Acá no hace nada: en un Sheet la ✕ la pone el
+   * `SheetContent`, no la cabecera. Para apagarla se usa `hideCloseButton` en
+   * el Content.
+   */
+  hideClose?: boolean
+}
 
 const SheetHeader = ({
   className,
+  hideClose: _hideClose,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
+}: SheetHeaderProps) => (
   <div
     className={cn(
       "flex flex-col space-y-2 text-center sm:text-left",

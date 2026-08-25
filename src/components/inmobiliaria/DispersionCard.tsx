@@ -100,7 +100,7 @@ export function DispersionCard({
         whileTap={{ scale: 0.995 }}
         onClick={() => onViewDetail?.(dispersion)}
         className={cn(
-          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-surface dark:bg-card border-border dark:border-strong cursor-pointer transition-all duration-200 hover:',
+          'w-full flex items-center gap-4 p-4 rounded-xl border-l-4 border bg-surface dark:bg-card border-border dark:border-border-strong cursor-pointer transition-all duration-200 hover:',
           borderColor
         )}
       >
@@ -147,13 +147,13 @@ export function DispersionCard({
       className={cn(
         'w-full rounded-xl border-l-4 border bg-surface dark:bg-card overflow-hidden transition-all duration-200 group hover:',
         borderColor,
-        'border-border dark:border-strong',
+        'border-border dark:border-border-strong',
         onViewDetail && 'cursor-pointer'
       )}
       onClick={() => onViewDetail?.(dispersion)}
     >
       {/* Header Section */}
-      <div className="p-5 pb-4 border-b border-faint dark:border-strong">
+      <div className="p-5 pb-4 border-b border-border-faint dark:border-border-strong">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
@@ -181,9 +181,9 @@ export function DispersionCard({
       </div>
 
       {/* Bank Account Section */}
-      <div className="px-5 py-4 border-b border-faint dark:border-strong">
+      <div className="px-5 py-4 border-b border-border-faint dark:border-border-strong">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
             <Bank className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
@@ -191,11 +191,14 @@ export function DispersionCard({
               Cuenta de destino
             </p>
             <p className="font-medium text-fg dark:text-white truncate text-sm">
-              {formatBankAccount(
-                dispersion.propietarioBankAccount.bank,
-                dispersion.propietarioBankAccount.accountType,
-                dispersion.propietarioBankAccount.accountNumber
-              )}
+              {/* Sin cuenta se dice, no se inventa: es a dónde va la plata. */}
+              {dispersion.propietarioBankAccount
+                ? formatBankAccount(
+                    dispersion.propietarioBankAccount.bank,
+                    dispersion.propietarioBankAccount.accountType,
+                    dispersion.propietarioBankAccount.accountNumber
+                  )
+                : 'No registrada'}
             </p>
           </div>
         </div>
@@ -262,7 +265,7 @@ export function DispersionCard({
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="mt-3 space-y-2 border-t border-border dark:border-strong pt-3">
+              <div className="mt-3 space-y-2 border-t border-border dark:border-border-strong pt-3">
                 {dispersion.items.map((item) => (
                   <div
                     key={item.cobroId}
@@ -283,7 +286,7 @@ export function DispersionCard({
       </div>
 
       {/* Status Section */}
-      <div className="px-5 py-4 border-t border-faint dark:border-strong space-y-2">
+      <div className="px-5 py-4 border-t border-border-faint dark:border-border-strong space-y-2">
         {/* Completed: Show transfer info */}
         {dispersion.status === 'completed' &&
           dispersion.processedAt &&
@@ -335,7 +338,7 @@ export function DispersionCard({
       </div>
 
       {/* Actions */}
-      <div className="px-5 py-4 flex items-center justify-between border-t border-faint dark:border-strong">
+      <div className="px-5 py-4 flex items-center justify-between border-t border-border-faint dark:border-border-strong">
         {dispersion.status === 'pending' && onProcess && (
           <Button
             size="sm"

@@ -190,7 +190,7 @@ function Sidebar() {
 
       {/* Footer — account */}
       <div className="flex items-center gap-2 border-t border-border-faint px-3.5 py-3">
-        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-accent-soft font-mono text-[10px] font-semibold text-primary">
+        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary-soft font-mono text-[10px] font-semibold text-primary">
           MG
         </span>
         <div className="min-w-0">
@@ -226,7 +226,7 @@ function NavItem({
       className={cn(
         'relative mx-1.5 flex h-8 cursor-pointer select-none items-center gap-2 rounded-md px-2 font-body text-[13px] transition-colors',
         active
-          ? 'bg-accent-soft font-medium text-primary'
+          ? 'bg-primary-soft font-medium text-primary'
           : 'text-fg-muted hover:bg-surface-hover hover:text-fg'
       )}
     >
@@ -271,7 +271,7 @@ function TopBar() {
         <span className="font-display font-medium tabular-nums text-fg">4.820</span>
       </div>
       {/* Avatar */}
-      <span className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-accent-soft font-mono text-[10.5px] font-semibold text-primary">
+      <span className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-primary-soft font-mono text-[10.5px] font-semibold text-primary">
         MG
       </span>
     </div>

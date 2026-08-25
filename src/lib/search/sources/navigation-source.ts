@@ -3,7 +3,7 @@
 /**
  * navigation-source — federated search over the panel's own navigation:
  * every sidebar destination plus the in-page actions each destination
- * contains (e.g. Inmuebles → "Nueva propiedad", Equipo → "Nuevo agente").
+ * contains (e.g. Consignaciones → "Nueva consignación", Equipo → "Nuevo agente").
  *
  * The catalog is static and mirrors ALL_NAV_ITEMS in
  * src/app/panel/inmobiliaria/layout.tsx (same deliberate duplication as
@@ -47,13 +47,19 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'page', title: 'Postulaciones', context: 'Agentes IA', href: '/panel/inmobiliaria/postulaciones', keywords: 'candidatos aplicaciones solicitudes' },
 
   // ── Portafolio ────────────────────────────────────────────────────────────
-  { kind: 'page', title: 'Inmuebles', context: 'Portafolio', href: '/panel/inmobiliaria/propiedades', keywords: 'propiedades apartamentos casas', permission: { module: 'portafolio', action: 'view' } },
-  { kind: 'action', title: 'Nueva propiedad', context: 'Inmuebles', href: '/publicar', keywords: 'crear publicar inmueble propiedad', permission: { module: 'portafolio', action: 'create' } },
+  { kind: 'page', title: 'Inmuebles', context: 'Portafolio', href: '/panel/inmobiliaria/inmuebles', keywords: 'propiedades apartamentos casas', permission: { module: 'portafolio', action: 'view' } },
+  // No hay "Nueva propiedad": una inmobiliaria nunca administra un inmueble sin
+  // propietario, así que entrar uno es siempre una consignación (más abajo). La
+  // entrada que había apuntaba a /publicar, el formulario del propietario, que
+  // no pide dueño ni comisión — dejaba una ficha a medias.
   { kind: 'page', title: 'Contratos', context: 'Portafolio', href: '/panel/inmobiliaria/contratos', keywords: 'arriendos leasing', permission: { module: 'portafolio', action: 'view' } },
-  { kind: 'action', title: 'Nuevo contrato', context: 'Contratos', href: '/panel/inmobiliaria/contratos/nuevo', keywords: 'crear contrato arriendo', permission: { module: 'portafolio', action: 'create' } },
-  { kind: 'page', title: 'Consignaciones', context: 'Portafolio', href: '/panel/inmobiliaria/portafolio', keywords: 'portafolio inventario', permission: { module: 'portafolio', action: 'view' } },
-  { kind: 'action', title: 'Nueva consignación', context: 'Consignaciones', href: '/panel/inmobiliaria/portafolio/nuevo', keywords: 'crear consignar propiedad', permission: { module: 'portafolio', action: 'create' } },
-  { kind: 'action', title: 'Importar propiedades', context: 'Consignaciones', href: '/panel/inmobiliaria/portafolio/importar', keywords: 'importar excel csv masivo', permission: { module: 'portafolio', action: 'create' } },
+  // Al listado, no a /contratos/nuevo: esa pantalla exige `?applicationId=` y
+  // desde el buscador no hay de dónde sacarlo. En el listado, el botón «Nuevo
+  // contrato» pregunta sobre qué postulación aprobada se arma.
+  { kind: 'action', title: 'Nuevo contrato', context: 'Contratos', href: '/panel/inmobiliaria/contratos', keywords: 'crear contrato arriendo', permission: { module: 'portafolio', action: 'create' } },
+  { kind: 'page', title: 'Consignaciones', context: 'Portafolio', href: '/panel/inmobiliaria/inmuebles', keywords: 'portafolio inventario', permission: { module: 'portafolio', action: 'view' } },
+  { kind: 'action', title: 'Nueva consignación', context: 'Consignaciones', href: '/panel/inmobiliaria/inmuebles/nuevo', keywords: 'crear consignar propiedad inmueble publicar', permission: { module: 'portafolio', action: 'create' } },
+  { kind: 'action', title: 'Importar propiedades', context: 'Consignaciones', href: '/panel/inmobiliaria/inmuebles/importar', keywords: 'importar excel csv masivo', permission: { module: 'portafolio', action: 'create' } },
   { kind: 'page', title: 'Propietarios', context: 'Portafolio', href: '/panel/inmobiliaria/propietarios', keywords: 'dueños landlords', permission: { module: 'propietarios', action: 'view' } },
   { kind: 'page', title: 'Prospección (Pipeline)', context: 'Portafolio', href: '/panel/inmobiliaria/pipeline', keywords: 'leads captacion kanban', permission: { module: 'pipeline', action: 'view' } },
   { kind: 'page', title: 'Equipo', context: 'Portafolio', href: '/panel/inmobiliaria/agentes', keywords: 'agentes usuarios miembros', permission: { module: 'agentes', action: 'view' } },

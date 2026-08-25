@@ -7,7 +7,10 @@ import { sanitizeReturnUrl } from '@/lib/utils'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const returnUrl = sanitizeReturnUrl(searchParams.get('returnUrl'), '/')
+  // No explicit returnUrl → send OAuth users to the client-side resolver, which
+  // reads GET /users/me and routes by role/onboarding (this server route can't).
+  // An explicit, safe returnUrl (invitations, deep-links) is still honored.
+  const returnUrl = sanitizeReturnUrl(searchParams.get('returnUrl'), '/auth/post-login')
 
   if (code) {
     const cookieStore = cookies()
@@ -51,5 +54,21 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/auth?error=auth_callback_failed`)
+  /*
+   * Sin `?code=` esto NO es necesariamente un fallo: los enlaces de invitación
+   * de Supabase vuelven por el flujo implícito, con el token en el FRAGMENTO
+   * (`#access_token=…`), que el navegador nunca manda al servidor. Desde acá
+   * es invisible.
+   *
+   * Antes se caía a `/auth?error=auth_callback_failed`: el inquilino invitado
+   * hacía clic en su correo, veía un error, y como una cuenta invitada no
+   * tiene contraseña no tenía ninguna otra forma de entrar.
+   *
+   * El fragmento sobrevive a esta redirección —el navegador lo conserva
+   * cuando el destino no trae uno— así que lo resuelve `/auth/enlace`, que sí
+   * corre en el navegador.
+   */
+  return NextResponse.redirect(
+    `${origin}/auth/enlace?returnUrl=${encodeURIComponent(returnUrl)}`,
+  )
 }

@@ -42,6 +42,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import {
   DropdownList,
   DropdownListContent,
@@ -162,6 +164,26 @@ export function DocumentoManager({
       (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     );
   }, [documents, searchQuery, selectedCategories, selectedStatuses]);
+
+  /**
+   * Paginado de presentación: `usePropertyDocuments()` trae el archivo completo
+   * de documentos de todos los inmuebles — es de los que más crece.
+   *
+   * `resetKey` con los filtros (no con `viewMode`: cambiar de lista a grilla no
+   * cambia el conjunto). Alimenta las DOS vistas para que muestren la misma
+   * página; «seleccionar todo» sigue operando sobre todo lo filtrado.
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(filteredDocuments, {
+    resetKey: `${searchQuery.trim()}|${selectedCategories.join()}|${selectedStatuses.join()}`,
+  });
 
   // Calculate summary stats
   const stats = useMemo(() => {
@@ -490,7 +512,7 @@ export function DocumentoManager({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredDocuments.map((doc) => {
+              {pageItems.map((doc) => {
                 const StatusIcon = STATUS_ICONS[doc.status];
 
                 return (
@@ -630,7 +652,7 @@ export function DocumentoManager({
         // Grid View
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           <AnimatePresence mode="popLayout">
-            {filteredDocuments.map((doc) => {
+            {pageItems.map((doc) => {
               const StatusIcon = STATUS_ICONS[doc.status];
 
               return (
@@ -653,7 +675,7 @@ export function DocumentoManager({
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex items-start gap-3 min-w-0">
                         <div
-                          className="w-10 h-10 rounded-md bg-surface-brand flex items-center justify-center shrink-0"
+                          className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             toggleDocSelection(doc.id);
@@ -782,6 +804,20 @@ export function DocumentoManager({
               );
             })}
           </AnimatePresence>
+        </div>
+      )}
+
+      {/* Pie único para lista y grilla: sólo si hay más de una página. */}
+      {shouldPaginate && (
+        <div className="rounded-xl border border-border px-4 py-3">
+          <TablePagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         </div>
       )}
     </div>

@@ -18,8 +18,12 @@ import {
 } from '@/components/onboarding/inmobiliaria/agency-step-prefill'
 import { MembersStepForm, type PendingMembersInvites } from '@/components/onboarding/inmobiliaria/MembersStepForm'
 import { PaymentProviderAutoSkipStep } from '@/components/onboarding/inmobiliaria/PaymentProviderAutoSkipStep'
-import { PolicyStepForm } from '@/components/onboarding/inmobiliaria/PolicyStepForm'
-import { HabeasDataStepForm } from '@/components/onboarding/inmobiliaria/HabeasDataStepForm'
+import { PolicyAutoSkipStep } from '@/components/onboarding/inmobiliaria/PolicyAutoSkipStep'
+import {
+  POLICY_STEP_DEFAULT_VALUES,
+  toPolicyRequest,
+} from '@/components/onboarding/inmobiliaria/policy-step-schema'
+import { TermsStepForm } from '@/components/onboarding/inmobiliaria/TermsStepForm'
 import { CompleteStepForm } from '@/components/onboarding/inmobiliaria/CompleteStepForm'
 import { wizardStepLabel } from '@/components/onboarding/inmobiliaria/wizard-steps'
 import type { OnboardingSessionMembersRequest } from '@/lib/api/generated/agency'
@@ -110,8 +114,7 @@ function OnboardingWizard({
     submitMembers,
     submitPaymentProvider,
     submitPolicy,
-    presignHabeasData,
-    confirmHabeasData,
+    acceptTerms,
     completeOnboarding,
   } = useOnboardingSession(sessionId)
 
@@ -222,16 +225,27 @@ function OnboardingWizard({
                 onSkip={() => withOverrideClear(submitPaymentProvider)({ skip: true })}
               />
             ) : effectiveStep === 'policy' ? (
-              <PolicyStepForm
+              // Invisible step — the collection policy is an optional adjustment
+              // configured later in the agency panel. Auto-submits the agent's
+              // default policy instead of showing PolicyStepForm (kept in the
+              // codebase, unreachable from the wizard, for future panel reuse).
+              <PolicyAutoSkipStep
                 isSubmitting={isSubmitting}
-                onSubmit={withOverrideClear(submitPolicy)}
-                submitError={error !== null && error.kind === 'validation' ? error.message : null}
+                onSkip={() =>
+                  withOverrideClear(submitPolicy)(toPolicyRequest(POLICY_STEP_DEFAULT_VALUES))
+                }
               />
             ) : effectiveStep === 'habeas_data' ? (
-              <HabeasDataStepForm
+              // The signed-habeas-data upload was replaced by a terms
+              // acceptance. The agent step is still `habeas_data`; it's
+              // completed via acceptTerms (backend handoff — see
+              // onboarding-session.service.ts). El formulario de subida
+              // (HabeasDataStepForm) se borró: sus dos rutas —presign-url y
+              // confirm— ya no existen en el agente, así que «guardarlo para
+              // después» era guardar llamadas a un 404.
+              <TermsStepForm
                 isSubmitting={isSubmitting}
-                presignHabeasData={presignHabeasData}
-                confirmHabeasData={withOverrideClear(confirmHabeasData)}
+                onSubmit={withOverrideClear(acceptTerms)}
                 submitError={error !== null && error.kind === 'validation' ? error.message : null}
               />
             ) : (

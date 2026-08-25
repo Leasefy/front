@@ -14,6 +14,7 @@ import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -145,9 +146,9 @@ export default function AplicacionesPage() {
   const router = useRouter();
   // Statuses where scheduling a property visit still makes sense.
   const canScheduleVisit = (s: string) =>
-    ['submitted', 'under_review', 'needs_info', 'pre_approved'].includes(s);
+    ['submitted', 'under_review', 'needs_info'].includes(s);
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
-  const { active: activeApplications, completed: completedApplications, contractsByApp, isLoading: isAppsLoading, error } = useTenantApplications();
+  const { active: activeApplications, completed: completedApplications, contractsByApp, isLoading: isAppsLoading, error, errorCrudo, refetch: recargarPostulaciones } = useTenantApplications();
 
   const [activeTab, setTab] = useState<'active' | 'completed'>('active');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -165,25 +166,19 @@ export default function AplicacionesPage() {
       label: t('applications.steps.submitted'),
       color: 'bg-primary-soft text-primary',
       icon: Clock,
-      progress: 25
+      progress: 20
     },
     under_review: {
       label: t('applications.steps.review'),
       color: 'bg-warning-soft text-warning',
       icon: Clock,
-      progress: 50
+      progress: 60
     },
     needs_info: {
       label: locale === 'es' ? 'Info. requerida' : 'Info required',
       color: 'bg-warning-soft text-warning',
       icon: Warning,
       progress: 30
-    },
-    pre_approved: {
-      label: locale === 'es' ? 'Pre-aprobada' : 'Pre-approved',
-      color: 'bg-success-soft text-success',
-      icon: CheckCircle,
-      progress: 75
     },
     approved: {
       label: t('applications.steps.approved'),
@@ -212,6 +207,13 @@ export default function AplicacionesPage() {
   };
 
   const currentApplications = activeTab === 'active' ? activeApplications : completedApplications;
+  /*
+   * Sin ninguna postulación no hay nada que resumir, filtrar ni ver de dos
+   * formas. Los KPI en cero, las pestañas y el conmutador lista/tarjetas eran
+   * andamiaje alrededor de un vacío: ocupaban la pantalla y empujaban abajo lo
+   * único que importa ahí, que es cómo empezar.
+   */
+  const sinPostulaciones = activeApplications.length + completedApplications.length === 0;
 
   // Pagination logic
   const totalPages = Math.ceil(currentApplications.length / ITEMS_PER_PAGE);
@@ -244,16 +246,18 @@ export default function AplicacionesPage() {
     );
   }
 
-  // Error state
+  // Un fallo NO es un vacío. Antes se pintaba con `EmptyState` —el cartel de
+  // «no hay nada»— y su «Reintentar» era un <a> a esta misma ruta: en el App
+  // Router eso no vuelve a pedir nada, así que el botón no hacía absolutamente
+  // nada. `FalloDeCarga` clasifica el fallo y reintenta de verdad.
   if (error) {
     return (
       <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          <EmptyState
-            icon={XCircle}
-            title={locale === 'es' ? 'Error al cargar aplicaciones' : 'Error loading applications'}
-            description={error}
-            action={{ label: locale === 'es' ? 'Reintentar' : 'Retry', href: '/inquilino/aplicaciones' }}
+          <FalloDeCarga
+            error={errorCrudo ?? error}
+            queEs="tus postulaciones"
+            onReintentar={recargarPostulaciones}
           />
         </div>
       </div>
@@ -279,6 +283,7 @@ export default function AplicacionesPage() {
         </motion.header>
 
         {/* Stats Grid */}
+        {!sinPostulaciones && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -318,8 +323,10 @@ export default function AplicacionesPage() {
             <p className="text-sm text-fg-muted mt-2">{locale === 'es' ? 'Aprobadas o rechazadas' : 'Approved or rejected'}</p>
           </div>
         </motion.div>
+        )}
 
         {/* Controls: Tabs + View Toggle */}
+        {!sinPostulaciones && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -393,6 +400,7 @@ export default function AplicacionesPage() {
             />
           </div>
         </motion.div>
+        )}
 
         {/* Applications */}
         <motion.section
@@ -426,7 +434,7 @@ export default function AplicacionesPage() {
                               {/* Image */}
                               <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
                                 <Image
-                                  src={application.property?.thumbnail || '/placeholder-property.jpg'}
+                                  src={application.property?.thumbnail || '/placeholder-property.svg'}
                                   alt={application.property?.title || 'Propiedad'}
                                   fill
                                   quality={90}
@@ -492,7 +500,7 @@ export default function AplicacionesPage() {
 
                                 <div className="mt-4">
                                   <div className="flex items-center justify-between text-xs text-fg-muted mb-2">
-                                    <span>{locale === 'es' ? 'Progreso de aplicación' : 'Application progress'}</span>
+                                    <span>{locale === 'es' ? 'Progreso de tu postulación' : 'Application progress'}</span>
                                     <span>{status.progress}% {locale === 'es' ? 'completado' : 'complete'}</span>
                                   </div>
                                   <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
@@ -501,7 +509,7 @@ export default function AplicacionesPage() {
                                         "h-full rounded-full transition-all duration-500",
                                         application.status === 'rejected' || application.status === 'withdrawn' || application.status === 'contract_failed'
                                           ? "bg-danger"
-                                          : application.status === 'approved' || application.status === 'pre_approved'
+                                          : application.status === 'approved'
                                           ? "bg-success"
                                           : application.status === 'needs_info'
                                           ? "bg-warning"
@@ -528,11 +536,10 @@ export default function AplicacionesPage() {
                                         {application.status === 'submitted' && (locale === 'es' ? 'Esperando revisión' : 'Waiting for review')}
                                         {application.status === 'under_review' && (locale === 'es' ? 'En evaluación de documentos' : 'Document evaluation')}
                                         {application.status === 'needs_info' && (locale === 'es' ? '⚠ Completar información solicitada' : '⚠ Complete requested information')}
-                                        {application.status === 'pre_approved' && (locale === 'es' ? 'Agendar visita' : 'Schedule visit')}
                                         {application.status === 'approved' && nextStepForApproved(contractsByApp[application.id], locale)}
                                         {application.status === 'rejected' && (locale === 'es' ? 'Proceso cerrado — explorá alternativas' : 'Process closed — explore alternatives')}
-                                        {application.status === 'withdrawn' && (locale === 'es' ? 'Aplicación cerrada' : 'Application closed')}
-                                        {application.status === 'contract_failed' && (locale === 'es' ? 'Contrato no prosperó — crear nueva aplicación' : 'Contract didn\'t succeed — create a new application')}
+                                        {application.status === 'withdrawn' && (locale === 'es' ? 'Postulación cerrada' : 'Application closed')}
+                                        {application.status === 'contract_failed' && (locale === 'es' ? 'Contrato no prosperó — crear nueva postulación' : 'Contract didn\'t succeed — create a new application')}
                                       </p>
                                     </div>
                                   </div>
@@ -585,7 +592,7 @@ export default function AplicacionesPage() {
                             {/* Image */}
                             <div className="relative aspect-[4/3] overflow-hidden">
                               <Image
-                                src={application.property?.thumbnail || '/placeholder-property.jpg'}
+                                src={application.property?.thumbnail || '/placeholder-property.svg'}
                                 alt={application.property?.title || 'Propiedad'}
                                 fill
                                 quality={90}
@@ -636,7 +643,7 @@ export default function AplicacionesPage() {
                                         "h-full rounded-full transition-all duration-500",
                                         application.status === 'rejected' || application.status === 'withdrawn' || application.status === 'contract_failed'
                                           ? "bg-danger"
-                                          : application.status === 'approved' || application.status === 'pre_approved'
+                                          : application.status === 'approved'
                                           ? "bg-success"
                                           : application.status === 'needs_info'
                                           ? "bg-warning"
@@ -731,18 +738,20 @@ export default function AplicacionesPage() {
             <EmptyState
               icon={FileText}
               title={activeTab === 'active'
-                ? (locale === 'es' ? 'No tienes aplicaciones en proceso' : 'No applications in progress')
-                : (locale === 'es' ? 'No tienes aplicaciones completadas' : 'No completed applications')
+                ? (locale === 'es' ? 'Todavía no te has postulado' : "You haven't applied yet")
+                : (locale === 'es' ? 'No tienes postulaciones cerradas' : 'No closed applications')
               }
               description={activeTab === 'active'
                 ? (locale === 'es'
-                    ? 'Explora propiedades disponibles y aplica para comenzar tu proceso de arriendo.'
+                    ? 'Con tu tope aprobado te mostramos las propiedades que puedes tomar. Postularte es el primer paso.'
                     : 'Explore available properties and apply to start your rental process.')
                 : (locale === 'es'
-                    ? 'Las aplicaciones aprobadas o rechazadas aparecerán aquí.'
+                    ? 'Las postulaciones aprobadas o rechazadas aparecerán aquí.'
                     : 'Approved or rejected applications will appear here.')
               }
-              action={activeTab === 'active' ? { label: locale === 'es' ? 'Buscar propiedades' : 'Browse properties', href: '/inquilino/explorar' } : undefined}
+              /* A SU catálogo, no al listado general: ahí están las que puede
+                 tomar de verdad. "aplicar" está muerto (docs/VOCABULARIO.md). */
+              action={activeTab === 'active' ? { label: locale === 'es' ? 'Ver propiedades para mí' : 'See properties for me', href: '/inquilino/para-ti' } : undefined}
             />
           )}
         </motion.section>

@@ -32,14 +32,29 @@ import { parseSpreadsheetFile, downloadTemplate } from '../lib/parseFile';
 import { autoMapColumns } from '../lib/columnMapping';
 import type { ImportStepProps } from '../ImportWizard';
 
-const SUPPORTED_EXTENSIONS = ['csv', 'xlsx', 'xls'];
+/**
+ * Todo lo que el parser sabe leer de verdad — no una lista conservadora.
+ *
+ * `.ods`, `.fods`, `.txt` y `.tsv` se rechazaban aunque SheetJS los lee (ida y
+ * vuelta verificada). Peor: los mensajes mandaban a la persona a convertir el
+ * archivo a mano —«abrilo en LibreOffice y guardalo como .xlsx», «renombralo a
+ * .csv»— para hacer un trabajo que el parser ya hacía.
+ */
+const SUPPORTED_EXTENSIONS = ['csv', 'tsv', 'txt', 'xlsx', 'xls', 'ods', 'fods'];
+
+/**
+ * Los que NO son planillas. Acá el mensaje sí ayuda, porque no hay nada que
+ * parsear.
+ *
+ * `.numbers` sigue en la lista a propósito: SheetJS trae el parser, pero no
+ * pude verificarlo con un archivo real, y prometer un formato sin probarlo es
+ * cómo se llega a un «no se pudo leer el archivo» sin explicación.
+ */
 const UNSUPPORTED_MESSAGES: Record<string, string> = {
   numbers: 'Los archivos .numbers de Apple no son soportados. Abre tu archivo en Numbers y expórtalo como CSV: Archivo → Exportar a → CSV.',
-  ods: 'Los archivos .ods no son soportados directamente. Abre tu archivo en LibreOffice/Calc y guárdalo como .xlsx o .csv.',
-  pdf: 'Los archivos PDF no pueden importarse. Necesitas un archivo Excel (.xlsx) o CSV.',
-  doc: 'Los archivos Word no pueden importarse. Necesitas un archivo Excel (.xlsx) o CSV.',
-  docx: 'Los archivos Word no pueden importarse. Necesitas un archivo Excel (.xlsx) o CSV.',
-  txt: 'Si tu archivo .txt tiene datos separados por comas, renómbralo a .csv e intenta de nuevo.',
+  pdf: 'Los archivos PDF no pueden importarse. Necesitas una planilla: Excel, CSV u ODS.',
+  doc: 'Los archivos Word no pueden importarse. Necesitas una planilla: Excel, CSV u ODS.',
+  docx: 'Los archivos Word no pueden importarse. Necesitas una planilla: Excel, CSV u ODS.',
 };
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const ROW_COUNT_WARNING_THRESHOLD = 5000;
@@ -86,7 +101,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
       });
     } catch (err) {
       console.error('Error parsing file:', err);
-      setParseError('No se pudo leer el archivo. Verifica que sea un archivo .xlsx, .xls o .csv válido.');
+      setParseError('No se pudo leer el archivo. Verifica que sea una planilla válida (.xlsx, .xls, .csv, .tsv, .txt, .ods).');
     } finally {
       setIsParsing(false);
     }
@@ -108,7 +123,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
       if (hint) {
         setParseError(hint);
       } else {
-        setParseError(`El formato .${ext} no es soportado. Usa archivos .xlsx, .xls o .csv.`);
+        setParseError(`El formato .${ext} no es soportado. Usa una planilla: .xlsx, .xls, .csv, .tsv, .txt u .ods.`);
       }
       return;
     }
@@ -169,12 +184,12 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
         className={cn(
           'border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all duration-200',
           isParsing
-            ? 'border-border dark:border-strong cursor-not-allowed'
+            ? 'border-border dark:border-border-strong cursor-not-allowed'
             : isDragActive
               ? 'border-primary/30 bg-primary-soft'
               : hasFile
                 ? 'border-success/30 bg-success-soft'
-                : 'border-border dark:border-strong hover:border-primary/30 dark:hover:border-primary/30 hover:bg-surface-muted dark:hover:bg-ink/50'
+                : 'border-border dark:border-border-strong hover:border-primary/30 dark:hover:border-primary/30 hover:bg-surface-muted dark:hover:bg-ink'
         )}
       >
         {/* allowlist: react-dropzone hidden file input (canonical dropzone mechanism) */}
@@ -246,14 +261,14 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
               {t('inmobiliaria.import.upload.rowsDetected', { count: state.rawRows.length })}
             </MonoLabel>
           </div>
-          <div className="overflow-x-auto rounded-xl border border-border dark:border-strong">
+          <div className="overflow-x-auto rounded-xl border border-border dark:border-border-strong">
             <Table className="text-sm">
               <TableHeader>
                 <TableRow className="bg-surface-muted dark:bg-ink">
                   {state.headers.map((header) => (
                     <TableHead
                       key={header}
-                      className="px-3 py-2 text-left whitespace-nowrap border-b border-border dark:border-strong"
+                      className="px-3 py-2 text-left whitespace-nowrap border-b border-border dark:border-border-strong"
                     >
                       {header}
                     </TableHead>
@@ -262,7 +277,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
               </TableHeader>
               <TableBody>
                 {state.rawRows.slice(0, 5).map((row) => (
-                  <TableRow key={row._rowIndex} className="border-b border-faint dark:border-strong last:border-0">
+                  <TableRow key={row._rowIndex} className="border-b border-border-faint dark:border-border-strong last:border-0">
                     {state.headers.map((header) => {
                       const value = String(row[header] ?? '');
                       const truncated = value.length > 30 ? value.slice(0, 30) + '...' : value;

@@ -1,28 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import type { AgencyPlanId } from '@/lib/types/subscription';
-import { FEATURE_GATES, type FeatureName } from '@/lib/constants/feature-gates';
+import { useCallback } from 'react';
+import type { FeatureName } from '@/lib/constants/feature-gates';
 import { getAgencyPlanById, getEvaluationPrice as getEvalPrice } from '@/lib/constants/subscription-plans';
-
-/**
- * Agency plan tiers ordered by level.
- * Used to check if current plan meets minimum tier requirements.
- */
-const PLAN_TIER: Record<AgencyPlanId, number> = {
-  starter: 0,
-  pro: 1,
-  flex: 2,
-  enterprise: 3,
-};
-
-/** Human-readable plan names for upgrade prompts */
-const PLAN_NAMES: Record<AgencyPlanId, string> = {
-  starter: 'Starter',
-  pro: 'Pro',
-  flex: 'Flex',
-  enterprise: 'Enterprise',
-};
 
 /**
  * Info returned when a feature is locked behind a higher plan.
@@ -33,124 +13,46 @@ export interface UpgradeReason {
   labelEn: string;
 }
 
-/** Agents available per plan tier */
-const PLAN_AGENTS: Record<AgencyPlanId, string[]> = {
-  starter: ['tenant-scoring'], // Pay-per-use only
-  pro: ['tenant-scoring', 'smart-matching'],
-  flex: 'all' as unknown as string[], // All 19 agents — use canUseAgent() for checks
-  enterprise: 'all' as unknown as string[],
-};
-
 /**
- * Hook for agency plan access checks.
- * Defaults to 'flex' until the backend exposes a plan endpoint.
+ * Hook for agency plan access checks (UI visibility only).
  *
- * SECURITY: This is client-side only and NOT a security boundary.
- * Feature gating MUST be enforced server-side. This hook only controls
- * UI visibility — the backend must verify plan access on every API call.
- * TODO: Replace hardcoded default with authenticated API call to fetch plan.
+ * SECURITY: This is client-side only and NOT a security boundary. Feature
+ * gating for the agency panel is enforced SERVER-SIDE (contrato 29 · planes
+ * dinámicos). This hook is intentionally PERMISSIVE — it grants every gated
+ * feature so the panel never hides a paid feature behind a client-side tier
+ * check. Do NOT reintroduce tier-name Records (PLAN_TIER/PLAN_NAMES/PLAN_AGENTS)
+ * or ordinal comparisons here; the closed tier set no longer exists (slugs are
+ * admin-creatable). Any real gating must be added on the backend.
  */
 export function useAgencyPlan() {
-  const [planId] = useState<AgencyPlanId>('flex');
+  // Every check below is permissive (grants access). Kept as functions with the
+  // original signatures so existing callers stay source-compatible.
+  const hasMinPlan = useCallback((_minPlan?: string): boolean => true, []);
+  const hasFeature = useCallback((_name: FeatureName): boolean => true, []);
+  const canUseAgent = useCallback((_agentId: string): boolean => true, []);
+  const getUpgradeReason = useCallback((_name: FeatureName): UpgradeReason | null => null, []);
 
-  /**
-   * Check if current plan meets the minimum required tier.
-   * e.g., hasMinPlan('pro') returns true for pro, flex, enterprise
-   */
-  const hasMinPlan = (minPlan: AgencyPlanId): boolean => {
-    return PLAN_TIER[planId] >= PLAN_TIER[minPlan];
-  };
-
-  /**
-   * Whether the current plan is the Flex (percentage-based) tier.
-   */
-  const isFlexPlan = planId === 'flex';
-
-  /**
-   * Check if a specific feature is accessible on the current plan.
-   * Considers both the minimum tier requirement and the flexOnly flag.
-   */
-  const hasFeature = useCallback(
-    (name: FeatureName): boolean => {
-      const gate = FEATURE_GATES[name];
-      if (!gate) return false;
-
-      const meetsTier = PLAN_TIER[planId] >= PLAN_TIER[gate.minTier];
-      if (!meetsTier) return false;
-
-      // If feature is flex-only, user must be on flex or enterprise
-      if (gate.flexOnly && PLAN_TIER[planId] < PLAN_TIER['flex']) return false;
-
-      return true;
-    },
-    [planId],
-  );
-
-  /**
-   * Get the per-evaluation price in COP for the current plan.
-   */
-  const getEvaluationPrice = useCallback((): number => {
-    return getEvalPrice(planId);
-  }, [planId]);
-
-  /**
-   * Check if the current plan can use a specific AI agent.
-   * Starter: only tenant-scoring (pay-per-use).
-   * Pro: tenant-scoring + smart-matching (limited evals).
-   * Flex/Enterprise: all 19 agents (unlimited).
-   */
-  const canUseAgent = useCallback(
-    (agentId: string): boolean => {
-      // Flex and Enterprise have access to all agents
-      if (PLAN_TIER[planId] >= PLAN_TIER['flex']) return true;
-
-      const agents = PLAN_AGENTS[planId];
-      if (Array.isArray(agents)) {
-        return agents.includes(agentId);
-      }
-      return true;
-    },
-    [planId],
-  );
-
-  /**
-   * Get upgrade info when a feature is locked.
-   * Returns null if the feature is accessible, or the required plan details if locked.
-   */
-  const getUpgradeReason = useCallback(
-    (name: FeatureName): UpgradeReason | null => {
-      if (hasFeature(name)) return null;
-
-      const gate = FEATURE_GATES[name];
-      if (!gate) return null;
-
-      return {
-        requiredPlan: PLAN_NAMES[gate.minTier],
-        labelEs: gate.labelEs,
-        labelEn: gate.labelEn,
-      };
-    },
-    [hasFeature],
-  );
+  // Presentation defaults: the panel treats the agency as fully enabled, so the
+  // evaluation price / plan details mirror the top (percentage) plan. These are
+  // constant lookups, not tier-name branching.
+  const getEvaluationPrice = useCallback((): number => getEvalPrice('flex'), []);
 
   return {
-    /** Current plan identifier */
-    planId,
-    /** Whether current plan is Flex (percentage-based) */
-    isFlexPlan,
-    /** Check if current plan meets a minimum tier */
+    /** Whether the current plan is treated as the percentage (Flex) tier. */
+    isFlexPlan: true,
+    /** Check if current plan meets a minimum tier (always true — UI permissive). */
     hasMinPlan,
-    /** Check if a specific gated feature is accessible */
+    /** Check if a specific gated feature is accessible (always true — UI permissive). */
     hasFeature,
-    /** Get the per-evaluation AI price in COP for current plan */
+    /** Get the per-evaluation AI price in COP for the current plan. */
     getEvaluationPrice,
-    /** Check if current plan can use a specific AI agent by ID */
+    /** Check if current plan can use a specific AI agent (always true — UI permissive). */
     canUseAgent,
-    /** Get upgrade prompt info for a locked feature (null if accessible) */
+    /** Get upgrade prompt info for a locked feature (always null — nothing locked in UI). */
     getUpgradeReason,
-    /** Convenience: true if plan is Pro or higher */
-    hasAdvancedReports: PLAN_TIER[planId] >= PLAN_TIER.pro,
-    /** Full plan details from constants */
-    planDetails: getAgencyPlanById(planId),
+    /** Convenience: advanced reports are always visible in the UI. */
+    hasAdvancedReports: true,
+    /** Full plan details for presentation (top/percentage plan). */
+    planDetails: getAgencyPlanById('flex'),
   };
 }

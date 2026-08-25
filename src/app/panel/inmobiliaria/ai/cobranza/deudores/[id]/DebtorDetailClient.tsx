@@ -36,8 +36,13 @@ import {
 import { PIIRevealModal } from '@/components/inmobiliaria/cobranza/PIIRevealModal'
 import { Button, Badge } from '@/components/ui'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, MonoLabel } from '@leasefy/cadence'
+import { MonoLabel } from '@leasefy/cadence'
+// El Sheet va por el adaptador local, no crudo del DS: es lo que trae el
+// overlay z-[300], el contrato de Lenis y la ✕ del producto. Importado
+// directo, este cajón era el único con la ✕ pelada del DS.
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 
+import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 import { DebtorSidebar } from './DebtorSidebar'
 import { DebtorActionRail } from './DebtorActionRail'
 import { TimelineTab } from './tabs/TimelineTab'
@@ -210,6 +215,11 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
     <main className="p-4 lg:p-8 max-w-7xl mx-auto pb-8">
       {/* Header */}
       <header className="mb-5">
+        <VolverALaLista
+          href="/panel/inmobiliaria/ai/cobranza/deudores"
+          label={t('inmobiliaria.ai.volverA.casos')}
+          className="mb-2"
+        />
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {debtorName || t('inmobiliaria.ai.cobranza.detail.title')}
@@ -374,9 +384,6 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
               debtorId={debtorId}
               debtorName={debtorName}
               currentStage={data?.currentStage ?? 'S0'}
-              prefill={{
-                nombre: debtorName,
-              }}
               onIntervention={onIntervention}
             />
           )}

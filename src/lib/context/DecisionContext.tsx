@@ -49,10 +49,6 @@ interface DecisionContextValue {
   clearDecision: (candidateId: string) => void;
   /** Check if state has been hydrated from localStorage */
   isHydrated: boolean;
-  /** Get count of pre-approved candidates for a property */
-  getPreApprovedCount: (candidateIds: string[]) => number;
-  /** Check if can pre-approve more (max 3) */
-  canPreApprove: (candidateIds: string[]) => boolean;
   /** Auto-reject all other candidates when contract is signed */
   autoRejectOthers: (approvedCandidateId: string, allCandidateIds: string[]) => void;
   /** Get all decisions */
@@ -64,10 +60,28 @@ interface DecisionContextValue {
 // ============================================================================
 
 const STORAGE_KEY = 'arriendo-facil-decisions';
-export const MAX_PRE_APPROVALS = 3;
 
 // Storage manager instance
 const storage = new StorageManager<DecisionState>(STORAGE_KEY);
+
+/**
+ * Statuses persisted before T-0023 may still contain removed values (e.g. the old
+ * `'pre-approved'`). Any status outside the current union hydrates as `'pending'` —
+ * never crashes, never gets written back to the stored blob (`STORAGE_KEY` is not
+ * purged or versioned; unrelated notes in the same blob survive untouched).
+ */
+const VALID_CANDIDATE_STATUSES: readonly LandlordCandidateStatus[] = [
+  'pending',
+  'approved',
+  'rejected',
+  'more-info',
+];
+
+function normalizeCandidateStatus(status: string): LandlordCandidateStatus {
+  return (VALID_CANDIDATE_STATUSES as readonly string[]).includes(status)
+    ? (status as LandlordCandidateStatus)
+    : 'pending';
+}
 
 // ============================================================================
 // Context
@@ -133,7 +147,9 @@ export function DecisionProvider({ children }: DecisionProviderProps) {
 
   const getDecision = useCallback(
     (candidateId: string): CandidateDecision | null => {
-      return state.decisions[candidateId] || null;
+      const decision = state.decisions[candidateId];
+      if (!decision) return null;
+      return { ...decision, status: normalizeCandidateStatus(decision.status) };
     },
     [state.decisions]
   );
@@ -184,23 +200,6 @@ export function DecisionProvider({ children }: DecisionProviderProps) {
     });
   }, []);
 
-  const getPreApprovedCount = useCallback(
-    (candidateIds: string[]): number => {
-      return candidateIds.filter((id) => {
-        const decision = state.decisions[id];
-        return decision?.status === 'pre-approved';
-      }).length;
-    },
-    [state.decisions]
-  );
-
-  const canPreApprove = useCallback(
-    (candidateIds: string[]): boolean => {
-      return getPreApprovedCount(candidateIds) < MAX_PRE_APPROVALS;
-    },
-    [getPreApprovedCount]
-  );
-
   const autoRejectOthers = useCallback(
     (approvedCandidateId: string, allCandidateIds: string[]) => {
       const now = new Date().toISOString();
@@ -235,7 +234,11 @@ export function DecisionProvider({ children }: DecisionProviderProps) {
 
   const getAllDecisions = useCallback(
     (): Record<string, CandidateDecision> => {
-      return state.decisions;
+      const normalized: Record<string, CandidateDecision> = {};
+      for (const [id, decision] of Object.entries(state.decisions)) {
+        normalized[id] = { ...decision, status: normalizeCandidateStatus(decision.status) };
+      }
+      return normalized;
     },
     [state.decisions]
   );
@@ -251,8 +254,6 @@ export function DecisionProvider({ children }: DecisionProviderProps) {
     setNote,
     clearDecision,
     isHydrated,
-    getPreApprovedCount,
-    canPreApprove,
     autoRejectOthers,
     getAllDecisions,
   };

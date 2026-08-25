@@ -17,7 +17,6 @@ import type { Property } from '@/lib/types/property';
 import { StepPersonal } from '@/components/wizard/steps/StepPersonal';
 import { StepEmployment } from '@/components/wizard/steps/StepEmployment';
 import { StepIncome } from '@/components/wizard/steps/StepIncome';
-import { StepReferences } from '@/components/wizard/steps/StepReferences';
 import { StepDocuments } from '@/components/wizard/steps/StepDocuments';
 import { StepReview } from '@/components/wizard/steps/StepReview';
 
@@ -31,24 +30,20 @@ import { Spinner } from '@/components/ui/spinner';
 
 function mapDocumentsToDocumentInfo(docs: BackendDocument[]): Partial<DocumentInfo> {
   const result: Partial<DocumentInfo> = {};
-  // Backend emits canonical UPPER_SNAKE types (ID_DOCUMENT, EMPLOYMENT_LETTER, etc.)
-  // plus some legacy lowercase variants. Support both.
+  // Backend emits canonical UPPER_SNAKE types (ID_DOCUMENT, BANK_STATEMENT, etc.)
+  // plus some legacy lowercase variants. Support both. Only cédula and
+  // extracto bancario have a slot in `DocumentInfo` since T-0020 — a legacy
+  // document of any other type (EMPLOYMENT_LETTER, INCOME_PROOF, PAY_STUB,
+  // CREDIT_REPORT) has nowhere to go and is silently ignored, same as an
+  // unrecognized type.
   const typeMap: Record<string, keyof DocumentInfo> = {
     ID_DOCUMENT: 'idDocument',
     BANK_STATEMENT: 'bankStatement',
     BANK_STATEMENTS: 'bankStatement', // legacy fallback
-    INCOME_PROOF: 'incomeProof',
-    EMPLOYMENT_LETTER: 'employmentLetter',
-    PAY_STUB: 'payStub',
-    CREDIT_REPORT: 'creditReport',
     // Legacy lowercase
     id_document: 'idDocument',
     bank_statement: 'bankStatement',
     bank_statements: 'bankStatement', // legacy fallback
-    income_proof: 'incomeProof',
-    employment_letter: 'employmentLetter',
-    pay_stub: 'payStub',
-    credit_report: 'creditReport',
   };
   for (const doc of docs) {
     const key = typeMap[doc.type];
@@ -68,7 +63,7 @@ function mapDocumentsToDocumentInfo(docs: BackendDocument[]): Partial<DocumentIn
 
 function buildProperty(p: NonNullable<BackendApplication['property']>): Property {
   const images = p.images ?? [];
-  const thumbnail = images[0]?.url ?? '/placeholder-property.jpg';
+  const thumbnail = images[0]?.url ?? '/placeholder-property.svg';
   return {
     id: p.id,
     title: p.title,
@@ -143,7 +138,7 @@ export default function CompletarPage({ params }: CompletarPageProps) {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Error cargando la aplicación');
+          setError(err instanceof Error ? err.message : 'Error cargando la postulación');
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -166,7 +161,7 @@ export default function CompletarPage({ params }: CompletarPageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface-muted px-4">
         <div className="text-center">
-          <p className="text-fg-muted mb-4">{error ?? 'No se pudo cargar la aplicación.'}</p>
+          <p className="text-fg-muted mb-4">{error ?? 'No se pudo cargar la postulación.'}</p>
           <a
             href={`/inquilino/aplicaciones/${applicationId}`}
             className="text-primary hover:underline text-sm"
@@ -315,9 +310,8 @@ function UpdateStepContent({ onSubmissionComplete }: { onSubmissionComplete: () 
       {currentStep === 1 && <StepPersonal />}
       {currentStep === 2 && <StepEmployment />}
       {currentStep === 3 && <StepIncome />}
-      {currentStep === 4 && <StepReferences />}
-      {currentStep === 5 && <StepDocuments />}
-      {currentStep === 6 && <StepReview />}
+      {currentStep === 4 && <StepDocuments />}
+      {currentStep === 5 && <StepReview />}
     </div>
   );
 }

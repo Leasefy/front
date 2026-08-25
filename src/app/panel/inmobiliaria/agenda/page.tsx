@@ -7,10 +7,13 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { SectionLabel } from '@/components/ui/section-label';
-import { EmptyState } from '@/components/ui/empty-state';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { RESUMEN_AGENDA_VACIO } from '@/lib/api/agenda.types';
 import type { AgendaListResponse, EventoAgenda, EventoTipo, EventoEstado } from '@/lib/api/agenda.types';
 import { agendaApi } from '@/lib/api/agenda.service';
@@ -44,8 +47,8 @@ const TIPO_DOT: Record<EventoTipo, string> = {
 /** Badge classes per event status. */
 const ESTADO_BADGE: Record<EventoEstado, string> = {
   pendiente: 'bg-primary/10 text-primary',
-  completado: 'bg-success-500/10 text-success-600 dark:text-success-400',
-  vencido: 'bg-error-500/10 text-error-600 dark:text-error-400',
+  completado: 'bg-success-500/10 text-success',
+  vencido: 'bg-error-500/10 text-danger',
   cancelado: 'bg-neutral-400/10 text-muted-foreground',
 };
 
@@ -58,17 +61,21 @@ function AgendaContent() {
 
   const [data, setData] = useState<AgendaListResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
+  // El error entero, no un booleano: `FalloDeCarga` lo clasifica para saber si
+  // reintentar puede dar otro resultado. Con un `true` pelado, una sesión
+  // vencida y un 500 se veían igual, y los dos ofrecían un "Reintentar" que
+  // sobre el 401 no arregla nada.
+  const [error, setError] = useState<unknown>(null);
   const [citaOpen, setCitaOpen] = useState(false);
   const [actingId, setActingId] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setIsLoading(true);
-    setError(false);
+    setError(null);
     agendaApi
       .getAgenda()
       .then(setData)
-      .catch(() => setError(true))
+      .catch(setError)
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -95,6 +102,21 @@ function AgendaContent() {
 
   const resumen = data?.resumen ?? RESUMEN_AGENDA_VACIO;
   const eventos = data?.eventos ?? [];
+
+  /**
+   * Paginado de presentación: `agendaApi.getAgenda()` trae el feed completo de
+   * eventos y crece con cada visita, firma y vencimiento. Sin filtros en esta
+   * pantalla ⇒ sin `resetKey`.
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(eventos);
 
   const formatFecha = (iso: string) => {
     const d = new Date(iso);
@@ -161,18 +183,19 @@ function AgendaContent() {
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Spinner />
-          </div>
-        ) : error ? (
-          <div className="py-14 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">{t(k('loadError'))}</p>
-            <Button variant="outline" onClick={load} hideArrow className="mx-auto">
-              {t(k('retry'))}
-            </Button>
-          </div>
-        ) : (
+        {/* El vacío NO va acá: vive dentro del <TableBody> para que se sigan
+            viendo los encabezados de columna. Acá sólo carga y fallo. */}
+        <EstadoDeDatos
+          cargando={isLoading}
+          error={error}
+          queEs="la agenda"
+          onReintentar={load}
+          esqueleto={
+            <div className="flex items-center justify-center py-16">
+              <Spinner />
+            </div>
+          }
+        >
           <Table>
             <TableHeader>
               <TableRow>
@@ -187,15 +210,20 @@ function AgendaContent() {
               {eventos.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={COLUMNS.length} className="p-0">
-                    <EmptyState
-                      icon={CalendarBlank}
-                      title={t(k('emptyTitle'))}
-                      description={t(k('emptyDesc'))}
+                    {/* Sin filtros en esta pantalla: un vacío acá es «no hay
+                        nada agendado», y lo útil es poder agendar desde acá.
+                        `setCitaOpen` abre el mismo modal del botón de arriba. */}
+                    <SinDatos
+                      queSon="eventos"
+                      icono={CalendarBlank}
+                      titulo={t(k('emptyTitle'))}
+                      descripcion={t(k('emptyDesc'))}
+                      crear={{ label: 'Agendar una visita', onClick: () => setCitaOpen(true) }}
                     />
                   </TableCell>
                 </TableRow>
               ) : (
-                eventos.map((e: EventoAgenda) => (
+                pageItems.map((e: EventoAgenda) => (
                   <TableRow key={e.id}>
                     <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
                       {formatFecha(e.fecha)}
@@ -236,7 +264,7 @@ function AgendaContent() {
                               type="button"
                               disabled={actingId === visitIdOf(e.id)}
                               onClick={() => runCitaAction(visitIdOf(e.id), () => agendaApi.aceptarCita(visitIdOf(e.id)))}
-                              className="text-caption font-medium text-success-600 dark:text-success-400 hover:underline disabled:opacity-50"
+                              className="text-caption font-medium text-success hover:underline disabled:opacity-50"
                             >
                               {t(k('citaConfirmar'))}
                             </button>
@@ -245,7 +273,7 @@ function AgendaContent() {
                               type="button"
                               disabled={actingId === visitIdOf(e.id)}
                               onClick={() => runCitaAction(visitIdOf(e.id), () => agendaApi.rechazarCita(visitIdOf(e.id)))}
-                              className="text-caption font-medium text-error-600 dark:text-error-400 hover:underline disabled:opacity-50"
+                              className="text-caption font-medium text-danger hover:underline disabled:opacity-50"
                             >
                               {t(k('citaRechazar'))}
                             </button>
@@ -268,7 +296,21 @@ function AgendaContent() {
               )}
             </TableBody>
           </Table>
-        )}
+
+          {/* Pie: sólo si hay más de una página. */}
+          {shouldPaginate && (
+            <div className="border-t border-border px-4 py-3">
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
+        </EstadoDeDatos>
       </section>
 
       <PedirCitaModal isOpen={citaOpen} onClose={() => setCitaOpen(false)} onCreated={load} />

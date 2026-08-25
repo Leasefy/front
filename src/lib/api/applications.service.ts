@@ -18,6 +18,7 @@ import type {
   CreditCheck,
   ProtectionOption,
   ApplicationPrefill,
+  ResultadoDeReuso,
 } from './applications.types';
 import type { Application } from '@/lib/types/application';
 import type { TenantApplicationStatus } from '@/lib/types/tenant-application';
@@ -55,8 +56,6 @@ const STATUS_MAP: Record<string, Application['status']> = {
   UNDER_REVIEW: 'under_review',
   INFO_REQUESTED: 'under_review',
   NEEDS_INFO: 'under_review',
-  PREAPPROVED: 'under_review',
-  PRE_APPROVED: 'under_review',
   APPROVED: 'approved',
   REJECTED: 'rejected',
   WITHDRAWN: 'rejected',
@@ -68,8 +67,6 @@ const STATUS_TO_TENANT_MAP: Record<string, TenantApplicationStatus> = {
   UNDER_REVIEW: 'under_review',
   INFO_REQUESTED: 'needs_info',
   NEEDS_INFO: 'needs_info',
-  PREAPPROVED: 'pre_approved',
-  PRE_APPROVED: 'pre_approved',
   APPROVED: 'approved',
   REJECTED: 'rejected',
   WITHDRAWN: 'withdrawn',
@@ -85,7 +82,7 @@ export function mapBackendApplication(ba: BackendApplication): Application {
     id: ba.id,
     propertyId: ba.propertyId,
     status: STATUS_MAP[ba.status] ?? 'draft',
-    currentStep: 6, // Backend applications are always complete
+    currentStep: 5, // Backend applications are always complete (wizard has 5 steps since T-0025)
     personal: {
       fullName: ba.fullName,
       documentType: ba.documentType as Application['personal']['documentType'],
@@ -101,12 +98,6 @@ export function mapBackendApplication(ba: BackendApplication): Application {
     employment: {
       employmentStatus: ba.employmentStatus as Application['employment']['employmentStatus'],
       companyName: ba.companyName,
-      industry: ba.industry,
-      position: ba.position,
-      contractType: ba.contractType as Application['employment']['contractType'],
-      timeAtJob: ba.timeAtJob,
-      employerPhone: ba.employerPhone,
-      employerAddress: ba.employerAddress,
     },
     income: {
       monthlySalary: ba.monthlySalary ?? 0,
@@ -116,10 +107,12 @@ export function mapBackendApplication(ba: BackendApplication): Application {
       monthlyObligations: ba.monthlyObligations ?? 0,
       availableForRent: ba.availableForRent ?? 0,
     },
-    references: ba.references ?? {
-      previousLandlords: [],
-      employmentReferences: [],
-      personalReferences: [],
+    // Reconstruido campo a campo — el back todavía puede mandar
+    // `personalReferences` en el JSON legado y ese campo ya no existe en
+    // `ReferenceInfo` (T-0020).
+    references: {
+      previousLandlords: ba.references?.previousLandlords ?? [],
+      employmentReferences: ba.references?.employmentReferences ?? [],
     },
     documents: {},
     hasCoSigner: ba.hasCoSigner ?? false,
@@ -129,7 +122,20 @@ export function mapBackendApplication(ba: BackendApplication): Application {
   };
 }
 
-function generateTrackingCode(id: string): string {
+/**
+ * El código de seguimiento de una postulación.
+ *
+ * No es un dato guardado: se DERIVA del id, con la misma fórmula que usa el
+ * back para las postulaciones de invitado (`applications.service.ts` allá).
+ * Por eso puede vivir en el front sin mentir — dos lados que calculan lo mismo
+ * llegan al mismo código.
+ *
+ * Exportada a propósito: la pantalla de "ya quedaste postulado" mostraba un
+ * `APP-1234` sacado de `Math.random()`, distinto del `AF-XXXXXX` que la persona
+ * veía después en su panel. Le pedíamos guardar un número que no servía para
+ * consultar nada. Un identificador o es el de verdad, o no se muestra.
+ */
+export function codigoDeSeguimiento(id: string): string {
   return 'AF-' + id.replace(/-/g, '').slice(0, 6).toUpperCase();
 }
 
@@ -139,14 +145,14 @@ function mapToTenantView(ba: BackendApplication): TenantApplicationView {
     id: ba.id,
     propertyId: ba.propertyId,
     status: STATUS_TO_TENANT_MAP[ba.status] ?? 'submitted',
-    trackingCode: generateTrackingCode(ba.id),
+    trackingCode: codigoDeSeguimiento(ba.id),
     submittedAt: ba.createdAt,
     updatedAt: ba.updatedAt,
     property: ba.property
       ? {
           id: ba.property.id,
           title: ba.property.title,
-          thumbnail: firstImage?.url || '/placeholder-property.jpg',
+          thumbnail: firstImage?.url || '/placeholder-property.svg',
           city: ba.property.city,
           neighborhood: ba.property.neighborhood,
           monthlyRent: ba.property.monthlyRent,
@@ -196,6 +202,18 @@ export const applicationsApi = {
     return result.map(mapToTenantView);
   },
 
+  /**
+   * Lightweight list of my applications with the RAW backend status — used to
+   * decide if a property already has an active application (see
+   * `isActiveApplicationStatus`). The mapped `getMine()` collapses statuses
+   * (WITHDRAWN → 'rejected', etc.), which loses the distinction the anti-dup
+   * guard needs; this keeps `status` verbatim.
+   */
+  async getMineStatuses(): Promise<Array<{ id: string; propertyId: string; status: string }>> {
+    const result = await apiClient.get<BackendApplication[]>('/applications/mine');
+    return result.map((ba) => ({ id: ba.id, propertyId: ba.propertyId, status: ba.status }));
+  },
+
   /** Get a single application by ID */
   async getById(id: string): Promise<Application> {
     const ba = await apiClient.get<BackendApplication>(`/applications/${id}`);
@@ -218,11 +236,16 @@ export const applicationsApi = {
 
   /**
    * Update a single step of an application (NEEDS_INFO / DRAFT flow)
-   * Step 1 → personal, 2 → employment, 3 → income, 4 → references
+   * Step 1 → personal, 2 → employment, 3 → income.
+   *
+   * T-0025 dropped the references step from the wizard — the front no longer
+   * calls `steps/4` (references). The backend keeps accepting it for
+   * back-compat with older/in-flight clients (`contract.md` T-0025 §3.1), but
+   * this client's type no longer offers it.
    */
   async updateStep(
     id: string,
-    step: 1 | 2 | 3 | 4,
+    step: 1 | 2 | 3,
     data: Record<string, unknown>
   ): Promise<void> {
     await apiClient.patch(`/applications/${id}/steps/${step}`, data);
@@ -292,6 +315,23 @@ export const applicationsApi = {
     return apiClient.get<ApplicationPrefill>('/applications/prefill');
   },
 
+  /**
+   * Adjunta a esta postulación los documentos que el inquilino ya había subido
+   * en postulaciones anteriores. El back copia el archivo (no reapunta el
+   * viejo) y la copia nace sin revisión: el visto bueno que le dio otra
+   * inmobiliaria no se hereda.
+   *
+   * Devuelve qué se copió, qué ya estaba y qué **falló** — quien llame tiene
+   * que mirar `fallaron` antes de dar la postulación por completa.
+   * POST /applications/:id/documents/reuse
+   */
+  async reuseDocuments(applicationId: string): Promise<ResultadoDeReuso> {
+    return apiClient.post<ResultadoDeReuso>(
+      `/applications/${applicationId}/documents/reuse`,
+      {}
+    );
+  },
+
   /** Get documents for an application */
   async getDocuments(applicationId: string): Promise<BackendDocument[]> {
     return apiClient.get<BackendDocument[]>(`/documents/application/${applicationId}`);
@@ -328,14 +368,6 @@ export const landlordApplicationsApi = {
   async getDetail(applicationId: string): Promise<LandlordApplicationDetail> {
     return apiClient.get<LandlordApplicationDetail>(
       `/landlord/applications/${applicationId}`
-    );
-  },
-
-  /** POST /landlord/applications/:id/preapprove */
-  async preapprove(applicationId: string, data?: object): Promise<void> {
-    await apiClient.post(
-      `/landlord/applications/${applicationId}/preapprove`,
-      data ?? {}
     );
   },
 

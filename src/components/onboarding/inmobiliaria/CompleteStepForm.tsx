@@ -83,7 +83,7 @@ export function CompleteStepForm({ isSubmitting, onSubmit, error, onNavigateToSt
     return (
       <div
         data-testid="complete-step-missing"
-        className="rounded-lg border border-border bg-surface-raised p-6 space-y-4 shadow-sm"
+        className="rounded-lg border border-border bg-surface p-6 space-y-4 shadow-sm"
       >
         <div className="flex items-start gap-2">
           <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
@@ -119,9 +119,9 @@ export function CompleteStepForm({ isSubmitting, onSubmit, error, onNavigateToSt
   return (
     <div
       data-testid="complete-step-form"
-      className="rounded-lg border border-border bg-surface-raised p-6 text-center space-y-4 shadow-sm"
+      className="rounded-lg border border-border bg-surface p-6 text-center space-y-4 shadow-sm"
     >
-      <div className="w-12 h-12 mx-auto rounded-md bg-surface-brand flex items-center justify-center">
+      <div className="w-12 h-12 mx-auto rounded-md bg-primary-soft flex items-center justify-center">
         <CheckCircle className="w-6 h-6 text-primary" />
       </div>
       <div>

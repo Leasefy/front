@@ -5,21 +5,31 @@
  * and renders the appropriate CTA for each lifecycle state.
  *
  * Status → CTA mapping:
- *   firmado   + certId → "Pagar certificado" (startPayment → redirect to Wompi)
- *   pagado    + certId → "Descargar certificado" (certificateUrl with cap token)
- *   entregado + certId → same as pagado + "Verificar certificado" link
+ *   firmado + certId + paid   → "Ver el informe" (la landing web del informe,
+ *                                el ENTREGABLE principal) + "Descargar el PDF"
+ *                                (payment already happened at intake)
+ *   firmado + certId + !paid  → honest pending note + enlace al informe (la
+ *                                landing muestra lo público y el estado del pago)
+ *   entregado + certId → same as firmado+paid + "Verificar certificado" link
+ *   (`pagado` is not a real state — the micro's state machine has five
+ *   members, not six; see `AvaluoStatus` in lib/types/avaluo.ts, T-0007)
  *   rechazado          → destructive note
  *   other              → processing message
+ *
+ * El informe web (`/avaluo/reporte/[slug]?token=`) es la entrega principal del
+ * avalúo: el capability token viaja en la query como en `certificateUrl` (es
+ * el mismo secreto del dueño y la landing lo canjea server-side contra el
+ * micro). El PDF queda como descarga secundaria.
  *
  * Capability token is read from localStorage (avaluo:cap:<submissionId>).
  */
 
-import { useState } from 'react'
 import { toast } from 'sonner'
 import {
   ArrowDown,
   ArrowSquareOut,
   ArrowsClockwise,
+  FileText,
   SealCheck,
   WarningCircle,
 } from '@phosphor-icons/react'
@@ -29,7 +39,8 @@ import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TERMINAL_STATUSES, STATUS_BADGE } from '@/lib/types/avaluo'
 import type { AvaluoStatusResponse } from '@/lib/types/avaluo'
-import { startPayment, certificateUrl, readCapToken } from '@/lib/api/avaluo.service'
+import { certificateUrl, readCapToken } from '@/lib/api/avaluo.service'
+import { reporteAvaluoHref } from '@/lib/avaluo/reporte-href'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -67,8 +78,6 @@ export function AvaluoEstadoCard({
   isLoading,
   isError,
 }: AvaluoEstadoCardProps) {
-  const [isPaying, setIsPaying] = useState(false)
-
   // While loading and no data yet — show skeleton
   if (isLoading && !statusData) {
     return (
@@ -99,7 +108,7 @@ export function AvaluoEstadoCard({
     return null
   }
 
-  const { status, certId, slug } = statusData
+  const { status, certId, slug, paid } = statusData
   const badge = STATUS_BADGE[status]
   const isTerminal = TERMINAL_STATUSES.includes(status)
 
@@ -110,22 +119,6 @@ export function AvaluoEstadoCard({
   // Handlers
   // ---------------------------------------------------------------------------
 
-  const handlePay = async () => {
-    if (!certId) return
-    setIsPaying(true)
-    try {
-      const { url } = await startPayment(certId)
-      window.location.href = url
-    } catch (err) {
-      const msg =
-        err instanceof Error && err.message
-          ? err.message
-          : 'No pudimos iniciar el pago. Intentá de nuevo.'
-      toast.error(msg)
-      setIsPaying(false)
-    }
-  }
-
   const handleDownloadCertificate = () => {
     if (!certId || !capToken) {
       toast.error('No encontramos tu token de acceso. Intentá desde el mismo navegador donde solicitaste el avalúo.')
@@ -135,47 +128,68 @@ export function AvaluoEstadoCard({
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
+  // El informe web: la entrega principal. Necesita el slug (viaja con el
+  // certId en el status) y el capability token del dueño.
+  const reportHref = slug && capToken ? reporteAvaluoHref(slug, capToken) : null
+
+  const verInformeButton = reportHref !== null && (
+    <Button asChild size="lg" className="inline-flex items-center gap-2">
+      <a href={reportHref} target="_blank" rel="noopener noreferrer">
+        <FileText className="w-4 h-4" />
+        Ver el informe
+      </a>
+    </Button>
+  )
+  const descargarPdfButton = (
+    <Button
+      size="lg"
+      variant="outline"
+      onClick={handleDownloadCertificate}
+      className="inline-flex items-center gap-2"
+    >
+      <ArrowDown className="w-4 h-4" />
+      Descargar el PDF
+    </Button>
+  )
+
   // ---------------------------------------------------------------------------
   // CTA section per status
   // ---------------------------------------------------------------------------
 
   let cta: React.ReactNode = null
 
-  if (status === 'firmado' && certId) {
+  if (status === 'firmado' && certId && paid) {
     cta = (
-      <Button
-        size="lg"
-        isLoading={isPaying}
-        onClick={handlePay}
-        className="w-full sm:w-auto"
-      >
-        Pagar certificado
-      </Button>
+      <div className="flex flex-col sm:flex-row gap-3">
+        {verInformeButton}
+        {descargarPdfButton}
+      </div>
     )
-  } else if (status === 'pagado' && certId) {
+  } else if (status === 'firmado' && certId && !paid) {
     cta = (
-      <Button
-        size="lg"
-        variant="outline"
-        onClick={handleDownloadCertificate}
-        className="w-full sm:w-auto inline-flex items-center gap-2"
-      >
-        <ArrowDown className="w-4 h-4" />
-        Descargar certificado
-      </Button>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2 text-sm text-fg-muted">
+          <SealCheck className="w-4 h-4 flex-none" />
+          <span>Estamos confirmando tu pago.</span>
+        </div>
+        {reportHref !== null && (
+          <a
+            href={reportHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+          >
+            <ArrowSquareOut className="w-4 h-4" />
+            Ver el avance del informe
+          </a>
+        )}
+      </div>
     )
   } else if (status === 'entregado' && certId) {
     cta = (
       <div className="flex flex-col sm:flex-row gap-3">
-        <Button
-          size="lg"
-          variant="outline"
-          onClick={handleDownloadCertificate}
-          className="inline-flex items-center gap-2"
-        >
-          <ArrowDown className="w-4 h-4" />
-          Descargar certificado
-        </Button>
+        {verInformeButton}
+        {descargarPdfButton}
         {slug && (
           <a
             href={`/avaluo/verificar/${slug}`}

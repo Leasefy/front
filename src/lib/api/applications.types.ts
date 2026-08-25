@@ -179,7 +179,6 @@ export type LandlordApplicationStatus =
   | 'DRAFT'
   | 'SUBMITTED'
   | 'UNDER_REVIEW'
-  | 'PREAPPROVED'
   | 'APPROVED'
   | 'REJECTED'
   | 'NEEDS_INFO'
@@ -192,6 +191,53 @@ export interface LandlordRiskScore {
   level: 'A' | 'B' | 'C' | 'D';
 }
 
+/**
+ * Per-carrier viability from the candidate's Fianly pre-scoring study.
+ * See PreScoringStudy for the full shape (T-0024 contract §3.2).
+ *
+ * `maxAsegurableCop` is nullable — contract §3.1 / §9 amendment 2. The back
+ * legitimately emits `null` for a carrier that will not back the tenant.
+ * MUST NOT be pushed through a currency formatter unguarded: that turns
+ * "no cover" into a false "$0" figure, which is worse than showing no
+ * number at all.
+ */
+export interface PreScoringCarrierResult {
+  name: string;
+  maxAsegurableCop: number | null;
+  viable: boolean;
+}
+
+/**
+ * Known values include 'COMPLETED' | 'EXPIRED' | 'STUDY_STARTED'; the backend
+ * may return other pre-scoring order statuses, so this stays a plain string
+ * rather than a closed union — the UI must not fail on an unrecognized one.
+ */
+export type PreScoringStudyStatus = string;
+
+/**
+ * Fianly pre-scoring study result, resolved through the application's
+ * PINNED order (`Application.preScoringOrderId`) — never the tenant's
+ * currently vigent order. T-0024 contract §3.2.
+ *
+ * `carriers` is empty for orders that predate the per-carrier snapshot
+ * column; `maxAsegurableCop` still comes through in that case (it was
+ * already persisted), so the UI renders "ceiling only", never "no study".
+ * A `status: 'EXPIRED'` study still returns this block — the study stays
+ * valid for the application it was filed under.
+ */
+export interface PreScoringStudy {
+  status: PreScoringStudyStatus;
+  /** Optional per contract §3.2 — the backend may omit the key entirely, not
+   *  just send null. Both degrade to the same UI: hide the date. */
+  completedAt?: string | null;
+  /** Optional per contract §3.2. Absent, like null, means "no ceiling
+   *  recorded" — the panel shows the explanatory line instead of a number. */
+  maxAsegurableCop?: number | null;
+  /** Optional per contract §3.2 — absent (older backend) degrades exactly
+   *  like an empty array: ceiling-only, never "no study". */
+  carriers?: PreScoringCarrierResult[];
+}
+
 /** Shape returned by GET /landlord/properties/:id/candidates */
 export interface LandlordCandidate {
   id: string;
@@ -201,6 +247,12 @@ export interface LandlordCandidate {
   submittedAt: string;
   riskScore?: LandlordRiskScore;
   privateNote?: string | null;
+  /**
+   * `null` when no pre-scoring study exists for this application; absent on
+   * responses from a backend that predates this field. Both degrade to the
+   * same "no study" UI state — never a blank panel. See PreScoringStudy.
+   */
+  preScoringStudy?: PreScoringStudy | null;
 }
 
 /** Item of GET /landlord/candidates — candidate plus its property context */
@@ -415,9 +467,63 @@ export interface EvaluationResult {
 // Wizard prefill — GET /applications/prefill
 // ============================================================================
 
+/**
+ * Identidad derivada del estudio de pre-scoring vigente del tenant
+ * (`.orchestration/tasks/T-0001-prescoring-prefill/contract.md` §3.2).
+ *
+ * Presente en AMBOS miembros de la unión `ApplicationPrefill` — es ortogonal a
+ * `hasPreviousApplication`: alguien sin postulación previa puede tener un
+ * estudio vigente y de todas formas debe ver su identidad precargada y
+ * bloqueada.
+ *
+ * `orderId` es sólo para correlación/telemetría en el front — NUNCA se manda
+ * de vuelta en ningún body.
+ */
+export interface PreScoringIdentity {
+  orderId: string;
+  fullName: string | null;
+  documentType: 'cc';
+  documentNumber: string;
+  email: string | null;
+  /**
+   * Los campos que el front debe bloquear. El set de bloqueo se DERIVA de
+   * este array — nunca de una lista fija — porque es lo que mantiene
+   * sincronizados el bloqueo de UI y la enforcement del back (contract §3.2).
+   */
+  lockedFields?: Array<'fullName' | 'documentType' | 'documentNumber' | 'email'>;
+}
+
 /** Returned when the tenant has no previous application to prefill from */
 export interface ApplicationPrefillEmpty {
   hasPreviousApplication: false;
+  /** Absent or null → front locks nothing, prefills nothing from this block. */
+  preScoringIdentity?: PreScoringIdentity | null;
+}
+
+/**
+ * Un documento que el inquilino ya subió y no hay que volver a pedirle.
+ *
+ * Llega con `uploadedAt` a propósito: la pantalla muestra de cuándo es cada
+ * archivo antes de que la persona confirme. Un extracto bancario de hace ocho
+ * meses sigue siendo un archivo válido, pero no es el extracto que la
+ * aseguradora espera — y reemplazarlo o no es decisión suya, no nuestra.
+ */
+export interface DocumentoReutilizable {
+  /** Tipo del back: ID_DOCUMENT, BANK_STATEMENT, EMPLOYMENT_LETTER… */
+  type: string;
+  originalName: string;
+  size: number;
+  /** ISO-8601 */
+  uploadedAt: string;
+}
+
+/** Resultado de POST /applications/:id/documents/reuse */
+export interface ResultadoDeReuso {
+  copiados: Array<{ id: string; type: string; originalName: string }>;
+  /** Tipos que la postulación ya tenía: no se pisaron. */
+  yaEstaban: string[];
+  /** Tipos cuya copia falló. NO quedaron adjuntos. */
+  fallaron: string[];
 }
 
 /** Returned when the tenant has a previous application; every scalar may be null */
@@ -469,6 +575,16 @@ export interface ApplicationPrefillData {
   } | null;
   hasCoSigner: boolean | null;
   coSigner: Record<string, unknown> | null;
+  /**
+   * Documentos que ya subió y se pueden volver a usar — el más reciente de cada
+   * tipo, sin los que una inmobiliaria rechazó en revisión.
+   *
+   * Opcional porque un back anterior a este contrato no lo manda; ausente se
+   * lee como "no hay ninguno reutilizable", que es el comportamiento de antes.
+   */
+  documents?: DocumentoReutilizable[];
+  /** Absent or null → front locks nothing, prefills nothing from this block. */
+  preScoringIdentity?: PreScoringIdentity | null;
 }
 
 /** Discriminated union returned by GET /applications/prefill */
@@ -507,7 +623,9 @@ export interface SmartMatchingResponse {
     monthlyIncome: number;
     employmentMonths: number;
     maxBudget: number;
-    preferredLocations: string[];
+    // The backend can omit this when it has no location signal for the
+    // candidate — treat it as optional and guard before reading `.length`.
+    preferredLocations?: string[];
   };
   results: SmartMatchResult[];
   message?: string;

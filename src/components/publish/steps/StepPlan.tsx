@@ -290,7 +290,7 @@ export function StepPlan() {
                                   'w-3.5 h-3.5 flex-shrink-0',
                                   isSelected || plan.highlighted
                                     ? 'text-[#1A40FF] dark:text-[#5570FF]'
-                                    : 'text-neutral-400 dark:text-neutral-500',
+                                    : 'text-fg-muted',
                                 )}
                               />
                               <span className="text-xs text-neutral-500 dark:text-neutral-400 truncate">

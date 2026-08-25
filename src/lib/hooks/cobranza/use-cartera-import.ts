@@ -27,6 +27,7 @@
 
 import { useCallback, useState } from 'react'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useAuth } from '@/lib/auth'
 
 export interface CarteraImportErrorEntry {
@@ -42,6 +43,25 @@ export interface CarteraImportSummary {
   totalRecibidos: number
   truncado: boolean
   source: string
+  /** Cánones vencidos guardados. De acá sale la mora. */
+  obligacionesCreadas?: number
+  obligacionesActualizadas?: number
+  /**
+   * Deudores que ENTRARON al embudo. Sin esto no los llama la cadencia ni
+   * aparecen en el panel, así que este número —y no `creados`— es el que dice
+   * cuántos empiezan a gestionarse.
+   */
+  altasAlEmbudo?: number
+  /** Filas con monto pero sin fecha de vencimiento legible: no entran a cobranza. */
+  sinVencimiento?: number
+  /** Qué columna se leyó como vencimiento y cómo se interpretaron las fechas. */
+  vencimiento?: {
+    columna: string | null
+    orden: 'dmy' | 'mdy'
+    /** false ⇒ el orden es una SUPOSICIÓN y hay que decirlo en pantalla. */
+    probado: boolean
+    ejemplo: string | null
+  }
   generatedAt: string
 }
 
@@ -97,7 +117,7 @@ export function useCarteraImport(): UseCarteraImportResult {
         form.set('file', file, file.name)
 
         // multipart: NO fijamos content-type — el navegador agrega el boundary.
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cartera/import`,
           {
             method: 'POST',

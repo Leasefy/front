@@ -15,7 +15,10 @@ import { Badge } from '@/components/ui'
 
 import { useI18n } from '@/lib/i18n'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
-import { useDebtorAudit } from '@/lib/hooks/cobranza/use-debtor-audit'
+import {
+  useDebtorAudit,
+  type DebtorAuditEntry,
+} from '@/lib/hooks/cobranza/use-debtor-audit'
 import { PauseModal } from '@/components/inmobiliaria/cobranza/intervention/PauseModal'
 import { ForceStageModal } from '@/components/inmobiliaria/cobranza/intervention/ForceStageModal'
 import { ManualWAModal } from '@/components/inmobiliaria/cobranza/intervention/ManualWAModal'
@@ -26,11 +29,46 @@ void React
 
 type OpenModal = 'pause' | 'forceStage' | 'manualWA' | 'manualCall' | null
 
+/**
+ * Lo mínimo que este archivo necesita de una fila de auditoría, DERIVADO del
+ * contrato generado.
+ *
+ * Estaba escrito a mano (`actor_role?: string | null`) porque el contrato
+ * todavía no traía el campo. Ahora sí — y un campo de auditoría declarado a
+ * mano es justo lo que después no avisa cuando el agente lo renombra.
+ */
+type ActorDeAuditoria = Pick<DebtorAuditEntry, 'actor_type' | 'actor_id' | 'actor_role'>
+
+/**
+ * Quién hizo la acción, para poder rastrearla.
+ *
+ * Antes acá salía `actor_type` a secas: «user». Eso dice la CATEGORÍA del
+ * actor, no la persona — con tres administradores en una agencia, «user ·
+ * 10/8/2026» no permite saber quién pausó una cobranza. El endpoint ya traía
+ * `actor_id` (el email) y ahora también `actor_role`.
+ *
+ * Los actores que no son personas (`saas_orchestrator`, `system`) no tienen
+ * email ni rol: se nombran por lo que son, no con un slug crudo.
+ */
+export function describirActor(
+  e: ActorDeAuditoria,
+  t: (k: string) => string,
+): string {
+  if (!e.actor_id) {
+    const NS = 'inmobiliaria.ai.cobranza.detail.acciones.actor'
+    if (e.actor_type === 'saas_orchestrator') return t(`${NS}.agente`)
+    if (e.actor_type === 'system') return t(`${NS}.sistema`)
+    // Un tipo de actor que no conocemos se muestra crudo antes que inventarle
+    // un nombre: es una traza, y equivocarse acá es peor que verse feo.
+    return e.actor_type
+  }
+  return e.actor_role ? `${e.actor_id} · ${e.actor_role}` : e.actor_id
+}
+
 interface AccionesTabProps {
   debtorId: string
   debtorName: string
   currentStage: CarteraStage
-  prefill: Record<string, string>
   onIntervention: () => void
 }
 
@@ -38,7 +76,6 @@ export function AccionesTab({
   debtorId,
   debtorName,
   currentStage,
-  prefill,
   onIntervention,
 }: AccionesTabProps) {
   const { t, locale } = useI18n()
@@ -66,7 +103,7 @@ export function AccionesTab({
   return (
     <div className="space-y-5">
       <section>
-        <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-3">
+        <h2 className="text-sm font-semibold text-fg mb-3">
           {t('inmobiliaria.ai.cobranza.detail.acciones.title')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -115,7 +152,7 @@ export function AccionesTab({
 
       {/* Audit ribbon */}
       <section>
-        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-2">
+        <h3 className="text-sm font-semibold text-fg mb-2">
           {t('inmobiliaria.ai.cobranza.detail.acciones.auditTitle')}
         </h3>
         {audit.isLoading && !audit.data ? (
@@ -123,12 +160,12 @@ export function AccionesTab({
             {Array.from({ length: 3 }, (_, i) => (
               <div
                 key={i}
-                className="h-8 bg-neutral-100 dark:bg-neutral-800 rounded animate-pulse"
+                className="h-8 bg-surface-muted rounded animate-pulse"
               />
             ))}
           </div>
         ) : auditEntries.length === 0 ? (
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="text-xs text-fg-muted">
             {t('inmobiliaria.ai.cobranza.detail.acciones.auditEmpty')}
           </p>
         ) : (
@@ -136,13 +173,14 @@ export function AccionesTab({
             {auditEntries.map((e) => (
               <li
                 key={e.id}
-                className="flex items-center justify-between text-xs px-2 py-1 rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
+                className="flex items-center justify-between text-xs px-2 py-1 rounded bg-surface-muted border border-border"
               >
-                <span className="font-mono text-neutral-700 dark:text-neutral-200">
+                <span className="font-mono text-fg-muted">
                   {e.action}
                 </span>
-                <span className="text-neutral-500 dark:text-neutral-400">
-                  {e.actor_type} · {new Date(e.occurred_at).toLocaleString(locale)}
+                <span className="text-fg-muted">
+                  {describirActor(e, t)} ·{' '}
+                  {new Date(e.occurred_at).toLocaleString(locale)}
                 </span>
               </li>
             ))}
@@ -171,7 +209,6 @@ export function AccionesTab({
         onClose={() => setOpenModal(null)}
         debtorId={debtorId}
         debtorName={debtorName}
-        prefill={prefill}
         onSuccess={handleSuccess}
       />
       <ManualCallModal
@@ -216,12 +253,12 @@ function CTACard({
       title={disabled ? disabledTooltip : undefined}
       data-testid={testId}
       className={
-        'group text-left rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ' +
+        'group text-left rounded-md border border-border bg-surface px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ' +
         accentClass
       }
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-neutral-900 dark:text-white">
+        <span className="text-sm font-medium text-fg">
           {label}
         </span>
         {badge && (

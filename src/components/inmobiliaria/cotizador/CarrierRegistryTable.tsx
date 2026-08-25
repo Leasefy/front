@@ -337,28 +337,28 @@ export function CarrierRegistryTable({
         <Table className="min-w-full divide-y divide-border">
           <TableHeader className="bg-surface-muted/60">
             <TableRow>
-              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left sticky left-0 bg-surface-muted z-10">
+              <TableHead className="px-4 py-3 text-left sticky left-0 bg-surface-muted z-10">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colName')}
               </TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colMode')}
               </TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colGlobalEnabled')}
               </TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colTenantEnabled')}
               </TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colGlobalPriority')}
               </TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colTenantPriority')}
               </TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colBreachStatus')}
               </TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.colActions')}
               </TableHead>
             </TableRow>

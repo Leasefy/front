@@ -17,6 +17,7 @@ import { CadenceChannelMixChart } from '@/components/inmobiliaria/cobranza/Caden
 import { HeatmapGrid24x7 }        from '@/components/inmobiliaria/cobranza/HeatmapGrid24x7'
 import { CostPerPesoKpi }         from '@/components/inmobiliaria/cobranza/CostPerPesoKpi'
 import { TopScriptsTable }        from '@/components/inmobiliaria/cobranza/TopScriptsTable'
+import { FalloDeCarga }           from '@/components/estado/FalloDeCarga'
 
 export default function CobranzaAnaliticaPage() {
   const { t } = useI18n()
@@ -27,10 +28,10 @@ export default function CobranzaAnaliticaPage() {
     return (
       <main className="p-6 lg:p-8 space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {t('inmobiliaria.ai.cobranza.analitica.title')}
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">
+          <p className="text-fg-muted mt-0.5 text-sm">
             {t('inmobiliaria.ai.cobranza.analitica.subtitle')}
           </p>
         </header>
@@ -39,7 +40,7 @@ export default function CobranzaAnaliticaPage() {
             <div
               key={i}
               className={[
-                'rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6',
+                'rounded-xl border border-border bg-card p-6',
                 i === 0 || i === 3 ? 'md:col-span-2' : '',
               ].join(' ')}
               style={{ height: i === 0 || i === 3 ? 340 : 300 }}
@@ -55,24 +56,18 @@ export default function CobranzaAnaliticaPage() {
     return (
       <main className="p-6 lg:p-8 space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {t('inmobiliaria.ai.cobranza.analitica.title')}
           </h1>
         </header>
-        <div className="rounded-xl border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-danger">
-            {t('inmobiliaria.ai.cobranza.analitica.errors.loading')}: {error}
-          </p>
-          <Button
-            type="button"
-            variant="link"
-            size="sm"
-            onClick={() => void refetch()}
-            className="shrink-0 text-danger"
-          >
-            {t('inmobiliaria.ai.cobranza.analitica.errors.retry')}
-          </Button>
-        </div>
+        {/* El mensaje crudo del backend —en inglés, con nombres de endpoint—
+            no le sirve a nadie que esté mirando esta pantalla. `FalloDeCarga`
+            lo deja en el DOM para diagnóstico y en pantalla dice qué pasó. */}
+        <FalloDeCarga
+          error={error}
+          queEs="la analítica de cobranza"
+          onReintentar={() => void refetch()}
+        />
       </main>
     )
   }
@@ -91,7 +86,7 @@ export default function CobranzaAnaliticaPage() {
     return (
       <main className="p-6 lg:p-8 space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {t('inmobiliaria.ai.cobranza.analitica.title')}
           </h1>
         </header>
@@ -109,7 +104,7 @@ export default function CobranzaAnaliticaPage() {
     return (
       <main className="p-6 lg:p-8">
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {t('inmobiliaria.ai.cobranza.analitica.title')}
           </h1>
         </header>
@@ -132,10 +127,10 @@ export default function CobranzaAnaliticaPage() {
     <main className="p-6 lg:p-8 space-y-6">
       {/* Page header */}
       <header>
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+        <h1 className="text-2xl font-semibold text-fg tracking-tight">
           {t('inmobiliaria.ai.cobranza.analitica.title')}
         </h1>
-        <p className="text-neutral-500 dark:text-neutral-400 mt-0.5 text-sm">
+        <p className="text-fg-muted mt-0.5 text-sm">
           {t('inmobiliaria.ai.cobranza.analitica.subtitle')}
         </p>
       </header>
@@ -144,8 +139,8 @@ export default function CobranzaAnaliticaPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Widget 1 — Recovery Rate (full-width row) */}
-        <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4 md:col-span-2">
-          <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+        <section className="rounded-xl border border-border bg-card p-6 space-y-4 md:col-span-2">
+          <h2 className="text-base font-semibold text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.recoveryRate.title')}
           </h2>
           <RecoveryRateChart
@@ -158,8 +153,8 @@ export default function CobranzaAnaliticaPage() {
         </section>
 
         {/* Widget 2 — Top Objections (single col) */}
-        <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4">
-          <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+        <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <h2 className="text-base font-semibold text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.topObjections.title')}
           </h2>
           <TopObjectionsTable
@@ -172,8 +167,8 @@ export default function CobranzaAnaliticaPage() {
         </section>
 
         {/* Widget 3 — Cost Per Peso (single col) */}
-        <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4">
-          <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+        <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <h2 className="text-base font-semibold text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.costPerPeso.title')}
           </h2>
           <CostPerPesoKpi
@@ -183,8 +178,8 @@ export default function CobranzaAnaliticaPage() {
         </section>
 
         {/* Widget 4 — Cadence: ChannelMix + Heatmap stacked (full-width row) */}
-        <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4 md:col-span-2">
-          <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+        <section className="rounded-xl border border-border bg-card p-6 space-y-4 md:col-span-2">
+          <h2 className="text-base font-semibold text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.cadence.title')}
           </h2>
           <div className="space-y-6">
@@ -207,8 +202,8 @@ export default function CobranzaAnaliticaPage() {
         </section>
 
         {/* Widget 5 — Top Scripts (Phase 38-04a: branches on data.topScripts.populated) */}
-        <section className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4">
-          <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+        <section className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <h2 className="text-base font-semibold text-fg">
             {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
           </h2>
           <TopScriptsTable data={data?.topScripts} />

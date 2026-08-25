@@ -39,9 +39,12 @@ export function ScoreCard({ isPaid, level, onClick }: ScoreCardProps) {
           <p className="text-2xl font-bold text-fg-subtle dark:text-fg-muted blur-[6px] select-none">
             ??
           </p>
+          {/* Decía "Evaluar perfil", una acción que no existe: la evaluación
+              la lanza la inmobiliaria sobre una postulación. Ahora la etiqueta
+              dice cuándo aparece, y el detalle lo explica. */}
           <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle text-[10px] font-medium rounded-full">
             <Lock className="w-3 h-3" />
-            {locale === 'es' ? 'Evaluar perfil' : 'Evaluate profile'}
+            {locale === 'es' ? 'Al postularte' : 'When you apply'}
           </span>
         </div>
       </button>

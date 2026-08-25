@@ -18,6 +18,7 @@ import {
   List,
   CaretRight,
   Users,
+  UserCircle,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,8 @@ import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria'
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { Button } from '@/components/ui/button';
 import { TablePagination } from '@/components/ui/pagination';
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { SinDatos } from '@/components/estado/SinDatos';
 import { SegmentedControl, KpiCard, IconButton } from '@leasefy/cadence';
 
 type ViewMode = 'table' | 'grid';
@@ -121,7 +124,7 @@ function Modal({
         {/* Modal */}
         <div
           className={cn(
-            'relative bg-card w-full rounded-xl flex flex-col',
+            'relative bg-card w-full rounded-[20px] flex flex-col',
             sizeClasses[size]
           )}
           style={{ maxHeight: '85vh' }}
@@ -173,13 +176,38 @@ function PropietariosContent() {
   const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { propietarios: apiPropietarios } = usePropietarios();
-  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
+  // ⚠️ Tomar SÓLO los datos era el defecto: `useApiData` captura el fallo en su
+  // estado y no lo relanza, así que una petición muerta llegaba acá como lista
+  // vacía y la pantalla decía «todavía no tenés propietarios» — afirmando algo
+  // que nadie verificó. `errorCrudo` es el error entero, que es lo que
+  // `FalloDeCarga` necesita para saber si reintentar sirve.
+  const {
+    propietarios: apiPropietarios,
+    isLoading: cargandoPropietarios,
+    errorCrudo: errorPropietarios,
+    refetch: recargarPropietarios,
+  } = usePropietarios();
 
-  // Sync with API data
-  useEffect(() => {
-    if (apiPropietarios.length > 0) setPropietarios(apiPropietarios);
-  }, [apiPropietarios]);
+  /*
+   * La lista es la del hook, sin copia local.
+   *
+   * Había un `useState` espejo que se llenaba con
+   * `if (apiPropietarios.length > 0) setPropietarios(...)`. Ese `> 0` es una
+   * trampa: el espejo sólo copia hacia adelante, así que **borrar el último
+   * propietario dejaba su fila en pantalla para siempre** — la petición salía,
+   * el hook devolvía la lista vacía y la copia se quedaba con lo viejo.
+   *
+   * Con el refresco automático el problema se agrava: la pantalla recibe el
+   * dato nuevo y lo ignora. Un espejo que no puede vaciarse no es un caché, es
+   * una afirmación desactualizada.
+   *
+   * Y tenía un segundo daño, menos visible (visto al integrar #87): los KPI de
+   * arriba —inmuebles, canon, pendiente— se suman de ESTA lista, y esos campos
+   * los calcula el backend. Un objeto recién creado los trae en cero, así que
+   * parchear la copia a mano al crear un propietario **bajaba los totales de la
+   * agencia**. Leer siempre del hook no tiene ninguno de los dos problemas.
+   */
+  const propietarios = apiPropietarios;
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showIACapture, setShowIACapture] = useState(false);
@@ -255,8 +283,9 @@ function PropietariosContent() {
     setIsDeleting(true);
     try {
       await propietariosApi.delete(deletingPropietario.id);
-      // Only remove from local state once the backend confirms deletion
-      setPropietarios((prev) => prev.filter((p) => p.id !== deletingPropietario.id));
+      // La fila se va sola: el cliente avisa que «propietarios» cambió y la
+      // lista se vuelve a pedir. Antes se la sacaba a mano de una copia local,
+      // que es una segunda versión de la verdad y podía discrepar del back.
       toast.success(t('inmobiliaria.propietarios.toasts.deleted', { name: deletingPropietario.name }));
       setDeletingPropietario(null);
     } catch (err) {
@@ -271,8 +300,9 @@ function PropietariosContent() {
   const handleCreateSubmit = async (data: PropietarioFormData) => {
     try {
       const created = await propietariosApi.create(data);
-      // Use the persisted object returned by the backend (real id, computed fields)
-      setPropietarios((prev) => [created, ...prev]);
+      // Aparece solo. Y se pide de nuevo al back a propósito: el objeto que
+      // devuelve `create` no trae los campos calculados (propiedades, canon),
+      // así que insertarlo a mano mostraba una fila incompleta hasta recargar.
       toast.success(t('inmobiliaria.propietarios.toasts.created', { name: created.name }));
       setShowAddModal(false);
       setCurrentPage(1); // Reset to first page to show new item
@@ -288,11 +318,8 @@ function PropietariosContent() {
     if (!editingPropietario) return;
 
     try {
-      const updated = await propietariosApi.update(editingPropietario.id, data);
-      // Replace with the persisted object returned by the backend
-      setPropietarios((prev) =>
-        prev.map((p) => (p.id === editingPropietario.id ? updated : p))
-      );
+      await propietariosApi.update(editingPropietario.id, data);
+      // Se actualiza sola.
       toast.success(t('inmobiliaria.propietarios.toasts.updated'));
       setEditingPropietario(null);
     } catch (err) {
@@ -410,25 +437,41 @@ function PropietariosContent() {
 
         {/* Content */}
         <div>
-          {viewMode === 'table' ? (
-            <PropietarioTable
-              propietarios={paginationData.paginatedItems}
-              onView={handleView}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onExport={handleExport}
-            />
-          ) : (
-            <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {paginationData.paginatedItems.map((propietario) => (
-                <PropietarioCard
-                  key={propietario.id}
-                  propietario={propietario}
-                  onClick={() => handleView(propietario)}
-                />
-              ))}
-            </div>
-          )}
+          <EstadoDeDatos
+            cargando={cargandoPropietarios}
+            error={errorPropietarios}
+            queEs="los propietarios"
+            onReintentar={recargarPropietarios}
+          >
+            {paginationData.totalItems === 0 ? (
+              /* Sin filtros en esta pantalla: un vacío acá es siempre «todavía
+                 no hay ninguno», y lo útil es crear el primero. */
+              <SinDatos
+                queSon="propietarios"
+                icono={UserCircle}
+                descripcion="Registrá al dueño de un inmueble para poder consignarlo y liquidarle sus pagos."
+                crear={{ label: 'Agregar propietario', onClick: () => setShowAddModal(true) }}
+              />
+            ) : viewMode === 'table' ? (
+              <PropietarioTable
+                propietarios={paginationData.paginatedItems}
+                onView={handleView}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onExport={handleExport}
+              />
+            ) : (
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {paginationData.paginatedItems.map((propietario) => (
+                  <PropietarioCard
+                    key={propietario.id}
+                    propietario={propietario}
+                    onClick={() => handleView(propietario)}
+                  />
+                ))}
+              </div>
+            )}
+          </EstadoDeDatos>
         </div>
 
         {/* Pagination Footer */}

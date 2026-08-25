@@ -1,12 +1,19 @@
 'use client'
 
 import { createContext, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import type { User, AuthContextType, Agency, AgencyMemberRole } from './types'
+import type { User, AuthContextType, Agency, AgencyMemberRole, UserRole } from './types'
 import { toFrontendRole } from './types'
 import { fetchAgencyProfile, type AgencyFetchResult } from './agency-fetch'
+import { toast } from 'sonner'
 import { getSupabase } from '@/lib/supabase/client'
-import { apiClient, ApiError, setAccessToken } from '@/lib/api/client'
-import { TENANT_ONBOARDING_STORAGE_KEY } from '@/lib/onboarding/tenant-onboarding-status'
+import { apiClient, ApiError, setAccessToken, setUnauthorizedHandler } from '@/lib/api/client'
+import {
+  terminarSesion,
+  purgarSesionLocal,
+  registrarCierreDeSesion,
+  haySesionGuardada,
+} from './session-terminal'
+import { claimSession } from '@/lib/api/session.service'
 import {
   readActiveContext,
   writeActiveContext,
@@ -207,6 +214,9 @@ function readAgencyFromStorage(): Agency | null {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
+  // Se lee UNA vez, en el primer render: para cuando corren los efectos,
+  // auth-js ya pudo haber descartado la sesión y borrado el rastro.
+  const [sesionGuardadaAlCargar] = useState(haySesionGuardada)
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [mfaRequired, setMfaRequired] = useState(false)
@@ -230,6 +240,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [lastProbeTransient, setLastProbeTransient] = useState(false)
   // Persisted active-context choice for dual-context users (null = unset).
   const [persistedContext, setPersistedContext] = useState<ActiveContext | null>(null)
+
+  /**
+   * ¿El SIGNED_OUT que viene es porque el usuario apretó "Cerrar sesión"?
+   *
+   * Supabase emite el MISMO evento en los dos casos: cuando el usuario se va por
+   * su cuenta y cuando auth-js descarta una sesión que ya no puede renovar. La
+   * diferencia importa: uno termina en la home sin decir nada, el otro tiene que
+   * avisar "tu sesión expiró". Un ref y no un estado porque lo lee el handler de
+   * `onAuthStateChange`, que se registra una sola vez y capturaría un valor viejo.
+   */
+  const cierreVoluntarioRef = useRef(false)
+
+  /**
+   * ¿Hubo alguna sesión viva en esta carga de página?
+   *
+   * Se siembra con lo que había guardado ANTES de que auth-js pudiera tocarlo
+   * (por eso se lee en el primer render y no en un efecto), y se levanta en
+   * cuanto llega una sesión de verdad. Es lo que separa "se te venció la
+   * sesión" de "nunca entraste": sin esto, un visitante anónimo en la landing
+   * —que también recibe SIGNED_OUT al arrancar— iría a parar a /auth con un
+   * cartel de sesión vencida.
+   */
+  const huboSesionRef = useRef(sesionGuardadaAlCargar)
 
   /**
    * Fetch the user profile from the backend.
@@ -496,6 +529,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setPersistedContext(context)
   }, [user?.id])
 
+  /**
+   * Single-session: claim this device's session as the active one. Must run
+   * BEFORE the first authenticated request (fetchUser) so a device that only
+   * opened the app (INITIAL_SESSION, not SIGNED_IN) becomes active instead of
+   * getting 401'd by the backend's single-session guard. Best-effort with a
+   * hard timeout so a hung/failed claim can never stall the auth bootstrap
+   * (matches signOut's timeout-race style). A `superseded` result means this
+   * device just displaced another one — tell the user.
+   */
+  const claimActiveSession = useCallback(async (token: string) => {
+    const result = await Promise.race([
+      claimSession(token).catch(() => null),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+    ])
+    if (result?.superseded) {
+      toast('Cerramos tu sesión en otro dispositivo')
+    }
+  }, [])
+
   // Initialize auth on mount.
   // We rely exclusively on onAuthStateChange (which fires INITIAL_SESSION on setup)
   // to avoid calling getSession() in parallel, which triggers an AbortError from
@@ -532,8 +584,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
 
         if (event === 'INITIAL_SESSION') {
+          if (!session) {
+            // Sin sesión hay que decirlo EXPLÍCITAMENTE. `setAccessToken` es lo
+            // único que marca la pregunta como contestada (`_sesionResuelta` en
+            // api/client.ts); sin esta línea la compuerta queda abierta y CADA
+            // petición paga los 3 s de `esperarRespuestaDeSesion` antes de
+            // salir igual sin `Authorization`. Con el refresh token muerto —el
+            // caso en que este `else` es la primera noticia— eso eran ~4 s por
+            // pantalla para terminar en un cartel de error equivocado.
+            setAccessToken(null)
+          }
           if (session) {
+            huboSesionRef.current = true
             setAccessToken(session.access_token)
+            // Claim the active session BEFORE any other authenticated request.
+            await claimActiveSession(session.access_token)
             const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
             if (userData) userData.hasPassword = getHasPassword(session)
             setUser(userData)
@@ -552,7 +617,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
           setIsLoading(false)
         } else if (event === 'SIGNED_IN' && session) {
+          huboSesionRef.current = true
           setAccessToken(session.access_token)
+          // Claim the active session BEFORE any other authenticated request.
+          await claimActiveSession(session.access_token)
           const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
           if (userData) userData.hasPassword = getHasPassword(session)
           setUser(userData)
@@ -568,6 +636,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
             void probeAgencyMembership(session.access_token)
           }
         } else if (event === 'SIGNED_OUT') {
+          // auth-js emite SIGNED_OUT cuando descarta una sesión que no pudo
+          // renovar (`_removeSession`). Si NO fue el usuario el que se fue y
+          // había alguien adentro, esto es la muerte del refresh token: hay que
+          // salir a /auth, no quedarse en un panel que ya no puede cargar nada.
+          // Sin esto la salida dependía de que ProtectedRoute estuviera montado
+          // y reaccionara por estado de React — indirecto y tarde.
+          if (!cierreVoluntarioRef.current && huboSesionRef.current) {
+            terminarSesion('expirada')
+          }
           setAccessToken(null)
           setUser(null)
           setAgencyState(null)
@@ -581,6 +658,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setNeedsOnboarding(false)
           setIsLoading(false)
         } else if (event === 'TOKEN_REFRESHED' && session) {
+          huboSesionRef.current = true
           setAccessToken(session.access_token)
           const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
           if (userData) userData.hasPassword = getHasPassword(session)
@@ -605,7 +683,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
-  }, [fetchUser, checkMfaLevel, probeAgencyMembership])
+  }, [fetchUser, checkMfaLevel, probeAgencyMembership, claimActiveSession])
 
   /** Sign in with Google OAuth via Supabase */
   const signInWithGoogle = useCallback(async () => {
@@ -642,14 +720,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return null
   }, [fetchUser, checkMfaLevel])
 
-  /** Sign up with email and password. Returns whether email confirmation is required. */
-  const signUpWithEmail = useCallback(async (email: string, password: string, redirectTo?: string) => {
+  /**
+   * Sign up with email and password. Returns whether email confirmation is required.
+   *
+   * `perfil` lleva datos que ya conocemos de la persona **antes** de que tenga
+   * cuenta — hoy los del recorrido de aprobación (nombre, celular, cédula,
+   * ciudad). Van a `user_metadata`, que sobrevive al link de confirmación y se
+   * puede leer del lado del servidor. Sin esto habría que volver a pedirle cosas
+   * que acaba de escribir dos pantallas atrás.
+   */
+  const signUpWithEmail = useCallback(async (email: string, password: string, redirectTo?: string, intendedRole?: UserRole, perfil?: Record<string, string>) => {
     const supabase = getSupabase()
     if (!supabase) throw new Error('Supabase not initialized')
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
+      options: {
+        ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
+        // Persist the profile chosen at signup as user_metadata so it survives
+        // regardless of the confirmation link (readable server-side too).
+        ...(intendedRole || perfil
+          ? { data: { ...(intendedRole ? { intended_role: intendedRole } : {}), ...(perfil ?? {}) } }
+          : {}),
+      },
     })
     if (error) throw error
     const requiresConfirmation = !data.session
@@ -701,6 +794,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
    *  cleanup (FCM, Supabase) is fire-and-forget so a hung lock or network
    *  failure can never block the UI from logging out. */
   const signOut = useCallback(async () => {
+    // El SIGNED_OUT que va a emitir Supabase más abajo es consecuencia de ESTA
+    // llamada, no de un token muerto: marcarlo evita el cartel "tu sesión
+    // expiró" sobre una salida que el usuario pidió.
+    cierreVoluntarioRef.current = true
     // Best-effort FCM cleanup with the token still in memory.
     // Awaited but with a hard timeout so a slow backend can't stall logout.
     await Promise.race([
@@ -708,30 +805,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       new Promise((resolve) => setTimeout(resolve, 1500)),
     ])
 
-    // Synchronous cleanup — must succeed even if Supabase hangs below.
-    if (typeof document !== 'undefined') {
-      document.cookie.split(';').forEach((c) => {
-        const name = c.split('=')[0]?.trim()
-        if (name && (name.startsWith('sb-') || name.startsWith('supabase'))) {
-          document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`
-          document.cookie = `${name}=; Max-Age=0; path=/`
-        }
-      })
-    }
-    if (typeof window !== 'undefined') {
-      try {
-        Object.keys(window.localStorage)
-          .filter((k) => k.startsWith('sb-') || k.startsWith('supabase.'))
-          .forEach((k) => window.localStorage.removeItem(k))
-        Object.keys(window.sessionStorage)
-          .filter((k) => k.startsWith('sb-') || k.startsWith('supabase.'))
-          .forEach((k) => window.sessionStorage.removeItem(k))
-        // The tenant onboarding wizard cache carries this account's PII
-        // (phone, budget, zones, pets) — never leave it behind for the next
-        // account on a shared browser.
-        window.localStorage.removeItem(TENANT_ONBOARDING_STORAGE_KEY)
-      } catch {}
-    }
+    // Limpieza síncrona — tiene que salir bien aunque Supabase se cuelgue abajo.
+    // Vive en session-terminal.ts porque el cierre por sesión vencida necesita
+    // exactamente lo mismo: una sola definición de "qué es limpiar la sesión".
+    purgarSesionLocal()
 
     setAccessToken(null)
     setUser(null)
@@ -751,6 +828,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
       supabase?.auth.signOut({ scope: 'local' }).catch(() => {})
     } catch {}
   }, [])
+
+  // Backstop global de 401. `apiClient` sólo llama acá con un código de sesión
+  // muerta, así que no hace falta volver a filtrar: un 401 de onboarding o de
+  // permisos nunca llega a este handler.
+  //
+  // Los dos códigos NO se tratan igual, y por eso la decisión vive acá y no en
+  // apiClient:
+  //   - vencida/inválida → salida dura a /auth con el motivo.
+  //   - SESSION_SUPERSEDED → el camino bueno es el modal "iniciaste sesión en
+  //     otro dispositivo" (SessionRevocationHandler, por Realtime). Redirigir
+  //     duro acá se lo comería y el usuario nunca sabría por qué lo sacaron;
+  //     con signOut, ProtectedRoute lo lleva a /auth igual.
+  useEffect(() => {
+    setUnauthorizedHandler((code) => {
+      if (code === 'SESSION_SUPERSEDED') {
+        void signOut()
+        return
+      }
+      terminarSesion('expirada')
+    })
+    return () => setUnauthorizedHandler(null)
+  }, [signOut])
+
+  // `terminarSesion` corre fuera de React (lo dispara apiClient). Le pasamos
+  // signOut para que la limpieza asíncrona —FCM, signOut de Supabase— también
+  // ocurra en el cierre por vencimiento, no sólo en el voluntario.
+  useEffect(() => {
+    registrarCierreDeSesion(() => {
+      cierreVoluntarioRef.current = true
+      void signOut()
+    })
+    return () => registrarCierreDeSesion(null)
+  }, [signOut])
 
   // ── Derived membership / active-context signals ────────────────────────────
   // Agency-panel access hinges on this ONE signal (ACTIVE membership only).

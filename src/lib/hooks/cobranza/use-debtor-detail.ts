@@ -13,11 +13,42 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { components } from '@/lib/api/generated/agent'
 
-export type DebtorDetailResponse = components['schemas']['CobranzaDebtorDetailHeaderResponse']
+// ── Manual augmentation of NEW backend sidebar fields ─────────────────────────
+// The generated `agent` client does not yet contain these fields. We extend the
+// response TYPE here (instead of regenerating the whole client) and keep the new
+// fields OPTIONAL so the UI degrades gracefully if the API hasn't shipped them.
+
+/** Per-channel + total contact-attempts breakdown (NEW — see backend shapes). */
+export interface DebtorContactAttempts {
+  total: number
+  lastAttemptAt: string | null
+  lastChannel: 'voice' | 'whatsapp' | 'email' | 'sms' | null
+  byChannel: { voice: number; whatsapp: number; email: number; sms: number }
+}
+
+/** Agent-recommended next step derived from the last call (NEW). */
+export interface DebtorRecommendedNextStep {
+  action: string | null
+  label: string | null
+  reason: string | null
+  basedOnCallAt: string | null
+}
+
+type GeneratedDetail =
+  components['schemas']['CobranzaDebtorDetailHeaderResponse']
+
+export type DebtorDetailResponse = Omit<GeneratedDetail, 'sidebar'> & {
+  sidebar: GeneratedDetail['sidebar'] & {
+    /** NEW — real per-channel contact-attempts breakdown. */
+    contactAttempts?: DebtorContactAttempts
+    /** NEW — agent-recommended next step (hidden when action is null). */
+    recommendedNextStep?: DebtorRecommendedNextStep
+  }
+}
 
 export interface UseDebtorDetailResult {
   data: DebtorDetailResponse | null
@@ -47,10 +78,7 @@ export function useDebtorDetail(args: { debtorId: string }): UseDebtorDetailResu
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json: DebtorDetailResponse = await res.json()
       setData(json)

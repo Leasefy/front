@@ -66,7 +66,7 @@ export function PropietarioBankInfo({
   return (
     <div
       className={cn(
-        'p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]',
+        'p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]',
         className
       )}
     >
@@ -99,7 +99,7 @@ export function PropietarioBankInfo({
       {/* Bank Info */}
       <div className="space-y-3">
         {/* Bank */}
-        <div className="flex items-center justify-between py-2 border-b border-faint dark:border-strong">
+        <div className="flex items-center justify-between py-2 border-b border-border-faint dark:border-border-strong">
           <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.bank')}</span>
           <span className="font-medium text-fg dark:text-white">
             {bank?.name || bankAccount.bank}
@@ -107,7 +107,7 @@ export function PropietarioBankInfo({
         </div>
 
         {/* Account Type */}
-        <div className="flex items-center justify-between py-2 border-b border-faint dark:border-strong">
+        <div className="flex items-center justify-between py-2 border-b border-border-faint dark:border-border-strong">
           <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.type')}</span>
           <span className="font-medium text-fg dark:text-white">
             {accountTypeLabel}
@@ -115,7 +115,7 @@ export function PropietarioBankInfo({
         </div>
 
         {/* Account Number */}
-        <div className="flex items-center justify-between py-2 border-b border-faint dark:border-strong">
+        <div className="flex items-center justify-between py-2 border-b border-border-faint dark:border-border-strong">
           <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.number')}</span>
           <div className="flex items-center gap-2">
             <span className="font-mono font-medium text-fg dark:text-white">
@@ -154,7 +154,7 @@ export function PropietarioBankInfo({
       </div>
 
       {/* Verification Badge */}
-      <div className="mt-4 pt-3 border-t border-faint dark:border-strong">
+      <div className="mt-4 pt-3 border-t border-border-faint dark:border-border-strong">
         <div className="flex items-center gap-2 text-success">
           <ShieldCheck className="w-4 h-4" />
           <span className="text-xs font-medium">{t('inmobiliaria.propietario.bankInfo.verified')}</span>

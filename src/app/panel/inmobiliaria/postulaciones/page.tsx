@@ -6,7 +6,6 @@ import {
   ClipboardText,
   Hourglass,
   WarningCircle,
-  SealCheck,
   CheckCircle,
   XCircle,
   MagnifyingGlass,
@@ -15,10 +14,14 @@ import {
 import { cn } from '@/lib/utils'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { ErrorState } from '@/components/ui/error-state'
-import { Spinner, Input } from '@/components/ui'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
+import { Input } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { TablePagination } from '@/components/ui/pagination'
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { IconButton, SegmentedControl } from '@leasefy/cadence'
+import { RecorridoMapa } from '@/components/inmobiliaria/recorrido/RecorridoMapa'
 import { landlordApplicationsApi } from '@/lib/api/applications.service'
 import type { AllCandidatesItem, LandlordApplicationStatus } from '@/lib/api/applications.types'
 
@@ -31,7 +34,6 @@ const STATUS_CONFIG: Record<
   DRAFT:           { label: 'Borrador',          bg: 'bg-surface-muted',  text: 'text-fg-muted' },
   SUBMITTED:       { label: 'Postulado',         bg: 'bg-primary-soft',   text: 'text-primary' },
   UNDER_REVIEW:    { label: 'En revisión',       bg: 'bg-primary-soft',   text: 'text-primary' },
-  PREAPPROVED:     { label: 'Pre-aprobado',      bg: 'bg-surface-muted',  text: 'text-fg-muted' },
   APPROVED:        { label: 'Aprobado',          bg: 'bg-success-soft',   text: 'text-success' },
   REJECTED:        { label: 'Rechazado',         bg: 'bg-danger-soft',    text: 'text-danger' },
   NEEDS_INFO:      { label: 'Pide info',         bg: 'bg-warning-soft',   text: 'text-warning' },
@@ -50,7 +52,7 @@ const SCORE_COLORS: Record<string, string> = {
 
 // ─── Clickable stat tiles (same visual language as propiedades StatTile) ──────
 
-type FilterKey = 'ALL' | 'IN_REVIEW' | 'NEEDS_INFO' | 'PREAPPROVED' | 'APPROVED' | 'REJECTED'
+type FilterKey = 'ALL' | 'IN_REVIEW' | 'NEEDS_INFO' | 'APPROVED' | 'REJECTED'
 
 const TILE_TONES = {
   neutral: 'bg-surface-muted text-fg-muted',
@@ -70,7 +72,6 @@ const FILTERS: {
   { key: 'ALL',         label: 'Total',         tone: 'neutral', icon: ClipboardText, statuses: null },
   { key: 'IN_REVIEW',   label: 'En revisión',   tone: 'info',    icon: Hourglass,     statuses: ['SUBMITTED', 'UNDER_REVIEW'] },
   { key: 'NEEDS_INFO',  label: 'Pide info',     tone: 'warn',    icon: WarningCircle, statuses: ['NEEDS_INFO'] },
-  { key: 'PREAPPROVED', label: 'Pre-aprobadas', tone: 'neutral', icon: SealCheck,     statuses: ['PREAPPROVED'] },
   { key: 'APPROVED',    label: 'Aprobadas',     tone: 'ok',      icon: CheckCircle,   statuses: ['APPROVED'] },
   { key: 'REJECTED',    label: 'Rechazadas',    tone: 'bad',     icon: XCircle,       statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED'] },
 ];
@@ -133,7 +134,9 @@ export default function PostulacionesPage() {
   const [filter, setFilter] = useState<FilterKey>('ALL')
   const [search, setSearch] = useState('')
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // El error ENTERO, no su mensaje: el status distingue «no existe» de
+  // «no pudimos cargar», y sólo uno de los dos se puede reintentar.
+  const [error, setError] = useState<unknown>(null)
 
   const load = useCallback(async () => {
     setError(null)
@@ -141,7 +144,7 @@ export default function PostulacionesPage() {
       const res = await landlordApplicationsApi.getAllCandidates()
       setItems(res.candidates)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar las postulaciones.')
+      setError(err)
     } finally {
       setIsLoading(false)
     }
@@ -157,6 +160,21 @@ export default function PostulacionesPage() {
     (statuses: LandlordApplicationStatus[] | null) =>
       statuses === null ? items.length : items.filter((c) => statuses.includes(c.status)).length,
     [items],
+  )
+
+  /**
+   * Abre la postulación de esa persona, no la lista de su propiedad.
+   *
+   * El destino es la pantalla de candidatos del inmueble —ahí vive el cajón con
+   * el detalle, el scoring y las acciones— y `?candidato=` le dice a cuál abrir.
+   */
+  const abrirCandidato = useCallback(
+    (c: AllCandidatesItem) => {
+      router.push(
+        `/panel/inmobiliaria/inmuebles/${c.propertyId}/candidatos?candidato=${encodeURIComponent(c.id)}`,
+      )
+    },
+    [router],
   )
 
   const visibleItems = useMemo(() => {
@@ -176,6 +194,21 @@ export default function PostulacionesPage() {
     return result
   }, [items, filter, search])
 
+  /**
+   * Paginado de presentación: `getAllCandidates()` trae todas las postulaciones
+   * de la inmobiliaria. `resetKey` con los filtros — sin eso, filtrar estando en
+   * la página 3 deja la tabla vacía y se lee como «no hay nada».
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(visibleItems, { resetKey: `${filter}|${search.trim()}` })
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -187,15 +220,37 @@ export default function PostulacionesPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-24">
-          <Spinner size="md" variant="muted" label="Cargando postulaciones" />
-        </div>
+        /* Esqueleto con las 5 columnas reales de la tabla, no un spinner: la
+           forma de lo que viene ya se conoce, así que la pantalla no tiene que
+           saltar cuando lleguen los datos. */
+        <EsqueletoTabla columnas={5} filas={6} />
       ) : error ? (
-        <ErrorState
-          title="No se pudieron cargar las postulaciones"
-          description={error}
-          onRetry={() => void load()}
+        <FalloDeCarga
+          error={error}
+          queEs="las postulaciones"
+          onReintentar={() => void load()}
         />
+      ) : items.length === 0 ? (
+        /* Sin nada que atender, lo útil no son seis tiles en cero ni una tabla
+           vacía con filtros: es explicar qué va a llegar acá y de dónde viene.
+           El mapa vivía en una pantalla aparte llamada «Recorrido» y ese era el
+           error — el recorrido no es un destino, es el contexto de ESTA lista.
+
+           Va DENTRO de la misma tarjeta que hospeda la tabla: el contenedor de
+           la lista es el que dice que la lista está vacía. Suelto sobre la
+           página el mensaje flota y el mapa parece otra sección. */
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          {/* Sin envoltorio con padding: `EmptyState` ya trae el suyo (py-16) y
+              sumarle otro abría un hueco de media pantalla antes del mapa. */}
+          <EmptyState
+            icon={ClipboardText}
+            title="Todavía no te ha llegado ninguna postulación"
+            description="Cuando alguien con asegurabilidad vigente se postule a una de tus propiedades, aparece acá con su nivel y su estado. Así es el recorrido completo:"
+          />
+          <div className="border-t border-border px-6 py-8">
+            <RecorridoMapa />
+          </div>
+        </div>
       ) : (
         <>
           {/* Stats — clickable, they filter the table */}
@@ -271,17 +326,31 @@ export default function PostulacionesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {visibleItems.map((c) => {
+                  {pageItems.map((c) => {
                     const statusCfg = STATUS_CONFIG[c.status] ?? FALLBACK_STATUS
                     return (
                       <TableRow
                         key={c.id}
-                        className="cursor-pointer"
-                        onClick={() => router.push(`/panel/inmobiliaria/propiedades/${c.propertyId}/candidatos`)}
+                        className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                        // `?candidato=` abre el cajón de ESA persona al llegar.
+                        // Sin el parámetro caías en la lista de la propiedad y
+                        // tenías que volver a buscarla: el encabezado promete
+                        // "haz clic en una para revisarla" y el clic no revisaba.
+                        onClick={() => abrirCandidato(c)}
+                        // La fila era un `tr` con onClick: no se podía alcanzar
+                        // con teclado ni se anunciaba como accionable.
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Revisar la postulación de ${c.tenantName}`}
+                        onKeyDown={(e) => {
+                          if (e.key !== 'Enter' && e.key !== ' ') return
+                          e.preventDefault()
+                          abrirCandidato(c)
+                        }}
                       >
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
                               <span className="text-xs font-medium text-primary">{initials(c.tenantName)}</span>
                             </div>
                             <div className="min-w-0">
@@ -323,7 +392,33 @@ export default function PostulacionesPage() {
                 </TableBody>
               </Table>
             )}
+
+            {/* Pie: sólo si hay más de una página. */}
+            {shouldPaginate && (
+              <div className="border-t border-border px-4 py-3">
+                <TablePagination
+                  total={total}
+                  page={page}
+                  pageSize={pageSize}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </div>
+            )}
           </div>
+
+          {/* Con trabajo encima, el recorrido se pliega: sigue disponible para
+              quien no sepa de dónde salió esta lista, sin robarle espacio a
+              quien vino a atenderla. */}
+          <details className="group border-t border-border pt-6">
+            <summary className="cursor-pointer list-none text-sm font-medium text-primary hover:underline">
+              Cómo funciona el recorrido
+            </summary>
+            <div className="pt-6">
+              <RecorridoMapa />
+            </div>
+          </details>
         </>
       )}
     </div>

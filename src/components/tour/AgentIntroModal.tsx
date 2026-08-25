@@ -101,6 +101,23 @@ function persistDismissed(id: string): void {
   }
 }
 
+/**
+ * Olvida el "ya la vi" de TODAS las novedades, para que vuelvan a presentarse.
+ *
+ * Existe porque el ajuste «volver a ver las novedades» sólo repone la
+ * preferencia global: sin esto, cada agente seguiría marcado como visto en
+ * localStorage y el botón no haría nada visible.
+ */
+export function resetAgentIntros(): void {
+  try {
+    for (const a of AGENT_INTROS) {
+      window.localStorage.removeItem(`${STORAGE_PREFIX}${a.id}`)
+    }
+  } catch {
+    /* storage unavailable — nothing to reset */
+  }
+}
+
 export interface AgentIntroModalProps {
   /** Current pathname (from usePathname in the host layout). */
   pathname: string

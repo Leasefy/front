@@ -51,7 +51,7 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
         {Array.from({ length: 5 }, (_, i) => (
           <div
             key={i}
-            className="h-14 bg-neutral-100 dark:bg-neutral-800 rounded-sm animate-pulse"
+            className="h-14 bg-surface-muted rounded-sm animate-pulse"
           />
         ))}
       </div>
@@ -80,8 +80,8 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
   const events = data?.events ?? []
   if (events.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-neutral-300 dark:border-neutral-700 p-8 text-center">
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+      <div className="rounded-md border border-dashed border-border p-8 text-center">
+        <p className="text-sm text-fg-muted">
           {t('inmobiliaria.ai.cobranza.detail.timeline.empty')}
         </p>
       </div>
@@ -113,12 +113,12 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
         return (
           <li
             key={`${ev.event_type}-${ev.occurred_at}-${idx}`}
-            className="rounded-sm border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
+            className="rounded-sm border border-border bg-surface"
           >
             <button
               type="button"
               onClick={handleClick}
-              className="w-full text-left px-3 py-2 flex items-start gap-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
+              className="w-full text-left px-3 py-2 flex items-start gap-3 hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
             >
               <span
                 aria-hidden="true"
@@ -128,7 +128,7 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
                 {EVENT_ICON[ev.event_type] ?? '•'}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium text-neutral-900 dark:text-white">
+                <span className="block text-sm font-medium text-fg">
                   {t(
                     `inmobiliaria.ai.cobranza.detail.timeline.event${
                       ev.event_type === 'stage_transition'
@@ -142,7 +142,7 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
                   )}
                 </span>
                 <span
-                  className="block text-xs text-neutral-500 dark:text-neutral-400 mt-0.5"
+                  className="block text-xs text-fg-muted mt-0.5"
                   title={new Date(ev.occurred_at).toLocaleString(locale)}
                 >
                   {relativeTime(ev.occurred_at, locale)}
@@ -150,7 +150,7 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
               </span>
             </button>
             {isExpanded && ev.event_type === 'stage_transition' && (
-              <div className="px-3 pb-3 pt-1 text-xs text-neutral-600 dark:text-neutral-300 border-t border-neutral-200 dark:border-neutral-800 font-mono">
+              <div className="px-3 pb-3 pt-1 text-xs text-fg-muted border-t border-border font-mono">
                 <pre className="whitespace-pre-wrap break-words">
                   {JSON.stringify(ev.payload, null, 2)}
                 </pre>

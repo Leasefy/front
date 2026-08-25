@@ -15,8 +15,11 @@ import { getPlanById, PLANS } from '@/lib/constants/subscription-plans';
 import { useMySubscription } from '@/lib/hooks/useSubscription';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { useLandlordNotifications, useTenantNotifications } from '@/lib/hooks/useNotifications';
+import { useArcoAlerts } from '@/lib/hooks/cobranza/use-arco-alerts';
+import { ArcoDeadlineAlert } from '@/components/inmobiliaria/cobranza/ArcoDeadlineAlert';
 import { LANDLORD_CATEGORIES, TENANT_CATEGORIES, formatNotificationTime } from '@/lib/types/notification';
 import type { BaseNotification, LandlordNotificationCategory, TenantNotificationCategory } from '@/lib/types/notification';
+import { FeedbackCta } from '@/components/feedback/FeedbackCta';
 import { AvatarSubscriptionIndicator } from './SubscriptionBadge';
 import { openPlanMobileSidebar } from './PlanSidebar';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
@@ -139,14 +142,24 @@ export function PlanHeader({
 
   // Route destinations depend on context
   const upgradePlanHref = isInmobiliaria ? '/panel/inmobiliaria/upgrade' : '/panel/upgrade';
-  const manageSubscriptionHref = isInmobiliaria ? '/panel/inmobiliaria/configuracion' : '/panel/configuracion';
+  // Agencies manage/change their plan (and pay) from the /upgrade flow — send
+  // "Gestionar suscripción" there directly. Landlord/tenant keep their config page.
+  const manageSubscriptionHref = isInmobiliaria ? '/panel/inmobiliaria/upgrade' : '/panel/configuracion';
 
-  // Real notifications from API
-  const landlordNotifs = useLandlordNotifications();
-  const tenantNotifs = useTenantNotifications();
+  // Real notifications from API. Only the active role subscribes/fetches — the
+  // inactive hook is disabled so we don't double-fetch or collide on the
+  // `notifications:{userId}` realtime channel.
+  const landlordNotifs = useLandlordNotifications({ enabled: isLandlord });
+  const tenantNotifs = useTenantNotifications({ enabled: !isLandlord });
   const activeNotifs = isLandlord ? landlordNotifs : tenantNotifs;
   const notifications = activeNotifs.notifications as BaseNotification[];
   const unreadCount = activeNotifs.unreadCount;
+
+  // Plazos ARCO (Habeas Data). Sólo en el panel de inmobiliaria y sólo con
+  // acceso al módulo de cobranza — el hook ya se gatea solo y no dispara ni un
+  // fetch fuera de ese caso, así que landlord/tenant no pagan nada por esto.
+  // Van fijos arriba de la lista, no mezclados: ver ArcoDeadlineAlert.
+  const arcoAlerts = useArcoAlerts(isInmobiliaria);
 
   const handleNotificationClick = (notification: BaseNotification) => {
     if (!notification.read) {
@@ -515,13 +528,38 @@ export function PlanHeader({
           )}
           {actions}
 
+          {/*
+            Los tres portales, no solo los de `/panel`. Va fuera del bloque de
+            abajo a propósito: ese está gateado por `isLandlord`
+            (`pathname.startsWith('/panel')`), así que el inquilino —que usa
+            este mismo header— se quedaba sin poder opinar. Y es de quien menos
+            sabemos.
+
+            Primero del grupo, a la izquierda del rayo, y el único con texto:
+            pedir opinión solo funciona si se lee. Desde `md` para no apretar el
+            cluster de iconos en pantallas chicas.
+          */}
+          <FeedbackCta
+            className="hidden md:inline-flex mr-1"
+            locale={locale}
+            hiddenFields={{
+              panel: isInmobiliaria ? 'inmobiliaria' : isLandlord ? 'propietario' : 'inquilino',
+              ruta: pathname ?? '',
+            }}
+          />
+
           {/* Quick Action Icons - Only for Landlords */}
           {isLandlord && (
             <>
+
               {/* Subscription Popover — admin-only in inmobiliaria context */}
               {canShowAdminActions && <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
                 <PopoverTrigger asChild>
-                  <button className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors">
+                  <button
+                    type="button"
+                    aria-label={locale === 'es' ? 'Tu suscripción' : 'Your subscription'}
+                    className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
+                  >
                     <Lightning className="w-5 h-5 stroke-[1.5px]" />
                     {isBaseTier && (
                       <span className="absolute top-1 right-1 w-2 h-2 bg-[#1A40FF] rounded-full" />
@@ -645,7 +683,11 @@ export function PlanHeader({
                 }
               }}>
                 <PopoverTrigger asChild>
-                  <button className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors">
+                  <button
+                    type="button"
+                    aria-label={locale === 'es' ? 'Invitar a tu equipo' : 'Invite your team'}
+                    className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
+                  >
                     <UserPlus className="w-5 h-5 stroke-[1.5px]" />
                     {pendingInvites.length > 0 && (
                       <span className="absolute top-0 right-0 w-4 h-4 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[9px] font-medium flex items-center justify-center rounded-full">
@@ -862,14 +904,14 @@ export function PlanHeader({
                           {teamMembers.slice(0, 5).map((member) => (
                             <div
                               key={member.id}
-                              className="w-8 h-8 rounded-full bg-muted border-2 border-surface-raised flex items-center justify-center text-[11px] font-medium text-plan-secondary"
+                              className="w-8 h-8 rounded-full bg-muted border-2 border-surface flex items-center justify-center text-[11px] font-medium text-plan-secondary"
                               title={member.name || member.email}
                             >
                               {(member.name || member.email).charAt(0).toUpperCase()}
                             </div>
                           ))}
                           {teamMembers.length > 5 && (
-                            <div className="w-8 h-8 rounded-full bg-[#1A40FF] border-2 border-surface-raised flex items-center justify-center text-[10px] font-medium text-white uppercase tracking-wide font-mono">
+                            <div className="w-8 h-8 rounded-full bg-[#1A40FF] border-2 border-surface flex items-center justify-center text-[10px] font-medium text-white uppercase tracking-wide font-mono">
                               +{teamMembers.length - 5}
                             </div>
                           )}
@@ -892,10 +934,26 @@ export function PlanHeader({
             }}
           >
             <PopoverTrigger asChild>
-              <button className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors">
+              <button
+                    type="button"
+                    aria-label={locale === 'es' ? 'Notificaciones' : 'Notifications'}
+                    className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
+                  >
                 <Bell className="w-5 h-5 stroke-[1.5px]" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-primary rounded-full ring-2 ring-bg" />
+                {/* Un plazo ARCO vencido pinta el punto en rojo: es la única
+                    condición del panel con consecuencia legal, así que gana
+                    sobre el punto azul de "hay algo sin leer". */}
+                {(arcoAlerts.all.length > 0 || unreadCount > 0) && (
+                  <span
+                    className={cn(
+                      'absolute top-1 right-1 w-2.5 h-2.5 rounded-full ring-2 ring-bg',
+                      arcoAlerts.hasOverdue
+                        ? 'bg-danger'
+                        : arcoAlerts.all.length > 0
+                          ? 'bg-warning'
+                          : 'bg-primary'
+                    )}
+                  />
                 )}
               </button>
             </PopoverTrigger>
@@ -917,6 +975,12 @@ export function PlanHeader({
                   </svg>
                 </button>
               </div>
+
+              {/* Plazos ARCO — fijos arriba, fuera de las pestañas leído/sin leer. */}
+              <ArcoDeadlineAlert
+                alerts={arcoAlerts}
+                onNavigate={() => setNotificationsOpen(false)}
+              />
 
               {/* Tabs — Cadence SegmentedControl */}
               <div className="px-5 py-3 border-b border-border-faint">

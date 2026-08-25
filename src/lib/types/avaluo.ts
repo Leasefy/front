@@ -43,12 +43,15 @@ export type Finalidad = string
 // Status union — mirrors backend enum
 // ---------------------------------------------------------------------------
 
+// `pagado` NO existe: la máquina de estados real del micro tiene cinco
+// miembros (`avaluo/src/avaluo/signoff/state-machine.ts`), removido por el
+// reorder pay-at-intake (T-0007). El sexto valor era dead code — gateaba una
+// rama de `AvaluoEstadoCard.tsx` que el micro nunca puede producir.
 export type AvaluoStatus =
   | 'borrador'
   | 'en_revisión'
   | 'firmado'
   | 'rechazado'
-  | 'pagado'
   | 'entregado'
 
 /** Statuses that end the lifecycle — no further actions expected. */
@@ -66,7 +69,6 @@ export const STATUS_BADGE: Record<
   en_revisión: { variant: 'warning', label: 'En revisión' },
   firmado: { variant: 'success', label: 'Listo para pago' },
   rechazado: { variant: 'destructive', label: 'Rechazado' },
-  pagado: { variant: 'default', label: 'Pago recibido' },
   entregado: { variant: 'success', label: 'Entregado' },
 }
 
@@ -208,6 +210,15 @@ export interface IntakeResponse {
    * Cannot be recovered if lost.
    */
   token: string
+  /**
+   * Wompi (or stub in dev) hosted checkout URL, or `null` when no payment
+   * is required yet. Payment now happens AT INTAKE, before the valuation
+   * runs — when present with `paymentProvider: 'wompi'`, the citizen must
+   * be redirected here immediately after intake.
+   */
+  paymentUrl: string | null
+  /** Payment provider for `paymentUrl`, or `null` when there is no payment. */
+  paymentProvider: 'wompi' | 'stub' | null
 }
 
 /** Response returned by POST /api/avaluo/photo-presign */
@@ -227,18 +238,10 @@ export interface AvaluoStatusResponse {
   slug?: string
   /** ISO-8601 timestamp of the last status change */
   updatedAt?: string
-}
-
-/** Response returned by POST /api/avaluo/:certId/pay */
-export interface PaymentResponse {
-  /** Wompi (or stub in dev) checkout redirect URL */
-  url: string
-  /** Payment provider identifier */
-  provider: string
-  /** Payment reference */
-  reference: string
-  /** Amount in Colombian pesos */
-  amountCop: number
-  /** ISO-8601 expiry for the payment link, if provided */
-  expiresAt?: string
+  /**
+   * Whether the citizen has paid. Present in EVERY 200 response.
+   * Payment happens at intake (WU2) — this field is observation-only,
+   * it does NOT gate the valuation pipeline.
+   */
+  paid: boolean
 }

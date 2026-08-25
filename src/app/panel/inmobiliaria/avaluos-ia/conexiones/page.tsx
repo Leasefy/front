@@ -47,13 +47,13 @@ interface Conexion {
 }
 
 const ENTRADAS: Conexion[] = [
-  { icon: House, modulo: 'Portafolio', ejemplo: 'Nicolás trae la ficha del inmueble: área, estrato, habitaciones y fotos.', tipo: 'auto', href: '/panel/inmobiliaria/propiedades' },
+  { icon: House, modulo: 'Portafolio', ejemplo: 'Nicolás trae la ficha del inmueble: área, estrato, habitaciones y fotos.', tipo: 'auto', href: '/panel/inmobiliaria/inmuebles' },
   { icon: UserCircle, modulo: 'Propietarios', ejemplo: 'Carga el contacto y la expectativa del dueño, sin volver a digitar.', tipo: 'auto', href: '/panel/inmobiliaria/propietarios' },
   { icon: Globe, modulo: 'Mercado', ejemplo: 'Laura cruza con publicaciones activas y cierres recientes de la zona.', tipo: 'auto' },
 ]
 
 const SALIDAS: Conexion[] = [
-  { icon: Megaphone, modulo: 'Publicaciones', ejemplo: 'Publicar al precio recomendado crea el aviso en tu portafolio.', tipo: 'click', href: '/panel/inmobiliaria/propiedades' },
+  { icon: Megaphone, modulo: 'Publicaciones', ejemplo: 'Publicar al precio recomendado crea el aviso en tu portafolio.', tipo: 'click', href: '/panel/inmobiliaria/inmuebles' },
   { icon: FilePlus, modulo: 'Contratos', ejemplo: 'El canon acordado pre-llena el contrato de arrendamiento.', tipo: 'click', href: '/panel/inmobiliaria/contratos' },
   { icon: ChatCircleText, modulo: 'Cobranza IA', ejemplo: 'Al arrendarse, el canon entra al recaudo mensual de cobranza.', tipo: 'auto', href: '/panel/inmobiliaria/ai/cobranza' },
   { icon: ShieldCheck, modulo: 'Estudio del inquilino IA', ejemplo: 'Pasas al interesado a estudio con un clic, sin redigitar nada.', tipo: 'click', href: '/panel/inmobiliaria/ai/estudio' },

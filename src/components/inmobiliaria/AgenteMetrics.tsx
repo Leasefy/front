@@ -34,7 +34,7 @@ function MetricCard({ label, value, icon, iconBg, performance }: MetricCardProps
     ? 'bg-success-soft border-success/30'
     : performance === 'below'
     ? 'bg-danger-soft border-danger/30'
-    : 'bg-surface dark:bg-[#14130F] border-border dark:border-strong';
+    : 'bg-surface dark:bg-[#14130F] border-border dark:border-border-strong';
 
   return (
     <div

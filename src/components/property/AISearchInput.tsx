@@ -141,7 +141,20 @@ export function AISearchInput({
               rows={2}
               className={cn(
                 'border-0 bg-transparent shadow-none resize-none px-0 py-0',
-                'focus-visible:ring-0 focus-visible:border-0',
+                /*
+                 * Un solo indicador de foco, no dos.
+                 *
+                 * El contenedor ya marca el foco —borde y halo azules, vía
+                 * `isFocused`— y el Textarea del DS trae ADEMÁS el suyo:
+                 * `focus-visible:shadow-[0_0_0_3px_rgba(26,64,255,.12)]`. Al
+                 * pararse a escribir se veían dos rectángulos redondeados, uno
+                 * dentro del otro. `focus-visible:ring-0` no lo apagaba porque
+                 * el DS no usa el `ring` de Tailwind sino un `box-shadow`.
+                 *
+                 * El foco de teclado NO se pierde: lo sigue mostrando el
+                 * contenedor, que es el control que la persona ve.
+                 */
+                'focus-visible:ring-0 focus-visible:border-0 focus-visible:shadow-none',
                 'text-[15px] md:text-[15px] text-foreground placeholder:text-muted-foreground/70',
                 'leading-relaxed',
                 'disabled:cursor-not-allowed min-h-[52px]'
@@ -237,13 +250,17 @@ export function AISearchInput({
                 {/* AI Response Header */}
                 <div className="mb-4 flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-success-50 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-success-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="w-4 h-4 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
                   <div>
                     <p className="text-[13px] font-medium text-foreground">
-                      Encontré <span className="text-success-600 font-mono tabular-nums">{results.length} propiedades</span>
+                      Encontré{' '}
+                      <span className="text-success font-mono tabular-nums">
+                        {results.length}{' '}
+                        {results.length === 1 ? 'propiedad' : 'propiedades'}
+                      </span>
                     </p>
                     <p className="text-[11px] text-muted-foreground">
                       Basado en: &ldquo;{value}&rdquo;

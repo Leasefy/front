@@ -3,7 +3,6 @@
 import * as React from 'react';
 import { motion } from 'framer-motion';
 import {
-  X,
   FileText,
   Clock,
   Users,
@@ -33,7 +32,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { IconButton } from '@leasefy/cadence';
 import type { ReportDefinition, ReportCategory } from '@/lib/types/inmobiliaria';
 import {
   getReportCategoryColor,
@@ -433,7 +431,7 @@ function CarteraEdadesPreview({ t }: { t: (key: string, params?: Record<string, 
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
-      <div className="p-4 rounded-xl bg-danger-soft text-white">
+      <div className="p-4 rounded-xl bg-danger-soft text-fg">
         <p className="text-sm font-medium text-danger">{t('inmobiliaria.reporte.totalOverduePortfolio')}</p>
         <p className="text-2xl font-bold">{formatCurrency(data.summary.totalPending)}</p>
         <p className="text-xs text-danger mt-1">{t('inmobiliaria.reporte.pendingCharges', { count: data.items.length })}</p>
@@ -577,15 +575,8 @@ export function ReporteViewer({
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto p-0">
         {/* Header */}
         <SheetHeader className="p-6 pb-4 border-b border-border sticky top-0 bg-gradient-to-b from-background via-background to-background/95 backdrop-blur-sm z-10">
-          {/* Close Button */}
-          <IconButton
-            variant="ghost"
-            onClick={onClose}
-            aria-label={t('inmobiliaria.reporte.close')}
-            icon={<X className="w-5 h-5" weight="bold" />}
-            className="absolute right-4 top-4"
-          />
-
+          {/* La ✕ la pone `SheetContent`: es la misma de todos los cajones y
+              modales del producto. Acá había una segunda, dibujada a mano. */}
           <div className="flex items-start gap-4 pr-10">
             <div
               className={cn(

@@ -78,9 +78,9 @@ export const visitsApi = {
     return mapBackendVisit(raw);
   },
 
-  /** PATCH /visits/:id/confirm */
+  /** PATCH /visits/:id/accept */
   async confirm(id: string): Promise<Visit> {
-    const raw = await apiClient.patch<BackendVisit>(`/visits/${id}/confirm`);
+    const raw = await apiClient.patch<BackendVisit>(`/visits/${id}/accept`);
     return mapBackendVisit(raw);
   },
 

@@ -44,8 +44,7 @@ function baseHookResult(overrides: Record<string, unknown> = {}) {
     submitMembers: vi.fn(),
     submitPaymentProvider: vi.fn(),
     submitPolicy: vi.fn(),
-    presignHabeasData: vi.fn(),
-    confirmHabeasData: vi.fn(),
+    acceptTerms: vi.fn(),
     completeOnboarding: vi.fn(),
     ...overrides,
   }
@@ -398,16 +397,33 @@ describe('<OnboardingInmobiliariaClient>', () => {
     expect(container.querySelector('[data-testid="wizard-step-placeholder"]')).toBeFalsy()
   })
 
-  it('mounts <HabeasDataStepForm> on the habeas_data step and forwards presign/confirm', () => {
-    const presignHabeasData = vi.fn()
-    const confirmHabeasData = vi.fn()
-    mockUseOnboardingSession.mockReturnValue(
-      baseHookResult({ currentStep: 'habeas_data', presignHabeasData, confirmHabeasData }),
-    )
+  it('mounts <TermsStepForm> on the habeas_data step (no upload form) and forwards acceptTerms on submit', async () => {
+    const acceptTerms = vi.fn().mockResolvedValue({
+      sessionId: 'sess-1',
+      currentStep: 'complete',
+      nextStep: null,
+      draft: {},
+    })
+    mockUseOnboardingSession.mockReturnValue(baseHookResult({ currentStep: 'habeas_data', acceptTerms }))
     render()
 
-    expect(container.querySelector('[data-testid="habeas-data-step-form"]')).toBeTruthy()
+    // The signed-habeas-data upload form is gone; only the terms step shows.
+    expect(container.querySelector('[data-testid="terms-step-form"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="habeas-data-step-form"]')).toBeFalsy()
     expect(container.querySelector('[data-testid="wizard-step-placeholder"]')).toBeFalsy()
+
+    // Accept terms, then submit → acceptTerms is forwarded.
+    const cb = container.querySelector('[data-testid="terms-accept"]') as HTMLButtonElement
+    act(() => {
+      cb.click()
+    })
+    const submit = container.querySelector('[data-testid="terms-step-form"] button[type="submit"]') as HTMLButtonElement
+    await act(async () => {
+      submit.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(acceptTerms).toHaveBeenCalledTimes(1)
   })
 
   it('mounts <MembersStepForm> on the members step and forwards submitMembers', async () => {
@@ -490,15 +506,21 @@ describe('<OnboardingInmobiliariaClient>', () => {
   // inmobiliaria can finish onboarding without a payment gateway and
   // configure one later from the dashboard. Arriving at this step must never
   // show PaymentProviderStepForm; it auto-submits `{ skip: true }` instead.
-  it('auto-skips the payment_provider step: no PaymentProviderStepForm, POSTs { skip: true } exactly once, then renders <PolicyStepForm> on success', async () => {
+  it('auto-skips the payment_provider step: no PaymentProviderStepForm, POSTs { skip: true } exactly once, then auto-skips the policy step on success', async () => {
     let hookCurrentStep: string = 'payment_provider'
     const submitPaymentProvider = vi.fn().mockImplementation(async (body: unknown) => {
       expect(body).toEqual({ skip: true })
       hookCurrentStep = 'policy'
       return { sessionId: 'sess-1', currentStep: 'policy', nextStep: 'habeas_data', draft: {} }
     })
+    const submitPolicy = vi.fn().mockResolvedValue({
+      sessionId: 'sess-1',
+      currentStep: 'habeas_data',
+      nextStep: 'complete',
+      draft: {},
+    })
     mockUseOnboardingSession.mockImplementation(() =>
-      baseHookResult({ get currentStep() { return hookCurrentStep }, submitPaymentProvider }),
+      baseHookResult({ get currentStep() { return hookCurrentStep }, submitPaymentProvider, submitPolicy }),
     )
     render()
 
@@ -514,7 +536,9 @@ describe('<OnboardingInmobiliariaClient>', () => {
     render()
 
     expect(submitPaymentProvider).toHaveBeenCalledTimes(1)
-    expect(container.querySelector('[data-testid="policy-step-form"]')).toBeTruthy()
+    // policy is now ALSO an invisible auto-skip step — no PolicyStepForm.
+    expect(container.querySelector('[data-testid="policy-step-form"]')).toBeFalsy()
+    expect(container.querySelector('[data-testid="policy-skip-loading"]')).toBeTruthy()
   })
 
   it('auto-skip failure shows an error with a retry, and retrying re-fires the skip exactly once (no auto-loop)', async () => {
@@ -548,16 +572,30 @@ describe('<OnboardingInmobiliariaClient>', () => {
     expect(container.querySelector('[data-testid="payment-provider-skip-error"]')).toBeFalsy()
   })
 
-  it('mounts <PolicyStepForm> on the policy step and forwards submitPolicy', () => {
-    const submitPolicy = vi.fn().mockResolvedValue(null)
+  it('auto-skips the policy step: no PolicyStepForm, submits the agent default policy exactly once', async () => {
+    const submitPolicy = vi.fn().mockResolvedValue({
+      sessionId: 'sess-1',
+      currentStep: 'habeas_data',
+      nextStep: 'complete',
+      draft: {},
+    })
     mockUseOnboardingSession.mockReturnValue(baseHookResult({ currentStep: 'policy', submitPolicy }))
     render()
 
-    expect(container.querySelector('[data-testid="policy-step-form"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="policy-step-form"]')).toBeFalsy()
+    expect(container.querySelector('[data-testid="policy-skip-loading"]')).toBeTruthy()
     expect(container.querySelector('[data-testid="wizard-step-placeholder"]')).toBeFalsy()
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    // Sends the agent's default policy (allowedPaymentPlans + negotiationMaxAttempts).
+    expect(submitPolicy).toHaveBeenCalledTimes(1)
+    expect(submitPolicy).toHaveBeenCalledWith({ allowedPaymentPlans: [3, 6, 12], negotiationMaxAttempts: 3 })
   })
 
-  it('blocks submitAgency until the zod schema is satisfied, then calls it with the mapped payload', async () => {
+  it('blocks submitAgency until the zod schema is satisfied — required departamento/municipio (comboboxes) gate the submit', async () => {
     const submitAgency = vi.fn().mockResolvedValue({
       sessionId: 'sess-1',
       currentStep: 'members',
@@ -574,26 +612,22 @@ describe('<OnboardingInmobiliariaClient>', () => {
     expect(submitAgency).not.toHaveBeenCalled()
     expect(container.textContent).toContain('La razón social es obligatoria.')
 
-    // Fill every required field.
+    // Fill only the free-text fields. Departamento and Municipio are searchable
+    // comboboxes (Radix Popover) that can't be opened/selected under happy-dom,
+    // so they stay empty — the submit must remain blocked on those required
+    // fields. The pure field→payload mapping is covered by toAgencyRequest and
+    // the schema; the form wiring by AgencyStepForm's own tests.
     setInputValue(byId('legalName'), 'Inmobiliaria Test SAS')
     setInputValue(byId('nit'), '900123456-7')
     setInputValue(byId('address.calle'), 'Calle 10 # 20-30')
-    setInputValue(byId('address.ciudad'), 'Bogotá')
-    setInputValue(byId('address.departamento'), 'Cundinamarca')
     setInputValue(byId('primaryContactEmail'), 'contacto@inmobiliaria.test')
     setInputValue(byId('primaryContactPhone'), '3001234567')
 
     await clickSubmit()
 
-    expect(submitAgency).toHaveBeenCalledTimes(1)
-    expect(submitAgency).toHaveBeenCalledWith({
-      legalName: 'Inmobiliaria Test SAS',
-      nit: '900123456-7',
-      address: { calle: 'Calle 10 # 20-30', ciudad: 'Bogotá', departamento: 'Cundinamarca' },
-      primaryContactEmail: 'contacto@inmobiliaria.test',
-      primaryContactPhone: '3001234567',
-      billingModel: 'standard',
-    })
+    expect(submitAgency).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('El departamento es obligatorio.')
+    expect(container.textContent).toContain('El municipio es obligatorio.')
   })
 
   it('shows the terminal expired-session banner and does not render the wizard content', () => {

@@ -19,6 +19,7 @@
 
 import { AddressAutocomplete, type AddressSelection } from './AddressAutocomplete';
 import { LocationPicker, type LatLng } from '@/components/map/LocationPicker';
+import { useReverseGeocode } from '@/lib/hooks/use-reverse-geocode';
 
 export interface PropertyLocationValue {
   address?: string;
@@ -53,6 +54,28 @@ export function PropertyLocationField({
 }: PropertyLocationFieldProps) {
   const pinValue: LatLng | null =
     typeof latitude === 'number' && typeof longitude === 'number' ? { lat: latitude, lng: longitude } : null;
+
+  /**
+   * There was no reverse geocoding anywhere in the repo: LocationPicker's
+   * onChange only ever emitted {lat, lng}, so clicking/dragging the map pin
+   * never touched the address field — only AddressAutocomplete's onSelect
+   * did. Debounced so a rapid click/drag doesn't fire a request per
+   * interaction; echoes the SAME coords back with the result so a slow
+   * resolve can never null out a newer pin position (onChange below always
+   * sets latitude/longitude, and an undefined value there would wipe them).
+   * Fail-closed: no result (or a failed request) keeps the coordinates,
+   * leaves the address exactly as the user last typed it — never wiped.
+   */
+  const { reverseGeocode } = useReverseGeocode((result, coords) => {
+    if (!result) return;
+    onChange({
+      address: result.road || result.label,
+      latitude: coords.lat,
+      longitude: coords.lng,
+      geocodePlaceId: result.placeId,
+      coordsSource: 'geocoded',
+    });
+  });
 
   return (
     <div className={className}>
@@ -90,6 +113,7 @@ export function PropertyLocationField({
               longitude: coords.lng,
               coordsSource: 'geocoded',
             });
+            reverseGeocode(coords.lat, coords.lng);
           }}
         />
       </div>

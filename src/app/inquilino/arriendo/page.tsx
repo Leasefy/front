@@ -13,7 +13,7 @@ import { useI18n } from '@/lib/i18n';
 import { useOnboardingStatus } from '@/lib/hooks/use-onboarding-status';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ErrorState } from '@/components/ui/error-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Spinner } from '@/components/ui/spinner';
 
 /**
@@ -23,7 +23,7 @@ export default function ArriendoPage() {
   const { t, locale, formatCurrency } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
-  const { leases, isLoading, error, refetch, getActive } = useLeases();
+  const { leases, isLoading, error, errorCrudo, refetch, getActive } = useLeases();
   const { getNextPayment } = useMyPayments();
 
   const activeLeases = isOnboardingComplete ? getActive() : [];
@@ -91,7 +91,10 @@ export default function ArriendoPage() {
     return (
       <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          <ErrorState description={error} onRetry={refetch} />
+          {/* `ErrorState` mostraba el mensaje crudo del backend y ofrecía
+              reintentar siempre, incluso sobre un 404. `FalloDeCarga` clasifica
+              el fallo y sólo ofrece reintentar cuando puede cambiar algo. */}
+          <FalloDeCarga error={errorCrudo ?? error} queEs="tu arriendo" onReintentar={refetch} />
         </div>
       </div>
     );
@@ -115,7 +118,14 @@ export default function ArriendoPage() {
           </p>
         </motion.header>
 
-        {/* Stats Grid */}
+        {/*
+          Los KPI solo cuando hay algo que resumir.
+          Sin contratos decían "0", "$0" y —lo peor— "Al día · Todos los pagos
+          al día", que es una afirmación FALSA: no hay pagos que estén al día.
+          Un resumen de nada no informa, y encima ocupa el lugar donde debería
+          estar lo único útil de esta pantalla: qué hacer para tener un arriendo.
+        */}
+        {activeLeases.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -164,6 +174,7 @@ export default function ArriendoPage() {
             </p>
           </div>
         </motion.div>
+        )}
 
         {/* Leases List */}
         <motion.section
@@ -171,12 +182,17 @@ export default function ArriendoPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-fg">{locale === 'es' ? 'Contratos activos' : 'Active contracts'}</h2>
-            <span className="text-sm text-fg-muted">
-              {activeLeases.length} {locale === 'es' ? (activeLeases.length !== 1 ? 'contratos' : 'contrato') : (activeLeases.length !== 1 ? 'contracts' : 'contract')}
-            </span>
-          </div>
+          {/* Sin contratos no va el encabezado: "Contratos activos · 0
+              contratos" arriba de "No tienes arriendos activos" dice lo mismo
+              dos veces, y la segunda ya lo dice mejor. */}
+          {activeLeases.length > 0 && (
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-fg">{locale === 'es' ? 'Contratos activos' : 'Active contracts'}</h2>
+              <span className="text-sm text-fg-muted">
+                {activeLeases.length} {locale === 'es' ? (activeLeases.length !== 1 ? 'contratos' : 'contrato') : (activeLeases.length !== 1 ? 'contracts' : 'contract')}
+              </span>
+            </div>
+          )}
 
           {activeLeases.length > 0 ? (
             <div className="space-y-4">
@@ -362,7 +378,10 @@ export default function ArriendoPage() {
               icon={House}
               title="No tienes arriendos activos"
               description="Cuando firmes un contrato de arriendo, tu información aparecerá aquí."
-              action={{ label: "Ver aplicaciones", href: "/inquilino/aplicaciones" }}
+              /* "aplicaciones" está muerto (docs/VOCABULARIO.md). Y quien no
+                 tiene arriendo no necesita revisar su historial: necesita
+                 encontrar dónde vivir. */
+              action={{ label: 'Ver propiedades para mí', href: '/inquilino/para-ti' }}
             />
           )}
         </motion.section>

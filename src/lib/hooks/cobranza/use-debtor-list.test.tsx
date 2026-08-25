@@ -35,6 +35,7 @@ function makePage(opts: {
     channel: 'voice'
     isPaused: false
     carteraPausedUntil: null
+    attempts: { total: number; lastAttemptAt: string | null }
   }>
   nextCursor: string | null
   generatedAt: string
@@ -53,6 +54,8 @@ function makePage(opts: {
       channel: 'voice' as const,
       isPaused: false as const,
       carteraPausedUntil: null,
+      // NEW backend field — per-item contact-attempts summary.
+      attempts: { total: 5, lastAttemptAt: '2026-05-10T00:00:00Z' },
     })),
     nextCursor: opts.nextCursor === undefined ? null : opts.nextCursor,
     generatedAt: '2026-05-27T00:00:00Z',
@@ -257,6 +260,26 @@ describe('useDebtorList', () => {
     container.remove()
   })
 
+  it('surfaces the NEW optional per-item attempts summary', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => makePage({ count: 1 }),
+    })) as unknown as typeof globalThis.fetch
+    globalThis.fetch = fetchMock
+
+    const { ref, root, container } = mountHarness({})
+    await flushPromises()
+
+    expect(ref.current?.pages[0]?.attempts).toEqual({
+      total: 5,
+      lastAttemptAt: '2026-05-10T00:00:00Z',
+    })
+
+    act(() => root.unmount())
+    container.remove()
+  })
+
   it('serializes a HEX:<8hex> search payload unchanged', async () => {
     const fetchMock = vi.fn(async () => ({
       ok: true,
@@ -270,6 +293,98 @@ describe('useDebtorList', () => {
 
     const url = (fetchMock as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0] as string
     expect(url).toContain('search=HEX%3Aef797c81')
+
+    act(() => root.unmount())
+    container.remove()
+  })
+  // ── Respuestas fuera de orden ───────────────────────────────────────────────
+  //
+  // El síntoma en pantalla: marcabas la etapa S0 y quedaban las 7 filas de S0
+  // arriba y las 45 de antes abajo, con el chip encendido y el contador
+  // diciendo 45. Parecía el filtro roto; el servidor filtraba perfecto.
+  //
+  // La causa: el sondeo de 30s (o la petición anterior, todavía en vuelo)
+  // llegaba DESPUÉS de la filtrada. Para entonces `hasLoadedFirstPage` ya era
+  // true, así que la rama de «refresco» las FUSIONABA en vez de reemplazar.
+  //
+  // Una respuesta vieja no es un dato viejo: es la respuesta a OTRA pregunta.
+
+  it('una respuesta de otro filtro que llega tarde no se mezcla con la vigente', async () => {
+    let resolverVieja!: (v: unknown) => void
+    const vieja = new Promise<unknown>((r) => {
+      resolverVieja = r
+    })
+    let n = 0
+    const fetchMock = vi.fn(async () => {
+      n += 1
+      if (n === 1) return vieja // sin filtro: queda en vuelo a propósito
+      return {
+        ok: true,
+        status: 200,
+        json: async () => makePage({ count: 1, startId: 100 }),
+      }
+    }) as unknown as typeof globalThis.fetch
+    globalThis.fetch = fetchMock
+
+    const { ref, root, container, rerender } = mountHarness({})
+    // Sin flush: la primera petición sigue sin responder.
+    rerender({ stage: 'S0' })
+    await flushPromises()
+    expect(ref.current?.pages.map((p) => p.id)).toEqual(['D-100'])
+
+    // Ahora llega la vieja, tarde.
+    await act(async () => {
+      resolverVieja({
+        ok: true,
+        status: 200,
+        json: async () => makePage({ count: 3 }),
+      })
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(ref.current?.pages.map((p) => p.id)).toEqual(['D-100'])
+
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('un fallo de una petición ya descartada no pinta un error', async () => {
+    // Si no, al filtrar aparecía «no pudimos cargar» por una pregunta que ya
+    // nadie hizo, encima de una lista que sí había cargado bien.
+    let resolverVieja!: (v: unknown) => void
+    const vieja = new Promise<unknown>((r) => {
+      resolverVieja = r
+    })
+    let n = 0
+    const fetchMock = vi.fn(async () => {
+      n += 1
+      if (n === 1) return vieja
+      return {
+        ok: true,
+        status: 200,
+        json: async () => makePage({ count: 1, startId: 200 }),
+      }
+    }) as unknown as typeof globalThis.fetch
+    globalThis.fetch = fetchMock
+
+    const { ref, root, container, rerender } = mountHarness({})
+    rerender({ stage: 'S0' })
+    await flushPromises()
+    expect(ref.current?.pages.length).toBe(1)
+
+    await act(async () => {
+      resolverVieja({ ok: false, status: 500, json: async () => ({}) })
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(ref.current?.error).toBeNull()
+    expect(ref.current?.pages.length).toBe(1)
 
     act(() => root.unmount())
     container.remove()

@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import Lenis from 'lenis';
-import { CaretLeft, ShareNetwork, Heart, X, MagnifyingGlassPlus, CaretRight } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, X } from '@phosphor-icons/react';
 import { IconButton } from '@leasefy/cadence';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useLenis } from '@/components/providers/SmoothScroll';
 
@@ -18,8 +16,14 @@ interface PhotoGalleryModalProps {
 }
 
 /**
- * Airbnb-style photo tour modal
- * Full-screen scrollable gallery with thumbnail grid navigation and zoom
+ * Full-screen photo carousel / lightbox.
+ *
+ * Opens straight into the large image at `initialImageIndex` (no intermediate
+ * scrollable "gallery page"). Navigate the whole set with the on-screen arrows,
+ * ← / → keys, a swipe, or the thumbnail strip. Wraps around at the ends.
+ *
+ * Modal + Lenis contract (see DESIGN.md): the overlay carries `data-lenis-prevent`
+ * and calls `useLenis().stop()` while open so the page behind never scrolls.
  */
 export function PhotoGalleryModal({
   images,
@@ -28,361 +32,169 @@ export function PhotoGalleryModal({
   onClose,
   initialImageIndex = 0,
 }: PhotoGalleryModalProps) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const modalLenisRef = useRef<Lenis | null>(null);
-  const imageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [activeIndex, setActiveIndex] = useState(initialImageIndex);
-  const [zoomedIndex, setZoomedIndex] = useState<number | null>(null);
   const lenis = useLenis();
+  const touchStartX = useRef<number | null>(null);
 
-  // Create a dedicated Lenis instance for the modal scroll container
-  useEffect(() => {
-    if (!isOpen || !scrollContainerRef.current) return;
+  const total = images.length;
+  const hasMultiple = total > 1;
 
-    const modalLenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-      wrapper: scrollContainerRef.current,
-      content: scrollContainerRef.current.firstElementChild as HTMLElement,
-    });
-
-    modalLenisRef.current = modalLenis;
-
-    function raf(time: number) {
-      modalLenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    const frameId = requestAnimationFrame(raf);
-
-    return () => {
-      cancelAnimationFrame(frameId);
-      modalLenis.destroy();
-      modalLenisRef.current = null;
-    };
-  }, [isOpen]);
-
-  // Define scrollToImage BEFORE the useEffect that uses it
-  const scrollToImage = useCallback((index: number) => {
-    const container = scrollContainerRef.current;
-    const target = imageRefs.current[index];
-
-    if (!container || !target) return;
-
-    // Get the offset of the target relative to the scroll container
-    const containerRect = container.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const scrollTop = container.scrollTop;
-    const targetScrollTop = scrollTop + (targetRect.top - containerRect.top) - 24;
-
-    // Use modal Lenis for smooth scroll, fallback to native
-    if (modalLenisRef.current) {
-      modalLenisRef.current.scrollTo(targetScrollTop, { duration: 1.2 });
-    } else {
-      container.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
-    }
+  const goTo = useCallback((index: number) => {
+    setActiveIndex(index);
   }, []);
 
-  // Scroll to initial image when modal opens
-  useEffect(() => {
-    if (isOpen && initialImageIndex > 0) {
-      const timer = setTimeout(() => {
-        scrollToImage(initialImageIndex);
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, initialImageIndex, scrollToImage]);
+  const goNext = useCallback(() => {
+    setActiveIndex((i) => (i + 1) % total);
+  }, [total]);
 
-  // Handle escape key to close and control Lenis
+  const goPrev = useCallback(() => {
+    setActiveIndex((i) => (i - 1 + total) % total);
+  }, [total]);
+
+  // Re-sync to the clicked image every time the carousel is (re)opened.
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (zoomedIndex !== null) {
-          setZoomedIndex(null);
-        } else {
-          onClose();
-        }
-      }
+    if (isOpen) setActiveIndex(initialImageIndex);
+  }, [isOpen, initialImageIndex]);
+
+  // Keyboard nav + freeze the page behind the overlay.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowLeft') goPrev();
+      else if (e.key === 'ArrowRight') goNext();
     };
 
-    const handleArrowKeys = (e: KeyboardEvent) => {
-      if (zoomedIndex === null) return;
-
-      if (e.key === 'ArrowLeft') {
-        setZoomedIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
-      } else if (e.key === 'ArrowRight') {
-        setZoomedIndex((prev) => (prev !== null && prev < images.length - 1 ? prev + 1 : prev));
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      document.addEventListener('keydown', handleArrowKeys);
-      document.body.style.overflow = 'hidden';
-      // Stop Lenis smooth scroll so modal can scroll normally
-      lenis.stop();
-    }
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    lenis.stop();
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.removeEventListener('keydown', handleArrowKeys);
+      document.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
-      // Restart Lenis when modal closes
       lenis.start();
     };
-  }, [isOpen, onClose, lenis, zoomedIndex, images.length]);
+  }, [isOpen, onClose, goPrev, goNext, lenis]);
 
-  // Track active image on scroll
-  useEffect(() => {
-    if (!isOpen || !scrollContainerRef.current) return;
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const index = imageRefs.current.findIndex((ref) => ref === entry.target);
-            if (index !== -1) setActiveIndex(index);
-          }
-        });
-      },
-      {
-        root: scrollContainerRef.current,
-        threshold: 0.6,
-      }
-    );
-
-    imageRefs.current.forEach((ref) => {
-      if (ref) observer.observe(ref);
-    });
-
-    return () => observer.disconnect();
-  }, [isOpen, images.length]);
-
-  const handleZoom = useCallback((index: number) => {
-    setZoomedIndex(index);
-  }, []);
-
-  const handleCloseZoom = useCallback(() => {
-    setZoomedIndex(null);
-  }, []);
-
-  const handlePrevImage = useCallback(() => {
-    setZoomedIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
-  }, []);
-
-  const handleNextImage = useCallback(() => {
-    setZoomedIndex((prev) => (prev !== null && prev < images.length - 1 ? prev + 1 : prev));
-  }, [images.length]);
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || !hasMultiple) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(delta) > 50) {
+      if (delta < 0) goNext();
+      else goPrev();
+    }
+    touchStartX.current = null;
+  };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col" data-lenis-prevent>
-      {/* Header - Airbnb style */}
-      <header className="flex-shrink-0 bg-card border-b border-border">
-        <div className="flex items-center justify-between h-16 px-6 md:px-8">
-          {/* Back button */}
-          <IconButton
-            variant="ghost"
-            icon={<CaretLeft className="w-5 h-5 text-foreground" />}
-            onClick={onClose}
-            aria-label="Cerrar galeria"
-            className="-ml-2 h-8 w-8 rounded-full"
-          />
-
-          {/* Action buttons */}
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" hideArrow className="gap-2 rounded-xl text-sm text-foreground">
-              <ShareNetwork className="w-4 h-4" />
-              <span className="hidden sm:inline">Compartir</span>
-            </Button>
-            <Button variant="ghost" hideArrow className="gap-2 rounded-xl text-sm text-foreground">
-              <Heart className="w-4 h-4" />
-              <span className="hidden sm:inline">Guardar</span>
-            </Button>
+    <div
+      className="fixed inset-0 z-50 bg-black/95 flex flex-col"
+      data-lenis-prevent
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Fotos de ${propertyTitle}`}
+      onClick={onClose}
+    >
+      {/* Header — close + counter */}
+      <header
+        className="flex-shrink-0 flex items-center justify-between h-16 px-4 md:px-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <IconButton
+          variant="ghost"
+          icon={<X className="w-5 h-5 text-white" />}
+          onClick={onClose}
+          aria-label="Cerrar galería"
+          className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20"
+        />
+        {hasMultiple && (
+          <div className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full">
+            <span data-testid="gallery-counter" className="text-sm font-medium text-white font-mono tabular-nums">
+              {activeIndex + 1} / {total}
+            </span>
           </div>
-        </div>
+        )}
       </header>
 
-      {/* Main Content - Scrollable */}
+      {/* Stage — large image + arrows */}
       <div
-        ref={scrollContainerRef}
-        data-lenis-prevent
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth"
+        className="relative flex-1 min-h-0 flex items-center justify-center px-4 md:px-16"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
-        <div className="max-w-6xl mx-auto px-6 md:px-8 py-6">
-          {/* Title */}
-          <h1 className="text-2xl md:text-[28px] font-heading font-semibold text-foreground mb-6">
-            Galería de fotos
-          </h1>
+        {hasMultiple && (
+          <IconButton
+            variant="ghost"
+            icon={<CaretLeft className="w-6 h-6 text-white" />}
+            onClick={(e) => {
+              e.stopPropagation();
+              goPrev();
+            }}
+            aria-label="Imagen anterior"
+            className="absolute left-3 md:left-5 z-10 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20"
+          />
+        )}
 
-          {/* Thumbnail Grid - Rounded style */}
-          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-10">
+        <div
+          className="relative w-full h-full max-w-6xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Image
+            key={activeIndex}
+            src={images[activeIndex]}
+            alt={`${propertyTitle} - Foto ${activeIndex + 1}`}
+            fill
+            className="object-contain"
+            sizes="100vw"
+            priority
+            data-testid="gallery-active-image"
+          />
+        </div>
+
+        {hasMultiple && (
+          <IconButton
+            variant="ghost"
+            icon={<CaretRight className="w-6 h-6 text-white" />}
+            onClick={(e) => {
+              e.stopPropagation();
+              goNext();
+            }}
+            aria-label="Siguiente imagen"
+            className="absolute right-3 md:right-5 z-10 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20"
+          />
+        )}
+      </div>
+
+      {/* Thumbnail strip */}
+      {hasMultiple && (
+        <div
+          className="flex-shrink-0 py-4 px-4 md:px-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex gap-2 overflow-x-auto justify-start md:justify-center pb-1">
             {images.map((image, index) => (
               <button
                 key={index}
-                onClick={() => scrollToImage(index)}
+                type="button"
+                onClick={() => goTo(index)}
+                aria-label={`Ver foto ${index + 1}`}
+                aria-current={activeIndex === index}
                 className={cn(
-                  'relative aspect-[4/3] rounded-xl overflow-hidden transition-all duration-200',
-                  'hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
-                  activeIndex === index && 'ring-2 ring-primary ring-offset-2'
+                  'relative aspect-[4/3] w-16 md:w-20 flex-shrink-0 rounded-md overflow-hidden transition-all duration-150',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-white',
+                  activeIndex === index ? 'ring-2 ring-white opacity-100' : 'opacity-50 hover:opacity-90'
                 )}
               >
-                <Image
-                  src={image}
-                  alt={`Foto ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="120px"
-                />
+                <Image src={image} alt={`Miniatura ${index + 1}`} fill className="object-cover" sizes="80px" />
               </button>
             ))}
-          </div>
-
-          {/* Separator */}
-          <div className="border-t border-border mb-10" />
-
-          {/* Full-size Images - Airbnb style with title on left */}
-          <div className="space-y-16">
-            {images.map((image, index) => (
-              <div
-                key={index}
-                ref={(el) => { imageRefs.current[index] = el; }}
-                className="scroll-mt-6"
-              >
-                {/* Two-column layout like Airbnb */}
-                <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 items-start">
-                  {/* Section title - left column */}
-                  <div className="md:sticky md:top-6">
-                    <p className="text-lg font-medium text-foreground">
-                      Foto {index + 1}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1 font-mono tabular-nums">
-                      {index + 1} de {images.length}
-                    </p>
-                    <Button
-                      variant="ghost"
-                      hideArrow
-                      onClick={() => handleZoom(index)}
-                      className="mt-3 h-auto gap-1.5 p-0 text-xs font-medium text-muted-foreground hover:bg-transparent hover:text-foreground"
-                    >
-                      <MagnifyingGlassPlus className="w-3.5 h-3.5" />
-                      Ver en grande
-                    </Button>
-                  </div>
-
-                  {/* Image - right column (clickable for zoom) */}
-                  <button
-                    onClick={() => handleZoom(index)}
-                    className="relative w-full rounded-xl overflow-hidden bg-muted group cursor-zoom-in"
-                  >
-                    <Image
-                      src={image}
-                      alt={`${propertyTitle} - Foto ${index + 1}`}
-                      width={1200}
-                      height={800}
-                      className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                      sizes="(max-width: 768px) 100vw, 900px"
-                      priority={index < 3}
-                    />
-                    {/* Zoom overlay hint */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm px-4 py-2.5 rounded-xl flex items-center gap-2">
-                        <MagnifyingGlassPlus className="w-4 h-4 text-foreground" />
-                        <span className="text-sm font-medium text-foreground">Ampliar</span>
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* End indicator */}
-          <div className="mt-16 pt-8 border-t border-border text-center">
-            <p className="text-sm text-muted-foreground">
-              Has visto todas las {images.length} fotos
-            </p>
-            <Button
-              variant="link"
-              hideArrow
-              onClick={() => scrollToImage(0)}
-              className="mt-4 h-auto p-0 text-sm font-medium text-foreground"
-            >
-              Volver al inicio
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Zoom Overlay */}
-      {zoomedIndex !== null && (
-        <div
-          className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center"
-          onClick={handleCloseZoom}
-        >
-          {/* Close button */}
-          <IconButton
-            variant="ghost"
-            icon={<X className="w-5 h-5 text-white" />}
-            onClick={handleCloseZoom}
-            aria-label="Cerrar zoom"
-            className="absolute top-4 right-4 z-10 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20"
-          />
-
-          {/* Image counter */}
-          <div className="absolute top-4 left-4 z-10 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-xl">
-            <span className="text-sm font-medium text-white font-mono tabular-nums">
-              {zoomedIndex + 1} / {images.length}
-            </span>
-          </div>
-
-          {/* Compass buttons */}
-          {zoomedIndex > 0 && (
-            <IconButton
-              variant="ghost"
-              icon={<CaretLeft className="w-6 h-6 text-white" />}
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePrevImage();
-              }}
-              aria-label="Imagen anterior"
-              className="absolute left-4 z-10 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20"
-            />
-          )}
-          {zoomedIndex < images.length - 1 && (
-            <IconButton
-              variant="ghost"
-              icon={<CaretRight className="w-6 h-6 text-white" />}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNextImage();
-              }}
-              aria-label="Siguiente imagen"
-              className="absolute right-4 z-10 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20"
-            />
-          )}
-
-          {/* Zoomed image */}
-          <div
-            className="relative max-w-[90vw] max-h-[85vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Image
-              src={images[zoomedIndex]}
-              alt={`${propertyTitle} - Foto ${zoomedIndex + 1}`}
-              width={1920}
-              height={1280}
-              className="max-w-full max-h-[85vh] w-auto h-auto object-contain"
-              priority
-            />
-          </div>
-
-          {/* Keyboard hint */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-xl">
-            <span className="text-xs text-white/70">
-              Usa ← → para navegar · ESC para cerrar
-            </span>
           </div>
         </div>
       )}

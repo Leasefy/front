@@ -15,7 +15,6 @@ export type TenantApplicationStatus =
   | 'submitted'        // Application sent, awaiting review
   | 'under_review'     // Landlord is reviewing
   | 'needs_info'       // Agency requested additional information from tenant
-  | 'pre_approved'     // Initial approval, pending final decision
   | 'approved'         // Final approval - accepted!
   | 'rejected'         // Declined
   | 'withdrawn'        // Tenant cancelled application
@@ -28,7 +27,6 @@ export const APPLICATION_STATUS_LABELS: Record<TenantApplicationStatus, string> 
   submitted: 'Enviada',
   under_review: 'En revisión',
   needs_info: 'Info. requerida',
-  pre_approved: 'Pre-aprobada',
   approved: 'Aprobada',
   rejected: 'Rechazada',
   withdrawn: 'Retirada',
@@ -43,7 +41,6 @@ export const APPLICATION_STATUS_COLORS: Record<TenantApplicationStatus, string> 
   submitted: 'bg-muted text-foreground',
   under_review: 'bg-plan-status-blue-bg text-plan-status-blue',
   needs_info: 'bg-[#F8F0E0] text-[#B7791F]',
-  pre_approved: 'bg-plan-status-purple-bg text-plan-status-purple',
   approved: 'bg-plan-status-green-bg text-plan-status-green',
   rejected: 'bg-plan-status-red-bg text-plan-status-red',
   withdrawn: 'bg-plan-status-yellow-bg text-plan-status-yellow',
@@ -62,7 +59,6 @@ export type ApplicationEventType =
   | 'submitted'         // Application submitted
   | 'documents_verified' // Documents reviewed
   | 'under_review'      // Landlord began review
-  | 'pre_approved'      // Pre-approval granted
   | 'approved'          // Final approval
   | 'rejected'          // Application declined
   | 'withdrawn';        // Tenant withdrew
@@ -105,9 +101,8 @@ export interface TenantApplication {
  */
 const STATUS_PROGRESS: Record<TenantApplicationStatus, number> = {
   submitted: 20,
-  under_review: 40,
+  under_review: 60,
   needs_info: 30,
-  pre_approved: 70,
   approved: 100,
   rejected: 100,
   withdrawn: 100,
@@ -139,6 +134,5 @@ export function isApplicationFinal(status: TenantApplicationStatus): boolean {
 export function canWithdraw(status: TenantApplicationStatus): boolean {
   return status === 'submitted'
     || status === 'under_review'
-    || status === 'needs_info'
-    || status === 'pre_approved';
+    || status === 'needs_info';
 }

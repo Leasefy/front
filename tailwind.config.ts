@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 import leasefyBridge from "./tailwind.leasefy";
+import { coloresConAlpha } from "./tailwind.alpha";
 
 const config: Config = {
     darkMode: ["class"],
@@ -94,9 +95,22 @@ const config: Config = {
   				from: { opacity: '0', transform: 'translateY(10px)' },
   				to: { opacity: '1', transform: 'translateY(0)' }
   			},
+  			// ⚠️ Anima `scale`, NO `transform`.
+  			//
+  			// Los diálogos del DS se centran con `left-1/2 -translate-x-1/2`
+  			// (Tailwind lo resuelve dentro de `transform`). Si la animación
+  			// declara `transform: scale(...)`, PISA ese translate: el diálogo
+  			// queda con el borde izquierdo en la mitad de la pantalla y
+  			// cualquiera más ancho que media pantalla se sale por la derecha.
+  			// Medido: viewport 1600, diálogo de 1024 → left 800, right 1824.
+  			//
+  			// `scale` es una propiedad CSS independiente y compone con
+  			// `transform` en vez de reemplazarlo, así que el centrado sobrevive
+  			// y la animación se ve igual. Aplica a todo lo que use
+  			// `animate-scale-in` (diálogos, popovers, pickers).
   			'scale-in': {
-  				from: { opacity: '0', transform: 'scale(0.95)' },
-  				to: { opacity: '1', transform: 'scale(1)' }
+  				from: { opacity: '0', scale: '0.95' },
+  				to: { opacity: '1', scale: '1' }
   			},
   			'command-pop': {
   				from: { opacity: '0', transform: 'translateY(-12px) scale(0.96)' },
@@ -179,7 +193,10 @@ const config: Config = {
   			'panel-out': 'panel-out 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards',
   			'backdrop-out': 'backdrop-out 0.3s ease-in forwards'
   		},
-  		colors: {
+  		// coloresConAlpha: los tokens escritos como `var(--x)` pelado (bg, fg,
+  		// plan-*) no aceptaban modificador de opacidad — Tailwind no emitía la
+  		// regla. Ver tailwind.alpha.ts. Los `hsl(var(--x))` pasan intactos.
+  		colors: coloresConAlpha({
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
@@ -491,7 +508,7 @@ const config: Config = {
   					}
   				}
   			}
-  		}
+  		})
   	}
   },
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],

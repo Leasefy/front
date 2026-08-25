@@ -10,8 +10,9 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { agencyApi, inmobiliariaConfigApi, permissionsApi } from '../inmobiliaria.service';
+import { agencyApi, inmobiliariaConfigApi, permissionsApi, cobrosApi, mantenimientoApi, documentosApi, propietariosApi } from '../inmobiliaria.service';
 import { ApiError, setAccessToken } from '../client';
+import type { PropietarioFormData } from '@/lib/types/inmobiliaria';
 
 function mockFetchOnce(body: unknown, init: { ok?: boolean; status?: number } = {}) {
   const { ok = true, status = 200 } = init;
@@ -207,5 +208,238 @@ describe('team-action HTTP verbs match the backend routes', () => {
       status: 403,
       message: 'Solo un administrador puede cambiar roles',
     });
+  });
+});
+
+// ── (7) audit fixes: verb/path corrections against the real back routes ─────
+
+describe('cobrosApi.registerPayment — matches backend @Post(:id/payment)', () => {
+  it('POSTs to /inmobiliaria/cobros/:id/payment with the payment body', async () => {
+    const fetchMock = mockFetchOnce({ id: 'cobro-1', status: 'PAID' });
+    const payment = {
+      paidAmount: 1_500_000,
+      paymentDate: '2026-08-10',
+      paymentMethod: 'TRANSFER',
+      paymentReference: 'ref-123',
+    };
+
+    await cobrosApi.registerPayment('cobro-1', payment);
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/cobros/cobro-1/payment')).toBe(true);
+    expect(opts.method).toBe('POST');
+    expect(JSON.parse(opts.body as string)).toEqual(payment);
+  });
+});
+
+describe('cobrosApi.sendReminder — matches backend @Put(:id/send-reminder)', () => {
+  it('PUTs to /inmobiliaria/cobros/:id/send-reminder with no body', async () => {
+    const fetchMock = mockFetchOnce({}, { status: 204 });
+
+    await cobrosApi.sendReminder('cobro-1');
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/cobros/cobro-1/send-reminder')).toBe(true);
+    expect(opts.method).toBe('PUT');
+    expect(opts.body).toBeUndefined();
+  });
+});
+
+describe('mantenimientoApi.approveQuote — matches backend @Put(:id/select-quote)', () => {
+  it('PUTs to /inmobiliaria/mantenimiento/:id/select-quote with { quoteId }', async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'IN_PROGRESS' });
+
+    await mantenimientoApi.approveQuote('sol-1', 'quote-9');
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/select-quote')).toBe(true);
+    expect(opts.method).toBe('PUT');
+    expect(JSON.parse(opts.body as string)).toEqual({ quoteId: 'quote-9' });
+  });
+});
+
+describe('mantenimientoApi.updateStatus — maps to real backend transitions (no generic /status route)', () => {
+  it("'approved' → PUT :id/approve", async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'APPROVED' });
+    await mantenimientoApi.updateStatus('sol-1', 'approved');
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/approve')).toBe(true);
+    expect(opts.method).toBe('PUT');
+  });
+
+  it("'completed' → PUT :id/complete", async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'COMPLETED' });
+    await mantenimientoApi.updateStatus('sol-1', 'completed');
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/complete')).toBe(true);
+    expect(opts.method).toBe('PUT');
+  });
+
+  it("'cancelled' → PUT :id/cancel", async () => {
+    const fetchMock = mockFetchOnce({ id: 'sol-1', status: 'CANCELLED' });
+    await mantenimientoApi.updateStatus('sol-1', 'cancelled');
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/mantenimiento/sol-1/cancel')).toBe(true);
+    expect(opts.method).toBe('PUT');
+  });
+
+  it('throws on a status with no backend transition (reported/quoted/in_progress)', async () => {
+    await expect(mantenimientoApi.updateStatus('sol-1', 'in_progress')).rejects.toThrow();
+  });
+});
+
+describe('documentosApi.getTemplates — matches backend @Controller(inmobiliaria/documents) @Get(templates)', () => {
+  it('GETs /inmobiliaria/documents/templates', async () => {
+    const fetchMock = mockFetchOnce([{ id: 'tpl-1', name: 'Contrato' }]);
+
+    const result = await documentosApi.getTemplates();
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/documents/templates')).toBe(true);
+    expect(opts.method).toBe('GET');
+    expect(result).toEqual([{ id: 'tpl-1', name: 'Contrato' }]);
+  });
+});
+
+// ── propietariosApi.create/update — bank fields wire mapping (T-0014) ───────
+//
+// contract.md §3.2/§3.3 (T-0014): the front's own bank slugs (BankCode) and
+// account-type values do NOT line up 1:1 with the backend's ColombianBank
+// enum / AHORROS|CORRIENTE. `bankCode`/`accountType`/`accountNumber`/
+// `accountHolder` never reach the wire as-is — they get renamed AND
+// translated at this boundary. `bankName` is backend-derived and must never
+// be sent by the front.
+
+const BASE_PROPIETARIO: PropietarioFormData = {
+  name: 'Victor Espitia',
+  email: 'victor@test.co',
+  phone: '+57 300 000 0000',
+  documentType: 'CC',
+  documentNumber: '123456789',
+  bankCode: 'bancolombia',
+  accountType: 'savings',
+  accountNumber: '49739377771',
+  accountHolder: 'victor espitia',
+};
+
+describe('propietariosApi.create — maps front bank fields to the wire contract', () => {
+  it('renames and translates bankCode/accountType to the wire codes; never sends bankName', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1', name: BASE_PROPIETARIO.name });
+
+    await propietariosApi.create(BASE_PROPIETARIO);
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/propietarios')).toBe(true);
+    expect(opts.method).toBe('POST');
+    const body = JSON.parse(opts.body as string);
+    expect(body.bankCode).toBe('BANCOLOMBIA');
+    expect(body.bankAccountType).toBe('AHORROS');
+    expect(body.bankAccountNumber).toBe('49739377771');
+    expect(body.bankAccountHolder).toBe('victor espitia');
+    // deprecated free-text field is back-derived — the front must never send it
+    expect(body.bankName).toBeUndefined();
+    // front-only keys must not leak onto the wire
+    expect(body.accountType).toBeUndefined();
+    expect(body.accountNumber).toBeUndefined();
+    expect(body.accountHolder).toBeUndefined();
+  });
+
+  it('maps checking to CORRIENTE', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+    await propietariosApi.create({ ...BASE_PROPIETARIO, accountType: 'checking' });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.bankAccountType).toBe('CORRIENTE');
+  });
+
+  it('maps colpatria to SCOTIABANK — not a toUpperCase() of the slug', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+    await propietariosApi.create({ ...BASE_PROPIETARIO, bankCode: 'colpatria' });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.bankCode).toBe('SCOTIABANK');
+  });
+
+  it('maps cajasocial to BANCO_CAJA_SOCIAL — not a toUpperCase() of the slug', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+    await propietariosApi.create({ ...BASE_PROPIETARIO, bankCode: 'cajasocial' });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.bankCode).toBe('BANCO_CAJA_SOCIAL');
+  });
+
+  it('maps the three catalogue-only banks the owner form now surfaces (avvillas/bancoomeva/pichincha)', async () => {
+    const cases: [PropietarioFormData['bankCode'], string][] = [
+      ['avvillas', 'BANCO_AV_VILLAS'],
+      ['bancoomeva', 'BANCOOMEVA'],
+      ['pichincha', 'BANCO_PICHINCHA'],
+    ];
+    for (const [slug, wire] of cases) {
+      const fetchMock = mockFetchOnce({ id: 'prop-1' });
+      await propietariosApi.create({ ...BASE_PROPIETARIO, bankCode: slug });
+      const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+      expect(body.bankCode).toBe(wire);
+    }
+  });
+
+  it('throws instead of silently coercing an unmapped bank slug (no toUpperCase fallback, no default)', async () => {
+    await expect(
+      propietariosApi.create({
+        ...BASE_PROPIETARIO,
+        bankCode: 'unknown-bank' as unknown as PropietarioFormData['bankCode'],
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('does not send bankCode/bankAccountType when the front value is empty (no bank on file yet)', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+    await propietariosApi.create({
+      ...BASE_PROPIETARIO,
+      bankCode: '',
+      accountType: '',
+      accountNumber: '',
+      accountHolder: '',
+    });
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.bankCode).toBeUndefined();
+    expect(body.bankAccountType).toBeUndefined();
+  });
+});
+
+describe('propietariosApi.update — applies the same wire mapping on a partial payload', () => {
+  it('PATCHes only the given fields, translated to the wire contract', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+
+    await propietariosApi.update('prop-1', {
+      bankCode: 'bbva',
+      accountType: 'checking',
+      accountNumber: '999',
+      accountHolder: 'Juan Perez',
+    });
+
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url.endsWith('/inmobiliaria/propietarios/prop-1')).toBe(true);
+    expect(opts.method).toBe('PATCH');
+    const body = JSON.parse(opts.body as string);
+    expect(body).toEqual({
+      bankCode: 'BBVA',
+      bankAccountType: 'CORRIENTE',
+      bankAccountNumber: '999',
+      bankAccountHolder: 'Juan Perez',
+    });
+  });
+
+  it('leaves non-bank fields untouched when only they are given', async () => {
+    const fetchMock = mockFetchOnce({ id: 'prop-1' });
+
+    await propietariosApi.update('prop-1', { name: 'Nuevo Nombre', city: 'Medellin' });
+
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body).toEqual({ name: 'Nuevo Nombre', city: 'Medellin' });
+  });
+
+  it('throws instead of silently coercing an unmapped bank slug on update too', async () => {
+    await expect(
+      propietariosApi.update('prop-1', {
+        bankCode: 'unknown-bank' as unknown as PropietarioFormData['bankCode'],
+      }),
+    ).rejects.toThrow();
   });
 });

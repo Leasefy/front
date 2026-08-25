@@ -83,12 +83,6 @@ export interface PersonalInfo {
 export interface EmploymentInfo {
   employmentStatus: EmploymentStatus;
   companyName?: string;
-  industry?: string;
-  position?: string;
-  contractType?: ContractType;
-  timeAtJob?: number; // months (stability indicator)
-  employerPhone?: string;
-  employerAddress?: string;
 }
 
 // ============================================================================
@@ -105,7 +99,12 @@ export interface IncomeInfo {
 }
 
 // ============================================================================
-// Reference information (Step 4)
+// Reference information — LEGACY, no longer a wizard step (T-0025).
+//
+// Kept only so a historical application (submitted before T-0025) still
+// decodes correctly when read back (`mapBackendApplication`) and so an
+// in-flight prefill from a previous application can still carry its data
+// forward. Nothing in the wizard UI reads or writes this anymore.
 // ============================================================================
 
 export interface PreviousLandlordReference {
@@ -123,20 +122,13 @@ export interface EmploymentReference {
   relationship: string;
 }
 
-export interface PersonalReference {
-  name: string;
-  phone: string;
-  relationship: string;
-}
-
 export interface ReferenceInfo {
   previousLandlords: PreviousLandlordReference[];
   employmentReferences: EmploymentReference[];
-  personalReferences: PersonalReference[];
 }
 
 // ============================================================================
-// Document information (Step 5)
+// Document information (Step 4)
 // ============================================================================
 
 export interface DocumentUpload {
@@ -149,19 +141,23 @@ export interface DocumentUpload {
    * without needing a re-upload.
    */
   remoteId?: string;
+  /**
+   * El documento viene de una postulación ANTERIOR de esta misma persona: existe
+   * en el servidor, pero todavía no en ESTA postulación. Lo adjunta de verdad
+   * `POST /applications/:id/documents/reuse`, después de crearla.
+   *
+   * Distinto de `remoteId`, que significa "ya es de esta postulación". La
+   * diferencia importa: sin la marca, un `fileName` sin `File` se lee como un
+   * archivo perdido al serializar a localStorage y el envío se bloquea pidiendo
+   * adjuntar de nuevo lo que la persona ya nos dio.
+   */
+  reusable?: boolean;
 }
 
 export interface DocumentInfo {
   idDocument: DocumentUpload | null;
   /** Required — extracto bancario (últimos 3 meses) */
   bankStatement: DocumentUpload | null;
-  /** One of incomeProof / employmentLetter is required */
-  incomeProof?: DocumentUpload | null;
-  /** One of incomeProof / employmentLetter is required */
-  employmentLetter?: DocumentUpload | null;
-  /** Optional — colilla de nómina */
-  payStub?: DocumentUpload | null;
-  creditReport?: DocumentUpload | null; // optional self-provided
 }
 
 // ============================================================================
@@ -198,6 +194,18 @@ export interface Application {
   prefilledAt?: string;
   /** True once the user dismissed the prefill notice. */
   prefillNoticeDismissed?: boolean;
+  /**
+   * Identidad derivada del estudio de pre-scoring vigente
+   * (`.orchestration/tasks/T-0001-prescoring-prefill/contract.md` §3.2).
+   * Sólo para correlación/telemetría — NUNCA se manda de vuelta en un body.
+   */
+  preScoringOrderId?: string;
+  /** Campos de `personal` que vienen del estudio y el front debe bloquear. */
+  preScoringLockedFields?: Array<'fullName' | 'documentType' | 'documentNumber' | 'email'>;
+  /** true cuando la identidad de este envío viene del estudio de pre-scoring. */
+  preScoringIdentityApplied?: boolean;
+  /** true cuando (además o en cambio) se precargaron datos de una postulación anterior. */
+  previousApplicationDataApplied?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -208,11 +216,10 @@ export interface Application {
 
 export const WIZARD_STEPS = [
   { id: 1, key: 'personal', label: 'Personal', description: 'Datos personales' },
-  { id: 2, key: 'employment', label: 'Empleo', description: 'Informacion laboral' },
+  { id: 2, key: 'employment', label: 'Empleo', description: 'Información laboral' },
   { id: 3, key: 'income', label: 'Ingresos', description: 'Capacidad de pago' },
-  { id: 4, key: 'references', label: 'Referencias', description: 'Referencias personales' },
-  { id: 5, key: 'documents', label: 'Documentos', description: 'Documentos requeridos' },
-  { id: 6, key: 'review', label: 'Revision', description: 'Revisar y enviar' },
+  { id: 4, key: 'documents', label: 'Documentos', description: 'Documentos requeridos' },
+  { id: 5, key: 'review', label: 'Revisión', description: 'Revisar y enviar' },
 ] as const;
 
 export type WizardStepKey = typeof WIZARD_STEPS[number]['key'];
@@ -230,7 +237,6 @@ export interface StepValidation {
   personal: (data: Partial<PersonalInfo>) => ValidationResult;
   employment: (data: Partial<EmploymentInfo>) => ValidationResult;
   income: (data: Partial<IncomeInfo>) => ValidationResult;
-  references: (data: Partial<ReferenceInfo>) => ValidationResult;
   documents: (data: Partial<DocumentInfo>) => ValidationResult;
 }
 
@@ -253,7 +259,6 @@ export function createEmptyApplication(propertyId: string): Application {
     references: {
       previousLandlords: [],
       employmentReferences: [],
-      personalReferences: [],
     },
     documents: {},
     hasCoSigner: false,

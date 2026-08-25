@@ -138,7 +138,7 @@ export function AddressAutocomplete({
           id={listboxId}
           role="listbox"
           aria-label="Sugerencias de dirección"
-          className="absolute left-0 right-0 top-full mt-2 z-dropdown rounded-md border border-border bg-surface-raised shadow-md max-h-64 overflow-y-auto"
+          className="absolute left-0 right-0 top-full mt-2 z-dropdown rounded-md border border-border bg-surface shadow-md max-h-64 overflow-y-auto"
         >
           {isLoading && (
             <p className="px-4 py-3 text-sm text-fg-muted flex items-center gap-2">
@@ -175,7 +175,7 @@ export function AddressAutocomplete({
                 onMouseEnter={() => setActiveIndex(index)}
                 className={cn(
                   'w-full text-left px-4 py-2.5 text-sm flex items-start gap-2',
-                  index === activeIndex ? 'bg-surface-brand text-fg' : 'text-fg hover:bg-surface-sunken',
+                  index === activeIndex ? 'bg-primary-soft text-fg' : 'text-fg hover:bg-surface-muted',
                 )}
               >
                 <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-fg-subtle" aria-hidden="true" />

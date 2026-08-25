@@ -65,6 +65,12 @@ export function Navbar() {
     user.role !== 'tenant' &&
     !(user.role === 'agency' && (agencyRole === 'CONTADOR' || agencyRole === 'VIEWER'))
   );
+
+  // Authenticated users get a slimmed navbar: just the one action relevant to
+  // their role (Publicar for inmobiliaria/agente, Buscar for inquilino) + the
+  // user menu. The marketing nav (Precios / Para quién / Productos) is only for
+  // anonymous visitors.
+  const isLoggedIn = isAuthenticated && !!user;
   const pathname = usePathname();
   const router = useRouter();
 
@@ -165,75 +171,104 @@ export function Navbar() {
 
             {/* Nav Links - Desktop */}
             <div className="hidden md:flex items-center gap-6">
-              {canPublish && (
-                <Button
-                  variant={isActive('/publicar') ? "default" : "secondary"}
-                  size="sm"
-                  hideArrow
-                  asChild
-                  className="text-[13px]"
-                >
-                  <Link href="/publicar">Publicar Inmueble</Link>
-                </Button>
+              {isLoggedIn ? (
+                /* Authenticated: single role-based action, no marketing nav. */
+                canPublish ? (
+                  <Button
+                    variant={isActive('/publicar') ? "default" : "secondary"}
+                    size="sm"
+                    hideArrow
+                    asChild
+                    className="text-[13px]"
+                  >
+                    <Link href="/publicar">Publicar Inmueble</Link>
+                  </Button>
+                ) : (
+                  <Link
+                    href="/propiedades"
+                    className={cn(
+                      "text-[13px] transition-colors font-medium",
+                      isActive('/propiedades')
+                        ? isScrolled ? "text-foreground" : "text-white"
+                        : isScrolled ? "text-foreground/70 hover:text-foreground" : "text-white/70 hover:text-white"
+                    )}
+                  >
+                    Buscar Inmueble
+                  </Link>
+                )
+              ) : (
+                <>
+                  {canPublish && (
+                    <Button
+                      variant={isActive('/publicar') ? "default" : "secondary"}
+                      size="sm"
+                      hideArrow
+                      asChild
+                      className="text-[13px]"
+                    >
+                      <Link href="/publicar">Publicar Inmueble</Link>
+                    </Button>
+                  )}
+                  <Link
+                    href="/propiedades"
+                    className={cn(
+                      "text-[13px] transition-colors font-medium",
+                      isActive('/propiedades')
+                        ? isScrolled ? "text-foreground" : "text-white"
+                        : isScrolled ? "text-foreground/70 hover:text-foreground" : "text-white/70 hover:text-white"
+                    )}
+                  >
+                    Buscar Inmueble
+                  </Link>
+                  <Link
+                    href="/pricing"
+                    className={cn(
+                      "text-[13px] transition-colors font-medium",
+                      isActive('/pricing')
+                        ? isScrolled ? "text-foreground" : "text-white"
+                        : isScrolled ? "text-foreground/70 hover:text-foreground" : "text-white/70 hover:text-white"
+                    )}
+                  >
+                    Precios
+                  </Link>
+
+                  {/* Para quién dropdown - Minimal Style */}
+                  <div className="relative">
+                    <button
+                      onClick={() => { setIsParaQuienOpen(!isParaQuienOpen); setIsProductosOpen(false); }}
+                      className={cn(
+                        "flex items-center gap-1 text-[13px] transition-colors font-medium",
+                        isActive('/para') || isParaQuienOpen
+                          ? isScrolled ? "text-foreground" : "text-white"
+                          : isScrolled ? "text-foreground/70 hover:text-foreground" : "text-white/70 hover:text-white"
+                      )}
+                      aria-expanded={isParaQuienOpen}
+                      aria-haspopup="true"
+                    >
+                      Para quién
+                      <CaretDown className={`w-3.5 h-3.5 transition-transform ${isParaQuienOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
+
+                  {/* Productos dropdown - Minimal Style */}
+                  <div className="relative">
+                    <button
+                      onClick={() => { setIsProductosOpen(!isProductosOpen); setIsParaQuienOpen(false); }}
+                      className={cn(
+                        "flex items-center gap-1 text-[13px] transition-colors font-medium",
+                        isActive('/productos') || isProductosOpen
+                          ? isScrolled ? "text-foreground" : "text-white"
+                          : isScrolled ? "text-foreground/70 hover:text-foreground" : "text-white/70 hover:text-white"
+                      )}
+                      aria-expanded={isProductosOpen}
+                      aria-haspopup="true"
+                    >
+                      Productos
+                      <CaretDown className={`w-3.5 h-3.5 transition-transform ${isProductosOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
+                </>
               )}
-              <Link
-                href="/propiedades"
-                className={cn(
-                  "text-[13px] transition-colors font-medium",
-                  isActive('/propiedades')
-                    ? isScrolled ? "text-foreground" : "text-white"
-                    : isScrolled ? "text-foreground/70 hover:text-foreground" : "text-white/70 hover:text-white"
-                )}
-              >
-                Buscar Inmueble
-              </Link>
-              <Link
-                href="/pricing"
-                className={cn(
-                  "text-[13px] transition-colors font-medium",
-                  isActive('/pricing')
-                    ? isScrolled ? "text-foreground" : "text-white"
-                    : isScrolled ? "text-foreground/70 hover:text-foreground" : "text-white/70 hover:text-white"
-                )}
-              >
-                Precios
-              </Link>
-
-              {/* Para quién dropdown - Minimal Style */}
-              <div className="relative">
-                <button
-                  onClick={() => { setIsParaQuienOpen(!isParaQuienOpen); setIsProductosOpen(false); }}
-                  className={cn(
-                    "flex items-center gap-1 text-[13px] transition-colors font-medium",
-                    isActive('/para') || isParaQuienOpen
-                      ? isScrolled ? "text-foreground" : "text-white"
-                      : isScrolled ? "text-foreground/70 hover:text-foreground" : "text-white/70 hover:text-white"
-                  )}
-                  aria-expanded={isParaQuienOpen}
-                  aria-haspopup="true"
-                >
-                  Para quién
-                  <CaretDown className={`w-3.5 h-3.5 transition-transform ${isParaQuienOpen ? 'rotate-180' : ''}`} />
-                </button>
-              </div>
-
-              {/* Productos dropdown - Minimal Style */}
-              <div className="relative">
-                <button
-                  onClick={() => { setIsProductosOpen(!isProductosOpen); setIsParaQuienOpen(false); }}
-                  className={cn(
-                    "flex items-center gap-1 text-[13px] transition-colors font-medium",
-                    isActive('/productos') || isProductosOpen
-                      ? isScrolled ? "text-foreground" : "text-white"
-                      : isScrolled ? "text-foreground/70 hover:text-foreground" : "text-white/70 hover:text-white"
-                  )}
-                  aria-expanded={isProductosOpen}
-                  aria-haspopup="true"
-                >
-                  Productos
-                  <CaretDown className={`w-3.5 h-3.5 transition-transform ${isProductosOpen ? 'rotate-180' : ''}`} />
-                </button>
-              </div>
             </div>
           </div>
 
@@ -633,110 +668,141 @@ export function Navbar() {
               transition={{ duration: 0.2, delay: 0.05 }}
               className="px-6 py-4 space-y-1"
             >
-              {canPublish && (
-                <Link
-                  href="/publicar"
-                  className={cn(
-                    "block min-h-[44px] py-3 text-sm font-medium transition-colors flex items-center",
-                    isActive('/publicar') ? "text-foreground" : "text-foreground/70 hover:text-foreground"
+              {isLoggedIn ? (
+                /* Authenticated: single role-based action, no marketing nav. */
+                canPublish ? (
+                  <Link
+                    href="/publicar"
+                    className={cn(
+                      "block min-h-[44px] py-3 text-sm font-medium transition-colors flex items-center",
+                      isActive('/publicar') ? "text-foreground" : "text-foreground/70 hover:text-foreground"
+                    )}
+                    onClick={() => setIsMobileListOpen(false)}
+                  >
+                    Publicar Inmueble
+                    {isActive('/publicar') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-primary" />}
+                  </Link>
+                ) : (
+                  <Link
+                    href="/propiedades"
+                    className={cn(
+                      "block min-h-[44px] py-3 text-sm transition-colors flex items-center",
+                      isActive('/propiedades') ? "text-foreground font-medium" : "text-foreground/70 hover:text-foreground"
+                    )}
+                    onClick={() => setIsMobileListOpen(false)}
+                  >
+                    Buscar Inmueble
+                    {isActive('/propiedades') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-primary" />}
+                  </Link>
+                )
+              ) : (
+                <>
+                  {canPublish && (
+                    <Link
+                      href="/publicar"
+                      className={cn(
+                        "block min-h-[44px] py-3 text-sm font-medium transition-colors flex items-center",
+                        isActive('/publicar') ? "text-foreground" : "text-foreground/70 hover:text-foreground"
+                      )}
+                      onClick={() => setIsMobileListOpen(false)}
+                    >
+                      Publicar Inmueble
+                      {isActive('/publicar') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-primary" />}
+                    </Link>
                   )}
-                  onClick={() => setIsMobileListOpen(false)}
-                >
-                  Publicar Inmueble
-                  {isActive('/publicar') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-primary" />}
-                </Link>
+                  <Link
+                    href="/propiedades"
+                    className={cn(
+                      "block min-h-[44px] py-3 text-sm transition-colors flex items-center",
+                      isActive('/propiedades') ? "text-foreground font-medium" : "text-foreground/70 hover:text-foreground"
+                    )}
+                    onClick={() => setIsMobileListOpen(false)}
+                  >
+                    Buscar Inmueble
+                    {isActive('/propiedades') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-primary" />}
+                  </Link>
+                  <Link
+                    href="/pricing"
+                    className={cn(
+                      "block min-h-[44px] py-3 text-sm transition-colors flex items-center",
+                      isActive('/pricing') ? "text-foreground font-medium" : "text-foreground/70 hover:text-foreground"
+                    )}
+                    onClick={() => setIsMobileListOpen(false)}
+                  >
+                    Precios
+                    {isActive('/pricing') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-primary" />}
+                  </Link>
+
+                  {/* Para quién - Mobile */}
+                  <div className="pt-2 mt-2 border-t border-border">
+                    <p className="text-xs font-medium text-fg-muted uppercase tracking-wide py-2">Para quién</p>
+                    {audienceLinks.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={cn(
+                            "flex items-center gap-3 min-h-[44px] py-3 text-sm transition-colors",
+                            isActive(item.href) ? "text-foreground font-medium" : "text-foreground/70 hover:text-foreground"
+                          )}
+                          onClick={() => setIsMobileListOpen(false)}
+                        >
+                          <div className="w-7 h-7 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
+                            <Icon className="w-3.5 h-3.5 text-foreground/60" strokeWidth={1.5} />
+                          </div>
+                          {item.label}
+                          {isActive(item.href) && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
+                        </Link>
+                      );
+                    })}
+                  </div>
+
+                  {/* Productos - Mobile */}
+                  <div className="pt-2 mt-2 border-t border-border">
+                    <p className="text-xs font-medium text-fg-muted uppercase tracking-wide py-2">Productos</p>
+                    {productLinks.map((item) => {
+                      const Icon = item.icon;
+                      const isComingSoon = 'comingSoon' in item && item.comingSoon;
+
+                      if (isComingSoon) {
+                        return (
+                          <div
+                            key={item.href}
+                            className="flex items-center gap-3 min-h-[44px] py-3 text-sm text-foreground/40 cursor-not-allowed"
+                          >
+                            <div className="w-7 h-7 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
+                              <Icon className="w-3.5 h-3.5 text-foreground/30" strokeWidth={1.5} />
+                            </div>
+                            {item.label}
+                            <span className="ml-auto px-1.5 py-0.5 text-[9px] font-medium bg-foreground/10 text-foreground/50 rounded-full">
+                              Próximamente
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={cn(
+                            "flex items-center gap-3 min-h-[44px] py-3 text-sm transition-colors",
+                            isActive(item.href) ? "text-foreground font-medium" : "text-foreground/70 hover:text-foreground"
+                          )}
+                          onClick={() => setIsMobileListOpen(false)}
+                        >
+                          <div className="w-7 h-7 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
+                            <Icon className="w-3.5 h-3.5 text-foreground/60" strokeWidth={1.5} />
+                          </div>
+                          {item.label}
+                          {isActive(item.href) && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </>
               )}
-              <Link
-                href="/propiedades"
-                className={cn(
-                  "block min-h-[44px] py-3 text-sm transition-colors flex items-center",
-                  isActive('/propiedades') ? "text-foreground font-medium" : "text-foreground/70 hover:text-foreground"
-                )}
-                onClick={() => setIsMobileListOpen(false)}
-              >
-                Buscar Inmueble
-                {isActive('/propiedades') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-primary" />}
-              </Link>
-              <Link
-                href="/pricing"
-                className={cn(
-                  "block min-h-[44px] py-3 text-sm transition-colors flex items-center",
-                  isActive('/pricing') ? "text-foreground font-medium" : "text-foreground/70 hover:text-foreground"
-                )}
-                onClick={() => setIsMobileListOpen(false)}
-              >
-                Precios
-                {isActive('/pricing') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-primary" />}
-              </Link>
-
-              {/* Para quién - Mobile */}
-              <div className="pt-2 mt-2 border-t border-border">
-                <p className="text-xs font-medium text-fg-muted uppercase tracking-wide py-2">Para quién</p>
-                {audienceLinks.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 min-h-[44px] py-3 text-sm transition-colors",
-                        isActive(item.href) ? "text-foreground font-medium" : "text-foreground/70 hover:text-foreground"
-                      )}
-                      onClick={() => setIsMobileListOpen(false)}
-                    >
-                      <div className="w-7 h-7 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-3.5 h-3.5 text-foreground/60" strokeWidth={1.5} />
-                      </div>
-                      {item.label}
-                      {isActive(item.href) && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
-                    </Link>
-                  );
-                })}
-              </div>
-
-              {/* Productos - Mobile */}
-              <div className="pt-2 mt-2 border-t border-border">
-                <p className="text-xs font-medium text-fg-muted uppercase tracking-wide py-2">Productos</p>
-                {productLinks.map((item) => {
-                  const Icon = item.icon;
-                  const isComingSoon = 'comingSoon' in item && item.comingSoon;
-
-                  if (isComingSoon) {
-                    return (
-                      <div
-                        key={item.href}
-                        className="flex items-center gap-3 min-h-[44px] py-3 text-sm text-foreground/40 cursor-not-allowed"
-                      >
-                        <div className="w-7 h-7 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
-                          <Icon className="w-3.5 h-3.5 text-foreground/30" strokeWidth={1.5} />
-                        </div>
-                        {item.label}
-                        <span className="ml-auto px-1.5 py-0.5 text-[9px] font-medium bg-foreground/10 text-foreground/50 rounded-full">
-                          Próximamente
-                        </span>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 min-h-[44px] py-3 text-sm transition-colors",
-                        isActive(item.href) ? "text-foreground font-medium" : "text-foreground/70 hover:text-foreground"
-                      )}
-                      onClick={() => setIsMobileListOpen(false)}
-                    >
-                      <div className="w-7 h-7 rounded-xl bg-surface-muted flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-3.5 h-3.5 text-foreground/60" strokeWidth={1.5} />
-                      </div>
-                      {item.label}
-                      {isActive(item.href) && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
-                    </Link>
-                  );
-                })}
-              </div>
 
               {isAuthenticated && user ? (
                 <>

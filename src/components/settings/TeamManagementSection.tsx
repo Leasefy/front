@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { useTeamMembers } from '@/lib/hooks/useSettings';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import type { TeamRole } from '@/lib/types/team';
 import { SettingsModal } from './SettingsModal';
 
@@ -18,8 +19,20 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
   const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Real team data from backend
-  const { members: teamMembersList, invite, update, remove } = useTeamMembers();
+  // Real team data from backend.
+  // ⚠️ El `isLoading` de arriba es el de ENVIAR el formulario, no el de traer
+  // el equipo: dos cosas distintas con el mismo nombre. Por eso la lista decía
+  // «No hay miembros en el equipo» mientras cargaba, y también cuando la
+  // consulta moría — a alguien que sí tiene equipo.
+  const {
+    members: teamMembersList,
+    isLoading: cargandoEquipo,
+    errorCrudo: errorEquipo,
+    refresh: recargarEquipo,
+    invite,
+    update,
+    remove,
+  } = useTeamMembers();
 
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showEditMemberModal, setShowEditMemberModal] = useState(false);
@@ -144,7 +157,21 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
               </div>
             </div>
           ))}
-          {teamMembersList.length === 0 && (
+          {cargandoEquipo && teamMembersList.length === 0 && (
+            <div className="flex items-center justify-center px-6 py-8">
+              <Spinner size="md" variant="muted" />
+            </div>
+          )}
+          {!cargandoEquipo && Boolean(errorEquipo) && (
+            <FalloDeCarga
+              error={errorEquipo}
+              queEs="tu equipo"
+              onReintentar={recargarEquipo}
+              enmarcado={false}
+              className="py-8"
+            />
+          )}
+          {!cargandoEquipo && !errorEquipo && teamMembersList.length === 0 && (
             <div className="px-6 py-8 text-center">
               <p className="text-sm text-fg-subtle">{t('landlordSettings.team.noMembers') || 'No hay miembros en el equipo'}</p>
             </div>

@@ -10,6 +10,7 @@ import {
   PencilSimple,
   MapPin,
   Users,
+  PaperPlaneTilt,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { IconButton } from '@leasefy/cadence';
@@ -39,6 +40,8 @@ interface AgenteTableProps {
   agentes: Agente[];
   onView: (agente: Agente) => void;
   onEdit: (agente: Agente) => void;
+  /** Sólo para filas `invited`: volver a mandarle el correo de invitación. */
+  onReenviarInvitacion?: (agente: Agente) => void;
 }
 
 // Role badge colors — usado por el avatar fallback (color-coded por rol).
@@ -69,6 +72,7 @@ const STATUS_BADGE_VARIANT = {
   active: 'success',
   inactive: 'secondary',
   on_leave: 'warning',
+  invited: 'warning',
 } as const;
 
 // Role order for sorting
@@ -78,8 +82,10 @@ const ROLE_ORDER: Record<AgenteRole, number> = {
   agent: 3,
 };
 
-// Status order for sorting
+// Status order for sorting. Las invitaciones van primero: son lo último que
+// hiciste y lo único que todavía espera una acción tuya.
 const STATUS_ORDER: Record<AgenteStatus, number> = {
+  invited: 0,
   active: 1,
   on_leave: 2,
   inactive: 3,
@@ -93,6 +99,7 @@ export function AgenteTable({
   agentes,
   onView,
   onEdit,
+  onReenviarInvitacion,
 }: AgenteTableProps) {
   const { t } = useI18n();
   const [sortField, setSortField] = useState<SortField>('name');
@@ -108,6 +115,7 @@ export function AgenteTable({
     active: t('inmobiliaria.agente.statusActive'),
     inactive: t('inmobiliaria.agente.statusInactive'),
     on_leave: t('inmobiliaria.agente.statusOnLeaveShort'),
+    invited: t('inmobiliaria.agente.statusInvited'),
   };
 
   // Sort agentes
@@ -178,10 +186,14 @@ export function AgenteTable({
     className?: string;
   }) => (
     <TableHead className={cn('text-left p-4', className)}>
-      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
+      {/*
+        allowlist: disparador de orden — no hay primitiva en Cadence. `uppercase`
+        va explícito porque el navegador le pone `text-transform: none` a los
+        controles y el botón perdía las mayúsculas del `TH`. Ver DispersionTable.
+      */}
       <button
         onClick={() => handleSort(field)}
-        className="inline-flex items-center gap-1.5 hover:text-fg"
+        className="inline-flex items-center gap-1.5 uppercase hover:text-fg"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -221,6 +233,10 @@ export function AgenteTable({
           {sortedAgentes.map((agente, index) => {
             const roleStyle = ROLE_STYLES[agente.role];
             const initials = getInitials(agente.name);
+            // Un invitado todavía no es un agente del backend: no tiene ficha
+            // (`GET /agentes/:id` sólo encuentra miembros ACTIVE, así que
+            // abrirla daría 404) ni métricas que mostrar.
+            const pendiente = agente.status === 'invited';
 
             return (
               <motion.tr
@@ -228,8 +244,11 @@ export function AgenteTable({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.02 }}
-                onClick={() => onView(agente)}
-                className="border-t border-faint hover:bg-muted/50 cursor-pointer transition-colors"
+                onClick={pendiente ? undefined : () => onView(agente)}
+                className={cn(
+                  'border-t border-border-faint transition-colors',
+                  !pendiente && 'hover:bg-muted/50 cursor-pointer',
+                )}
               >
                 {/* Agent Name + Avatar */}
                 <TableCell className="p-4">
@@ -292,29 +311,35 @@ export function AgenteTable({
                 {/* Assigned Properties */}
                 <TableCell className="p-4">
                   <span className="font-semibold font-mono tabular-nums text-foreground">
-                    {agente.metrics.assignedProperties}
+                    {pendiente ? <span className="text-muted-foreground">—</span> : agente.metrics.assignedProperties}
                   </span>
                 </TableCell>
 
                 {/* Closings this month */}
                 <TableCell className="p-4 hidden md:table-cell">
                   <span className="font-semibold font-mono tabular-nums text-foreground">
-                    {agente.metrics.closedThisMonth}
+                    {pendiente ? <span className="text-muted-foreground">—</span> : agente.metrics.closedThisMonth}
                   </span>
                 </TableCell>
 
                 {/* Commissions this month */}
                 <TableCell className="p-4 hidden md:table-cell">
                   <span className="font-semibold font-mono tabular-nums text-foreground">
-                    {formatCurrency(agente.metrics.commissionsThisMonth)}
+                    {pendiente
+                      ? <span className="text-muted-foreground">—</span>
+                      : formatCurrency(agente.metrics.commissionsThisMonth)}
                   </span>
                 </TableCell>
 
                 {/* Commission Split */}
                 <TableCell className="p-4 hidden lg:table-cell">
-                  <Badge variant="default" className="font-mono tabular-nums">
-                    {agente.commissionSplit}%
-                  </Badge>
+                  {pendiente ? (
+                    <span className="text-muted-foreground">—</span>
+                  ) : (
+                    <Badge variant="default" className="font-mono tabular-nums">
+                      {agente.commissionSplit}%
+                    </Badge>
+                  )}
                 </TableCell>
 
                 {/* Actions */}
@@ -329,15 +354,27 @@ export function AgenteTable({
                         aria-label="Acciones"
                       />
                     </DropdownListTrigger>
-                    <DropdownListContent align="end" className="w-40">
-                      <DropdownListItem onSelect={() => onView(agente)}>
-                        <Eye className="w-4 h-4" />
-                        <span className="text-sm">{t('inmobiliaria.agente.viewDetail')}</span>
-                      </DropdownListItem>
-                      <DropdownListItem onSelect={() => onEdit(agente)}>
-                        <PencilSimple className="w-4 h-4" />
-                        <span className="text-sm">{t('inmobiliaria.agente.edit')}</span>
-                      </DropdownListItem>
+                    <DropdownListContent align="end" className="w-48">
+                      {pendiente ? (
+                        <DropdownListItem
+                          onSelect={() => onReenviarInvitacion?.(agente)}
+                          disabled={!onReenviarInvitacion}
+                        >
+                          <PaperPlaneTilt className="w-4 h-4" />
+                          <span className="text-sm">{t('inmobiliaria.config.users.resendInvite')}</span>
+                        </DropdownListItem>
+                      ) : (
+                        <>
+                          <DropdownListItem onSelect={() => onView(agente)}>
+                            <Eye className="w-4 h-4" />
+                            <span className="text-sm">{t('inmobiliaria.agente.viewDetail')}</span>
+                          </DropdownListItem>
+                          <DropdownListItem onSelect={() => onEdit(agente)}>
+                            <PencilSimple className="w-4 h-4" />
+                            <span className="text-sm">{t('inmobiliaria.agente.edit')}</span>
+                          </DropdownListItem>
+                        </>
+                      )}
                     </DropdownListContent>
                   </DropdownList>
                 </TableCell>

@@ -18,7 +18,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  X,
   Wrench,
   Lightning,
   Snowflake,
@@ -107,14 +106,14 @@ const TYPE_ICONS: Record<MantenimientoType, React.ElementType> = {
 };
 
 const PRIORITY_STYLES: Record<MantenimientoPriority, { bg: string; text: string; labelKey: string }> = {
-  low: { bg: 'bg-fg-muted dark:bg-fg-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
+  low: { bg: 'bg-surface-muted dark:bg-surface-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
   medium: { bg: 'bg-primary-soft', text: 'text-primary', labelKey: 'inmobiliaria.mantenimiento.priorityMedium' },
   high: { bg: 'bg-warning-soft', text: 'text-warning', labelKey: 'inmobiliaria.mantenimiento.priorityHigh' },
   emergency: { bg: 'bg-danger-soft', text: 'text-danger', labelKey: 'inmobiliaria.mantenimiento.priorityEmergency' },
 };
 
 const STATUS_STYLES: Record<MantenimientoStatus, { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
-  reported: { bg: 'bg-fg-muted dark:bg-fg-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: Note },
+  reported: { bg: 'bg-surface-muted dark:bg-surface-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: Note },
   quoted: { bg: 'bg-primary-soft', text: 'text-primary', labelKey: 'inmobiliaria.mantenimiento.statusQuoted', icon: CurrencyDollar },
   approved: { bg: 'bg-success-soft', text: 'text-success', labelKey: 'inmobiliaria.mantenimiento.statusApproved', icon: Check },
   in_progress: { bg: 'bg-warning-soft', text: 'text-warning', labelKey: 'inmobiliaria.mantenimiento.statusInProgress', icon: Play },
@@ -275,7 +274,7 @@ function PhotoGallery({
             onClick={() => setSelectedPhoto(url)}
             className="aspect-square rounded-md bg-muted overflow-hidden relative group"
           >
-            <div className="absolute inset-0 flex items-center justify-center bg-fg-muted dark:bg-fg-muted">
+            <div className="absolute inset-0 flex items-center justify-center bg-surface-muted dark:bg-surface-muted">
               <ImageIcon className="w-6 h-6 text-muted-foreground" />
             </div>
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
@@ -320,7 +319,7 @@ function Timeline({ events, fmtDate }: { events: TimelineEvent[]; fmtDate: (d: s
           event.status === 'quote_received' ||
           event.status === 'note_added' ||
           event.status === 'photo_added'
-            ? { bg: 'bg-fg-muted dark:bg-fg-muted', text: 'text-fg-muted dark:text-fg-muted' }
+            ? { bg: 'bg-surface-muted dark:bg-surface-muted', text: 'text-fg-muted dark:text-fg-muted' }
             : STATUS_STYLES[event.status as MantenimientoStatus] || STATUS_STYLES.reported;
 
         return (
@@ -461,29 +460,23 @@ export function MantenimientoViewer({
           {/* Header */}
           <div className="sticky top-0 z-10 bg-background border-b border-border">
             <SheetHeader className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div
-                    className={cn(
-                      'w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0',
-                      priorityStyle.bg
-                    )}
-                  >
-                    <TypeIcon className={cn('w-5 h-5', priorityStyle.text)} />
-                  </div>
-                  <div>
-                    <SheetTitle className="text-left">{solicitud.title}</SheetTitle>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {typeInfo?.labelEs} · {fmtDate(solicitud.createdAt)}
-                    </p>
-                  </div>
+              {/* `pr-10` reserva el hueco de la ✕ del `SheetContent`, que es la
+                  misma de todo el producto. Acá había una segunda a mano. */}
+              <div className="flex items-start gap-3 pr-10">
+                <div
+                  className={cn(
+                    'w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0',
+                    priorityStyle.bg
+                  )}
+                >
+                  <TypeIcon className={cn('w-5 h-5', priorityStyle.text)} />
                 </div>
-                <IconButton
-                  variant="ghost"
-                  onClick={onClose}
-                  aria-label={t('inmobiliaria.mantenimiento.cancel')}
-                  icon={<X className="w-5 h-5" />}
-                />
+                <div>
+                  <SheetTitle className="text-left">{solicitud.title}</SheetTitle>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {typeInfo?.labelEs} · {fmtDate(solicitud.createdAt)}
+                  </p>
+                </div>
               </div>
 
               {/* Status & Priority Badges */}
@@ -688,17 +681,24 @@ export function MantenimientoViewer({
                 </Button>
               )}
 
-              {/* Secondary Actions */}
+              {/* Secondary Actions
+                  «Agregar nota» sólo aparece si alguien puede guardarla. El
+                  botón estaba siempre, y en Operaciones el handler era un
+                  `toast.success('Nota agregada')` sin nada detrás: no existe
+                  endpoint de notas para mantenimientos (el controlador tiene
+                  quote/select-quote/approve/complete/cancel y nada más). */}
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  hideArrow
-                  onClick={() => setShowNoteDialog(true)}
-                  className="flex-1"
-                >
-                  <ChatCircle className="w-4 h-4" />
-                  {t('inmobiliaria.mantenimiento.addNote')}
-                </Button>
+                {onAddNote && (
+                  <Button
+                    variant="outline"
+                    hideArrow
+                    onClick={() => setShowNoteDialog(true)}
+                    className="flex-1"
+                  >
+                    <ChatCircle className="w-4 h-4" />
+                    {t('inmobiliaria.mantenimiento.addNote')}
+                  </Button>
+                )}
                 <IconButton
                   variant="outline"
                   onClick={() => setShowCancelDialog(true)}

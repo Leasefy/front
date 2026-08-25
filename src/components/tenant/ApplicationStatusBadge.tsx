@@ -23,7 +23,6 @@ export interface ApplicationStatusBadgeProps {
  * Colors:
  * - submitted: slate (neutral - waiting)
  * - under_review: blue (active - in progress)
- * - pre_approved: sky (positive - almost there)
  * - approved: emerald (success)
  * - rejected: red (declined)
  * - withdrawn: amber (cancelled by user)

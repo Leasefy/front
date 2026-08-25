@@ -26,7 +26,6 @@ type RiskFunnel = 'all' | 'A' | 'B' | 'C' | 'D';
 // Map LandlordCandidateStatus to StatusFunnel for display
 const STATUS_TO_FUNNEL: Record<string, StatusFunnel> = {
   'pending': 'new',
-  'pre-approved': 'reviewing',
   'approved': 'approved',
   'rejected': 'rejected',
   'more-info': 'reviewing',

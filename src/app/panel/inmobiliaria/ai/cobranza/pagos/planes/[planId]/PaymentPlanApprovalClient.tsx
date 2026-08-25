@@ -44,6 +44,7 @@ import {
   type RejectReasonSlug,
 } from '@/lib/hooks/cobranza/use-payment-plan-approval'
 import { usePaymentsFunnelRealtime } from '@/lib/hooks/cobranza/use-payments-funnel-realtime'
+import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 
 void React
 
@@ -256,6 +257,11 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
 
   return (
     <div className="p-4 lg:p-8 space-y-6">
+      <VolverALaLista
+        href="/panel/inmobiliaria/ai/cobranza/pagos"
+        label={t('inmobiliaria.ai.volverA.pagos')}
+      />
+
       {/* Header */}
       <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>

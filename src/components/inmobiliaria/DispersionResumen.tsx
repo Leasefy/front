@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import type { DispersionSummary } from '@/lib/types/inmobiliaria';
+import { nombreDelMes } from '@/lib/utils/mes';
 
 interface DispersionResumenProps {
   summary: DispersionSummary;
@@ -87,10 +88,9 @@ export function DispersionResumen({
     : 0;
 
   // Format month for display
-  const monthDisplay = formatDate(summary.month + '-01', {
-    month: 'long',
-    year: 'numeric',
-  });
+  // `new Date('2026-08-01')` es medianoche UTC: en Colombia retrocede al 31
+  // de julio y el título decía «julio» sobre datos de agosto.
+  const monthDisplay = nombreDelMes(summary.month);
 
   const hasPending = summary.dispersionsPending > 0;
   const hasFailed = summary.dispersionsFailed > 0;

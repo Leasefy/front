@@ -36,7 +36,7 @@ interface AgenteFiltersProps {
 
 // Role/status/sort option values - labels are translated in component
 const ROLE_VALUES: (AgenteRole | 'all')[] = ['all', 'agent', 'coordinator', 'director'];
-const STATUS_VALUES: (AgenteStatus | 'all')[] = ['all', 'active', 'inactive', 'on_leave'];
+const STATUS_VALUES: (AgenteStatus | 'all')[] = ['all', 'active', 'invited', 'inactive', 'on_leave'];
 const SORT_VALUES: AgenteFiltersState['sortBy'][] = ['name', 'closedThisMonth', 'commissionsThisMonth'];
 
 /**
@@ -61,6 +61,7 @@ export function AgenteFilters({
   const STATUS_OPTIONS: { value: AgenteStatus | 'all'; label: string }[] = [
     { value: 'all', label: t('inmobiliaria.agente.all') },
     { value: 'active', label: t('inmobiliaria.agente.statusActive') },
+    { value: 'invited', label: t('inmobiliaria.agente.statusInvited') },
     { value: 'inactive', label: t('inmobiliaria.agente.statusInactive') },
     { value: 'on_leave', label: t('inmobiliaria.agente.statusOnLeaveShort') },
   ];

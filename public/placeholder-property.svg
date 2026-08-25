@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Propiedad sin foto">
+  <rect width="800" height="600" fill="#f4f2ef"/>
+  <g fill="none" stroke="#c9c4bc" stroke-width="10" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M260 300 L400 190 L540 300"/>
+    <path d="M300 288 V400 H500 V288"/>
+    <path d="M372 400 V342 H428 V400"/>
+  </g>
+</svg>

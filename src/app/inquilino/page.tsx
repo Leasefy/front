@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -14,6 +15,14 @@ import { useTenantApplications } from '@/lib/hooks/useApplications';
 import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { TenantDashboardEmpty } from '@/components/tenant/TenantDashboardEmpty';
+import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
+// El de `ui/` es el de Cadence —la baldosa con degradado cobalto→cian— y es el
+// que usan las otras seis pantallas del inquilino. El de `data-display/` es
+// otro, con círculo gris: mezclarlos es justo lo que hacía que el home se
+// viera de otro producto.
+import { EmptyState } from '@/components/ui/empty-state';
+import { useAprobacion } from '@/lib/hooks/use-aprobacion';
+import { referenciaCanon } from '@/lib/api/aprobacion.service';
 import {
   deriveTenantOnboardingStatus,
   readTenantOnboardingCacheStatus,
@@ -44,6 +53,7 @@ export default function InquilinoPage() {
 
   // Evaluation state
   const { evaluation, isPaid, score, purchaseEvaluation } = useEvaluation();
+  const { aprobacion, vigente: aprobacionVigente } = useAprobacion();
   const [scoreSheetOpen, setScoreSheetOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
 
@@ -110,8 +120,18 @@ export default function InquilinoPage() {
   };
 
   // Real data: applications, leases and next payment come from the backend.
-  const { active: activeApplications, isLoading: applicationsLoading } = useTenantApplications();
-  const { getActive: getActiveLeases, isLoading: leasesLoading } = useLeases();
+  const {
+    active: activeApplications,
+    isLoading: applicationsLoading,
+    error: errorPostulaciones,
+    refetch: recargarPostulaciones,
+  } = useTenantApplications();
+  const {
+    getActive: getActiveLeases,
+    isLoading: leasesLoading,
+    error: errorArriendos,
+    refetch: recargarArriendos,
+  } = useLeases();
   const { getNextPayment } = useMyPayments();
 
   const activeLeases = getActiveLeases();
@@ -123,8 +143,25 @@ export default function InquilinoPage() {
     ? { id: activeLeases[0].id, propertyName: activeLeases[0].propertyTitle }
     : null;
 
-  // Featured properties for recommendation (always show)
-  const { properties: featuredProperties, isLoading: featuredLoading } = useFeaturedProperties(4);
+  /*
+   * Vista previa de su catálogo. Se piden más de las que se muestran porque
+   * después se filtran.
+   *
+   * El filtro es el MISMO que el de `/inquilino/para-ti`, y eso es el punto:
+   * antes el home mostraba destacadas sin filtrar, así que alguien aprobado
+   * hasta $2.800.000 podía ver acá una de $4.000.000, hacer clic en "Ver más"
+   * y no encontrarla en su catálogo. La vista previa prometía algo que el
+   * destino no tenía.
+   */
+  const { properties: featuredRaw, isLoading: featuredLoading } = useFeaturedProperties(12);
+  const referenciaHome = referenciaCanon(aprobacion);
+  const featuredProperties = useMemo(() => {
+    const disponibles = featuredRaw.filter((p) => p.status !== 'rented');
+    const dentro = referenciaHome
+      ? disponibles.filter((p) => p.monthlyRent <= referenciaHome.valorCop)
+      : disponibles;
+    return [...dentro].sort((a, b) => a.monthlyRent - b.monthlyRent).slice(0, 4);
+  }, [featuredRaw, referenciaHome]);
 
   // Loading state — wait for auth + real data so the "new user" banner doesn't flash
   if (authLoading || isOnboardingComplete === null || applicationsLoading || leasesLoading) {
@@ -140,7 +177,37 @@ export default function InquilinoPage() {
     return <TenantDashboardEmpty />;
   }
 
-  // Check if user is "new" (no leases, no applications)
+  /*
+   * No se puede armar el inicio sin saber si tiene arriendo o postulaciones:
+   * cualquier cosa que se pinte acá sería una afirmación sobre datos que no
+   * llegaron. Se dice, con reintento, en vez de inventar un panel vacío.
+   */
+  if (errorPostulaciones || errorArriendos) {
+    return (
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+        <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
+          <FalloDeCarga
+            error={errorPostulaciones ?? errorArriendos}
+            queEs="tu panel"
+            onReintentar={() => {
+              if (errorPostulaciones) void recargarPostulaciones();
+              if (errorArriendos) void recargarArriendos();
+            }}
+            volverA={{ label: 'Explorar propiedades', href: '/inquilino/explorar' }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  /*
+   * Si la carga FALLÓ, las dos listas quedan vacías y esta pantalla concluía
+   * que la persona es nueva: a alguien con un arriendo activo lo saludaba como
+   * si acabara de llegar y le escondía sus postulaciones.
+   *
+   * Un fallo no es una ausencia. Los hooks siempre expusieron `error`; la
+   * pantalla lo ignoraba.
+   */
   const isNewUser = activeLeases.length === 0 && activeApplications.length === 0;
 
   return (
@@ -159,43 +226,41 @@ export default function InquilinoPage() {
           <h1 className="text-3xl sm:text-4xl font-medium text-fg dark:text-white tracking-tight">
             {t('dashboard.hello', { name: firstName })}
           </h1>
-          {isNewUser && (
-            <p className="mt-2 text-fg-muted dark:text-fg-subtle">
-              {locale === 'es'
-                ? '¡Tu perfil está listo! Ahora puedes buscar y aplicar a propiedades.'
-                : 'Your profile is ready! Now you can search and apply to properties.'}
-            </p>
-          )}
+          {/* Acá iba un "¡Tu perfil está listo!" que repetía, palabra por
+              palabra, la tarjeta que viene justo debajo. Dos felicitaciones
+              seguidas por el mismo hecho. Queda una. */}
         </motion.header>
 
-        {/* Welcome Card for New Users */}
+        {/*
+          Lo primero del home es la aprobación, y reemplaza al viejo
+          "¡Perfil completado!".
+
+          El perfil completo no es el hito que le importa a nadie: es un trámite
+          nuestro. El hito es **hasta cuánto puede arrendar** — sin eso no se
+          puede postular a nada, y con eso el catálogo deja de ser una vitrina.
+          El banner cubre los cuatro estados, así que el home empuja la acción
+          correcta en cada uno: conseguirla, esperarla, ver qué hacer si le
+          dijeron que no, o ir a su catálogo si ya la tiene.
+
+          Desde el home el paso siguiente es el catálogo, no el detalle: por eso
+          `detalle` apunta a "para ti" y no a la pantalla del tope.
+        */}
         {isNewUser && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mb-8 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-6 sm:p-8"
+            className="mb-8"
           >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              <div className="w-14 h-14 rounded-xl bg-[#E8F3EC] dark:bg-[#2C7A53]/20 flex items-center justify-center flex-shrink-0">
-                <CheckCircle className="w-7 h-7 text-[#2C7A53] dark:text-[#3EAE70]" weight="fill" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
-                  {locale === 'es' ? '¡Perfil completado!' : 'Profile completed!'}
-                </h2>
-                <p className="text-fg-muted dark:text-fg-subtle">
-                  {locale === 'es'
-                    ? 'Tu score de inquilino está activo. Explora propiedades y aplica con un solo clic.'
-                    : 'Your tenant score is active. Explore properties and apply with one click.'}
-                </p>
-              </div>
-              <Button asChild className="flex-shrink-0">
-                <Link href="/inquilino/explorar">
-                  {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
-                </Link>
-              </Button>
-            </div>
+            <TopeAprobadoBanner
+              aprobacion={aprobacion}
+              vigente={aprobacionVigente}
+              detalle={{
+                href: '/inquilino/para-ti',
+                label: locale === 'es' ? 'Ver mis propiedades' : 'View my properties',
+                variant: 'default',
+              }}
+            />
           </motion.div>
         )}
 
@@ -204,7 +269,9 @@ export default function InquilinoPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+          className={`grid gap-4 mb-8 ${
+            isNewUser ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 lg:grid-cols-4'
+          }`}
         >
           {/* Trust Score - Always show */}
           <ScoreCard
@@ -213,6 +280,11 @@ export default function InquilinoPage() {
             onClick={() => setScoreSheetOpen(true)}
           />
 
+          {/* Contadores — solo cuando cuentan algo. Un "Arriendos 0" y un
+              "Postulaciones 0" no resumen nada y ocupan el lugar de lo único
+              útil, que es por dónde empezar. */}
+          {!isNewUser && (
+          <>
           {/* Active Leases */}
           <Link href="/inquilino/arriendo" className="group">
             <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
@@ -238,12 +310,12 @@ export default function InquilinoPage() {
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('nav.applications')}</p>
               <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">{activeApplications.length}</p>
               <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
-                {activeApplications.length === 0
-                  ? (locale === 'es' ? 'Sin aplicaciones' : 'No applications')
-                  : (locale === 'es' ? 'En proceso' : 'In progress')}
+                {locale === 'es' ? 'En proceso' : 'In progress'}
               </p>
             </div>
           </Link>
+          </>
+          )}
 
           {/* Next Payment or CTA */}
           {nextPayment && primaryLease ? (
@@ -290,12 +362,24 @@ export default function InquilinoPage() {
                   <h2 className="text-xl font-semibold text-fg dark:text-white">
                     {locale === 'es' ? 'Propiedades para ti' : 'Properties for you'}
                   </h2>
+                  {/* Decía "Basado en tu perfil y preferencias", que no es lo
+                      que hace: no hay motor de perfil detrás de esta sección.
+                      Ahora dice lo que sí es cierto, y cambia según tenga o no
+                      un tope aprobado. */}
                   <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
-                    {locale === 'es' ? 'Basado en tu perfil y preferencias' : 'Based on your profile and preferences'}
+                    {referenciaHome
+                      ? locale === 'es'
+                        ? 'Dentro de tu tope aprobado'
+                        : 'Within your approved cap'
+                      : locale === 'es'
+                        ? 'Disponibles ahora'
+                        : 'Available now'}
                   </p>
                 </div>
+                {/* Apunta al catálogo propio, no a Explorar: la sección se
+                    llama "Propiedades para ti" y mandaba al listado general. */}
                 <Link
-                  href="/inquilino/explorar"
+                  href="/inquilino/para-ti"
                   className="text-sm text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white font-medium flex items-center gap-1 transition-colors"
                 >
                   {t('common.showMore')}
@@ -321,11 +405,18 @@ export default function InquilinoPage() {
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
 
-                      {/* Match badge */}
-                      <div className="absolute top-3 left-3 px-2.5 py-1 text-white text-xs font-medium rounded-full flex items-center gap-1" style={{ backgroundColor: '#14130f' }}>
-                        <Check className="w-3 h-3" weight="bold" />
-                        {92 - index * 5}% match
-                      </div>
+                      {/*
+                        Acá iba una insignia "92% match". El número salía de
+                        `92 - index * 5`: la posición en el arreglo, no un
+                        cálculo. La primera tarjeta siempre decía 92%.
+
+                        El match REAL existe y es del backend —`/recommendations`
+                        devuelve `matchScore` y lo pinta `PropertyMatchCard`—
+                        pero esta sección no usa ese endpoint, usa
+                        `useFeaturedProperties`. Así que la insignia afirmaba
+                        una afinidad que nadie midió. Fuera hasta que la sección
+                        se conecte al motor (ver el handoff de Víctor).
+                      */}
 
                       {/* Heart - Glass effect */}
                       <div
@@ -357,7 +448,12 @@ export default function InquilinoPage() {
                           {property.bedrooms} {locale === 'es' ? 'hab' : 'bed'}
                         </span>
                         <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
-                          {property.bathrooms} {locale === 'es' ? 'baños' : 'bath'}
+                          {property.bathrooms}{' '}
+                          {locale === 'es'
+                            ? property.bathrooms === 1
+                              ? 'baño'
+                              : 'baños'
+                            : 'bath'}
                         </span>
                         <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
                           {property.area} m²
@@ -369,30 +465,59 @@ export default function InquilinoPage() {
               </div>
             </motion.section>
 
-            {/* Empty State for Applications - Show when no applications */}
+            {/*
+              Antes esto era un bloque suelto: sin encabezado y sobre un fondo
+              `surface-muted/80` que encima del fondo de la página no se ve, así
+              que quedaba flotando después de las tarjetas sin pertenecer a
+              nada. Un vacío sin sección no dice de qué está vacío.
+
+              Ahora es una sección como la de arriba —título, subtítulo y enlace
+              a la lista completa— y el vacío usa el `EmptyState` compartido,
+              el mismo de Documentos y Contratos, dentro de una tarjeta con
+              borde como el resto de las superficies del home.
+            */}
             {activeApplications.length === 0 && (
               <motion.section
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
               >
-                <div className="rounded-xl bg-surface-muted/80 dark:bg-surface/[0.03] py-14 px-6 text-center">
-                  <div className="w-14 h-14 rounded-xl bg-surface dark:bg-surface/[0.06] flex items-center justify-center mx-auto mb-5">
-                    <FileText className="w-6 h-6 text-fg-subtle dark:text-fg-muted" />
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold text-fg dark:text-white">
+                      {t('nav.applications')}
+                    </h2>
+                    <p className="text-sm text-fg-muted dark:text-fg-subtle mt-0.5">
+                      {locale === 'es'
+                        ? 'El estado de cada propiedad a la que te postules'
+                        : 'The status of every property you apply to'}
+                    </p>
                   </div>
-                  <h3 className="text-base font-semibold text-fg mb-1.5">
-                    {locale === 'es' ? 'Sin aplicaciones aún' : 'No applications yet'}
-                  </h3>
-                  <p className="text-sm text-fg-muted max-w-sm mx-auto leading-relaxed mb-6">
-                    {locale === 'es'
-                      ? 'Cuando apliques a una propiedad, podrás ver el estado de tu aplicación aquí.'
-                      : 'When you apply to a property, you\'ll see the status of your application here.'}
-                  </p>
-                  <Button asChild>
-                    <Link href="/inquilino/explorar">
-                      {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
-                    </Link>
-                  </Button>
+                  <Link
+                    href="/inquilino/aplicaciones"
+                    className="text-sm text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white font-medium flex items-center gap-1 transition-colors"
+                  >
+                    {t('common.showMore')}
+                    <ArrowUpRight className="w-4 h-4" />
+                  </Link>
+                </div>
+
+                <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618]">
+                  {/* "aplicación / aplicar" está muerto: docs/VOCABULARIO.md.
+                      Y el CTA va a su catálogo, que es lo siguiente que haría. */}
+                  <EmptyState
+                    icon={FileText}
+                    title={locale === 'es' ? 'Todavía no te has postulado' : 'You have not applied yet'}
+                    description={
+                      locale === 'es'
+                        ? 'Cuando te postules a una propiedad, podrás seguir acá cómo va tu postulación.'
+                        : 'When you apply to a property, you\'ll be able to follow your application here.'
+                    }
+                    action={{
+                      label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me',
+                      href: '/inquilino/para-ti',
+                    }}
+                  />
                 </div>
               </motion.section>
             )}
@@ -429,7 +554,7 @@ export default function InquilinoPage() {
                     href: '/inquilino/aplicaciones',
                     icon: FileText,
                     label: t('nav.applications'),
-                    desc: locale === 'es' ? 'Ver mis aplicaciones' : 'View my applications'
+                    desc: locale === 'es' ? 'Ver mis postulaciones' : 'View my applications'
                   },
                   {
                     href: '/inquilino/perfil',

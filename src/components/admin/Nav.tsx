@@ -34,9 +34,11 @@ export const NAV_ITEMS = [
   { href: '/admin/keys', label: 'Keys', hint: 'rotación 90d', code: '24' },
   { href: '/admin/feature-flags', label: 'Flags', hint: 'per-tenant', code: '25' },
   { href: '/admin/pricing-config', label: 'Pricing', hint: 'modelo agencia', code: '26' },
+  { href: '/admin/plans', label: 'Planes', hint: 'catálogo agency', code: '30' },
   { href: '/admin/agency-targets', label: 'Targets', hint: 'metas mensuales', code: '27' },
   { href: '/admin/avaluos', label: 'Avalúos', hint: 'firma certificados', code: '28' },
   { href: '/admin/registration-profiles', label: 'Perfiles', hint: 'signup on/off', code: '29' },
+  { href: '/admin/cotizador', label: 'Cotizador', hint: 'carriers · credenciales', code: '31' },
 ] as const
 
 export function Nav({ userEmail }: { userEmail: string }) {

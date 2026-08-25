@@ -7,7 +7,7 @@
  * results are client-filtered by title/address/neighborhood (accent-insensitive).
  *
  * Permission: portafolio:view
- * href: /panel/inmobiliaria/propiedades/{id}
+ * href: /panel/inmobiliaria/inmuebles/{id}
  */
 
 import { getAccessToken } from '@/lib/api/client';
@@ -93,7 +93,7 @@ export const propiedadesSource: SearchSource = {
           },
           { label: formatCOP(item.monthlyRent), color: 'neutral' as const },
         ],
-        href: `/panel/inmobiliaria/propiedades/${item.id}`,
+        href: `/panel/inmobiliaria/inmuebles/${item.id}`,
         preview: {
           type: 'propiedad',
           id: item.id,

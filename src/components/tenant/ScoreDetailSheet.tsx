@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { CheckCircle, WarningCircle, Lock, Copy, Check, DownloadSimple, ShareNetwork, X } from '@phosphor-icons/react';
 import { ProgressRing, RiskBadge, IconButton, type RiskGrade } from '@leasefy/cadence';
 import {
@@ -128,9 +129,30 @@ export function ScoreDetailSheet({
         {/* Footer */}
         <div className="flex-shrink-0 border-t border-border px-6 py-4">
           {!isPaid ? (
-            <Button onClick={onPurchase} className="w-full" size="lg">
-              {locale === 'es' ? 'Evaluar mi perfil' : 'Evaluate my profile'}
-            </Button>
+            /*
+              Acá había un botón primario "Evaluar mi perfil" cableado a
+              `purchaseEvaluation()`, que solo escribe una advertencia en
+              consola: la evaluación de autoservicio del inquilino no existe
+              todavía. Se tocaba y no pasaba absolutamente nada — ni aviso, ni
+              error, ni navegación.
+
+              La evaluación **sí** existe, pero la lanza la inmobiliaria sobre
+              una postulación (`POST /evaluations/:applicationId`). Así que en
+              vez de un botón muerto se dice cómo se consigue de verdad, y el
+              paso siguiente es postularse.
+            */
+            <div className="space-y-3">
+              <p className="text-sm text-fg-muted text-center">
+                {locale === 'es'
+                  ? 'Tu evaluación la hace la inmobiliaria cuando te postulas a una propiedad. No tienes que pedirla ni pagarla aparte.'
+                  : 'Your evaluation is run by the agency when you apply to a property. You do not need to request or pay for it separately.'}
+              </p>
+              <Button asChild className="w-full" size="lg">
+                <Link href="/inquilino/para-ti">
+                  {locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me'}
+                </Link>
+              </Button>
+            </div>
           ) : (
             <div className="flex gap-3">
               <Button variant="outline" onClick={onDownloadPDF} hideArrow className="flex-1">
@@ -178,10 +200,13 @@ function LockedContent({ locale }: { locale: string }) {
             ? '¿Qué es la evaluación de inquilino?'
             : 'What is the tenant evaluation?'}
         </h3>
+        {/* Decía "Obtén tu evaluación", como si se pudiera pedir: no se puede,
+            la lanza la inmobiliaria. Y "proceso de aplicación" está muerto
+            (docs/VOCABULARIO.md). */}
         <p className="text-sm text-fg-muted leading-relaxed">
           {locale === 'es'
-            ? 'Obtén tu evaluación para compartir con propietarios e inmobiliarias. Un score verificable que demuestra tu confiabilidad como inquilino y acelera el proceso de aplicación.'
-            : 'Get your evaluation to share with landlords and agencies. A verifiable score that demonstrates your reliability as a tenant and speeds up the application process.'}
+            ? 'Un score verificable que muestra tu confiabilidad como inquilino. La inmobiliaria lo genera al estudiar tu postulación, y queda acá para que lo compartas.'
+            : 'A verifiable score that shows your reliability as a tenant. The agency generates it when reviewing your application, and it stays here for you to share.'}
         </p>
       </div>
 

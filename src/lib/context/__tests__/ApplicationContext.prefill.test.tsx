@@ -270,10 +270,13 @@ describe('ApplicationContext — prefill: hasPreviousApplication false', () => {
   });
 });
 
-// ── (3) update mode → getPrefill NOT called ───────────────────────────────
+// ── (3) update mode: getPrefill runs, but only the identity lock applies ─
 
-describe('ApplicationContext — prefill: update mode skips prefill', () => {
-  it('does not call getPrefill when mode is update', async () => {
+describe('ApplicationContext — prefill: update mode does NOT apply previous-application data', () => {
+  it('calls getPrefill in update mode too, but leaves an existing application untouched when there is no pre-scoring identity', async () => {
+    // SAMPLE_PREFILL_WITH_DATA has no preScoringIdentity — this proves the
+    // fix does NOT resurrect the previous-application prefill in update mode,
+    // it only opens the door for the identity-lock check.
     mockGetPrefill.mockResolvedValue(SAMPLE_PREFILL_WITH_DATA);
 
     const initialApplication = {
@@ -295,13 +298,138 @@ describe('ApplicationContext — prefill: update mode skips prefill', () => {
       updatedAt: new Date().toISOString(),
     };
 
-    await renderProvider({
+    const { getCtx } = await renderProvider({
       mode: 'update',
       existingApplicationId: 'app-existing',
       initialApplication,
     });
 
-    expect(mockGetPrefill).not.toHaveBeenCalled();
+    // getPrefill IS called now — the identity-lock check needs it even in
+    // update mode (contract.md T-0001 §8.2 names this vector explicitly).
+    expect(mockGetPrefill).toHaveBeenCalledTimes(1);
+
+    // But nothing from the previous-application prefill was applied: the
+    // existing application's own data survives untouched.
+    expect(getCtx().application.personal.fullName).toBe('Existing User');
+    expect(getCtx().application.personal.documentNumber).toBe('111');
+    expect(getCtx().application.income.monthlySalary).toBe(3_000_000);
+  });
+});
+
+describe('ApplicationContext — prefill: update mode LOCKS identity from the pre-scoring study', () => {
+  const SAMPLE_IDENTITY = {
+    orderId: 'order-abc',
+    fullName: 'Nombre Del Estudio',
+    documentType: 'cc' as const,
+    documentNumber: '1122334455',
+    email: 'estudio@ejemplo.co',
+    lockedFields: ['fullName', 'documentType', 'documentNumber', 'email'] as const,
+  };
+
+  function buildInitialApplication() {
+    return {
+      id: 'app-existing',
+      propertyId: 'prop-test',
+      status: 'draft' as const,
+      currentStep: 6,
+      personal: {
+        fullName: 'Nombre Mal Tipeado',
+        documentType: 'ce' as const,
+        documentNumber: '000000',
+        email: 'otro@ejemplo.co',
+        phone: '3009998877',
+        currentAddress: 'Calle 1 # 2-3',
+      },
+      employment: { employmentStatus: 'employed' as const, companyName: 'Mi Empresa' },
+      income: { monthlySalary: 3_000_000, totalMonthlyIncome: 3_000_000, monthlyObligations: 0, availableForRent: 3_000_000 },
+      references: {
+        previousLandlords: [{ name: 'L', phone: '1', address: 'A', duration: 1, relationship: 'r' }],
+        employmentReferences: [],
+        personalReferences: [],
+      },
+      documents: { idDocument: { fileName: 'id.pdf', file: null, uploadedAt: new Date().toISOString() } },
+      hasCoSigner: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  it('overwrites and locks the 4 identity fields when preScoringIdentity is present — the escaped regression', async () => {
+    mockGetPrefill.mockResolvedValueOnce({
+      hasPreviousApplication: false,
+      preScoringIdentity: SAMPLE_IDENTITY,
+    });
+
+    const { getCtx } = await renderProvider({
+      mode: 'update',
+      existingApplicationId: 'app-existing',
+      initialApplication: buildInitialApplication(),
+    });
+
+    expect(getCtx().application.personal.fullName).toBe('Nombre Del Estudio');
+    expect(getCtx().application.personal.documentType).toBe('cc');
+    expect(getCtx().application.personal.documentNumber).toBe('1122334455');
+    expect(getCtx().application.personal.email).toBe('estudio@ejemplo.co');
+    expect(getCtx().application.preScoringLockedFields).toEqual([
+      'fullName',
+      'documentType',
+      'documentNumber',
+      'email',
+    ]);
+  });
+
+  it('does not touch employment/income/references/documents in update mode', async () => {
+    mockGetPrefill.mockResolvedValueOnce({
+      hasPreviousApplication: false,
+      preScoringIdentity: SAMPLE_IDENTITY,
+    });
+
+    const initial = buildInitialApplication();
+    const { getCtx } = await renderProvider({
+      mode: 'update',
+      existingApplicationId: 'app-existing',
+      initialApplication: initial,
+    });
+
+    expect(getCtx().application.employment.companyName).toBe('Mi Empresa');
+    expect(getCtx().application.income.monthlySalary).toBe(3_000_000);
+    expect(getCtx().application.personal.phone).toBe('3009998877');
+    expect(getCtx().application.personal.currentAddress).toBe('Calle 1 # 2-3');
+  });
+
+  it('never resurrects previous-application data even when hasPreviousApplication is also true', async () => {
+    mockGetPrefill.mockResolvedValueOnce({
+      ...SAMPLE_PREFILL_WITH_DATA, // hasPreviousApplication: true, unrelated person's data
+      preScoringIdentity: SAMPLE_IDENTITY,
+    });
+
+    const initial = buildInitialApplication();
+    const { getCtx } = await renderProvider({
+      mode: 'update',
+      existingApplicationId: 'app-existing',
+      initialApplication: initial,
+    });
+
+    // Identity fields come from the study, not from SAMPLE_PREFILL_WITH_DATA
+    expect(getCtx().application.personal.fullName).toBe('Nombre Del Estudio');
+    // Everything SAMPLE_PREFILL_WITH_DATA would have brought stays untouched
+    expect(getCtx().application.personal.phone).toBe('3009998877');
+    expect(getCtx().application.employment.companyName).toBe('Mi Empresa');
+    expect(getCtx().application.income.monthlySalary).toBe(3_000_000);
+  });
+
+  it('leaves the application untouched when the identity fetch fails', async () => {
+    mockGetPrefill.mockRejectedValueOnce(new Error('network error'));
+
+    const initial = buildInitialApplication();
+    const { getCtx } = await renderProvider({
+      mode: 'update',
+      existingApplicationId: 'app-existing',
+      initialApplication: initial,
+    });
+
+    expect(getCtx().application.personal.fullName).toBe('Nombre Mal Tipeado');
+    expect(getCtx().application.preScoringLockedFields ?? []).toEqual([]);
   });
 });
 

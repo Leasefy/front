@@ -35,7 +35,7 @@ const tierConfig = {
   none: {
     iconBg: 'bg-surface-muted',
     iconColor: 'text-fg-muted',
-    selectedBg: 'bg-surface-muted dark:bg-ink/50',
+    selectedBg: 'bg-surface-muted',
     selectedBorder: 'border-border dark:border-border-strong',
     gradient: '',
   },
@@ -212,7 +212,7 @@ export function InsuranceSelector({
                 <div className={cn(
                   'border-t px-4 py-3',
                   isSelected
-                    ? 'border-border/50 dark:border-border-strong/50 bg-surface-muted/50 dark:bg-ink/30'
+                    ? 'border-border/50 dark:border-border-strong/50 bg-surface-muted'
                     : 'border-border'
                 )}>
                   <div className="flex flex-wrap gap-x-4 gap-y-2">

@@ -486,14 +486,14 @@ export function ConfigPermisos({
             <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <Table className="w-full min-w-[700px]">
                 <TableHeader>
-                  <TableRow className="border-b border-faint dark:border-strong">
+                  <TableRow className="border-b border-border-faint dark:border-border-strong">
                     <TableHead className="text-left p-4 w-[200px]">
-                      <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
+                      <span>
                         {t('inmobiliaria.config.permissions.module')}
                       </span>
                     </TableHead>
                     <TableHead className="p-4 w-[60px] text-center">
-                      <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
+                      <span>
                         {t('inmobiliaria.config.permissions.all')}
                       </span>
                     </TableHead>
@@ -521,7 +521,7 @@ export function ConfigPermisos({
                                     )}
                                   >
                                     <ActionIcon className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
-                                    <span className="text-xs font-semibold text-fg-muted dark:text-fg-subtle uppercase tracking-wider">
+                                    <span>
                                       {getActionLabel(action)}
                                     </span>
                                     <Checkbox

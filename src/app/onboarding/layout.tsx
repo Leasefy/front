@@ -2,7 +2,6 @@
 
 import { I18nProvider } from '@/lib/i18n';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
-import { Toaster } from '@/components/ui/toast';
 
 interface OnboardingLayoutProps {
   children: React.ReactNode;
@@ -15,10 +14,9 @@ interface OnboardingLayoutProps {
 export default function OnboardingLayout({ children }: OnboardingLayoutProps) {
   return (
     <ForceLightMode>
-      <I18nProvider>
-        {children}
-        <Toaster position="top-center" />
-      </I18nProvider>
+      {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx).
+          No montés otro acá: sonner pinta cada toast en TODOS los Toaster montados. */}
+      <I18nProvider>{children}</I18nProvider>
     </ForceLightMode>
   );
 }

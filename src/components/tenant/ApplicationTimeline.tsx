@@ -1,6 +1,6 @@
 'use client';
 
-import { FileText, PaperPlaneTilt, CheckCircle, MagnifyingGlass, Clock, XCircle, SignOut } from '@phosphor-icons/react';
+import { FileText, PaperPlaneTilt, CheckCircle, MagnifyingGlass, XCircle, SignOut } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { formatDateTime } from '@/lib/format';
@@ -19,7 +19,6 @@ const EVENT_ICONS: Record<ApplicationEventType, React.ElementType> = {
   submitted: PaperPlaneTilt,
   documents_verified: CheckCircle,
   under_review: MagnifyingGlass,
-  pre_approved: Clock,
   approved: CheckCircle,
   rejected: XCircle,
   withdrawn: SignOut,
@@ -33,7 +32,6 @@ const EVENT_COLORS: Record<ApplicationEventType, string> = {
   submitted: 'text-primary bg-primary-soft',
   documents_verified: 'text-primary bg-primary-soft',
   under_review: 'text-primary bg-primary-soft',
-  pre_approved: 'text-warning bg-warning-soft',
   approved: 'text-success bg-success-soft',
   rejected: 'text-danger bg-danger-soft',
   withdrawn: 'text-fg-muted bg-surface-muted',
@@ -47,7 +45,6 @@ const EVENT_LINE_COLORS: Record<ApplicationEventType, string> = {
   submitted: 'bg-primary-soft',
   documents_verified: 'bg-primary-soft',
   under_review: 'bg-primary-soft',
-  pre_approved: 'bg-warning-soft',
   approved: 'bg-success-soft',
   rejected: 'bg-danger-soft',
   withdrawn: 'bg-surface-muted',

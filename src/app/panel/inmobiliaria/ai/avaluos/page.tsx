@@ -9,18 +9,37 @@
  *  - "Solicitar avalúo" mints a SHAREABLE wizard link (`avaluosApi.solicitar`)
  *    the agency sends to its client; the certificate is issued in the agency's
  *    name. The link is the primary output — NOT an auto-redirect.
- *  - "Casos por etapa / Mis solicitudes" reads the agency's own certificates by
+ *  - "Avalúos de tu inmobiliaria" reads the agency's own certificates by
  *    lifecycle state (`useAgencyAvaluos`) — the SAME closed set the avalúo micro
- *    exposes (borrador|en_revisión|firmado|rechazado|entregado).
- *  - "Actividad reciente" shows the latest requests, unfiltered.
+ *    exposes (borrador|en_revisión|firmado|rechazado|entregado). Deliberately NOT
+ *    called "Mis solicitudes": that is the neighbouring TAB (`./cola`), which
+ *    shows the agent's work-items — otro servicio, otros datos. Two places with
+ *    the same name and different contents leave you unable to tell which you
+ *    are looking at.
+ *
+ * There used to be a third block, "Actividad reciente", calling the same hook a
+ * second time to render the 5 newest rows of the list already shown in full
+ * above it. It added no data, cost a second round-trip, and had no error branch:
+ * with the list failing it announced "Aún no hay actividad reciente" right below
+ * "No pudimos cargar los avalúos". Removed.
  *
  * PRODUCT REALITY (legal-sensitive copy): this is a REMOTE "estimación de valor
  * referencial" generated with AI — there is NO physical visit (the certificate
  * itself states "No se realizó visita física") — and it is reviewed and signed
- * by a Leasefy reviewer. The copy below must never imply a site visit.
+ * by a Leasefy reviewer. The copy must never imply a site visit.
+ *
+ * ⚠️ That copy now lives in `es.json`/`en.json` under
+ * `inmobiliaria.ai.workspace.pages.avaluos`, NOT in this file. It used to be
+ * hardcoded here while the same keys sat in both dictionaries with OLDER,
+ * different wording — so this was the only page in the workspace that stayed
+ * in Spanish when you switched to English, and there were two versions of a
+ * legally reviewed sentence with nothing keeping them in sync. The migration
+ * moved what was ON SCREEN into the dictionaries; it did not adopt the stale
+ * text that was already there. `claves-avaluos.test.ts` freezes the key set in
+ * both locales.
  */
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import {
   Check,
@@ -30,22 +49,33 @@ import {
   FileMagnifyingGlass,
   SealCheck,
   ShareNetwork,
+  WarningCircle,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/data-display/EmptyState'
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { SinDatos } from '@/components/estado/SinDatos'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useAgencyAvaluos } from '@/lib/hooks/useInmobiliaria'
 import { avaluosApi } from '@/lib/api/inmobiliaria.service'
 import { ApiError } from '@/lib/api/client'
+import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { useI18n } from '@/lib/i18n'
+
+/** Raíz del diccionario de esta pantalla. */
+const NS = 'inmobiliaria.ai.workspace.pages.avaluos'
 
 // ---------------------------------------------------------------------------
 // State metadata — the real certificate lifecycle states, the SAME closed set
 // the avalúo micro exposes. Mirrors the admin `avaluo-states.ts` template,
 // mapped to the panel's own Badge variants.
+//
+// El valor que manda el micro (`en_revisión`, con tilde) NO sirve como clave de
+// i18n, así que cada estado lleva la suya. Lo que se guarda acá es lo que NO se
+// traduce —la variante del Badge— y el puente al diccionario.
 // ---------------------------------------------------------------------------
 
 const AVALUO_STATES = [
@@ -58,56 +88,47 @@ const AVALUO_STATES = [
 
 type AvaluoStateValue = (typeof AVALUO_STATES)[number]
 
-const STATE_META: Record<
-  AvaluoStateValue,
-  { label: string; variant: React.ComponentProps<typeof Badge>['variant'] }
-> = {
-  borrador: { label: 'Borrador', variant: 'secondary' },
-  'en_revisión': { label: 'En revisión', variant: 'warning' },
-  firmado: { label: 'Firmado', variant: 'success' },
-  rechazado: { label: 'Rechazado', variant: 'destructive' },
-  entregado: { label: 'Entregado', variant: 'default' },
+type BadgeVariant = React.ComponentProps<typeof Badge>['variant']
+
+const STATE_META: Record<AvaluoStateValue, { clave: string; variant: BadgeVariant }> = {
+  borrador: { clave: 'borrador', variant: 'secondary' },
+  'en_revisión': { clave: 'enRevision', variant: 'warning' },
+  firmado: { clave: 'firmado', variant: 'success' },
+  rechazado: { clave: 'rechazado', variant: 'destructive' },
+  entregado: { clave: 'entregado', variant: 'default' },
 }
 
-/** Presentation for a state; an unknown value degrades to a neutral pill. */
-function stateMeta(state: string): {
-  label: string
-  variant: React.ComponentProps<typeof Badge>['variant']
-} {
-  return STATE_META[state as AvaluoStateValue] ?? { label: state, variant: 'secondary' }
+/**
+ * Presentación de un estado. Un valor que no conocemos degrada a píldora
+ * neutra mostrando el valor crudo: inventarle una traducción sería peor.
+ */
+function stateMeta(
+  state: string,
+  t: (key: string) => string,
+): { label: string; variant: BadgeVariant } {
+  const meta = STATE_META[state as AvaluoStateValue]
+  return meta
+    ? { label: t(`${NS}.estados.${meta.clave}`), variant: meta.variant }
+    : { label: state, variant: 'secondary' }
 }
 
-/** Filter tabs: "Todos" ('' → no state filter) + the real lifecycle states. */
-const STATE_TABS: { value: string; label: string }[] = [
-  { value: '', label: 'Todos' },
-  ...AVALUO_STATES.map((s) => ({ value: s, label: STATE_META[s].label })),
-]
+/** Pestañas de filtro: "Todos" ('' → sin filtro) + los estados reales. */
+function stateTabs(t: (key: string) => string): { value: string; label: string }[] {
+  return [
+    { value: '', label: t('common.all') },
+    ...AVALUO_STATES.map((s) => ({ value: s, label: stateMeta(s, t).label })),
+  ]
+}
 
 // ---------------------------------------------------------------------------
 // "¿Cómo funciona?" — the real, truthful journey (no site visit).
 // ---------------------------------------------------------------------------
 
-const COMO_FUNCIONA_STEPS: { icon: Icon; title: string; desc: string }[] = [
-  {
-    icon: ShareNetwork,
-    title: 'Generás y compartís el link',
-    desc: 'Enviás el link a tu cliente; se cargan los datos del inmueble y el pago en línea.',
-  },
-  {
-    icon: ChartLineUp,
-    title: 'Estimación con datos de mercado',
-    desc: 'El motor cruza datos del mercado y genera la estimación de valor referencial, sin visita física.',
-  },
-  {
-    icon: SealCheck,
-    title: 'Revisión y firma',
-    desc: 'Un revisor de Leasefy revisa la estimación y firma el certificado.',
-  },
-  {
-    icon: DownloadSimple,
-    title: 'Certificado firmado',
-    desc: 'Descargás el certificado firmado y llega al correo de la inmobiliaria.',
-  },
+const COMO_FUNCIONA_STEPS: { icon: Icon; clave: string }[] = [
+  { icon: ShareNetwork, clave: 'step1' },
+  { icon: ChartLineUp, clave: 'step2' },
+  { icon: SealCheck, clave: 'step3' },
+  { icon: DownloadSimple, clave: 'step4' },
 ]
 
 // ---------------------------------------------------------------------------
@@ -115,12 +136,25 @@ const COMO_FUNCIONA_STEPS: { icon: Icon; title: string; desc: string }[] = [
 // ---------------------------------------------------------------------------
 
 function AvaluosSala() {
+  const { t } = useI18n()
   const [activeState, setActiveState] = useState('')
   const [page, setPage] = useState(0)
 
+  // Both CTAs end at the avalúo MICRO's wizard, whose origin comes from
+  // `NEXT_PUBLIC_AVALUO_API_URL`. When that is unset there is no URL to compose:
+  // `avaluosApi.solicitar()` throws AFTER the back has already minted an agency
+  // token, so the click cost a round-trip and returned nothing usable.
+  //
+  // `wizard-url.ts` states the contract: "Empty when the micro base is unset →
+  // callers must degrade (hide/disable the CTA)". `/avaluo/nuevo` already honours
+  // it ("no está disponible por ahora"); this panel did not — it offered two live
+  // buttons for a service it could not reach. Say so BEFORE the click, not after.
+  const servicioConfigurado = AVALUO_WIZARD_ORIGIN !== ''
+
   // Two distinct ways to request an avalúo, both backed by `avaluosApi.solicitar()`:
-  //  - Directo: the agency member does it themselves now → navigate to the wizard
-  //    in the same tab (a new-tab popup would be blocked after the await).
+  //  - Directo: the agency member does it themselves now → open the wizard in a
+  //    NEW tab so the panel (and the agency session) stays alive. See the anti-popup
+  //    pattern in `onSolicitarDirecto` for why the tab is opened synchronously.
   //    Independent loading state so it never blocks the link action's spinner.
   //  - Link para compartir: mint a SHAREABLE wizard link the agency sends to a
   //    third party (owner/client). Keep the last minted link so it can be
@@ -130,21 +164,25 @@ function AvaluosSala() {
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
-  // Main list — filterable by state, paginated.
-  const { avaluos, total, pageSize, isLoading, error } = useAgencyAvaluos({
+  // La lista de la agencia — filtrable por estado, paginada. UNA sola vez.
+  //
+  // Había una segunda llamada a este mismo hook para pintar «Actividad
+  // reciente», que mostraba las 5 más nuevas de la MISMA lista que ya estaba
+  // completa arriba. Costaba un segundo viaje al servidor (cuatro en total,
+  // porque StrictMode duplica cada uno) para no agregar ni un dato nuevo.
+  //
+  // Y mentía: no tenía rama de error, así que cuando la carga fallaba —hoy
+  // falla, 502: el micro de avalúos no responde— la sección de arriba decía
+  // «No pudimos cargar los avalúos» y la de abajo, con el MISMO pedido
+  // fallado, decía «Aún no hay actividad reciente». Dos frases que se
+  // contradicen a diez centímetros una de otra. Se fue entera.
+  //
+  // `errorCrudo` (el error tal cual, no su mensaje) es lo que necesita
+  // <EstadoDeDatos> para clasificar: un 502 no se cuenta igual que un 403.
+  const { avaluos, total, pageSize, isLoading, errorCrudo, refetch } = useAgencyAvaluos({
     state: activeState || undefined,
     page,
   })
-
-  // "Actividad reciente" — always the latest requests regardless of the filter.
-  const { avaluos: recentAll } = useAgencyAvaluos({ page: 0 })
-  const recent = useMemo(
-    () =>
-      [...recentAll]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 5),
-    [recentAll],
-  )
 
   const onStateChange = (state: string) => {
     setActiveState(state)
@@ -159,33 +197,45 @@ function AvaluosSala() {
       const { wizardUrl } = await avaluosApi.solicitar()
       return wizardUrl
     } catch (err) {
-      // Surface the back's Spanish message (incl. 422 agency missing email/name).
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : 'No pudimos solicitar el avalúo. Intentá de nuevo.'
+      // El mensaje del back se muestra tal cual (incl. el 422 de agencia sin
+      // correo/nombre): lo escribe él en español y es más específico que
+      // cualquier texto nuestro. La clave sólo cubre lo que no es ApiError.
+      const message = err instanceof ApiError ? err.message : t(`${NS}.errorSolicitar`)
       toast.error(message)
       return null
     }
   }
 
-  // Directo — the agency member fills it out right now: navigate to the wizard in
-  // the SAME tab. A `window.open(_, '_blank')` here would be popup-blocked: it runs
-  // after `await requestAvaluo()`, so the user-gesture context is already gone.
-  // Same-tab navigation after an await is never blocked. On success we leave
-  // `openingWizard` true so the button keeps showing "Abriendo asistente…" through
-  // the navigation; on failure the finally clause clears it and the toast is shown.
+  // Directo — the agency member fills it out right now, but we must NOT navigate the
+  // panel away: that would tear down their agency session context. Open the wizard in
+  // a NEW tab instead. The catch: `window.open(url, '_blank')` AFTER an await is
+  // popup-blocked, because the user-gesture context is gone by then. Anti-popup
+  // pattern: open a blank tab SYNCHRONOUSLY inside the click (gesture still alive),
+  // keep the handle, and point it at the wizard URL once the request resolves.
+  //  - request failed → close the placeholder tab (toast already shown).
+  //  - popup blocked even synchronously (handle is null) → degrade to same-tab nav so
+  //    the action still works; session preservation is best-effort in that case.
+  // `opener` is nulled before navigating (while the tab is still same-origin about:blank)
+  // to prevent the wizard tab from reaching back into the panel via window.opener.
   const onSolicitarDirecto = async () => {
     setOpeningWizard(true)
-    let navigating = false
+    const newTab = window.open('about:blank', '_blank')
     try {
       const wizardUrl = await requestAvaluo()
-      if (wizardUrl) {
-        navigating = true
+      if (!wizardUrl) {
+        newTab?.close()
+        return
+      }
+      if (newTab) {
+        newTab.opener = null
+        newTab.location.replace(wizardUrl)
+      } else {
         window.location.assign(wizardUrl)
       }
+    } catch {
+      newTab?.close()
     } finally {
-      if (!navigating) setOpeningWizard(false)
+      setOpeningWizard(false)
     }
   }
 
@@ -208,7 +258,7 @@ function AvaluosSala() {
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast.error('No pudimos copiar el link. Copialo manualmente.')
+      toast.error(t(`${NS}.errorCopiar`))
     }
   }
 
@@ -219,11 +269,10 @@ function AvaluosSala() {
     <div className="p-6 lg:p-8 space-y-6">
       {/* ── Header ─────────────────────────────────────────────────── */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Avalúos</h1>
-        <p className="text-sm text-muted-foreground max-w-2xl">
-          Estimación de valor referencial, 100% remota y asistida por IA. Sin visita física: el
-          certificado se genera con datos de mercado y lo firma un revisor de Leasefy.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          {t(`${NS}.salaTitulo`)}
+        </h1>
+        <p className="text-sm text-muted-foreground max-w-2xl">{t(`${NS}.salaDesc`)}</p>
       </header>
 
       {/* ── Solicitar un avalúo ────────────────────────────────────────
@@ -235,35 +284,63 @@ function AvaluosSala() {
         className="rounded-xl border border-border bg-card p-5 space-y-4"
         data-testid="avaluos-solicitar"
       >
-        <h2 className="text-base font-semibold text-foreground">Solicitar un avalúo</h2>
+        <h2 className="text-base font-semibold text-foreground">{t(`${NS}.solicitarTitle`)}</h2>
+
+        {!servicioConfigurado && (
+          <div
+            className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2"
+            data-testid="avaluos-servicio-no-configurado"
+          >
+            <WarningCircle
+              className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
+              aria-hidden="true"
+            />
+            <div>
+              <p className="text-sm font-medium text-warning">
+                {t(`${NS}.desconectadoTitulo`)}
+              </p>
+              {/* `solicitarUnavailable`, la MISMA frase que usa el vacío de la
+                  cola: el servicio está desconectado en un solo lugar del
+                  diccionario, no en dos que se despegan.
+
+                  Lo que decía antes —«Tus avalúos anteriores se siguen viendo
+                  más abajo»— era falso: la lista de abajo sale del MISMO
+                  servicio y falla por la misma razón (502). Un aviso no puede
+                  prometer lo que la pantalla incumple diez centímetros abajo. */}
+              <p className="text-body-sm text-fg-muted mt-0.5">
+                {t(`${NS}.solicitarUnavailable`)}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Directo — lo hago yo */}
           <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-4">
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">Solicitar avalúo</p>
+              <p className="text-sm font-semibold text-foreground">{t(`${NS}.solicitarCta`)}</p>
               <p className="text-xs text-muted-foreground leading-snug">
-                Abrí el asistente y cargá los datos del inmueble vos mismo.
+                {t(`${NS}.directoDetalle`)}
               </p>
             </div>
             <Button
               hideArrow
               className="mt-auto w-full"
               isLoading={openingWizard}
-              disabled={openingWizard}
+              disabled={openingWizard || !servicioConfigurado}
               onClick={onSolicitarDirecto}
               data-testid="avaluos-solicitar-directo-cta"
             >
-              {openingWizard ? 'Abriendo asistente…' : 'Solicitar avalúo'}
+              {openingWizard ? t(`${NS}.abriendoAsistente`) : t(`${NS}.solicitarCta`)}
             </Button>
           </div>
 
           {/* Link para compartir — se lo mando a un cliente */}
           <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-4">
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">Generar link para compartir</p>
+              <p className="text-sm font-semibold text-foreground">{t(`${NS}.linkCta`)}</p>
               <p className="text-xs text-muted-foreground leading-snug">
-                Enviá el link a tu cliente para que lo complete; el avalúo saldrá a nombre de tu
-                inmobiliaria.
+                {t(`${NS}.linkDetalle`)}
               </p>
             </div>
             <Button
@@ -271,12 +348,12 @@ function AvaluosSala() {
               variant="secondary"
               className="mt-auto w-full"
               isLoading={generatingLink}
-              disabled={generatingLink}
+              disabled={generatingLink || !servicioConfigurado}
               onClick={onGenerarLink}
               data-testid="avaluos-generar-link-cta"
             >
               <ShareNetwork className="size-4" />
-              {generatingLink ? 'Generando link…' : 'Generar link para compartir'}
+              {generatingLink ? t(`${NS}.generandoLink`) : t(`${NS}.linkCta`)}
             </Button>
           </div>
         </div>
@@ -291,15 +368,13 @@ function AvaluosSala() {
           className="rounded-xl border border-border bg-card p-4 space-y-3"
           data-testid="avaluos-share-link"
         >
-          <p className="text-sm text-muted-foreground">
-            Enviá este link a tu cliente; el avalúo saldrá a nombre de tu inmobiliaria.
-          </p>
+          <p className="text-sm text-muted-foreground">{t(`${NS}.linkListoDetalle`)}</p>
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               readOnly
               value={shareUrl}
-              aria-label="Link para compartir el avalúo"
+              aria-label={t(`${NS}.linkAria`)}
               onFocus={(e) => e.currentTarget.select()}
               className="flex-1 min-w-0 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-mono text-foreground truncate"
             />
@@ -308,18 +383,18 @@ function AvaluosSala() {
                 {copied ? (
                   <>
                     <Check className="size-4" weight="bold" />
-                    Copiado
+                    {t('common.copied')}
                   </>
                 ) : (
                   <>
                     <Copy className="size-4" />
-                    Copiar link para compartir
+                    {t(`${NS}.copiarLink`)}
                   </>
                 )}
               </Button>
               <Button asChild variant="outline" hideArrow>
                 <a href={shareUrl} target="_blank" rel="noopener noreferrer">
-                  Abrir ahora
+                  {t(`${NS}.abrirAhora`)}
                 </a>
               </Button>
             </div>
@@ -332,39 +407,49 @@ function AvaluosSala() {
         className="rounded-xl border border-border bg-card p-5 space-y-4"
         data-testid="avaluos-como-funciona"
       >
-        <h2 className="text-base font-semibold text-foreground">¿Cómo funciona?</h2>
+        <h2 className="text-base font-semibold text-foreground">
+          {t(`${NS}.comoFunciona.title`)}
+        </h2>
         <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {COMO_FUNCIONA_STEPS.map((step, i) => {
             const StepIcon = step.icon
             return (
-              <li key={step.title} className="space-y-1.5">
+              <li key={step.clave} className="space-y-1.5">
                 <div className="flex items-center gap-2">
                   <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
                     <StepIcon className="w-4 h-4 text-foreground" weight="duotone" aria-hidden="true" />
                   </span>
                   <span className="text-xs tabular-nums text-muted-foreground">{i + 1}</span>
                 </div>
-                <p className="text-sm font-semibold text-foreground leading-tight">{step.title}</p>
-                <p className="text-xs text-muted-foreground leading-snug">{step.desc}</p>
+                <p className="text-sm font-semibold text-foreground leading-tight">
+                  {t(`${NS}.comoFunciona.${step.clave}.title`)}
+                </p>
+                <p className="text-xs text-muted-foreground leading-snug">
+                  {t(`${NS}.comoFunciona.${step.clave}.desc`)}
+                </p>
               </li>
             )
           })}
         </ol>
         <p className="text-xs text-muted-foreground border-t border-border pt-3">
-          La revisión y la firma del certificado las hace un revisor de Leasefy. No se realiza
-          visita física al inmueble.
+          {t(`${NS}.firmaNota`)}
         </p>
       </div>
 
-      {/* ── Casos por etapa / Mis solicitudes ──────────────────────── */}
-      <section className="space-y-4" data-testid="avaluos-mis-solicitudes">
+      {/* ── Los avalúos de la agencia ───────────────────────────────────
+          NO se llama «Mis solicitudes»: ése es el nombre de la pestaña de al
+          lado (`/avaluos/cola`), que muestra OTRA cosa —los work-items del
+          agente— desde otro servicio. Dos lugares distintos con el mismo
+          nombre y datos distintos hacen imposible saber cuál mira uno. La
+          pestaña es un lugar; esta sección es un lugar distinto. */}
+      <section className="space-y-4" data-testid="avaluos-de-la-agencia">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-base font-semibold text-foreground">Mis solicitudes</h2>
+          <h2 className="text-base font-semibold text-foreground">{t(`${NS}.listaTitulo`)}</h2>
         </div>
 
         {/* State filter */}
         <div className="flex flex-wrap gap-2">
-          {STATE_TABS.map((tab) => {
+          {stateTabs(t).map((tab) => {
             const active = activeState === tab.value
             return (
               <button
@@ -384,37 +469,55 @@ function AvaluosSala() {
           })}
         </div>
 
-        {/* Content */}
-        {isLoading ? (
-          <div className="rounded-xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">
-            Cargando avalúos…
-          </div>
-        ) : error ? (
-          <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-6 text-sm text-destructive">
-            No pudimos cargar los avalúos. {error}
-          </div>
-        ) : avaluos.length === 0 ? (
-          <EmptyState
-            icon={FileMagnifyingGlass}
-            title="Todavía no hay avalúos"
-            description="Cuando solicites un avalúo, aparecerá aquí con su estado y valor de mercado."
-          />
-        ) : (
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {/* Los cuatro estados, en un solo marco.
+            Antes eran tres cajas distintas —una por estado— cada una con su
+            propio borde, así que el hueco cambiaba de forma según qué pasara.
+            Y el cartel de error escupía el mensaje del backend tal cual: la
+            agencia leía «Error 502». <EstadoDeDatos> los ordena (cargando →
+            falló → vacío → datos), clasifica el fallo y sólo ofrece reintentar
+            cuando reintentar puede cambiar algo. */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <EstadoDeDatos
+            cargando={isLoading}
+            error={errorCrudo}
+            vacio={avaluos.length === 0}
+            queEs={t(`${NS}.queEs`)}
+            onReintentar={() => void refetch()}
+            cuandoVacio={
+              // El vacío son DOS: nunca pediste uno, o el filtro de estado no
+              // deja pasar ninguno. Decir «todavía no hay avalúos» cuando hay
+              // tres firmados y estás mirando «Rechazado» es afirmar algo falso,
+              // y deja sin la única salida útil: quitar el filtro.
+              <SinDatos
+                hayFiltros={activeState !== ''}
+                queSon={t(`${NS}.queSon`)}
+                icono={FileMagnifyingGlass}
+                titulo={t(`${NS}.vacioTitulo`)}
+                descripcion={t(`${NS}.vacioDesc`)}
+                onLimpiarFiltros={() => onStateChange('')}
+              />
+            }
+          >
             {/* Table header */}
             <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 px-4 py-2.5 bg-muted/40 border-b border-border">
-              <span className="text-xs font-medium text-muted-foreground">Estado</span>
-              <span className="text-xs font-medium text-muted-foreground">Método</span>
-              <span className="text-xs font-medium text-muted-foreground text-right">Valor</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                {t(`${NS}.col.estado`)}
+              </span>
+              <span className="text-xs font-medium text-muted-foreground">
+                {t(`${NS}.col.propietario`)}
+              </span>
+              <span className="text-xs font-medium text-muted-foreground text-right">
+                {t(`${NS}.col.valor`)}
+              </span>
               <span className="text-xs font-medium text-muted-foreground hidden sm:block text-right">
-                Creado
+                {t(`${NS}.col.creado`)}
               </span>
             </div>
 
             {/* Rows */}
             <ul role="list" className="divide-y divide-neutral-100 dark:divide-neutral-800">
               {avaluos.map((item) => {
-                const meta = stateMeta(item.state)
+                const meta = stateMeta(item.state, t)
                 return (
                   <li
                     key={item.id}
@@ -422,9 +525,14 @@ function AvaluosSala() {
                   >
                     <Badge variant={meta.variant}>{meta.label}</Badge>
 
-                    <span className="text-xs font-mono uppercase tracking-wide text-muted-foreground truncate">
-                      {item.method || '—'}
-                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm text-foreground truncate">
+                        {item.ownerName?.trim() || t(`${NS}.sinNombre`)}
+                      </p>
+                      <p className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground truncate">
+                        {item.method || '—'}
+                      </p>
+                    </div>
 
                     <span className="text-sm font-medium tabular-nums text-right whitespace-nowrap">
                       {item.valueCop == null ? '—' : formatCurrency(item.valueCop)}
@@ -441,8 +549,11 @@ function AvaluosSala() {
             {/* Pagination */}
             {(hasPrev || hasNext) && (
               <div className="flex items-center justify-between gap-4 px-4 py-3 border-t border-border">
+                {/* Singular y plural son DOS claves, no una con `{{n}} avalúo(s)`:
+                    el inglés pluraliza distinto y el paréntesis se lee mal en
+                    los dos idiomas. */}
                 <span className="text-xs text-muted-foreground">
-                  {total} {total === 1 ? 'avalúo' : 'avalúos'}
+                  {total === 1 ? t(`${NS}.conteoUno`) : t(`${NS}.conteo`, { n: total })}
                 </span>
                 <div className="flex items-center gap-2">
                   <Button
@@ -452,7 +563,7 @@ function AvaluosSala() {
                     disabled={!hasPrev}
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                   >
-                    Anterior
+                    {t('common.previous')}
                   </Button>
                   <Button
                     variant="outline"
@@ -461,44 +572,13 @@ function AvaluosSala() {
                     disabled={!hasNext}
                     onClick={() => setPage((p) => p + 1)}
                   >
-                    Siguiente
+                    {t('common.next')}
                   </Button>
                 </div>
               </div>
             )}
-          </div>
-        )}
-      </section>
-
-      {/* ── Actividad reciente ─────────────────────────────────────── */}
-      <section
-        className="rounded-xl border border-border bg-card p-5 space-y-3"
-        data-testid="avaluos-actividad-reciente"
-      >
-        <h2 className="text-sm font-semibold text-foreground">Actividad reciente</h2>
-        {recent.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Aún no hay actividad reciente.</p>
-        ) : (
-          <ul className="divide-y divide-border">
-            {recent.map((item) => {
-              const meta = stateMeta(item.state)
-              return (
-                <li key={item.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center gap-3">
-                  <Badge variant={meta.variant}>{meta.label}</Badge>
-                  <span className="flex-1 min-w-0 text-sm text-foreground truncate">
-                    {item.city || 'Inmueble'} ·{' '}
-                    <span className="text-muted-foreground">
-                      {item.valueCop == null ? 'Sin valor' : formatCurrency(item.valueCop)}
-                    </span>
-                  </span>
-                  <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
-                    {formatDate(item.createdAt)}
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
-        )}
+          </EstadoDeDatos>
+        </div>
       </section>
     </div>
   )

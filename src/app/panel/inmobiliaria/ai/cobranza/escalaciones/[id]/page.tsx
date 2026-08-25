@@ -26,6 +26,7 @@ import { EscalationResolveModal } from '@/components/inmobiliaria/cobranza/Escal
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Badge } from '@/components/ui'
 import { MonoLabel } from '@leasefy/cadence'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 function EscalationDetailContent() {
   const params = useParams()
@@ -62,7 +63,26 @@ function EscalationDetailContent() {
     return <PageSkeleton variant="detail" />
   }
 
-  if (error || !data) {
+    /*
+   * «No existe» y «no se pudo cargar» eran la misma pantalla: `if (!x || error)`.
+   * Le decía a alguien con mala conexión que esta escalación había sido eliminada, y sin
+   * ofrecer reintentar — porque sobre algo que no existe reintentar no tiene
+   * sentido. Las dos señales ya estaban por separado; se juntaban a mano.
+   */
+  if (error) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+        <FalloDeCarga
+          error={error}
+          queEs="esta escalación"
+            onReintentar={() => void refetch()}
+          volverA={{ label: 'Escalaciones', href: '/panel/inmobiliaria/ai/cobranza/escalaciones' }}
+        />
+      </div>
+    );
+  }
+
+  if (!data) {
     return (
       <div className="p-4 md:p-6">
         <Button

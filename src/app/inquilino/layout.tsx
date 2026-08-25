@@ -1,15 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Toaster } from '@/components/ui/toast';
-import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass } from '@phosphor-icons/react';
+import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck, Target } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
 import { SidebarProvider, useSidebar } from '@/lib/context/SidebarContext';
 import { TenantProfileProvider, useTenantProfile } from '@/lib/context/TenantProfileContext';
 import { I18nProvider, useI18n } from '@/lib/i18n';
-import { FooterCompact } from '@/components/layout/FooterCompact';
 import { cn } from '@/lib/utils';
 
 // Define the setup steps (2 steps: basic info + preferences. Income is collected during application)
@@ -28,13 +26,23 @@ function useTenantNavItems() {
 
   return [
     { label: t('nav.panel'), href: '/inquilino', icon: SquaresFour, exact: true },
+    // Su catálogo va ANTES de Explorar: lo primero es lo que puede tomar,
+    // y hasta ahora no había forma de llegar acá sin saberse la URL.
+    // `Target` y no `Sparkle`: las chispas están reservadas para lo que hace
+    // IA en todo el producto, y esto no la usa — es un filtro por su tope.
+    { label: locale === 'es' ? 'Para ti' : 'For you', href: '/inquilino/para-ti', icon: Target },
     { label: locale === 'es' ? 'Explorar' : 'Explore', href: '/inquilino/explorar', icon: MagnifyingGlass },
+    // Va temprano a propósito: la aprobación es lo primero del recorrido —
+    // sin ella no se puede postular a nada (docs/VOCABULARIO.md).
+    { label: t('nav.approval'), href: '/inquilino/aprobacion', icon: SealCheck },
     { label: t('nav.myRental'), href: '/inquilino/arriendo', icon: House },
     { label: t('nav.applications'), href: '/inquilino/aplicaciones', icon: FileMagnifyingGlass },
     { label: t('nav.contracts'), href: '/inquilino/contratos', icon: Handshake },
     { label: t('nav.payments'), href: '/inquilino/pagos', icon: CreditCard },
     { label: t('nav.documents'), href: '/inquilino/documentos', icon: FileText },
-    { label: t('nav.messages'), href: '/inquilino/mensajes', icon: Chat, badge: 2 },
+    // Sin `badge`: el 2 estaba escrito a mano. La pantalla de Mensajes dice
+    // "Sin conversaciones" mientras el sidebar prometía dos sin leer.
+    { label: t('nav.messages'), href: '/inquilino/mensajes', icon: Chat },
   ];
 }
 
@@ -111,7 +119,10 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
         navItems={navItems}
         logo={{
           title: 'Arriendo',
-          href: '/inquilino',
+          // Mismo criterio que en los otros dos paneles: el logo es la firma
+          // del producto y sale a la landing. El home del panel ya vive en el
+          // nav ("Panel"), no hace falta un segundo enlace al mismo lugar.
+          href: '/',
         }}
         profileCompletion={isLoaded ? {
           percentage,
@@ -131,10 +142,10 @@ function InquilinoLayoutInner({ children }: { children: React.ReactNode }) {
         <main id="main-content" tabIndex={-1}>
           {children}
         </main>
-        {/* Compact footer on every tenant window (visible but small). */}
-        <FooterCompact />
       </div>
-      <Toaster position="top-right" />
+      {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
+          <ProtectedRoute>: acá adentro se perdía todo toast emitido mientras el guard
+          resuelve. No montés otro: sonner duplica el toast por cada Toaster montado. */}
     </div>
   );
 }

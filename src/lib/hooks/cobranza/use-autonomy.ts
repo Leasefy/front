@@ -17,6 +17,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useRefetchOnVisible } from '@/lib/hooks/useRefetchOnVisible'
 import type { components } from '@/lib/api/generated/agent'
 
@@ -54,10 +55,7 @@ export function useAutonomy(): UseAutonomyResult {
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/autonomy`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/autonomy`)
       if (res.status === 404) {
         setNotProvisioned(true)
         setData(null)
@@ -96,7 +94,7 @@ export function useAutonomy(): UseAutonomyResult {
       if (!agentUrl) throw new Error('NEXT_PUBLIC_AGENT_URL not configured')
       if (!agencyId) throw new Error('Agency not available')
 
-      const res = await globalThis.fetch(
+      const res = await agentFetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/autonomy`,
         {
           method: 'PUT',

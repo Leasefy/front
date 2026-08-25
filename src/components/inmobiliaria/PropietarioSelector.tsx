@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MagnifyingGlass,
@@ -24,6 +24,13 @@ interface PropietarioSelectorProps {
   onChange: (id: string, data?: PropietarioFormData) => void;
   newPropietarioData?: PropietarioFormData;
   className?: string;
+  /**
+   * A persist error from the wizard's "Siguiente" (T-0011: create/update
+   * happens on the step transition, not on this form's own submit). When
+   * set, the create form is force-reopened so the error is visible on the
+   * right field (e.g. a 409 duplicate-document conflict).
+   */
+  serverError?: { field: keyof PropietarioFormData; message: string } | null;
 }
 
 /**
@@ -36,11 +43,18 @@ export function PropietarioSelector({
   onChange,
   newPropietarioData,
   className,
+  serverError,
 }: PropietarioSelectorProps) {
   const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [showNewForm, setShowNewForm] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+
+  // Reopen the form so a persist failure (409 duplicate document, etc.) is
+  // visible next to the field it names instead of getting lost behind the
+  // collapsed "new owner" summary card.
+  useEffect(() => {
+    if (serverError) setShowNewForm(true);
+  }, [serverError]);
 
   // Filter propietarios by search
   const filteredPropietarios = useMemo(() => {
@@ -49,7 +63,7 @@ export function PropietarioSelector({
     return propietarios.filter(
       (p) =>
         p.name.toLowerCase().includes(query) ||
-        p.email.toLowerCase().includes(query) ||
+        (p.email?.toLowerCase().includes(query) ?? false) ||
         p.documentNumber.includes(query)
     );
   }, [propietarios, search]);
@@ -60,7 +74,6 @@ export function PropietarioSelector({
 
     // Close new form if open
     setShowNewForm(false);
-    setIsCreating(false);
 
     // Select propietario
     onChange(propietario.id);
@@ -70,24 +83,36 @@ export function PropietarioSelector({
     // Clear any existing selection
     onChange('');
     setShowNewForm(true);
-    setIsCreating(true);
   };
 
   const handleCancelNewPropietario = () => {
     setShowNewForm(false);
-    setIsCreating(false);
   };
 
+  /**
+   * Stages the form data locally — this button's role stays "collect and
+   * stage"; persistence happens on the wizard's "Siguiente" (T-0011, see
+   * ConsignacionWizard.persistOwnerIfNeeded).
+   *
+   * If `value` is already a REAL id (not a `new-*` temp id) with staged
+   * `newPropietarioData`, this is an edit of an owner the wizard already
+   * created in this session (reopened via "Editar", below) — keep the same
+   * id so the next "Siguiente" PUTs an update instead of POSTing a
+   * duplicate. Otherwise it's a fresh create: generate a temp id.
+   */
   const handleNewPropietarioSubmit = async (data: PropietarioFormData) => {
-    // Generate a temporary ID for the new propietario
-    const tempId = `new-${Date.now()}`;
-    onChange(tempId, data);
+    const isEditingPersisted = Boolean(value) && !value?.startsWith('new-');
+    const id = isEditingPersisted ? (value as string) : `new-${Date.now()}`;
+    onChange(id, data);
     setShowNewForm(false);
-    setIsCreating(true);
   };
 
-  // Check if a new propietario was created
-  const hasNewPropietario = isCreating && value?.startsWith('new-') && newPropietarioData;
+  // True whenever the current selection came from OUR OWN create/edit form
+  // — independent of whether it's been persisted yet (`value` may still be
+  // a temp `new-*` id, or the real UUID once "Siguiente" persists it) and
+  // independent of remounts (this component unmounts when the wizard moves
+  // off step 1, so any local "just created" flag would reset on return).
+  const hasNewPropietario = Boolean(value) && Boolean(newPropietarioData);
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -169,9 +194,10 @@ export function PropietarioSelector({
                 variant="link"
                 hideArrow
                 onClick={() => {
-                  setIsCreating(false);
+                  // Reopen the form WITHOUT clearing `value` — keeping the
+                  // same id (temp or already-persisted) is what lets a
+                  // resubmit update instead of creating a duplicate.
                   setShowNewForm(true);
-                  onChange('');
                 }}
                 className="shrink-0"
               >
@@ -206,8 +232,10 @@ export function PropietarioSelector({
               </div>
               <PropietarioForm
                 mode="create"
+                initialFormData={newPropietarioData}
                 onSubmit={handleNewPropietarioSubmit}
                 onCancel={handleCancelNewPropietario}
+                serverError={serverError}
               />
             </div>
           </motion.div>

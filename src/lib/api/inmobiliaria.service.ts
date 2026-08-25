@@ -50,9 +50,35 @@ import type {
   AgencyInviteResult,
   AgencyOnboardingStatus,
 } from '@/lib/types/inmobiliaria';
+import { adaptarDispersion, type DispersionDelBack } from './dispersion-adapter';
+import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
+import type { BankCode, AccountType } from '@/lib/types/payment-accounts';
 
 const BASE = '/inmobiliaria';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+
+/**
+ * La lista, venga envuelta en `{ data }` o pelada.
+ *
+ * ⚠️ Esto NO es tolerancia por gusto: **cinco tablas del panel decían «todavía
+ * no tenés nada» con los datos ahí**. El código hacía `res.data` sobre lo que
+ * el back devuelve como array pelado, `[].data` es `undefined`, y el hook lo
+ * pinta como lista vacía. Medido en el CRM de Propietarios: la respuesta traía
+ * tres propietarios y la pantalla mostraba «Todavía no tenés propietarios».
+ *
+ * Es la tercera vez que la misma confusión de forma tumba una pantalla, y
+ * ninguna de las tres se cayó: se veía como «no hay datos», que es indistinguible
+ * de la verdad. Un `.data` a secas vuelve a romperse en silencio el día que un
+ * endpoint cambie de forma; esto no.
+ *
+ * Lo que sí falla ruidosamente es una forma que no es ninguna de las dos —
+ * ahí el problema es real y tiene que verse.
+ */
+function lista<T>(res: { data?: T[] } | T[] | null | undefined): T[] {
+  if (Array.isArray(res)) return res;
+  if (res && Array.isArray(res.data)) return res.data;
+  return [];
+}
 
 // Permission response types
 export interface UserPermissionsResponse {
@@ -79,6 +105,96 @@ export interface MemberPermissionsResponse {
 // Propietarios
 // ============================================================================
 
+/**
+ * contract.md §3.2 (T-0014) — front slug -> backend `ColombianBank` wire code.
+ * NOT a `.toUpperCase()` of the slug: `colpatria` -> `SCOTIABANK` and
+ * `cajasocial` -> `BANCO_CAJA_SOCIAL` break that assumption. Values come from
+ * `back/src/common/enums/colombian-banks.enum.ts` (read-only reference — that
+ * enum is owned by the back and is not touched here).
+ */
+const BANK_CODE_TO_WIRE: Record<BankCode, string> = {
+  bancolombia: 'BANCOLOMBIA',
+  davivienda: 'DAVIVIENDA',
+  bbva: 'BBVA',
+  bogota: 'BANCO_BOGOTA',
+  popular: 'BANCO_POPULAR',
+  occidente: 'BANCO_OCCIDENTE',
+  colpatria: 'SCOTIABANK',
+  cajasocial: 'BANCO_CAJA_SOCIAL',
+  falabella: 'BANCO_FALABELLA',
+  itau: 'ITAU',
+  avvillas: 'BANCO_AV_VILLAS',
+  bancoomeva: 'BANCOOMEVA',
+  pichincha: 'BANCO_PICHINCHA',
+};
+
+/** contract.md §3.3 (T-0014) — front account type -> backend enum. */
+const ACCOUNT_TYPE_TO_WIRE: Record<AccountType, string> = {
+  savings: 'AHORROS',
+  checking: 'CORRIENTE',
+};
+
+/**
+ * Translates a front `BankCode` slug to the backend's `ColombianBank` code.
+ * No coercion, no default — an unmapped slug is a bug (a new bank added to
+ * `COLOMBIAN_BANKS` without a wire entry here) and must surface loudly, the
+ * same rule T-0011 established for `PropertyType` (see
+ * `properties.mapper.ts` / `ConsignacionWizard.tsx`'s `TYPE_TO_BACKEND` throw).
+ */
+function mapBankCodeToWire(code: BankCode): string {
+  const wire = BANK_CODE_TO_WIRE[code];
+  if (!wire) {
+    throw new Error(
+      `Banco no soportado: "${code}". Este banco no tiene un código válido del backend — revisá BANK_CODE_TO_WIRE en inmobiliaria.service.ts.`,
+    );
+  }
+  return wire;
+}
+
+/** Translates a front account type to the backend's `AHORROS`/`CORRIENTE` enum. */
+function mapAccountTypeToWire(type: AccountType): string {
+  const wire = ACCOUNT_TYPE_TO_WIRE[type];
+  if (!wire) {
+    throw new Error(`Tipo de cuenta no soportado: "${type}".`);
+  }
+  return wire;
+}
+
+/**
+ * Maps the front's bank fields (`bankCode`, `accountType`, `accountNumber`,
+ * `accountHolder`) onto the backend DTO's wire fields (`bankCode`,
+ * `bankAccountType`, `bankAccountNumber`, `bankAccountHolder`).
+ *
+ * Renaming alone is not enough — contract.md §1: the back runs
+ * `forbidNonWhitelisted: true`, so the front's field names 400 on their own,
+ * AND the *values* (bank slug, account type) don't line up 1:1 with the
+ * backend enums either. `bankName` is never sent: the back derives it from
+ * `bankCode` server-side (contract.md §3.1) and it is a free-text field that
+ * gets printed verbatim on the owner's payout document — a stale/typo'd
+ * front value must never reach it.
+ */
+function mapPropietarioBankFields<T extends Partial<PropietarioFormData>>(
+  data: T,
+): Omit<T, 'bankCode' | 'accountType' | 'accountNumber' | 'accountHolder'> & Record<string, unknown> {
+  const { bankCode, accountType, accountNumber, accountHolder, ...rest } = data;
+  const payload: Record<string, unknown> = { ...rest };
+
+  if (bankCode) {
+    payload.bankCode = mapBankCodeToWire(bankCode);
+  }
+  if (accountType) {
+    payload.bankAccountType = mapAccountTypeToWire(accountType);
+  }
+  if (accountNumber !== undefined) {
+    payload.bankAccountNumber = accountNumber;
+  }
+  if (accountHolder !== undefined) {
+    payload.bankAccountHolder = accountHolder;
+  }
+
+  return payload as Omit<T, 'bankCode' | 'accountType' | 'accountNumber' | 'accountHolder'> & Record<string, unknown>;
+}
+
 export const propietariosApi = {
   async getAll(params?: { page?: number; limit?: number; search?: string; city?: string; tags?: string }): Promise<Propietario[]> {
     const query = new URLSearchParams();
@@ -88,8 +204,8 @@ export const propietariosApi = {
     if (params?.city) query.set('city', params.city);
     if (params?.tags) query.set('tags', params.tags);
     const qs = query.toString();
-    const res = await apiClient.get<{ data: Propietario[] }>(`${BASE}/propietarios${qs ? `?${qs}` : ''}`);
-    return res.data;
+    const res = await apiClient.get<{ data: Propietario[] } | Propietario[]>(`${BASE}/propietarios${qs ? `?${qs}` : ''}`);
+    return lista(res);
   },
 
   async getById(id: string): Promise<Propietario> {
@@ -97,11 +213,11 @@ export const propietariosApi = {
   },
 
   async create(data: PropietarioFormData): Promise<Propietario> {
-    return apiClient.post<Propietario>(`${BASE}/propietarios`, data);
+    return apiClient.post<Propietario>(`${BASE}/propietarios`, mapPropietarioBankFields(data));
   },
 
   async update(id: string, data: Partial<PropietarioFormData>): Promise<Propietario> {
-    return apiClient.patch<Propietario>(`${BASE}/propietarios/${id}`, data);
+    return apiClient.patch<Propietario>(`${BASE}/propietarios/${id}`, mapPropietarioBankFields(data));
   },
 
   async delete(id: string): Promise<void> {
@@ -109,18 +225,18 @@ export const propietariosApi = {
   },
 
   async getConsignaciones(id: string): Promise<Consignacion[]> {
-    const res = await apiClient.get<{ data: Consignacion[] }>(`${BASE}/propietarios/${id}/consignaciones`);
-    return res.data;
+    const res = await apiClient.get<{ data: Consignacion[] } | Consignacion[]>(`${BASE}/propietarios/${id}/consignaciones`);
+    return lista(res);
   },
 
   async getCobros(id: string): Promise<Cobro[]> {
-    const res = await apiClient.get<{ data: Cobro[] }>(`${BASE}/propietarios/${id}/cobros`);
-    return res.data;
+    const res = await apiClient.get<{ data: Cobro[] } | Cobro[]>(`${BASE}/propietarios/${id}/cobros`);
+    return lista(res);
   },
 
   async getDispersiones(id: string): Promise<Dispersion[]> {
-    const res = await apiClient.get<{ data: Dispersion[] }>(`${BASE}/propietarios/${id}/dispersiones`);
-    return res.data;
+    const res = await apiClient.get<{ data: Dispersion[] } | Dispersion[]>(`${BASE}/propietarios/${id}/dispersiones`);
+    return lista(res);
   },
 
   async getExtracto(id: string, month?: string): Promise<ExtractoPropietario> {
@@ -135,8 +251,8 @@ export const propietariosApi = {
 
 export const agentesApi = {
   async getAll(): Promise<Agente[]> {
-    const res = await apiClient.get<{ data: Agente[] }>(`${BASE}/agentes`);
-    return res.data;
+    const res = await apiClient.get<{ data: Agente[] } | Agente[]>(`${BASE}/agentes`);
+    return lista(res);
   },
 
   async getById(id: string): Promise<Agente> {
@@ -156,13 +272,13 @@ export const agentesApi = {
   },
 
   async getConsignaciones(id: string): Promise<Consignacion[]> {
-    const res = await apiClient.get<{ data: Consignacion[] }>(`${BASE}/agentes/${id}/consignaciones`);
-    return res.data;
+    const res = await apiClient.get<{ data: Consignacion[] } | Consignacion[]>(`${BASE}/agentes/${id}/consignaciones`);
+    return lista(res);
   },
 
   async getPipeline(id: string): Promise<PipelineItem[]> {
-    const res = await apiClient.get<{ data: PipelineItem[] }>(`${BASE}/agentes/${id}/pipeline`);
-    return res.data;
+    const res = await apiClient.get<{ data: PipelineItem[] } | PipelineItem[]>(`${BASE}/agentes/${id}/pipeline`);
+    return lista(res);
   },
 
   async getMetrics(id: string): Promise<Agente['metrics']> {
@@ -170,8 +286,8 @@ export const agentesApi = {
   },
 
   async getLeaderboard(): Promise<Agente[]> {
-    const res = await apiClient.get<{ data: Agente[] }>(`${BASE}/agentes/leaderboard`);
-    return res.data;
+    const res = await apiClient.get<{ data: Agente[] } | Agente[]>(`${BASE}/agentes/leaderboard`);
+    return lista(res);
   },
 };
 
@@ -225,6 +341,17 @@ export type ConsignacionUpdateInput = Partial<ConsignacionFormData> & {
   currentTenantName?: string;
   leaseEndDate?: string;
   consignmentContractUrl?: string;
+  /**
+   * El inmueble sobre el que corre el mandato. Ahora es llave foránea en la
+   * base: un id inventado se rechaza en vez de guardarse.
+   */
+  propertyId?: string;
+  /**
+   * `User.id` del agente asignado — NO el `Agente.id` del front, que es un
+   * `AgencyMember.id`. Sale de `Agente.userId`, que el back expone desde
+   * 2026-08-16. Ver la nota de arriba sobre `agenteId`.
+   */
+  agenteUserId?: string;
 };
 
 function toConsignacionPayload(data: ConsignacionUpdateInput): Record<string, unknown> {
@@ -246,8 +373,16 @@ export const consignacionesApi = {
     agenteId?: string;
     minRent?: number;
     maxRent?: number;
+    /**
+     * El mandato de UN inmueble. `agencyId + propertyId` es único en la base,
+     * así que devuelve cero o un elemento. Lo usan las pantallas que sólo
+     * tienen el id del inmueble para llegar al detalle, que abre por
+     * consignación.
+     */
+    propertyId?: string;
   }): Promise<Consignacion[]> {
     const query = new URLSearchParams();
+    if (params?.propertyId) query.set('propertyId', params.propertyId);
     if (params?.status) query.set('status', params.status);
     if (params?.propertyType) query.set('propertyType', params.propertyType);
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
@@ -268,7 +403,39 @@ export const consignacionesApi = {
     return normalizeConsignacion(raw);
   },
 
-  async create(data: ConsignacionFormData & { contractDate: string }): Promise<Consignacion> {
+  /**
+   * El mandato de `/inmuebles/:id`, venga el id que venga.
+   *
+   * `:id` es un id de CONSIGNACIÓN — así lo dice `docs/VOCABULARIO.md` y así lo
+   * arman las pantallas del portafolio. Pero hay enlaces que sólo tienen el id
+   * del INMUEBLE y entran igual: la paleta de comandos, el matching del
+   * `CandidateDrawer` y —esto se descubrió el 2026-08-16 en el panel real— la
+   * lista de **Postulaciones**, que enlazaba con `c.propertyId` y dejaba a cada
+   * fila muriendo en «No encontramos esa propiedad».
+   *
+   * `agencyId + propertyId` es único, así que preguntar por inmueble devuelve
+   * cero o uno. Se intenta primero por mandato —el caso normal, una sola
+   * petición— y sólo si no está se pregunta por inmueble.
+   */
+  async getByIdOrPropertyId(id: string): Promise<Consignacion> {
+    try {
+      return await this.getById(id);
+    } catch (error) {
+      const porInmueble = await this.getAll({ propertyId: id });
+      // Si tampoco es un inmueble de esta agencia, el error que vale es el
+      // primero —«no existe esa consignación»—, no «la lista vino vacía».
+      if (porInmueble.length === 0) throw error;
+      return porInmueble[0];
+    }
+  },
+
+  async create(
+    data: ConsignacionFormData & {
+      contractDate: string;
+      propertyId?: string;
+      agenteUserId?: string;
+    },
+  ): Promise<Consignacion> {
     const raw = await apiClient.post<RawConsignacion>(
       `${BASE}/consignaciones`,
       toConsignacionPayload(data),
@@ -453,7 +620,7 @@ export const cobrosApi = {
     paymentMethod: string;
     paymentReference?: string;
   }): Promise<Cobro> {
-    return apiClient.patch<Cobro>(`${BASE}/cobros/${id}/pay`, payment);
+    return apiClient.post<Cobro>(`${BASE}/cobros/${id}/payment`, payment);
   },
 
   async getSummary(month: string): Promise<CobroSummary> {
@@ -495,7 +662,7 @@ export const cobrosApi = {
   },
 
   async sendReminder(id: string): Promise<void> {
-    await apiClient.post(`${BASE}/cobros/${id}/reminder`, {});
+    await apiClient.put(`${BASE}/cobros/${id}/send-reminder`);
   },
 };
 
@@ -515,6 +682,8 @@ export interface AgencyAvaluoItem {
   valueCop: number | null;
   method: string;
   city: string | null;
+  /** Owner/client the certificate is issued for; null when the back has no name on file. */
+  ownerName: string | null;
   identity: string;
   submissionId: string | null;
   createdAt: string;
@@ -616,34 +785,82 @@ export const dispersionesApi = {
     if (params?.status) query.set('status', params.status);
     if (params?.propietarioId) query.set('propietarioId', params.propietarioId);
     const qs = query.toString();
-    const res = await apiClient.get<{ data: Dispersion[] }>(`${BASE}/dispersiones${qs ? `?${qs}` : ''}`);
-    return res.data;
+    /*
+     * El back devuelve el array PELADO. Pedir `res.data` sobre un array da
+     * `undefined`, y el hook lo servía como lista vacía: la pantalla decía
+     * «No hay dispersiones registradas» con dispersiones en la base.
+     */
+    const filas = await apiClient.get<DispersionDelBack[]>(
+      `${BASE}/dispersiones${qs ? `?${qs}` : ''}`,
+    );
+    return filas.map(adaptarDispersion);
   },
 
   async getById(id: string): Promise<Dispersion> {
-    return apiClient.get<Dispersion>(`${BASE}/dispersiones/${id}`);
+    return adaptarDispersion(
+      await apiClient.get<DispersionDelBack>(`${BASE}/dispersiones/${id}`),
+    );
   },
 
-  async create(data: Partial<Dispersion>): Promise<Dispersion> {
-    return apiClient.post<Dispersion>(`${BASE}/dispersiones`, data);
+  /**
+   * Genera las dispersiones del mes. **El back calcula los montos**, no el
+   * navegador: descuenta la comisión sobre el canon recaudado, resta lo que
+   * paga el propietario y deja fuera la administración de la copropiedad.
+   *
+   * Antes esto era un `POST /dispersiones` con los totales ya calculados en el
+   * cliente. La ruta no existía —así que nunca guardó nada— pero de haber
+   * existido habría escrito los números viejos, salteándose la liquidación.
+   */
+  async generate(
+    month: string,
+    /**
+     * A quiénes. Sin la lista, el mes entero.
+     *
+     * El asistente deja destildar propietarios; esa decisión se quedaba en el
+     * navegador y `generate` tomaba el mes completo, así que destildar a
+     * alguien no lo excluía de nada.
+     */
+    propietarioIds?: string[],
+  ): Promise<{
+    month: string;
+    totalPropietarios: number;
+    created: number;
+    skipped: number;
+    /** Los del mes que quedaron fuera por la selección. */
+    noElegidos: number;
+  }> {
+    return apiClient.post(`${BASE}/dispersiones/generate`, {
+      month,
+      ...(propietarioIds ? { propietarioIds } : {}),
+    });
   },
 
+  /** El back expone PUT, no PATCH. Con PATCH la llamada moría en 404. */
   async process(id: string): Promise<Dispersion> {
-    return apiClient.patch<Dispersion>(`${BASE}/dispersiones/${id}/process`, {});
+    return adaptarDispersion(
+      await apiClient.put<DispersionDelBack>(
+        `${BASE}/dispersiones/${id}/process`,
+        {},
+      ),
+    );
   },
 
-  async preview(propietarioId: string, period: string): Promise<Dispersion> {
-    return apiClient.get<Dispersion>(`${BASE}/dispersiones/preview?propietarioId=${propietarioId}&period=${period}`);
+  /**
+   * Lo que se giraría este mes, **calculado por el back y sin escribir nada**.
+   *
+   * El asistente lo calculaba en el navegador y le salían otros números: la
+   * comisión sobre lo pagado en vez de sobre el canon, un 10% inventado cuando
+   * no encontraba la consignación, sin conceptos, y «Propietario desconocido».
+   */
+  async preview(month: string): Promise<VistaPreviaDeDispersiones> {
+    return apiClient.get<VistaPreviaDeDispersiones>(
+      `${BASE}/dispersiones/preview?month=${month}`,
+    );
   },
 
   async getSummary(month: string): Promise<DispersionSummary> {
-    const res = await apiClient.get<{ data: DispersionSummary }>(`${BASE}/dispersiones/summary?month=${month}`);
-    return res.data;
-  },
-
-  async getExtracto(propietarioId: string, month?: string): Promise<ExtractoPropietario> {
-    const qs = month ? `?month=${month}` : '';
-    return apiClient.get<ExtractoPropietario>(`${BASE}/dispersiones/${propietarioId}/extracto${qs}`);
+    // Sin envoltorio `{ data }`: el back responde el objeto directo.
+    return apiClient.get<DispersionSummary>(`${BASE}/dispersiones/summary?month=${month}`);
   },
 };
 
@@ -657,8 +874,8 @@ export const mantenimientoApi = {
     if (params?.status) query.set('status', params.status);
     if (params?.consignacionId) query.set('consignacionId', params.consignacionId);
     const qs = query.toString();
-    const res = await apiClient.get<{ data: SolicitudMantenimiento[] }>(`${BASE}/mantenimiento${qs ? `?${qs}` : ''}`);
-    return res.data;
+    const res = await apiClient.get<{ data: SolicitudMantenimiento[] } | SolicitudMantenimiento[]>(`${BASE}/mantenimiento${qs ? `?${qs}` : ''}`);
+    return lista(res);
   },
 
   async getById(id: string): Promise<SolicitudMantenimiento> {
@@ -673,17 +890,33 @@ export const mantenimientoApi = {
     return apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}`, data);
   },
 
+  /**
+   * The backend has no generic `/status` route — it exposes explicit transitions
+   * (@Put :id/approve | :id/complete | :id/cancel). Map the target status to the
+   * matching endpoint. Statuses without a backend transition (reported / quoted /
+   * in_progress) cannot be set directly and throw.
+   */
   async changeStatus(id: string, status: string): Promise<SolicitudMantenimiento> {
-    return apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/status`, { status });
+    switch (status) {
+      case 'approved':
+        return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/approve`);
+      case 'completed':
+        // `completionNotes`/`completionPhotoUrls` are optional and not collected here.
+        return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/complete`, {});
+      case 'cancelled':
+        return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/cancel`);
+      default:
+        throw new Error(`Unsupported maintenance status transition: ${status}`);
+    }
   },
 
   /** Alias for changeStatus used by operaciones page */
   async updateStatus(id: string, status: string): Promise<SolicitudMantenimiento> {
-    return apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/status`, { status });
+    return mantenimientoApi.changeStatus(id, status);
   },
 
   async approveQuote(id: string, quoteId: string): Promise<SolicitudMantenimiento> {
-    return apiClient.patch<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/approve-quote`, { quoteId });
+    return apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${id}/select-quote`, { quoteId });
   },
 
   async getKanban(): Promise<Record<string, SolicitudMantenimiento[]>> {
@@ -832,8 +1065,8 @@ export const renovacionesApi = {
 
 export const reportesApi = {
   async getDefinitions(): Promise<ReportDefinition[]> {
-    const res = await apiClient.get<{ data: ReportDefinition[] }>(`${BASE}/reports/definitions`);
-    return res.data;
+    const res = await apiClient.get<{ data: ReportDefinition[] } | ReportDefinition[]>(`${BASE}/reports/definitions`);
+    return lista(res);
   },
 
   async getCartera(params?: { startDate?: string; endDate?: string }): Promise<CarteraReport> {
@@ -964,8 +1197,8 @@ export const analyticsApi = {
 
 export const documentosApi = {
   async getTemplates(): Promise<DocumentTemplate[]> {
-    const res = await apiClient.get<{ data: DocumentTemplate[] }>(`${BASE}/templates`);
-    return res.data;
+    const res = await apiClient.get<{ data: DocumentTemplate[] } | DocumentTemplate[]>(`${BASE}/documents/templates`);
+    return lista(res);
   },
 
   async getDocuments(params?: { consignacionId?: string; category?: string }): Promise<PropertyDocument[]> {
@@ -973,8 +1206,8 @@ export const documentosApi = {
     if (params?.consignacionId) query.set('consignacionId', params.consignacionId);
     if (params?.category) query.set('category', params.category);
     const qs = query.toString();
-    const res = await apiClient.get<{ data: PropertyDocument[] }>(`${BASE}/documents${qs ? `?${qs}` : ''}`);
-    return res.data;
+    const res = await apiClient.get<{ data: PropertyDocument[] } | PropertyDocument[]>(`${BASE}/documents${qs ? `?${qs}` : ''}`);
+    return lista(res);
   },
 
   async generate(templateId: string, variables: Record<string, string>): Promise<PropertyDocument> {
@@ -988,8 +1221,8 @@ export const documentosApi = {
 
 export const actasApi = {
   async getAll(): Promise<ActaEntrega[]> {
-    const res = await apiClient.get<{ data: ActaEntrega[] }>(`${BASE}/actas`);
-    return res.data;
+    const res = await apiClient.get<{ data: ActaEntrega[] } | ActaEntrega[]>(`${BASE}/actas`);
+    return lista(res);
   },
 
   async getById(id: string): Promise<ActaEntrega> {
@@ -1054,8 +1287,8 @@ export const inmobiliariaConfigApi = {
   },
 
   async getInvoices(): Promise<BillingInvoice[]> {
-    const res = await apiClient.get<{ data: BillingInvoice[] }>(`${BASE}/config/billing/invoices`);
-    return res.data;
+    const res = await apiClient.get<{ data: BillingInvoice[] } | BillingInvoice[]>(`${BASE}/config/billing/invoices`);
+    return lista(res);
   },
 
   // ==========================================================================

@@ -21,6 +21,8 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
+import { TablePagination } from '@/components/ui/pagination';
+import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import type { OccupancyData } from '@/lib/data/mock-reports';
 
 interface OccupancyReportProps {
@@ -35,6 +37,24 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
   const { formatCurrency } = useI18n();
 
   const { summary, byProperty, byZone, monthlyTrend } = data;
+
+  /**
+   * Paginado de presentación: «detalle por propiedad» es una fila por inmueble
+   * del portafolio — `adaptOccupancy()` no lo recorta (a diferencia de
+   * `adaptCollections()`, que sí capa el top-10 de morosos).
+   *
+   * El resumen, las zonas y la tendencia siguen calculándose sobre el conjunto
+   * completo: sólo se pagina el detalle.
+   */
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(byProperty);
 
   // Find max occupancy for trend scaling
   const maxOccupancy = Math.max(...monthlyTrend.map((m) => m.occupancyRate));
@@ -73,7 +93,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Occupancy by Zone - CSS Bar Chart */}
-      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-5">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
           <MapPin className="w-4 h-4 text-fg-muted" />
           Ocupacion por zona
@@ -109,7 +129,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Monthly Occupancy Trend - CSS Dot/Bar Chart */}
-      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] p-5">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
           <TrendUp className="w-4 h-4 text-fg-muted" />
           Tendencia de ocupacion (12 meses)
@@ -148,8 +168,8 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Property Table */}
-      <div className="rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
-        <div className="p-4 border-b border-border dark:border-strong">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
+        <div className="p-4 border-b border-border dark:border-border-strong">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <House className="w-4 h-4 text-fg-muted" />
             Detalle por propiedad
@@ -158,7 +178,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
         <div className="overflow-x-auto">
           <Table className="text-sm">
             <TableHeader>
-              <TableRow className="border-b border-faint dark:border-strong">
+              <TableRow className="border-b border-border-faint dark:border-border-strong">
                 <TableHead className="text-left py-3 px-4">Propiedad</TableHead>
                 <TableHead className="text-left py-3 px-4">Zona</TableHead>
                 <TableHead className="text-left py-3 px-4">Estado</TableHead>
@@ -168,10 +188,10 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {byProperty.map((prop) => (
+              {pageItems.map((prop) => (
                 <TableRow
                   key={prop.id}
-                  className="border-b border-faint dark:border-strong/50 hover:bg-surface-muted dark:hover:bg-ink/30 transition-colors"
+                  className="border-b border-border-faint dark:border-border-strong/50 hover:bg-surface-muted dark:hover:bg-ink transition-colors"
                 >
                   <TableCell className="py-2.5 px-4 font-medium text-foreground">{prop.title}</TableCell>
                   <TableCell className="py-2.5 px-4 text-muted-foreground">{prop.zone}</TableCell>
@@ -194,6 +214,20 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
             </TableBody>
           </Table>
         </div>
+
+        {/* Pie: sólo si hay más de una página. */}
+        {shouldPaginate && (
+          <div className="border-t border-border dark:border-border-strong px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -237,7 +271,7 @@ function KPICard({
 }) {
   const colors = COLOR_MAP[color];
   return (
-    <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
       <div className="flex items-center gap-3">
         <div
           className={cn(

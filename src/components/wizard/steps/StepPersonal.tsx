@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { User, FileText, Calendar, Phone, MapPin, Users, Heart, Envelope } from '@phosphor-icons/react';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import {
@@ -12,7 +12,10 @@ import {
   FormField,
   LightInput,
   LightSelect,
+  LockedField,
 } from '../WizardFormField';
+
+const RAZON_BLOQUEO = 'Viene de tu estudio de arrendamiento vigente y no se puede editar.';
 
 // ============================================================================
 // Component
@@ -25,6 +28,11 @@ import {
 export function StepPersonal() {
   const { application, updatePersonal, attemptedAdvance } = useApplication();
   const personal = application.personal;
+
+  const locked = useMemo(
+    () => new Set(application.preScoringLockedFields ?? []),
+    [application.preScoringLockedFields]
+  );
 
   // Track which fields have been touched for error display
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -56,81 +64,82 @@ export function StepPersonal() {
   return (
     <div className="space-y-6">
       {/* Full Name */}
-      <FormField
-        label="Nombre completo"
-        htmlFor="fullName"
-        error={getError('fullName')}
-        required
-      >
-        <LightInput
-          id="fullName"
-          autoComplete="name"
-          placeholder="Cómo aparece en tu documento"
-          value={personal.fullName || ''}
-          onChange={(e) => handleInputChange('fullName', e.target.value)}
-          onBlur={() => handleBlur('fullName')}
-          icon={<User className="h-4 w-4" />}
-          hasError={!!getError('fullName')}
-        />
+      <FormField label="Nombre completo" htmlFor="fullName" error={getError('fullName')} required>
+        {locked.has('fullName') ? (
+          <LockedField id="fullName" value={personal.fullName || ''} reason={RAZON_BLOQUEO} icon={<User className="h-4 w-4" />} />
+        ) : (
+          <LightInput
+            id="fullName"
+            autoComplete="name"
+            placeholder="Cómo aparece en tu documento"
+            value={personal.fullName || ''}
+            onChange={(e) => handleInputChange('fullName', e.target.value)}
+            onBlur={() => handleBlur('fullName')}
+            icon={<User className="h-4 w-4" />}
+            hasError={!!getError('fullName')}
+          />
+        )}
       </FormField>
 
       {/* Email */}
-      <FormField
-        label="Correo electrónico"
-        htmlFor="email"
-        error={getError('email')}
-        required
-      >
-        <LightInput
-          id="email"
-          kind="email"
-          placeholder="tu@email.com"
-          value={personal.email || ''}
-          onChange={(e) => handleInputChange('email', e.target.value)}
-          onBlur={() => handleBlur('email')}
-          icon={<Envelope className="h-4 w-4" />}
-          hasError={!!getError('email')}
-        />
+      <FormField label="Correo electrónico" htmlFor="email" error={getError('email')} required>
+        {locked.has('email') ? (
+          <LockedField id="email" value={personal.email || ''} reason={RAZON_BLOQUEO} icon={<Envelope className="h-4 w-4" />} />
+        ) : (
+          <LightInput
+            id="email"
+            kind="email"
+            placeholder="tu@email.com"
+            value={personal.email || ''}
+            onChange={(e) => handleInputChange('email', e.target.value)}
+            onBlur={() => handleBlur('email')}
+            icon={<Envelope className="h-4 w-4" />}
+            hasError={!!getError('email')}
+          />
+        )}
       </FormField>
 
       {/* Document TextT and Number - Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField
-          label="Tipo de documento"
-          htmlFor="documentType"
-          error={getError('documentType')}
-          required
-        >
-          <LightSelect
-            id="documentType"
-            value={personal.documentType || ''}
-            onChange={(value) => handleInputChange('documentType', value)}
-            onBlur={() => handleBlur('documentType')}
-            options={DOCUMENT_TYPES}
-            placeholder="Seleccionar tipo"
-            icon={<FileText className="h-4 w-4" />}
-            hasError={!!getError('documentType')}
-          />
+        <FormField label="Tipo de documento" htmlFor="documentType" error={getError('documentType')} required>
+          {locked.has('documentType') ? (
+            <LockedField
+              id="documentType"
+              value={DOCUMENT_TYPES.find((t) => t.value === personal.documentType)?.label ?? personal.documentType ?? ''}
+              reason={RAZON_BLOQUEO}
+              icon={<FileText className="h-4 w-4" />}
+            />
+          ) : (
+            <LightSelect
+              id="documentType"
+              value={personal.documentType || ''}
+              onChange={(value) => handleInputChange('documentType', value)}
+              onBlur={() => handleBlur('documentType')}
+              options={DOCUMENT_TYPES}
+              placeholder="Seleccionar tipo"
+              icon={<FileText className="h-4 w-4" />}
+              hasError={!!getError('documentType')}
+            />
+          )}
         </FormField>
 
-        <FormField
-          label="Número de documento"
-          htmlFor="documentNumber"
-          error={getError('documentNumber')}
-          required
-        >
-          <LightInput
-            id="documentNumber"
-            kind="cedula"
-            placeholder="Sin puntos ni guiones"
-            value={personal.documentNumber || ''}
-            onChange={(e) =>
-              handleInputChange('documentNumber', e.target.value.replace(/\D/g, ''))
-            }
-            onBlur={() => handleBlur('documentNumber')}
-            icon={<FileText className="h-4 w-4" />}
-            hasError={!!getError('documentNumber')}
-          />
+        <FormField label="Número de documento" htmlFor="documentNumber" error={getError('documentNumber')} required>
+          {locked.has('documentNumber') ? (
+            <LockedField id="documentNumber" value={personal.documentNumber || ''} reason={RAZON_BLOQUEO} icon={<FileText className="h-4 w-4" />} />
+          ) : (
+            <LightInput
+              id="documentNumber"
+              kind="cedula"
+              placeholder="Sin puntos ni guiones"
+              value={personal.documentNumber || ''}
+              onChange={(e) =>
+                handleInputChange('documentNumber', e.target.value.replace(/\D/g, ''))
+              }
+              onBlur={() => handleBlur('documentNumber')}
+              icon={<FileText className="h-4 w-4" />}
+              hasError={!!getError('documentNumber')}
+            />
+          )}
         </FormField>
       </div>
 

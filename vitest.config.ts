@@ -8,7 +8,10 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    // `scripts/` entra al include porque el codegen del back tiene lógica
+    // propia (desambiguar `operationId` colisionados) y esa lógica decide qué
+    // tipos ve el front. Sin test corriendo en el CI, se rompe en silencio.
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'scripts/**/*.test.ts'],
     server: {
       deps: {
         // `@leasefy/cadence` is a file:../cadence dep. Its transitive deps

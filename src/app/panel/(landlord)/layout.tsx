@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Toaster } from '@/components/ui/toast';
-import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank } from '@phosphor-icons/react';
+import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell } from '@phosphor-icons/react';
 // Sparkle import removed — re-add when AI Beta nav item is uncommented
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -59,7 +59,40 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
     label: 'Mensajes',
     href: '/panel/mensajes',
     icon: Chat,
-    badge: 3,
+    // Sin `badge`: el 3 estaba escrito a mano, no contaba nada.
+  },
+  // --- Portal del Propietario (post-firma) — capa aditiva v8.0 ---
+  // Shells "Pronto" hasta que cada ola (v8-02..v8-05) los llene con la vista real
+  // cableada al back owner-facing. El `tag` se quita cuando la ola aterriza.
+  {
+    kind: 'section',
+    label: 'Mi arriendo',
+    href: '#sec-mi-arriendo',
+    icon: House,
+  },
+  {
+    label: 'Mi plata',
+    href: '/panel/portafolio',
+    icon: Wallet,
+    tag: 'Pronto',
+  },
+  {
+    label: 'Elegir inquilino',
+    href: '/panel/seleccion',
+    icon: UsersThree,
+    tag: 'Pronto',
+  },
+  {
+    label: 'Solicitudes',
+    href: '/panel/solicitudes',
+    icon: ChatCircleText,
+    tag: 'Pronto',
+  },
+  {
+    label: 'Novedades',
+    href: '/panel/novedades',
+    icon: Bell,
+    tag: 'Pronto',
   },
   // --- AI Beta section (hidden — re-enable when ready) ---
   // {
@@ -149,7 +182,10 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         navItems={LANDLORD_NAV_ITEMS}
         logo={{
           title: 'PLan',
-          href: '/panel',
+          // Mismo criterio que en los otros dos paneles: el logo es la firma
+          // del producto y sale a la landing. El home del panel ya vive en el
+          // nav ("Panel"), no hace falta un segundo enlace al mismo lugar.
+          href: '/',
         }}
         showUpgrade={showUpgrade}
         upgradeHref="/panel/upgrade"
@@ -176,8 +212,9 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Toast notifications - Premium style */}
-      <Toaster position="top-right" />
+      {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
+          <ProtectedRoute>: acá adentro se perdía todo toast emitido mientras el guard
+          resuelve. No montés otro: sonner duplica el toast por cada Toaster montado. */}
     </div>
   );
 }

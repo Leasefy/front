@@ -22,6 +22,7 @@ import { formatCurrency, formatArea } from '@/lib/format';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import type { Property } from '@/lib/types/property';
 import type { AcceptanceProbability } from '@/lib/scoring/propertyMatching';
+import { PostularButton } from '@/components/tenant/PostularButton';
 import {
   getMatchScoreBgColor,
   getAcceptanceProbabilityLabel,
@@ -380,14 +381,15 @@ export function PropertyDetailSheet({
                 }
               />
 
-              {/* Apply Button */}
-              <Link
-                href={`/aplicar/${property.id}`}
-                className="flex items-center justify-center gap-2 h-12 px-6 bg-primary hover:opacity-90 text-white text-sm font-medium rounded-xl transition-colors"
+              {/* Postulación — el gate enseña el camino si todavía no puede
+                  (ver PostularButton). "Aplicar" murió: docs/VOCABULARIO.md. */}
+              <PostularButton
+                propertyId={property.id}
+                canonCop={property.monthlyRent}
+                className="w-full h-12"
               >
-                Aplicar a propiedad
-                <CaretRight className="w-4 h-4" />
-              </Link>
+                Postularme a esta propiedad
+              </PostularButton>
             </div>
           </div>
         </SheetContent>

@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { normalizeAutocompleteResults } from '../geocode.normalize';
+import { normalizeAutocompleteResults, normalizeReverseResult } from '../geocode.normalize';
 
 const FULL_RESULT = {
   place_id: '134560401',
@@ -121,5 +121,59 @@ describe('normalizeAutocompleteResults', () => {
         road: 'Calle 123',
       },
     ]);
+  });
+});
+
+/**
+ * normalizeReverseResult — LocationIQ `/v1/reverse` returns a SINGLE object
+ * (not an array like /v1/autocomplete), so it needs its own normalizer, but
+ * shares the same fail-closed contract: a malformed/incomplete result comes
+ * back `null` rather than surfacing fabricated data.
+ */
+describe('normalizeReverseResult', () => {
+  it('normalizes a full LocationIQ reverse result into a GeocodeSuggestion', () => {
+    const result = normalizeReverseResult(FULL_RESULT);
+
+    expect(result).toEqual({
+      label: FULL_RESULT.display_name,
+      lat: 4.6768169,
+      lon: -74.0482148,
+      placeId: '134560401',
+      city: 'Bogotá',
+      neighborhood: 'Chapinero',
+      road: 'Calle 123',
+    });
+  });
+
+  it('returns null when lat/lon are missing or non-finite', () => {
+    expect(normalizeReverseResult({ ...FULL_RESULT, lat: 'not-a-number' })).toBeNull();
+    expect(normalizeReverseResult({ ...FULL_RESULT, lon: undefined })).toBeNull();
+  });
+
+  it('returns null without a place_id', () => {
+    expect(normalizeReverseResult({ ...FULL_RESULT, place_id: undefined })).toBeNull();
+  });
+
+  it('returns null without a label (display_name/display_place)', () => {
+    expect(normalizeReverseResult({ ...FULL_RESULT, display_name: undefined, display_place: undefined })).toBeNull();
+  });
+
+  it('returns null for non-object input (e.g. LocationIQ error payload)', () => {
+    expect(normalizeReverseResult(null)).toBeNull();
+    expect(normalizeReverseResult(undefined)).toBeNull();
+    expect(normalizeReverseResult('nope')).toBeNull();
+    expect(normalizeReverseResult([FULL_RESULT])).toBeNull();
+  });
+
+  it('omits optional city/neighborhood/road keys when absent', () => {
+    const result = normalizeReverseResult({
+      place_id: '1',
+      lat: '1.0',
+      lon: '2.0',
+      display_name: 'Some place',
+      address: {},
+    });
+
+    expect(result).toEqual({ label: 'Some place', lat: 1, lon: 2, placeId: '1' });
   });
 });

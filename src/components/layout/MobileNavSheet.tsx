@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { X } from '@phosphor-icons/react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { NavItem } from '@/components/ui/plan/PlanSidebar';
 import { useI18n } from '@/lib/i18n';
@@ -90,16 +89,9 @@ export function MobileNavSheet({ open, items, onClose }: MobileNavSheetProps) {
           })}
         </div>
 
-        <div className="pt-2 border-t border-border mt-2">
-          <button
-            onClick={onClose}
-            className="flex items-center gap-3 w-full px-4 py-3 min-h-[52px] text-fg-muted hover:bg-surface-muted rounded-xl"
-            aria-label={t('inmobiliaria.mobileNav.closeButton')}
-          >
-            <X className="w-5 h-5" />
-            <span className="text-[14px]">{t('inmobiliaria.mobileNav.closeButton')}</span>
-          </button>
-        </div>
+        {/* Acá abajo había una fila «Cerrar» con su propia ✕, además de la del
+            cajón: dos aspas para la misma acción. Queda la del `SheetContent`,
+            que es la de todo el producto. */}
       </SheetContent>
     </Sheet>
   );

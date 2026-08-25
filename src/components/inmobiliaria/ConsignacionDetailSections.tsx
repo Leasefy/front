@@ -61,11 +61,11 @@ function SectionCard({ title, icon, children, className }: SectionCardProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F] overflow-hidden',
+        'rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] overflow-hidden',
         className
       )}
     >
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-faint dark:border-strong">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-border-faint dark:border-border-strong">
         <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center text-fg-muted dark:text-fg-subtle">
           {icon}
         </div>
@@ -106,7 +106,7 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-3 border-t border-faint dark:border-strong">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-3 border-t border-border-faint dark:border-border-strong">
           <div>
             <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.contractStartDate')}</p>
             <p className="text-sm font-medium text-fg dark:text-white flex items-center gap-1.5">
@@ -212,20 +212,24 @@ export function PropietarioSection({ propietario }: PropietarioSectionProps) {
 
         {/* Contact Buttons */}
         <div className="flex items-center gap-2">
-          <a
-            href={`mailto:${propietario.email}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
-          >
-            <Envelope className="w-4 h-4" />
-            {t('inmobiliaria.consignaciones.detail.email')}
-          </a>
-          <a
-            href={`tel:${propietario.phone}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
-          >
-            <Phone className="w-4 h-4" />
-            {t('inmobiliaria.consignaciones.detail.call')}
-          </a>
+          {propietario.email && (
+            <a
+              href={`mailto:${propietario.email}`}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+            >
+              <Envelope className="w-4 h-4" />
+              {t('inmobiliaria.consignaciones.detail.email')}
+            </a>
+          )}
+          {propietario.phone && (
+            <a
+              href={`tel:${propietario.phone}`}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface-muted dark:bg-ink text-fg dark:text-fg-subtle hover:bg-surface-muted dark:hover:bg-ink transition-colors text-sm font-medium"
+            >
+              <Phone className="w-4 h-4" />
+              {t('inmobiliaria.consignaciones.detail.call')}
+            </a>
+          )}
         </div>
       </div>
     </SectionCard>
@@ -472,7 +476,7 @@ export function DocumentsSection({ consignacion, onViewInventory }: DocumentsSec
 
         {/* Photos Gallery */}
         {hasPhotos && (
-          <div className="pt-3 border-t border-faint dark:border-strong">
+          <div className="pt-3 border-t border-border-faint dark:border-border-strong">
             <div className="flex items-center gap-2 mb-3">
               <Images className="w-4 h-4 text-fg-subtle" />
               <span className="text-sm text-fg-muted dark:text-fg-subtle">

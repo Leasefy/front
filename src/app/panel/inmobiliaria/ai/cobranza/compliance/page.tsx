@@ -37,11 +37,13 @@ function ComplianceOverviewContent() {
 
   useAutoRefresh(refetch)
 
-  // D-34-RES-A1 banner trigger — any open request meets the 15-day cutoff
-  // by definition, but the explicit predicate stays for defense-in-depth.
+  // El disparador era `remaining_days <= 15`, que con un término de 15 días es
+  // cierto SIEMPRE que haya una solicitud abierta: la banda roja salía aunque
+  // faltaran dos semanas. Una alerta que está siempre encendida deja de leerse.
+  // Ahora avisa por lo que de verdad urge: vencidas o a punto de vencer.
   const showBanner = useMemo(() => {
     if (!data) return false
-    return data.habeas_data.open_requests.some((r) => r.remaining_days <= 15)
+    return data.habeas_data.open_requests.some((r) => r.remaining_days <= URGENT_DAYS)
   }, [data])
 
   const lastUpdated = useMemo(() => {
@@ -156,8 +158,17 @@ function ComplianceOverviewContent() {
               >
                 {data.ley_2300.weekly_outside_hours_count}
               </span>
+              {/*
+                Decía «4 / 0», que se lee como una fracción rota — «cuatro de
+                cero». No es un progreso hacia una meta: es un CONTEO de
+                infracciones contra un objetivo que sólo puede ser cero. Se
+                escribe con palabras.
+              */}
               <span className="text-sm text-muted-foreground">
-                / {data.ley_2300.target}
+                {data.ley_2300.weekly_outside_hours_count === 1
+                  ? 'intento'
+                  : 'intentos'}{' '}
+                · el objetivo es {data.ley_2300.target}
               </span>
             </div>
           </section>
@@ -195,42 +206,61 @@ function ComplianceOverviewContent() {
             <MonoLabel>
               {t('inmobiliaria.ai.cobranza.compliance.overview.retentionHeading')}
             </MonoLabel>
-            <div className="mt-3 space-y-2">
-              <div className="flex items-baseline gap-2">
-                <span
-                  className={[
-                    'text-3xl font-mono tabular-nums',
-                    data.retention.compliance_pct >= data.retention.target
-                      ? 'text-success'
-                      : 'text-warning',
-                  ].join(' ')}
-                >
-                  {data.retention.compliance_pct}%
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  / {data.retention.target}%
-                </span>
-              </div>
-              <div
-                className="h-2 w-full rounded-full bg-muted overflow-hidden"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={data.retention.compliance_pct}
-              >
+            {/* `compliance_pct: null` = no hay filas que medir. Antes el back
+                devolvía 100 fijo con un TODO y esto pintaba un 100% verde que
+                no medía nada — en la pantalla cuyo trabajo es avisar cuando
+                algo va mal. «No hay nada» y «está todo bien» no son lo mismo. */}
+            {data.retention.compliance_pct === null ? (
+              <p className="mt-3 text-body-sm text-fg-muted">
+                {t('inmobiliaria.ai.cobranza.compliance.overview.retentionUnmeasured')}
+              </p>
+            ) : (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-baseline gap-2">
+                  <span
+                    className={[
+                      'text-3xl font-mono tabular-nums',
+                      data.retention.compliance_pct >= data.retention.target
+                        ? 'text-success'
+                        : 'text-warning',
+                    ].join(' ')}
+                  >
+                    {data.retention.compliance_pct}%
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    / {data.retention.target}%
+                  </span>
+                </div>
                 <div
-                  className={[
-                    'h-full transition-all',
-                    data.retention.compliance_pct >= data.retention.target
-                      ? 'bg-success'
-                      : 'bg-warning',
-                  ].join(' ')}
-                  style={{
-                    width: `${Math.min(100, Math.max(0, data.retention.compliance_pct))}%`,
-                  }}
-                />
+                  className="h-2 w-full rounded-full bg-muted overflow-hidden"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={data.retention.compliance_pct}
+                >
+                  <div
+                    className={[
+                      'h-full transition-all',
+                      data.retention.compliance_pct >= data.retention.target
+                        ? 'bg-success'
+                        : 'bg-warning',
+                    ].join(' ')}
+                    style={{
+                      width: `${Math.min(100, Math.max(0, data.retention.compliance_pct))}%`,
+                    }}
+                  />
+                </div>
+                <p className="text-caption text-fg-subtle">
+                  {t(
+                    `inmobiliaria.ai.cobranza.compliance.overview.retentionCaption${
+                      data.retention.measured_rows === 1 ? 'One' : ''
+                    }`,
+                  )
+                    .replace('{rows}', String(data.retention.measured_rows))
+                    .replace('{overdue}', String(data.retention.overdue_rows))}
+                </p>
               </div>
-            </div>
+            )}
           </section>
 
           {/* Section 4: 30-day sparkline */}
@@ -259,6 +289,13 @@ function ComplianceOverviewContent() {
     </div>
   )
 }
+
+/**
+ * Umbral de la banda roja, en días hábiles. Mismo criterio que la bandeja de
+ * Habeas Data (`ARCO_URGENT_THRESHOLD_DAYS`): una alerta que está siempre
+ * encendida deja de leerse.
+ */
+const URGENT_DAYS = 3
 
 export default function CompliancePage() {
   return (

@@ -3,16 +3,18 @@
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Bed, Bathtub, ArrowsOut, Buildings, CaretRight, ArrowSquareOut } from '@phosphor-icons/react';
+import { MapPin, Bed, Bathtub, ArrowsOut, Buildings, CaretRight, ArrowSquareOut, ArrowLeft } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { PhotoGalleryModal } from '@/components/property/PhotoGalleryModal';
 import { PropertyAccordion } from '@/components/property/PropertyAccordion';
 import { StickyCTA, MobileStickyCTA } from '@/components/property/StickyCTA';
-import { SocialProofBanner } from '@/components/property/SocialProof';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import { useProperty } from '@/lib/hooks/useProperties';
 import { useAuth } from '@/lib/auth/use-auth';
+import { useAprobacion } from '@/lib/hooks/use-aprobacion';
+import { superaReferencia, referenciaCanon } from '@/lib/api/aprobacion.service';
+import { SobreTopeAlert } from '@/components/tenant/TopeAprobadoBanner';
 import { formatCurrency, formatArea } from '@/lib/format';
 
 // Offering-agency social networks rendered in the compact "Síguenos" row.
@@ -90,6 +92,14 @@ export interface PropertyDetailViewProps {
   basePath?: string;
   /** Where the "back to listings" breadcrumb goes (public '/propiedades', tenant '/inquilino/explorar'). */
   listingHref?: string;
+  /**
+   * Cómo se llama ese origen en el breadcrumb.
+   *
+   * Era fijo en "Propiedades", así que quien venía de SU catálogo aterrizaba
+   * en una migaja que no tenía nada que ver con donde había empezado — y el
+   * link lo devolvía al listado general, perdiendo su tope y su contexto.
+   */
+  listingLabel?: string;
 }
 
 /**
@@ -103,6 +113,7 @@ export interface PropertyDetailViewProps {
 export function PropertyDetailView({
   propertyId,
   listingHref = '/propiedades',
+  listingLabel = 'Propiedades',
 }: PropertyDetailViewProps) {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { user } = useAuth();
@@ -117,6 +128,12 @@ export function PropertyDetailView({
 
   // Fetch property from API
   const { property, isLoading: propertyLoading, error: propertyError } = useProperty(propertyId);
+
+  // Aprobación del inquilino: si esta propiedad supera su tope aprobado, se lo
+  // avisamos acá igual que en el catálogo (mismo `superaReferencia`). Sin
+  // aprobación vigente (o sin tope) no se muestra nada — la lógica gatea sola,
+  // así que un usuario inmobiliaria/propietario nunca ve esto.
+  const { aprobacion, vigente: aprobacionVigente } = useAprobacion();
 
   // Scroll to top on page load and when property changes
   useEffect(() => {
@@ -196,16 +213,38 @@ export function PropertyDetailView({
   return (
     <>
       <div className="min-h-screen bg-background">
-        {/* Back Compass - Breadcrumb style */}
+        {/*
+          Volver, de verdad.
+          La miga de pan sola no alcanza: es un rastro, no un control. Quien
+          entra a una ficha desde el buscador quiere volver A SEGUIR BUSCANDO, y
+          para eso tiene que haber un botón que se vea como un botón.
+          La miga se queda —dice dónde estás— pero el que devuelve es el botón.
+        */}
         <div className="pt-6">
           <div className="container-platform">
-            <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Link href={listingHref} className="hover:text-foreground transition-colors">
-                Propiedades
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <Link
+                href={listingHref}
+                className="group inline-flex h-9 items-center gap-2 rounded-full border border-border bg-card pl-3 pr-4 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                <ArrowLeft
+                  className="h-4 w-4 transition-transform group-hover:-translate-x-0.5"
+                  aria-hidden="true"
+                />
+                Volver a {listingLabel.toLowerCase()}
               </Link>
-              <CaretRight className="w-3.5 h-3.5" />
-              <span className="text-foreground/70 truncate max-w-[200px]">{property.title}</span>
-            </nav>
+
+              <nav
+                aria-label="Ruta"
+                className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground"
+              >
+                <Link href={listingHref} className="hover:text-foreground transition-colors">
+                  {listingLabel}
+                </Link>
+                <CaretRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                <span className="truncate text-foreground/70">{property.title}</span>
+              </nav>
+            </div>
           </div>
         </div>
 
@@ -313,8 +352,29 @@ export function PropertyDetailView({
                 )}
               </div>
 
-              {/* Social Proof Banner - Styled */}
-              <SocialProofBanner propertyId={property.id} className="mb-8" />
+              {/* Aviso "supera tu tope" + salida por codeudor (mismo criterio
+                  que el overlay del catálogo). Solo aparece con aprobación
+                  vigente cuyo tope real se pasa este canon. */}
+              {aprobacionVigente &&
+                superaReferencia(property.monthlyRent, aprobacion) === true && (
+                  <SobreTopeAlert
+                    monthlyRent={property.monthlyRent}
+                    referencia={referenciaCanon(aprobacion)}
+                    className="mb-8"
+                  />
+                )}
+
+              {/*
+                Acá iba `SocialProofBanner`: "7 viendo ahora" con un punto que
+                latía, "38 visitas hoy" y una insignia de "demanda muy alta".
+                Nada de eso se medía — salía de `generateMockStats(propertyId)`,
+                un número derivado de las letras del id, y el contador de
+                "viendo ahora" se movía solo cada 8 segundos para parecer vivo.
+
+                Va fuera y no se reemplaza por un cero: es urgencia inventada,
+                puesta justo en la pantalla donde la persona decide postularse.
+                Vuelve cuando haya visitas de verdad que contar.
+              */}
 
               {/* Stats Row - Premium card style */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">

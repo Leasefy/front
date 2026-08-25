@@ -17,8 +17,12 @@ import {
   User,
   Percent,
   CalendarPlus,
+  ArrowSquareOut,
+  Users,
+  Trash,
 } from '@phosphor-icons/react';
 import { IconButton } from '@leasefy/cadence';
+import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -48,6 +52,15 @@ interface ConsignacionTableProps {
   onView: (consignacion: Consignacion) => void;
   onEdit: (consignacion: Consignacion) => void;
   onAgendarCita?: (consignacion: Consignacion) => void;
+  /**
+   * Las tres que traía «Inmuebles · catálogo» cuando era una pantalla aparte.
+   * Al fusionar las dos listas tenían que venirse con ella o se perdían.
+   * Opcionales para no obligar a los demás call sites (el detalle del agente,
+   * el del propietario) a inventarse un comportamiento.
+   */
+  onVerAviso?: (consignacion: Consignacion) => void;
+  onCandidatos?: (consignacion: Consignacion) => void;
+  onEliminar?: (consignacion: Consignacion) => void;
 }
 
 // Property type icons
@@ -94,6 +107,9 @@ export function ConsignacionTable({
   onView,
   onEdit,
   onAgendarCita,
+  onVerAviso,
+  onCandidatos,
+  onEliminar,
 }: ConsignacionTableProps) {
   const { t } = useI18n();
   const [sortField, setSortField] = useState<SortField>('propertyTitle');
@@ -150,71 +166,67 @@ export function ConsignacionTable({
 
   const SortIcon = sortDirection === 'asc' ? SortAscending : SortDescending;
 
+  const SortableHeader = ({
+    field,
+    children,
+    className,
+  }: {
+    field: SortField;
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <TableHead className={cn('p-4 text-left', className)}>
+      {/*
+        allowlist: disparador de orden — Cadence no trae uno (DataTable no
+        ordena). El botón HEREDA el tratamiento del encabezado del DS en vez de
+        traer el suyo. Dos motivos, los dos medidos en pantalla:
+        1. `text-xs font-semibold` reemplazaba la mono de 11px del `TH` por otra
+           tipografía, así que esta tabla se leía distinta de las demás.
+        2. El navegador le da `text-transform: none` a los controles de
+           formulario, y eso PISA el `uppercase` que el `TH` hereda. Por eso
+           «Propiedad» salía capitalizada mientras «PROPIETARIO» —que es un
+           `span`, no un `button`— sí salía en mayúscula. El `uppercase`
+           explícito de acá es lo que devuelve la consistencia.
+      */}
+      <button
+        onClick={() => handleSort(field)}
+        className="flex items-center gap-2 font-[inherit] text-[inherit] uppercase tracking-[inherit] text-fg-subtle transition-colors hover:text-fg"
+      >
+        {children}
+        {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
+      </button>
+    </TableHead>
+  );
+
   return (
     <div className="overflow-x-auto">
       <Table className="w-full min-w-[900px]">
         <TableHeader>
           <TableRow className="border-b border-border bg-muted/30">
-            <TableHead className="text-left p-4">
-              {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
-              <button
-                onClick={() => handleSort('propertyTitle')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                {t('inmobiliaria.consignaciones.table.property')}
-                {sortField === 'propertyTitle' && <SortIcon className="w-3.5 h-3.5" />}
-              </button>
-            </TableHead>
-            <TableHead className="text-left p-4">
-              {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
-              <button
-                onClick={() => handleSort('propertyZone')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                {t('inmobiliaria.consignaciones.table.zone')}
-                {sortField === 'propertyZone' && <SortIcon className="w-3.5 h-3.5" />}
-              </button>
-            </TableHead>
-            <TableHead className="text-left p-4">
-              {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
-              <button
-                onClick={() => handleSort('monthlyRent')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                {t('inmobiliaria.consignaciones.table.rent')}
-                {sortField === 'monthlyRent' && <SortIcon className="w-3.5 h-3.5" />}
-              </button>
-            </TableHead>
-            <TableHead className="text-left p-4">
-              {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
-              <button
-                onClick={() => handleSort('commissionPercent')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                {t('inmobiliaria.consignaciones.table.commission')}
-                {sortField === 'commissionPercent' && <SortIcon className="w-3.5 h-3.5" />}
-              </button>
-            </TableHead>
+            <SortableHeader field="propertyTitle">
+              {t('inmobiliaria.consignaciones.table.property')}
+            </SortableHeader>
+            <SortableHeader field="propertyZone">
+              {t('inmobiliaria.consignaciones.table.zone')}
+            </SortableHeader>
+            <SortableHeader field="monthlyRent">
+              {t('inmobiliaria.consignaciones.table.rent')}
+            </SortableHeader>
+            <SortableHeader field="commissionPercent">
+              {t('inmobiliaria.consignaciones.table.commission')}
+            </SortableHeader>
+            {/* Sin ordenamiento: el `TH` del DS ya viste la etiqueta (mono 11px
+                en mayúscula). Envolverla en un `span` con tipografía propia era
+                justamente lo que hacía convivir dos estilos en la misma fila. */}
             <TableHead className="text-left p-4 hidden lg:table-cell">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {t('inmobiliaria.consignaciones.table.owner')}
-              </span>
+              {t('inmobiliaria.consignaciones.table.owner')}
             </TableHead>
             <TableHead className="text-left p-4 hidden md:table-cell">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {t('inmobiliaria.consignaciones.table.agent')}
-              </span>
+              {t('inmobiliaria.consignaciones.table.agent')}
             </TableHead>
-            <TableHead className="text-left p-4">
-              {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
-              <button
-                onClick={() => handleSort('availability')}
-                className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                {t('inmobiliaria.consignaciones.table.status')}
-                {sortField === 'availability' && <SortIcon className="w-3.5 h-3.5" />}
-              </button>
-            </TableHead>
+            <SortableHeader field="availability">
+              {t('inmobiliaria.consignaciones.table.status')}
+            </SortableHeader>
             <TableHead className="w-12 p-4"></TableHead>
           </TableRow>
         </TableHeader>
@@ -277,12 +289,24 @@ export function ConsignacionTable({
                 </TableCell>
 
                 {/* Canon */}
-                <TableCell className="p-4">
+                {/*
+                  `whitespace-nowrap`: la columna es angosta y el importe se
+                  partía en dos renglones. Un monto cortado a mitad se lee como
+                  otra cifra, así que acá el número manda sobre el ancho — para
+                  eso la tabla tiene su propio scroll horizontal.
+                */}
+                <TableCell className="p-4 whitespace-nowrap">
                   <div>
                     <p className="font-semibold text-foreground tabular-nums">
                       {formatCurrency(consignacion.monthlyRent)}
                     </p>
-                    {consignacion.adminFee && consignacion.adminFee > 0 && (
+                    {/*
+                      Antes: `consignacion.adminFee && consignacion.adminFee > 0 && (…)`.
+                      Con `adminFee === 0` la primera guarda devuelve `0` —no `false`—
+                      y React pinta ese cero: quedaba un «0» suelto debajo del canon,
+                      que se ve igual que un importe partido en dos renglones.
+                    */}
+                    {consignacion.adminFee != null && consignacion.adminFee > 0 && (
                       <p className="text-xs text-muted-foreground tabular-nums">
                         {t('inmobiliaria.consignaciones.table.adminFee', { amount: formatCurrency(consignacion.adminFee) })}
                       </p>
@@ -325,7 +349,7 @@ export function ConsignacionTable({
                           className="w-7 h-7 rounded-full object-cover shrink-0"
                         />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-surface-brand flex items-center justify-center shrink-0">
+                        <div className="w-7 h-7 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
                           <span className="text-xs font-medium text-primary">
                             {agenteInfo.name.charAt(0)}
                           </span>
@@ -383,6 +407,42 @@ export function ConsignacionTable({
                         >
                           <CalendarPlus className="w-4 h-4" />
                           <span className="text-sm">{t('inmobiliaria.agenda.pedirCita')}</span>
+                        </DropdownListItem>
+                      )}
+                      {onCandidatos && (
+                        <DropdownListItem
+                          className="gap-3"
+                          onClick={() => onCandidatos(consignacion)}
+                        >
+                          <Users className="w-4 h-4" />
+                          <span className="text-sm">
+                            {t('inmobiliaria.inmuebles.acciones.candidatos')}
+                          </span>
+                        </DropdownListItem>
+                      )}
+                      {/* El aviso público sólo existe si hay inmueble: un
+                          mandato de la migración de cartera puede no tenerlo
+                          todavía, y un enlace a la nada no es una acción. */}
+                      {onVerAviso && consignacion.propertyId && (
+                        <DropdownListItem
+                          className="gap-3"
+                          onClick={() => onVerAviso(consignacion)}
+                        >
+                          <ArrowSquareOut className="w-4 h-4" />
+                          <span className="text-sm">
+                            {t('inmobiliaria.inmuebles.acciones.verAviso')}
+                          </span>
+                        </DropdownListItem>
+                      )}
+                      {onEliminar && (
+                        <DropdownListItem
+                          className="gap-3 text-danger focus:text-danger"
+                          onClick={() => onEliminar(consignacion)}
+                        >
+                          <Trash className="w-4 h-4" />
+                          <span className="text-sm">
+                            {t('inmobiliaria.inmuebles.acciones.eliminar')}
+                          </span>
                         </DropdownListItem>
                       )}
                     </DropdownListContent>

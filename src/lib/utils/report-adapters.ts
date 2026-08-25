@@ -117,11 +117,14 @@ export function adaptCollections(report: CarteraReport | null | undefined): Coll
       .sort((a, b) => b.pendingAmount - a.pendingAmount)
       .slice(0, 10)
       .map((item) => ({
-        tenantName: item.tenantName,
+        tenantName: item.tenantName ?? '',
         propertyTitle: item.propertyTitle,
         daysLate: item.daysLate,
         amount: item.pendingAmount,
-        attempts: 0,
+        // Los recordatorios que se enviaron de verdad. Antes era un 0 fijo: la
+        // columna «Intentos» afirmaba, para TODA la cartera, que nadie había
+        // sido contactado — que no es lo mismo que no saberlo.
+        attempts: item.remindersSent,
       })),
   };
 }

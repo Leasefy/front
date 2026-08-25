@@ -11,6 +11,12 @@ interface CallQAPanelProps {
   qa: CallQAScores
 }
 
+/**
+ * Las puntuaciones vienen en escala 0-100 (la base lo garantiza:
+ * `calls_qa_score_decimal_range`). Antes se comparaban contra 0,8 / 0,6 —de
+ * una escala 0-1 que nunca existió— así que TODA llamada caía en rojo y el
+ * porcentaje se calculaba ×100 sobre un número que ya era porcentaje.
+ */
 function tone(score: number | null): {
   bar: string
   text: string
@@ -21,13 +27,13 @@ function tone(score: number | null): {
       text: 'text-fg-subtle',
     }
   }
-  if (score >= 0.8) {
+  if (score >= 80) {
     return {
       bar: 'bg-success',
       text: 'text-success',
     }
   }
-  if (score >= 0.6) {
+  if (score >= 60) {
     return {
       bar: 'bg-warning',
       text: 'text-warning',
@@ -44,7 +50,7 @@ function ScoreRow({
   score: number | null
 }) {
   const c = tone(score)
-  const pct = score == null ? null : Math.round(score * 100)
+  const pct = score == null ? null : Math.round(score)
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
@@ -73,10 +79,10 @@ function ScoreRow({
 export default function CallQAPanel({ qa }: CallQAPanelProps) {
   const { t } = useI18n()
   const allNull =
-    qa.tone == null &&
+    qa.rapport == null &&
     qa.compliance == null &&
-    qa.recovery == null &&
-    qa.clarity == null
+    qa.resolution == null &&
+    qa.sentiment == null
   return (
     <section
       aria-label={t('inmobiliaria.ai.cobranza.call.qa.title')}
@@ -95,21 +101,26 @@ export default function CallQAPanel({ qa }: CallQAPanelProps) {
             label={t('inmobiliaria.ai.cobranza.call.qa.overall')}
             score={qa.overall}
           />
+          {/*
+            Las cuatro dimensiones que el QaScorer realmente califica. Las que
+            estaban antes (tono / recuperación / claridad) no existen en
+            ningún lado: se inventaron junto con el contrato.
+          */}
           <ScoreRow
-            label={t('inmobiliaria.ai.cobranza.call.qa.tone')}
-            score={qa.tone}
+            label={t('inmobiliaria.ai.cobranza.call.qa.rapport')}
+            score={qa.rapport}
           />
           <ScoreRow
             label={t('inmobiliaria.ai.cobranza.call.qa.compliance')}
             score={qa.compliance}
           />
           <ScoreRow
-            label={t('inmobiliaria.ai.cobranza.call.qa.recovery')}
-            score={qa.recovery}
+            label={t('inmobiliaria.ai.cobranza.call.qa.resolution')}
+            score={qa.resolution}
           />
           <ScoreRow
-            label={t('inmobiliaria.ai.cobranza.call.qa.clarity')}
-            score={qa.clarity}
+            label={t('inmobiliaria.ai.cobranza.call.qa.sentiment')}
+            score={qa.sentiment}
           />
         </div>
       )}

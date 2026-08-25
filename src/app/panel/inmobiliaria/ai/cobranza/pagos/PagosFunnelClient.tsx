@@ -4,18 +4,23 @@
  * PagosFunnelClient — Phase 32 plan 32-07 (COBR-UI-05).
  *
  * Operator funnel for `cobranza/pagos`:
- *  - 5-KPI strip (approved / pending / declined / recaudado / disbursed / avg fee)
+ *  - Tira de 6 indicadores, en el orden del recorrido de la plata:
+ *    por cobrar → en proceso → aprobados → rechazados → recaudado → desembolsado
  *  - Date-window selector (today / 7d / 30d (default) / 90d / mtd)
- *  - Multi-select chip filters (provider, status)
+ *  - Multi-select chip filters (provider, estado)
  *  - Sortable table (created_at DESC default, amount DESC, disbursement_pending_days DESC)
- *  - ⚠ pill when disbursementPendingDays >= 3
+ *  - ⚠ pill when disbursementPendingDays >= 3 (nunca sobre una obligación:
+ *    no se demora el desembolso de una plata que no entró)
  *  - Row click → /pagos/planes/{planId} (pending + payment_plan) or /pagos/{paymentId}
  *  - <Mask> wraps every debtor name; no raw PII in DOM
- *  - IntersectionObserver sentinel for infinite scroll
+ *  - Paginación numerada (el scroll infinito se cambió por páginas)
+ *
+ * El vocabulario de estados vive en `@/lib/cobranza/pago-vocab` — ahí está
+ * explicado por qué una obligación importada no es un pago pendiente.
  */
 
 import * as React from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { CurrencyCircleDollar } from '@phosphor-icons/react'
@@ -41,7 +46,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Chip, SegmentedControl } from '@leasefy/cadence'
+import { Card, Chip, SegmentedControl } from '@leasefy/cadence'
+import { TablePagination } from '@/components/ui/pagination'
+import {
+  PAGE_SIZE_OPTIONS,
+  useTablePagination,
+} from '@/lib/hooks/use-table-pagination'
 import {
   usePaymentsFunnel,
   type UsePaymentsFunnelFilters,
@@ -49,16 +59,28 @@ import {
   type PaymentsFunnelKpis,
   type PaymentsFunnelSort,
 } from '@/lib/hooks/cobranza/use-payments-funnel'
+import {
+  ESTADOS_VISIBLES,
+  ESTADO_A_FILTRO,
+  estadoBadgeVariant,
+  estadoVisible,
+  type EstadoVisible,
+} from '@/lib/cobranza/pago-vocab'
 
 void React
 
 type Provider = 'wompi' | 'bold'
-type Status = 'approved' | 'pending' | 'declined' | 'disbursed'
 type DateWindow = NonNullable<UsePaymentsFunnelFilters['dateWindow']>
 
 const PROVIDERS: Provider[] = ['wompi', 'bold']
-const STATUSES: Status[] = ['approved', 'pending', 'declined', 'disbursed']
 const DATE_WINDOWS: DateWindow[] = ['today', '7d', '30d', '90d', 'mtd']
+
+/**
+ * Columnas de la tabla: nombre · monto · proveedor · estado · desembolso · fecha.
+ * Lo usan el esqueleto y el `colSpan` del vacío; con un número suelto en cada
+ * lado, quitar una columna dejaba el esqueleto y el mensaje descuadrados.
+ */
+const COLUMNAS = 6
 
 const copFormat = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -71,23 +93,6 @@ function formatCop(value: number | null | undefined): string {
   return copFormat.format(value)
 }
 
-// Semantic status tints vía tokens del DS (contrato §8). Antes: bg/text del mismo
-// hex → texto invisible; ahora soft-bg + texto sólido para contraste real.
-function statusBadgeVariant(
-  status: Status,
-): 'default' | 'secondary' | 'success' | 'warning' | 'destructive' {
-  switch (status) {
-    case 'approved':
-      return 'success'
-    case 'pending':
-      return 'warning'
-    case 'declined':
-      return 'destructive'
-    case 'disbursed':
-      return 'secondary'
-  }
-}
-
 function providerBadgeVariant(provider: Provider): 'default' | 'secondary' {
   return provider === 'wompi' ? 'default' : 'secondary'
 }
@@ -96,27 +101,34 @@ function KpiCard({
   testId,
   label,
   value,
+  hint,
   isLoading,
 }: {
   testId: string
   label: string
   value: string
+  /** Línea de apoyo: un monto sin saber sobre cuántas filas se calcula dice a medias. */
+  hint?: string
   isLoading: boolean
 }) {
   return (
-    <div
-      data-testid={testId}
-      className="rounded-lg border border-border bg-card px-4 py-3"
-    >
-      <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+    <Card data-testid={testId} className="px-4 py-3">
+      <p className="text-xs font-medium text-fg-muted uppercase tracking-wider">
         {label}
       </p>
       {isLoading ? (
-        <div className="mt-1 h-5 w-24 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+        <div className="mt-1 h-5 w-24 animate-pulse rounded bg-surface-muted" />
       ) : (
-        <p className="mt-1 text-lg font-semibold text-neutral-900 dark:text-white">{value}</p>
+        // Los números van monoespaciados y tabulares para que las columnas de
+        // cifras se alineen entre tarjetas.
+        <p className="mt-1 text-lg font-semibold text-fg font-mono tabular-nums">
+          {value}
+        </p>
       )}
-    </div>
+      {!isLoading && hint && (
+        <p className="mt-0.5 text-xs text-fg-subtle">{hint}</p>
+      )}
+    </Card>
   )
 }
 
@@ -127,14 +139,17 @@ export default function PagosFunnelClient() {
   // ── Filter state ──────────────────────────────────────────────────────────
   const [dateWindow, setDateWindow] = useState<DateWindow>('30d')
   const [providers, setProviders] = useState<Provider[]>([])
-  const [statuses, setStatuses] = useState<Status[]>([])
+  const [statuses, setStatuses] = useState<EstadoVisible[]>([])
   const [sort, setSort] = useState<PaymentsFunnelSort>('created_at')
 
   // ── Hook filters ──────────────────────────────────────────────────────────
   const filters = useMemo<UsePaymentsFunnelFilters>(
     () => ({
       provider: providers.length > 0 ? providers.join(',') : undefined,
-      status: statuses.length > 0 ? statuses.join(',') : undefined,
+      status:
+        statuses.length > 0
+          ? statuses.map((s) => ESTADO_A_FILTRO[s]).join(',')
+          : undefined,
       dateWindow,
       sort,
     }),
@@ -144,25 +159,33 @@ export default function PagosFunnelClient() {
   const { rows, kpis, isLoading, isLoadingMore, error, hasMore, loadMore, refetch } =
     usePaymentsFunnel(filters)
 
-  // ── Infinite scroll sentinel ──────────────────────────────────────────────
-  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  // ── Paginación ────────────────────────────────────────────────────────────
+  //
+  // Páginas numeradas, igual que Llamadas y Cartas, en vez del scroll infinito
+  // que había: un paginador dice cuántos pagos hay y deja volver a una página,
+  // dos cosas que el scroll infinito no permite.
+  //
+  // El endpoint pagina por cursor del lado del servidor, así que se recorta en
+  // memoria lo YA cargado y se pide el siguiente tramo al llegar a la última
+  // página. Las dos mecánicas conviven sin pelearse.
+  const {
+    pageItems,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    shouldPaginate,
+  } = useTablePagination(rows, {
+    resetKey: `${providers.join(',')}|${statuses.join(',')}|${dateWindow}|${sort}`,
+  })
+
+  const lastPage = Math.max(1, Math.ceil(total / pageSize))
   useEffect(() => {
-    const el = sentinelRef.current
-    if (!el) return
-    if (!hasMore) return
-    const obs = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            void loadMore()
-          }
-        }
-      },
-      { rootMargin: '300px' },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [hasMore, loadMore, rows.length])
+    if (page >= lastPage && hasMore && !isLoadingMore) {
+      void loadMore()
+    }
+  }, [page, lastPage, hasMore, isLoadingMore, loadMore])
 
   // Phase 38-05a: hasActiveFilters discriminates between "no payments yet"
   // (page-level EmptyState with CTA) and "no payments match these filters"
@@ -182,10 +205,10 @@ export default function PagosFunnelClient() {
     return (
       <main className="p-4 lg:p-8 max-w-7xl mx-auto">
         <header className="mb-5">
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-fg tracking-tight">
             {t('inmobiliaria.ai.cobranza.pagos.title')}
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+          <p className="text-sm text-fg-muted mt-0.5">
             {t('inmobiliaria.ai.cobranza.pagos.subtitle')}
           </p>
         </header>
@@ -206,7 +229,7 @@ export default function PagosFunnelClient() {
   const toggleProvider = (p: Provider) => {
     setProviders((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]))
   }
-  const toggleStatus = (s: Status) => {
+  const toggleStatus = (s: EstadoVisible) => {
     setStatuses((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
   }
   const clearFilters = () => {
@@ -226,18 +249,42 @@ export default function PagosFunnelClient() {
   }
 
   // ── KPI strip render helper ───────────────────────────────────────────────
+  //
+  // El orden sigue el recorrido de la plata: lo que se debe → lo que está en
+  // camino → lo que se confirmó o se cayó → lo que entró → lo que se giró.
+  //
+  // Ya NO está «Comisión promedio»: lo calculaba sobre `payments.fee_amount`,
+  // una columna que no escribe ningún writer del agente (ni el webhook de la
+  // pasarela, que ni siquiera lee la comisión del payload). Un «—» fijo se
+  // leía como «no hubo comisión». Para reponerla hay que empezar por el
+  // writer, no por la tarjeta.
   const renderKpis = (k: PaymentsFunnelKpis | null) => (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+      <KpiCard
+        testId="pagos-kpi-por-cobrar"
+        label={t('inmobiliaria.ai.cobranza.pagos.kpi.porCobrar')}
+        value={formatCop(k?.porCobrarCop ?? 0)}
+        hint={
+          k
+            ? k.porCobrarCount === 1
+              ? t('inmobiliaria.ai.cobranza.pagos.kpi.porCobrarHintOne')
+              : t('inmobiliaria.ai.cobranza.pagos.kpi.porCobrarHint', {
+                  count: k.porCobrarCount,
+                })
+            : undefined
+        }
+        isLoading={isLoading && !k}
+      />
+      <KpiCard
+        testId="pagos-kpi-en-proceso"
+        label={t('inmobiliaria.ai.cobranza.pagos.kpi.enProceso')}
+        value={String(k?.enProcesoCount ?? 0)}
+        isLoading={isLoading && !k}
+      />
       <KpiCard
         testId="pagos-kpi-approved"
         label={t('inmobiliaria.ai.cobranza.pagos.kpi.approved')}
         value={String(k?.approvedCount ?? 0)}
-        isLoading={isLoading && !k}
-      />
-      <KpiCard
-        testId="pagos-kpi-pending"
-        label={t('inmobiliaria.ai.cobranza.pagos.kpi.pending')}
-        value={String(k?.pendingCount ?? 0)}
         isLoading={isLoading && !k}
       />
       <KpiCard
@@ -258,22 +305,16 @@ export default function PagosFunnelClient() {
         value={formatCop(k?.totalDisbursedCop)}
         isLoading={isLoading && !k}
       />
-      <KpiCard
-        testId="pagos-kpi-avg-fee"
-        label={t('inmobiliaria.ai.cobranza.pagos.kpi.avgFee')}
-        value={formatCop(k?.avgFeeCop)}
-        isLoading={isLoading && !k}
-      />
     </div>
   )
 
   return (
     <main className="p-4 lg:p-8 max-w-7xl mx-auto">
       <header className="mb-5">
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">
+        <h1 className="text-2xl font-semibold text-fg tracking-tight">
           {t('inmobiliaria.ai.cobranza.pagos.title')}
         </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+        <p className="text-sm text-fg-muted mt-0.5">
           {t('inmobiliaria.ai.cobranza.pagos.subtitle')}
         </p>
       </header>
@@ -281,99 +322,115 @@ export default function PagosFunnelClient() {
       {/* KPI strip */}
       {renderKpis(kpis)}
 
-      {/* Date-window selector — excluyente → SegmentedControl (contrato §3) */}
-      <div className="flex flex-wrap items-center gap-2 mb-3">
-        <SegmentedControl<DateWindow>
-          value={dateWindow}
-          onChange={setDateWindow}
-          aria-label={t('inmobiliaria.ai.cobranza.pagos.title')}
-          options={DATE_WINDOWS.map((w) => ({
-            value: w,
-            label: t(`inmobiliaria.ai.cobranza.pagos.dateWindow.${w}`),
-          }))}
-        />
-      </div>
-
-      {/* Filters row */}
-      <div className="flex flex-col md:flex-row md:items-center md:flex-wrap gap-3 mb-4">
-        <fieldset>
-          <legend className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mr-2 inline">
-            {t('inmobiliaria.ai.cobranza.pagos.filter.provider')}:
-          </legend>
-          <span className="inline-flex flex-wrap gap-2 align-middle">
-            {PROVIDERS.map((p) => (
-              <Chip
-                key={p}
-                size="sm"
-                selected={providers.includes(p)}
-                onClick={() => toggleProvider(p)}
-                data-testid={`pagos-provider-chip-${p}`}
+      {/*
+        Una sola tarjeta: barra de herramientas, tabla y pie de paginación.
+        Antes el selector de fechas, los filtros y el orden flotaban sueltos
+        ENCIMA de la tarjeta, así que la pantalla se leía como tres bloques sin
+        relación en vez de una tabla con sus controles.
+      */}
+      <Card className="overflow-hidden">
+      {/*
+        Barra en DOS filas que usan el ancho, no tres apiladas contra el borde
+        izquierdo: lo excluyente (ventana temporal, orden) arriba y a los
+        extremos; lo acumulable (proveedor, estado) abajo.
+      */}
+      <div className="border-b border-border px-4 py-3 space-y-2.5">
+        {/* Fila 1 — ventana temporal · orden */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <SegmentedControl<DateWindow>
+            value={dateWindow}
+            onChange={setDateWindow}
+            aria-label={t('inmobiliaria.ai.cobranza.pagos.dateWindow.label')}
+            options={DATE_WINDOWS.map((w) => ({
+              value: w,
+              label: t(`inmobiliaria.ai.cobranza.pagos.dateWindow.${w}`),
+            }))}
+          />
+          <div className="flex items-center gap-2">
+            <label htmlFor="pagos-sort" className="text-xs font-medium text-fg-muted">
+              {t('inmobiliaria.ai.cobranza.pagos.sort.label')}:
+            </label>
+            <Select value={sort} onValueChange={(v) => setSort(v as PaymentsFunnelSort)}>
+              <SelectTrigger
+                id="pagos-sort"
+                data-testid="pagos-sort-select"
+                className="h-8 w-auto gap-1 text-xs"
               >
-                {t(`inmobiliaria.ai.cobranza.pagos.filter.${p}`)}
-              </Chip>
-            ))}
-          </span>
-        </fieldset>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at">
+                  {t('inmobiliaria.ai.cobranza.pagos.sort.createdAt')}
+                </SelectItem>
+                <SelectItem value="amount">
+                  {t('inmobiliaria.ai.cobranza.pagos.sort.amountDesc')}
+                </SelectItem>
+                <SelectItem value="disbursement_pending_days">
+                  {t('inmobiliaria.ai.cobranza.pagos.sort.disbursementPendingDays')}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-        <fieldset>
-          <legend className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mr-2 inline">
-            {t('inmobiliaria.ai.cobranza.pagos.filter.status')}:
-          </legend>
-          <span className="inline-flex flex-wrap gap-2 align-middle">
-            {STATUSES.map((s) => (
-              <Chip
-                key={s}
-                size="sm"
-                selected={statuses.includes(s)}
-                onClick={() => toggleStatus(s)}
-                data-testid={`pagos-status-chip-${s}`}
-              >
-                {t(`inmobiliaria.ai.cobranza.pagos.status.${s}`)}
-              </Chip>
-            ))}
-          </span>
-        </fieldset>
+        {/* Fila 2 — filtros acumulables · limpiar */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <fieldset>
+            <legend className="text-xs font-medium text-fg-muted mr-2 inline">
+              {t('inmobiliaria.ai.cobranza.pagos.filter.provider')}:
+            </legend>
+            <span className="inline-flex flex-wrap gap-1.5 align-middle">
+              {PROVIDERS.map((p) => (
+                <Chip
+                  key={p}
+                  size="sm"
+                  selected={providers.includes(p)}
+                  onClick={() => toggleProvider(p)}
+                  data-testid={`pagos-provider-chip-${p}`}
+                >
+                  {t(`inmobiliaria.ai.cobranza.pagos.filter.${p}`)}
+                </Chip>
+              ))}
+            </span>
+          </fieldset>
 
-        <Button
-          variant="link"
-          size="sm"
-          hideArrow
-          onClick={clearFilters}
-          className="px-0 h-auto self-center"
-        >
-          {t('inmobiliaria.ai.cobranza.pagos.filter.clear')}
-        </Button>
-      </div>
+          <fieldset>
+            <legend className="text-xs font-medium text-fg-muted mr-2 inline">
+              {t('inmobiliaria.ai.cobranza.pagos.filter.status')}:
+            </legend>
+            <span className="inline-flex flex-wrap gap-1.5 align-middle">
+              {ESTADOS_VISIBLES.map((st) => (
+                <Chip
+                  key={st}
+                  size="sm"
+                  selected={statuses.includes(st)}
+                  onClick={() => toggleStatus(st)}
+                  data-testid={`pagos-status-chip-${ESTADO_A_FILTRO[st]}`}
+                >
+                  {t(`inmobiliaria.ai.cobranza.pagos.status.${st}`)}
+                </Chip>
+              ))}
+            </span>
+          </fieldset>
 
-      {/* Sort selector */}
-      <div className="flex items-center gap-2 mb-4">
-        <label
-          htmlFor="pagos-sort"
-          className="text-xs font-medium text-neutral-500 dark:text-neutral-400"
-        >
-          Sort:
-        </label>
-        <Select value={sort} onValueChange={(v) => setSort(v as PaymentsFunnelSort)}>
-          <SelectTrigger
-            id="pagos-sort"
-            data-testid="pagos-sort-select"
-            className="h-8 w-auto gap-1 text-xs"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="created_at">{t('inmobiliaria.ai.cobranza.pagos.sort.createdAt')}</SelectItem>
-            <SelectItem value="amount">{t('inmobiliaria.ai.cobranza.pagos.sort.amountDesc')}</SelectItem>
-            <SelectItem value="disbursement_pending_days">
-              {t('inmobiliaria.ai.cobranza.pagos.sort.disbursementPendingDays')}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+          {/* Sólo cuando hay algo que limpiar: un botón que no hace nada es ruido. */}
+          {hasActiveFilters && (
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
+              onClick={clearFilters}
+              className="ml-auto px-0 h-auto"
+            >
+              {t('inmobiliaria.ai.cobranza.pagos.filter.clear')}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Error banner */}
       {error && (
-        <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 mb-4 flex items-center justify-between gap-3">
+        <div className="border-b border-border bg-danger-soft px-4 py-3 flex items-center justify-between gap-3">
           <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.pagos.error')}: {error}
           </p>
@@ -390,15 +447,15 @@ export default function PagosFunnelClient() {
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <Table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-800 text-sm">
-          <TableHeader className="bg-neutral-50 dark:bg-neutral-950/50">
+        <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
               <TableHead>
                 {t('inmobiliaria.ai.cobranza.pagos.columns.nombre')}
               </TableHead>
               <TableHead
-                className="cursor-pointer hover:text-foreground"
+                className="cursor-pointer hover:text-fg"
                 onClick={() => setSort('amount')}
                 data-testid="pagos-th-monto"
               >
@@ -406,16 +463,18 @@ export default function PagosFunnelClient() {
                 {sort === 'amount' && <span className="ml-1">↓</span>}
               </TableHead>
               <TableHead>
-                {t('inmobiliaria.ai.cobranza.pagos.columns.fee')}
-              </TableHead>
-              <TableHead>
                 {t('inmobiliaria.ai.cobranza.pagos.columns.provider')}
               </TableHead>
               <TableHead>
                 {t('inmobiliaria.ai.cobranza.pagos.columns.status')}
               </TableHead>
+              {/* El endpoint ya mandaba `disbursementState` y nadie lo mostraba,
+                  en la pantalla que se llama «funnel de pagos y desembolsos». */}
+              <TableHead>
+                {t('inmobiliaria.ai.cobranza.pagos.columns.disbursement')}
+              </TableHead>
               <TableHead
-                className="cursor-pointer hover:text-foreground"
+                className="cursor-pointer hover:text-fg"
                 onClick={() => setSort('created_at')}
                 data-testid="pagos-th-fecha"
               >
@@ -424,13 +483,13 @@ export default function PagosFunnelClient() {
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <TableBody>
             {isLoading && rows.length === 0 && (
               Array.from({ length: 5 }, (_, i) => (
                 <TableRow key={`pagos-skel-${i}`} className="animate-pulse">
-                  {Array.from({ length: 6 }, (_, j) => (
+                  {Array.from({ length: COLUMNAS }, (_, j) => (
                     <TableCell key={j} className="px-3 py-3">
-                      <div className="h-3 w-full bg-neutral-200 dark:bg-neutral-800 rounded" />
+                      <div className="h-3 w-full bg-surface-muted rounded" />
                     </TableCell>
                   ))}
                 </TableRow>
@@ -438,14 +497,16 @@ export default function PagosFunnelClient() {
             )}
             {!isLoading && rows.length === 0 && !error && (
               <TableRow>
-                <TableCell colSpan={6} className="px-3 py-12 text-center">
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                <TableCell colSpan={COLUMNAS} className="px-3 py-12 text-center">
+                  <p className="text-sm text-fg-muted">
                     {t('inmobiliaria.ai.cobranza.pagos.emptyFiltered')}
                   </p>
                 </TableCell>
               </TableRow>
             )}
-            {rows.map((row) => {
+            {pageItems.map((row) => {
+              const estado = estadoVisible(row)
+              const esObligacion = row.kind === 'obligacion'
               const isPending = row.disbursementPendingDays >= 3
               return (
                 <TableRow
@@ -457,26 +518,41 @@ export default function PagosFunnelClient() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleRowClick(row)
                   }}
-                  className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
+                  className=" cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <TableCell className="px-3 py-2 whitespace-nowrap text-neutral-900 dark:text-white">
-                    <Mask field="cedula" value={row.debtor.fullName} />
+                  <TableCell className="px-3 py-2 whitespace-nowrap">
+                    <span className="text-fg">{row.debtor.fullName}</span>
+                    <span className="block text-xs text-fg-subtle">
+                      <Mask field="cedula" value={row.debtor.cedulaMasked} />
+                    </span>
                   </TableCell>
-                  <TableCell className="px-3 py-2 tabular-nums text-xs text-neutral-900 dark:text-white">
+                  <TableCell className="px-3 py-2 tabular-nums text-xs text-fg">
                     {formatCop(row.amount)}
                   </TableCell>
-                  <TableCell className="px-3 py-2 tabular-nums text-xs text-neutral-500 dark:text-neutral-400">
-                    {formatCop(row.feeCop)}
-                  </TableCell>
                   <TableCell className="px-3 py-2">
-                    <Badge variant={providerBadgeVariant(row.provider)}>
-                      {t(`inmobiliaria.ai.cobranza.pagos.filter.${row.provider}`)}
-                    </Badge>
+                    {row.provider ? (
+                      <Badge variant={providerBadgeVariant(row.provider)}>
+                        {t(`inmobiliaria.ai.cobranza.pagos.filter.${row.provider}`)}
+                      </Badge>
+                    ) : (
+                      // Sin pasarela todavía. Antes esto interpolaba `null` en
+                      // la clave y pintaba `…pagos.filter.null` en cada fila.
+                      //
+                      // Y para una obligación no es «todavía»: nadie intentó
+                      // pagarla, así que no hay pasarela pendiente de asignar.
+                      <span className="text-xs text-fg-subtle">
+                        {t(
+                          esObligacion
+                            ? 'inmobiliaria.ai.cobranza.pagos.provider.noAplica'
+                            : 'inmobiliaria.ai.cobranza.pagos.provider.none',
+                        )}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <Badge variant={statusBadgeVariant(row.status)}>
-                        {t(`inmobiliaria.ai.cobranza.pagos.status.${row.status}`)}
+                      <Badge variant={estadoBadgeVariant(estado)}>
+                        {t(`inmobiliaria.ai.cobranza.pagos.status.${estado}`)}
                       </Badge>
                       {isPending && (
                         <Badge
@@ -490,7 +566,35 @@ export default function PagosFunnelClient() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
+                  <TableCell className="px-3 py-2 whitespace-nowrap">
+                    {/*
+                      No se puede desembolsar una plata que nunca entró: para
+                      una obligación este paso no existe. «Sin desembolsar»
+                      insinuaba un giro atrasado sobre una deuda sin pagar.
+                    */}
+                    {esObligacion ? (
+                      <span className="text-xs text-fg-subtle">
+                        {t('inmobiliaria.ai.cobranza.pagos.disbursement.noAplica')}
+                      </span>
+                    ) : row.disbursementState === 'settled' ? (
+                      <Badge variant="success">
+                        {t('inmobiliaria.ai.cobranza.pagos.disbursement.settled')}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-fg-muted">
+                        {t('inmobiliaria.ai.cobranza.pagos.disbursement.pending')}
+                        {row.disbursementPendingDays > 0 && (
+                          <span className="text-fg-subtle">
+                            {' · '}
+                            {t('inmobiliaria.ai.cobranza.pagos.disbursement.days', {
+                              days: row.disbursementPendingDays,
+                            })}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="px-3 py-2 text-xs text-fg-muted whitespace-nowrap">
                     {new Date(row.createdAt).toLocaleDateString('es-CO', {
                       day: '2-digit',
                       month: 'short',
@@ -502,18 +606,22 @@ export default function PagosFunnelClient() {
             })}
           </TableBody>
         </Table>
-      </div>
-
-      {/* Sentinel + loadingMore spinner */}
-      {hasMore && (
-        <div ref={sentinelRef} className="py-6 flex items-center justify-center">
-          {isLoadingMore && (
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">
-              {t('inmobiliaria.ai.cobranza.pagos.loadingMore')}
-            </span>
-          )}
         </div>
-      )}
+
+        {/* Pie: sólo si hay más de una página — un paginador que no pagina es ruido. */}
+        {shouldPaginate && (
+          <div className="border-t border-border px-4 py-3">
+            <TablePagination
+              total={total}
+              page={page}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+        )}
+      </Card>
     </main>
   )
 }

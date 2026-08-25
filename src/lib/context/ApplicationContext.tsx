@@ -14,7 +14,6 @@ import {
   PersonalInfo,
   EmploymentInfo,
   IncomeInfo,
-  ReferenceInfo,
   DocumentInfo,
   CoSignerInfo,
   createEmptyApplication,
@@ -30,9 +29,9 @@ import {
 import { StorageManager } from '@/lib/utils/storage';
 import { contextLogger } from '@/lib/utils/logger';
 import { applicationsApi } from '@/lib/api/applications.service';
-import { getAccessToken } from '@/lib/api/client';
+import { getAccessToken, ApiError } from '@/lib/api/client';
 import { getConsentText, type ConsentTextResponse } from '@/lib/api/legal.service';
-import type { ApplicationPrefillData } from '@/lib/api/applications.types';
+import { aplicarPrefill, aplicarIdentidadDelEstudio } from '@/lib/tenant/prefill-a-postulacion';
 
 // ============================================================================
 // Local storage key
@@ -74,7 +73,6 @@ interface ApplicationContextValue {
   updatePersonal: (data: Partial<PersonalInfo>) => void;
   updateEmployment: (data: Partial<EmploymentInfo>) => void;
   updateIncome: (data: Partial<IncomeInfo>) => void;
-  updateReferences: (data: Partial<ReferenceInfo>) => void;
   updateDocuments: (data: Partial<DocumentInfo>) => void;
 
   // Co-signer
@@ -286,57 +284,23 @@ export function ApplicationProvider({
     applicationsApi.getPrefill()
       .then((prefill) => {
         if (cancelled) return;
-        if (!prefill.hasPreviousApplication) return;
-
-        const data = prefill as ApplicationPrefillData;
+        // `preScoringIdentity` es ORTOGONAL a `hasPreviousApplication` — alguien
+        // sin postulación previa puede tener un estudio vigente y de todas
+        // formas debe ver su identidad precargada y bloqueada. Sólo si NINGUNA
+        // de las dos cosas está presente no hay nada que prefillear.
+        if (!prefill.hasPreviousApplication && !prefill.preScoringIdentity) return;
 
         setApplication((prev) => {
           // If the state is no longer pristine (user typed something), bail out.
           if (prev.personal.fullName) return prev;
 
-          return {
-            ...prev,
-            personal: {
-              ...prev.personal,
-              fullName: data.fullName ?? prev.personal.fullName ?? '',
-              documentType: (data.documentType as Application['personal']['documentType']) ?? prev.personal.documentType,
-              documentNumber: data.documentNumber ?? prev.personal.documentNumber ?? '',
-              dateOfBirth: data.dateOfBirth ?? prev.personal.dateOfBirth ?? '',
-              phone: data.phone ?? prev.personal.phone ?? '',
-              email: data.email ?? prev.personal.email ?? '',
-              currentAddress: data.currentAddress ?? prev.personal.currentAddress ?? '',
-              timeAtCurrentAddress: data.timeAtCurrentAddress ?? prev.personal.timeAtCurrentAddress,
-              maritalStatus: (data.maritalStatus as Application['personal']['maritalStatus']) ?? prev.personal.maritalStatus,
-              dependents: data.dependents ?? prev.personal.dependents,
-            },
-            employment: {
-              ...prev.employment,
-              employmentStatus: (data.employmentStatus as Application['employment']['employmentStatus']) ?? prev.employment.employmentStatus,
-              companyName: data.companyName ?? prev.employment.companyName ?? '',
-              industry: data.industry ?? prev.employment.industry ?? '',
-              position: data.position ?? prev.employment.position ?? '',
-              contractType: (data.contractType as Application['employment']['contractType']) ?? prev.employment.contractType,
-              timeAtJob: data.timeAtJob ?? prev.employment.timeAtJob,
-              employerPhone: data.employerPhone ?? prev.employment.employerPhone ?? '',
-              employerAddress: data.employerAddress ?? prev.employment.employerAddress ?? '',
-            },
-            income: {
-              ...prev.income,
-              monthlySalary: data.monthlySalary ?? prev.income.monthlySalary ?? 0,
-              additionalIncome: data.additionalIncome ?? prev.income.additionalIncome ?? 0,
-              additionalIncomeSource: data.additionalIncomeSource ?? prev.income.additionalIncomeSource ?? '',
-              totalMonthlyIncome: data.totalMonthlyIncome ?? prev.income.totalMonthlyIncome ?? 0,
-              monthlyObligations: data.monthlyObligations ?? prev.income.monthlyObligations ?? 0,
-              availableForRent: data.availableForRent ?? prev.income.availableForRent ?? 0,
-            },
-            references: data.references ?? prev.references,
-            hasCoSigner: data.hasCoSigner ?? prev.hasCoSigner,
-            coSigner: (data.coSigner as unknown as Application['coSigner']) ?? prev.coSigner,
-            // Prefilled data is a convenience, not a confirmation: steps stay
-            // unconfirmed and the wizard shows a notice asking to review them.
-            prefilledAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
+          // El mapeo vive en `lib/tenant/prefill-a-postulacion` porque lo usa
+          // también la postulación directa, que decide con él si hay algo que
+          // preguntar. Dos mapeos distintos harían que una pantalla dijera "ya
+          // tenemos todo" sobre datos que la otra considera incompletos.
+          // Los datos traídos NO cuentan como confirmados: los pasos siguen sin
+          // marcar y el wizard muestra el aviso de revisarlos.
+          return aplicarPrefill(prev, prefill);
         });
       })
       .catch(() => {
@@ -348,6 +312,55 @@ export function ApplicationProvider({
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, propertyId]);
+
+  // ========================================================================
+  // Pre-scoring identity lock — ALSO in update mode (NEEDS_INFO correction)
+  // ========================================================================
+  //
+  // Unlike the effect above, this one is NOT gated to create mode. Contract
+  // T-0001 §8.2 names `PATCH /applications/:id/steps/1` (which this is —
+  // submitApplication's update branch) as a live identity-write vector,
+  // explicitly reachable in `mode === 'update'`. Leaving it unlocked here
+  // let a tenant in the correction flow retype a different name and hit a
+  // 409 IDENTIDAD_NO_COINCIDE with no idea why the front never warned them.
+  //
+  // Deliberately does NOT reuse `aplicarPrefill` — that would also apply
+  // `hasPreviousApplication` data, resurrecting an unrelated previous
+  // application's values over what the tenant is actively correcting in
+  // THIS one. `aplicarIdentidadDelEstudio` touches only the four identity
+  // fields, sourced only from `preScoringIdentity`, never from
+  // `hasPreviousApplication`.
+  //
+  // Race-condition guard: same shape as the effect above — `cancelled` for
+  // unmount, and the functional-update form of `setApplication` so the
+  // identity is layered onto whatever the latest state is, not a stale
+  // closure. There is no pristine/dirty check here on purpose: the identity
+  // is meant to WIN over whatever is currently typed in the locked fields
+  // (contract §3.2) — that is what makes it a correction, not a suggestion.
+
+  useEffect(() => {
+    if (mode !== 'update') return;
+    if (!getAccessToken()) return;
+
+    let cancelled = false;
+
+    applicationsApi.getPrefill()
+      .then((prefill) => {
+        if (cancelled) return;
+        if (!prefill.preScoringIdentity) return;
+
+        setApplication((prev) => aplicarIdentidadDelEstudio(prev, prefill));
+      })
+      .catch(() => {
+        // Identity lock is best-effort here too: the back still enforces on
+        // submit (409 IDENTIDAD_NO_COINCIDE) regardless — this UI lock is UX,
+        // not the control.
+        contextLogger.warn('Pre-scoring identity fetch failed in update mode — form stays editable');
+      });
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, existingApplicationId]);
 
   // ========================================================================
   // Compass helpers
@@ -423,14 +436,6 @@ export function ApplicationProvider({
     });
   }, []);
 
-  const updateReferences = useCallback((data: Partial<ReferenceInfo>) => {
-    setApplication((prev) => ({
-      ...prev,
-      references: { ...prev.references, ...data },
-      updatedAt: new Date().toISOString(),
-    }));
-  }, []);
-
   const updateDocuments = useCallback((data: Partial<DocumentInfo>) => {
     setApplication((prev) => ({
       ...prev,
@@ -496,17 +501,21 @@ export function ApplicationProvider({
     // Uploading is impossible without the File — block early with a clear message.
     // In update mode, fileName-without-file means the document already exists on
     // the server and skipping the upload is intentional, so the guard is skipped.
+    //
+    // `reusable` es la excepción, y no es un detalle: un documento traído de una
+    // postulación anterior TAMBIÉN llega sin `File`, pero no se perdió nada —
+    // vive en el servidor y lo copia `reuseDocuments` más abajo. Sin distinguir
+    // los dos casos, a quien reusa sus documentos se le bloqueaba el envío
+    // pidiéndole adjuntar de nuevo lo que ya nos había dado.
     if (mode !== 'update') {
       const docs = application.documents;
       const staleSlots = [
         docs.idDocument,
         docs.bankStatement,
-        docs.incomeProof,
-        docs.employmentLetter,
-        docs.payStub,
-        docs.creditReport,
       ];
-      const hasStaleSlot = staleSlots.some((slot) => slot?.fileName && !slot?.file);
+      const hasStaleSlot = staleSlots.some(
+        (slot) => slot?.fileName && !slot?.file && !slot?.reusable,
+      );
       if (hasStaleSlot) {
         setSubmissionError(
           'Algunos documentos se desconectaron al recargar la página. Volvé al paso de documentos y adjuntalos de nuevo.',
@@ -534,12 +543,6 @@ export function ApplicationProvider({
       // Employment
       employmentStatus: application.employment.employmentStatus,
       companyName: application.employment.companyName,
-      industry: application.employment.industry,
-      position: application.employment.position,
-      contractType: application.employment.contractType,
-      timeAtJob: application.employment.timeAtJob,
-      employerPhone: application.employment.employerPhone,
-      employerAddress: application.employment.employerAddress,
       // Income
       monthlySalary: application.income.monthlySalary,
       additionalIncome: application.income.additionalIncome,
@@ -547,7 +550,13 @@ export function ApplicationProvider({
       totalMonthlyIncome: application.income.totalMonthlyIncome,
       monthlyObligations: application.income.monthlyObligations,
       availableForRent: application.income.availableForRent,
-      // References
+      // References — T-0025 dropped the wizard step; `application.references`
+      // is now always the empty seed from `createEmptyApplication` (or a
+      // previous application's data carried by prefill). Left in the one-shot
+      // create/guest payload on purpose: `CreateApplicationDto.references` is
+      // optional and the backend already tolerates/ignores it either way
+      // (`contract.md` T-0025 §2.1) — this is NOT the `steps/4` PATCH call
+      // that was removed below.
       references: application.references as Record<string, unknown>,
       // Co-signer
       hasCoSigner: application.hasCoSigner,
@@ -587,12 +596,6 @@ export function ApplicationProvider({
         await applicationsApi.updateStep(existingApplicationId, 2, {
           employmentStatus: application.employment.employmentStatus,
           companyName: application.employment.companyName,
-          industry: application.employment.industry,
-          position: application.employment.position,
-          contractType: application.employment.contractType,
-          timeAtJob: application.employment.timeAtJob,
-          employerPhone: application.employment.employerPhone,
-          employerAddress: application.employment.employerAddress,
         });
 
         // Step 3 — Income
@@ -605,11 +608,6 @@ export function ApplicationProvider({
           availableForRent: application.income.availableForRent,
         });
 
-        // Step 4 — References
-        await applicationsApi.updateStep(existingApplicationId, 4, {
-          references: application.references as Record<string, unknown>,
-        });
-
         // Upload any new documents — in update mode we do NOT silently swallow
         // upload errors. If an upload fails, the whole flow fails so we don't
         // notify the agency of a partial update.
@@ -617,10 +615,6 @@ export function ApplicationProvider({
         const docEntries: Array<{ file: File | null | undefined; type: string }> = [
           { file: docs.idDocument?.file, type: 'ID_DOCUMENT' },
           { file: docs.bankStatement?.file, type: 'BANK_STATEMENT' },
-          { file: docs.incomeProof?.file, type: 'INCOME_PROOF' },
-          { file: docs.employmentLetter?.file, type: 'EMPLOYMENT_LETTER' },
-          { file: docs.payStub?.file, type: 'PAY_STUB' },
-          { file: docs.creditReport?.file, type: 'CREDIT_REPORT' },
         ];
         for (const { file, type } of docEntries) {
           if (file) {
@@ -649,10 +643,6 @@ export function ApplicationProvider({
         const docEntries: Array<{ file: File | null | undefined; type: string }> = [
           { file: docs.idDocument?.file, type: 'ID_DOCUMENT' },
           { file: docs.bankStatement?.file, type: 'BANK_STATEMENT' },
-          { file: docs.incomeProof?.file, type: 'INCOME_PROOF' },
-          { file: docs.employmentLetter?.file, type: 'EMPLOYMENT_LETTER' },
-          { file: docs.payStub?.file, type: 'PAY_STUB' },
-          { file: docs.creditReport?.file, type: 'CREDIT_REPORT' },
         ];
         for (const { file, type } of docEntries) {
           if (file) {
@@ -666,6 +656,26 @@ export function ApplicationProvider({
               const msg = uploadErr instanceof Error ? uploadErr.message : 'Error subiendo documento';
               throw new Error(`No pudimos subir el documento "${type}". ${msg}`);
             }
+          }
+        }
+
+        /*
+         * Los documentos traídos de una postulación anterior no tienen `File`
+         * que subir: se copian en el servidor. Va DESPUÉS de las subidas a
+         * propósito — el back sólo copia los tipos que todavía no están, así
+         * que un archivo recién adjuntado le gana al viejo, que es lo que la
+         * persona espera cuando reemplaza uno.
+         */
+        const hayReusables = [
+          docs.idDocument,
+          docs.bankStatement,
+        ].some((slot) => slot?.reusable);
+        if (hayReusables) {
+          try {
+            await applicationsApi.reuseDocuments(created.id);
+          } catch (reuseErr) {
+            const msg = reuseErr instanceof Error ? reuseErr.message : 'Error adjuntando documentos';
+            throw new Error(`No pudimos adjuntar tus documentos anteriores. ${msg}`);
           }
         }
       } else {
@@ -693,8 +703,19 @@ export function ApplicationProvider({
         },
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al enviar la aplicación';
-      setSubmissionError(message);
+      // El back rechaza el envío cuando la identidad contradice el estudio de
+      // pre-scoring vigente (contract.md T-0001 §3.3). Es un control del
+      // servidor, no del front — el bloqueo de UI en el paso 1 es sólo UX.
+      // Mensaje accionable, sin diff de campos (el wire no lo trae) y sin
+      // reintento automático.
+      if (err instanceof ApiError && err.code === 'IDENTIDAD_NO_COINCIDE') {
+        setSubmissionError(
+          'Tu postulación debe presentarse con la identidad de tu estudio de arrendamiento vigente. Recargá la página para traer tus datos actualizados e intentá de nuevo.',
+        );
+      } else {
+        const message = err instanceof Error ? err.message : 'Error al enviar la aplicación';
+        setSubmissionError(message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -737,7 +758,6 @@ export function ApplicationProvider({
         personal: application.personal,
         employment: application.employment,
         income: application.income,
-        references: application.references,
         documents: application.documents,
       },
       { acceptTerms, authorizeVerification }
@@ -787,7 +807,7 @@ export function ApplicationProvider({
   // backend rejects a consent without its version, so the legal text must have
   // loaded before submit is allowed.
   const canSubmit =
-    completedSteps.length >= 5 &&
+    completedSteps.length >= 4 &&
     acceptTerms &&
     authorizeVerification &&
     !!authorizationVersion;
@@ -814,7 +834,6 @@ export function ApplicationProvider({
     updatePersonal,
     updateEmployment,
     updateIncome,
-    updateReferences,
     updateDocuments,
 
     setHasCoSigner,
@@ -886,39 +905,11 @@ function sanitizeDocumentsForStorage(
       uploadedAt: documents.idDocument.uploadedAt,
     };
   }
-  if (documents.incomeProof) {
-    sanitized.incomeProof = {
-      file: null,
-      fileName: documents.incomeProof.fileName,
-      uploadedAt: documents.incomeProof.uploadedAt,
-    };
-  }
-  if (documents.employmentLetter) {
-    sanitized.employmentLetter = {
-      file: null,
-      fileName: documents.employmentLetter.fileName,
-      uploadedAt: documents.employmentLetter.uploadedAt,
-    };
-  }
   if (documents.bankStatement) {
     sanitized.bankStatement = {
       file: null,
       fileName: documents.bankStatement.fileName,
       uploadedAt: documents.bankStatement.uploadedAt,
-    };
-  }
-  if (documents.payStub) {
-    sanitized.payStub = {
-      file: null,
-      fileName: documents.payStub.fileName,
-      uploadedAt: documents.payStub.uploadedAt,
-    };
-  }
-  if (documents.creditReport) {
-    sanitized.creditReport = {
-      file: null,
-      fileName: documents.creditReport.fileName,
-      uploadedAt: documents.creditReport.uploadedAt,
     };
   }
 
@@ -930,15 +921,19 @@ function sanitizeDocumentsForStorage(
  * through the step (confirmedSteps) AND its data must still be present. Data
  * presence alone is NOT enough — prefilled data requires user review, so a
  * freshly prefilled wizard starts with zero completed steps.
+ *
+ * T-0025 dropped the references step entirely — the wizard went from 6 steps
+ * to 5. Documents moved from step 5 to step 4; Review moved from step 6 to
+ * step 5.
  */
 function getCompletedSteps(application: Application): number[] {
   const confirmed = application.confirmedSteps ?? [];
   const dataComplete = getDataCompleteSteps(application);
-  const completed = dataComplete.filter((step) => step < 6 && confirmed.includes(step));
+  const completed = dataComplete.filter((step) => step < 5 && confirmed.includes(step));
 
-  // Step 6: Review - all previous steps confirmed with their data intact
-  if (completed.length === 5) {
-    completed.push(6);
+  // Step 5: Review - all previous steps confirmed with their data intact
+  if (completed.length === 4) {
+    completed.push(5);
   }
 
   return completed;
@@ -973,26 +968,17 @@ function getDataCompleteSteps(application: Application): number[] {
     completed.push(3);
   }
 
-  // Step 4: References - has at least one reference
-  const refs = application.references;
-  if (
-    (refs.previousLandlords && refs.previousLandlords.length > 0) ||
-    (refs.personalReferences && refs.personalReferences.length > 0)
-  ) {
-    completed.push(4);
-  }
-
-  // Step 5: Documents - has ID document
+  // Step 4: Documents - has ID document
   if (
     application.documents.idDocument?.fileName ||
     application.documents.idDocument?.file
   ) {
-    completed.push(5);
+    completed.push(4);
   }
 
-  // Step 6: Review - all previous steps completed
-  if (completed.length === 5) {
-    completed.push(6);
+  // Step 5: Review - all previous steps completed
+  if (completed.length === 4) {
+    completed.push(5);
   }
 
   return completed;

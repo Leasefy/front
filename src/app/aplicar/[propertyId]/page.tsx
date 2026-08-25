@@ -2,25 +2,27 @@
 
 import { use, useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { ArrowLeft, CheckCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { WizardShell } from '@/components/wizard/WizardShell';
-import { ConfirmationScreen, generateTrackingCode } from '@/components/wizard/ConfirmationScreen';
+import { PostulacionEnviadaModal } from '@/components/tenant/PostulacionEnviadaModal';
 import { ApplicationProvider, useApplication } from '@/lib/context/ApplicationContext';
 import { useProperty } from '@/lib/hooks/useProperties';
 import { applicationsApi } from '@/lib/api/applications.service';
-import { getAccessToken } from '@/lib/api/client';
+import { useAuth } from '@/lib/auth/use-auth';
 import type { Property } from '@/lib/types/property';
 
 // Step components
 import { StepPersonal } from '@/components/wizard/steps/StepPersonal';
 import { StepEmployment } from '@/components/wizard/steps/StepEmployment';
 import { StepIncome } from '@/components/wizard/steps/StepIncome';
-import { StepReferences } from '@/components/wizard/steps/StepReferences';
 import { StepDocuments } from '@/components/wizard/steps/StepDocuments';
 import { StepReview } from '@/components/wizard/steps/StepReview';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { PostulacionDirecta } from '@/components/tenant/PostulacionDirecta';
+import { usePostulacionDirecta } from '@/lib/hooks/use-postulacion-directa';
 
 // ============================================================================
 // Page props
@@ -42,7 +44,19 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   // Handle both Promise and direct params (Next.js version compatibility)
   const resolvedParams = params instanceof Promise ? use(params) : params;
   const searchParams = useSearchParams();
-  const { property, isLoading, error } = useProperty(resolvedParams.propertyId);
+  const pathname = usePathname();
+  const { property, isLoading, error, errorCrudo } = useProperty(resolvedParams.propertyId);
+
+  // Postulación directa: quien ya se estudió, está vigente, el inmueble le
+  // entra en el tope y ya llenó una postulación completa no tiene por qué
+  // volver a llenar seis pasos. `?formulario=1` es la salida explícita.
+  const verFormulario = searchParams.get('formulario') === '1';
+  const {
+    cargando: decidiendoCamino,
+    prefillDirecto,
+    consentText,
+  } = usePostulacionDirecta(property?.monthlyRent);
+  const [postuladaId, setPostuladaId] = useState<string | null>(null);
 
   // Get pre-filled name and email from URL params (lead capture)
   const initialName = searchParams.get('name') || '';
@@ -56,13 +70,20 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   // this property cannot create a second one (backend 409). Detect it up front
   // and show a card instead of letting them redo the whole wizard and dead-end
   // at submit. undefined = still checking, null = none, object = already applied.
-  const isAuthed = !!getAccessToken();
+  //
+  // `useAuth`, no `getAccessToken()`: el token vive en memoria y lo pone el
+  // AuthProvider cuando Supabase responde. Leerlo durante el render devuelve
+  // null en la primera pasada aunque haya sesión, y entonces esta detección se
+  // saltaba entera — quien ya había postulado volvía a llenar los seis pasos
+  // para chocar con un 409 al enviar.
+  const { isAuthenticated: isAuthed, isLoading: resolviendoSesion } = useAuth();
   const [existingApp, setExistingApp] = useState<
     { id: string; status: string } | null | undefined
   >(undefined);
   const [withdrawing, setWithdrawing] = useState(false);
 
   useEffect(() => {
+    if (resolviendoSesion) return; // todavía no se sabe si hay sesión
     if (!isAuthed) {
       setExistingApp(null); // guests can't have an account-bound application
       return;
@@ -89,7 +110,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [isAuthed, resolvedParams.propertyId]);
+  }, [isAuthed, resolviendoSesion, resolvedParams.propertyId]);
 
   const handleWithdrawAndReapply = useCallback(async () => {
     if (!existingApp) return;
@@ -112,7 +133,25 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   }
 
   // 404 handling
-  if (!property || error) {
+    /*
+   * «No existe» y «no se pudo cargar» eran la misma pantalla: `if (!x || error)`.
+   * Le decía a alguien con mala conexión que esta propiedad había sido eliminada, y sin
+   * ofrecer reintentar — porque sobre algo que no existe reintentar no tiene
+   * sentido. Las dos señales ya estaban por separado; se juntaban a mano.
+   */
+  if (error) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
+        <FalloDeCarga
+          error={errorCrudo ?? error}
+          queEs="esta propiedad"
+          volverA={{ label: 'Ver propiedades disponibles', href: '/propiedades' }}
+        />
+      </div>
+    );
+  }
+
+  if (!property) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="text-center px-4">
@@ -155,8 +194,11 @@ export default function AplicarPage({ params }: AplicarPageProps) {
     );
   }
 
-  // Still checking whether this authenticated user already applied.
-  if (isAuthed && existingApp === undefined) {
+  // Still checking whether this authenticated user already applied, or which
+  // of the two paths they take. Se espera a las dos: mostrar el formulario y
+  // reemplazarlo un segundo después por la pantalla directa sería peor que
+  // esperar.
+  if (decidiendoCamino || (isAuthed && existingApp === undefined)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -173,6 +215,32 @@ export default function AplicarPage({ params }: AplicarPageProps) {
         onWithdraw={handleWithdrawAndReapply}
         withdrawing={withdrawing}
       />
+    );
+  }
+
+  // A quien ya se estudió, tiene la aprobación vigente, el inmueble le entra en
+  // el tope y ya llenó una postulación completa, no hay nada que preguntarle:
+  // una pantalla de confirmación en vez de los seis pasos.
+  //
+  // El "ya quedaste postulado" va ENCIMA de esa pantalla, no en lugar de ella:
+  // así queda a la vista a cuál de los inmuebles corresponde.
+  if (prefillDirecto && !verFormulario) {
+    return (
+      <>
+        <PostulacionDirecta
+          property={property}
+          prefill={prefillDirecto}
+          consentText={consentText}
+          hrefFormulario={`${pathname}?formulario=1`}
+          onPostulada={setPostuladaId}
+        />
+        {postuladaId ? (
+          <PostulacionEnviadaModal
+            property={property}
+            applicationId={postuladaId}
+          />
+        ) : null}
+      </>
     );
   }
 
@@ -255,30 +323,30 @@ interface WizardContentProps {
 function WizardContent({ property }: WizardContentProps) {
   const { application, isGuestSubmission } = useApplication();
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [trackingCode, setTrackingCode] = useState('');
 
   // Handle successful submission
   const handleSubmissionComplete = useCallback(() => {
-    setTrackingCode(generateTrackingCode());
     setIsSubmitted(true);
   }, []);
 
-  // Show confirmation screen after successful submission
-  if (isSubmitted || application.status === 'submitted') {
-    return (
-      <ConfirmationScreen
-        property={property}
-        trackingCode={trackingCode || generateTrackingCode()}
-        isGuest={isGuestSubmission}
-        guestEmail={application.personal.email}
-      />
-    );
-  }
+  const enviada = isSubmitted || application.status === 'submitted';
 
+  // El aviso de "ya te postulaste" va encima del formulario, no en su lugar:
+  // detrás queda lo que se acaba de mandar.
   return (
-    <WizardShell property={property}>
-      <WizardStepContent onSubmissionComplete={handleSubmissionComplete} />
-    </WizardShell>
+    <>
+      <WizardShell property={property}>
+        <WizardStepContent onSubmissionComplete={handleSubmissionComplete} />
+      </WizardShell>
+      {enviada ? (
+        <PostulacionEnviadaModal
+          property={property}
+          applicationId={application.id}
+          esInvitado={isGuestSubmission}
+          correoInvitado={application.personal.email}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -313,14 +381,11 @@ function WizardStepContent({ onSubmissionComplete }: WizardStepContentProps) {
       {/* Step 3: Income Information */}
       {currentStep === 3 && <StepIncome />}
 
-      {/* Step 4: References */}
-      {currentStep === 4 && <StepReferences />}
+      {/* Step 4: Documents */}
+      {currentStep === 4 && <StepDocuments />}
 
-      {/* Step 5: Documents */}
-      {currentStep === 5 && <StepDocuments />}
-
-      {/* Step 6: Review */}
-      {currentStep === 6 && <StepReview />}
+      {/* Step 5: Review */}
+      {currentStep === 5 && <StepReview />}
     </div>
   );
 }

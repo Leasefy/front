@@ -1,4 +1,6 @@
 import type { NavItem } from '@/components/ui/plan/PlanSidebar';
+import { canSeeBusinessModule, type BusinessModule } from './agency-module-scope';
+import { isAgentModule } from '@/lib/auth/agent-module-access';
 
 /**
  * A sidebar nav item that may carry a permission `module` gate and/or an
@@ -10,6 +12,12 @@ export type NavItemWithModule = NavItem & {
   /** Agency roles allowed (in addition to isAdmin). */
   roles?: readonly string[];
   adminOnly?: boolean;
+  /**
+   * Módulo de negocio al que pertenece la fila. Recorta la navegación por rol
+   * vía ROLE_MODULE_SCOPE — encuadre, NO seguridad (ver agency-module-scope.ts).
+   * Sin `scope` la fila es transversal y no se recorta.
+   */
+  scope?: BusinessModule;
 };
 
 export interface NavFilterContext {
@@ -18,6 +26,20 @@ export interface NavFilterContext {
   canAccess: (module: string, action: string) => boolean;
   isAdmin: boolean;
   agencyRole: string | null;
+  /**
+   * El servicio del agente NO contestó (`agentAccessStatus === 'sin-verificar'`).
+   *
+   * `cobranza` y `cotizador` fallan cerrado a propósito, y para «el agente dijo
+   * que no» eso está bien. Pero cuando **no pudimos preguntar** —el agente caído,
+   * un 401, la agencia sin aprovisionar— fallar cerrado **borra la fila del
+   * menú**, y un módulo que desaparece sin decir nada se lee como «esto no
+   * existe», no como «no pudimos verificarlo».
+   *
+   * Con esto la fila sobrevive SÓLO en ese caso. No afloja ningún permiso: la
+   * pantalla sigue gateada y muestra «No pudimos verificar tu acceso» con su
+   * reintentar, que es la verdad. Ver `agent-module-access.ts`.
+   */
+  agentUnverified?: boolean;
 }
 
 /**
@@ -40,7 +62,18 @@ export function filterAgencyNav(
   const filterItem = (item: NavItemWithModule): NavItemWithModule | null => {
     // Module-based gate: agent modules use agent permissions, others use the
     // monolith effectivePermissions map — both resolved inside canAccess.
-    if (item.module && !ctx.canAccess(item.module, 'view')) return null;
+    if (item.module && !ctx.canAccess(item.module, 'view')) {
+      // Excepción única: el agente no contestó y el módulo es suyo. No es que
+      // no tenga permiso — es que no pudimos preguntar. Ver `agentUnverified`.
+      const esDelAgente = ctx.agentUnverified === true && isAgentModule(item.module);
+      if (!esDelAgente) return null;
+    }
+    // Encuadre por módulo de negocio: recorta el menú al trabajo del rol.
+    // Corre DESPUÉS del gate de permisos a propósito — solo puede quitar filas
+    // que el permiso ya concedía, nunca devolver una que el permiso negó.
+    if (!canSeeBusinessModule(item.scope, { isAdmin: ctx.isAdmin, agencyRole: ctx.agencyRole })) {
+      return null;
+    }
     // Role-based gate: isAdmin bypasses; otherwise the current agencyRole must
     // be in the item's allow-list.
     if (item.roles && item.roles.length > 0) {

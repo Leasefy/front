@@ -164,6 +164,52 @@ describe('CartaApprovalClient', () => {
     unmount(h)
   })
 
+  // Un botón muerto sin motivo se lee como «está roto» — le pasó al dueño del
+  // producto. Estas tres fijan que SIEMPRE haya una razón visible y audible.
+  it('con campos vacíos, el botón dice POR QUÉ está deshabilitado', () => {
+    CAN_APPROVE = true
+    const h = mount()
+    const btn = getByTestId(h.container, 'approval-aprobar-carta') as HTMLButtonElement
+    expect(btn.disabled).toBe(true)
+    expect(btn.getAttribute('title')).toContain('requiredHint')
+    expect(btn.getAttribute('aria-describedby')).toBe('carta-required-hint')
+    expect(getByTestId(h.container, 'carta-required-hint')).not.toBeNull()
+    unmount(h)
+  })
+
+  it('los dos campos se anuncian como obligatorios', () => {
+    CAN_APPROVE = true
+    const h = mount()
+    expect(
+      getByTestId(h.container, 'carta-send-method')!.getAttribute('aria-required'),
+    ).toBe('true')
+    expect(
+      getByTestId(h.container, 'carta-sent-to-address')!.getAttribute('aria-required'),
+    ).toBe('true')
+    unmount(h)
+  })
+
+  // La pista tiene que seguir al estado real, no ser un cartel fijo: con la
+  // dirección puesta pero sin método, sigue faltando algo y sigue explicándolo.
+  //
+  // ⚠️ No se maneja el `Select` acá a propósito: `carta-send-method` es el
+  // SelectTrigger de Radix (un <button>), NO un <select>, así que
+  // `setNativeValue` no cambia el estado de React. El camino completo —los dos
+  // campos puestos habilitan el botón— se verificó en navegador real.
+  it('con la dirección puesta pero sin método, la pista sigue', () => {
+    CAN_APPROVE = true
+    const h = mount()
+    const input = getByTestId(h.container, 'carta-sent-to-address') as HTMLInputElement
+    act(() => {
+      setNativeValue(input, 'Calle 93 # 15-27, Bogotá')
+    })
+    expect(input.value).toBe('Calle 93 # 15-27, Bogotá')
+    const btn = getByTestId(h.container, 'approval-aprobar-carta') as HTMLButtonElement
+    expect(btn.disabled).toBe(true)
+    expect(getByTestId(h.container, 'carta-required-hint')).not.toBeNull()
+    unmount(h)
+  })
+
   it('Test 4: Download card is not shown before approve', () => {
     CAN_APPROVE = true
     const h = mount()

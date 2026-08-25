@@ -9,8 +9,12 @@
  * `suggestedAction`. Empty state uses the shared EmptyState primitive.
  *
  * Pure presentational: receives the owner-inbox payload + loading/error flags.
+ *
+ * El endpoint devuelve la lista completa de propietarios, sin tope: el recorte
+ * es de presentación y va con `useTablePagination` + el pie del design system.
  */
 
+import { useMemo } from 'react'
 import { UsersThree, Warning } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
@@ -25,6 +29,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { TablePagination } from '@/components/ui/pagination'
+import {
+  PAGE_SIZE_OPTIONS,
+  useTablePagination,
+} from '@/lib/hooks/use-table-pagination'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import type { OwnerInbox } from '@/lib/api/pagos-home.types'
 
@@ -42,6 +51,15 @@ export function PagosHomeOwnerInbox({
   onRetry,
 }: PagosHomeOwnerInboxProps) {
   const { t, formatCurrency } = useI18n()
+
+  // `data` puede venir en null mientras carga o si falló. Se estabiliza acá
+  // para no crear un array nuevo en cada render.
+  const rows = useMemo(() => data?.rows ?? [], [data])
+
+  // Sin `resetKey`: el widget no tiene filtros ni búsqueda. Los hooks van antes
+  // de cualquier return condicional (carga / error / vacío).
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(rows)
 
   return (
     <Card className="rounded-xl">
@@ -73,53 +91,69 @@ export function PagosHomeOwnerInbox({
               {t('inmobiliaria.ai.pagos_home.errors.retry')}
             </button>
           </div>
-        ) : !data || data.rows.length === 0 ? (
+        ) : rows.length === 0 ? (
           <EmptyState
             icon={UsersThree}
             title={t('inmobiliaria.ai.pagos_home.ownerInbox.empty.title')}
             description={t('inmobiliaria.ai.pagos_home.ownerInbox.empty.description')}
           />
         ) : (
-          <Table data-testid="owner-inbox-table">
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  {t('inmobiliaria.ai.pagos_home.ownerInbox.columns.propietario')}
-                </TableHead>
-                <TableHead className="text-right">
-                  {t('inmobiliaria.ai.pagos_home.ownerInbox.columns.inmuebles')}
-                </TableHead>
-                <TableHead className="text-right">
-                  {t('inmobiliaria.ai.pagos_home.ownerInbox.columns.valorAPagar')}
-                </TableHead>
-                <TableHead>
-                  {t('inmobiliaria.ai.pagos_home.ownerInbox.columns.estado')}
-                </TableHead>
-                <TableHead className="text-right">
-                  {t('inmobiliaria.ai.pagos_home.ownerInbox.columns.accion')}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.rows.map((row) => (
-                <TableRow key={row.ownerProfileId}>
-                  <TableCell className="font-medium text-foreground">{row.ownerName}</TableCell>
-                  <TableCell className="text-right tabular-nums">{row.inmueblesCount}</TableCell>
-                  <TableCell className="text-right tabular-nums font-semibold">
-                    {formatCurrency(row.valorAPagarCop)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{row.estado}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" hideArrow>
-                      {row.suggestedAction}
-                    </Button>
-                  </TableCell>
+          <>
+            <Table data-testid="owner-inbox-table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
+                    {t('inmobiliaria.ai.pagos_home.ownerInbox.columns.propietario')}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t('inmobiliaria.ai.pagos_home.ownerInbox.columns.inmuebles')}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t('inmobiliaria.ai.pagos_home.ownerInbox.columns.valorAPagar')}
+                  </TableHead>
+                  <TableHead>
+                    {t('inmobiliaria.ai.pagos_home.ownerInbox.columns.estado')}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t('inmobiliaria.ai.pagos_home.ownerInbox.columns.accion')}
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {pageItems.map((row) => (
+                  <TableRow key={row.ownerProfileId}>
+                    <TableCell className="font-medium text-foreground">{row.ownerName}</TableCell>
+                    <TableCell className="text-right tabular-nums">{row.inmueblesCount}</TableCell>
+                    <TableCell className="text-right tabular-nums font-semibold">
+                      {formatCurrency(row.valorAPagarCop)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{row.estado}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" hideArrow>
+                        {row.suggestedAction}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {/* Pie: sólo si hay más de una página. */}
+            {shouldPaginate && (
+              <div className="border-t border-border pt-3 mt-3">
+                <TablePagination
+                  total={total}
+                  page={page}
+                  pageSize={pageSize}
+                  pageSizeOptions={PAGE_SIZE_OPTIONS}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

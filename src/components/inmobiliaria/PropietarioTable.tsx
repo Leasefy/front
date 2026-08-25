@@ -77,21 +77,36 @@ export function PropietarioTable({
   const filteredPropietarios = useMemo(() => {
     let result = [...propietarios];
 
-    // Search filter
+    /*
+     * Buscar no puede tumbar la tabla.
+     *
+     * `email`, `phone` y `documentNumber` llegan en `null` desde el back —un
+     * propietario sin teléfono es normal, no un error— y `null.includes(...)`
+     * revienta el render entero: la pantalla pasa de la tabla a «esta sección
+     * se rompió» en cuanto alguien escribe una letra.
+     *
+     * No se había visto nunca porque la lista llegaba SIEMPRE vacía (el
+     * `res.data` sobre un array pelado), así que no había fila que filtrar.
+     * Arreglar aquello dejó esto al alcance de la primera búsqueda.
+     */
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
+      const contiene = (valor: string | null | undefined) =>
+        (valor ?? '').toLowerCase().includes(query);
       result = result.filter(
         (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.email.toLowerCase().includes(query) ||
-          p.documentNumber.includes(query) ||
-          p.phone.includes(query)
+          contiene(p.name) ||
+          contiene(p.email) ||
+          contiene(p.documentNumber) ||
+          contiene(p.phone)
       );
     }
 
-    // Pending balance filter
+    // Pending balance filter. `pendingBalance` puede no venir: `undefined > 0`
+    // es false, que es lo correcto, pero conviene decirlo en vez de confiar en
+    // la coerción.
     if (filterPending) {
-      result = result.filter((p) => p.pendingBalance > 0);
+      result = result.filter((p) => (p.pendingBalance ?? 0) > 0);
     }
 
     // Type filter
@@ -138,10 +153,14 @@ export function PropietarioTable({
     children: React.ReactNode;
   }) => (
     <TableHead className="text-left p-4">
-      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
+      {/*
+        allowlist: disparador de orden — no hay primitiva en Cadence. `uppercase`
+        va explícito porque un `<button>` trae `text-transform: none` del
+        navegador y perdía las mayúsculas del `TH`. Ver DispersionTable.
+      */}
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 hover:text-foreground"
+        className="flex items-center gap-2 uppercase hover:text-foreground"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -289,7 +308,7 @@ export function PropietarioTable({
                           {propietario.name}
                         </p>
                         <p className="text-sm text-muted-foreground truncate">
-                          {propietario.email}
+                          {propietario.email ?? '—'}
                         </p>
                       </div>
                     </div>
@@ -362,24 +381,28 @@ export function PropietarioTable({
                           <PencilSimple className="w-4 h-4" />
                           <span className="text-sm">{t('inmobiliaria.propietario.table.edit')}</span>
                         </DropdownListItem>
-                        <DropdownListItem asChild>
-                          <a
-                            href={`mailto:${propietario.email}`}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Envelope className="w-4 h-4" />
-                            <span className="text-sm">{t('inmobiliaria.propietario.table.sendEmail')}</span>
-                          </a>
-                        </DropdownListItem>
-                        <DropdownListItem asChild>
-                          <a
-                            href={`tel:${propietario.phone}`}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Phone className="w-4 h-4" />
-                            <span className="text-sm">{t('inmobiliaria.propietario.table.call')}</span>
-                          </a>
-                        </DropdownListItem>
+                        {propietario.email && (
+                          <DropdownListItem asChild>
+                            <a
+                              href={`mailto:${propietario.email}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Envelope className="w-4 h-4" />
+                              <span className="text-sm">{t('inmobiliaria.propietario.table.sendEmail')}</span>
+                            </a>
+                          </DropdownListItem>
+                        )}
+                        {propietario.phone && (
+                          <DropdownListItem asChild>
+                            <a
+                              href={`tel:${propietario.phone}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Phone className="w-4 h-4" />
+                              <span className="text-sm">{t('inmobiliaria.propietario.table.call')}</span>
+                            </a>
+                          </DropdownListItem>
+                        )}
                         <DropdownListSeparator />
                         <DropdownListItem
                           onSelect={() => onDelete(propietario)}

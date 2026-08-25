@@ -1,10 +1,12 @@
 /**
- * LandingRegistroCta.test.tsx — landing "Empezar ahora" (/registro) CTA.
+ * LandingRegistroCta.test.tsx — landing "Empezar ahora" CTA.
  *
- * Bug fix follow-up: after LandingAuthCta made the "Iniciar sesión" spot
- * session-aware, the sibling "Empezar ahora" -> /registro anchors were left
- * un-aware — a logged-in user clicking it errors out (register flow assumes
- * no session). This component:
+ * Sends logged-out users to /auth in create-account mode (the profile picker).
+ * It used to point at /registro, which is the invitation-completion flow and
+ * fails without an invitationToken ("Invitación inválida").
+ *
+ * Session-aware, like its LandingAuthCta sibling — a logged-in user must never
+ * hit the register flow. This component:
  *  - header/mobile variants: render normally when logged out (or while auth
  *    is still loading), but render NOTHING when authenticated — the adjacent
  *    <LandingAuthCta> "Ir al panel" already covers that spot, avoiding two

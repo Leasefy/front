@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
-import { CurrencyDollar, Wallet, CreditCard, PiggyBank } from '@phosphor-icons/react';
+import { useState, useCallback } from 'react';
+import { Wallet, CreditCard, PiggyBank } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
-import { formatCurrency } from '@/lib/format';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import {
   validateIncomeStep,
@@ -96,27 +95,6 @@ export function StepIncome() {
     [updateIncome]
   );
 
-  // Computed values for capacity summary
-  const totalIncome = income.totalMonthlyIncome || 0;
-  const obligations = income.monthlyObligations || 0;
-  const availableForRent = income.availableForRent || 0;
-  const recommendedRent = Math.floor(availableForRent * 0.3);
-
-  // Capacity level indicator
-  const capacityLevel = useMemo(() => {
-    if (availableForRent <= 0) return 'insufficient';
-    if (recommendedRent < 500000) return 'limited';
-    if (recommendedRent < 1500000) return 'moderate';
-    return 'good';
-  }, [availableForRent, recommendedRent]);
-
-  const capacityStyles = {
-    insufficient: 'bg-danger-soft border-danger/30 text-danger',
-    limited: 'bg-warning-soft border-warning/30 text-warning',
-    moderate: 'bg-primary-soft border-[#1A40FF]/30 text-[#1A40FF]',
-    good: 'bg-success-soft border-success/30 text-success',
-  };
-
   return (
     <div className="space-y-6">
       {/* Monthly Salary */}
@@ -193,79 +171,6 @@ export function StepIncome() {
           icon={<CreditCard className="h-4 w-4" />}
         />
       </FormField>
-
-      {/* Capacity Summary Card */}
-      {totalIncome > 0 && (
-        <div className={cn(
-          'mt-8 p-5 border rounded-sm',
-          capacityStyles[capacityLevel]
-        )}>
-          <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
-            <CurrencyDollar className="h-4 w-4" />
-            Tu capacidad de pago
-          </h3>
-
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="opacity-80">Ingreso total mensual:</span>
-              <span className="font-medium">{formatCurrency(totalIncome)}</span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="opacity-80">Obligaciones mensuales:</span>
-              <span className="font-medium">- {formatCurrency(obligations)}</span>
-            </div>
-
-            <div className="border-t border-current/10 pt-2 flex justify-between">
-              <span>Disponible:</span>
-              <span className="font-semibold">{formatCurrency(availableForRent)}</span>
-            </div>
-          </div>
-
-          {/* Recommended Rent */}
-          {availableForRent > 0 && (
-            <div className="mt-4 pt-4 border-t border-current/10">
-              <p className="text-xs opacity-70 mb-2">
-                Regla del 30%: El arriendo no debería superar el 30% de tu
-                disponibilidad
-              </p>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Arriendo recomendado:</span>
-                <span className="text-lg font-bold">
-                  {formatCurrency(recommendedRent)}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Capacity Message */}
-          <div className="mt-4">
-            {capacityLevel === 'insufficient' && (
-              <p className="text-xs opacity-80">
-                Tus obligaciones actuales superan tus ingresos. Considera agregar
-                un codeudor para mejorar tu aplicacion.
-              </p>
-            )}
-            {capacityLevel === 'limited' && (
-              <p className="text-xs opacity-80">
-                Tu capacidad de pago es limitada. Busca propiedades dentro de tu
-                presupuesto recomendado.
-              </p>
-            )}
-            {capacityLevel === 'moderate' && (
-              <p className="text-xs opacity-80">
-                Tienes una capacidad de pago moderada. Hay buenas opciones de
-                arriendo dentro de tu rango.
-              </p>
-            )}
-            {capacityLevel === 'good' && (
-              <p className="text-xs opacity-80">
-                Tienes buena capacidad de pago para opciones de arriendo variadas.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

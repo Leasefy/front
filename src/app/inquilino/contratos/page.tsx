@@ -9,6 +9,7 @@ import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { EmptyState } from '@/components/ui/empty-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Spinner } from '@/components/ui/spinner';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
@@ -139,7 +140,7 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
 
 export default function ContratosPage() {
   const { locale } = useI18n();
-  const { contracts, isLoading, error } = useContracts();
+  const { contracts, isLoading, error, errorCrudo, refetch: recargarContratos } = useContracts();
 
   // Loading
   if (isLoading) {
@@ -150,20 +151,18 @@ export default function ContratosPage() {
     );
   }
 
-  // Error
+  // El mensaje crudo del backend —en inglés, con su jerga— no le sirve a un
+  // inquilino, y este cartel no ofrecía ninguna salida. `FalloDeCarga` escribe
+  // qué pasó y ofrece reintentar sólo si reintentar puede cambiar algo.
   if (error) {
     return (
       <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-xl bg-danger-soft flex items-center justify-center mx-auto mb-4">
-              <WarningCircle className="w-8 h-8 text-danger" />
-            </div>
-            <h2 className="text-lg font-semibold text-fg mb-2">
-              {locale === 'es' ? 'Error cargando contratos' : 'Error loading contracts'}
-            </h2>
-            <p className="text-fg-muted">{error}</p>
-          </div>
+          <FalloDeCarga
+            error={errorCrudo ?? error}
+            queEs="tus contratos"
+            onReintentar={recargarContratos}
+          />
         </div>
       </div>
     );
@@ -186,7 +185,8 @@ export default function ContratosPage() {
           className="mb-8"
         >
           <h1 className="text-3xl font-medium text-fg tracking-tight">
-            {locale === 'es' ? 'Mis Contratos' : 'My Contracts'}
+            {/* Sentence case, como el resto del panel. */}
+            {locale === 'es' ? 'Mis contratos' : 'My contracts'}
           </h1>
           <p className="mt-1 text-fg-muted">
             {locale === 'es'
@@ -205,9 +205,16 @@ export default function ContratosPage() {
             <EmptyState
               icon={Handshake}
               title={locale === 'es' ? 'Sin contratos aún' : 'No contracts yet'}
+              /* "aplicación" está muerto: docs/VOCABULARIO.md. */
               description={locale === 'es'
-                ? 'Cuando un propietario apruebe tu aplicación y genere un contrato, aparecerá aquí para que lo firmes.'
-                : 'When a landlord approves your application and generates a contract, it will appear here for you to sign.'}
+                ? 'Cuando te elijan en una postulación y generen el contrato, aparecerá aquí para que lo firmes.'
+                : 'When you are selected for an application and the contract is generated, it will appear here for you to sign.'}
+              /* Era la única pantalla vacía sin ninguna acción: un callejón.
+                 Para llegar a un contrato hay que postularse primero. */
+              action={{
+                label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me',
+                href: '/inquilino/para-ti',
+              }}
             />
           </motion.div>
         ) : (

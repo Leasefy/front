@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
+import { SesionYaAbierta } from './SesionYaAbierta';
 import {
   SpinnerGap,
   ArrowLeft,
@@ -66,12 +67,12 @@ function GoogleIcon({ className }: { className?: string }) {
 /** Hairline divider with a mono technical label — DS signature. */
 function MonoDivider({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 my-6">
-      <div className="h-px flex-1 bg-border" />
-      <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
+    <div className="my-7 flex items-center gap-4">
+      <div className="h-px flex-1 bg-border/70" />
+      <span className="font-mono text-[9.5px] font-medium uppercase tracking-[0.14em] text-fg-subtle">
         {children}
       </span>
-      <div className="h-px flex-1 bg-border" />
+      <div className="h-px flex-1 bg-border/70" />
     </div>
   );
 }
@@ -83,7 +84,7 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="w-full h-11 flex items-center justify-center gap-2.5 rounded-full border border-border bg-surface hover:border-border-strong hover:bg-surface-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-border bg-surface text-[14px] font-medium text-fg transition-all hover:border-border-strong hover:bg-surface-muted active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50"
     >
       {isLoading ? (
         <SpinnerGap className="w-4 h-4 animate-spin text-fg-subtle" />
@@ -92,6 +93,35 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
       )}
       <span className="text-[13.5px] font-medium text-fg">{children}</span>
     </button>
+  );
+}
+
+/**
+ * Los motivos que `session-terminal.ts` puede mandar en `?reason=`. Un valor
+ * desconocido (o inventado a mano en la URL) simplemente no muestra nada.
+ */
+const AVISOS_DE_SESION: Record<string, string> = {
+  expirada: 'Tu sesión expiró. Volvé a entrar para seguir donde estabas.',
+  revocada: 'Cerramos esta sesión porque entraste desde otro dispositivo.',
+  inactividad: 'Cerramos tu sesión por inactividad. Volvé a entrar para continuar.',
+};
+
+/**
+ * Aviso de por qué el usuario terminó acá sin pedirlo.
+ *
+ * Va en `warning` y no en `danger` a propósito: que se venza una sesión no es
+ * un error del usuario ni una falla del sistema, es lo que tiene que pasar. El
+ * rojo del ErrorBanner de abajo queda para lo que sí salió mal.
+ */
+function AvisoBanner({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="px-3.5 py-2.5 rounded-xl bg-warning-soft border border-warning/30"
+    >
+      <p className="text-[12.5px] text-warning">{children}</p>
+    </motion.div>
   );
 }
 
@@ -136,6 +166,21 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   }, []);
 
   const returnUrl = sanitizeReturnUrl(returnUrlProp || searchParams.get('returnUrl'), '/');
+
+  /*
+   * Por qué está acá sin haberlo pedido. `terminarSesion` (session-terminal.ts)
+   * manda el motivo en la URL al sacar a alguien de un panel que ya no puede
+   * cargar nada; sin este cartel, el usuario aparece en el login sin ninguna
+   * explicación y lo natural es pensar que la app se rompió.
+   */
+  const avisoDeSesion = AVISOS_DE_SESION[searchParams.get('reason') ?? ''] ?? null;
+  /*
+   * Llegar acá con sesión abierta no es un error: pasa cada vez que alguien
+   * toca «Postularme» y la puerta lo manda a entrar. Antes veía un formulario
+   * en blanco, sin señal de que ya estaba dentro y sin forma de continuar.
+   * Se le pregunta con cuál cuenta sigue; `quiereOtraCuenta` es su respuesta.
+   */
+  const [quiereOtraCuenta, setQuiereOtraCuenta] = React.useState(false);
 
   // A fatal auth-bootstrap error (e.g. 409: this email already belongs to
   // another account) is handed over by auth-context via sessionStorage across
@@ -336,7 +381,10 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       // invitation/onboarding context and land the user as a bare TENANT.
       const dest = returnUrl && returnUrl !== '/' ? returnUrl : onboardingDest();
       const emailRedirectTo = `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(dest)}`;
-      const { requiresConfirmation } = await signUpWithEmail(data.email, data.password, emailRedirectTo);
+      // Persist the deep-linked role (if any) as intended_role on the Supabase
+      // user. Without a deep-link the user picks their role at
+      // /onboarding/seleccionar-rol, so this is `undefined` here.
+      const { requiresConfirmation } = await signUpWithEmail(data.email, data.password, emailRedirectTo, explicitRole ?? undefined);
       if (requiresConfirmation) {
         setResetEmail(data.email);
         setRegisterStep('confirm-email');
@@ -386,6 +434,32 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     : registerStep === 'confirm-email' ? 'Correo enviado'
     : 'Crear cuenta';
 
+  /*
+   * Sesión ya abierta: se pregunta antes de nada.
+   *
+   * `didAuthenticateInForm` distingue quien acaba de entrar acá —a ese lo
+   * redirige el efecto de arriba— de quien LLEGÓ con sesión. Al segundo se le
+   * ofrecen las dos salidas en vez de mostrarle un formulario vacío.
+   *
+   * Sólo cuando venía a hacer algo (`returnUrl`): entrar a /auth sin destino
+   * es otra cosa y no se toca.
+   */
+  if (
+    !authLoading &&
+    isAuthenticated &&
+    user &&
+    !didAuthenticateInForm.current &&
+    !quiereOtraCuenta &&
+    returnUrl &&
+    returnUrl !== '/'
+  ) {
+    return (
+      <div className={cn('w-full', className)}>
+        <SesionYaAbierta destino={returnUrl} onCambiarDeCuenta={() => setQuiereOtraCuenta(true)} />
+      </div>
+    );
+  }
+
   return (
     <div className={cn('w-full', className)}>
       {/* Header — left-aligned, quiet hierarchy */}
@@ -414,15 +488,15 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
 
         <Eyebrow>{eyebrow}</Eyebrow>
 
-        <h1 className="mt-3 font-heading text-[24px] font-medium text-fg tracking-[-0.01em] leading-tight">
+        <h1 className="mt-3 font-heading text-[30px] font-medium leading-[1.15] tracking-[-0.025em] text-fg">
           {mode === 'login' && 'Bienvenido de vuelta'}
           {mode === 'register' && registerStep === 'credentials' && 'Crea tu cuenta'}
           {mode === 'register' && registerStep === 'confirm-email' && 'Revisa tu correo'}
           {mode === 'forgot-password' && 'Recupera tu contraseña'}
           {mode === 'reset-sent' && 'Revisa tu correo'}
         </h1>
-        <p className="mt-1.5 text-[13.5px] text-fg-subtle leading-relaxed">
-          {mode === 'login' && 'Ingresa a tu cuenta para continuar.'}
+        <p className="mt-2.5 text-[14px] leading-relaxed text-fg-subtle">
+          {mode === 'login' && 'Ingresá a tu cuenta para continuar.'}
           {mode === 'register' && registerStep === 'credentials' && 'Ingresa tus datos para continuar.'}
           {mode === 'register' && registerStep === 'confirm-email' && (
             <>Enviamos un enlace de confirmación a <span className="font-medium text-fg-muted">{resetEmail}</span>.</>
@@ -482,14 +556,26 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                   </button>
                 </div>
               </div>
+              {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
-              <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
-                {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Ingresando...</>) : 'Iniciar sesión'}
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="h-12 w-full rounded-full text-[14px] transition-transform active:scale-[0.995]"
+              >
+                {isLoading ? (
+                  <>
+                    <SpinnerGap className="mr-2 h-4 w-4 animate-spin" />
+                    Ingresando…
+                  </>
+                ) : (
+                  'Iniciar sesión'
+                )}
               </Button>
             </form>
 
             <p className="mt-7 text-[13px] text-fg-subtle">
-              ¿No tienes cuenta?{' '}
+              ¿Todavía no tenés cuenta?{' '}
               <button
                 type="button"
                 onClick={() => handleModeSwitch('register')}
@@ -549,6 +635,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 })}
                 error={registerForm.formState.errors.confirmPassword?.message}
               />
+              {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
               {error && <ErrorBanner>{error}</ErrorBanner>}
               <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
                 {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
@@ -615,7 +702,8 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
               })}
               error={forgotPasswordForm.formState.errors.email?.message}
             />
-            {error && <ErrorBanner>{error}</ErrorBanner>}
+            {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
+              {error && <ErrorBanner>{error}</ErrorBanner>}
             <Button type="submit" disabled={isLoading} className="w-full h-11 rounded-full text-[14px]">
               {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando...</>) : 'Enviar enlace de recuperación'}
             </Button>

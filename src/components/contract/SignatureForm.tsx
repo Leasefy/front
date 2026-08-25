@@ -172,7 +172,7 @@ export function SignatureForm({
             'flex cursor-pointer items-start gap-3 p-4 transition-all',
             acceptedTerms
               ? 'bg-primary-soft/50'
-              : 'hover:bg-surface-muted dark:hover:bg-ink/50'
+              : 'hover:bg-surface-muted dark:hover:bg-ink'
           )}>
             <div className={cn(
               'w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
@@ -207,7 +207,7 @@ export function SignatureForm({
             'flex cursor-pointer items-start gap-3 p-4 transition-all',
             acceptedLegal
               ? 'bg-primary-soft/50'
-              : 'hover:bg-surface-muted dark:hover:bg-ink/50'
+              : 'hover:bg-surface-muted dark:hover:bg-ink'
           )}>
             <div className={cn(
               'w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
@@ -242,7 +242,7 @@ export function SignatureForm({
             'flex cursor-pointer items-start gap-3 p-4 transition-all',
             acceptedData
               ? 'bg-primary-soft/50'
-              : 'hover:bg-surface-muted dark:hover:bg-ink/50'
+              : 'hover:bg-surface-muted dark:hover:bg-ink'
           )}>
             <div className={cn(
               'w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',

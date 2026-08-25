@@ -256,7 +256,7 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
               <div className="relative flex items-center gap-2">
                 {/* Animated dots */}
                 <div className="flex items-center gap-[3px] flex-shrink-0">
-                  <span className="h-[5px] w-[5px] rounded-full bg-fg-muted animate-[pulse_1.5s_ease-in-out_infinite]" />
+                  <span className="h-[5px] w-[5px] rounded-full bg-surface-muted animate-[pulse_1.5s_ease-in-out_infinite]" />
                   <span className="h-[5px] w-[5px] rounded-full bg-fg-subtle animate-[pulse_1.5s_ease-in-out_0.3s_infinite]" />
                   <span className="h-[5px] w-[5px] rounded-full bg-border-strong animate-[pulse_1.5s_ease-in-out_0.6s_infinite]" />
                 </div>

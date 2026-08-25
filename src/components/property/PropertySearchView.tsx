@@ -11,8 +11,11 @@ import { PropertyGrid } from '@/components/property/PropertyGrid';
 import { AISearchInput } from '@/components/property/AISearchInput';
 import dynamic from 'next/dynamic';
 import { MapToggle } from '@/components/map';
+import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
+import { useAuth } from '@/lib/auth/use-auth';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import { useProperties } from '@/lib/hooks/useProperties';
+import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { cn } from '@/lib/utils';
 import type { PropertyFiltersParams } from '@/lib/api/properties.types';
 
@@ -47,6 +50,14 @@ const PRICE_RANGES = [
 interface PropertySearchViewProps {
   /** When true, renders without Navbar and adapts layout for embedding inside dashboard */
   embedded?: boolean;
+  /**
+   * No monta ningún header propio: lo pone quien envuelve.
+   *
+   * `/propiedades` ahora usa el header de la landing (`LandingChrome`), que es
+   * el mismo de la home. `embedded` no sirve para esto: además de quitar el
+   * navbar cambia todo el alto del layout para caber dentro del panel.
+   */
+  sinNavbar?: boolean;
   /** Prefix for card detail links. Public '/propiedades', tenant '/inquilino/propiedades'. */
   basePath?: string;
 }
@@ -55,9 +66,18 @@ interface PropertySearchViewProps {
  * Reusable property search view.
  * Used by /propiedades (public, with Navbar) and /inquilino/explorar (embedded in tenant layout).
  */
-export function PropertySearchView({ embedded = false, basePath }: PropertySearchViewProps) {
+export function PropertySearchView({ embedded = false, sinNavbar = false, basePath }: PropertySearchViewProps) {
   const searchParams = useSearchParams();
   const heroQuery = searchParams.get('q');
+  const { user } = useAuth();
+  const { aprobacion, vigente: aprobacionVigente } = useAprobacion();
+  /**
+   * La aprobación es del inquilino. A este catálogo también entra gente de la
+   * inmobiliaria y propietarios, y a ellos "todavía no sabes hasta cuánto
+   * puedes arrendar" no les dice nada — no son los que arriendan.
+   * Anónimo SÍ la ve: es el caso principal, quien llega por el link del asesor.
+   */
+  const mostrarAprobacion = !user || user.role === 'tenant';
   const [showMap, setShowMap] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
@@ -251,17 +271,19 @@ export function PropertySearchView({ embedded = false, basePath }: PropertySearc
         ? 'flex flex-col h-[calc(100vh-64px)]'
         : 'min-h-screen bg-background'
     )}>
-      {!embedded && <Navbar />}
+      {!embedded && !sinNavbar && <Navbar />}
 
       {/* Main Layout - Split View */}
       <div className={cn(
         'flex',
-        embedded ? 'flex-1 min-h-0' : 'pt-[76px]'
+        embedded ? 'flex-1 min-h-0' : 'pt-16 lg:pt-[76px]'
       )}>
         {/* Left Panel - Scrollable Content */}
         <div
           className={cn(
-            'w-full lg:w-1/2',
+            // La grilla de adentro (`PropertyGrid`) trae su propio contenedor
+            // de container query y mide su ancho, no el de la ventana.
+            'w-full lg:w-1/2 2xl:w-3/5',
             embedded ? 'overflow-y-auto' : 'min-h-screen',
             showMap && 'hidden lg:block'
           )}
@@ -282,7 +304,7 @@ export function PropertySearchView({ embedded = false, basePath }: PropertySearc
                 'font-medium text-foreground tracking-tight mb-4',
                 embedded ? 'text-base' : 'text-lg'
               )}>
-                Busqueda inteligente
+                Búsqueda inteligente
               </h1>
               <AISearchInput
                 value={aiSearchQuery}
@@ -395,6 +417,23 @@ export function PropertySearchView({ embedded = false, basePath }: PropertySearc
 
           {/* Property Grid */}
           <div className="p-4 md:p-6">
+            {/* La aprobación vuelve personal al catálogo público, que es donde
+                aterriza quien llega por el link del asesor y todavía no tiene
+                cuenta. Sin aprobación la banda invita; con ella, muestra el
+                número y marca lo que se pasa. */}
+            {mostrarAprobacion && (
+              <TopeAprobadoBanner
+                aprobacion={aprobacion}
+                vigente={aprobacionVigente}
+                className="mb-6"
+                detalle={
+                  user
+                    ? { href: '/inquilino/aprobacion', label: 'Ver detalle' }
+                    : // Sin cuenta su aprobación vive solo en este navegador.
+                      { href: '/auth', label: 'Crear cuenta' }
+                }
+              />
+            )}
             <PropertyGrid
               properties={filteredProperties}
               isWishlisted={isWishlisted}
@@ -404,6 +443,7 @@ export function PropertySearchView({ embedded = false, basePath }: PropertySearc
               onPropertyHover={setHoveredPropertyId}
               propertyRefCallback={propertyRefCallback}
               basePath={basePath}
+              aprobacion={mostrarAprobacion && aprobacionVigente ? aprobacion : null}
             />
           </div>
         </div>
@@ -413,12 +453,13 @@ export function PropertySearchView({ embedded = false, basePath }: PropertySearc
           className={cn(
             embedded
               ? cn(
-                  'w-full lg:w-1/2 h-full',
+                  'w-full lg:w-1/2 2xl:w-2/5 h-full',
                   !showMap && 'hidden lg:block'
                 )
               : cn(
-                  'w-full lg:w-1/2 lg:fixed lg:right-0 lg:top-[76px]',
-                  'h-[calc(100vh-76px)]',
+                  'w-full lg:w-1/2 2xl:w-2/5 lg:fixed lg:right-0',
+                  // El header de la landing mide 64px y 76px desde lg.
+                  'lg:top-[76px] h-[calc(100vh-64px)] lg:h-[calc(100vh-76px)]',
                   !showMap && 'hidden lg:block'
                 )
           )}

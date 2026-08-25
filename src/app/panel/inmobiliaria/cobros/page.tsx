@@ -17,7 +17,7 @@ import { useI18n } from '@/lib/i18n';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Pagination } from '@/components/ui/pagination';
 import { Button, Spinner } from '@/components/ui';
-import { ErrorState } from '@/components/ui/error-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SegmentedControl } from '@leasefy/cadence';
 import {
   useCobros,
@@ -73,7 +73,7 @@ function CobrosContent() {
   const {
     cobros: apiCobros,
     isLoading: cobrosLoading,
-    error: cobrosError,
+    errorCrudo: cobrosError,
     refetch: refetchCobros,
     setData: setCobrosData,
   } = useCobros({
@@ -476,11 +476,13 @@ function CobrosContent() {
               <p className="text-sm text-fg-muted">Cargando cobros...</p>
             </div>
           ) : cobrosError ? (
-            <ErrorState
-              title="Error al cargar cobros"
-              description={cobrosError}
-              onRetry={() => refetchCobros()}
-              className="border-0 bg-transparent"
+            /* Mostraba `description={cobrosError}`: el mensaje crudo del
+               backend, en inglés, dentro de la tarjeta de la tabla. */
+            <FalloDeCarga
+              error={cobrosError}
+              queEs="los cobros"
+              onReintentar={() => refetchCobros()}
+              enmarcado={false}
             />
           ) : paginatedCobros.length > 0 ? (
             viewMode === 'table' ? (
@@ -507,7 +509,7 @@ function CobrosContent() {
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800/60">
                 <CurrencyCircleDollar
                   weight="duotone"
-                  className="h-6 w-6 text-neutral-400 dark:text-neutral-500"
+                  className="h-6 w-6 text-fg-muted"
                   aria-hidden="true"
                 />
               </div>

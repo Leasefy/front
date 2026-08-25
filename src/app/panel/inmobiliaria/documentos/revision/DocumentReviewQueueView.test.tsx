@@ -11,6 +11,7 @@ import type {
   ReviewQueueCounts,
   ReviewQueueItem,
 } from '@/lib/api/document-review.types';
+import { ApiError } from '@/lib/api/client';
 
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -160,17 +161,42 @@ describe('<DocumentReviewQueueView>', () => {
     expect(doc.id).toBe('doc-pending');
   });
 
-  it('renders the empty state when there are no items', () => {
+  it('sin soportes: dice que todavía no llegó nada y ofrece dónde mirar', () => {
+    // Acá no hay filtros, así que el vacío es siempre «no llegó nada», nunca
+    // «buscaste mal». Y no se crea desde acá —los soportes los adjunta el
+    // candidato—, así que la salida útil es ver las postulaciones.
     render({ ...baseProps(), items: [] });
-    expect(container.querySelector('[data-testid="empty-state"]')).toBeTruthy();
+    const vacio = container.querySelector('[data-testid="sin-datos"]');
+    expect(vacio).toBeTruthy();
+    expect(vacio?.getAttribute('data-caso')).toBe('vacio');
+    expect(container.querySelector('a[href="/panel/inmobiliaria/postulaciones"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull();
   });
 
   it('renders the error state and wires retry', () => {
-    const props = { ...baseProps(), error: 'boom' };
+    const props = { ...baseProps(), error: new ApiError(500, 'boom') };
     render(props);
-    const error = container.querySelector('[data-testid="error-state"]');
+    const error = container.querySelector('[data-testid="fallo-de-carga"]');
     expect(error).toBeTruthy();
-    act(() => (container.querySelector('[data-testid="retry"]') as HTMLButtonElement).click());
+    act(() => (container.querySelector('[data-testid="reintentar"]') as HTMLButtonElement).click());
     expect(props.onRetry).toHaveBeenCalled();
+  });
+
+  it('un 404 no ofrece reintentar: el error entero llega hasta el cartel', () => {
+    // Con `error: string` esto era imposible: sin el status, todo caía en
+    // «fue un problema nuestro, probá de nuevo» — incluso sobre algo que no
+    // existe y por más que reintentes nunca va a aparecer.
+    render({ ...baseProps(), error: new ApiError(404, 'not found') });
+    expect(
+      container.querySelector('[data-testid="fallo-de-carga"]')?.getAttribute('data-tipo'),
+    ).toBe('noExiste');
+    expect(container.querySelector('[data-testid="reintentar"]')).toBeNull();
+  });
+
+  it('con la consulta caída los contadores no muestran ceros', () => {
+    // Cinco tarjetas en 0 sobre un dato que nadie trajo tranquilizan con una
+    // afirmación falsa: «no tenés nada pendiente».
+    render({ ...baseProps(), error: new ApiError(500, 'boom') });
+    expect(container.querySelector('[data-testid="count-pending"]')?.textContent).toContain('—');
   });
 });

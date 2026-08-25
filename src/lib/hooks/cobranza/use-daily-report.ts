@@ -18,8 +18,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useAuth } from '@/lib/auth'
+import type { components } from '@/lib/api/generated/agent'
 
 // ----- GET /daily-report/today ---------------------------------------------
 
@@ -34,20 +35,57 @@ export interface DailyReportSummary {
   connect_rate_pct?: number
 }
 
+/** Per-row "next recommended step" narrative (additive — D-client-report). */
+export interface DailyReportDebtorNextStep {
+  action: string | null
+  label: string | null
+  reason: string | null
+}
+
+/** Per-row contact-attempt rollup (additive — D-client-report). */
+export interface DailyReportDebtorAttempts {
+  total: number
+  last_contact_at: string | null
+}
+
 export interface DailyReportDebtor {
   debtor_id: string
+  /**
+   * Nombre del deudor. Opcional porque un payload cacheado antes de que el
+   * agente hiciera el JOIN no lo trae — la tabla cae a la referencia en ese
+   * caso, no a un nombre inventado.
+   */
+  debtor_name?: string | null
   debtor_id_masked?: string
   dpd: number
   balance_cop: number
   last_contact_at?: string | null
+  /**
+   * Backend additively enriches each top-N row with a per-client narrative.
+   * All OPTIONAL so the page renders unchanged if the API has not shipped them.
+   */
+  attempts?: DailyReportDebtorAttempts
+  next_step?: DailyReportDebtorNextStep
+  /** <=300 chars, Spanish, no PII — short summary of the last interaction. */
+  last_interaction?: string | null
 }
 
-export interface DailyReportAlert {
-  kpi: string
-  threshold: number | string
-  actual: number | string
-  severity: 'warn' | 'critical' | string
-}
+/**
+ * ⚠️ Esto estaba escrito a mano como `{ kpi, threshold, actual, severity }` y de
+ * los cuatro campos sólo acertaba `threshold`. El banner del reporte quedaba
+ * literalmente así:
+ *
+ *     ⚠  : undefined (umbral 12)
+ *
+ * Y lo peor no es el «undefined»: el agente YA manda `message_es` con la frase
+ * completa —«Índice de morosidad en 62.22% — por encima del umbral 12%»— y la
+ * pantalla la tiraba a la basura para armar la suya con campos inexistentes.
+ * Además `severity` nunca coincidía con `level`, así que una alerta CRITICAL se
+ * pintaba siempre como advertencia.
+ *
+ * Se toma del contrato generado (`pnpm api:gen`) y no se vuelve a transcribir.
+ */
+export type DailyReportAlert = components['schemas']['CarteraDailyReportAlert']
 
 export interface DailyReportResponse {
   report_date: string
@@ -83,10 +121,7 @@ export function useDailyReport(): UseDailyReportResult {
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/today`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/today`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as DailyReportResponse
       setData(json)
@@ -154,10 +189,7 @@ export function useDailyReportHistory(days = 30): UseDailyReportHistoryResult {
         const sp = new URLSearchParams()
         sp.set('days', String(days))
         if (cursor) sp.set('cursor', cursor)
-        const res = await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/history?${sp.toString()}`,
-          { headers: agentAuthHeaders() },
-        )
+        const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/history?${sp.toString()}`)
         if (!res.ok) throw new Error(`${res.status}`)
         const json = (await res.json()) as DailyReportHistoryResponse
         setItems((prev) => (append ? [...prev, ...(json.items ?? [])] : json.items ?? []))
@@ -214,10 +246,7 @@ export async function downloadHistoryCsv(
   days = 30,
 ): Promise<void> {
   if (!agentUrl) throw new Error('NEXT_PUBLIC_AGENT_URL not configured')
-  const res = await globalThis.fetch(
-    `${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/history.csv?days=${days}`,
-    { headers: agentAuthHeaders() },
-  )
+  const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/daily-report/history.csv?days=${days}`)
   if (!res.ok) throw new Error(`${res.status}`)
   const blob = await res.blob()
   const url = URL.createObjectURL(blob)

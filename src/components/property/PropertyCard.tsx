@@ -22,6 +22,8 @@ export interface PropertyCardProps {
   className?: string;
   /** Prefix for the detail link. Public '/propiedades', tenant '/inquilino/propiedades'. */
   basePath?: string;
+  /** Query extra en el link (p.ej. `from=para-ti`) para que el detalle sepa de dónde vino. */
+  linkQuery?: string;
 }
 
 export function PropertyCard({
@@ -34,6 +36,7 @@ export function PropertyCard({
   onHoverEnd,
   className,
   basePath = '/propiedades',
+  linkQuery,
 }: PropertyCardProps) {
   const {
     id,
@@ -54,8 +57,25 @@ export function PropertyCard({
   const [activeImage, setActiveImage] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Use images array if available, fallback to thumbnailUrl
-  const allImages = images && images.length > 0 ? images : [thumbnailUrl];
+  // Use images array if available, fallback to thumbnailUrl. Empty strings are
+  // filtered first: demo/incomplete properties can carry a blank thumbnailUrl
+  // or blank entries, and `next/image` warns (and preloads an empty href) on
+  // `src=""`. If nothing usable is left, fall back to the shared placeholder.
+  const PLACEHOLDER = '/placeholder-property.svg';
+  // `trim()` y no `length > 0`: la base trae entradas de puros espacios, y
+  // `next/image` no las trata como vacías — las intenta resolver como ruta
+  // relativa y tira «Failed to parse src "   "», que rompe el render entero
+  // de la tarjeta en vez de degradar a placeholder.
+  const isNonEmpty = (src: unknown): src is string =>
+    typeof src === 'string' && src.trim().length > 0;
+  const gallery = (images ?? []).filter(isNonEmpty);
+  const sinFotos = gallery.length === 0 && !isNonEmpty(thumbnailUrl);
+  const allImages =
+    gallery.length > 0
+      ? gallery
+      : isNonEmpty(thumbnailUrl)
+        ? [thumbnailUrl]
+        : [PLACEHOLDER];
 
   const handlePrev = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -101,7 +121,7 @@ export function PropertyCard({
 
   return (
     <Link
-      href={`${basePath}/${id}`}
+      href={linkQuery ? `${basePath}/${id}?${linkQuery}` : `${basePath}/${id}`}
       className={cn(
         'group block rounded-xl transition-all duration-300 ease-out',
         isHighlighted && 'ring-2 ring-primary ring-offset-2',
@@ -128,6 +148,15 @@ export function PropertyCard({
             priority={i === 0}
           />
         ))}
+
+        {sinFotos && (
+          <div
+            data-testid="inmueble-sin-fotos"
+            className="absolute inset-0 flex items-center justify-center text-sm font-medium text-fg-muted"
+          >
+            Sin fotos
+          </div>
+        )}
 
         {/* Subtle bottom gradient for depth */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

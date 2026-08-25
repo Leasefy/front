@@ -1,10 +1,11 @@
 'use client'
 
 import { LeasefyLogo } from '@/components/brand';
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/use-auth'
 import { getUserHomeRoute } from '@/lib/auth/role-routes'
+import { sanitizeReturnUrl } from '@/lib/utils'
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Check, Rocket, User, House, Shield, Clock, Lightning, Info, Eye, SealCheck } from '@phosphor-icons/react'
@@ -64,6 +65,7 @@ const STEP_WHY_CONTENT = {
 
 export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) {
   const router = useRouter()
+  const returnUrl = useSearchParams().get('returnUrl')
   const { isAuthenticated, user } = useAuth()
   const { locale } = useI18n()
   const {
@@ -140,7 +142,13 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
           // (no empty-state flash). The wizard just provisioned a TENANT: if
           // this closure's `user` is still the pre-submit null, route as a
           // tenant rather than to the public landing.
-          router.push(getUserHomeRoute(user ?? { role: 'tenant' }))
+          // `returnUrl` honrado: quien llega desde el recorrido de aprobación
+          // venía a ver SU catálogo, no la home. Sin esto el onboarding lo
+          // descartaba y el recorrido terminaba en otro lado del prometido.
+          // `sanitizeReturnUrl` evita que un link externo lo mande a cualquier
+          // parte; sin parámetro, el destino de siempre.
+          const destino = getUserHomeRoute(user ?? { role: 'tenant' })
+          router.push(sanitizeReturnUrl(returnUrl, destino))
         })
         .catch((err) => {
           // Stay in the wizard — the context already surfaced the error toast.

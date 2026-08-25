@@ -26,7 +26,7 @@ export function AuthModal({
 }: AuthModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="sr-only">Crea tu cuenta para continuar</DialogTitle>
           <DialogDescription className="sr-only">

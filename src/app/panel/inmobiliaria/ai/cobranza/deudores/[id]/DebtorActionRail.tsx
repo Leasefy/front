@@ -34,7 +34,7 @@ import { ManualCallModal } from '@/components/inmobiliaria/cobranza/intervention
 
 void React
 
-type OpenModal = 'pause' | 'forceStage' | 'manualWA' | 'manualCall' | null
+type OpenModal = 'pause' | 'reanudar' | 'forceStage' | 'manualWA' | 'manualCall' | null
 
 const NS = 'inmobiliaria.ai.cobranza'
 
@@ -112,6 +112,9 @@ export function DebtorActionRail({
       ? `Cadencia de la etapa ${stageName}`
       : `${stageName} stage cadence`
 
+  /** La ficha ya muestra «Pausado · En pausa hasta …» con este mismo dato. */
+  const estaPausado = Boolean(data?.isPaused)
+
   // Same RBAC gates as AccionesTab (CONTEXT D-31-01..04).
   const pauseEnabled = canIntervene
   const forceStageEnabled = canForceStage && isAdmin
@@ -138,16 +141,16 @@ export function DebtorActionRail({
 
       {/* Próxima acción programada */}
       <section
-        className="rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4"
+        className="rounded-xl border border-border bg-surface p-4"
         data-testid="rail-next-action"
       >
-        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+        <h3 className="text-sm font-semibold text-fg">
           {t(`${NS}.detalle.proximaAccionTitulo`)}
         </h3>
         {nextAction ? (
           <>
             <div className="mt-2 space-y-1">
-              <p className="text-sm font-medium text-neutral-900 dark:text-white capitalize">
+              <p className="text-sm font-medium text-fg capitalize">
                 {nextAction.channel}
               </p>
               <p className="text-xs text-primary tabular-nums">
@@ -155,23 +158,23 @@ export function DebtorActionRail({
                 {formatRelative(nextAction.plannedFor, now, locale)}
               </p>
               {nextAction.templateName && (
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                <p className="text-xs text-fg-muted">
                   {nextAction.templateName}
                 </p>
               )}
             </div>
             {/* Por qué — hairline-separated quiet block */}
-            <div className="mt-3 pt-3 border-t border-neutral-200/80 dark:border-neutral-800">
-              <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+            <div className="mt-3 pt-3 border-t border-border">
+              <p className="text-xs font-medium text-fg-muted">
                 {t(`${NS}.detalle.porQue`)}
               </p>
-              <p className="mt-0.5 text-sm leading-snug text-neutral-700 dark:text-neutral-300">
+              <p className="mt-0.5 text-sm leading-snug text-fg-muted">
                 {whyText}
               </p>
             </div>
           </>
         ) : (
-          <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="mt-2 text-sm text-fg-muted">
             {t(`${NS}.detail.sidebar.noNextAction`)}
           </p>
         )}
@@ -179,20 +182,36 @@ export function DebtorActionRail({
 
       {/* Acciones rápidas */}
       <section
-        className="rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4"
+        className="rounded-xl border border-border bg-surface p-4"
         data-testid="rail-quick-actions"
       >
-        <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+        <h3 className="text-sm font-semibold text-fg">
           {t(`${NS}.detalle.accionesRapidas`)}
         </h3>
         <div className="mt-3 space-y-2">
-          <RailAction
-            label={t(`${NS}.detail.acciones.pause.cta`)}
-            disabled={!pauseEnabled}
-            disabledTooltip={t(`${NS}.detail.acciones.adminOnlyTooltip`)}
-            onClick={() => setOpenModal('pause')}
-            testId="rail-pause"
-          />
+          {/*
+            Pausado, la acción es REANUDAR. Antes decía «Pausar cobranza» tanto
+            si el deudor estaba en pausa como si no, y no había ninguna otra
+            puerta: quien se equivocaba de fecha dejaba al agente detenido sobre
+            ese caso hasta que la fecha pasara sola.
+          */}
+          {estaPausado ? (
+            <RailAction
+              label={t(`${NS}.detail.acciones.resume.cta`)}
+              disabled={!pauseEnabled}
+              disabledTooltip={t(`${NS}.detail.acciones.adminOnlyTooltip`)}
+              onClick={() => setOpenModal('reanudar')}
+              testId="rail-resume"
+            />
+          ) : (
+            <RailAction
+              label={t(`${NS}.detail.acciones.pause.cta`)}
+              disabled={!pauseEnabled}
+              disabledTooltip={t(`${NS}.detail.acciones.adminOnlyTooltip`)}
+              onClick={() => setOpenModal('pause')}
+              testId="rail-pause"
+            />
+          )}
           <RailAction
             label={t(`${NS}.detail.acciones.forceStage.cta`)}
             disabled={!forceStageEnabled}
@@ -219,7 +238,7 @@ export function DebtorActionRail({
         </div>
 
         {/* Escalar → cola de escalaciones */}
-        <div className="mt-3 pt-3 border-t border-neutral-200/80 dark:border-neutral-800">
+        <div className="mt-3 pt-3 border-t border-border">
           <Button asChild variant="link" size="sm" hideArrow className="px-0 h-auto">
             <Link
               href="/panel/inmobiliaria/ai/cobranza/escalaciones"
@@ -237,6 +256,14 @@ export function DebtorActionRail({
       </section>
 
       {/* Modals — own instances; success bubbles up to refetch detail */}
+      <PauseModal
+        modo="reanudar"
+        open={openModal === 'reanudar'}
+        onClose={() => setOpenModal(null)}
+        debtorId={debtorId}
+        debtorName={debtorName}
+        onSuccess={onIntervention}
+      />
       <PauseModal
         open={openModal === 'pause'}
         onClose={() => setOpenModal(null)}
@@ -257,7 +284,6 @@ export function DebtorActionRail({
         onClose={() => setOpenModal(null)}
         debtorId={debtorId}
         debtorName={debtorName}
-        prefill={{ nombre: debtorName }}
         onSuccess={handleSuccess}
       />
       <ManualCallModal
@@ -297,7 +323,7 @@ function RailAction({
       data-testid={testId}
       className="w-full flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:border-primary/40 disabled:opacity-50 disabled:cursor-not-allowed motion-reduce:transition-none"
     >
-      <span className="text-sm font-medium text-neutral-900 dark:text-white">
+      <span className="text-sm font-medium text-fg">
         {label}
       </span>
       {badge && (

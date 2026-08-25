@@ -38,7 +38,7 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
   if (data === undefined) {
     return (
       <section aria-label={t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}>
-        <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
+        <h3 className="text-sm font-semibold text-fg-muted mb-3">
           {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
         </h3>
         <NoDataYetBadge
@@ -53,7 +53,7 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
   if (!data.populated) {
     return (
       <section aria-label={t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}>
-        <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
+        <h3 className="text-sm font-semibold text-fg-muted mb-3">
           {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
         </h3>
         <EmptyState
@@ -70,26 +70,32 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
 
   return (
     <section aria-label={t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}>
-      <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
+      <h3 className="text-sm font-semibold text-fg-muted mb-3">
         {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.title')}
       </h3>
-      <div className="overflow-x-auto rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+      <div className="overflow-x-auto rounded-md border border-border bg-surface">
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="text-xs text-neutral-500 dark:text-neutral-400">
-              <th className="text-left px-3 py-2 font-medium">
+            {/*
+              Tabla suelta (no usa las primitivas del DS), así que los `<th>`
+              llevan a mano el tratamiento de encabezado del `TableHead`: mono
+              11px en mayúsculas, fg-subtle. Antes eran sans 12px en minúsculas
+              y esta tabla se leía distinta del resto del panel.
+            */}
+            <tr>
+              <th className="text-left px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.script')}
               </th>
-              <th className="text-left px-3 py-2 font-medium">
+              <th className="text-left px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.stage')}
               </th>
-              <th className="text-right px-3 py-2 font-medium">
+              <th className="text-right px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.nCalls')}
               </th>
-              <th className="text-right px-3 py-2 font-medium">
+              <th className="text-right px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.conversionRate')}
               </th>
-              <th className="text-right px-3 py-2 font-medium">
+              <th className="text-right px-3 py-2 font-mono text-[11px] uppercase tracking-[0.04em] text-fg-subtle">
                 {t('inmobiliaria.ai.cobranza.analitica.widgets.topScripts.column.lift')}
               </th>
             </tr>
@@ -98,18 +104,18 @@ export function TopScriptsTable({ data }: TopScriptsTableProps): JSX.Element {
             {rows.map((row) => (
               <tr
                 key={row.scriptTemplateId}
-                className="border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/30"
+                className="border-b border-border hover:bg-surface-muted"
               >
-                <td className="px-3 py-2 text-neutral-900 dark:text-white">
+                <td className="px-3 py-2 text-fg">
                   {row.scriptName}
                 </td>
-                <td className="px-3 py-2 text-neutral-600 dark:text-neutral-300 font-semibold">
+                <td className="px-3 py-2 text-fg-muted font-semibold">
                   {row.stage}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums text-neutral-700 dark:text-neutral-300">
+                <td className="px-3 py-2 text-right tabular-nums text-fg-muted">
                   {row.nCalls}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums text-neutral-700 dark:text-neutral-300">
+                <td className="px-3 py-2 text-right tabular-nums text-fg-muted">
                   {(row.conversionRate * 100).toFixed(1)}%
                 </td>
                 <td

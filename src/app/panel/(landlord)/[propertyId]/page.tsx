@@ -12,6 +12,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button, Spinner, Card } from '@/components/ui';
 import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { useLandlordProperty, useCandidate, useCandidateDecision, useCandidates } from '@/lib/hooks/useLandlord';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { ApiError } from '@/lib/api/client';
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
 import { documentsApi, type DocumentItem } from '@/lib/api/documents.service';
 import { landlordApi } from '@/lib/api/landlord.service';
@@ -81,8 +83,18 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const hasAiScoring = canPlanAccessFeature(planId, 'ai_scoring');
 
   // Fetch property with candidates from API
-  const { property, isLoading: propertyLoading } = useLandlordProperty(propertyId);
-  const { candidates: apiCandidates, isLoading: candidatesLoading, refetch: refetchCandidates } = useCandidates({ propertyId });
+  const {
+    property,
+    isLoading: propertyLoading,
+    errorCrudo: errorPropiedad,
+    refetch: recargarPropiedad,
+  } = useLandlordProperty(propertyId);
+  const {
+    candidates: apiCandidates,
+    isLoading: candidatesLoading,
+    errorCrudo: errorCandidatos,
+    refetch: refetchCandidates,
+  } = useCandidates({ propertyId });
   const { decide } = useCandidateDecision();
 
   // Visits from real API
@@ -143,7 +155,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const filteredCandidates = useMemo(() => {
     if (activeTab === 'all') return candidates;
     if (activeTab === 'pending') return candidates.filter(c => c.status === 'pending');
-    if (activeTab === 'pre-approved') return candidates.filter(c => c.status === 'pre-approved');
     if (activeTab === 'approved') return candidates.filter(c => c.status === 'approved');
     if (activeTab === 'rejected') return candidates.filter(c => c.status === 'rejected');
     return candidates;
@@ -153,7 +164,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const counts = useMemo(() => ({
     all: candidates.length,
     pending: candidates.filter(c => c.status === 'pending').length,
-    preApproved: candidates.filter(c => c.status === 'pre-approved').length,
     approved: candidates.filter(c => c.status === 'approved').length,
     rejected: candidates.filter(c => c.status === 'rejected').length,
   }), [candidates]);
@@ -162,7 +172,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const tabs: PlanTab[] = [
     { id: 'all', label: 'Todos', count: counts.all },
     { id: 'pending', label: 'Pendientes', count: counts.pending },
-    { id: 'pre-approved', label: 'Pre-aprobados', count: counts.preApproved },
     { id: 'approved', label: 'Aprobados', count: counts.approved },
     { id: 'rejected', label: 'Rechazados', count: counts.rejected },
     { id: 'visits', label: 'Visitas', count: propertyVisits.length },
@@ -180,7 +189,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const getStatusType = (status: LandlordCandidateStatus): PlanStatusType => {
     const map: Record<LandlordCandidateStatus, PlanStatusType> = {
       'pending': 'new',
-      'pre-approved': 'in_progress',
       'approved': 'accepted',
       'rejected': 'rejected',
       'more-info': 'pending',
@@ -192,7 +200,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const getStatusLabel = (status: LandlordCandidateStatus): string => {
     const map: Record<LandlordCandidateStatus, string> = {
       'pending': 'Pendiente',
-      'pre-approved': 'Pre-aprobado',
       'approved': 'Aprobado',
       'rejected': 'Rechazado',
       'more-info': 'Requiere info',
@@ -296,9 +303,8 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
       const candidate = candidates.find(c => c.id === candidateId);
 
       // Map to API decision format
-      const decisionMap: Record<LandlordCandidateStatus, 'pre-approved' | 'approved' | 'rejected' | 'more-info'> = {
+      const decisionMap: Record<LandlordCandidateStatus, 'approved' | 'rejected' | 'more-info'> = {
         'pending': 'more-info',
-        'pre-approved': 'pre-approved',
         'approved': 'approved',
         'rejected': 'rejected',
         'more-info': 'more-info',
@@ -322,12 +328,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
             description: `Iniciando proceso de contrato con ${candidate?.fullName}`,
           });
           router.push(`/panel/${propertyId}/contract/${candidateId}?new=true`);
-        } else if (newStatus === 'pre-approved') {
-          handleCloseDetail();
-          toast.success('Candidato pre-aprobado', {
-            description: `${candidate?.fullName} ha sido pre-aprobado. Puedes continuar revisando otros candidatos o aprobar definitivamente.`,
-            duration: 5000,
-          });
         } else if (newStatus === 'rejected') {
           handleCloseDetail();
           toast('Candidato rechazado', {
@@ -560,15 +560,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
           <Button
             variant="secondary"
             hideArrow
-            onClick={() => handleDecision(selectedCandidate.id, 'pre-approved')}
-            className="w-full bg-plan-status-blue-bg text-primary rounded-sm hover:bg-primary-soft"
-          >
-            <Clock className="w-4 h-4" />
-            Pre-aprobar
-          </Button>
-          <Button
-            variant="secondary"
-            hideArrow
             onClick={() => handleDecision(selectedCandidate.id, 'approved')}
             className="w-full bg-plan-status-green-bg text-success rounded-sm hover:bg-success-soft"
           >
@@ -792,23 +783,24 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
     );
   }
 
-  // Property not found
+  // Property not found — o, hasta ahora, cualquier otra cosa.
+  //
+  // `property` queda en null tanto por un 404 como por un 500 o un corte de
+  // red, y la pantalla concluía «no existe o no tienes acceso» para los tres.
+  // Sobre un fallo de red eso es acusar a la persona de un problema de
+  // permisos que no tiene, y encima le saca el botón de reintentar.
+  // `FalloDeCarga` lo decide por el status: 404 → «no encontramos», sin
+  // reintentar; cualquier otro → con reintentar.
   if (!property) {
     return (
       <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-xl bg-surface-muted flex items-center justify-center mx-auto mb-4">
-              <WarningCircle className="w-8 h-8 text-fg-subtle" />
-            </div>
-            <h1 className="text-xl font-semibold text-fg mb-2">
-              Propiedad no encontrada
-            </h1>
-            <p className="text-fg-muted mb-6">
-              La propiedad que buscas no existe o no tienes acceso.
-            </p>
-            <BackButton href="/panel" label="Volver al panel" variant="pill" />
-          </div>
+          <FalloDeCarga
+            error={errorPropiedad ?? new ApiError(404, 'property not found')}
+            queEs="esta propiedad"
+            onReintentar={recargarPropiedad}
+            volverA={{ label: 'Volver al panel', href: '/panel' }}
+          />
         </div>
       </div>
     );
@@ -1032,7 +1024,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
         ) : (
           <>
             {/* Stats Row - Compact Style */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               <Card className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
@@ -1052,17 +1044,6 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                   <div>
                     <p className="text-2xl font-bold text-fg">{counts.pending}</p>
                     <p className="text-xs text-fg-muted">Pendientes</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary-soft dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                    <Eye className="w-5 h-5 text-primary dark:text-[#5570FF]" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-fg">{counts.preApproved}</p>
-                    <p className="text-xs text-fg-muted">Pre-aprobados</p>
                   </div>
                 </div>
               </Card>
@@ -1107,20 +1088,33 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
               />
             ) : activeTab !== 'visits' ? (
               <div className="bg-surface rounded-xl border border-border overflow-hidden">
-                <PlanTable
-                  data={tableData}
-                  columns={columns}
-                  keyExtractor={(row) => row.id}
-                  onRowClick={handleRowClick}
-                  emptyMessage={
-                    activeTab === 'all'
-                      ? 'Aún no hay candidatos para esta propiedad'
-                      : `No hay candidatos ${tabs.find(t => t.id === activeTab)?.label.toLowerCase() || ''}`
-                  }
-                  stickyHeader
-                  pagination
-                  pageSize={4}
-                />
+                {/* Sin esto, una consulta caída llegaba como `[]` y la tabla
+                    afirmaba «Aún no hay candidatos para esta propiedad». A un
+                    propietario esperando postulaciones eso no es un detalle:
+                    es la respuesta a la única pregunta que vino a hacer. */}
+                {errorCandidatos ? (
+                  <FalloDeCarga
+                    error={errorCandidatos}
+                    queEs="los candidatos"
+                    onReintentar={refetchCandidates}
+                    enmarcado={false}
+                  />
+                ) : (
+                  <PlanTable
+                    data={tableData}
+                    columns={columns}
+                    keyExtractor={(row) => row.id}
+                    onRowClick={handleRowClick}
+                    emptyMessage={
+                      activeTab === 'all'
+                        ? 'Aún no hay candidatos para esta propiedad'
+                        : `No hay candidatos ${tabs.find(t => t.id === activeTab)?.label.toLowerCase() || ''}`
+                    }
+                    stickyHeader
+                    pagination
+                    pageSize={4}
+                  />
+                )}
               </div>
             ) : (
               <div className="bg-surface rounded-xl border border-border overflow-hidden">

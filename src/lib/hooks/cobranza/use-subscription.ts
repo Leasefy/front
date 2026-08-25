@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 export interface SubscriptionRow {
   email_enabled: boolean
@@ -64,7 +65,7 @@ export function useSubscription(): UseSubscriptionResult {
       return
     }
     try {
-      const res = await globalThis.fetch(url, { headers: agentAuthHeaders() })
+      const res = await agentFetch(url)
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as SubscriptionRow
       setData(json)
@@ -91,7 +92,7 @@ export function useSubscription(): UseSubscriptionResult {
     if (Object.keys(patch).length === 0) return
     setIsSaving(true)
     try {
-      const res = await globalThis.fetch(url, {
+      const res = await agentFetch(url, {
         method: 'PATCH',
         headers: agentAuthHeaders({ 'content-type': 'application/json' }),
         body: JSON.stringify(patch),

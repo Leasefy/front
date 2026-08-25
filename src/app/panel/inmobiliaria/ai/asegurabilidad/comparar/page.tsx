@@ -102,7 +102,7 @@ function CompararView() {
                 {/* Esquina criterio × aseguradora */}
                 <TableHead
                   scope="col"
-                  className="sticky left-0 z-10 bg-card px-4 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide border-b border-border min-w-[180px]"
+                  className="sticky left-0 z-10 bg-card px-4 py-3 text-left border-b border-border min-w-[180px]"
                 >
                   {tf(`${NS}.preview.criterioCol`, 'Criterio')}
                 </TableHead>
@@ -115,7 +115,7 @@ function CompararView() {
                     <span className="inline-flex flex-col items-center gap-2">
                       <span className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
                         <ShieldCheck
-                          className="w-4 h-4 text-neutral-300 dark:text-neutral-600"
+                          className="w-4 h-4 text-fg-subtle"
                           weight="duotone"
                           aria-hidden="true"
                         />
@@ -135,11 +135,11 @@ function CompararView() {
                     {/* Etiqueta del criterio (real, para que se entienda la matriz) */}
                     <TableHead
                       scope="row"
-                      className="sticky left-0 z-10 bg-card px-4 py-3.5 text-left text-sm font-medium text-neutral-700 dark:text-neutral-200 border-b border-border align-middle"
+                      className="sticky left-0 z-10 bg-card px-4 py-3.5 text-left text-fg border-b border-border align-middle"
                     >
                       <span className="inline-flex items-center gap-2">
                         <RowIcon
-                          className="w-4 h-4 shrink-0 text-neutral-400 dark:text-neutral-500"
+                          className="w-4 h-4 shrink-0 text-fg-muted"
                           weight="duotone"
                           aria-hidden="true"
                         />

@@ -7,7 +7,6 @@ import {
   X,
   Robot,
   Sparkle,
-  ArrowClockwise,
   MagnifyingGlass,
   ShieldCheck,
   WarningCircle,
@@ -28,7 +27,6 @@ import { IconButton } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { ChatThread } from '@/components/messages/ChatThread';
-import { agentCreditsApi } from '@/lib/api/agent-credits.service';
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
 import { useContractByApplication } from '@/lib/hooks/useContracts';
 import { getAccessToken, ApiError } from '@/lib/api/client';
@@ -41,19 +39,25 @@ import type {
   Observation,
   ScoreBreakdown,
   SmartMatchingResponse,
+  PreScoringStudy,
 } from '@/lib/api/applications.types';
-import type { AgentCreditsBalance } from '@/lib/api/agent-credits.service';
 
 // ============================================================================
 // Props
 // ============================================================================
 
-export type CandidateAction = 'preapprove' | 'approve' | 'reject' | 'request-info';
+export type CandidateAction = 'approve' | 'reject' | 'request-info';
 
 interface CandidateDrawerProps {
   candidate: LandlordCandidate | null;
   onClose: () => void;
   onAction: (type: CandidateAction, candidate: LandlordCandidate) => void;
+  /**
+   * Kept for caller compatibility; no longer invoked. The drawer used to call
+   * this after triggering a fresh AI re-evaluation — that trigger was removed
+   * in T-0024 (the panel now reads the pre-scoring study the candidate
+   * already paid for, instead of dispatching a new one).
+   */
   onReevaluated?: () => void;
 }
 
@@ -65,7 +69,6 @@ const STATUS_LABELS: Record<LandlordApplicationStatus, string> = {
   DRAFT: 'Borrador',
   SUBMITTED: 'Postulado',
   UNDER_REVIEW: 'En revisión',
-  PREAPPROVED: 'Pre-aprobado',
   APPROVED: 'Aprobado',
   REJECTED: 'Rechazado',
   NEEDS_INFO: 'Pide info',
@@ -134,22 +137,15 @@ const DOC_TYPE_LABELS: Record<string, string> = {
 // Drawer component
 // ============================================================================
 
-export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }: CandidateDrawerProps) {
+export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawerProps) {
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [noEvaluationYet, setNoEvaluationYet] = useState(false);
 
-  const [isReevaluating, setIsReevaluating] = useState(false);
-  const [reevalMessage, setReevalMessage] = useState<string | null>(null);
-  const [reevalError, setReevalError] = useState<string | null>(null);
-  const [creditsExhausted, setCreditsExhausted] = useState(false);
-
   const [isMatching, setIsMatching] = useState(false);
   const [matchingResults, setMatchingResults] = useState<SmartMatchingResponse | null>(null);
   const [matchingError, setMatchingError] = useState<string | null>(null);
-
-  const [creditsBalance, setCreditsBalance] = useState<AgentCreditsBalance | null>(null);
 
   const { documents, isLoading: isLoadingDocs, error: docsError } = useCandidateDocuments(candidate?.id);
   // Only relevant when the candidate was approved — we skip the request otherwise
@@ -191,15 +187,6 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
     return () => stopPolling();
   }, [candidate, stopPolling]);
 
-  const refreshCreditsBalance = useCallback(async () => {
-    try {
-      const balance = await agentCreditsApi.getBalance();
-      setCreditsBalance(balance);
-    } catch {
-      // Silently fail — we show 'saldo: -' in that case
-    }
-  }, []);
-
   // Fetch consolidated evaluation result when a candidate is opened.
   // Landlords/agencies use /evaluations/:id/result — NOT /scoring/* (tenant-only).
   useEffect(() => {
@@ -235,9 +222,10 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
               }
             } catch (err) {
               if (err instanceof ApiError && err.status === 503) {
-                // Agent micro unreachable — backend 503. No credit deducted, evaluation state intact.
-                // Stop polling and surface the error; user can retry via "Re-evaluar".
-                setAiError('Servicio temporalmente no disponible. Reintentá en unos minutos.');
+                // Agent micro unreachable — backend 503. Evaluation state intact.
+                // Stop polling and surface the error; there is no re-trigger from
+                // this drawer (T-0024 removed the front-side trigger).
+                setAiError('Servicio temporalmente no disponible. Reintenta en unos minutos.');
                 setIsLoadingAI(false);
                 stopPolling();
                 return;
@@ -270,85 +258,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
   useEffect(() => {
     setMatchingResults(null);
     setMatchingError(null);
-    setReevalMessage(null);
-    setReevalError(null);
-    setCreditsExhausted(false);
   }, [candidate]);
-
-  // Load credits balance when the drawer opens
-  useEffect(() => {
-    if (!candidate) return;
-    refreshCreditsBalance();
-  }, [candidate, refreshCreditsBalance]);
-
-  const handleReevaluate = useCallback(async () => {
-    if (!candidate) return;
-    setIsReevaluating(true);
-    setReevalMessage(null);
-    setReevalError(null);
-    setCreditsExhausted(false);
-    try {
-      const res = await landlordApplicationsApi.triggerReevaluation(candidate.id);
-      const triggerTime = Date.now();
-      const expectedRunId = res.runId;
-
-      setReevalMessage('Re-evaluación en curso. Esperando nuevo resultado...');
-      onReevaluated?.();
-      refreshCreditsBalance();
-
-      // Clear the stale result and start polling for the new one
-      setEvaluation(null);
-      setNoEvaluationYet(false);
-      setAiError(null);
-      setIsLoadingAI(true);
-      setIsPolling(true);
-
-      pollingRef.current = setInterval(async () => {
-        try {
-          const result = await landlordApplicationsApi.getEvaluationResult(candidate.id);
-
-          // If the agent explicitly failed, stop and show error
-          if (result.status === 'failed') {
-            setAiError('El agente no pudo completar la evaluación. Intentá de nuevo.');
-            setIsLoadingAI(false);
-            stopPolling();
-            return;
-          }
-
-          // Accept result if runId matches OR if completedAt is newer than trigger
-          const isNew =
-            (expectedRunId && result.runId === expectedRunId) ||
-            (result.completedAt && new Date(result.completedAt).getTime() > triggerTime);
-          if (isNew) {
-            setEvaluation(result);
-            setIsLoadingAI(false);
-            setReevalMessage('Re-evaluación completada.');
-            stopPolling();
-          }
-        } catch (err) {
-          if (err instanceof ApiError && err.status === 503) {
-            // Agent micro unreachable — backend 503. No credit deducted, evaluation state intact.
-            // Stop polling and surface the error; user can retry via "Re-evaluar".
-            setReevalError('Servicio temporalmente no disponible. Reintentá en unos minutos.');
-            setIsLoadingAI(false);
-            stopPolling();
-            return;
-          }
-          // Keep polling on other transient errors.
-        }
-      }, 3000);
-    } catch (err) {
-      const raw = err instanceof Error ? err.message : 'Error al disparar la re-evaluación';
-      if (/cr[eé]ditos?\s+insuficient|saldo.*insuficient/i.test(raw)) {
-        setCreditsExhausted(true);
-        setReevalError('No tenés créditos disponibles para ejecutar el agente.');
-      } else {
-        setReevalError(raw);
-      }
-    } finally {
-      setIsReevaluating(false);
-    }
-  }, [candidate, onReevaluated, stopPolling, refreshCreditsBalance]);
 
   const handleSmartMatching = useCallback(async () => {
     if (!candidate) return;
@@ -376,10 +286,10 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
   const recommendation = evaluation?.recommendation ? RECOMMENDATION_LABELS[evaluation.recommendation] : null;
 
   const requiresManualReview = evaluation?.requires_manual_review === true;
-  const canPreapprove = candidate.status === 'SUBMITTED' || candidate.status === 'UNDER_REVIEW';
-  const canApprove = candidate.status === 'PREAPPROVED' && !requiresManualReview;
-  const canReject = canPreapprove || candidate.status === 'PREAPPROVED';
-  const canRequestInfo = canPreapprove;
+  const isOpenForDecision = candidate.status === 'SUBMITTED' || candidate.status === 'UNDER_REVIEW';
+  const canApprove = candidate.status === 'UNDER_REVIEW' && !requiresManualReview;
+  const canReject = isOpenForDecision;
+  const canRequestInfo = isOpenForDecision;
 
   return (
     <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -394,14 +304,14 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
         {/* Header — flex-none keeps it pinned to the top of the panel */}
         <div className="flex-none bg-background border-b border-border px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-surface-brand flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center flex-shrink-0">
               <User className="w-5 h-5 text-primary" />
             </div>
             <div className="min-w-0">
               <h2 className="font-semibold text-foreground truncate">
                 {candidate.tenantName || 'Candidato'}
               </h2>
-              <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
+              <p className="text-xs text-fg-muted truncate flex items-center gap-1.5">
                 <Envelope className="w-3 h-3" />
                 {candidate.tenantEmail}
               </p>
@@ -425,11 +335,11 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
         >
           {/* Status */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Estado:</span>
+            <span className="text-sm text-fg-muted">Estado:</span>
             <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-foreground">
               {STATUS_LABELS[candidate.status]}
             </span>
-            <span className="text-sm text-muted-foreground ml-auto">
+            <span className="text-sm text-fg-muted ml-auto">
               Postulado el {new Date(candidate.submittedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
           </div>
@@ -445,10 +355,10 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                   <p className="font-semibold text-sm text-foreground">
                     {existingContract ? 'Contrato en curso' : 'Candidato aprobado'}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-fg-muted mt-0.5">
                     {existingContract
                       ? 'Ya hay un contrato creado para esta aplicación.'
-                      : 'Ya podés crear el contrato y enviarlo para firma.'}
+                      : 'Ya puedes crear el contrato y enviarlo para firma.'}
                   </p>
                 </div>
               </div>
@@ -481,7 +391,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-sm text-foreground">Proceso de contrato cerrado</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-fg-muted mt-0.5">
                     El contrato se canceló o fue rechazado definitivamente. Para reintentar con este candidato, necesitás una nueva aplicación.
                   </p>
                 </div>
@@ -498,112 +408,53 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
             </section>
           )}
 
+          {/*
+            Pre-scoring study — the candidate already paid for and completed
+            this study (Fianly) when they applied. The panel reads the result
+            pinned to THIS application (never the tenant's currently vigent
+            order — that's a back-side invariant, see contract.md §3.2) and
+            never triggers a new one. T-0024.
+          */}
+          <section className="rounded-xl border border-border bg-card p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-md bg-primary-soft flex items-center justify-center">
+                <ShieldCheck className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm text-foreground">Estudio de preescoring</h3>
+                <p className="text-xs text-fg-muted">Resultado del estudio de asegurabilidad que ya pagó el candidato</p>
+              </div>
+            </div>
+            <PreScoringStudyPanel study={candidate.preScoringStudy} />
+          </section>
+
           {/* AI Scoring Block */}
           <section className={cn(
             'rounded-xl border p-5 space-y-4',
             levelColor ? `${levelColor.bg} ${levelColor.border}` : 'bg-muted border-border'
           )}>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-md bg-surface dark:bg-ink flex items-center justify-center">
-                  <Robot className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-foreground">Análisis IA · Tenant Scoring</h3>
-                  <p className="text-xs text-muted-foreground">Generado por el agente de evaluación de riesgo</p>
-                </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-md bg-surface dark:bg-ink flex items-center justify-center">
+                <Robot className="w-4 h-4 text-primary" />
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                hideArrow
-                onClick={handleReevaluate}
-                disabled={isReevaluating}
-                className="gap-1.5"
-              >
-                {isReevaluating ? (
-                  <DSSpinner size="xs" variant="current" />
-                ) : (
-                  <ArrowClockwise className="w-3.5 h-3.5" />
-                )}
-                Re-evaluar
-              </Button>
+              <div>
+                <h3 className="font-semibold text-sm text-foreground">Análisis IA · Tenant Scoring</h3>
+                <p className="text-xs text-fg-muted">Generado por el agente de evaluación de riesgo</p>
+              </div>
             </div>
-
-            {/* Credits balance chip */}
-            {creditsBalance && (
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <Sparkle className="w-3.5 h-3.5" />
-                  <span>
-                    Saldo:{' '}
-                    <span className="font-semibold text-foreground tabular-nums">
-                      {creditsBalance.total}
-                    </span>{' '}
-                    <span className="text-muted-foreground">
-                      créditos (1 por evaluación)
-                    </span>
-                  </span>
-                </div>
-                {(creditsBalance.planBalance > 0 || creditsBalance.purchasedBalance > 0) && (
-                  <span className="text-muted-foreground">
-                    {creditsBalance.planBalance} del plan
-                    {creditsBalance.purchasedBalance > 0 && ` + ${creditsBalance.purchasedBalance} comprados`}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {reevalMessage && (
-              <div className="rounded-md bg-success-soft text-success flex items-center gap-2">
-                {isPolling && <DSSpinner size="xs" variant="current" className="flex-shrink-0" />}
-                {reevalMessage}
-              </div>
-            )}
-
-            {creditsExhausted ? (
-              <div className="rounded-xl bg-danger-soft border border-danger/30 p-3 space-y-2">
-                <p className="text-xs font-semibold text-danger flex items-center gap-1.5">
-                  <WarningCircle className="w-4 h-4" />
-                  Créditos de evaluación agotados
-                </p>
-                <p className="text-xs text-danger">
-                  Cada evaluación del agente consume un crédito. Podés comprar un pack extra —
-                  los créditos comprados no expiran.
-                </p>
-                <div className="flex items-center gap-2">
-                  <Link
-                    href="/panel/inmobiliaria/creditos"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-danger hover:opacity-90 text-white text-xs font-medium transition-colors"
-                  >
-                    Comprar créditos
-                  </Link>
-                  <Link
-                    href="/panel/inmobiliaria/upgrade"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-danger/30 text-danger text-xs font-medium hover:bg-danger-soft transition-colors"
-                  >
-                    Ver planes
-                  </Link>
-                </div>
-              </div>
-            ) : reevalError ? (
-              <div className="rounded-md bg-danger-soft text-danger">
-                {reevalError}
-              </div>
-            ) : null}
 
             {isLoadingAI ? (
               <div className="flex items-center justify-center py-6">
                 <DSSpinner size="sm" variant="muted" />
               </div>
             ) : noEvaluationYet ? (
-              <div className="rounded-xl bg-white/60 dark:bg-ink/60 p-3 border border-border">
-                <p className="text-xs text-muted-foreground">
-                  Este candidato aún no tiene una evaluación del agente. Hacé clic en &ldquo;Re-evaluar&rdquo; para generar la primera.
+              <div className="rounded-xl bg-surface-muted p-3 border border-border">
+                <p className="text-xs text-fg-muted">
+                  Este candidato aún no tiene un análisis de IA generado por el agente.
                 </p>
               </div>
             ) : aiError ? (
-              <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <div className="flex items-start gap-2 text-xs text-fg-muted">
                 <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>{aiError}</span>
               </div>
@@ -618,8 +469,8 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                       </span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-3xl font-bold text-foreground">{totalScore}<span className="text-sm font-normal text-muted-foreground">/100</span></p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{LEVEL_DESCRIPTIONS[level]}</p>
+                      <p className="text-3xl font-bold text-foreground">{totalScore}<span className="text-sm font-normal text-fg-muted">/100</span></p>
+                      <p className="text-xs text-fg-muted mt-0.5">{LEVEL_DESCRIPTIONS[level]}</p>
                     </div>
                   </div>
                 )}
@@ -674,13 +525,13 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
 
                 {/* Recommendation */}
                 {recommendation && (
-                  <div className="rounded-xl bg-white/60 dark:bg-ink/60 p-3 flex items-start gap-2 border border-border">
+                  <div className="rounded-xl bg-surface-muted p-3 flex items-start gap-2 border border-border">
                     <recommendation.icon className={cn('w-5 h-5 flex-shrink-0 mt-0.5', recommendation.color)} />
                     <div>
-                      <p className="text-xs text-muted-foreground">Recomendación del agente</p>
+                      <p className="text-xs text-fg-muted">Recomendación del agente</p>
                       <p className={cn('text-sm font-semibold', recommendation.color)}>{recommendation.label}</p>
                       {evaluation?.confidence !== undefined && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <p className="text-xs text-fg-muted mt-0.5">
                           Confianza: {Math.round(evaluation.confidence * 100)}%
                         </p>
                       )}
@@ -690,7 +541,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
 
                 {/* Summary */}
                 {evaluation?.summary && (
-                  <div className="rounded-xl bg-white/60 dark:bg-ink/60 p-3 border border-border">
+                  <div className="rounded-xl bg-surface-muted p-3 border border-border">
                     <p className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
                       <Sparkle className="w-3.5 h-3.5" />
                       Resumen
@@ -705,7 +556,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                     <p className="text-xs font-semibold text-foreground mb-2">Razonamiento</p>
                     <ul className="space-y-1.5">
                       {evaluation.reasoning.map((r, i) => (
-                        <li key={i} className="text-xs text-muted-foreground flex items-start gap-2">
+                        <li key={i} className="text-xs text-fg-muted flex items-start gap-2">
                           <span className="text-primary mt-0.5">•</span>
                           <span>{r}</span>
                         </li>
@@ -753,8 +604,8 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 )}
 
                 {!level && !evaluation && !aiError && (
-                  <p className="text-xs text-muted-foreground">
-                    Aún no hay análisis disponible. Hacé clic en &ldquo;Re-evaluar&rdquo; para generar uno.
+                  <p className="text-xs text-fg-muted">
+                    Aún no hay análisis disponible.
                   </p>
                 )}
               </>
@@ -770,7 +621,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm text-foreground">Smart Matching</h3>
-                  <p className="text-xs text-muted-foreground">Otras propiedades de tu portafolio que le podrían calzar</p>
+                  <p className="text-xs text-fg-muted">Otras propiedades de tu portafolio que le podrían calzar</p>
                 </div>
               </div>
               <Button
@@ -799,19 +650,20 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 {matchingResults.candidateProfile && (
                   <div className="rounded-xl bg-muted p-3 text-xs space-y-1">
                     <p className="font-semibold text-foreground">Perfil detectado del candidato:</p>
-                    <p className="text-muted-foreground">
+                    <p className="text-fg-muted">
                       Ingresos: <span className="text-foreground">{formatCurrency(matchingResults.candidateProfile.monthlyIncome)}</span> · Presupuesto máx: <span className="text-foreground">{formatCurrency(matchingResults.candidateProfile.maxBudget)}</span>
                     </p>
-                    {matchingResults.candidateProfile.preferredLocations.length > 0 && (
-                      <p className="text-muted-foreground">
-                        Zonas preferidas: <span className="text-foreground">{matchingResults.candidateProfile.preferredLocations.join(', ')}</span>
-                      </p>
-                    )}
+                    {matchingResults.candidateProfile.preferredLocations &&
+                      matchingResults.candidateProfile.preferredLocations.length > 0 && (
+                        <p className="text-fg-muted">
+                          Zonas preferidas: <span className="text-foreground">{matchingResults.candidateProfile.preferredLocations.join(', ')}</span>
+                        </p>
+                      )}
                   </div>
                 )}
 
                 {matchingResults.results.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">
+                  <p className="text-xs text-fg-muted text-center py-4">
                     {matchingResults.message ?? 'No hay otras propiedades compatibles disponibles en tu portafolio.'}
                   </p>
                 ) : (
@@ -819,14 +671,14 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                     {matchingResults.results.map((r) => (
                       <Link
                         key={r.propertyId}
-                        href={`/panel/inmobiliaria/portafolio/${r.propertyId}`}
-                        className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-border dark:border-strong dark:hover:border-border dark:border-strong hover:bg-muted/50 transition-all group"
+                        href={`/panel/inmobiliaria/inmuebles/${r.propertyId}`}
+                        className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-border dark:border-border-strong dark:hover:border-border dark:border-border-strong hover:bg-muted/50 transition-all group"
                       >
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-foreground truncate group-hover:text-fg-muted dark:text-fg-subtle dark:group-hover:text-fg-muted dark:text-fg-subtle transition-colors">
                             {r.property.title}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-fg-muted">
                             {r.property.neighborhood}, {r.property.city} · {r.property.bedrooms} hab · {formatCurrency(r.property.monthlyRent)}/mes
                           </p>
                         </div>
@@ -834,9 +686,9 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                           <div className="px-2 py-0.5 rounded-full bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle text-xs font-bold">
                             {r.compatibilityScore}%
                           </div>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">match</p>
+                          <p className="text-[10px] text-fg-muted mt-0.5">match</p>
                         </div>
-                        <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-fg-muted dark:text-fg-subtle dark:group-hover:text-fg-muted dark:text-fg-subtle transition-colors" />
+                        <ArrowUpRight className="w-4 h-4 text-fg-muted group-hover:text-fg-muted dark:text-fg-subtle dark:group-hover:text-fg-muted dark:text-fg-subtle transition-colors" />
                       </Link>
                     ))}
                   </div>
@@ -845,8 +697,8 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
             )}
 
             {!matchingResults && !isMatching && !matchingError && (
-              <p className="text-xs text-muted-foreground">
-                Hacé clic en &ldquo;Buscar compatibles&rdquo; para que el agente analice tu portafolio y te sugiera propiedades que le podrían calzar mejor a este candidato.
+              <p className="text-xs text-fg-muted">
+                Haz clic en &ldquo;Buscar compatibles&rdquo; para que el agente analice tu portafolio y te sugiera propiedades que le podrían calzar mejor a este candidato.
               </p>
             )}
           </section>
@@ -854,12 +706,15 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
           {/* Documents section */}
           <section className="rounded-xl border border-border bg-card p-5 space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-md bg-fg-muted flex items-center justify-center">
-                <FileText className="w-4 h-4 text-fg-muted dark:text-fg-muted" />
+              {/* `bg-surface-muted` es un token de TEXTO usado como fondo: pintaba
+                  un disco gris claro, y encima el icono iba con ESE MISMO color
+                  — invisible. El chip va con superficie, el icono con texto. */}
+              <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center">
+                <FileText className="w-4 h-4 text-fg-muted" />
               </div>
               <div>
                 <h3 className="font-semibold text-sm text-foreground">Documentos adjuntos</h3>
-                <p className="text-xs text-muted-foreground">Archivos cargados por el candidato</p>
+                <p className="text-xs text-fg-muted">Archivos cargados por el candidato</p>
               </div>
             </div>
 
@@ -875,7 +730,7 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 ))}
                 <div className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2">
                   <p className="text-xs text-warning">
-                    La verificación final es responsabilidad de tu equipo. Revisá los documentos originales antes de tomar una decisión.
+                    La verificación final es responsabilidad de tu equipo. Revisa los documentos originales antes de tomar una decisión.
                   </p>
                 </div>
               </div>
@@ -887,12 +742,12 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                 <DSSpinner size="sm" variant="muted" />
               </div>
             ) : docsError ? (
-              <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <div className="flex items-start gap-2 text-xs text-fg-muted">
                 <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>No se pudieron cargar los documentos.</span>
               </div>
             ) : documents.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-3">
+              <p className="text-xs text-fg-muted text-center py-3">
                 Este candidato no tiene documentos adjuntos aún.
               </p>
             ) : (
@@ -914,19 +769,14 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
           <section className="rounded-xl border border-border bg-card p-5 space-y-3">
             <h3 className="font-semibold text-sm text-foreground">Acciones</h3>
             <div className="grid grid-cols-2 gap-2">
-              {canPreapprove && (
-                <Button hideArrow onClick={() => onAction('preapprove', candidate)}>
-                  Pre-aprobar
-                </Button>
-              )}
-              {candidate.status === 'PREAPPROVED' && (
+              {candidate.status === 'UNDER_REVIEW' && (
                 // success/green: Cadence Button has no success variant (logged gap) — real
                 // Button keeps all DS states; only the fill is overridden for the missing tone.
                 <Button
                   hideArrow
                   onClick={() => !requiresManualReview && onAction('approve', candidate)}
                   disabled={requiresManualReview}
-                  title={requiresManualReview ? 'Revisá las alertas de integridad antes de aprobar' : undefined}
+                  title={requiresManualReview ? 'Revisa las alertas de integridad antes de aprobar' : undefined}
                   className="bg-success text-white hover:bg-success/90 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Aprobar
@@ -948,8 +798,8 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
                   Rechazar
                 </Button>
               )}
-              {!canPreapprove && !canApprove && !canReject && !canRequestInfo && (
-                <p className="col-span-2 text-xs text-muted-foreground text-center py-2">
+              {!isOpenForDecision && !canApprove && !canReject && !canRequestInfo && (
+                <p className="col-span-2 text-xs text-fg-muted text-center py-2">
                   No hay acciones disponibles para este estado.
                 </p>
               )}
@@ -965,15 +815,125 @@ export function CandidateDrawer({ candidate, onClose, onAction, onReevaluated }:
 // Helpers
 // ============================================================================
 
+/**
+ * Renders the candidate's Fianly pre-scoring study, already paid for at
+ * application time (T-0024 contract.md §3.2). Four states, none of which may
+ * render a blank panel:
+ *  - `study` null/absent → an honest "no study" state.
+ *  - `carriers: []` with `maxAsegurableCop` present → ceiling-only, the
+ *    common case for every order that predates the per-carrier column. Must
+ *    NOT look like "no study".
+ *  - `status: 'EXPIRED'` → still shown, labeled — the study stayed valid for
+ *    the application it was filed under.
+ *  - Full result → verdict-adjacent ceiling + per-carrier viability rows.
+ *
+ * Exported for direct unit testing (see CandidateDrawer.test.tsx).
+ */
+export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null | undefined }) {
+  if (!study) {
+    return (
+      <div className="rounded-xl bg-surface-muted p-3 border border-border" data-testid="prescoring-panel-empty">
+        <p className="text-xs text-fg-muted">
+          Este candidato no tiene un estudio de preescoring registrado para esta postulación.
+        </p>
+      </div>
+    );
+  }
+
+  const carriers = study.carriers ?? [];
+  const isExpired = study.status === 'EXPIRED';
+
+  return (
+    <div className="space-y-3" data-testid="prescoring-panel-full">
+      {isExpired && (
+        <div className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2 flex items-start gap-2" data-testid="prescoring-expired-badge">
+          <Info className="w-3.5 h-3.5 text-warning flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <p className="text-xs text-warning">
+            El estudio venció, pero el resultado sigue siendo válido para esta postulación.
+          </p>
+        </div>
+      )}
+
+      {study.maxAsegurableCop != null ? (
+        <div>
+          <p className="text-xs text-fg-muted">Monto máximo asegurable</p>
+          <p className="text-2xl font-bold text-foreground font-mono tabular-nums">
+            {formatCurrency(study.maxAsegurableCop)}
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-fg-muted">Este estudio no registró un monto máximo asegurable.</p>
+      )}
+
+      {study.completedAt && (
+        <p className="text-xs text-fg-muted">
+          Completado el{' '}
+          {new Date(study.completedAt).toLocaleDateString('es-CO', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })}
+        </p>
+      )}
+
+      {carriers.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-foreground">Aseguradoras evaluadas</p>
+          {carriers.map((carrier) => (
+            <div
+              key={carrier.name}
+              className="flex items-center justify-between gap-3 rounded-md bg-surface-muted p-2.5 border border-border"
+              data-testid="prescoring-carrier-row"
+            >
+              <span className="text-xs text-foreground truncate">{carrier.name}</span>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                {carrier.maxAsegurableCop != null ? (
+                  <span className="text-xs font-semibold text-foreground tabular-nums font-mono">
+                    {formatCurrency(carrier.maxAsegurableCop)}
+                  </span>
+                ) : (
+                  // Nullable per contract §3.1/§9 amendment 2 — the back emits `null` for a
+                  // carrier that will not back the tenant. MUST NOT fall through to
+                  // formatCurrency: it null-coalesces to 0 and renders a false "$0" ceiling,
+                  // which reads as "will back you for zero pesos" instead of "will not back you".
+                  <span
+                    className="inline-flex items-center gap-1 text-xs font-medium text-danger"
+                    data-testid="prescoring-carrier-no-cover"
+                  >
+                    <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                    Sin cobertura
+                  </span>
+                )}
+                <span className={cn('inline-flex items-center gap-1 text-xs font-medium', carrier.viable ? 'text-success' : 'text-danger')}>
+                  {carrier.viable ? (
+                    <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                  ) : (
+                    <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                  )}
+                  {carrier.viable ? 'Viable' : 'No viable'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-fg-muted" data-testid="prescoring-ceiling-only-note">
+          El detalle por aseguradora no está disponible para este estudio; se muestra el monto máximo asegurable global.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function SubscoreBar({ label, value, weight }: { label: string; value: number; weight?: number }) {
   const color = value >= 75 ? 'bg-success' : value >= 50 ? 'bg-warning' : 'bg-danger';
   return (
-    <div className="rounded-md bg-white/60 dark:bg-ink/60 p-2 border border-border">
+    <div className="rounded-md bg-surface-muted p-2 border border-border">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] text-muted-foreground truncate">{label}</span>
+        <span className="text-[10px] text-fg-muted truncate">{label}</span>
         <div className="flex items-center gap-1.5">
           {weight !== undefined && (
-            <span className="text-[10px] text-muted-foreground/60 tabular-nums">{weight}%</span>
+            <span className="text-[10px] text-fg-subtle tabular-nums">{weight}%</span>
           )}
           <span className="text-xs font-semibold text-foreground tabular-nums">{value}</span>
         </div>
@@ -1019,7 +979,7 @@ function IntegrityFlagCard({ flag }: { flag: IntegrityFlag }) {
   }
   return (
     <div className="rounded-md bg-muted border border-border px-3 py-2">
-      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+      <p className="text-xs text-fg-muted flex items-center gap-1.5">
         <Info className="w-3.5 h-3.5 flex-shrink-0" />
         {message}
         {docLabel && <span className="ml-auto">— {docLabel}</span>}
@@ -1061,13 +1021,13 @@ function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId:
   }, [applicationId, doc.id]);
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-white/60 dark:bg-ink/60 hover:border-primary/30 dark:hover:border-primary/30 transition-colors group">
-      <div className="w-8 h-8 rounded-md bg-fg-muted flex items-center justify-center flex-shrink-0">
+    <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-surface-muted hover:border-primary/30 dark:hover:border-primary/30 transition-colors group">
+      <div className="w-8 h-8 rounded-md bg-surface-muted flex items-center justify-center flex-shrink-0">
         <FileText className={cn('w-4 h-4', isPdf ? 'text-danger' : 'text-fg-muted')} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold text-foreground truncate">{label}</p>
-        <p className="text-[10px] text-muted-foreground truncate">
+        <p className="text-[10px] text-fg-muted truncate">
           {doc.fileName ?? 'archivo'}
           {sizeKb && ` · ${sizeKb}`}
         </p>
@@ -1094,7 +1054,7 @@ function ObservationCard({ observation }: { observation: Observation }) {
       'rounded-md px-3 py-2 border text-xs',
       isWarning
         ? 'bg-warning-soft text-warning'
-        : 'bg-muted border-border text-muted-foreground'
+        : 'bg-muted border-border text-fg-muted'
     )}>
       <p className="flex items-start gap-1.5">
         <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />

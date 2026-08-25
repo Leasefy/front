@@ -9,6 +9,7 @@ import { apiClient } from './client';
 import type {
   AgencyPlanTier,
   AgencySubscriptionState,
+  ChargePaymentLinkResponse,
   ChargePseCheckoutDto,
   ChargePseCheckoutResponse,
   SelectPlanResponse,
@@ -51,6 +52,19 @@ export const agencySubscriptionApi = {
     return apiClient.post<ChargePseCheckoutResponse>(
       `${BASE}/charges/${chargeId}/pse-checkout`,
       dto,
+    );
+  },
+
+  /**
+   * POST /inmobiliaria/subscription/charges/:chargeId/payment-link — create a
+   * hosted Wompi Payment Link for a PENDING charge (avaluo-style). Returns the
+   * permalink `url` to open in a separate tab; the payer picks any method there.
+   * Requires `subscription:edit`.
+   */
+  chargePaymentLink(chargeId: string): Promise<ChargePaymentLinkResponse> {
+    return apiClient.post<ChargePaymentLinkResponse>(
+      `${BASE}/charges/${chargeId}/payment-link`,
+      {},
     );
   },
 };

@@ -39,8 +39,8 @@ const BLOCKS: SystemBlock[] = [
     cta: '/panel/inmobiliaria/propietarios',
     items: [
       { labelKey: 'inmobiliaria.nav.propietarios', href: '/panel/inmobiliaria/propietarios' },
-      { labelKey: 'inmobiliaria.nav.propiedades', href: '/panel/inmobiliaria/propiedades' },
-      { labelKey: 'inmobiliaria.nav.portafolio', href: '/panel/inmobiliaria/portafolio' },
+      { labelKey: 'inmobiliaria.nav.propiedades', href: '/panel/inmobiliaria/inmuebles' },
+      { labelKey: 'inmobiliaria.nav.portafolio', href: '/panel/inmobiliaria/inmuebles' },
       { labelKey: 'inmobiliaria.nav.pipeline', href: '/panel/inmobiliaria/pipeline' },
       { labelKey: 'inmobiliaria.nav.agentes', href: '/panel/inmobiliaria/agentes' },
       { labelKey: 'inmobiliaria.nav.mensajes', href: '/panel/inmobiliaria/mensajes' },

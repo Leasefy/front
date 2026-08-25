@@ -1,12 +1,32 @@
 'use client'
 
+/**
+ * ArcoStatusBadge — estado de una solicitud ARCO.
+ *
+ * Envuelve el `StatusBadge` de Cadence: el punto, el tinte, el radio y la
+ * tipografía salen del DS. Acá sólo vive el mapeo de estado → tono semántico,
+ * que es conocimiento de dominio y no del sistema de diseño.
+ *
+ * Antes era un `<span>` con clases escritas a mano, que replicaba a ojo lo que
+ * el DS ya resuelve.
+ */
+
+import { StatusBadge, type SemanticTone } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 
+/**
+ * Los cinco estados que la tabla admite, copiados del CHECK de
+ * `agent.arco_requests` (`arco_requests_status_check`).
+ *
+ * Acá figuraba también `pending_counsel_review`, que NO es un estado: es un
+ * flag del cuerpo del 503 que devuelve el gate de asesor jurídico
+ * (`{ pending_counsel_review: true, contact: … }`). La base lo rechaza por
+ * constraint, así que jamás podía llegar en una solicitud.
+ */
 export type ArcoStatus =
   | 'pending_email_verification'
   | 'pending_admin_triage'
   | 'in_progress'
-  | 'pending_counsel_review'
   | 'resolved'
   | 'rejected'
 
@@ -15,27 +35,24 @@ export type ArcoStatusBadgeProps = {
   className?: string
 }
 
-const STATUS_COLORS: Record<ArcoStatus, string> = {
-  pending_email_verification: 'text-fg-muted bg-surface-muted',
-  pending_admin_triage: 'text-warning bg-warning-soft',
-  in_progress: 'text-primary bg-primary-soft',
-  pending_counsel_review: 'text-warning bg-warning-soft',
-  resolved: 'text-success bg-success-soft',
-  rejected: 'text-danger bg-danger-soft',
+const STATUS_TONE: Record<ArcoStatus, SemanticTone> = {
+  // El reloj legal todavía no arranca: no es bueno ni malo.
+  pending_email_verification: 'neutral',
+  // Llegó y nadie la tomó — es lo que hay que mover.
+  pending_admin_triage: 'warning',
+  in_progress: 'info',
+  resolved: 'success',
+  rejected: 'critical',
 }
 
-const FALLBACK_STATUS: ArcoStatus = 'pending_admin_triage'
+const FALLBACK_TONE: SemanticTone = 'warning'
 
 export function ArcoStatusBadge({ status, className }: ArcoStatusBadgeProps) {
   const { t } = useI18n()
 
-  const colorClass = STATUS_COLORS[status] ?? STATUS_COLORS[FALLBACK_STATUS]
-
   return (
-    <span
-      className={`inline-flex items-center text-xs font-medium rounded-full px-2 py-0.5 ${colorClass} ${className ?? ''}`}
-    >
+    <StatusBadge tone={STATUS_TONE[status] ?? FALLBACK_TONE} className={className}>
       {t(`inmobiliaria.ai.arco.status.${status}`)}
-    </span>
+    </StatusBadge>
   )
 }

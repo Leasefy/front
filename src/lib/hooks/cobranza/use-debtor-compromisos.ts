@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { components } from '@/lib/api/generated/agent'
 
@@ -44,10 +44,7 @@ export function useDebtorCompromisos(args: { debtorId: string }): UseDebtorCompr
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}/compromisos`,
-        { headers: agentAuthHeaders() },
-      )
+      const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}/compromisos`)
       if (!res.ok) throw new Error(`${res.status}`)
       const json: DebtorCompromisosResponse = await res.json()
       setData(json)

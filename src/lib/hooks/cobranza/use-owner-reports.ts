@@ -24,6 +24,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 // ── Tipos del contrato del backend (agency-cobranza-owner-reports.ts) ─────────
 
@@ -70,12 +71,18 @@ export interface OwnerReportPdfResult {
 
 // ── fetch con bearer + content-type sólo cuando hay body ─────────────────────
 
+/**
+ * Va por `agentFetch`, NO por `fetch` a secas: si el token venció mientras la
+ * pestaña estaba en segundo plano, el 401 se reintenta una vez con sesión
+ * fresca. Con `fetch` crudo la pantalla queda clavada en «Error: 401» sobre
+ * datos que sí existen.
+ */
 async function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
   const headers = agentAuthHeaders(init.headers)
   if (init.body && !headers.has('content-type')) {
     headers.set('content-type', 'application/json')
   }
-  return globalThis.fetch(input, { ...init, headers })
+  return agentFetch(input, { ...init, headers })
 }
 
 export interface UseOwnerReportsResult {

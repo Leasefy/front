@@ -4,91 +4,6 @@
  */
 
 export interface paths {
-    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/pause": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Pause cobranza for a debtor (D-31-01) */
-        post: operations["pauseCobranzaDebtor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/force-stage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Force a debtor to a target cartera stage (D-31-02, admin-only) */
-        post: operations["forceStageCobranzaDebtor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/wa-send": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Send an approved WhatsApp template to a debtor (D-31-03) */
-        post: operations["manualWaSendCobranzaDebtor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/manual-call": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Trigger a Vapi manual outbound call to a debtor (D-31-04, admin-only) */
-        post: operations["manualCallCobranzaDebtor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/cobranza/wa-templates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List the approved WhatsApp templates available to this tenant */
-        get: operations["listCobranzaWaTemplates"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/dashboard/summary/{agencyId}": {
         parameters: {
             query?: never;
@@ -1010,7 +925,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/onboarding/{token}/habeas-data/presign-url": {
+    "/onboarding/{token}/habeas-data/accept-terms": {
         parameters: {
             query?: never;
             header?: never;
@@ -1020,8 +935,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Onboarding step 5a: mint presigned S3 PUT URL for HBD PDF
-         * @description PUBLIC route — magic-link token IS the auth surface. Returns a 10-min presigned PUT URL locked to application/pdf + SSE-AES256 (T-15-04). The client uploads the bytes DIRECTLY to S3, then calls /confirm to persist the metadata. Does NOT mutate the draft.
+         * Onboarding wizard: accept T&C and finalize (atomic tenant commit)
+         * @description PUBLIC route — magic-link token IS the auth surface. Records the T&C acceptance into terms_acceptances and runs the same atomic 4-table tenant commit as /complete. Idempotent on re-POST after completion.
          */
         post: {
             parameters: {
@@ -1034,20 +949,20 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["OnboardingHabeasDataPresignRequest"];
+                    "application/json": components["schemas"]["OnboardingAcceptTermsRequest"];
                 };
             };
             responses: {
-                /** @description Presigned URL minted */
+                /** @description T&C recorded, tenant committed, cursor advanced to complete */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["OnboardingHabeasDataPresignResponse"];
+                        "application/json": components["schemas"]["OnboardingAcceptTermsResponse"];
                     };
                 };
-                /** @description Malformed body / oversized / wrong contentType */
+                /** @description Malformed body / accepted !== true */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -1074,13 +989,13 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description State-machine violation */
+                /** @description State-machine violation OR missing prior draft sections */
                 409: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["OnboardingStepConflict"];
+                        "application/json": components["schemas"]["OnboardingStepConflict"] | components["schemas"]["OnboardingAcceptTermsMissingSteps"];
                     };
                 };
                 /** @description Session expired */
@@ -1092,98 +1007,8 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Database unavailable */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/onboarding/{token}/habeas-data/confirm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Onboarding step 5b: confirm HBD PDF upload + persist metadata
-         * @description PUBLIC route — magic-link token IS the auth surface. Called by the SPA after a successful presigned PUT to S3. Persists { s3Key, sha256, signedByFullName, signedByCedula, contractVersion } into draft.habeasData and advances current_step to habeas_data. Certicámara delivery is deferred to a Phase 14 background job (D-08).
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    token: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["OnboardingHabeasDataConfirmRequest"];
-                };
-            };
-            responses: {
-                /** @description HBD metadata persisted, cursor advanced */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["OnboardingHabeasDataConfirmResponse"];
-                    };
-                };
-                /** @description Malformed body / s3Key prefix mismatch */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Magic-link invalid / expired / replayed */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Session not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description State-machine violation */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["OnboardingStepConflict"];
-                    };
-                };
-                /** @description Session expired */
-                410: {
+                /** @description Transaction failed (e.g. OWNER-singleton constraint hit) */
+                500: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1735,7 +1560,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/onboarding/session/{sessionId}/habeas-data/presign-url": {
+    "/onboarding/session/{sessionId}/habeas-data/accept-terms": {
         parameters: {
             query?: never;
             header?: never;
@@ -1745,8 +1570,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * JWT onboarding wizard step 5a: mint presigned S3 PUT URL for HBD PDF
-         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/habeas-data/presign-url. Does NOT mutate the draft.
+         * JWT onboarding wizard: accept T&C and finalize (atomic tenant commit)
+         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Records the T&C acceptance into terms_acceptances and runs the same atomic 4-table tenant commit as /complete. Idempotent — a re-POST after completion returns the same envelope with currentStep: "complete".
          */
         post: {
             parameters: {
@@ -1759,20 +1584,20 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["OnboardingSessionHabeasDataPresignRequest"];
+                    "application/json": components["schemas"]["OnboardingSessionAcceptTermsRequest"];
                 };
             };
             responses: {
-                /** @description Presigned URL minted */
+                /** @description T&C recorded, tenant committed, cursor advanced to complete */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["OnboardingSessionHabeasDataPresignResponse"];
+                        "application/json": components["schemas"]["OnboardingSessionAcceptTermsResponse"];
                     };
                 };
-                /** @description Malformed body / oversized / wrong contentType */
+                /** @description Malformed body / accepted !== true */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -1790,7 +1615,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Valid JWT but wrong identity / unanchored / completed session */
+                /** @description Valid JWT but wrong identity / unanchored session */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -1808,13 +1633,13 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description State-machine violation */
+                /** @description State-machine violation OR missing prior draft sections */
                 409: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["OnboardingSessionStepConflict"];
+                        "application/json": components["schemas"]["OnboardingSessionStepConflict"] | components["schemas"]["OnboardingSessionAcceptTermsMissingSteps"];
                     };
                 };
                 /** @description Session expired */
@@ -1826,107 +1651,8 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Database unavailable */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/onboarding/session/{sessionId}/habeas-data/confirm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * JWT onboarding wizard step 5b: confirm HBD PDF upload + persist metadata
-         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Shares business logic with POST /onboarding/{token}/habeas-data/confirm.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    sessionId: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["OnboardingSessionHabeasDataConfirmRequest"];
-                };
-            };
-            responses: {
-                /** @description HBD metadata persisted, cursor advanced */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["OnboardingSessionHabeasDataConfirmResponse"];
-                    };
-                };
-                /** @description Malformed body / s3Key prefix mismatch */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Missing/invalid Supabase JWT */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Valid JWT but wrong identity / unanchored / completed session */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description Session not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description State-machine violation */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["OnboardingSessionStepConflict"];
-                    };
-                };
-                /** @description Session expired */
-                410: {
+                /** @description Transaction failed (e.g. OWNER-singleton constraint hit) */
+                500: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1993,7 +1719,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Valid JWT but wrong identity / unanchored / completed session */
+                /** @description Valid JWT but wrong identity / unanchored session */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2064,7 +1790,7 @@ export interface paths {
         };
         /**
          * JWT onboarding wizard: fetch current draft/step state (read-only)
-         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Authorizes iff sub === session.startedByUserId AND session.tenantId !== null AND session.completedAt === null (same gate as the mutating step routes). READ-ONLY: does not mutate the session/draft and does not count as a wizard step. Lets the SPA rehydrate {sessionId, currentStep, nextStep, draft} on browser refresh, mirroring GET /onboarding/{token}/resume for the magic-link family.
+         * @description JWT-gated — Authorization: Bearer <Supabase JWT>. Authorizes iff sub === session.startedByUserId AND session.tenantId !== null (completed sessions ARE allowed — this is a read-only rehydration route, so a finalized session returns currentStep: "complete"). READ-ONLY: does not mutate the session/draft and does not count as a wizard step. Lets the SPA rehydrate {sessionId, currentStep, nextStep, draft} on browser refresh, mirroring GET /onboarding/{token}/resume for the magic-link family.
          */
         get: {
             parameters: {
@@ -2095,7 +1821,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description Valid JWT but wrong identity / unanchored / completed session */
+                /** @description Valid JWT but wrong identity / unanchored session */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2375,6 +2101,7 @@ export interface paths {
                             stage: string;
                             language: string;
                             tone_variant: string;
+                            body: string;
                             body_draft: string | null;
                             body_published: string | null;
                             wa_submission_status: string | null;
@@ -2457,6 +2184,7 @@ export interface paths {
                             stage: string;
                             language: string;
                             tone_variant: string;
+                            body: string;
                             body_draft: string | null;
                             body_published: string | null;
                             wa_submission_status: string | null;
@@ -2555,6 +2283,7 @@ export interface paths {
                             stage: string;
                             language: string;
                             tone_variant: string;
+                            body: string;
                             body_draft: string | null;
                             body_published: string | null;
                             wa_submission_status: string | null;
@@ -2644,6 +2373,7 @@ export interface paths {
                         "application/json": {
                             status: string | null;
                             rejection_reason?: string | null;
+                            checked: boolean;
                         };
                     };
                 };
@@ -3313,6 +3043,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/pre-scoring/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Config de pre-scoring de afianzamiento
+         * @description Ventana de espera de autorización + TTL de reutilización del estudio Tier-2. Sin fila guardada, devuelve los defaults 48h/48h. Requiere cotizador:view.
+         */
+        get: operations["getPreScoringConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Editar la config de pre-scoring de afianzamiento (OWNER/ADMIN)
+         * @description Actualización parcial: lo que no se manda, no se toca. Requiere cotizador:configure.
+         */
+        patch: operations["updatePreScoringConfig"];
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cartera/overview": {
         parameters: {
             query?: never;
@@ -3569,6 +3323,91 @@ export interface paths {
          * @description Server-token-gated PII reveal endpoint (Phase 31, D-31-05/06/07/11). Writes an audit_log row with action="pii_reveal" BEFORE minting the 5-minute HS256 JWT. Requires cobranza:reveal-pii permission (OWNER / ADMIN / OPERATOR — VIEWER returns 403). Cross-tenant debtor lookups return 404 (no existence leak, T-15-06). If the underlying column is null (email / fiador_cedula), returns 404 to keep the reveal contract truthful.
          */
         post: operations["revealCobranzaDebtorPii"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause cobranza for a debtor (D-31-01) */
+        post: operations["pauseCobranzaDebtor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/force-stage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Force a debtor to a target cartera stage (D-31-02, admin-only) */
+        post: operations["forceStageCobranzaDebtor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/wa-send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send an approved WhatsApp template to a debtor (D-31-03) */
+        post: operations["manualWaSendCobranzaDebtor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/debtors/{debtorId}/manual-call": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Trigger a Vapi manual outbound call to a debtor (D-31-04, admin-only) */
+        post: operations["manualCallCobranzaDebtor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/wa-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the approved WhatsApp templates available to this tenant */
+        get: operations["listCobranzaWaTemplates"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3834,6 +3673,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cobranza/daily-report/thresholds/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Threshold versions, newest first */
+        get: operations["getCobranzaDailyReportThresholdsHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cobranza/daily-report/thresholds/rollback": {
         parameters: {
             query?: never;
@@ -3867,6 +3723,23 @@ export interface paths {
         head?: never;
         /** Update self subscription (hardcoded user_id; ignores body user_id) */
         patch: operations["patchCobranzaDailyReportSubscription"];
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/daily-report/subscription-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Aggregate subscriber counts (admin) — counts only, never names */
+        get: operations["getCobranzaDailyReportSubscriptionStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/agency/{agencyId}/cobranza/analytics/agency-gate": {
@@ -4492,6 +4365,54 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/acuerdos-generales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Acuerdos generales de la inmobiliaria
+         * @description Lista los acuerdos que el agente puede cerrar solo, ordenados como los evalúa el motor: mayor prioridad primero, y a igual prioridad el más nuevo. Requiere cobranza:view.
+         */
+        get: operations["listCobranzaAcuerdosGenerales"];
+        put?: never;
+        /**
+         * Crear un acuerdo general (OWNER/ADMIN)
+         * @description Crea un acuerdo que el agente puede cerrar sin preguntar, siempre recortado por el techo de la política al momento de negociar. Requiere cobranza:configure.
+         */
+        post: operations["createCobranzaAcuerdoGeneral"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/acuerdos-generales/{acuerdoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Borrar un acuerdo general (OWNER/ADMIN)
+         * @description Borra el acuerdo. Para dejar de aplicarlo sin perderlo está `active: false`. El estado completo queda en audit_log. Requiere cobranza:configure.
+         */
+        delete: operations["deleteCobranzaAcuerdoGeneral"];
+        options?: never;
+        head?: never;
+        /**
+         * Editar un acuerdo general (OWNER/ADMIN)
+         * @description Actualización parcial. La coherencia de los rangos se valida sobre el estado RESULTANTE, no sobre el parche: mover sólo el mínimo también puede invertir un rango. Requiere cobranza:configure.
+         */
+        patch: operations["updateCobranzaAcuerdoGeneral"];
         trace?: never;
     };
     "/api/agency/{agencyId}/cartera/import": {
@@ -5788,6 +5709,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/conciliacion/queue/bulk-confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk-confirm high-confidence suggested matches (human-initiated, audit-first per match)
+         * @description Confirms a batch of EXISTING suggested ReconciliationMatch rows by reusing the single-match commit path (confirmSuggestedMatch → audit-first $transaction). Accepts either an explicit matchIds[] or a filter.minConfidence selection. High-confidence only (floor 0.8). Idempotent, per-match isolated (one failure never aborts the batch). Never creates a new match. T-323: a human triggers the batch — no auto path. Requires conciliacion act/approve (OWNER/ADMIN/OPERATOR).
+         */
+        post: operations["bulkConfirmConciliacionMatches"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/conciliacion/report": {
         parameters: {
             query?: never;
@@ -6138,54 +6079,1691 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/conciliacion/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Conciliación summary — taxonomy counts, totals, reconciliation rate
+         * @description Typed summary the conciliación UI previously derived client-side. Computed from existing BankMovement + ReconciliationMatch rows (incl. caseType exception taxonomy). Read-only; VIEWER can access (same posture as the conciliación queue + report GET). Fail-soft: 503 in stub mode; 200 with zeros when tables empty; taxonomy degrades to zeros if the case_type column is not yet present (build-C migration not applied).
+         */
+        get: operations["getConciliacionSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/conciliacion/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the active reconciliation auto-match policy (latest version, or safe default)
+         * @description Returns the most-recent ReconciliationPolicyVersion + its policyJson. When no version exists (or the table is absent pre-migration) returns a SAFE DEFAULT: autoMatchEnabled all-false, source:"default", version_number 0. This is exactly the posture apply-match.ts resolveAutoMode() applies when policy is null. Read-only; all four agency roles may read (same posture as the conciliación queue/report GET).
+         */
+        get: operations["getConciliacionPolicy"];
+        put?: never;
+        /**
+         * Create a new reconciliation auto-match policy version (INSERT-only, OWNER/ADMIN)
+         * @description Creates a new ReconciliationPolicyVersion (versionNumber = max+1; existing rows are NEVER updated). policy_json is validated against the shape apply-match.ts consumes ({ autoMatchEnabled:{recaudo,dispersion,ap,comision}, confidenceThresholds }). This is the write-path that unblocks auto-match (resolveAutoMode reads the latest version). OWNER/ADMIN only — enabling auto-match authorizes automated money movement (segregation of duties; T-323 explicit-policy requirement). An audit_log row is written fail-soft inside the same transaction.
+         */
+        post: operations["createConciliacionPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/conciliacion/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger an on-demand reconciliation run for this tenant
+         * @description Emits the Inngest event conciliacion/run.requested ({ tenantId, from?, to? }) consumed by the durable reconciliation-run function. Does NOT run reconciliation inline and NEVER auto-applies money without a stored policy (T-323; shadow-mode by construction — D-41-05). Requires the conciliacion:act write role (OWNER/ADMIN/OPERATOR); VIEWER is read-only. Fail-soft: returns 200 { enqueued:false, reason } when the event backend is unavailable rather than 500ing.
+         */
+        post: operations["requestConciliacionRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/conciliacion/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List data-source connections (banco/pasarela/extracto) for the agency
+         * @description Returns the agency BankConnection rows (tenant-scoped), newest first. Never returns raw credentials — only configRef (a reference) + status + lastSyncAt. Read posture: all four agency roles (conciliacion:view). Fail-soft: stub mode or pre-migration → 200 with an empty list.
+         */
+        get: operations["listConciliacionConnections"];
+        put?: never;
+        /**
+         * Register a data-source connection (banco/pasarela/extracto) — no raw creds
+         * @description Creates a BankConnection: { sourceType, provider, displayName, configRef? }. configRef is a REFERENCE to credentials (vault/secret key), NEVER a raw credential — no password/token field is accepted. status starts "desconectado". Write posture: OWNER/ADMIN/OPERATOR (conciliacion:approve). Fail-soft: stub mode or pre-migration → 503 (cannot persist).
+         */
+        post: operations["createConciliacionConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/conciliacion/connections/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a connection status and/or displayName (tenant-scoped)
+         * @description Updates status (conectado | error | desconectado) and/or displayName on an existing BankConnection. Tenant-scoped 404 guard. No credential field is mutable here. Write posture: OWNER/ADMIN/OPERATOR (conciliacion:approve). Fail-soft: stub mode or pre-migration → 503.
+         */
+        patch: operations["patchConciliacionConnection"];
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/conciliacion/settlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List owner settlements (liquidaciones) — paginated, optional status filter
+         * @description Returns OwnerSettlement rows for the agency tenant, ordered by createdAt DESC, optionally filtered by ?status=. Read-only; all four agency roles may read (VIEWER included), mirroring the conciliación queue/report/summary GETs. Fail-soft: when the build-C migration is not yet applied (owner_settlements absent) the list degrades to empty rather than 500ing.
+         */
+        get: operations["listOwnerSettlements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/conciliacion/settlements/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create an owner settlement (status=borrador) from real figures (OWNER/ADMIN)
+         * @description Creates an OwnerSettlement with status=borrador. netCop is computed by the pure computeSettlement() helper (gross − commission − other) and STORED (figure-of-record). OWNER/ADMIN only (conciliacion:approve write authority). Creates nothing else — no Payout, no money movement. Fail-soft: 503 if the owner_settlements table is absent (migration not applied).
+         */
+        post: operations["generateOwnerSettlement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/conciliacion/settlements/{settlementId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a settlement: borrador → pendiente_aprobacion → aprobado (human-gated, T-323)
+         * @description Advances the settlement status. T-323: this is the human money-authorization step — OWNER/ADMIN only, audit-FIRST $transaction (auditLog.create BEFORE the OwnerSettlement.update). Valid transitions: borrador→pendiente_aprobacion, borrador→aprobado, pendiente_aprobacion→aprobado. It NEVER reaches pagado, NEVER creates a Payout, NEVER moves money — it may only attach a provided linkedPayoutId soft-reference. Disbursement is pagos/dispersión.
+         */
+        post: operations["approveOwnerSettlement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/ingest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Idempotent main -> agent push of Property/LeaseContract rows (DATA-02)
+         * @description Server-to-server ingest: creates/updates local Property/LeaseContract rows IDEMPOTENTLY, deduplicated by (agencyId, externalId). Never contacts any resident or advances an inspection — additive-only seed (D-INSP-01). Processed inline, capped at 500 rows per array. Ships flag-OFF (INSPECCION_ENABLED). Fail-soft to an empty summary if the 20260707120000_inspeccion_cimientos migration is not yet applied.
+         */
+        post: operations["ingestInspeccionProjection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lista paginada/filtrada de sesiones de inspección con estado + links de detalle (CHAN-03)
+         * @description Devuelve todas las sesiones de la agencia (más nuevas primero), filtrables por status/type, cada fila con actaStatus/comparisonId/comparisonStatus para que el panel enlace al detalle de acta/comparación ya existente (Fases 3/4). Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        get: operations["listInspeccionSessionsOverview"];
+        put?: never;
+        /**
+         * Inicia una sesión de inspección y materializa el checklist resuelto (CAP-01/CAP-02)
+         * @description Resuelve propertyId/leaseId contra agencyId, resuelve el checklist template (property-type-aware si hay propertyId) y materializa InspectionRoom/InspectionItem agrupados por ambiente. Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        post: operations["startInspeccionSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/sessions/{sessionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Detalle de una sesión de inspección + resumen de cobertura (CAP-02/CAP-04)
+         * @description Lee la sesión agrupada por ambiente e incluye un resumen de cobertura (totalRequired/capturedRequired/missing/isComplete) para que el panel muestre "faltan N ítems". Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        get: operations["getInspeccionSessionDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/sessions/{sessionId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cierra una sesión de inspección — rechaza si falta cobertura obligatoria (CAP-04)
+         * @description Único punto de escritura de status:"complete" — delega en completeInspectionSession (Plan 02-05), que nunca permite cerrar por debajo del 100% de ítems obligatorios. Responde 409 con la lista exacta de missing[] cuando la cobertura es incompleta. Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        post: operations["completeInspeccionSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/repair-costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lista el catálogo de costos de reparación COP de la agencia (F8)
+         * @description Devuelve todas las entradas del catálogo de costos de reparación que alimentan la liquidación de daño imputable. Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        get: operations["listInspeccionRepairCosts"];
+        /**
+         * Crea o actualiza una entrada del catálogo de costos de reparación (F8)
+         * @description Upsert por clave única (roomType, itemType, damageType, severity). El humano fija el número final; alimenta la liquidación de daño imputable. Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        put: operations["upsertInspeccionRepairCost"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/items/{itemId}/photos/presign-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mint a presigned S3 PUT URL for an inspection item photo (CAP-05)
+         * @description Client uploads photo bytes DIRECTLY to S3 via the returned presigned PUT URL (D-08/D-INSP trust boundary — the agent never touches the raw bytes). Does NOT persist anything; the s3Key is only committed at /confirm. Ships flag-OFF (INSPECCION_ENABLED). MAX_PHOTO_BYTES=15728640.
+         */
+        post: operations["presignInspeccionItemPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/items/{itemId}/photos/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm an uploaded item photo — quality-gated persist (CAP-03/CAP-05)
+         * @description Called by the client after a successful presigned PUT. Calls assessPhotoQuality BEFORE persisting anything — a rejected verdict (aprobada: false) returns accepted:false and creates NO InspectionPhoto row (client must retake). An accepted (or quality-check-skipped, fail-open) photo is persisted with full metadata and flips the parent item's status to 'captured'.
+         */
+        post: operations["confirmInspeccionItemPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/sessions/{sessionId}/acta/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Genera (o re-lee) el acta PDF de una sesión completa (ACTA-01/ACTA-02/ACTA-03)
+         * @description Corre el pipeline completo de generateActa: gate de estado de sesión (400 session_incomplete antes de tocar clasificación/S3/Anthropic) → clasificación de condición por visión → lectura estructurada fresca → render PDF → subida a S3 → persistencia. ACTA-04: si el acta ya está congelada/firmada con PDF existente, es una re-lectura pura (rendered: false). Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        post: operations["generateInspeccionActa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/sessions/{sessionId}/acta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lee el acta de una sesión — pura, sin efectos secundarios (ACTA-01)
+         * @description Lectura read-only sobre readActaContent — jamás dispara generateActa. Responde acta:null (200, no 404) cuando la sesión existe pero el acta todavía no fue generada. Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        get: operations["getInspeccionActa"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/sessions/{entrySessionId}/exit-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Inicia la sesión de SALIDA ligada a una entrada completa (CMP-01)
+         * @description Valida que `entrySessionId` resuelva, bajo `agencyId`, a una sesión `type:'entry'` en estado `complete`/`signed`, copia `propertyId`/`leaseId` para materializar la MISMA plantilla de checklist en la salida, y vincula ambas sesiones vía `getOrCreateComparison` (idempotente). Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        post: operations["startInspeccionExitSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/comparisons/{comparisonId}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Corre (o re-corre) el motor de comparación entrada↔salida (CMP-02/CMP-03/CMP-05)
+         * @description Gate de completitud de ambas sesiones → empareja ítems → clasifica cada par por visión → calcula base de descuento → persiste de forma idempotente (borra+recrea `ItemDelta`) → retorna el reporte fresco inline. Dispara costo real (Anthropic). Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        post: operations["runInspeccionComparison"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/comparisons/{comparisonId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lee el reporte de comparación — pura, sin efectos secundarios (CMP-04)
+         * @description Lectura read-only sobre `buildComparisonReport` — jamás dispara `runComparison`. Responde 404 solo cuando la comparación no existe bajo esta agencia; una comparación existente pero nunca corrida responde 200 con `deltas: []`. Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        get: operations["getInspeccionComparison"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/sessions/{sessionId}/acta/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Registra la firma electrónica de una parte sobre el acta (EVID-01)
+         * @description Primero garantiza que el PDF del acta existe (generateActa, Fase 3, idempotente) — si la sesión no está completa, corta ANTES de tocar firmas. Luego registra la firma vía recordSignature (Plan 05-03), que dispara el freeze→signed cuando la última parte requerida firma. El consentNotice devuelto siempre pasó por applyInspeccionFence (OPS-02). Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        post: operations["signInspeccionActa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/sessions/{sessionId}/acta/issue-otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Emite un OTP de identidad para la firma de una parte (Fase V2-2, refuerzo 1)
+         * @description Genera (o reutiliza, si hay cooldown de 60s activo) un OTP de 6 dígitos para la parte indicada y lo entrega vía el OtpPort configurado. El código NUNCA se devuelve por HTTP — sólo { issued, sent }. TTL 10min, max 3 intentos, single-use. Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        post: operations["issueInspeccionSignatureOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/sessions/{sessionId}/acta/signatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lee quién ha firmado el acta hasta ahora — pura, sin efectos secundarios
+         * @description Lectura read-only — jamás dispara generateActa ni recordSignature. Responde actaStatus:null (200, no 404) cuando la sesión existe pero el acta todavía no fue generada. signerIdentityDoc SIEMPRE enmascarado a sus últimos 4 caracteres (T-INSP-5-12). Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        get: operations["getInspeccionActaSignatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/sessions/{sessionId}/evidencia/build": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ensambla el paquete de evidencia de una acta ya firmada (EVID-02)
+         * @description Corre buildEvidencePacket (Plan 05-04) sobre una acta status:signed. El sellado Certicámara es un opt-in por-llamada DOBLE-gateado: seal:true en el body SOLO se honra cuando además isCerticamaraSealingEnabled() (flag de ops) es true — el body nunca puede ensanchar el gate por sí solo (T-INSP-5-15). Idempotente: si el paquete ya existe, se retorna tal cual (alreadyBuilt:true). Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        post: operations["buildInspeccionEvidencePacket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/sessions/{sessionId}/evidencia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lee el estado del paquete de evidencia y mintea URLs presignadas frescas (EVID-04)
+         * @description Lectura read-only — jamás dispara buildEvidencePacket. Responde status:not_built (200, no 404) cuando la sesión existe pero el paquete todavía no fue construido. manifestUrl/actaPdfUrl son URLs presignadas MINTEADAS FRESCAS en cada llamada (getObjectUrl) — jamás el s3Key crudo (T-INSP-5-16). shareMessage siempre pasó por applyInspeccionFence (OPS-02) antes de salir en la respuesta. Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        get: operations["getInspeccionEvidencePacket"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/inspeccion/sessions/{sessionId}/whatsapp-invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invita un teléfono a completar la captura de una sesión por WhatsApp (CHAN-02)
+         * @description Registra el binding teléfono→sesión en Redis (registerWhatsAppParticipant, TTL 7 días) y marca channel:"whatsapp" en la sesión — única forma en que una sesión se vuelve alcanzable por WhatsApp (CONTEXT.md: "WhatsApp no crea sesiones en frío"). Rechaza sesiones ya firmadas (409) — el chequeo corre ANTES de tocar Redis. Ships flag-OFF (INSPECCION_ENABLED).
+         */
+        post: operations["inviteInspeccionWhatsappParticipant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/prospectos/inquiries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Registra un inquiry de arriendo y crea/continúa un ProspectLead (INTAKE-01/02/03). */
+        post: operations["createProspectosInquiry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/prospectos/leads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista paginada de leads de prospectos (filtro opcional por estado). */
+        get: operations["listProspectosLeads"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/prospectos/leads/{leadId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Detalle de un lead de prospecto + sus visitas. */
+        get: operations["getProspectosLeadDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/prospectos/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista o resuelve la disponibilidad horaria de asesores (VISIT-07 / D-PROS-22). */
+        get: operations["listProspectAvailability"];
+        /** Crea o actualiza una fila de disponibilidad horaria (VISIT-07 / D-PROS-22). */
+        put: operations["upsertProspectAvailability"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/prospectos/availability/{availabilityId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Desactiva (soft-delete) una fila de disponibilidad (activo=false). */
+        delete: operations["deactivateProspectAvailability"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/prospectos/visits/propose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Propone hasta 5 horarios disponibles para una visita al inmueble (VISIT-01). */
+        post: operations["proposeVisitSlots"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/prospectos/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Agenda una visita (VISIT-02). Retorna 409 si el slot ya fue reservado (sin 500). */
+        post: operations["bookVisit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/prospectos/visits/{visitId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Confirma una visita, setea status=confirmada y envía email con .ics (VISIT-03). */
+        put: operations["confirmVisit"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/prospectos/visits/{visitId}/attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Registra asistencia (asistio/no_show) en ProspectVisit.status (VISIT-05, D-PROS-27). */
+        patch: operations["markVisitAttendance"];
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/prospectos/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cola de tareas de asesor generadas por los handoffs de Imana. */
+        get: operations["listProspectosTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/prospectos/tasks/{taskId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Actualiza el estado de una tarea de asesor (pendiente/en_progreso/completada/cancelada). */
+        patch: operations["updateProspectosTaskStatus"];
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/prospectos/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Métricas resumen del embudo de prospectos de arriendo (dashboard backoffice). */
+        get: operations["getProspectosSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/prospectos/metricas-asesor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Rollup de disciplina por asesor (copiloto comercial). */
+        get: operations["getProspectosMetricasAsesor"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/prospectos/prioridad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cola de leads rankeada por prioridad (copiloto comercial). */
+        get: operations["listProspectosPrioridad"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/calidad/publicaciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cola de calidad de publicaciones (worst-first). */
+        get: operations["listCalidadPublicaciones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/calidad/propuestas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cola de propuestas de corrección. */
+        get: operations["listCalidadPropuestas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/calidad/propuestas/{correctionId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Aprobar o rechazar una propuesta (aprobación humana). */
+        post: operations["decideCalidadPropuesta"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/calidad/estado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resumen de calidad + propuestas por estado. */
+        get: operations["getCalidadEstado"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/calidad/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Config de calidad efectiva de la agencia. */
+        get: operations["getCalidadConfig"];
+        /** Calibrar umbrales de calidad de la agencia. */
+        put: operations["putCalidadConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/calidad/propietario/respuesta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ingesta la respuesta del propietario (disponibilidad / cambios). */
+        post: operations["ingestCalidadPropietario"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/perfil": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Perfil del propietario autenticado (portal — Fase 1 smoke)
+         * @description Resuelve el propietario del JWT (HS256 del monolito: agencyId + sub + email) vía agent.portal_owners y devuelve su perfil mínimo + count de inmuebles proyectados. Flag-OFF por defecto (PORTAL_PROPIETARIO_ENABLED).
+         */
+        get: operations["getPortalPropietarioPerfil"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/portal-propietario/procesos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listar procesos de postulación de la agencia */
+        get: operations["listAgencyPortalProcesos"];
+        put?: never;
+        /** Crear proceso de postulación para un inmueble */
+        post: operations["createAgencyPortalProceso"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/portal-propietario/procesos/{processId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Detalle de proceso + TODAS sus candidaturas (vista de agencia) */
+        get: operations["getAgencyPortalProceso"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/portal-propietario/procesos/{processId}/candidaturas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Agregar candidatura a un proceso (REQ-PP-206: sin reiniciar) */
+        post: operations["createAgencyPortalCandidatura"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/portal-propietario/candidaturas/{candidacyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Actualizar etapa/veredicto/score, descartar, o sync desde evaluación
+         * @description `descartar` y `syncFromEvaluation` son mutuamente excluyentes entre sí y con los demás campos. `syncFromEvaluation` deriva el veredicto de la evaluación del cotizador (REQ-PP-203) sin inventar apto.
+         */
+        patch: operations["patchAgencyPortalCandidatura"];
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/portal-propietario/procesos/{processId}/listo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transición a esperando_eleccion (requiere ≥1 candidatura apto) */
+        post: operations["marcarAgencyPortalProcesoListo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/procesos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Procesos de postulación de los inmuebles del propietario */
+        get: operations["listPortalEleccionProcesos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/procesos/{processId}/comparacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Comparación de candidatos + snapshotHash (sin cédula/buró)
+         * @description Candidaturas del proceso en TODOS los status (transparencia D-PORT-04: los no-aptos y descartados SE VEN, con elegible:false). El snapshotHash se computa SOLO sobre las activas y debe volver en el POST de elección.
+         */
+        get: operations["getPortalEleccionComparacion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/procesos/{processId}/eleccion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Elegir candidato (CAS single-winner + WYSIWYS + evidencia)
+         * @description Errores tipados para el front: 409 conflict (refrescar estado) / 409 terms_changed (re-render de la comparación) / 422 not_eligible / 422 invalid_state / 403 forbidden / 404 not_found.
+         */
+        post: operations["postPortalEleccion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/portafolio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Rollup multi-inmueble: ocupación, vacancia (+funnel), recaudo del mes, vencimientos */
+        get: operations["getPortalFinanzasPortafolio"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/inmuebles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Inmuebles del propietario con su contrato vigente (max endDate) */
+        get: operations["listPortalFinanzasInmuebles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/inmuebles/{propertyRef}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Detalle del inmueble: contrato vigente + preaviso Ley 820 + novedades */
+        get: operations["getPortalFinanzasInmuebleDetalle"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/inmuebles/{propertyRef}/pagos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pagos del inmueble (contrato vigente Y anteriores), paidAt desc */
+        get: operations["listPortalFinanzasPagos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/recaudo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Serie mensual de recaudo COMPLETA (mes vacío = 0) del portafolio */
+        get: operations["getPortalFinanzasRecaudo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/recaudo/anual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Totales del año gravable por concepto (QW-3 — base del certificado fiscal) */
+        get: operations["getPortalFinanzasRecaudoAnual"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/proyeccion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Proyección determinística canon × meses + assumptions explícitas
+         * @description Horizonte = config.projectionMonths (validado 1-60 en portal-config — sin query param a propósito, T-F3-02). Cero LLM (D-PORT-06).
+         */
+        get: operations["getPortalFinanzasProyeccion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/informe.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Informe PDF del portafolio — server-rendered vía renderToBuffer
+         * @description Resumen del portafolio + recaudo 12m + vencimientos, renderizado server-side (molde agency-cotizador-pdf). T-F3-07: NADA del request ni de la DB construye URLs — el único URL del documento es el logo por process.env.APP_URL, dentro del template. Anti-PII (T-F3-03): buildInformePdfProps arma las props campo a campo; el único dato del inquilino es tenantDisplayName.
+         */
+        get: operations["getPortalFinanzasInformePdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/solicitudes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mis solicitudes (filtro ?status=, paginado limit/offset) */
+        get: operations["listPortalSolicitudes"];
+        put?: never;
+        /**
+         * Crear solicitud sobre un inmueble propio
+         * @description La agencia SIEMPRE intermedia: el propietario solo crea; las transiciones y llamados son superficies de agencia. no_renovar/reubicacion disparan el trigger de retención (REQ-PP-404).
+         */
+        post: operations["createPortalSolicitud"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/solicitudes/{requestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Detalle de solicitud + timeline (vista mínima LEGAL Q5)
+         * @description Ownership EN el WHERE: solicitud ajena ≡ inexistente → 404 único, sin leak de existencia. El timeline expone llamados SOLO como {kind, at, situationKey}.
+         */
+        get: operations["getPortalSolicitud"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/portal-propietario/solicitudes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cola de solicitudes del portal (filtros status/propertyRef/tipo) */
+        get: operations["listAgencyPortalSolicitudes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/portal-propietario/solicitudes/{requestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Transicionar solicitud (máquina estricta; rechazada exige motivo) */
+        patch: operations["transitionAgencyPortalSolicitud"];
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/portal-propietario/solicitudes/{requestId}/llamado-atencion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Emitir llamado de atención desde una solicitud (contractRef derivado)
+         * @description situationKey opcional: default = tipo de la solicitud (normalizado). Solicitud sin contrato → 422 no_contract (sin contrato no hay contra qué contar).
+         */
+        post: operations["emitAgencyPortalLlamadoFromSolicitud"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/portal-propietario/contratos/{contractRef}/llamado-atencion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Emitir llamado de atención directo por contrato (sin solicitud origen)
+         * @description situationKey REQUERIDO: sin solicitud origen no hay tipo del cual defaultear.
+         */
+        post: operations["emitAgencyPortalLlamadoFromContrato"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/portal-propietario/contratos/{contractRef}/elegibilidad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Elegibilidad de terminación + llamados agrupados por situación */
+        get: operations["getAgencyPortalContratoElegibilidad"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/danos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daños del propietario por inmueble — lectura fail-soft de mantenimiento */
+        get: operations["getPortalDanos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/digest/{periodo}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Digest mensual persistido de un periodo (YYYY-MM) — solo lectura
+         * @description SOLO lee digests PERSISTIDOS por el cron (no genera on-demand). El WHERE lleva SIEMPRE el ownerRef del contexto → un digest ajeno responde 404.
+         */
+        get: operations["getPortalDigestPeriodo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{agencyId}/propietario/digests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Últimos 12 digests del propietario (liviano, sin payload) */
+        get: operations["listPortalDigests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/portal-propietario/consentimiento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Registrar (grant) o revocar (revoke) consentimiento Habeas Data por canal
+         * @description registeredBy = memberEmail del JWT (nunca del body). evidence opcional con cap de 4000 chars serializados (T-F5-08).
+         */
+        post: operations["registerAgencyPortalConsentimiento"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Multi-aseguradora quote pipeline. Default: synchronous JSON response. Opt-in: when `?stream=1`, the response Content-Type is text/event-stream and the body is an SSE-framed stream of events whose payloads are the SSE* component schemas (`SSECarrierStart`, `SSECarrierVerdict`, `SSECarrierError`, `SSEPartialRanking`, `SSERecovery`, `SSEFinalVerdict`, `SSEHeartbeat`). */
+        post: operations["cotizadorQuoteCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/quote/{id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Server-Sent Events stream — subscribe / reconnect to a quote session started by POST /api/cotizador/quote. Supports Last-Event-ID re-sync over the anchored 12h TTL window (D-24-10). The response is a text/event-stream wire; event payloads conform to the SSE* component schemas (discriminated by the SSE `event:` field). */
+        get: operations["cotizadorStreamSubscribe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/quote/{id}/re-quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Interactive re-quote (D-24-09/D-24-11/D-24-12/D-24-18/D-24-20). PATCH a subset of {canon_mensual_cop, codeudores, tipo_inmueble}; only the affected carriers re-run (data-driven via cotizador_assumption_registry). Regenerates reasoning_trace_es every call. Returns 429 when the session budget cap is reached. */
+        post: operations["cotizadorReQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/cotizador/cohort-taxonomy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin read of the cotizador_cohort_taxonomy table (D-24-13). Read-only by design — the leasefy_admin RLS policy guards writes. Deterministic ordering by cohortId ASC. */
+        get: operations["cotizadorCohortTaxonomyList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/policy-outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record a real-world policy lifecycle outcome (D-25-01, D-25-02, D-25-03). Append-only event log linked to the originating quote_id. Idempotency-Key header required — retries with the same key return 200 with the original row. */
+        post: operations["cotizadorPolicyOutcomeCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/carrier-events/{carrier}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Per-carrier direct webhook. HMAC-SHA256 verification via X-Carrier-Signature (CARRIER_WEBHOOK_SECRET_{CARRIER} env var). Returns 501 — implementation deferred to Phase 27. Contract is locked here so Phase 27 can add parser logic without touching auth plumbing (D-25-02, 25-06). */
+        post: operations["cotizadorCarrierWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/sla": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-tenant SLA metric read (D-25-09, D-25-10). Returns hourly metric rows for the requesting tenant. Tenant isolation enforced via withTenantScope + FORCE RLS (T-25-10-02 — cross-tenant UUID returns only the GUC-scoped rows). */
+        get: operations["cotizadorSlaList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-tenant cost read (D-25-14). Returns cost aggregates for the requesting tenant. group_by=tenant excluded (caller is already scoped to one tenant). Tenant isolation via withTenantScope + FORCE RLS. */
+        get: operations["cotizadorCostsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/cotizador/carriers/{carrier}/reset-degradation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin manual reset of a carrier's degraded state (D-25-07 escape hatch). Returns prior state so operators can audit what was cleared. Auth: COTIZADOR_ADMIN_API_KEY header (not bearerAuth — admin shared secret). */
+        post: operations["cotizadorAdminResetDegradation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/cotizador/sla": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cross-tenant SLA rollup (leasefy_admin, D-25-11). System-actor query — no withTenantScope (admin sees all tenants). Returns at most 500 rows; capped=true when truncated. */
+        get: operations["cotizadorAdminSlaList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/cotizador/costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cross-tenant cost aggregates (leasefy_admin). Admin-scoped — no withTenantScope. Optional tenant_id filter narrows to a single tenant. group_by=tenant available (unlike the per-tenant endpoint which excludes it). */
+        get: operations["cotizadorAdminCostsList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/cotizador/drift": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Drift reports per (tenant, carrier) (D-25-12). Admin-scoped — no withTenantScope. Compares predicted verdicts against ground-truth outcomes to surface accuracy degradation. */
+        get: operations["cotizadorAdminDriftList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/data-subject/{cedula_hash}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Acceso (Habeas Data Ley 1581/2012): enqueue an asynchronous export of all cotizador* rows associated with the data subject's cedula_hash. Returns 202 Accepted with a job_id; poll GET /api/cotizador/arco/jobs/{job_id} for the presigned S3 export URL (24h TTL). Two-key counsel gate (D-26-11). */
+        get: operations["cotizadorArcoAcceso"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/data-subject/{cedula_hash}/rectify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rectificación (Habeas Data Ley 1581/2012): enqueue a correction of a cedula_hash-derived column. Only fields in ARCO_RECTIFIABLE_FIELDS may be corrected (D-26-12). Returns 202 Accepted. Idempotency-Key required (D-26-10). */
+        post: operations["cotizadorArcoRectificacion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/data-subject/{cedula_hash}/delete-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Cancelación (Habeas Data Ley 1581/2012): enqueue a hard DELETE of all cotizador* rows for this cedula_hash within the tenant (D-26-08). FK CASCADE reaps children. Returns 202 Accepted. Idempotency-Key required. */
+        delete: operations["cotizadorArcoCancelacion"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/data-subject/{cedula_hash}/object": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Oposición (Habeas Data Ley 1581/2012): enqueue an objection that triggers defense-in-depth blocklist enforcement (D-26-09 layers 1+2+3). Subsequent POST /api/cotizador/quote for this cedula_hash returns 451 Unavailable For Legal Reasons. Returns 202 Accepted. Idempotency-Key required. */
+        post: operations["cotizadorArcoOposicion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/arco/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Poll the status of an async ARCO job (D-26-10). Returns current status (pending | running | completed | failed) + result_uri for Acceso exports (presigned S3 URL, 24h TTL). Two-key counsel gate applies here too. */
+        get: operations["cotizadorArcoJobStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        CobranzaInterventionOk: {
-            /** @enum {boolean} */
-            ok: true;
-        };
-        CobranzaInterventionError: {
-            error: string;
-        };
-        CobranzaPauseBody: {
-            /** Format: date-time */
-            paused_until: string;
-            reason: string;
-        };
-        CobranzaForceStageBody: {
-            /** @enum {string} */
-            target_stage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX";
-            reason: string;
-        };
-        CobranzaWaSendOk: {
-            /** @enum {boolean} */
-            ok: true;
-            providerMessageId: string | null;
-        };
-        CobranzaWaSendBody: {
-            template_id: string;
-            variables: {
-                [key: string]: string;
-            };
-        };
-        CobranzaManualCallOk: {
-            /** @enum {boolean} */
-            ok: true;
-            callId: string;
-            stub?: boolean;
-        };
-        CobranzaManualCallBody: {
-            reason: string;
-        };
-        CobranzaWaTemplatesList: {
-            templates: {
-                id: string;
-                label: string;
-                variables: string[];
-            }[];
-        };
         DashboardSummaryResponse: {
             /** Format: uuid */
             agencyId: string;
@@ -6476,23 +8054,7 @@ export interface components {
              */
             erpProvider?: "alegra" | "alegra_full" | "siigo_full" | "world_office";
         };
-        OnboardingHabeasDataPresignResponse: {
-            presignedUrl: string;
-            s3Key: string;
-            expiresIn: number;
-        };
-        OnboardingHabeasDataPresignRequest: {
-            /** @example habeas-data-delegation.pdf */
-            fileName: string;
-            /**
-             * @example application/pdf
-             * @enum {string}
-             */
-            contentType: "application/pdf";
-            /** @example 524288 */
-            fileSize: number;
-        };
-        OnboardingHabeasDataConfirmResponse: {
+        OnboardingAcceptTermsResponse: {
             /** Format: uuid */
             sessionId: string;
             /** @enum {string} */
@@ -6502,18 +8064,30 @@ export interface components {
             draft: {
                 [key: string]: unknown;
             };
+            /** Format: uuid */
+            tenantId: string;
+            /** Format: uuid */
+            agencyId: string;
+            /** @enum {string} */
+            status: "COMPLETED";
+            dashboardUrl: string;
         };
-        OnboardingHabeasDataConfirmRequest: {
-            /** @example habeas-data/<sessionId>/<uuid>.pdf */
-            s3Key: string;
-            /** @example e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 */
-            sha256: string;
-            /** @example Juan Pérez García */
-            signedByFullName: string;
-            /** @example CC 1.012.345.678 */
-            signedByCedula: string;
-            /** @example 2026-01 */
-            contractVersion?: string;
+        OnboardingAcceptTermsMissingSteps: {
+            error: string;
+            missingSteps: string[];
+        };
+        OnboardingAcceptTermsRequest: {
+            /**
+             * @description Must be exactly true — the user checked the T&C box
+             * @example true
+             * @enum {boolean}
+             */
+            accepted: true;
+            /**
+             * @description Version identifier of the T&C text the SPA rendered. Recorded as-is.
+             * @example 2026-08
+             */
+            termsVersion: string;
         };
         OnboardingCompleteResponse: {
             /** Format: uuid */
@@ -6647,20 +8221,7 @@ export interface components {
             /** Format: uuid */
             tenantId?: string;
         };
-        OnboardingSessionHabeasDataPresignResponse: {
-            presignedUrl: string;
-            s3Key: string;
-            expiresIn: number;
-        };
-        OnboardingSessionHabeasDataPresignRequest: {
-            fileName: string;
-            /** @enum {string} */
-            contentType: "application/pdf";
-            fileSize: number;
-            /** Format: uuid */
-            tenantId?: string;
-        };
-        OnboardingSessionHabeasDataConfirmResponse: {
+        OnboardingSessionAcceptTermsResponse: {
             /** Format: uuid */
             sessionId: string;
             /** @enum {string} */
@@ -6670,16 +8231,30 @@ export interface components {
             draft: {
                 [key: string]: unknown;
             };
-        };
-        OnboardingSessionHabeasDataConfirmRequest: {
-            s3Key: string;
-            sha256: string;
-            signedByFullName: string;
-            signedByCedula: string;
-            /** @example 2026-01 */
-            contractVersion?: string;
             /** Format: uuid */
-            tenantId?: string;
+            tenantId: string;
+            /** Format: uuid */
+            agencyId: string;
+            /** @enum {string} */
+            status: "COMPLETED";
+            dashboardUrl: string;
+        };
+        OnboardingSessionAcceptTermsMissingSteps: {
+            error: string;
+            missingSteps: string[];
+        };
+        OnboardingSessionAcceptTermsRequest: {
+            /**
+             * @description Must be exactly true — the user checked the T&C box
+             * @example true
+             * @enum {boolean}
+             */
+            accepted: true;
+            /**
+             * @description Version identifier of the T&C text the SPA rendered. Recorded as-is so the row reflects exactly what the user saw.
+             * @example 2026-08
+             */
+            termsVersion: string;
         };
         OnboardingSessionCompleteResponse: {
             /** Format: uuid */
@@ -7177,6 +8752,14 @@ export interface components {
         CobranzaCotizadorPdfError: {
             error: string;
         };
+        PreScoringConfig: {
+            authorizationWaitHours: number;
+            resultReuseTtlHours: number;
+        };
+        PreScoringConfigPatch: {
+            authorizationWaitHours?: number;
+            resultReuseTtlHours?: number;
+        };
         CarteraOverviewKpis: {
             deudoresActivos: number;
             pagadoHoyCop: number;
@@ -7286,6 +8869,7 @@ export interface components {
         };
         CobranzaDebtorDetailKpis: {
             totalOwed: number;
+            totalCollected: number;
             paymentsCount: number;
             callsCount: number;
         };
@@ -7412,6 +8996,7 @@ export interface components {
             action: string;
             actor_type: string;
             actor_id: string | null;
+            actor_role: string | null;
             ip: string | null;
             user_agent: string | null;
             occurred_at: string;
@@ -7431,6 +9016,27 @@ export interface components {
             resolution: number | null;
             sentiment: number | null;
         };
+        CallComplianceEvent: {
+            id: string;
+            code: string;
+            at: string;
+            channel: string | null;
+        };
+        CobranzaCallSummaryDetail: {
+            outcome: string | null;
+            digest: string | null;
+            sentiment: string | null;
+            paymentPromised: {
+                amountCop: number | null;
+                dueDate: string | null;
+                channel: string | null;
+            } | null;
+            hardshipDetected: boolean;
+            fraudFlags: string[];
+            nextActionRecommended: string | null;
+            keyTopics: string[];
+            unresolvedObjection: string | null;
+        } | null;
         CallStateTraceRow: {
             /** Format: uuid */
             id: string;
@@ -7443,6 +9049,7 @@ export interface components {
         CallCostBreakdown: {
             llmUsd: number;
             voiceUsd: number;
+            platformUsd: number;
             whatsappUsd: number;
             totalUsd: number;
         };
@@ -7451,6 +9058,8 @@ export interface components {
             id: string;
             /** Format: uuid */
             debtorId: string | null;
+            debtorNameMasked: string;
+            debtorCedulaMasked: string;
             vapiCallId: string | null;
             direction: string;
             channel: string;
@@ -7461,7 +9070,10 @@ export interface components {
             endedAt: string | null;
             durationSeconds: number | null;
             qaDimensions: components["schemas"]["CallQaDimensions"];
-            complianceFlags: string[];
+            complianceEvents: components["schemas"]["CallComplianceEvent"][];
+            summary: components["schemas"]["CobranzaCallSummaryDetail"];
+            hasRecording: boolean;
+            hasTranscript: boolean;
             stateTrace: components["schemas"]["CallStateTraceRow"][];
             costBreakdown: components["schemas"]["CallCostBreakdown"];
             generatedAt: string;
@@ -7487,6 +9099,19 @@ export interface components {
         CobranzaCallTranscriptError: {
             error: string;
         };
+        CobranzaCallSummaryListItem: {
+            outcome: string | null;
+            digest: string | null;
+            sentiment: string | null;
+            paymentPromised: {
+                amountCop: number | null;
+                dueDate: string | null;
+                channel: string | null;
+            } | null;
+            hardshipDetected: boolean;
+            fraudFlagsCount: number;
+            nextActionRecommended: string | null;
+        } | null;
         CobranzaAgencyCallListItem: {
             /** Format: uuid */
             id: string;
@@ -7503,6 +9128,9 @@ export interface components {
             endedAt: string | null;
             qaScore: number | null;
             complianceFlagsCount: number;
+            summary: components["schemas"]["CobranzaCallSummaryListItem"];
+            hasRecording: boolean;
+            hasTranscript: boolean;
         };
         CobranzaAgencyCallsListResponse: {
             calls: components["schemas"]["CobranzaAgencyCallListItem"][];
@@ -7526,6 +9154,55 @@ export interface components {
         CobranzaRevealPiiRequest: {
             /** @enum {string} */
             field: "cedula" | "phone" | "email" | "fiador_cedula";
+        };
+        CobranzaInterventionOk: {
+            /** @enum {boolean} */
+            ok: true;
+        };
+        CobranzaInterventionError: {
+            error: string;
+        };
+        CobranzaPauseBody: {
+            /** Format: date-time */
+            paused_until: string | null;
+            reason: string;
+        };
+        CobranzaForceStageBody: {
+            /** @enum {string} */
+            target_stage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX";
+            reason: string;
+        };
+        CobranzaWaSendOk: {
+            /** @enum {boolean} */
+            ok: true;
+            providerMessageId: string | null;
+        };
+        CobranzaWaSendBody: {
+            template_id: string;
+            variables: {
+                [key: string]: string;
+            };
+        };
+        CobranzaManualCallOk: {
+            /** @enum {boolean} */
+            ok: true;
+            callId: string;
+            stub?: boolean;
+        };
+        CobranzaManualCallBody: {
+            reason: string;
+        };
+        CobranzaWaTemplatesList: {
+            templates: {
+                id: string;
+                label: string;
+                variables: string[];
+                body: string;
+                variableHints: {
+                    name: string;
+                    description: string;
+                }[];
+            }[];
         };
         CobranzaEscalationCard: {
             id: string;
@@ -7601,6 +9278,7 @@ export interface components {
                 open_requests: {
                     id: string;
                     debtor_id: string;
+                    debtor_name: string | null;
                     timestamp: string;
                     remaining_days: number;
                     /** @enum {string} */
@@ -7608,8 +9286,10 @@ export interface components {
                 }[];
             };
             retention: {
-                compliance_pct: number;
+                compliance_pct: number | null;
                 target: number;
+                measured_rows: number;
+                overdue_rows: number;
             };
             sparkline: {
                 daily_buckets_30d: {
@@ -7626,6 +9306,7 @@ export interface components {
             entries: {
                 id: string;
                 debtor_id: string;
+                debtor_name: string | null;
                 event_type: string;
                 channel: string | null;
                 timestamp: string;
@@ -7637,6 +9318,7 @@ export interface components {
             entries: {
                 id: string;
                 debtor_id: string;
+                debtor_name: string | null;
                 timestamp: string;
                 acknowledged_at: string | null;
             }[];
@@ -7696,6 +9378,9 @@ export interface components {
             is_rollback_of_version?: number | null;
             created_at?: string | null;
         };
+        CobranzaDailyReportThresholdsHistory: {
+            items: components["schemas"]["CobranzaDailyReportThresholds"][];
+        };
         CobranzaDailyReportThresholdsBody: {
             top_n_debtors_in_report: number;
             mora_dias_bucket_boundaries: number[];
@@ -7711,6 +9396,11 @@ export interface components {
             email_enabled: boolean;
             whatsapp_enabled: boolean;
             updated_at?: string | null;
+        };
+        CobranzaDailyReportSubscriptionStats: {
+            email_subscribed: number;
+            whatsapp_subscribed: number;
+            total_members: number;
         };
         CobranzaDailyReportSubscriptionPatch: {
             email_enabled?: boolean;
@@ -7816,11 +9506,12 @@ export interface components {
             id: string;
             createdAt: string;
             amount: number;
-            feeCop: number | null;
             /** @enum {string} */
             status: "approved" | "pending" | "declined" | "disbursed";
             /** @enum {string} */
-            provider: "wompi" | "bold";
+            kind: "obligacion" | "pago";
+            /** @enum {string|null} */
+            provider: "wompi" | "bold" | null;
             /** @enum {string} */
             disbursementState: "pending" | "settled";
             disbursementPendingDays: number;
@@ -7836,11 +9527,12 @@ export interface components {
         };
         CobranzaPaymentFunnelKpis: {
             approvedCount: number;
-            pendingCount: number;
+            enProcesoCount: number;
             declinedCount: number;
+            porCobrarCount: number;
+            porCobrarCop: number;
             totalRecaudadoCop: number;
             totalDisbursedCop: number;
-            avgFeeCop: number;
         };
         CobranzaPaymentFunnelResponse: {
             items: components["schemas"]["CobranzaPaymentFunnelRow"][];
@@ -7856,6 +9548,7 @@ export interface components {
             id: string;
             /** Format: uuid */
             debtorId: string;
+            debtorName: string | null;
             channel: string;
             label: string | null;
             status: string;
@@ -8009,6 +9702,7 @@ export interface components {
         CobranzaDispute: {
             id: string;
             debtor_id: string;
+            debtor_name: string | null;
             payment_id: string | null;
             reason: string;
             disputed_amount: number | null;
@@ -8325,10 +10019,91 @@ export interface components {
         CobranzaCadencePutBody: {
             cadenceConfig: components["schemas"]["CobranzaCadenceConfig"];
         };
+        CobranzaAcuerdoGeneral: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            priority: number;
+            active: boolean;
+            stages: ("S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX")[];
+            minDaysOverdue: number | null;
+            maxDaysOverdue: number | null;
+            minAmountCop: number | null;
+            maxAmountCop: number | null;
+            discountPct: number;
+            /** @enum {string} */
+            discountKind: "none" | "intereses_parcial" | "intereses_total";
+            maxInstallments: number;
+            minInitialPct: number;
+            conditionEs: string;
+            createdAt: string;
+            updatedAt: string;
+        };
+        CobranzaAcuerdosGeneralesResponse: {
+            acuerdos: components["schemas"]["CobranzaAcuerdoGeneral"][];
+            generatedAt: string;
+        };
+        CobranzaAcuerdoGeneralCreate: {
+            name: string;
+            conditionEs: string;
+            /** @default 0 */
+            priority: number;
+            /** @default true */
+            active: boolean;
+            /** @default [] */
+            stages: ("S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX")[];
+            /** @default null */
+            minDaysOverdue: number | null;
+            /** @default null */
+            maxDaysOverdue: number | null;
+            /** @default null */
+            minAmountCop: number | null;
+            /** @default null */
+            maxAmountCop: number | null;
+            /** @default 0 */
+            discountPct: number;
+            /**
+             * @default none
+             * @enum {string}
+             */
+            discountKind: "none" | "intereses_parcial" | "intereses_total";
+            /** @default 0 */
+            maxInstallments: number;
+            /** @default 100 */
+            minInitialPct: number;
+        };
+        CobranzaAcuerdoGeneralPatch: {
+            name?: string;
+            conditionEs?: string;
+            priority?: number;
+            active?: boolean;
+            stages?: ("S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX")[];
+            minDaysOverdue?: number | null;
+            maxDaysOverdue?: number | null;
+            minAmountCop?: number | null;
+            maxAmountCop?: number | null;
+            discountPct?: number;
+            /** @enum {string} */
+            discountKind?: "none" | "intereses_parcial" | "intereses_total";
+            maxInstallments?: number;
+            minInitialPct?: number;
+        };
         CarteraImportErrorEntry: {
             /** @description 0-based index of the failing row within the submitted batch. */
             rowIndex: number;
             error: string;
+        };
+        CarteraImportVencimiento: {
+            /** @description Encabezado que se detectó como fecha de vencimiento. */
+            columna: string | null;
+            /**
+             * @description Cómo se interpretaron las fechas ambiguas tipo 03/04/2026.
+             * @enum {string}
+             */
+            orden: "dmy" | "mdy";
+            /** @description true si alguna fila lo demostró (traía un día > 12). En false el orden es una SUPOSICIÓN (DD/MM, convención colombiana) y conviene mostrarlo para que la agencia pueda desmentirlo. */
+            probado: boolean;
+            ejemplo: string | null;
         };
         CarteraImportSummary: {
             creados: number;
@@ -8339,6 +10114,14 @@ export interface components {
             /** @description True when the batch exceeded MAX_ROWS (2000) and was truncated. */
             truncado: boolean;
             source: string;
+            /** @description Canones vencidos guardados en agent.obligations — de acá sale la mora. */
+            obligacionesCreadas: number;
+            obligacionesActualizadas: number;
+            /** @description Deudores que ENTRARON al embudo (fila nueva en agent.debtor_states). Sin esa fila no los llama la cadencia ni aparecen en el panel, así que este número —y no `creados`— dice cuántos empiezan a gestionarse. */
+            altasAlEmbudo: number;
+            /** @description Filas con monto pero sin fecha de vencimiento legible. Se importó el deudor, pero no entra a cobranza: sin vencimiento no hay días de mora, y una fecha inventada dispararía llamadas y una carta con cifras falsas. */
+            sinVencimiento: number;
+            vencimiento: components["schemas"]["CarteraImportVencimiento"];
             generatedAt: string;
         };
         CarteraImportError: {
@@ -8614,10 +10397,15 @@ export interface components {
             id: string;
             /** Format: uuid */
             debtorId: string;
+            debtorName: string | null;
+            debtorDocument: string | null;
+            outstandingCop: number | null;
+            delinquencyDays: number | null;
             aseguradora: string;
             status: string;
             /** Format: uuid */
             approvedByHumanUserId: string | null;
+            approvedByEmail: string | null;
             packetPdfUrl: string | null;
             createdAt: string;
             filedAt: string | null;
@@ -8644,6 +10432,8 @@ export interface components {
             id: string;
             /** Format: uuid */
             debtorId: string;
+            debtorName: string | null;
+            debtorDocument: string | null;
             kind: string;
             status: string;
             pdfUrl: string;
@@ -8710,6 +10500,9 @@ export interface components {
         CarteraPreJudicialApproveRequest: {
             /** @enum {string} */
             confirmation: "yes";
+            /** @enum {string} */
+            physicalSendMethod?: "servicio_472" | "email_only" | "operator_manual";
+            sentToAddress?: string;
         };
         CarteraPreJudicialRejectResponse: {
             /** Format: uuid */
@@ -9193,6 +10986,1566 @@ export interface components {
             /** Format: email */
             email?: string | null;
         };
+        InspeccionIngestErrorEntry: {
+            index: number;
+            /** @enum {string} */
+            entity: "property" | "lease";
+            error: string;
+        };
+        InspeccionIngestSummary: {
+            propertiesCreated: number;
+            propertiesUpdated: number;
+            leasesCreated: number;
+            leasesUpdated: number;
+            /** @description True when properties[] exceeded MAX_ROWS (500) and was truncated. */
+            propertiesTruncated: boolean;
+            /** @description True when leases[] exceeded MAX_ROWS (500) and was truncated. */
+            leasesTruncated: boolean;
+            errors: components["schemas"]["InspeccionIngestErrorEntry"][];
+            generatedAt: string;
+        };
+        InspeccionIngestError: {
+            error: string;
+        };
+        InspeccionIngestPropertyRow: {
+            /**
+             * Format: uuid
+             * @description id del inmueble/consignación en main; dedupe key de la ingesta.
+             */
+            externalId: string;
+            address: string;
+            propertyType: string;
+            city: string;
+            neighborhood?: string;
+        };
+        InspeccionIngestLeaseRow: {
+            /**
+             * Format: uuid
+             * @description id del contrato en main; dedupe key de la ingesta.
+             */
+            externalId: string;
+            /**
+             * Format: uuid
+             * @description externalId del Property al que pertenece. Si no resuelve a ningún Property conocido, el LeaseContract se crea igual con propertyId: null (sin auto-actuar, D-INSP-01 — nunca bloquea el batch).
+             */
+            propertyExternalId: string;
+            tenantName?: string;
+            ownerName?: string;
+            /** Format: date-time */
+            startDate?: string;
+            /** Format: date-time */
+            endDate?: string;
+            depositAmount?: number;
+            status?: string;
+        };
+        InspeccionIngestBody: {
+            /** @default [] */
+            properties: components["schemas"]["InspeccionIngestPropertyRow"][];
+            /** @default [] */
+            leases: components["schemas"]["InspeccionIngestLeaseRow"][];
+        };
+        InspeccionSession: {
+            id: string;
+            type: string;
+            status: string;
+            propertyId: string | null;
+            leaseId: string | null;
+            channel: string | null;
+            createdByEmail: string | null;
+            createdAt: string;
+            completedAt: string | null;
+        };
+        InspeccionSessionItem: {
+            id: string;
+            itemType: string;
+            required: boolean;
+            status: string;
+            photoCount: number;
+        };
+        InspeccionSessionRoom: {
+            id: string;
+            roomType: string;
+            label: string | null;
+            items: components["schemas"]["InspeccionSessionItem"][];
+        };
+        InspeccionMissingItem: {
+            roomId: string;
+            roomType: string;
+            itemId: string;
+            itemType: string;
+        };
+        InspeccionSessionCoverage: {
+            totalRequired: number;
+            capturedRequired: number;
+            missing: components["schemas"]["InspeccionMissingItem"][];
+            isComplete: boolean;
+        };
+        InspeccionSessionResponse: {
+            session: components["schemas"]["InspeccionSession"];
+            rooms: components["schemas"]["InspeccionSessionRoom"][];
+            coverage?: components["schemas"]["InspeccionSessionCoverage"];
+        };
+        InspeccionSessionsError: {
+            error: string;
+        };
+        InspeccionStartSessionRequest: {
+            /**
+             * @default entry
+             * @example entry
+             * @enum {string}
+             */
+            type: "entry" | "exit";
+            /** Format: uuid */
+            propertyId?: string;
+            /** Format: uuid */
+            leaseId?: string;
+        };
+        InspeccionSessionCompleteResponse: {
+            session: components["schemas"]["InspeccionSession"];
+        };
+        InspeccionSessionIncompleteResponse: {
+            error: string;
+            missing: components["schemas"]["InspeccionMissingItem"][];
+        };
+        InspeccionRepairCost: {
+            id: string;
+            roomType: string;
+            itemType: string;
+            damageType: string;
+            severity: string;
+            costCop: number;
+            active: boolean;
+        };
+        InspeccionRepairCostList: {
+            items: components["schemas"]["InspeccionRepairCost"][];
+        };
+        InspeccionCatalogoError: {
+            error: string;
+        };
+        InspeccionRepairCostUpsertRequest: {
+            /** @example sala */
+            roomType: string;
+            /** @example pisos */
+            itemType: string;
+            /**
+             * @example dano_imputable
+             * @enum {string}
+             */
+            damageType: "dano_imputable" | "faltante";
+            /**
+             * @example moderado
+             * @enum {string}
+             */
+            severity: "leve" | "moderado" | "severo";
+            /** @example 250000 */
+            costCop: number;
+            /** @example true */
+            active?: boolean;
+        };
+        InspeccionPhotoPresignResponse: {
+            presignedUrl: string;
+            s3Key: string;
+            expiresIn: number;
+        };
+        InspeccionPhotoError: {
+            error: string;
+        };
+        InspeccionPhotoPresignRequest: {
+            /** @example image/jpeg */
+            contentType: string;
+            /** @example 2500000 */
+            fileSize: number;
+        };
+        InspeccionPhotoConfirmResponse: {
+            accepted: boolean;
+            /** Format: uuid */
+            photoId?: string;
+            itemStatus?: string;
+            motivo?: string;
+            problemas?: string[];
+        };
+        InspeccionPhotoConfirmRequest: {
+            /** @example inspeccion/<agencyId>/<itemId>/<uuid>.jpg */
+            s3Key: string;
+            /** @example e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 */
+            sha256: string;
+            lat?: number;
+            lng?: number;
+        };
+        InspeccionActaSessionInfo: {
+            id: string;
+            type: string;
+            status: string;
+            propertyAddress: string | null;
+            propertyCity: string | null;
+            createdAt: string;
+            completedAt: string | null;
+        };
+        InspeccionActaRecord: {
+            id: string;
+            status: string;
+            pdfS3Key: string | null;
+            pdfUrl?: string;
+            frozenAt: string | null;
+            createdAt: string;
+            updatedAt: string;
+        } | null;
+        InspeccionActaPhoto: {
+            id: string;
+            s3Key: string;
+            capturedAt: string;
+        };
+        InspeccionActaItem: {
+            id: string;
+            itemType: string;
+            required: boolean;
+            condition: string | null;
+            conditionDescription: string | null;
+            conditionConfidence: number | null;
+            classifiedAt: string | null;
+            photos: components["schemas"]["InspeccionActaPhoto"][];
+        };
+        InspeccionActaRoom: {
+            id: string;
+            roomType: string;
+            label: string | null;
+            items: components["schemas"]["InspeccionActaItem"][];
+        };
+        InspeccionActaResponse: {
+            session: components["schemas"]["InspeccionActaSessionInfo"];
+            acta: components["schemas"]["InspeccionActaRecord"];
+            rooms: components["schemas"]["InspeccionActaRoom"][];
+            classify?: {
+                classified: number;
+                skippedNoKey: number;
+                alreadyFrozen: boolean;
+                costUsd: number;
+            };
+            rendered?: boolean;
+        };
+        InspeccionActaError: {
+            error: string;
+        };
+        InspeccionComparacionSession: {
+            id: string;
+            type: string;
+            status: string;
+            propertyId: string | null;
+            leaseId: string | null;
+            channel: string | null;
+            createdByEmail: string | null;
+            createdAt: string;
+            completedAt: string | null;
+        };
+        InspeccionComparacionSessionItem: {
+            id: string;
+            itemType: string;
+            required: boolean;
+            status: string;
+            photoCount: number;
+        };
+        InspeccionComparacionSessionRoom: {
+            id: string;
+            roomType: string;
+            label: string | null;
+            items: components["schemas"]["InspeccionComparacionSessionItem"][];
+        };
+        InspeccionExitSession: {
+            session: components["schemas"]["InspeccionComparacionSession"];
+            rooms: components["schemas"]["InspeccionComparacionSessionRoom"][];
+        };
+        InspeccionExitSessionResponse: {
+            exitSession: components["schemas"]["InspeccionExitSession"];
+            comparisonId: string;
+        };
+        InspeccionComparacionError: {
+            error: string;
+        };
+        InspeccionComparisonSessionSummary: {
+            id: string;
+            propertyAddress: string | null;
+            propertyCity: string | null;
+            completedAt: string | null;
+        } | null;
+        InspeccionComparisonPhoto: {
+            id: string;
+            url: string;
+            capturedAt: string;
+        };
+        InspeccionComparisonDelta: {
+            id: string;
+            roomType: string;
+            itemType: string;
+            deltaType: string | null;
+            severity: string | null;
+            description: string | null;
+            confidence: number | null;
+            suggestedDepositAmount: number | null;
+            depositBasisNotes: string | null;
+            imputableAmountCop: number | null;
+            legalCausal: string | null;
+            deferToHuman: boolean;
+            classifiedAt: string | null;
+            entryPhotos: components["schemas"]["InspeccionComparisonPhoto"][];
+            exitPhotos: components["schemas"]["InspeccionComparisonPhoto"][];
+        };
+        InspeccionComparisonReport: {
+            comparison: {
+                id: string;
+                status: string;
+                createdAt: string;
+                updatedAt: string;
+            };
+            entrySession: components["schemas"]["InspeccionComparisonSessionSummary"];
+            exitSession: components["schemas"]["InspeccionComparisonSessionSummary"];
+            deltas: components["schemas"]["InspeccionComparisonDelta"][];
+            changes: components["schemas"]["InspeccionComparisonDelta"][];
+            totalSuggestedDeposit: number | null;
+            totalImputable: number | null;
+            unevaluatedCount: number;
+        };
+        InspeccionFirmaSignature: {
+            signerRole: string;
+            signerName: string;
+            signedAt: string | null;
+        };
+        InspeccionFirmaSignResponse: {
+            signature: components["schemas"]["InspeccionFirmaSignature"];
+            actaStatus: string;
+            fullySigned: boolean;
+            requiredRoles: string[];
+            signedRoles: string[];
+            consentNotice: string;
+        };
+        InspeccionFirmaError: {
+            error: string;
+        };
+        InspeccionFirmaSignBody: {
+            /** @enum {string} */
+            signerRole: "tenant" | "owner" | "operator" | "inspector";
+            signerName: string;
+            signerIdentityDoc: string;
+            lat?: number;
+            lng?: number;
+            otpCode?: string;
+        };
+        InspeccionFirmaIssueOtpResponse: {
+            issued: boolean;
+            sent: boolean;
+        };
+        InspeccionFirmaIssueOtpBody: {
+            /** @enum {string} */
+            signerRole: "tenant" | "owner" | "operator" | "inspector";
+        };
+        InspeccionFirmaSignatureListItem: {
+            signerRole: string;
+            signerName: string;
+            signerIdentityDoc: string | null;
+            signedAt: string | null;
+            consentAt: string | null;
+        };
+        InspeccionFirmaSignaturesResponse: {
+            actaStatus: string | null;
+            requiredRoles: string[];
+            signatures: components["schemas"]["InspeccionFirmaSignatureListItem"][];
+        };
+        InspeccionEvidenciaBuildPacket: {
+            sha256: string;
+            sealed: boolean;
+            sealProvider: string | null;
+            sealedAt: string | null;
+        };
+        InspeccionEvidenciaBuildResponse: {
+            packet: components["schemas"]["InspeccionEvidenciaBuildPacket"];
+            alreadyBuilt: boolean;
+        };
+        InspeccionEvidenciaError: {
+            error: string;
+        };
+        InspeccionEvidenciaBuildBody: {
+            /** @default false */
+            seal: boolean;
+        };
+        InspeccionEvidenciaDetailResponse: {
+            /** @enum {string} */
+            status: "not_built" | "built";
+            manifestUrl: string | null;
+            actaPdfUrl: string | null;
+            sha256: string | null;
+            sealed: boolean;
+            sealProvider?: string | null;
+            shareMessage: string | null;
+        };
+        InspeccionOverviewSession: {
+            id: string;
+            type: string;
+            status: string;
+            channel: string | null;
+            propertyId: string | null;
+            leaseId: string | null;
+            createdAt: string;
+            completedAt: string | null;
+            actaStatus: string | null;
+            comparisonId: string | null;
+            comparisonStatus: string | null;
+        };
+        InspeccionOverviewPagination: {
+            page: number;
+            limit: number;
+            total: number;
+            hasMore: boolean;
+        };
+        InspeccionOverviewListResponse: {
+            sessions: components["schemas"]["InspeccionOverviewSession"][];
+            pagination: components["schemas"]["InspeccionOverviewPagination"];
+        };
+        InspeccionOverviewError: {
+            error: string;
+        };
+        InspeccionWhatsappInviteResponse: {
+            sessionId: string;
+            phone: string;
+            /** @enum {string} */
+            channel: "whatsapp";
+            expiresInSeconds: number;
+        };
+        InspeccionWhatsappError: {
+            error: string;
+        };
+        InspeccionWhatsappInviteRequest: {
+            /** @example 573009998877 */
+            phone: string;
+        };
+        ProspectosInquiryResponse: {
+            /** Format: uuid */
+            leadId: string;
+            estado: string;
+            /** Format: uuid */
+            consignacionId: string;
+            isAvailable: boolean;
+            unavailableReason?: string;
+            consignacionStatus?: string;
+            /** @description Respuesta del agente Imana al inquiry */
+            answer?: string;
+            /** @enum {string} */
+            detectedIntent?: "faq" | "agendar" | "escalar";
+            availabilityVerified?: boolean;
+            nextStep?: string | null;
+            escalate?: boolean;
+            escalationReason?: string | null;
+        };
+        ProspectosError: {
+            error: string;
+            message?: string;
+        };
+        ProspectosInquiryBody: {
+            /** Format: uuid */
+            consignacionId: string;
+            /** @enum {string} */
+            channel: "whatsapp" | "web" | "portal" | "form" | "other";
+            contactName?: string;
+            contactPhone?: string;
+            /** Format: email */
+            contactEmail?: string;
+            canalOrigen: string;
+            message?: string;
+        };
+        ProspectosLeadsListResponse: {
+            leads: {
+                id: string;
+                prospecto: string | null;
+                contacto: string | null;
+                consignacionId: string | null;
+                estado: string;
+                score: number | null;
+                intencionLevel: string | null;
+                presupuesto: number | null;
+                fechaMudanza: string | null;
+                ultimoMensajeAt: string | null;
+                asesorAsignado: string | null;
+                canal: string | null;
+            }[];
+            pagination: {
+                page: number;
+                limit: number;
+                total: number;
+                hasMore: boolean;
+            };
+            generatedAt: string;
+        };
+        ProspectosLeadsError: {
+            error: string;
+        };
+        ProspectosLeadDetailResponse: {
+            lead: {
+                id: string;
+                prospecto: string | null;
+                contacto: string | null;
+                email: string | null;
+                consignacionId: string | null;
+                estado: string;
+                score: number | null;
+                intencionLevel: string | null;
+                intencionScoreMotivos: string | null;
+                presupuesto: number | null;
+                fechaMudanza: string | null;
+                numPersonas: number | null;
+                mascotas: boolean | null;
+                parqueadero: boolean | null;
+                tipoIngreso: string | null;
+                zonaInteres: string[];
+                asesorAsignado: string | null;
+                canal: string | null;
+                conversationSummary: string | null;
+                proximaAccion: string | null;
+                handoffAt: string | null;
+                ultimoMensajeAt: string | null;
+                createdAt: string | null;
+            };
+            visitas: {
+                id: string;
+                scheduledAt: string | null;
+                status: string;
+                asesorEmail: string | null;
+                ubicacion: string | null;
+                durationMin: number | null;
+                verificacion: {
+                    asistio: boolean;
+                    interesado: boolean;
+                    motivo: string;
+                } | null;
+            }[];
+            tareas: {
+                id: string;
+                tipo: string;
+                objetivo: string;
+                estado: string;
+                prioridad: string;
+                asesorEmail: string | null;
+                dueAt: string | null;
+                createdAt: string | null;
+            }[];
+            generatedAt: string;
+        };
+        AsesorAvailabilityRow: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            agencyId: string;
+            /** Format: email */
+            asesorEmail: string | null;
+            dayOfWeek: number;
+            startTime: string;
+            endTime: string;
+            activo: boolean;
+            createdAt: string;
+            updatedAt: string;
+        };
+        AvailabilityListResponse: {
+            availability: components["schemas"]["AsesorAvailabilityRow"][];
+        };
+        ProspectosAvailabilityError: {
+            error: string;
+            message?: string;
+        };
+        UpsertAvailabilityResponse: {
+            availability: components["schemas"]["AsesorAvailabilityRow"];
+        };
+        UpsertAvailabilityBody: {
+            /**
+             * Format: email
+             * @description null = default de agencia; email = override del asesor específico.
+             * @example asesor@leasefy.co
+             */
+            asesorEmail: string | null;
+            /**
+             * @description 0=domingo … 6=sábado (JS Date.getDay()).
+             * @example 1
+             */
+            dayOfWeek: number;
+            /**
+             * @description Hora de inicio en formato HH:MM (hora Bogota).
+             * @example 09:00
+             */
+            startTime: string;
+            /**
+             * @description Hora de fin en formato HH:MM (hora Bogota).
+             * @example 17:00
+             */
+            endTime: string;
+        };
+        DeactivateAvailabilityResponse: {
+            ok: boolean;
+        };
+        ProposeSlotsResponse: {
+            slots: {
+                /** Format: date-time */
+                start: string;
+                /** Format: date-time */
+                end: string;
+                asesorEmail: string | null;
+            }[];
+            /** Format: uuid */
+            leadId: string;
+            /** Format: uuid */
+            consignacionId: string;
+        };
+        ProspectosVisitError: {
+            error: string;
+            message?: string;
+        };
+        ProposeSlotsBody: {
+            /** Format: uuid */
+            leadId: string;
+            /** Format: uuid */
+            consignacionId: string;
+            /** Format: email */
+            asesorEmail?: string;
+        };
+        BookVisitResponse: {
+            /** Format: uuid */
+            visitId: string;
+            /** @enum {string} */
+            status: "agendada";
+        };
+        SlotTakenResponse: {
+            /** @enum {string} */
+            error: "slot_taken";
+            message: string;
+        };
+        BookVisitBody: {
+            /** Format: uuid */
+            leadId: string;
+            /** Format: uuid */
+            consignacionId: string;
+            /** Format: email */
+            asesorEmail: string;
+            /** Format: date-time */
+            scheduledAt: string;
+            durationMin?: number;
+            ubicacion: string;
+            instrucciones?: string;
+            slotsPropuestos?: {
+                /** Format: date-time */
+                start: string;
+                /** Format: date-time */
+                end: string;
+                asesorEmail: string | null;
+            }[];
+        };
+        ConfirmVisitResponse: {
+            /** @enum {boolean} */
+            ok: true;
+            /** @enum {string} */
+            status: "confirmada";
+        };
+        ConfirmVisitBody: {
+            /** Format: email */
+            prospectEmail: string;
+            prospectName: string;
+            propertyAddress: string;
+            prospectPhone?: string;
+        };
+        AttendanceResponse: {
+            /** @enum {boolean} */
+            ok: true;
+            /** @enum {string} */
+            status: "asistio" | "no_show";
+        };
+        AttendanceBody: {
+            attended: boolean;
+        };
+        ProspectosTasksListResponse: {
+            tasks: {
+                id: string;
+                leadId: string;
+                tipo: string;
+                objetivo: string;
+                estado: string;
+                prioridad: string;
+                asesorEmail: string | null;
+                dueAt: string | null;
+                createdAt: string | null;
+            }[];
+            pagination: {
+                page: number;
+                limit: number;
+                total: number;
+                hasMore: boolean;
+            };
+            generatedAt: string;
+        };
+        ProspectosTasksError: {
+            error: string;
+        };
+        ProspectosTaskPatchResponse: {
+            task: {
+                id: string;
+                leadId: string;
+                tipo: string;
+                objetivo: string;
+                estado: string;
+                prioridad: string;
+                asesorEmail: string | null;
+                dueAt: string | null;
+                createdAt: string | null;
+            };
+            generatedAt: string;
+        };
+        ProspectosSummaryResponse: {
+            nuevos: number;
+            enConversacion: number;
+            calificados: number;
+            visitasAgendadas: number;
+            visitasConfirmadas: number;
+            asistio: number;
+            noShows: number;
+            enHandoff: number;
+            tareasPendientes: number;
+            conversionInquiryAVisita: number;
+            conversionVisitaAHandoff: number;
+            generatedAt: string;
+        };
+        ProspectosMetricsError: {
+            error: string;
+        };
+        ProspectosMetricasAsesorResponse: {
+            asesores: {
+                asesorEmail: string;
+                totalTasks: number;
+                openTasks: number;
+                completedTasks: number;
+                overdueTasks: number;
+                avgFirstResponseHours: number | null;
+                followUpTotal: number;
+                followUpCompleted: number;
+                followUpCompletionRate: number | null;
+            }[];
+            sinceDays: number;
+            generatedAt: string;
+        };
+        ProspectosMetricasAsesorError: {
+            error: string;
+        };
+        ProspectosPrioridadResponse: {
+            cola: {
+                id: string;
+                prospecto: string | null;
+                contacto: string | null;
+                estado: string;
+                score: number | null;
+                intencionLevel: string | null;
+                asesorAsignado: string | null;
+                ultimoMensajeAt: string | null;
+                priorityScore: number;
+                horasSinContacto: number;
+                enfriandose: boolean;
+            }[];
+            total: number;
+            generatedAt: string;
+        };
+        ProspectosPrioridadError: {
+            error: string;
+        };
+        CalidadPublicacionResponse: {
+            cola: {
+                consignacionId: string;
+                qualityScore: number | null;
+                issues: {
+                    code: string;
+                    severity: string;
+                    campo?: string;
+                    detalle: string;
+                }[];
+                lastAuditedAt: string | null;
+            }[];
+            total: number;
+            generatedAt: string;
+        };
+        CalidadPublicacionError: {
+            error: string;
+        };
+        CalidadPropuesta: {
+            id: string;
+            consignacionId: string;
+            issueCode: string;
+            accion: string;
+            campo: string | null;
+            estado: string;
+            createdAt: string | null;
+        };
+        CalidadV2Error: {
+            error: string;
+        };
+        CalidadConfig: {
+            requiredFields?: string[];
+            minPhotos?: number;
+            priceTolerancePct?: number;
+            staleListingDays?: number;
+            ownerContactCadenceDays?: number;
+            channelPriceTolerancePct?: number;
+        };
+        PortalPropietarioPerfil: {
+            /** Format: uuid */
+            ownerRef: string;
+            displayName: string | null;
+            propertiesCount: number;
+        };
+        PortalPropietarioPerfilError: {
+            error: string;
+        };
+        AgencyPortalProceso: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            propertyRef: string;
+            status: string;
+            /** Format: uuid */
+            chosenCandidacyId: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        AgencyPortalProcesosError: {
+            error: string;
+        };
+        AgencyPortalProcesoCreate: {
+            /** Format: uuid */
+            propertyRef: string;
+        };
+        AgencyPortalProcesoListItem: components["schemas"]["AgencyPortalProceso"] & {
+            candidaciesCount: number;
+        };
+        AgencyPortalCandidatura: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            processId: string;
+            candidateName: string;
+            cedulaHash: string | null;
+            email: string | null;
+            stage: string;
+            insurabilityVerdict: string | null;
+            /** Format: uuid */
+            evaluationId: string | null;
+            score: number | null;
+            status: string;
+            decidedAt: string | null;
+            /** Format: uuid */
+            decidedByOwnerRef: string | null;
+            decidedIp: string | null;
+            decidedUa: string | null;
+            decidedAuthMethod: string | null;
+            decidedSnapshotHash: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        AgencyPortalProcesoDetalle: components["schemas"]["AgencyPortalProceso"] & {
+            candidacies: components["schemas"]["AgencyPortalCandidatura"][];
+        };
+        AgencyPortalCandidaturaCreate: {
+            candidateName: string;
+            cedulaHash?: string;
+            /** Format: email */
+            email?: string;
+            /** Format: uuid */
+            evaluationId?: string;
+            score?: number;
+            /** @enum {string} */
+            stage?: "documentos" | "estudio" | "respuesta_aseguradora" | "finalizado";
+        };
+        AgencyPortalCandidaturaSyncResult: {
+            /** @enum {string|null} */
+            verdict: "apto" | "no_apto" | null;
+            updated: boolean;
+            /** @enum {string} */
+            skipped?: "no_evaluation" | "evaluation_not_found";
+        };
+        AgencyPortalCandidaturaDiscardOk: {
+            /** @enum {boolean} */
+            ok: true;
+        };
+        AgencyPortalCandidaturaPatch: {
+            /** @enum {string} */
+            stage?: "documentos" | "estudio" | "respuesta_aseguradora" | "finalizado";
+            /** @enum {string|null} */
+            insurabilityVerdict?: "apto" | "no_apto" | null;
+            score?: number | null;
+            /** @enum {boolean} */
+            descartar?: true;
+            /** @enum {boolean} */
+            syncFromEvaluation?: true;
+        };
+        PortalEleccionProceso: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            propertyRef: string;
+            propertyLabel: string;
+            status: string;
+            /** Format: uuid */
+            chosenCandidacyId: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        PortalEleccionError: {
+            error: string;
+        };
+        PortalEleccionCandidato: {
+            /** Format: uuid */
+            id: string;
+            candidateName: string;
+            stage: string;
+            insurabilityVerdict: string | null;
+            score: number | null;
+            status: string;
+            elegible: boolean;
+        };
+        PortalEleccionComparacion: {
+            /** Format: uuid */
+            processId: string;
+            status: string;
+            snapshotHash: string;
+            candidates: components["schemas"]["PortalEleccionCandidato"][];
+        };
+        PortalEleccionOk: {
+            /** Format: uuid */
+            processId: string;
+            /** @enum {string} */
+            status: "seleccionado" | "contrato_habilitado";
+            /** Format: uuid */
+            chosenCandidacyId: string;
+            decidedAt: string;
+        };
+        PortalEleccionRequest: {
+            /** Format: uuid */
+            candidacyId: string;
+            snapshotHash: string;
+        };
+        PortalFinanzasPreaviso: {
+            noticeDeadline: string;
+            daysToDeadline: number;
+            windowOpen: boolean;
+            contractYears: number;
+            options: {
+                /** @enum {string} */
+                tipo: "prorroga_unilateral" | "causal_especial" | "plena_voluntad_4anios";
+                costoCop?: number;
+                caucionCop?: number;
+                disponible: boolean;
+                fundamento: string;
+            }[];
+        };
+        PortalFinanzasPortafolio: {
+            totalProperties: number;
+            occupied: number;
+            vacant: number;
+            occupancyPct: number;
+            vacantDetail: {
+                /** Format: uuid */
+                propertyRef: string;
+                label: string;
+                vacantDays: number | null;
+                funnel: {
+                    /** Format: uuid */
+                    processId: string;
+                    status: string;
+                    candidateCount: number;
+                    aptoCount: number;
+                    awaitingYourChoice: boolean;
+                } | null;
+            }[];
+            recaudoMesActual: number;
+            contractsExpiring: {
+                /** Format: uuid */
+                propertyRef: string;
+                propertyLabel: string;
+                tenantDisplayName: string | null;
+                endDate: string;
+                daysLeft: number;
+                preaviso: components["schemas"]["PortalFinanzasPreaviso"];
+            }[];
+            openRequestsCount: number;
+        };
+        PortalFinanzasError: {
+            error: string;
+        };
+        PortalFinanzasInmueble: {
+            /** Format: uuid */
+            propertyRef: string;
+            label: string;
+            occupancyStatus: string;
+            contract: {
+                canonCop: number;
+                endDate: string;
+                daysRemaining: number;
+                tenantDisplayName: string | null;
+            } | null;
+        };
+        PortalFinanzasInmuebleDetalle: {
+            property: {
+                /** Format: uuid */
+                propertyRef: string;
+                label: string;
+                occupancyStatus: string;
+                vacantSince: string | null;
+            };
+            contract: {
+                /** Format: uuid */
+                contractRef: string;
+                canonCop: number;
+                startDate: string;
+                endDate: string;
+                daysRemaining: number;
+                tenantDisplayName: string | null;
+                preaviso: components["schemas"]["PortalFinanzasPreaviso"];
+            } | null;
+            novedades: {
+                eventRef: string;
+                tipo: string;
+                payload: {
+                    detalle?: string;
+                    motivo?: string;
+                    estado?: string;
+                    categoria?: string;
+                    montoCop?: number;
+                } | null;
+                occurredAt: string;
+            }[];
+            recaudo?: {
+                months: string[];
+                total: {
+                    month: string;
+                    amountCop: number;
+                }[];
+            };
+        };
+        PortalFinanzasPagos: {
+            total: number;
+            items: {
+                paymentRef: string;
+                /** Format: uuid */
+                contractRef: string;
+                amountCop: number;
+                paidAt: string;
+                concepto: string;
+                periodo: string | null;
+            }[];
+        };
+        PortalFinanzasRecaudo: {
+            months: string[];
+            total: {
+                month: string;
+                amountCop: number;
+            }[];
+            byProperty: {
+                /** Format: uuid */
+                propertyRef: string;
+                label: string;
+                series: {
+                    month: string;
+                    amountCop: number;
+                }[];
+            }[];
+        };
+        PortalFinanzasRecaudoAnual: {
+            year: number;
+            totals: {
+                concepto: string;
+                totalCop: number;
+                paymentsCount: number;
+            }[];
+        };
+        PortalFinanzasProyeccion: {
+            months: {
+                month: string;
+                totalCop: number;
+                byProperty: {
+                    /** Format: uuid */
+                    propertyRef: string;
+                    amountCop: number;
+                }[];
+            }[];
+            assumptions: string[];
+        };
+        PortalSolicitud: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            propertyRef: string;
+            /** Format: uuid */
+            contractRef: string | null;
+            tipo: string;
+            descripcion: string;
+            status: string;
+            rejectionReason: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        PortalSolicitudesError: {
+            error: string;
+        };
+        PortalSolicitudCreate: {
+            /** Format: uuid */
+            propertyRef: string;
+            /** @enum {string} */
+            tipo: "ruido" | "mascotas" | "numero_personas" | "convivencia" | "no_renovar" | "reubicacion" | "otra";
+            descripcion: string;
+        };
+        PortalSolicitudTimelineEvento: {
+            /** @enum {string} */
+            kind: "evento";
+            at: string;
+            tipo: string;
+            from?: string;
+            to?: string;
+            rejectionReason?: string;
+            motivo?: string;
+        };
+        PortalSolicitudTimelineLlamado: {
+            /** @enum {string} */
+            kind: "llamado";
+            at: string;
+            situationKey: string;
+        };
+        PortalSolicitudDetalle: components["schemas"]["PortalSolicitud"] & {
+            timeline: (components["schemas"]["PortalSolicitudTimelineEvento"] | components["schemas"]["PortalSolicitudTimelineLlamado"])[];
+        };
+        AgencyPortalSolicitud: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            ownerRef: string;
+            /** Format: uuid */
+            propertyRef: string;
+            /** Format: uuid */
+            contractRef: string | null;
+            tipo: string;
+            descripcion: string;
+            status: string;
+            rejectionReason: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        AgencyPortalSolicitudesError: {
+            error: string;
+        };
+        AgencyPortalSolicitudTransition: {
+            /** @enum {string} */
+            to: "en_gestion" | "esperando_verificacion" | "resuelta" | "cerrada" | "rechazada";
+            rejectionReason?: string;
+        };
+        AgencyPortalLlamado: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            contractRef: string;
+            /** Format: uuid */
+            requestId: string | null;
+            situationKey: string;
+            notes: string | null;
+            emittedByEmail: string;
+            createdAt: string;
+        };
+        AgencyPortalLlamadoResult: {
+            call: components["schemas"]["AgencyPortalLlamado"];
+            count: number;
+            becameEligible: boolean;
+            terminationEligible: boolean;
+        };
+        AgencyPortalLlamadoFromSolicitud: {
+            situationKey?: string;
+            notes?: string;
+        };
+        AgencyPortalLlamadoFromContrato: {
+            situationKey: string;
+            notes?: string;
+        };
+        AgencyPortalElegibilidad: {
+            terminationEligible: boolean;
+            calls: {
+                situationKey: string;
+                count: number;
+                callIds: string[];
+                lastCallAt: string;
+            }[];
+        };
+        PortalDanos: {
+            available: boolean;
+            tickets: {
+                id: string;
+                /** Format: uuid */
+                propertyRef: string;
+                category: string | null;
+                severity: string | null;
+                /** @enum {string} */
+                estadoDisplay: "en_proceso" | "resuelto" | "cerrado";
+                createdAt: string;
+                resolvedAt: string | null;
+                costoFinalCop: number | null;
+            }[];
+        };
+        PortalDanosDigestError: {
+            error: string;
+        };
+        PortalDigest: {
+            periodo: string;
+            payload?: unknown;
+            generatedAt: string;
+            deliveredAt: string | null;
+            deliveryChannel: string | null;
+        };
+        AgencyPortalConsent: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            ownerRef: string;
+            channel: string;
+            purpose: string;
+            grantedAt: string;
+            revokedAt: string | null;
+            evidence?: unknown;
+        };
+        AgencyConsentimientoError: {
+            error: string;
+        };
+        AgencyPortalConsentimiento: {
+            /** Format: uuid */
+            ownerRef: string;
+            /** @enum {string} */
+            channel: "whatsapp" | "email" | "voice";
+            /** @enum {string} */
+            action: "grant" | "revoke";
+            evidence?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Per-carrier quote result (Phase 20 D-20-15 8-carrier set). */
+        AseguradoraQuote: {
+            /** @enum {string} */
+            aseguradora: "sura" | "solidaria" | "mapfre" | "bolivar" | "estado" | "equidad" | "mundial" | "zurich";
+            /** @enum {string} */
+            status: "approved" | "conditional" | "rejected" | "error";
+            prima_mensual_cop: number | null;
+            condiciones: string[];
+            motivo_rechazo: string | null;
+            latency_ms: number;
+            raw_excerpt: {
+                [key: string]: unknown;
+            } | null;
+            stub_mode: boolean;
+            error: {
+                /** @enum {string} */
+                code: "timeout" | "transport" | "auth" | "rate_limit" | "parse";
+                message: string;
+            } | null;
+        };
+        /** @description Phase 24 D-24-13/D-24-16 cohort-taxonomy match. null when no taxonomy row matched the candidate predicate OR when confidence < threshold (D-24-16). The field is ALWAYS present on the synchronous response and on the SSEFinalVerdict event (additive contract — Phase 22/23 byte-for-byte compat preserved otherwise). */
+        CohortInsights: {
+            cohort_id: string;
+            label_es: string;
+            confidence: number;
+        } | null;
+        /** @description Recovery via alternate-path guidance (vs counterfactual). */
+        RecoveryAltPath: {
+            /** @enum {string} */
+            type: "alt_path";
+            advice_es: string;
+        };
+        /** @description Counterfactual recovery payload (D-23-09). */
+        RecoveryCounterfactual: {
+            /** @enum {string} */
+            type: "counterfactual";
+            what_ifs: {
+                [key: string]: unknown;
+            }[];
+            selected_levers_log: {
+                selected_levers: string[];
+                rationale_per_lever: {
+                    [key: string]: string;
+                };
+            };
+            fallback_message_es: string | null;
+        };
+        /** @description Recovery output discriminated by `type`. */
+        Recovery: components["schemas"]["RecoveryAltPath"] | components["schemas"]["RecoveryCounterfactual"];
+        /** @description Carrier currently in degraded mode (D-25-09). Present in POST /api/cotizador/quote 200 response when ≥1 carrier is degraded. */
+        DegradedCarrier: {
+            carrier: string;
+            reason: string;
+            /** Format: date-time */
+            since_iso: string;
+        };
+        /** @description Synchronous POST /api/cotizador/quote response (default — no stream). Phase 24 additively introduces cohort_insights; Phase 25 v1.1 additively introduces optional degraded_carriers. All other fields are byte-identical to Phase 23. */
+        CotizadorQuoteResponse: {
+            /** @enum {string} */
+            asegurabilidad: "yes" | "partial" | "no";
+            aseguradoras_consultadas: components["schemas"]["AseguradoraQuote"][];
+            mejor_opcion: components["schemas"]["AseguradoraQuote"] & (Record<string, never> | null);
+            alternativas: components["schemas"]["AseguradoraQuote"][];
+            stub_mode?: boolean;
+            cached: boolean;
+            /** Format: uuid */
+            quoteRequestId: string;
+            reasoning_trace_es: string | null;
+            cohort_insights: components["schemas"]["CohortInsights"];
+            recovery?: components["schemas"]["Recovery"];
+            /** @description Carriers currently in degraded mode (D-25-09). Present only when ≥1 carrier is degraded. Consumers that ignore unknown fields are unaffected (additive contract). Field is never in required[] — existing Phase 22/23 callers stay byte-for-byte compatible. */
+            degraded_carriers?: components["schemas"]["DegradedCarrier"][];
+        };
+        /** @description Standard error shape across the cotizador surface. */
+        CotizadorErrorResponse: {
+            /** @enum {boolean} */
+            success: false;
+            error: string;
+        };
+        /** @description POST /api/cotizador/quote body. cedula is HASHED at the server boundary (sha256(cedula | tenant_salt)) — raw cedula NEVER persisted (Habeas Data). */
+        CotizadorQuoteRequest: {
+            cedula: string;
+            ciudad: string;
+            canon_mensual_cop: number;
+            /** @enum {string} */
+            tipo_inmueble: "apartamento" | "casa" | "local";
+            /** Format: uuid */
+            tenant_id: string;
+            /** @default 0 */
+            codeudores: number;
+        };
+        /** @description SSE event `carrier.start`: emitted at fan-out start, once per carrier. The producer side writes the event to `cotizador_quote_stream_events` and the SSE wire atomically. */
+        SSECarrierStart: {
+            carrier: string;
+            started_at_ms: number;
+        };
+        /** @description SSE event `carrier.verdict`: emitted when a carrier returns a successful response (approved / conditional / rejected / error). prima_mensual_cop is non-null only when verdict === "approved". */
+        SSECarrierVerdict: {
+            carrier: string;
+            /** @enum {string} */
+            verdict: "approved" | "conditional" | "rejected" | "error";
+            prima_mensual_cop: number | null;
+            condiciones?: string[];
+        };
+        /** @description SSE event `carrier.error`: emitted when a carrier dispatch fails (timeout, transport, parse). Structurally distinct from SSECarrierVerdict (D-24-05 mutual exclusion): error_code + retryable required, no verdict / prima_mensual_cop fields. */
+        SSECarrierError: {
+            carrier: string;
+            error_code: string;
+            message: string;
+            retryable: boolean;
+        };
+        /** @description SSE event `agent.partial_ranking`: emitted once after the fan-out completes, before the final verdict + recovery + trace narration step. Carries the deterministic ranking + accepting count so the UI can render an interim view while the trace is being generated. */
+        SSEPartialRanking: {
+            ranked_carriers: {
+                carrier: string;
+                total_score: number;
+            }[];
+            accepting_count: number;
+        };
+        /** @description SSE event `agent.recovery`: emitted on rejection before agent.final_verdict. type discriminates the payload shape (alt_path | counterfactual). */
+        SSERecovery: {
+            /** @enum {string} */
+            type: "alt_path" | "counterfactual";
+            payload?: unknown;
+        };
+        /** @description SSE event `agent.final_verdict`: the TERMINAL event on the stream. D-24-02: reasoning_trace_es lives ONLY here. cohort_insights is the Phase 24 D-24-13/D-24-16 cohort match output (null when no taxonomy row matched or confidence below threshold). */
+        SSEFinalVerdict: {
+            /** @enum {string} */
+            asegurabilidad: "yes" | "partial" | "no";
+            mejor_opcion: {
+                carrier: string;
+                prima_mensual_cop: number;
+            } | null;
+            reasoning_trace_es: string | null;
+            cohort_insights: {
+                cohort_id: string;
+                label_es: string;
+                confidence: number;
+            } | null;
+            failed_carriers: string[];
+        };
+        /** @description SSE event `agent.heartbeat`: emitted every 5s during fan-out idle intervals so idle proxies do not disconnect. awaiting carries the set of carrier names still pending. */
+        SSEHeartbeat: {
+            elapsed_ms: number;
+            awaiting: string[];
+        };
+        /** @description Discriminated union over the 7 Phase 24 SSE event payload shapes. The SSE event type (carrier.start, carrier.verdict, carrier.error, agent.partial_ranking, agent.recovery, agent.final_verdict, agent.heartbeat) lives in the SSE `event:` field; this schema describes the payload (the SSE `data:` field). */
+        SSEEventPayload: components["schemas"]["SSECarrierStart"] | components["schemas"]["SSECarrierVerdict"] | components["schemas"]["SSECarrierError"] | components["schemas"]["SSEPartialRanking"] | components["schemas"]["SSERecovery"] | components["schemas"]["SSEFinalVerdict"] | components["schemas"]["SSEHeartbeat"];
+        /** @description Aggregate verdict across all consulted carriers. mejor_opcion is null on full rejection. */
+        QuoteVerdict: {
+            /** @enum {string} */
+            asegurabilidad: "yes" | "partial" | "no";
+            aseguradoras_consultadas: components["schemas"]["AseguradoraQuote"][];
+            mejor_opcion: components["schemas"]["AseguradoraQuote"] & (Record<string, never> | null);
+            alternativas: components["schemas"]["AseguradoraQuote"][];
+            stub_mode?: boolean;
+        };
+        /** @description POST /api/cotizador/quote/{id}/re-quote 200 response. delta_carriers + retained_carriers surface the D-24-11 selective re-run scope; session_cost_accumulator_usd reports the POST-increment value (D-24-20 session budget cap). */
+        CotizadorReQuoteResponse: {
+            /** @enum {boolean} */
+            success: true;
+            verdict: components["schemas"]["QuoteVerdict"];
+            reasoning_trace_es: string | null;
+            cohort_insights: components["schemas"]["CohortInsights"];
+            delta_carriers: string[];
+            retained_carriers: string[];
+            session_cost_accumulator_usd: number;
+            /** Format: uuid */
+            quoteRequestId: string;
+        };
+        /** @description POST /api/cotizador/quote/{id}/re-quote body (D-24-09/D-24-11). PATCH semantics — at LEAST one of canon_mensual_cop, codeudores, tipo_inmueble must be present. Empty bodies return 400. */
+        CotizadorReQuoteRequest: {
+            /** Format: uuid */
+            tenant_id: string;
+            canon_mensual_cop?: number;
+            codeudores?: number;
+            /** @enum {string} */
+            tipo_inmueble?: "apartamento" | "casa" | "local";
+        };
+        /** @description A single row of cotizador_cohort_taxonomy (D-24-13). matchPredicate is the JSON predicate (z-score range + categorical filters) the cohort evaluator matches against the candidate features. */
+        CohortTaxonomyRow: {
+            cohortId: string;
+            labelEs: string;
+            matchPredicate: {
+                [key: string]: unknown;
+            };
+            descriptionEs: string;
+            syntheticStats: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description GET /api/admin/cotizador/cohort-taxonomy 200 response. Ordered by cohortId ASC for deterministic consumption. */
+        CotizadorCohortTaxonomyResponse: {
+            /** @enum {boolean} */
+            success: true;
+            cohort_taxonomy: components["schemas"]["CohortTaxonomyRow"][];
+        };
+        /** @description Standard error response shape for Phase 25 endpoints. */
+        Phase25ErrorResponse: {
+            /** @enum {boolean} */
+            success: false;
+            error: string;
+        };
+        /** @description POST /api/cotizador/policy-outcome body. source_actor is hardcoded server-side to "inmobiliaria_relay" — callers cannot forge carrier_direct source (D-25-02, T-25-05-03). observed_at is the caller-supplied event time; recorded_at is the server-side ingest time. */
+        PolicyOutcomeRequest: {
+            /** Format: uuid */
+            quote_id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            /** @enum {string} */
+            outcome_type: "policy_emitted" | "policy_cancelled" | "rejected_second_review" | "claim_filed" | "other";
+            outcome_payload?: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            source_actor: "inmobiliaria_relay";
+            /** Format: date-time */
+            observed_at: string;
+        };
+        /** @description Per-carrier, per-hour SLA metric row. Computed by the cotizador fan-out instrumentation (D-25-09). */
+        SlaMetric: {
+            /** Format: uuid */
+            tenant_id: string;
+            carrier: string;
+            /** Format: date-time */
+            hour_bucket_start: string;
+            n_attempts: number;
+            n_errors: number;
+            p50_latency_ms: number;
+            p95_latency_ms: number;
+            p99_latency_ms: number;
+        };
+        /** @description Per-quote cost breakdown. Cost fields are serialized as strings in the actual response to preserve Decimal precision; this schema documents the numeric shape for codegen consumers (D-25-14). */
+        CotizadorCostRow: {
+            /** Format: uuid */
+            quote_id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            anthropic_cost_usd: number;
+            carrier_api_cost_usd: number;
+            sekure_commission_usd: number;
+            datacredito_cost_usd: number;
+            total_cost_usd: number;
+            /** Format: date-time */
+            computed_at: string;
+        };
+        /** @description Drift report row: predicted vs observed outcome accuracy for a (tenant, carrier) pair over a computation window (D-25-12). */
+        DriftReport: {
+            /** Format: uuid */
+            tenant_id: string;
+            carrier: string;
+            /** Format: date-time */
+            window_start: string;
+            /** Format: date-time */
+            window_end: string;
+            n_outcomes: number;
+            accuracy_pct: number;
+            /**
+             * @description null when no breach threshold is exceeded.
+             * @enum {string|null}
+             */
+            breach_severity: "low" | "medium" | "high" | "critical" | null;
+            /** Format: date-time */
+            computed_at: string;
+        };
+        /** @description 200 echo on idempotent replay (D-26-10 / T-26-06-03). Returned when Idempotency-Key matches an existing job for the same tenant. Original job_id returned. */
+        ArcoJobIdempotentEcho: {
+            /** Format: uuid */
+            job_id: string;
+            status_url: string;
+            /** @enum {boolean} */
+            duplicate: true;
+        };
+        /** @description 202 Accepted response for ARCO action endpoints (D-26-10). The job is enqueued asynchronously via Inngest. Poll GET /api/cotizador/arco/jobs/{job_id} for status. */
+        ArcoJobAccepted: {
+            /** Format: uuid */
+            job_id: string;
+            status_url: string;
+            estimated_completion: string;
+        };
+        /** @description Standard ARCO error response. */
+        ArcoErrorResponse: {
+            error: string;
+        };
+        /** @description Two-key counsel gate block (D-26-11). Returned when COTIZADOR_ARCO_ENABLED is unset or the compliance_acknowledgments ACK row is absent. Contact compliance@leasefy.co. */
+        Arco503Response: {
+            /** @enum {boolean} */
+            pending_counsel_review: true;
+            /** @enum {string} */
+            contact: "compliance@leasefy.co";
+        };
+        ArcoFieldNotRectifiable: {
+            /** @enum {string} */
+            error: "field_not_rectifiable";
+            field: string;
+            allowlist: string[];
+        };
+        /** @description Rectificación request body. Raw cédula keys (cedula, cedula_raw) are blocked at Zod refine (T-26-06-01). */
+        ArcoRectifyRequest: {
+            /** Format: uuid */
+            tenant_id: string;
+            /** @description Field name to rectify. Must be in ARCO_RECTIFIABLE_FIELDS (consent_authorization_id, name_correction, address_correction). D-26-12: carrier verdicts, drift deltas, recalibration outcomes are NOT rectifiable. */
+            field: string;
+            corrected_value: string;
+        };
+        /** @description Cancelación body. Only tenant_id is required — the cedula_hash comes from the X-Cotizador-Data-Subject-Cedula-Hash header (T-26-06-01). */
+        ArcoCancelacionRequest: {
+            /** Format: uuid */
+            tenant_id: string;
+        };
+        /** @description Oposición body. reason is optional — the data subject may omit it. Raw cédula keys are blocked (T-26-06-01). */
+        ArcoOposicionRequest: {
+            /** Format: uuid */
+            tenant_id: string;
+            reason?: string;
+        };
+        /** @description Job status for GET /api/cotizador/arco/jobs/{job_id}. result_uri is a presigned S3 URL (24h TTL) for Acceso exports; null for other actions. error_message is non-null only on failed status. */
+        ArcoJobStatus: {
+            /** @enum {string} */
+            status: "pending" | "running" | "completed" | "failed";
+            /** Format: date-time */
+            requested_at: string;
+            /** Format: date-time */
+            completed_at: string | null;
+            result_uri: string | null;
+            error_message: string | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -9202,361 +12555,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    pauseCobranzaDebtor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                debtorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CobranzaPauseBody"];
-            };
-        };
-        responses: {
-            /** @description Paused */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionOk"];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Debtor not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Audit-first write failed */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Database unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-        };
-    };
-    forceStageCobranzaDebtor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                debtorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CobranzaForceStageBody"];
-            };
-        };
-        responses: {
-            /** @description Stage forced */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionOk"];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Debtor or state not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Audit-first or transaction failed */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Database unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-        };
-    };
-    manualWaSendCobranzaDebtor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                debtorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CobranzaWaSendBody"];
-            };
-        };
-        responses: {
-            /** @description Template send dispatched to BSP */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaWaSendOk"];
-                };
-            };
-            /** @description Validation error or unknown template_id */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Debtor not found or has no phone */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Audit-first write failed */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description BSP send failed */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Database unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-        };
-    };
-    manualCallCobranzaDebtor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                debtorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CobranzaManualCallBody"];
-            };
-        };
-        responses: {
-            /** @description Vapi call created */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaManualCallOk"];
-                };
-            };
-            /** @description Stub-mode (VAPI_API_KEY unset) — audit written, no upstream call */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaManualCallOk"];
-                };
-            };
-            /** @description Validation error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Debtor not found or has no phone */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Audit-first write failed */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Vapi unreachable or non-2xx */
-            502: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Database unavailable or Vapi config missing */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-        };
-    };
-    listCobranzaWaTemplates: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Approved templates */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaWaTemplatesList"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-            /** @description Database unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CobranzaInterventionError"];
-                };
-            };
-        };
-    };
     getMemberPermissions: {
         parameters: {
             query?: never;
@@ -10940,6 +13938,131 @@ export interface operations {
             };
         };
     };
+    getPreScoringConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Config vigente del tenant (o defaults) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreScoringConfig"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    updatePreScoringConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreScoringConfigPatch"];
+            };
+        };
+        responses: {
+            /** @description Config actualizada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreScoringConfig"];
+                };
+            };
+            /** @description Cuerpo malformado o fuera de rango */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
     getCarteraOverview: {
         parameters: {
             query?: never;
@@ -11789,6 +14912,361 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CobranzaRevealPiiError"];
+                };
+            };
+        };
+    };
+    pauseCobranzaDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaPauseBody"];
+            };
+        };
+        responses: {
+            /** @description Paused */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Debtor not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Audit-first write failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
+    forceStageCobranzaDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaForceStageBody"];
+            };
+        };
+        responses: {
+            /** @description Stage forced */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Debtor or state not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Audit-first or transaction failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
+    manualWaSendCobranzaDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaWaSendBody"];
+            };
+        };
+        responses: {
+            /** @description Template send dispatched to BSP */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaWaSendOk"];
+                };
+            };
+            /** @description Validation error or unknown template_id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Debtor not found or has no phone */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Audit-first write failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description BSP send failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
+    manualCallCobranzaDebtor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CobranzaManualCallBody"];
+            };
+        };
+        responses: {
+            /** @description Vapi call created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaManualCallOk"];
+                };
+            };
+            /** @description Stub-mode (VAPI_API_KEY unset) — audit written, no upstream call */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaManualCallOk"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Debtor not found or has no phone */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Audit-first write failed */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Vapi unreachable or non-2xx */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable or Vapi config missing */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
+    listCobranzaWaTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Approved templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaWaTemplatesList"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
                 };
             };
         };
@@ -12671,6 +16149,48 @@ export interface operations {
             };
         };
     };
+    getCobranzaDailyReportThresholdsHistory: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Threshold versions for the agency */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportThresholdsHistory"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+        };
+    };
     rollbackCobranzaDailyReportThresholds: {
         parameters: {
             query?: never;
@@ -12817,6 +16337,46 @@ export interface operations {
             };
             /** @description Upsert failed */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportError"];
+                };
+            };
+        };
+    };
+    getCobranzaDailyReportSubscriptionStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subscriber counts for the agency */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDailyReportSubscriptionStats"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14978,6 +18538,285 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CobranzaCadenceError"];
+                };
+            };
+        };
+    };
+    listCobranzaAcuerdosGenerales: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Acuerdos generales del tenant */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAcuerdosGeneralesResponse"];
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    createCobranzaAcuerdoGeneral: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaAcuerdoGeneralCreate"];
+            };
+        };
+        responses: {
+            /** @description Acuerdo creado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAcuerdoGeneral"];
+                };
+            };
+            /** @description Cuerpo malformado, fuera de rango o incoherente */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    deleteCobranzaAcuerdoGeneral: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                acuerdoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Acuerdo borrado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** @enum {boolean} */
+                        deleted: true;
+                    };
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El acuerdo no existe en este tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    updateCobranzaAcuerdoGeneral: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                acuerdoId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaAcuerdoGeneralPatch"];
+            };
+        };
+        responses: {
+            /** @description Acuerdo actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAcuerdoGeneral"];
+                };
+            };
+            /** @description Cuerpo malformado, fuera de rango o incoherente */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Falta el bearer JWT o es inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description El acuerdo no existe en este tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
                 };
             };
         };
@@ -17273,6 +21112,8 @@ export interface operations {
         parameters: {
             query?: {
                 status?: "suggested";
+                caseType?: "parcial" | "duplicado" | "diferencia_monto" | "fuera_de_fecha" | "sin_identificar" | "multiple" | "comision";
+                groupByCaseType?: boolean | null;
                 page?: number;
                 pageSize?: number;
             };
@@ -17297,6 +21138,9 @@ export interface operations {
                         total: number;
                         page: number;
                         pageSize: number;
+                        countsByCaseType?: {
+                            [key: string]: number;
+                        };
                     };
                 };
             };
@@ -17514,6 +21358,67 @@ export interface operations {
             };
             /** @description Cannot reverse in current state */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    bulkConfirmConciliacionMatches: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Explicit set of suggested-match UUIDs to confirm. */
+                    matchIds?: string[];
+                    filter?: {
+                        /** @description Confirm every suggested match with confidence >= minConfidence. Must be >= the server high-confidence floor (0.8). */
+                        minConfidence: number;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Batch processed — summary of confirmed count + per-match failures. A 200 with confirmados=0 is returned when nothing matched the selection. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        confirmados: number;
+                        fallidos: {
+                            matchId: string;
+                            reason: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Invalid body (e.g. filter.minConfidence below the high-confidence floor) */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18655,6 +22560,5799 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    getConciliacionSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Conciliación typed summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        tenantId: string;
+                        generatedAt: string;
+                        taxonomy: {
+                            parciales: number;
+                            duplicados: number;
+                            diferencias_monto: number;
+                            fuera_de_fecha: number;
+                            sin_identificar: number;
+                        };
+                        totals: {
+                            movimientos: number;
+                            conciliados: number;
+                            en_cola: number;
+                            monto_conciliado_cop: number;
+                        };
+                        tasa_conciliacion: number | null;
+                    };
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getConciliacionPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active policy (or safe default seed) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string | null;
+                        version_number: number;
+                        policy_json: {
+                            [key: string]: unknown;
+                        };
+                        created_by: string | null;
+                        created_at: string | null;
+                        change_description: string | null;
+                        /** @enum {string} */
+                        source: "default" | "stored";
+                    };
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    createConciliacionPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    policy_json: {
+                        autoMatchEnabled: {
+                            recaudo: boolean;
+                            dispersion: boolean;
+                            ap: boolean;
+                            comision: boolean;
+                        };
+                        /** @default {} */
+                        confidenceThresholds?: {
+                            recaudo?: number;
+                            dispersion?: number;
+                            ap?: number;
+                            comision?: number;
+                        };
+                    };
+                    change_description?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description New policy version created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        version_number: number;
+                        created_at: string;
+                    };
+                };
+            };
+            /** @description Forbidden — OWNER or ADMIN required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Invalid policy_json shape */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable / policy table absent (migration not applied) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    requestConciliacionRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /**
+                     * Format: date-time
+                     * @description Optional ISO-8601 lower bound of the ingest window. Omit to use the run default look-back (7 days).
+                     * @example 2026-06-01T00:00:00.000Z
+                     */
+                    from?: string;
+                    /**
+                     * Format: date-time
+                     * @description Optional ISO-8601 upper bound of the ingest window. Omit to use now.
+                     * @example 2026-06-17T23:59:59.000Z
+                     */
+                    to?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Run trigger processed. enqueued=true when the event was emitted; enqueued=false (with reason) when the event backend is unavailable. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description true when the conciliacion/run.requested event was emitted. */
+                        enqueued: boolean;
+                        /** @description Inngest event id of the emitted trigger (present only when enqueued=true). */
+                        runId?: string;
+                        /** @description Why the run was NOT enqueued (present only when enqueued=false): one of db_unavailable | inngest_unavailable. */
+                        reason?: string;
+                    };
+                };
+            };
+            /** @description Invalid window (from/to not ISO-8601) or agencyId not a UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    listConciliacionConnections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Connection list (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            sourceType: string;
+                            provider: string;
+                            displayName: string;
+                            status: string;
+                            lastSyncAt: string | null;
+                            configRef: string | null;
+                            createdAt: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    createConciliacionConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * @description Connection kind: banco | pasarela | extracto.
+                     * @enum {string}
+                     */
+                    sourceType: "banco" | "pasarela" | "extracto";
+                    /** @description Free-text provider slug, e.g. bancolombia | wompi | bold. */
+                    provider: string;
+                    /** @description Human-friendly name shown in the operator UI. */
+                    displayName: string;
+                    /** @description OPAQUE reference to where the credential is stored (e.g. vault path / secret-manager key). NEVER a raw credential — no secret is accepted here. */
+                    configRef?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Connection registered */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        sourceType: string;
+                        provider: string;
+                        displayName: string;
+                        status: string;
+                        lastSyncAt: string | null;
+                        configRef: string | null;
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Invalid body */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable / table absent (migration not applied) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    patchConciliacionConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    status?: "conectado" | "error" | "desconectado";
+                    displayName?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Connection updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        sourceType: string;
+                        provider: string;
+                        displayName: string;
+                        status: string;
+                        lastSyncAt: string | null;
+                        configRef: string | null;
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Connection not found (cross-tenant guard) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Invalid body (no mutable field provided) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable / table absent (migration not applied) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    listOwnerSettlements: {
+        parameters: {
+            query?: {
+                status?: "borrador" | "pendiente_aprobacion" | "aprobado" | "pagado";
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated settlement list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            tenantId: string;
+                            /** Format: uuid */
+                            propertyId: string | null;
+                            /** Format: uuid */
+                            ownerId: string | null;
+                            ownerName: string | null;
+                            period: string;
+                            grossCop: number;
+                            commissionCop: number;
+                            otherDeductionsCop: number;
+                            netCop: number;
+                            status: string;
+                            /** Format: uuid */
+                            linkedPayoutId: string | null;
+                            createdAt: string;
+                        }[];
+                        total: number;
+                        page: number;
+                        pageSize: number;
+                    };
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    generateOwnerSettlement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Settlement period label, e.g. "2026-06" or "Junio 2026". */
+                    period: string;
+                    /** @description Canon recaudado del periodo (gross collected), integer COP. */
+                    grossCop: number;
+                    /** @description Comisión de administración, integer COP. */
+                    commissionCop: number;
+                    /** @description Otros descuentos, integer COP. Defaults to 0. */
+                    otherDeductionsCop?: number;
+                    /**
+                     * Format: uuid
+                     * @description Optional property id.
+                     */
+                    propertyId?: string;
+                    /**
+                     * Format: uuid
+                     * @description Optional owner id.
+                     */
+                    ownerId?: string;
+                    /** @description Optional owner display name (when ownerId is unknown). */
+                    ownerName?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Settlement created (status=borrador) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        tenantId: string;
+                        /** Format: uuid */
+                        propertyId: string | null;
+                        /** Format: uuid */
+                        ownerId: string | null;
+                        ownerName: string | null;
+                        period: string;
+                        grossCop: number;
+                        commissionCop: number;
+                        otherDeductionsCop: number;
+                        netCop: number;
+                        status: string;
+                        /** Format: uuid */
+                        linkedPayoutId: string | null;
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Forbidden — OWNER or ADMIN required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Invalid body shape */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable / owner_settlements absent (migration not applied) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    approveOwnerSettlement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                settlementId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * @description Target status for this approval step. pendiente_aprobacion (submit borrador for approval) or aprobado (approve). pagado is NOT allowed here — disbursement is pagos/dispersión (T-323).
+                     * @enum {string}
+                     */
+                    targetStatus: "pendiente_aprobacion" | "aprobado";
+                    /**
+                     * Format: uuid
+                     * @description Optional soft reference to an existing agent.payouts(id). This route only STORES the reference — it never creates a Payout nor moves money.
+                     */
+                    linkedPayoutId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Settlement approved (status advanced) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** Format: uuid */
+                        tenantId: string;
+                        /** Format: uuid */
+                        propertyId: string | null;
+                        /** Format: uuid */
+                        ownerId: string | null;
+                        ownerName: string | null;
+                        period: string;
+                        grossCop: number;
+                        commissionCop: number;
+                        otherDeductionsCop: number;
+                        netCop: number;
+                        status: string;
+                        /** Format: uuid */
+                        linkedPayoutId: string | null;
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Forbidden — OWNER or ADMIN required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Settlement not found (cross-tenant guard) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Illegal status transition for the settlement */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable / owner_settlements absent (migration not applied) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    ingestInspeccionProjection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InspeccionIngestBody"];
+            };
+        };
+        responses: {
+            /** @description Ingest summary (also returned with empty counts when unmigrated) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionIngestSummary"];
+                };
+            };
+            /** @description Malformed body / both arrays empty */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionIngestError"];
+                };
+            };
+            /** @description Missing / invalid AGENT_API_KEY bearer */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionIngestError"];
+                };
+            };
+            /** @description INSPECCION_ENABLED is not "true" */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionIngestError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionIngestError"];
+                };
+            };
+        };
+    };
+    listInspeccionSessionsOverview: {
+        parameters: {
+            query?: {
+                status?: "pending" | "in_progress" | "complete" | "signed";
+                type?: "entry" | "exit";
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lista de sesiones con paginación */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionOverviewListResponse"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionOverviewError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionOverviewError"];
+                };
+            };
+        };
+    };
+    startInspeccionSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InspeccionStartSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description Sesión creada, rooms/items materializados desde el checklist */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionSessionResponse"];
+                };
+            };
+            /** @description propertyId / leaseId no resuelven bajo esta agencia */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionSessionsError"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionSessionsError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionSessionsError"];
+                };
+            };
+        };
+    };
+    getInspeccionSessionDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesión + rooms/items + coverage */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionSessionResponse"];
+                };
+            };
+            /** @description Feature no habilitada, o sesión no encontrada bajo esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionSessionsError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionSessionsError"];
+                };
+            };
+        };
+    };
+    completeInspeccionSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesión cerrada — status:"complete" */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionSessionCompleteResponse"];
+                };
+            };
+            /** @description Feature no habilitada, o sesión no encontrada bajo esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionSessionsError"];
+                };
+            };
+            /** @description Cobertura de ítems obligatorios incompleta */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionSessionIncompleteResponse"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionSessionsError"];
+                };
+            };
+        };
+    };
+    listInspeccionRepairCosts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Catálogo de costos de reparación de la agencia */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionRepairCostList"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionCatalogoError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionCatalogoError"];
+                };
+            };
+        };
+    };
+    upsertInspeccionRepairCost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InspeccionRepairCostUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Entrada del catálogo creada/actualizada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionRepairCost"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionCatalogoError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionCatalogoError"];
+                };
+            };
+        };
+    };
+    presignInspeccionItemPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InspeccionPhotoPresignRequest"];
+            };
+        };
+        responses: {
+            /** @description Presigned URL minted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionPhotoPresignResponse"];
+                };
+            };
+            /** @description Malformed body / wrong contentType / oversized */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionPhotoError"];
+                };
+            };
+            /** @description Feature not enabled, or item not found under this agency */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionPhotoError"];
+                };
+            };
+            /** @description Database unavailable / schema not migrated */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionPhotoError"];
+                };
+            };
+        };
+    };
+    confirmInspeccionItemPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InspeccionPhotoConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Quality verdict + persist outcome (accepted true/false) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionPhotoConfirmResponse"];
+                };
+            };
+            /** @description Malformed body / s3Key prefix mismatch */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionPhotoError"];
+                };
+            };
+            /** @description Feature not enabled, or item not found under this agency */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionPhotoError"];
+                };
+            };
+            /** @description Acta already signed — session is immutable */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionPhotoError"];
+                };
+            };
+            /** @description Database unavailable / schema not migrated */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionPhotoError"];
+                };
+            };
+        };
+    };
+    generateInspeccionActa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Acta generada (o re-leída) + URL de descarga presignada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionActaResponse"];
+                };
+            };
+            /** @description La sesión aún no está complete/signed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionActaError"];
+                };
+            };
+            /** @description Feature no habilitada, o sesión no encontrada bajo esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionActaError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionActaError"];
+                };
+            };
+        };
+    };
+    getInspeccionActa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesión + acta (nullable si aún no se generó) + rooms */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionActaResponse"];
+                };
+            };
+            /** @description Feature no habilitada, o sesión no encontrada bajo esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionActaError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionActaError"];
+                };
+            };
+        };
+    };
+    startInspeccionExitSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                entrySessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesión de salida creada + id de la comparación vinculada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionExitSessionResponse"];
+                };
+            };
+            /** @description La entrada no es type:entry, o está incompleta, o falló el inicio de la salida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionComparacionError"];
+                };
+            };
+            /** @description Feature no habilitada, o la sesión de entrada no existe bajo esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionComparacionError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionComparacionError"];
+                };
+            };
+        };
+    };
+    runInspeccionComparison: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                comparisonId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reporte de comparación recién calculado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionComparisonReport"];
+                };
+            };
+            /** @description La entrada o la salida aún no están complete/signed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionComparacionError"];
+                };
+            };
+            /** @description Feature no habilitada, o la comparación no existe bajo esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionComparacionError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionComparacionError"];
+                };
+            };
+        };
+    };
+    getInspeccionComparison: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                comparisonId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reporte de comparación */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionComparisonReport"];
+                };
+            };
+            /** @description Feature no habilitada, o la comparación no existe bajo esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionComparacionError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionComparacionError"];
+                };
+            };
+        };
+    };
+    signInspeccionActa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InspeccionFirmaSignBody"];
+            };
+        };
+        responses: {
+            /** @description Firma registrada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionFirmaSignResponse"];
+                };
+            };
+            /** @description La sesión aún no está complete/signed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionFirmaError"];
+                };
+            };
+            /** @description OTP de identidad requerido y ausente/inválido (config.otpRequired) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionFirmaError"];
+                };
+            };
+            /** @description Feature no habilitada, o sesión no encontrada bajo esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionFirmaError"];
+                };
+            };
+            /** @description El rol ya firmó, o el acta ya está signed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionFirmaError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionFirmaError"];
+                };
+            };
+        };
+    };
+    issueInspeccionSignatureOtp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InspeccionFirmaIssueOtpBody"];
+            };
+        };
+        responses: {
+            /** @description OTP emitido (o reutilizado por cooldown) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionFirmaIssueOtpResponse"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionFirmaError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionFirmaError"];
+                };
+            };
+        };
+    };
+    getInspeccionActaSignatures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estado del acta + firmas registradas hasta ahora (identidad enmascarada) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionFirmaSignaturesResponse"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionFirmaError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionFirmaError"];
+                };
+            };
+        };
+    };
+    buildInspeccionEvidencePacket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InspeccionEvidenciaBuildBody"];
+            };
+        };
+        responses: {
+            /** @description Paquete de evidencia construido (o ya existente) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionEvidenciaBuildResponse"];
+                };
+            };
+            /** @description Feature no habilitada, o sesión no encontrada bajo esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionEvidenciaError"];
+                };
+            };
+            /** @description El acta todavía no está signed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionEvidenciaError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionEvidenciaError"];
+                };
+            };
+        };
+    };
+    getInspeccionEvidencePacket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estado del paquete de evidencia (URLs presignadas frescas cuando existe) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionEvidenciaDetailResponse"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionEvidenciaError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionEvidenciaError"];
+                };
+            };
+        };
+    };
+    inviteInspeccionWhatsappParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InspeccionWhatsappInviteRequest"];
+            };
+        };
+        responses: {
+            /** @description Teléfono invitado — binding activo por INSPECCION_WA_SESSION_TTL_SECONDS */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionWhatsappInviteResponse"];
+                };
+            };
+            /** @description Feature no habilitada, o sesión no encontrada bajo esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionWhatsappError"];
+                };
+            };
+            /** @description La sesión ya está firmada (inmutable) — no acepta nuevas invitaciones */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionWhatsappError"];
+                };
+            };
+            /** @description Base de datos no disponible / esquema no migrado */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InspeccionWhatsappError"];
+                };
+            };
+        };
+    };
+    createProspectosInquiry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ProspectosInquiryBody"];
+            };
+        };
+        responses: {
+            /** @description Inquiry procesado — lead creado o continuado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosInquiryResponse"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosError"];
+                };
+            };
+            /** @description Migración pendiente */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosError"];
+                };
+            };
+        };
+    };
+    listProspectosLeads: {
+        parameters: {
+            query?: {
+                estado?: string;
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lista de leads con paginación */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosLeadsListResponse"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosLeadsError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosLeadsError"];
+                };
+            };
+        };
+    };
+    getProspectosLeadDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                leadId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detalle del lead + visitas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosLeadDetailResponse"];
+                };
+            };
+            /** @description Feature no habilitada o lead no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosLeadsError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosLeadsError"];
+                };
+            };
+        };
+    };
+    listProspectAvailability: {
+        parameters: {
+            query?: {
+                asesorEmail?: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Disponibilidad horaria — lista completa o resuelta por asesor. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvailabilityListResponse"];
+                };
+            };
+            /** @description Feature no habilitada. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosAvailabilityError"];
+                };
+            };
+            /** @description DB no disponible. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosAvailabilityError"];
+                };
+            };
+        };
+    };
+    upsertProspectAvailability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UpsertAvailabilityBody"];
+            };
+        };
+        responses: {
+            /** @description Fila de disponibilidad creada o actualizada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpsertAvailabilityResponse"];
+                };
+            };
+            /** @description Feature no habilitada. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosAvailabilityError"];
+                };
+            };
+            /** @description DB no disponible. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosAvailabilityError"];
+                };
+            };
+        };
+    };
+    deactivateProspectAvailability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                availabilityId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Disponibilidad desactivada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeactivateAvailabilityResponse"];
+                };
+            };
+            /** @description Feature no habilitada. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosAvailabilityError"];
+                };
+            };
+            /** @description DB no disponible. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosAvailabilityError"];
+                };
+            };
+        };
+    };
+    proposeVisitSlots: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ProposeSlotsBody"];
+            };
+        };
+        responses: {
+            /** @description Slots disponibles para la visita */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposeSlotsResponse"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosVisitError"];
+                };
+            };
+            /** @description DB no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosVisitError"];
+                };
+            };
+        };
+    };
+    bookVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BookVisitBody"];
+            };
+        };
+        responses: {
+            /** @description Visita agendada exitosamente */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookVisitResponse"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosVisitError"];
+                };
+            };
+            /** @description El horario ya fue reservado — elige otro */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotTakenResponse"];
+                };
+            };
+            /** @description DB no disponible o migración pendiente */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosVisitError"];
+                };
+            };
+        };
+    };
+    confirmVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                visitId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConfirmVisitBody"];
+            };
+        };
+        responses: {
+            /** @description Visita confirmada — email con .ics enviado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmVisitResponse"];
+                };
+            };
+            /** @description Visita no encontrada o feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosVisitError"];
+                };
+            };
+            /** @description Error al confirmar */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosVisitError"];
+                };
+            };
+            /** @description DB no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosVisitError"];
+                };
+            };
+        };
+    };
+    markVisitAttendance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                visitId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AttendanceBody"];
+            };
+        };
+        responses: {
+            /** @description Asistencia registrada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceResponse"];
+                };
+            };
+            /** @description Visita no encontrada o feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosVisitError"];
+                };
+            };
+            /** @description DB no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosVisitError"];
+                };
+            };
+        };
+    };
+    listProspectosTasks: {
+        parameters: {
+            query?: {
+                estado?: string;
+                asesorEmail?: string;
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lista de tareas con paginación */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosTasksListResponse"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosTasksError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosTasksError"];
+                };
+            };
+        };
+    };
+    updateProspectosTaskStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                taskId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    estado: "pendiente" | "en_progreso" | "completada" | "cancelada";
+                };
+            };
+        };
+        responses: {
+            /** @description Tarea actualizada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosTaskPatchResponse"];
+                };
+            };
+            /** @description Feature no habilitada o tarea no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosTasksError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosTasksError"];
+                };
+            };
+        };
+    };
+    getProspectosSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resumen del embudo (cuentas por estado + conversiones) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosSummaryResponse"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosMetricsError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosMetricsError"];
+                };
+            };
+        };
+    };
+    getProspectosMetricasAsesor: {
+        parameters: {
+            query?: {
+                sinceDays?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Métricas por asesor */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosMetricasAsesorResponse"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosMetricasAsesorError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosMetricasAsesorError"];
+                };
+            };
+        };
+    };
+    listProspectosPrioridad: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cola priorizada de leads */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosPrioridadResponse"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosPrioridadError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectosPrioridadError"];
+                };
+            };
+        };
+    };
+    listCalidadPublicaciones: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cola de calidad */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalidadPublicacionResponse"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalidadPublicacionError"];
+                };
+            };
+            /** @description DB no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalidadPublicacionError"];
+                };
+            };
+        };
+    };
+    listCalidadPropuestas: {
+        parameters: {
+            query?: {
+                estado?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Propuestas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        propuestas: components["schemas"]["CalidadPropuesta"][];
+                        total: number;
+                    };
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalidadV2Error"];
+                };
+            };
+        };
+    };
+    decideCalidadPropuesta: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                correctionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    decision: "approve" | "reject";
+                };
+            };
+        };
+        responses: {
+            /** @description Resultado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                        estado?: string;
+                        reason?: string;
+                    };
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalidadV2Error"];
+                };
+            };
+        };
+    };
+    getCalidadEstado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resumen */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        totalAudited: number;
+                        avgScore: number | null;
+                        criticos: number;
+                        posibleTomado: number;
+                        porCodigo: {
+                            [key: string]: number;
+                        };
+                        propuestasPorEstado: {
+                            [key: string]: number;
+                        };
+                        generatedAt: string;
+                    };
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalidadV2Error"];
+                };
+            };
+        };
+    };
+    getCalidadConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Config */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalidadConfig"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalidadV2Error"];
+                };
+            };
+        };
+    };
+    putCalidadConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CalidadConfig"];
+            };
+        };
+        responses: {
+            /** @description Config efectiva */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalidadConfig"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalidadV2Error"];
+                };
+            };
+        };
+    };
+    ingestCalidadPropietario: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    consignacionId: string;
+                    /** @enum {string} */
+                    status?: "available" | "rented" | "unknown";
+                    changesRequirePhotos?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Ingerido */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        updated: boolean;
+                        proposedPause: boolean;
+                        tasksEmitted: number;
+                    };
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalidadV2Error"];
+                };
+            };
+        };
+    };
+    getPortalPropietarioPerfil: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Perfil del propietario resuelto */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalPropietarioPerfil"];
+                };
+            };
+            /** @description agencyId no es UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalPropietarioPerfilError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalPropietarioPerfilError"];
+                };
+            };
+            /** @description agencyId mismatch (cross-tenant) o propietario no proyectado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalPropietarioPerfilError"];
+                };
+            };
+            /** @description Portal apagado (PORTAL_PROPIETARIO_ENABLED off) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalPropietarioPerfilError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalPropietarioPerfilError"];
+                };
+            };
+        };
+    };
+    listAgencyPortalProcesos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Procesos (orderBy createdAt desc) con conteo de candidaturas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesoListItem"][];
+                };
+            };
+            /** @description Parámetros o body inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Flag apagado o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+        };
+    };
+    createAgencyPortalProceso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgencyPortalProcesoCreate"];
+            };
+        };
+        responses: {
+            /** @description Proceso creado (status abierto) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProceso"];
+                };
+            };
+            /** @description Parámetros o body inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Flag apagado o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Ya existe un proceso ACTIVO para este propertyRef */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+        };
+    };
+    getAgencyPortalProceso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                processId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Proceso con candidaturas completas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesoDetalle"];
+                };
+            };
+            /** @description Parámetros o body inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Flag apagado o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+        };
+    };
+    createAgencyPortalCandidatura: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                processId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgencyPortalCandidaturaCreate"];
+            };
+        };
+        responses: {
+            /** @description Candidatura creada (status activa) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalCandidatura"];
+                };
+            };
+            /** @description Parámetros o body inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Flag apagado o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Proceso en estado terminal */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+        };
+    };
+    patchAgencyPortalCandidatura: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                candidacyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgencyPortalCandidaturaPatch"];
+            };
+        };
+        responses: {
+            /** @description Candidatura actualizada / descartada / sincronizada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalCandidatura"] | components["schemas"]["AgencyPortalCandidaturaSyncResult"] | components["schemas"]["AgencyPortalCandidaturaDiscardOk"];
+                };
+            };
+            /** @description Parámetros o body inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Flag apagado o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Descarte CAS perdido (candidatura no activa) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+        };
+    };
+    marcarAgencyPortalProcesoListo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                processId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Proceso en esperando_eleccion */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProceso"];
+                };
+            };
+            /** @description Parámetros o body inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Flag apagado o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Sin candidaturas apto, o transición inválida (código en body) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalProcesosError"];
+                };
+            };
+        };
+    };
+    listPortalEleccionProcesos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Procesos de MIS inmuebles (orderBy createdAt desc) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionProceso"][];
+                };
+            };
+            /** @description agencyId no es UUID o body inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado, o inmueble ajeno */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+            /** @description Flags apagados (master o ELECCION) o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+        };
+    };
+    getPortalEleccionComparacion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                processId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comparación mínima (LEGAL Q2/Q5) + snapshotHash WYSIWYS */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionComparacion"];
+                };
+            };
+            /** @description agencyId no es UUID o body inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado, o inmueble ajeno */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+            /** @description Flags apagados (master o ELECCION) o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+        };
+    };
+    postPortalEleccion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                processId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalEleccionRequest"];
+            };
+        };
+        responses: {
+            /** @description Elección registrada (evidencia persistida + bitácora) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionOk"];
+                };
+            };
+            /** @description agencyId no es UUID o body inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado, o inmueble ajeno */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+            /** @description Flags apagados (master o ELECCION) o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+            /** @description conflict (carrera perdida) o terms_changed (WYSIWYS) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+            /** @description not_eligible (D-PORT-04) o invalid_state */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalEleccionError"];
+                };
+            };
+        };
+    };
+    getPortalFinanzasPortafolio: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resumen del portafolio (REQ-PP-305, QW-1/QW-2) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasPortafolio"];
+                };
+            };
+            /** @description agencyId no es UUID o query inválida (caps T-F3-02) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado, o inmueble ajeno/inexistente (sin leak) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Master flag apagado (D-PORT-07) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+        };
+    };
+    listPortalFinanzasInmuebles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lista de inmuebles del owner */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasInmueble"][];
+                };
+            };
+            /** @description agencyId no es UUID o query inválida (caps T-F3-02) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado, o inmueble ajeno/inexistente (sin leak) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Master flag apagado (D-PORT-07) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+        };
+    };
+    getPortalFinanzasInmuebleDetalle: {
+        parameters: {
+            query?: {
+                months?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+                propertyRef: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detalle (REQ-PP-301); `recaudo` presente solo con ?months= */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasInmuebleDetalle"];
+                };
+            };
+            /** @description agencyId no es UUID o query inválida (caps T-F3-02) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado, o inmueble ajeno/inexistente (sin leak) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Master flag apagado (D-PORT-07) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+        };
+    };
+    listPortalFinanzasPagos: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number | null;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+                propertyRef: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pagos paginados (REQ-PP-302) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasPagos"];
+                };
+            };
+            /** @description agencyId no es UUID o query inválida (caps T-F3-02) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado, o inmueble ajeno/inexistente (sin leak) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Master flag apagado (D-PORT-07) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+        };
+    };
+    getPortalFinanzasRecaudo: {
+        parameters: {
+            query?: {
+                months?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Serie total + por inmueble (REQ-PP-303) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasRecaudo"];
+                };
+            };
+            /** @description agencyId no es UUID o query inválida (caps T-F3-02) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado, o inmueble ajeno/inexistente (sin leak) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Master flag apagado (D-PORT-07) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+        };
+    };
+    getPortalFinanzasRecaudoAnual: {
+        parameters: {
+            query: {
+                year: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Totales por concepto del año */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasRecaudoAnual"];
+                };
+            };
+            /** @description agencyId no es UUID o query inválida (caps T-F3-02) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado, o inmueble ajeno/inexistente (sin leak) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Master flag apagado (D-PORT-07) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+        };
+    };
+    getPortalFinanzasProyeccion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Serie futura + assumptions (REQ-PP-304) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasProyeccion"];
+                };
+            };
+            /** @description agencyId no es UUID o query inválida (caps T-F3-02) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado, o inmueble ajeno/inexistente (sin leak) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Master flag apagado (D-PORT-07) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+        };
+    };
+    getPortalFinanzasInformePdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF binary (REQ-PP-306) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            /** @description agencyId no es UUID o query inválida (caps T-F3-02) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado, o inmueble ajeno/inexistente (sin leak) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Master flag apagado (D-PORT-07) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalFinanzasError"];
+                };
+            };
+        };
+    };
+    listPortalSolicitudes: {
+        parameters: {
+            query?: {
+                status?: "recibida" | "en_gestion" | "esperando_verificacion" | "resuelta" | "cerrada" | "rechazada";
+                limit?: number;
+                offset?: number | null;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Solicitudes del propietario (orderBy createdAt desc) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitud"][];
+                };
+            };
+            /** @description agencyId no es UUID, o body/query inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado, o inmueble ajeno */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+            /** @description Master flag apagado o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+        };
+    };
+    createPortalSolicitud: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortalSolicitudCreate"];
+            };
+        };
+        responses: {
+            /** @description Solicitud creada (status recibida, contractRef del contrato activo) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitud"];
+                };
+            };
+            /** @description agencyId no es UUID, o body/query inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado, o inmueble ajeno */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+            /** @description Master flag apagado o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+            /** @description Ya existe una solicitud ABIERTA idéntica (anti-replay T-F4-03) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+            /** @description Tipo inválido (defensa en profundidad — zod ya da 400) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+        };
+    };
+    getPortalSolicitud: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Solicitud + timeline en orden cronológico estable */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudDetalle"];
+                };
+            };
+            /** @description agencyId no es UUID, o body/query inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado, o inmueble ajeno */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+            /** @description Master flag apagado o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalSolicitudesError"];
+                };
+            };
+        };
+    };
+    listAgencyPortalSolicitudes: {
+        parameters: {
+            query?: {
+                status?: "recibida" | "en_gestion" | "esperando_verificacion" | "resuelta" | "cerrada" | "rechazada";
+                propertyRef?: string;
+                tipo?: "ruido" | "mascotas" | "numero_personas" | "convivencia" | "no_renovar" | "reubicacion" | "otra";
+                limit?: number;
+                offset?: number | null;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Solicitudes (orderBy createdAt desc) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitud"][];
+                };
+            };
+            /** @description Parámetros o body inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Bearer ausente, JWT inválido o memberEmail sin resolver */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Master flag apagado o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+        };
+    };
+    transitionAgencyPortalSolicitud: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgencyPortalSolicitudTransition"];
+            };
+        };
+        responses: {
+            /** @description Solicitud transicionada (fila post-CAS) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitud"];
+                };
+            };
+            /** @description Parámetros o body inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Bearer ausente, JWT inválido o memberEmail sin resolver */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Master flag apagado o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Carrera de dos operadores (CAS perdido) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description invalid_transition o rejection_reason_required */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+        };
+    };
+    emitAgencyPortalLlamadoFromSolicitud: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgencyPortalLlamadoFromSolicitud"];
+            };
+        };
+        responses: {
+            /** @description Llamado emitido (count + elegibilidad) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalLlamadoResult"];
+                };
+            };
+            /** @description Parámetros o body inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Bearer ausente, JWT inválido o memberEmail sin resolver */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Master flag apagado o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description no_contract o invalid_situation_key */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+        };
+    };
+    emitAgencyPortalLlamadoFromContrato: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                contractRef: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgencyPortalLlamadoFromContrato"];
+            };
+        };
+        responses: {
+            /** @description Llamado emitido (count + elegibilidad) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalLlamadoResult"];
+                };
+            };
+            /** @description Parámetros o body inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Bearer ausente, JWT inválido o memberEmail sin resolver */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Master flag apagado o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description invalid_situation_key */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+        };
+    };
+    getAgencyPortalContratoElegibilidad: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                contractRef: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Flag + llamados agrupados (paquete probatorio a la vista) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalElegibilidad"];
+                };
+            };
+            /** @description Parámetros o body inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Bearer ausente, JWT inválido o memberEmail sin resolver */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Master flag apagado o recurso inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalSolicitudesError"];
+                };
+            };
+        };
+    };
+    getPortalDanos: {
+        parameters: {
+            query?: {
+                propertyRef?: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daños (REQ-PP-501); available:false si la tabla no existe aún */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanos"];
+                };
+            };
+            /** @description agencyId/periodo inválidos o propertyRef no UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado o inmueble ajeno/inexistente (sin leak) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+            /** @description Master flag apagado (D-PORT-07) o digest inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+        };
+    };
+    getPortalDigestPeriodo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                periodo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Digest del periodo (REQ-PP-504) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDigest"];
+                };
+            };
+            /** @description agencyId/periodo inválidos o propertyRef no UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado o inmueble ajeno/inexistente (sin leak) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+            /** @description Master flag apagado (D-PORT-07) o digest inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+        };
+    };
+    listPortalDigests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lista liviana de digests (periodo desc, take 12) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        periodo: string;
+                        generatedAt: string;
+                        deliveredAt: string | null;
+                        deliveryChannel: string | null;
+                    }[];
+                };
+            };
+            /** @description agencyId/periodo inválidos o propertyRef no UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+            /** @description Bearer ausente o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+            /** @description agencyId mismatch, propietario no proyectado o inmueble ajeno/inexistente (sin leak) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+            /** @description Master flag apagado (D-PORT-07) o digest inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub-mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortalDanosDigestError"];
+                };
+            };
+        };
+    };
+    registerAgencyPortalConsentimiento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgencyPortalConsentimiento"];
+            };
+        };
+        responses: {
+            /** @description Consentimiento registrado/revocado (fila serializada) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyPortalConsent"];
+                };
+            };
+            /** @description Body inválido, campo forjado (.strict) o evidence > 4000 chars */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyConsentimientoError"];
+                };
+            };
+            /** @description Bearer ausente, JWT inválido o memberEmail sin resolver */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyConsentimientoError"];
+                };
+            };
+            /** @description Rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyConsentimientoError"];
+                };
+            };
+            /** @description Master flag apagado o owner/consent inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyConsentimientoError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgencyConsentimientoError"];
+                };
+            };
+        };
+    };
+    cotizadorQuoteCreate: {
+        parameters: {
+            query?: {
+                stream?: "1";
+            };
+            header: {
+                "x-cotizador-consent": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CotizadorQuoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Synchronous quote verdict (when `?stream=1` omitted). v1.1: additively includes optional degraded_carriers[] field (D-25-09). When `?stream=1` is set, the response is a Server-Sent Events stream. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorQuoteResponse"];
+                };
+            };
+            /** @description Invalid body, missing/malformed consent header, or invalid query. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description D-07 production allowlist gate — tenant not enabled for cotizador. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description G5 runtime PII leak — incident logged. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Orchestration failure or guardrail block. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorStreamSubscribe: {
+        parameters: {
+            query?: {
+                tenant_id?: string;
+            };
+            header?: {
+                "last-event-id"?: string;
+                "x-tenant-id"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Server-Sent Events stream. Content-Type: text/event-stream. The body is an SSE-framed sequence whose `data:` field carries a JSON payload matching one of the `SSE*` component schemas. The terminal event is `agent.final_verdict`; the server closes the stream deterministically thereafter (T-24-08-C — no indefinite keep-alive). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SSEEventPayload"];
+                };
+            };
+            /** @description Missing/malformed tenant_id or Last-Event-ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Quote not found (cross-tenant + missing both return 404). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Session expired (anchored 12h TTL — D-24-10). */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Database unavailable (stub mode). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorReQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CotizadorReQuoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Merged re-quote verdict + delta scope + post-increment session cost. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorReQuoteResponse"];
+                };
+            };
+            /** @description Invalid JSON body or empty/all-undefined partial. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Session not found (cross-tenant returns 404 — no existence leak). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Session expired (anchored 12h TTL — D-24-10). */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description G9 session budget cap exceeded (D-24-20) — violation_type `g9_session_budget_cap_exceeded`. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Orchestration failure or guardrail block. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Database unavailable (stub mode). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorCohortTaxonomyList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cohort taxonomy rows (ordered by cohortId ASC). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorCohortTaxonomyResponse"];
+                };
+            };
+            /** @description Missing or invalid `Authorization: Bearer <COTIZADOR_ADMIN_API_KEY>`. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+            /** @description Database unavailable (stub mode). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorPolicyOutcomeCreate: {
+        parameters: {
+            query?: never;
+            header: {
+                "idempotency-key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyOutcomeRequest"];
+            };
+        };
+        responses: {
+            /** @description Idempotent duplicate — original row returned. Retries with the same Idempotency-Key return this shape (Stripe/Wompi convention). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        /** Format: uuid */
+                        id: string;
+                        /** @enum {boolean} */
+                        duplicate: true;
+                    };
+                };
+            };
+            /** @description Outcome recorded (new INSERT). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        /** Format: uuid */
+                        id: string;
+                        /** @enum {boolean} */
+                        duplicate: false;
+                    };
+                };
+            };
+            /** @description Missing Idempotency-Key header, invalid JSON body, or Zod validation failure. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+            /** @description quote_id not found or cross-tenant isolation (T-25-05-01 — no existence leak). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorCarrierWebhook: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-carrier-signature": string;
+            };
+            path: {
+                carrier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description HMAC mismatch or missing X-Carrier-Signature header. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        error: "invalid_signature";
+                    };
+                };
+            };
+            /** @description Carrier not in AseguradoraName registry (T-25-06-03). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        error: "unknown_carrier";
+                    };
+                };
+            };
+            /** @description CARRIER_WEBHOOK_SECRET_{CARRIER} env var missing — not silent accept-all (T-25-06-02). */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        error: "webhook_not_configured";
+                    };
+                };
+            };
+            /** @description Contract locked — implementation deferred to Phase 27. Valid signature + known carrier. */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "accepted";
+                        /** @enum {string} */
+                        processing: "deferred-to-phase-27";
+                    };
+                };
+            };
+        };
+    };
+    cotizadorSlaList: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                from?: string;
+                to?: string;
+                carrier?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SLA metrics for tenant. Returns at most 500 rows ordered by hour_bucket_start ASC. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        sla: components["schemas"]["SlaMetric"][];
+                    };
+                };
+            };
+            /** @description Missing or invalid tenant_id. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid AGENT_API_KEY bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorCostsList: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                from?: string;
+                to?: string;
+                group_by?: "carrier" | "day";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-quote costs for tenant. Cost fields serialized as strings for Decimal precision. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        costs: components["schemas"]["CotizadorCostRow"][];
+                    };
+                };
+            };
+            /** @description Missing or invalid tenant_id. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid AGENT_API_KEY bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorAdminResetDegradation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                carrier: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Carrier degradation state cleared. prior_state reflects state before the reset. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        carrier: string;
+                        /** Format: date-time */
+                        reset_at: string;
+                        prior_state: {
+                            degraded: boolean;
+                            /** Format: date-time */
+                            degraded_since: string | null;
+                        };
+                    };
+                };
+            };
+            /** @description Missing or invalid COTIZADOR_ADMIN_API_KEY. Auth: admin shared-secret header (T-25-14-03). */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+            /** @description Forbidden — caller does not have leasefy_admin role. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+            /** @description Unknown carrier — not in AseguradoraName registry. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorAdminSlaList: {
+        parameters: {
+            query?: {
+                tenant_id?: string;
+                from?: string;
+                to?: string;
+                carrier?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cross-tenant SLA rollups (leasefy_admin). Returns at most 500 rows; capped=true when truncated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        sla: components["schemas"]["SlaMetric"][];
+                        row_count: number;
+                        capped: boolean;
+                    };
+                };
+            };
+            /** @description Missing or invalid COTIZADOR_ADMIN_API_KEY. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+            /** @description Forbidden — caller does not have leasefy_admin role. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorAdminCostsList: {
+        parameters: {
+            query?: {
+                tenant_id?: string;
+                from?: string;
+                to?: string;
+                group_by?: "carrier" | "tenant" | "day";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cross-tenant cost aggregates (leasefy_admin). Cost fields serialized as strings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        costs: components["schemas"]["CotizadorCostRow"][];
+                    };
+                };
+            };
+            /** @description Missing or invalid COTIZADOR_ADMIN_API_KEY. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorAdminDriftList: {
+        parameters: {
+            query?: {
+                tenant_id?: string;
+                from?: string;
+                to?: string;
+                carrier?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Drift reports per (tenant, carrier) within the requested window. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        drift: components["schemas"]["DriftReport"][];
+                    };
+                };
+            };
+            /** @description Missing or invalid COTIZADOR_ADMIN_API_KEY. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Phase25ErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorArcoAcceso: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header: {
+                "x-cotizador-data-subject-cedula-hash": string;
+            };
+            path: {
+                cedula_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Idempotent replay — existing job for this (cedula_hash, tenant_id) returned. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobIdempotentEcho"];
+                };
+            };
+            /** @description Acceso job enqueued. Poll status_url for the export URI. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobAccepted"];
+                };
+            };
+            /** @description Missing or malformed X-Cotizador-Data-Subject-Cedula-Hash header, or invalid tenant_id. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoErrorResponse"];
+                };
+            };
+            /** @description Two-key counsel gate not satisfied (D-26-11) or database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Arco503Response"];
+                };
+            };
+        };
+    };
+    cotizadorArcoRectificacion: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-cotizador-data-subject-cedula-hash": string;
+                "idempotency-key": string;
+            };
+            path: {
+                cedula_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArcoRectifyRequest"];
+            };
+        };
+        responses: {
+            /** @description Idempotent replay — existing job returned. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobIdempotentEcho"];
+                };
+            };
+            /** @description Rectificación job enqueued. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobAccepted"];
+                };
+            };
+            /** @description Missing Idempotency-Key, malformed cedula_hash header, or invalid body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoErrorResponse"];
+                };
+            };
+            /** @description Field not in ARCO_RECTIFIABLE_FIELDS (D-26-12). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoFieldNotRectifiable"];
+                };
+            };
+            /** @description Two-key counsel gate not satisfied or database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Arco503Response"];
+                };
+            };
+        };
+    };
+    cotizadorArcoCancelacion: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-cotizador-data-subject-cedula-hash": string;
+                "idempotency-key": string;
+            };
+            path: {
+                cedula_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArcoCancelacionRequest"];
+            };
+        };
+        responses: {
+            /** @description Idempotent replay — existing job returned. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobIdempotentEcho"];
+                };
+            };
+            /** @description Cancelación job enqueued. Hard DELETE runs asynchronously. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobAccepted"];
+                };
+            };
+            /** @description Missing Idempotency-Key, malformed cedula_hash header, or invalid body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoErrorResponse"];
+                };
+            };
+            /** @description Two-key counsel gate not satisfied or database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Arco503Response"];
+                };
+            };
+        };
+    };
+    cotizadorArcoOposicion: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-cotizador-data-subject-cedula-hash": string;
+                "idempotency-key": string;
+            };
+            path: {
+                cedula_hash: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArcoOposicionRequest"];
+            };
+        };
+        responses: {
+            /** @description Idempotent replay — existing job returned. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobIdempotentEcho"];
+                };
+            };
+            /** @description Oposición job enqueued. Blocklist enforcement activates asynchronously. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobAccepted"];
+                };
+            };
+            /** @description Missing Idempotency-Key, malformed cedula_hash header, or invalid body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoErrorResponse"];
+                };
+            };
+            /** @description Two-key counsel gate not satisfied or database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Arco503Response"];
+                };
+            };
+        };
+    };
+    cotizadorArcoJobStatus: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Job status. result_uri is null except for completed Acceso jobs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoJobStatus"];
+                };
+            };
+            /** @description Invalid job_id (not a UUID) or missing/invalid tenant_id. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoErrorResponse"];
+                };
+            };
+            /** @description Job not found. Cross-tenant jobs return 404 (no existence leak — T-26-06-02). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoErrorResponse"];
+                };
+            };
+            /** @description Two-key counsel gate not satisfied or database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Arco503Response"];
                 };
             };
         };

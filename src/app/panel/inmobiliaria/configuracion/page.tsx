@@ -27,6 +27,7 @@ import {
   Compass,
 } from '@phosphor-icons/react';
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext';
+import { resetAgentIntros } from '@/components/tour/AgentIntroModal';
 import { cn } from '@/lib/utils';
 import { Button, Switch, Spinner } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -41,8 +42,6 @@ import {
   ConfigIntegraciones,
   ConfigFacturacion,
 } from '@/components/inmobiliaria';
-import { AgencyPricingModal } from '@/components/inmobiliaria/AgencyPricingModal';
-import { Lightning } from '@phosphor-icons/react';
 import {
   useInmobiliariaConfig,
   useAgencyUsers,
@@ -158,7 +157,6 @@ function ConfiguracionContent() {
 
   // State
   const [activeTab, setTab] = useState<ConfigTab>(initialTab);
-  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [permissions, setPermissions] = useState<Record<AgencyRole, RolePermissions>>(
     DEFAULT_ROLE_PERMISSIONS
   );
@@ -618,46 +616,17 @@ function ConfiguracionContent() {
           )
         )}
 
-        {/* Facturacion Tab */}
+        {/* Facturacion Tab — plan/precio/límites vienen de la suscripción REAL
+            de agencia (useAgencySubscription + useAgencyPlans, dentro del
+            componente); useAgencyBilling solo aporta usage/invoices/paymentMethod. */}
         {activeTab === 'facturacion' && (
-          billingLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Spinner size="lg" />
-            </div>
-          ) : billing ? (
-            <ConfigFacturacion
-              billing={billing}
-              invoices={invoices}
-              onUpdatePaymentMethod={handleUpdatePaymentMethod}
-            />
-          ) : (
-            // Empty state — agency has no active billing/subscription yet.
-            // Show a clear CTA to view available plans instead of a dead-end message.
-            <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card px-6 py-16 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
-                <Lightning weight="duotone" className="h-6 w-6 text-fg-muted" aria-hidden="true" />
-              </div>
-              <div className="space-y-1.5">
-                <h3 className="text-base font-semibold text-fg">
-                  Todavía no tenés un plan activo
-                </h3>
-                <p className="mx-auto max-w-md text-sm leading-relaxed text-fg-muted">
-                  Elegí el plan que mejor se adapte a tu agencia y desbloqueá todas las funcionalidades de Leasefy.
-                </p>
-              </div>
-              <Button onClick={() => setIsPricingModalOpen(true)} hideArrow className="mt-1">
-                <Lightning className="w-4 h-4" />
-                Ver planes disponibles
-              </Button>
-            </div>
-          )
+          <ConfigFacturacion
+            billing={billing}
+            invoices={invoices}
+            isLoading={billingLoading}
+            onUpdatePaymentMethod={handleUpdatePaymentMethod}
+          />
         )}
-
-        {/* Pricing modal — shown from upgrade CTAs */}
-        <AgencyPricingModal
-          open={isPricingModalOpen}
-          onClose={() => setIsPricingModalOpen(false)}
-        />
 
         {/* Notificaciones Tab */}
         {activeTab === 'notificaciones' && (
@@ -824,6 +793,10 @@ function ConfiguracionContent() {
                   size="sm"
                   hideArrow
                   onClick={() => {
+                    // Reponer la preferencia global NO alcanza: cada novedad
+                    // guarda su propio "ya la vi" en localStorage, así que sin
+                    // este reset el botón no mostraría nada.
+                    resetAgentIntros();
                     relaunchTour();
                     toast.success(t('inmobiliaria.config.preferences.relaunchTourStarted'));
                   }}

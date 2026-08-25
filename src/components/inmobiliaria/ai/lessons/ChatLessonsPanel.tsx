@@ -15,7 +15,7 @@
  * States mirror the AI hub conventions (use-ai-hub-landing / ai-hub-chat):
  *   - no backend wired      → honest "backend not configured" notice
  *   - loading               → skeletons
- *   - error                 → ErrorState with retry
+ *   - error                 → <FalloDeCarga> con reintento (`refresh` del hook)
  *   - empty                 → "el asistente aprende a medida que lo usás"
  *   - enabled === false     → banner: certified lessons exist but aren't applied
  */
@@ -33,7 +33,7 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { isAgencyManager } from '@/lib/auth/agency-roles'
 import { toast } from '@/components/ui/toast'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ErrorState } from '@/components/ui/error-state'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EmptyState } from '@/components/ui/empty-state'
 import { isAgentConfigured, type CertifyDecision } from '@/lib/api/ai-hub-lessons'
 import { useChatLessons } from '@/lib/hooks/use-chat-lessons'
@@ -61,7 +61,7 @@ export function ChatLessonsPanel() {
   // OPERATOR+ (en este codebase: ADMIN / AGENTE). VIEWER y CONTADOR: solo lectura.
   const canCertify = isAgencyManager({ isAdmin, agencyRole })
 
-  const { lessons, enabled, isLoading, error, certify } = useChatLessons()
+  const { lessons, enabled, isLoading, error, certify, refresh } = useChatLessons()
   const [pendingId, setPendingId] = useState<string | null>(null)
 
   const grouped = useMemo(() => {
@@ -110,7 +110,7 @@ export function ChatLessonsPanel() {
         <div className="flex items-start gap-3">
           <Info weight="duotone" className="h-5 w-5 text-neutral-500 dark:text-neutral-400 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
+            <p className="text-sm font-medium text-fg">
               El servicio del asistente no está conectado en este entorno.
             </p>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
@@ -136,10 +136,13 @@ export function ChatLessonsPanel() {
   // ── Error ───────────────────────────────────────────────────────────────────
   if (error && lessons.length === 0) {
     return (
-      <ErrorState
-        title="No pudimos cargar las lecciones"
-        description="El asistente no respondió. Por favor intenta de nuevo."
-        onRetry={() => void window.location.reload()}
+      /* Reintentar recargaba la PÁGINA ENTERA (`window.location.reload()`)
+         para volver a pedir una lista: se perdía todo lo demás que hubiera en
+         pantalla. El hook ya expone `refresh`. */
+      <FalloDeCarga
+        error={error}
+        queEs="las lecciones del asistente"
+        onReintentar={() => void refresh()}
       />
     )
   }
@@ -195,7 +198,7 @@ export function ChatLessonsPanel() {
                 className="font-heading text-sm font-semibold text-neutral-900 dark:text-white"
               >
                 {GROUP_TITLE[status]}
-                <span className="ml-1.5 text-xs font-normal text-neutral-400 dark:text-neutral-500 tabular-nums">
+                <span className="ml-1.5 text-xs font-normal text-fg-muted tabular-nums">
                   {items.length}
                 </span>
               </h2>
@@ -221,7 +224,7 @@ export function ChatLessonsPanel() {
       {/* agency context guard — keeps the unused warning honest in builds where
           agency may be momentarily null without breaking the panel. */}
       {!agency && (
-        <p className="text-xs text-neutral-400 dark:text-neutral-500">
+        <p className="text-xs text-fg-muted">
           Selecciona una inmobiliaria para ver sus lecciones.
         </p>
       )}

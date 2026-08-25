@@ -30,6 +30,8 @@ export function usePagosHome(): UseAgentOverviewResult {
   const [data, setData] = useState<AgentOverviewResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Mismo contrato que `useAgentOverview`: el error entero, para FalloDeCarga.
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null)
   const [notAvailable, setNotAvailable] = useState(false)
 
   /** Stale-response guard: each fetch aborts the previous one (agency switch race). */
@@ -61,6 +63,7 @@ export function usePagosHome(): UseAgentOverviewResult {
       setNotAvailable(res.notAvailable)
       setError(null)
     } catch (err) {
+      setErrorCrudo(err)
       if (controller.signal.aborted && !timedOut) return
       setError(
         timedOut
@@ -86,5 +89,5 @@ export function usePagosHome(): UseAgentOverviewResult {
     }
   }, [fetchData, agencyId])
 
-  return { data, isLoading, error, notAvailable, refetch: fetchData }
+  return { data, isLoading, error, errorCrudo, notAvailable, refetch: fetchData }
 }

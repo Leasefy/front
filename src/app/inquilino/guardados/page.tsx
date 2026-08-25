@@ -13,6 +13,8 @@ import { useWishlistedProperties } from '@/lib/hooks/useProperties';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { IconButton } from '@leasefy/cadence';
 import { Spinner } from '@/components/ui/spinner';
 import type { Property } from '@/lib/types/property';
@@ -23,9 +25,13 @@ export default function GuardadosPage() {
   const { wishlist, removeFromWishlist } = useWishlist();
   // Resolve the actual wishlisted properties directly by ID (no top-100 ceiling,
   // so saved items never vanish just because they fall outside the featured page).
-  const { properties: resolvedProperties } = useWishlistedProperties(
-    isOnboardingComplete ? wishlist : [],
-  );
+  const {
+    properties: resolvedProperties,
+    isLoading: cargandoGuardadas,
+    errorCrudo: errorGuardadas,
+    yaNoDisponibles,
+    refetch: recargarGuardadas,
+  } = useWishlistedProperties(isOnboardingComplete ? wishlist : []);
 
   // Property detail sheet state
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -83,70 +89,87 @@ export default function GuardadosPage() {
                   : (locale === 'es' ? `${displayCount} propiedades guardadas` : `${displayCount} saved properties`)}
               </p>
             </div>
-            <Link
-              href="/inquilino/explorar"
-              className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
-            >
-              <MagnifyingGlass className="w-4 h-4" />
-              {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
-            </Link>
+            {/* El botón del encabezado solo cuando hay guardadas: sin nada, el
+                estado vacío ya ofrece la misma acción justo debajo, y dos
+                botones distintos para lo mismo en la misma pantalla confunden
+                sobre cuál es el camino. */}
+            {properties.length > 0 && (
+              <Link
+                href="/inquilino/explorar"
+                className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-full text-sm font-medium hover:opacity-90 transition-colors"
+              >
+                <MagnifyingGlass className="w-4 h-4" />
+                {locale === 'es' ? 'Buscar propiedades' : 'Search properties'}
+              </Link>
+            )}
           </div>
         </motion.header>
 
-        {/* Content */}
-        {properties.length === 0 ? (
+        {/* Content
+
+            Acá el vacío son TRES cosas distintas, y hay cómo saber cuál es
+            porque la lista de guardados es local (localStorage) y los inmuebles
+            vienen del backend:
+
+              wishlist vacía            → nunca guardaste nada  → salí a mirar
+              wishlist llena + fallo    → no se pudo traer      → reintentar
+              wishlist llena + 404s     → las bajaron           → decilo así
+
+            El tercero se veía como el primero: «No tienes propiedades
+            guardadas» a alguien que guardó cinco y se las despublicaron. */}
+        {cargandoGuardadas && wishlist.length > 0 ? (
+          <div className="flex items-center justify-center py-20">
+            <Spinner size="lg" />
+          </div>
+        ) : errorGuardadas ? (
+          <FalloDeCarga
+            error={errorGuardadas}
+            queEs="tus guardadas"
+            onReintentar={recargarGuardadas}
+          />
+        ) : properties.length === 0 ? (
           /* Empty State */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-xl bg-surface-muted/80 p-8 sm:p-12 text-center"
           >
-            <div className="w-14 h-14 rounded-xl bg-surface flex items-center justify-center mx-auto mb-5">
-              <Heart className="w-6 h-6 text-fg-subtle" />
-            </div>
-            <h2 className="text-base font-semibold text-fg mb-1.5">
-              {locale === 'es' ? 'No tienes propiedades guardadas' : 'No saved properties'}
-            </h2>
-            <p className="text-sm text-fg-muted max-w-sm mx-auto leading-relaxed mb-6">
-              {locale === 'es'
-                ? 'Explora propiedades y guarda las que te interesen tocando el corazón. Así podrás compararlas fácilmente.'
-                : 'Explore properties and save the ones you like by tapping the heart. This way you can easily compare them.'}
-            </p>
-            <Button asChild>
-              <Link href="/inquilino/explorar">
-                {locale === 'es' ? 'Explorar propiedades' : 'Explore properties'}
-              </Link>
-            </Button>
+            {/*
+              Era un tercer estilo de vacío —círculo gris sobre `surface-muted/80`—
+              mientras Documentos, Contratos, Pagos y Postulaciones usan el
+              `EmptyState` de Cadence. Tres formas distintas de decir "no hay
+              nada" en el mismo panel.
 
-            {/* Tips */}
-            <div className="mt-10 pt-8 border-t border-border">
-              <p className="text-sm font-medium text-fg mb-4">
-                {locale === 'es' ? '¿Cómo guardar propiedades?' : 'How to save properties?'}
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-fg-muted">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center">
-                    <MagnifyingGlass className="w-4 h-4" />
-                  </div>
-                  <span>{locale === 'es' ? 'Busca propiedades' : 'Search properties'}</span>
-                </div>
-                <CaretRight className="w-4 h-4 hidden sm:block" />
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center">
-                    <Heart className="w-4 h-4 text-danger" />
-                  </div>
-                  <span>{locale === 'es' ? 'Toca el corazón' : 'Tap the heart'}</span>
-                </div>
-                <CaretRight className="w-4 h-4 hidden sm:block" />
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center">
-                    <Check className="w-4 h-4 text-success" />
-                  </div>
-                  <span>{locale === 'es' ? '¡Guardada!' : 'Saved!'}</span>
-                </div>
-              </div>
-            </div>
+              El mini-tutorial "¿Cómo guardar propiedades? → busca → toca el
+              corazón → ¡guardada!" también salió: explicar en tres pasos cómo
+              usar un botón que no está en esta pantalla es andamiaje sobre un
+              vacío. El corazón se explica solo donde vive, en las tarjetas.
+            */}
+            <EmptyState
+              icon={Heart}
+              title={
+                yaNoDisponibles > 0
+                  ? locale === 'es'
+                    ? 'Las que guardaste ya no están publicadas'
+                    : 'The ones you saved are no longer listed'
+                  : locale === 'es'
+                    ? 'No tienes propiedades guardadas'
+                    : 'No saved properties'
+              }
+              description={
+                yaNoDisponibles > 0
+                  ? locale === 'es'
+                    ? 'Se arrendaron o las quitaron del catálogo. Buscá otras y volvé a guardar las que te sirvan.'
+                    : 'They were rented or removed from the catalog. Browse others and save the ones you like.'
+                  : locale === 'es'
+                    ? 'Toca el corazón en las propiedades que te interesen y las encuentras acá para compararlas.'
+                    : 'Tap the heart on the properties you like and find them here to compare them.'
+              }
+              action={{
+                label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me',
+                href: '/inquilino/para-ti',
+              }}
+            />
           </motion.div>
         ) : (
           /* Properties Grid */
@@ -232,7 +255,12 @@ export default function GuardadosPage() {
                         {property.bedrooms} {locale === 'es' ? 'hab' : 'bed'}
                       </span>
                       <span className="px-2.5 py-1 bg-surface-muted rounded-md text-xs text-fg-muted font-medium">
-                        {property.bathrooms} {locale === 'es' ? 'baños' : 'bath'}
+                        {property.bathrooms}{' '}
+                        {locale === 'es'
+                          ? property.bathrooms === 1
+                            ? 'baño'
+                            : 'baños'
+                          : 'bath'}
                       </span>
                       <span className="px-2.5 py-1 bg-surface-muted rounded-md text-xs text-fg-muted font-medium">
                         {property.area} m²
@@ -282,7 +310,7 @@ export default function GuardadosPage() {
                       {displayCount} {displayCount === 1 ? (locale === 'es' ? 'propiedad guardada' : 'saved property') : (locale === 'es' ? 'propiedades guardadas' : 'saved properties')}
                     </p>
                     <p className="text-sm text-fg-muted">
-                      {locale === 'es' ? '¿Listo para aplicar a alguna?' : 'Ready to apply to one?'}
+                      {locale === 'es' ? '¿Listo para postularte a alguna?' : 'Ready to apply to one?'}
                     </p>
                   </div>
                 </div>

@@ -63,14 +63,22 @@ function statusTone(status: string): SemanticTone {
   }
 }
 
-function statusLabel(status: string): string {
+/**
+ * `status = 'pending'` tapa DOS hechos: una obligación importada de cartera
+ * —lo que el deudor DEBE, donde nunca entró un peso— y un pago en camino que
+ * la pasarela todavía no confirma. La lista de Pagos los separa desde que
+ * existe `kind`; el detalle seguía diciendo «Pendiente» para los dos, que se
+ * lee como «ya lo pagó, falta confirmar».
+ */
+function statusLabel(status: string, paymentMethod?: string | null): string {
+  if (status === 'pending') {
+    return paymentMethod === 'cartera_import' ? 'Por cobrar' : 'En proceso'
+  }
   switch (status) {
     case 'approved':
       return 'Aprobado'
     case 'self_reported':
       return 'Reportado por el deudor'
-    case 'pending':
-      return 'Pendiente'
     case 'declined':
       return 'Rechazado'
     case 'voided':
@@ -79,6 +87,27 @@ function statusLabel(status: string): string {
       return 'Reembolsado'
     default:
       return status
+  }
+}
+
+/** El `payment_method` crudo no es texto para nadie. */
+function metodoEnEspanol(metodo: string | null | undefined): string {
+  if (!metodo) return '—'
+  switch (metodo) {
+    case 'cartera_import':
+      return 'Importado de la cartera'
+    case 'wompi':
+      return 'Link de pago (Wompi)'
+    case 'bold':
+      return 'Link de pago (Bold)'
+    case 'pse':
+      return 'PSE'
+    case 'transferencia':
+      return 'Transferencia bancaria'
+    case 'efectivo':
+      return 'Efectivo / ventanilla'
+    default:
+      return metodo.replace(/_/g, ' ')
   }
 }
 
@@ -165,7 +194,9 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
         </Field>
 
         <Field label="Estado">
-          <StatusBadge tone={statusTone(data.status)}>{statusLabel(data.status)}</StatusBadge>
+          <StatusBadge tone={statusTone(data.status)}>
+            {statusLabel(data.status, data.paymentMethod)}
+          </StatusBadge>
         </Field>
 
         <Field label="Proveedor">
@@ -173,7 +204,8 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
         </Field>
 
         <Field label="Método">
-          <span className="capitalize">{data.paymentMethod ?? '—'}</span>
+          {/* `capitalize` sobre el valor crudo pintaba «Cartera_import». */}
+          <span>{metodoEnEspanol(data.paymentMethod)}</span>
         </Field>
 
         <Field label="Deudor">

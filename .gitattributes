@@ -1,0 +1,2 @@
+# Shell scripts SIEMPRE en LF (bash rompe con CRLF en Windows)
+*.sh text eol=lf

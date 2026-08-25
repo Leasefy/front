@@ -34,6 +34,9 @@ import {
 
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui'
+import { Badge } from '@leasefy/cadence'
+
+type BadgeVariant = NonNullable<React.ComponentProps<typeof Badge>['variant']>
 
 // ── Estado derivado de la promesa ────────────────────────────────────────────
 
@@ -45,38 +48,29 @@ export type PromesaEstado =
   | 'cumplida'
 
 /** Tono semántico por estado — tokens DS (sin hex inline). */
+// El pill de estado se armaba a mano (bg/text/ring + `rounded-full`), en
+// paralelo al Badge del DS. Ahora el estado se expresa como `variant` de
+// Cadence; `text` sobrevive sólo porque la página de Promesas colorea con él
+// un texto suelto (la acción sugerida), que NO es un badge.
 export const PROMESA_ESTADO_TOKEN: Record<
   PromesaEstado,
-  { bg: string; text: string; ring: string; label: string }
+  { variant: BadgeVariant; text: string; label: string }
 > = {
-  activa: {
-    bg: 'bg-primary-soft',
-    text: 'text-primary',
-    ring: 'ring-primary/30',
-    label: 'Activa',
-  },
+  activa: { variant: 'info', text: 'text-primary', label: 'Activa' },
   por_vencer: {
-    bg: 'bg-warning-soft',
+    variant: 'warning',
     text: 'text-warning',
-    ring: 'ring-warning/30',
     label: 'Por vencer',
   },
   incumplida: {
-    bg: 'bg-danger-soft',
+    variant: 'danger',
     text: 'text-danger',
-    ring: 'ring-danger/30',
     label: 'Incumplida',
   },
-  parcial: {
-    bg: 'bg-warning-soft',
-    text: 'text-warning',
-    ring: 'ring-warning/30',
-    label: 'Parcial',
-  },
+  parcial: { variant: 'warning', text: 'text-warning', label: 'Parcial' },
   cumplida: {
-    bg: 'bg-success-soft',
+    variant: 'success',
     text: 'text-success',
-    ring: 'ring-success/30',
     label: 'Cumplida',
   },
 }
@@ -197,11 +191,9 @@ export function PromesaCard({ promesa }: { promesa: Promesa }) {
             <span className="text-sm font-semibold text-fg truncate">
               {promesa.inquilino}
             </span>
-            <span
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${token.bg} ${token.text} ${token.ring}`}
-            >
+            <Badge variant={token.variant} size="sm">
               {token.label}
-            </span>
+            </Badge>
           </div>
           <div className="flex items-center gap-3 text-xs text-fg-muted">
             <span className="inline-flex items-center gap-1 font-mono tabular-nums">

@@ -38,9 +38,26 @@ import {
 
 interface PropietarioFormProps {
   initialData?: Propietario;
+  /**
+   * Prefills from already-staged wizard data (`PropietarioFormData` — flat
+   * bank fields) instead of a persisted `Propietario` (nested
+   * `bankAccount`). Takes precedence over `initialData` when both are set.
+   * Used when re-opening the form to edit an owner the wizard already
+   * created in this session (T-0011) — without it, "Editar" reopened a
+   * completely blank form.
+   */
+  initialFormData?: PropietarioFormData;
   onSubmit: (data: PropietarioFormData) => Promise<void>;
   onCancel: () => void;
   mode: 'create' | 'edit';
+  /**
+   * A field-scoped error from a persist attempt that happened OUTSIDE this
+   * form (T-0011: the wizard's "Siguiente" persists on step transition, not
+   * on this form's own submit — see contract.md §3.3, the 409 duplicate
+   * document case). Injected into local `errors`/`touched` so it renders
+   * through the existing error UI instead of a second error path.
+   */
+  serverError?: { field: keyof PropietarioFormData; message: string } | null;
 }
 
 const DOCUMENT_TYPE_VALUES: { value: DocumentType; hint: string }[] = [
@@ -106,29 +123,41 @@ function InputWrapper({
  */
 export function PropietarioForm({
   initialData,
+  initialFormData,
   onSubmit,
   onCancel,
   mode,
+  serverError,
 }: PropietarioFormProps) {
   const { t } = useI18n();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const [formData, setFormData] = useState<PropietarioFormData>({
-    name: initialData?.name ?? '',
-    email: initialData?.email ?? '',
-    phone: initialData?.phone ?? '',
-    documentType: initialData?.documentType ?? 'CC',
-    documentNumber: initialData?.documentNumber ?? '',
-    address: initialData?.address ?? '',
-    city: initialData?.city ?? '',
-    bankCode: initialData?.bankAccount.bank ?? '',
-    accountType: initialData?.bankAccount.accountType ?? '',
-    accountNumber: initialData?.bankAccount.accountNumber ?? '',
-    accountHolder: initialData?.bankAccount.accountHolder ?? '',
-    notes: initialData?.notes ?? '',
-  });
+  const [formData, setFormData] = useState<PropietarioFormData>(
+    initialFormData ?? {
+      name: initialData?.name ?? '',
+      email: initialData?.email ?? '',
+      phone: initialData?.phone ?? '',
+      documentType: initialData?.documentType ?? 'CC',
+      documentNumber: initialData?.documentNumber ?? '',
+      address: initialData?.address ?? '',
+      city: initialData?.city ?? '',
+      bankCode: initialData?.bankAccount.bank ?? '',
+      accountType: initialData?.bankAccount.accountType ?? '',
+      accountNumber: initialData?.bankAccount.accountNumber ?? '',
+      accountHolder: initialData?.bankAccount.accountHolder ?? '',
+      notes: initialData?.notes ?? '',
+    },
+  );
+
+  // Surface a persist error that happened outside this form (the wizard's
+  // "Siguiente" 409) through the same error UI as a local validation error.
+  useEffect(() => {
+    if (!serverError) return;
+    setErrors((prev) => ({ ...prev, [serverError.field]: serverError.message }));
+    setTouched((prev) => ({ ...prev, [serverError.field]: true }));
+  }, [serverError]);
 
   const isCompany = formData.documentType === 'NIT';
   const selectedBank = COLOMBIAN_BANKS.find((b) => b.code === formData.bankCode);
@@ -375,7 +404,7 @@ export function PropietarioForm({
       </div>
 
       {/* Bank Account */}
-      <div className="space-y-4 pt-4 border-t border-faint dark:border-strong">
+      <div className="space-y-4 pt-4 border-t border-border-faint dark:border-border-strong">
         <div className="flex items-center gap-2 text-fg dark:text-white">
           <Bank className="w-5 h-5 text-success" />
           <h3 className="font-semibold">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
@@ -481,7 +510,7 @@ export function PropietarioForm({
       </div>
 
       {/* Notes */}
-      <div className="space-y-4 pt-4 border-t border-faint dark:border-strong">
+      <div className="space-y-4 pt-4 border-t border-border-faint dark:border-border-strong">
         <InputWrapper label={t('inmobiliaria.propietario.form.internalNotes')} hint={t('inmobiliaria.propietario.form.hintTeamOnly')}>
           <Textarea
             value={formData.notes}
@@ -494,7 +523,7 @@ export function PropietarioForm({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-faint dark:border-strong">
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-border-faint dark:border-border-strong">
         <Button
           type="button"
           variant="secondary"

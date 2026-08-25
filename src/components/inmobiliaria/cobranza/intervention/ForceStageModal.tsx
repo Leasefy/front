@@ -12,11 +12,17 @@
 import * as React from 'react'
 import { useEffect, useState } from 'react'
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
-import { CARTERA_STAGES, type CarteraStage } from '@/lib/cartera'
+import {
+  CARTERA_STAGES,
+  stageAgentPlan,
+  stageDayRange,
+  stageDisplayName,
+  type CarteraStage,
+} from '@/lib/cartera'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -53,26 +59,31 @@ export function ForceStageModal({
   currentStage,
   onSuccess,
 }: ForceStageModalProps) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const { agency } = useAuth()
   const agencyId = agency?.id ?? null
   const perms = usePermissionsContextSafe()
   const allowed = perms?.canAccess('cobranza', 'force-stage') ?? false
 
-  const initialTarget = CARTERA_STAGES.find((s) => s !== currentStage) ?? 'S0'
-
-  const [target, setTarget] = useState<CarteraStage>(initialTarget)
+  // Sin destino preseleccionado, a propósito.
+  //
+  // Antes arrancaba en `CARTERA_STAGES.find(s => s !== currentStage)`, o sea
+  // SIEMPRE S0 salvo que el caso ya estuviera ahí: el modal proponía solo, y
+  // en silencio, devolver a pre-vencimiento un caso con 27 días de mora. Un
+  // destino que nadie eligió no es un default, es una afirmación falsa. Acá
+  // hay que elegir, y hasta entonces «Confirmar» está apagado.
+  const [target, setTarget] = useState<CarteraStage | ''>('')
   const [reason, setReason] = useState<string>('')
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (open) {
-      setTarget(initialTarget)
+      setTarget('')
       setReason('')
       setError(null)
     }
-  }, [open, initialTarget])
+  }, [open])
 
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   const envMissing = !agentUrl || !agencyId
@@ -83,17 +94,21 @@ export function ForceStageModal({
       setError(t('inmobiliaria.ai.cobranza.detail.acciones.envMissing'))
       return
     }
+    if (!target) {
+      setError(t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.targetMissing'))
+      return
+    }
     if (reason.trim().length < 10) {
-      setError('Min 10 characters')
+      setError(t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonTooShort'))
       return
     }
     setSubmitting(true)
     try {
-      const res = await globalThis.fetch(
+      const res = await agentFetch(
         `${agentUrl}/api/agency/${agencyId}/cobranza/debtors/${debtorId}/force-stage`,
         {
           method: 'POST',
-          headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+          headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ target_stage: target, reason: reason.trim() }),
         },
       )
@@ -138,7 +153,23 @@ export function ForceStageModal({
               {t('inmobiliaria.ai.cobranza.detail.acciones.envMissing')}
             </p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
+              {/* De dónde sale. Sin esto el operador elige un destino sin saber
+                  desde dónde se mueve — y «S2 → S1» y «S5 → S1» no son lo
+                  mismo ni de lejos. */}
+              <div className="rounded-md border border-border bg-surface-muted px-3 py-2.5">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
+                  {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.currentLabel')}
+                </p>
+                <p className="mt-0.5 text-sm font-medium text-fg">
+                  {stageDisplayName(currentStage, locale)}
+                  <span className="ml-1.5 font-mono text-xs text-fg-subtle">{currentStage}</span>
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-fg-muted">
+                  {stageAgentPlan(currentStage, locale)}
+                </p>
+              </div>
+
               <label className="block">
                 <span className="text-xs font-medium text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.targetLabel')}
@@ -148,17 +179,52 @@ export function ForceStageModal({
                   onValueChange={(v) => setTarget(v as CarteraStage)}
                 >
                   <SelectTrigger className="mt-1 w-full">
-                    <SelectValue />
+                    <SelectValue
+                      placeholder={t(
+                        'inmobiliaria.ai.cobranza.detail.acciones.forceStage.targetPlaceholder',
+                      )}
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {CARTERA_STAGES.filter((s) => s !== currentStage).map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
+                    {/* Nombre humano + rango de días. El código («S2») queda
+                        como referencia secundaria: es lo que se ve en la tabla
+                        y en la auditoría, pero no es lo que se elige. */}
+                    {CARTERA_STAGES.filter((s) => s !== currentStage).map((s) => {
+                      const rango = stageDayRange(s, locale)
+                      return (
+                        <SelectItem key={s} value={s}>
+                          <span className="flex items-baseline gap-2">
+                            <span>{stageDisplayName(s, locale)}</span>
+                            <span className="font-mono text-[11px] text-fg-subtle">{s}</span>
+                            {rango && (
+                              <span className="text-[11px] text-fg-subtle">· {rango}</span>
+                            )}
+                          </span>
+                        </SelectItem>
+                      )
+                    })}
                   </SelectContent>
                 </Select>
               </label>
+
+              {/* La consecuencia, en la misma pantalla donde se decide. Cambiar
+                  de etapa no es reetiquetar: cambia a quién contacta el agente,
+                  cuándo, y si sigue haciéndolo. Sólo aparece cuando ya hay un
+                  destino elegido — antes no hay nada verdadero que decir. */}
+              {target && (
+                <div className="rounded-md border border-primary/25 bg-primary-soft px-3 py-2.5">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-primary">
+                    {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.effectLabel')}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-fg">
+                    {stageAgentPlan(target, locale)}
+                  </p>
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-fg-muted">
+                    {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.effectNote')}
+                  </p>
+                </div>
+              )}
+
               <label className="block">
                 <span className="text-xs font-medium text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonLabel')}
@@ -192,7 +258,7 @@ export function ForceStageModal({
             size="sm"
             hideArrow
             onClick={() => void handleSubmit()}
-            disabled={submitting || envMissing || !allowed}
+            disabled={submitting || envMissing || !allowed || !target}
           >
             {submitting
               ? t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.confirming')

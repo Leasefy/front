@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 
 export default function CostosPage() {
   const { t } = useI18n()
@@ -69,6 +70,22 @@ export default function CostosPage() {
         </p>
       </div>
 
+      {/* El fallo va ACÁ ARRIBA y reemplaza los datos, no debajo de ellos.
+          Estaba al final de la página: se veían los KPI en cero, la tabla
+          diciendo «no hay fuentes de costo», y recién abajo del todo —fuera de
+          pantalla— un cartel rojo avisando que nada de eso se había podido
+          traer. La pantalla afirmaba y desmentía en el mismo scroll. */}
+      {summaryError || seriesError ? (
+        <FalloDeCarga
+          error={summaryError ?? seriesError}
+          queEs="los costos"
+          onReintentar={() => {
+            void refetchSummary()
+            void refetchSeries()
+          }}
+        />
+      ) : (
+      <>
       {/* KPI strip — 30s polling (separate from charts per D-35-08) */}
       <CostKpiStrip kpis={summaryData?.kpis ?? null} isLoading={isLoadingSummary} />
 
@@ -112,13 +129,13 @@ export default function CostosPage() {
         <Table className="min-w-full divide-y divide-border">
           <TableHeader className="bg-surface-muted/60">
             <TableRow>
-              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colSource')}
               </TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-right">
+              <TableHead className="px-4 py-3 text-right">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colTotal')}
               </TableHead>
-              <TableHead className="px-4 py-3 text-xs font-medium text-fg-muted uppercase tracking-wide text-left">
+              <TableHead className="px-4 py-3 text-left">
                 {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.colStatus')}
               </TableHead>
             </TableRow>
@@ -163,23 +180,7 @@ export default function CostosPage() {
           </div>
         )}
       </section>
-
-      {/* Error state */}
-      {(summaryError || seriesError) && (
-        <div className="rounded-xl border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-sm flex items-center justify-between gap-4">
-          <span>{t('inmobiliaria.ai.cotizador.costos.loadError')}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            hideArrow
-            onClick={() => {
-              void refetchSummary()
-              void refetchSeries()
-            }}
-          >
-            {t('inmobiliaria.ai.cotizador.costos.retry')}
-          </Button>
-        </div>
+      </>
       )}
     </main>
   )

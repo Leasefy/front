@@ -15,7 +15,6 @@ import type { CandidateBasic } from './candidate';
  */
 export type LandlordCandidateStatus =
   | 'pending'      // Nueva - awaiting review
-  | 'pre-approved' // Pre-aprobado - initial approval
   | 'approved'     // Aprobado - final approval
   | 'rejected'     // Rechazado - declined
   | 'more-info';   // Requiere mas informacion
@@ -25,7 +24,6 @@ export type LandlordCandidateStatus =
  */
 export const CANDIDATE_STATUS_LABELS: Record<LandlordCandidateStatus, string> = {
   pending: 'Pendiente',
-  'pre-approved': 'Pre-aprobado',
   approved: 'Aprobado',
   rejected: 'Rechazado',
   'more-info': 'Requiere info',
@@ -36,7 +34,6 @@ export const CANDIDATE_STATUS_LABELS: Record<LandlordCandidateStatus, string> = 
  */
 export const CANDIDATE_STATUS_COLORS: Record<LandlordCandidateStatus, string> = {
   pending: 'bg-muted text-foreground',
-  'pre-approved': 'bg-plan-status-blue-bg text-plan-status-blue',
   approved: 'bg-plan-status-green-bg text-plan-status-green',
   rejected: 'bg-plan-status-red-bg text-plan-status-red',
   'more-info': 'bg-plan-status-yellow-bg text-plan-status-yellow',
@@ -69,7 +66,6 @@ export interface LandlordCandidate extends CandidateBasic {
 export interface LandlordProperty extends Property {
   candidateCount: number;
   pendingCount: number;
-  preApprovedCount: number;
   approvedCount: number;
   candidates?: LandlordCandidate[];
 }
@@ -85,7 +81,6 @@ export interface DashboardSummary {
   totalProperties: number;
   totalCandidates: number;
   pendingReview: number;
-  preApproved: number;
   approved: number;
 }
 
@@ -102,14 +97,12 @@ export function calculateDashboardSummary(properties: LandlordProperty[]): Dashb
       totalProperties: acc.totalProperties + 1,
       totalCandidates: acc.totalCandidates + prop.candidateCount,
       pendingReview: acc.pendingReview + prop.pendingCount,
-      preApproved: acc.preApproved + prop.preApprovedCount,
       approved: acc.approved + prop.approvedCount,
     }),
     {
       totalProperties: 0,
       totalCandidates: 0,
       pendingReview: 0,
-      preApproved: 0,
       approved: 0,
     }
   );

@@ -17,7 +17,10 @@ export type BankCode =
   | 'colpatria'
   | 'cajasocial'
   | 'falabella'
-  | 'itau';
+  | 'itau'
+  | 'avvillas'
+  | 'bancoomeva'
+  | 'pichincha';
 
 export type WalletCode = 'nequi' | 'daviplata' | 'dale' | 'movii' | 'rappipay';
 
@@ -30,7 +33,9 @@ export type AccountType = 'savings' | 'checking';
 export interface BankAccount {
   id: string;
   type: 'bank';
-  bankCode: BankCode;
+  // Optional: the real backend stores `bankName` as free text, not an enum —
+  // this is set only when reverse-lookup against COLOMBIAN_BANKS matches.
+  bankCode?: BankCode;
   bankName: string;
   accountType: AccountType;
   accountNumber: string;
@@ -43,7 +48,10 @@ export interface BankAccount {
 export interface DigitalWallet {
   id: string;
   type: 'wallet';
-  walletCode: WalletCode;
+  // Optional to mirror BankAccount.bankCode — see comment there. In practice
+  // wallets always resolve a walletCode (methodType maps 1:1), but keeping
+  // this optional avoids the two branches of PaymentAccount drifting apart.
+  walletCode?: WalletCode;
   walletName: string;
   phoneNumber: string;
   holderName: string;
@@ -110,6 +118,14 @@ export const COLOMBIAN_BANKS: BankInfo[] = [
   { code: 'cajasocial', name: 'Banco Caja Social', shortName: 'Caja Social', color: '#00703C' },
   { code: 'falabella', name: 'Banco Falabella', shortName: 'Falabella', color: '#AAC937' },
   { code: 'itau', name: 'Banco Itaú', shortName: 'Itaú', color: '#FF6600' },
+  // T-0014: back's ColombianBank enum (back/src/common/enums/colombian-banks.enum.ts)
+  // has these three the owner form never offered. NEQUI/DAVIPLATA are also in
+  // that back enum, but they are wallets in this front's model (see WalletCode
+  // below) — a bank-account form (accountType + accountNumber) is the wrong
+  // shape for them, so they are deliberately NOT added here.
+  { code: 'avvillas', name: 'Banco AV Villas', shortName: 'AV Villas', color: '#C10230' },
+  { code: 'bancoomeva', name: 'Bancoomeva', shortName: 'Bancoomeva', color: '#00A94F' },
+  { code: 'pichincha', name: 'Banco Pichincha', shortName: 'Pichincha', color: '#FFD100' },
 ];
 
 // ============================================================================

@@ -28,9 +28,13 @@ export interface SummaryMetrics {
 }
 
 export interface AgentMetrics {
-  scoring: ScoringMetrics
-  matching: MatchingMetrics
+  // scoring/matching are nullable: today the agent returns them null
+  // (PipelineRun has no tenant_id, matching is stateless). Only
+  // `summary.actionsThisWeek` is real. Consumers must guard `scoring?`/`matching?`.
+  scoring: ScoringMetrics | null
+  matching: MatchingMetrics | null
   summary: SummaryMetrics
+  generatedAt?: string
 }
 
 // =============================================================================
@@ -43,9 +47,9 @@ export interface AgentMetrics {
 // must guard reads (`metrics?.scoring.x ?? '—'`).
 //
 // NOTE: the request is authenticated with the user's Supabase JWT
-// (agentAuthHeaders) — never the server-only AGENT_API_KEY, which must not ship
-// to the browser. Until the agent exposes a per-agency scoring/matching metrics
-// endpoint, this honestly surfaces an empty/error state instead of zeros.
+// (agentAuthHeaders) — never the server-only AGENT_API_KEY. It hits the
+// per-agency endpoint `GET /api/agency/{agencyId}/ai-hub/metrics` (JWT +
+// agencyRoleMiddleware); the S2S `/metrics` route is not usable from the browser.
 
 export function useAgentMetrics(refreshIntervalMs: number = 60_000) {
   const { agency } = useAuth()
@@ -61,7 +65,9 @@ export function useAgentMetrics(refreshIntervalMs: number = 60_000) {
       return
     }
     try {
-      const res = await fetch(`${agentUrl}/metrics`, { headers: agentAuthHeaders() })
+      const res = await fetch(`${agentUrl}/api/agency/${agencyId}/ai-hub/metrics`, {
+        headers: agentAuthHeaders(),
+      })
       if (!res.ok) throw new Error(`Metrics API responded with ${res.status}`)
       const data: AgentMetrics = await res.json()
       setMetrics(data)

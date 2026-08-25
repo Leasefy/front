@@ -96,7 +96,11 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
     description: 'Porcentaje de ocupacion por zona y tipo de propiedad',
     icon: 'ChartPie',
     category: 'operativo',
-    format: 'pdf',
+    // Decía `pdf`, y por esa sola etiqueta la descarga caía en la rama «PDF en
+    // desarrollo» — cuando el back SÍ lo produce en CSV (ver el switch de
+    // `exportCsv` en reports.service.ts). Un reporte que funcionaba, tapado
+    // por una etiqueta de formato.
+    format: 'excel',
     frequency: 'monthly',
   },
   {

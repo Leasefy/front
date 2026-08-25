@@ -111,7 +111,7 @@ function PreviewHead({ icon: I, title, live }: { icon: Icon; title: string; live
       {live && (
         <span className="flex items-center gap-2 rounded-full border border-success-100 bg-success-50 px-2.5 py-1 text-[11px] font-medium text-success-700">
           <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success-400 opacity-75" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success-500" />
           </span>
           {live}
@@ -595,7 +595,7 @@ export default function AgentsShowcaseA() {
                         className={`block h-1.5 rounded-full transition-all ${
                           i === activeIndex
                             ? "w-6 bg-primary"
-                            : "w-1.5 bg-fg-subtle group-hover/dot:bg-fg-muted"
+                            : "w-1.5 bg-fg-subtle group-hover/dot:bg-surface-muted"
                         }`}
                       />
                     </button>

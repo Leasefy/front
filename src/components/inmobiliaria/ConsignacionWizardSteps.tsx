@@ -8,10 +8,8 @@ import {
   HouseLine,
   CurrencyDollar,
   Percent,
-  CalendarBlank,
   Clock,
   UserCircle,
-  Camera,
   Plus,
   Trash,
   Package,
@@ -38,6 +36,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { PropietarioSelector } from './PropietarioSelector';
 import { AgenteSelector } from './AgenteSelector';
 import { PropertyLocationField, type PropertyLocationValue } from '@/components/publicar/PropertyLocationField';
+import { PropertyPhotoPicker } from './PropertyPhotoPicker';
 
 // ============================================================================
 // Shared Types
@@ -53,6 +52,22 @@ export interface WizardFormData extends ConsignacionFormData {
   propertyLongitude?: number;
   propertyGeocodePlaceId?: string;
   propertyCoordsSource?: 'geocoded' | 'city';
+  /**
+   * `POST /properties` fields the wizard did not used to collect
+   * (contract.md §3.2 thresholds) — hardcoding these to 0 / the title is
+   * exactly what produced the 400 the user hit.
+   */
+  propertyDescription: string;
+  bedrooms: number;
+  bathrooms: number;
+  area: number;
+  /**
+   * Deferred upload: the property doesn't exist yet while the wizard is
+   * open, so photos stay as `File`s in memory and only reach
+   * `POST /properties/:id/images` from `ConsignacionWizard.handleSubmit`,
+   * after the property is created.
+   */
+  photos: File[];
 }
 
 export interface StepProps {
@@ -93,7 +108,15 @@ const INVENTORY_CONDITIONS: { value: InventoryItem['condition']; labelKey: strin
 // Step 1: Select Propietario
 // ============================================================================
 
-export function StepSelectPropietario({ formData, updateFormData, propietarios }: StepProps) {
+export function StepSelectPropietario({
+  formData,
+  updateFormData,
+  propietarios,
+  ownerServerError,
+}: StepProps & {
+  /** Set by ConsignacionWizard when persisting the owner on "Siguiente" fails — see contract.md §3.3. */
+  ownerServerError?: { field: keyof PropietarioFormData; message: string } | null;
+}) {
   const { t } = useI18n();
 
   return (
@@ -117,6 +140,7 @@ export function StepSelectPropietario({ formData, updateFormData, propietarios }
           });
         }}
         newPropietarioData={formData.newPropietarioData}
+        serverError={ownerServerError}
       />
     </div>
   );
@@ -140,6 +164,13 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
   if (touched.propertyCity && !formData.propertyCity) errors.propertyCity = t('inmobiliaria.consignaciones.wizard.step2.validation.cityRequired');
   if (touched.propertyZone && !formData.propertyZone) errors.propertyZone = t('inmobiliaria.consignaciones.wizard.step2.validation.zoneRequired');
   if (touched.monthlyRent && (!formData.monthlyRent || formData.monthlyRent <= 0)) errors.monthlyRent = t('inmobiliaria.consignaciones.wizard.step2.validation.rentRequired');
+  // Thresholds mirror CreatePropertyDto (contract.md §3.2) — bedrooms 0-20,
+  // bathrooms 1-10 (0 invalid), area 10-10000 m² (0 invalid), description 20-5000 chars.
+  if (touched.bedrooms && (formData.bedrooms == null || formData.bedrooms < 0 || formData.bedrooms > 20)) errors.bedrooms = t('inmobiliaria.consignaciones.wizard.step2.validation.bedroomsRequired');
+  if (touched.bathrooms && (!formData.bathrooms || formData.bathrooms < 1 || formData.bathrooms > 10)) errors.bathrooms = t('inmobiliaria.consignaciones.wizard.step2.validation.bathroomsRequired');
+  if (touched.area && (!formData.area || formData.area < 10 || formData.area > 10000)) errors.area = t('inmobiliaria.consignaciones.wizard.step2.validation.areaRequired');
+  const descriptionLength = formData.propertyDescription?.length ?? 0;
+  if (touched.propertyDescription && (descriptionLength < 20 || descriptionLength > 5000)) errors.propertyDescription = t('inmobiliaria.consignaciones.wizard.step2.validation.descriptionRequired');
 
   return (
     <div className="space-y-6">
@@ -319,6 +350,101 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
             </div>
           </div>
         </div>
+
+        {/* Bedrooms, Bathrooms, Area */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+              {t('inmobiliaria.consignaciones.wizard.step2.bedroomsLabel')} <span className="text-danger">*</span>
+            </label>
+            <Input
+              type="number"
+              min={0}
+              max={20}
+              value={formData.bedrooms ?? ''}
+              onChange={(e) => updateFormData({ bedrooms: e.target.value === '' ? undefined : Number(e.target.value) })}
+              onBlur={() => handleBlur('bedrooms')}
+              className={cn('w-full', errors.bedrooms && 'border-danger/30')}
+            />
+            {errors.bedrooms && (
+              <p className="text-xs text-danger flex items-center gap-1">
+                <Warning className="w-3 h-3" />
+                {errors.bedrooms}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+              {t('inmobiliaria.consignaciones.wizard.step2.bathroomsLabel')} <span className="text-danger">*</span>
+            </label>
+            <Input
+              type="number"
+              min={1}
+              max={10}
+              value={formData.bathrooms ?? ''}
+              onChange={(e) => updateFormData({ bathrooms: e.target.value === '' ? undefined : Number(e.target.value) })}
+              onBlur={() => handleBlur('bathrooms')}
+              className={cn('w-full', errors.bathrooms && 'border-danger/30')}
+            />
+            {errors.bathrooms && (
+              <p className="text-xs text-danger flex items-center gap-1">
+                <Warning className="w-3 h-3" />
+                {errors.bathrooms}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+              {t('inmobiliaria.consignaciones.wizard.step2.areaLabel')} <span className="text-danger">*</span>
+            </label>
+            <Input
+              type="number"
+              min={10}
+              max={10000}
+              value={formData.area ?? ''}
+              onChange={(e) => updateFormData({ area: e.target.value === '' ? undefined : Number(e.target.value) })}
+              onBlur={() => handleBlur('area')}
+              className={cn('w-full', errors.area && 'border-danger/30')}
+            />
+            {errors.area && (
+              <p className="text-xs text-danger flex items-center gap-1">
+                <Warning className="w-3 h-3" />
+                {errors.area}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            {t('inmobiliaria.consignaciones.wizard.step2.descriptionLabel')} <span className="text-danger">*</span>
+          </label>
+          <Textarea
+            value={formData.propertyDescription || ''}
+            onChange={(e) => updateFormData({ propertyDescription: e.target.value })}
+            onBlur={() => handleBlur('propertyDescription')}
+            placeholder={t('inmobiliaria.consignaciones.wizard.step2.descriptionPlaceholder')}
+            rows={4}
+            maxLength={5000}
+            className={cn('w-full resize-none', errors.propertyDescription && 'border-danger/30')}
+          />
+          <p className={cn('text-xs', errors.propertyDescription ? 'text-danger' : 'text-fg-subtle')}>
+            {t('inmobiliaria.consignaciones.wizard.step2.descriptionCounter', {
+              count: descriptionLength,
+              min: 20,
+              max: 5000,
+            })}
+          </p>
+          {errors.propertyDescription && (
+            <p className="text-xs text-danger flex items-center gap-1">
+              <Warning className="w-3 h-3" />
+              {errors.propertyDescription}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -379,7 +505,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
 
         {/* Commission Summary */}
         {monthlyRent > 0 && (
-          <div className="p-4 rounded-xl bg-surface-muted dark:bg-[#14130F] border border-faint dark:border-strong">
+          <div className="p-4 rounded-xl bg-surface-muted dark:bg-[#14130F] border border-border-faint dark:border-border-strong">
             <h4 className="text-sm font-medium text-fg dark:text-fg-subtle mb-3">
               {t('inmobiliaria.consignaciones.wizard.step3.monthlySummary')}
             </h4>
@@ -398,7 +524,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
                   -{formatCurrency(agencyCommission)}
                 </span>
               </div>
-              <div className="pt-2 border-t border-border dark:border-strong flex justify-between text-sm">
+              <div className="pt-2 border-t border-border dark:border-border-strong flex justify-between text-sm">
                 <span className="font-medium text-fg dark:text-white">{t('inmobiliaria.consignaciones.wizard.step3.ownerNet')}</span>
                 <span className="font-bold text-success">
                   {formatCurrency(ownerNet)}
@@ -426,22 +552,6 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
               />
             ))}
           </RadioCardGroup>
-        </div>
-
-        {/* Contract Start Date */}
-        <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
-            {t('inmobiliaria.consignaciones.wizard.step3.contractStartLabel')}
-          </label>
-          <div className="relative">
-            <CalendarBlank className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
-            <Input
-              type="date"
-              value={formData.contractStartDate || ''}
-              onChange={(e) => updateFormData({ contractStartDate: e.target.value })}
-              className="w-full pl-10"
-            />
-          </div>
         </div>
       </div>
     </div>
@@ -472,6 +582,15 @@ export function StepAssignAgent({ formData, updateFormData, agentes }: StepProps
         onChange={(id) => updateFormData({ agenteId: id || undefined })}
         allowNoAgent
       />
+
+      {!formData.agenteId && (
+        <div className="flex items-start gap-3 p-4 rounded-xl border border-border dark:border-border-strong bg-surface-muted dark:bg-[#14130F]">
+          <UserCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            {t('inmobiliaria.consignaciones.wizard.step4.selfAssignNotice')}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -547,7 +666,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]"
+                className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]"
               >
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center text-fg-muted dark:text-fg-subtle text-sm font-medium shrink-0">
@@ -619,7 +738,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
             ))}
           </div>
         ) : (
-          <div className="p-8 text-center rounded-xl border border-dashed border-border dark:border-strong bg-surface-muted dark:bg-[#14130F]">
+          <div className="p-8 text-center rounded-xl border border-dashed border-border dark:border-border-strong bg-surface-muted dark:bg-[#14130F]">
             <Package className="w-12 h-12 mx-auto mb-3 text-fg-subtle dark:text-fg-muted" />
             <p className="text-fg-muted dark:text-fg-subtle mb-3">
               {t('inmobiliaria.consignaciones.wizard.step5.emptyInventory')}
@@ -636,30 +755,15 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
         )}
       </div>
 
-      {/* Photo Upload Placeholder */}
+      {/* Property Photos */}
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-fg dark:text-fg-subtle">
           {t('inmobiliaria.consignaciones.wizard.step5.photosTitle')}
         </h3>
-        <div className="p-8 text-center rounded-xl border border-dashed border-border dark:border-strong bg-surface-muted dark:bg-[#14130F]">
-          <Camera className="w-12 h-12 mx-auto mb-3 text-fg-subtle dark:text-fg-muted" />
-          <p className="text-fg-muted dark:text-fg-subtle mb-1">
-            {t('inmobiliaria.consignaciones.wizard.step5.photosDropzone')}
-          </p>
-          <p className="text-xs text-fg-subtle dark:text-fg-muted">
-            {t('inmobiliaria.consignaciones.wizard.step5.photosFormats')}
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            hideArrow
-            disabled
-            className="mt-4"
-          >
-            <Camera className="w-4 h-4" />
-            {t('inmobiliaria.consignaciones.wizard.step5.photosSoon')}
-          </Button>
-        </div>
+        <PropertyPhotoPicker
+          photos={formData.photos ?? []}
+          onChange={(photos) => updateFormData({ photos })}
+        />
       </div>
 
       {/* General Notes */}
@@ -740,7 +844,7 @@ export function StepConfirmation({
 
       <div className="space-y-4">
         {/* Propietario Section */}
-        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.ownerSection')} step={1} />
           <div className="flex items-center gap-3">
             <div className={cn(
@@ -772,7 +876,7 @@ export function StepConfirmation({
         </div>
 
         {/* Property Section */}
-        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.propertySection')} step={2} />
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center text-2xl">
@@ -804,7 +908,7 @@ export function StepConfirmation({
         </div>
 
         {/* Terms Section */}
-        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.termsSection')} step={3} />
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -833,7 +937,7 @@ export function StepConfirmation({
         </div>
 
         {/* Agent Section */}
-        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.agentSection')} step={4} />
           {agente ? (
             <div className="flex items-center gap-3">
@@ -848,12 +952,12 @@ export function StepConfirmation({
               </div>
             </div>
           ) : (
-            <p className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.wizard.step6.notAssigned')}</p>
+            <p className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.wizard.step6.selfAssigned')}</p>
           )}
         </div>
 
         {/* Inventory Section */}
-        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-[#14130F]">
+        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.inventorySection')} step={5} />
           {inventoryItems.length > 0 ? (
             <div className="space-y-2">

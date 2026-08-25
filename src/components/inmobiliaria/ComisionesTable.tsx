@@ -182,11 +182,16 @@ export function ComisionesTable({
         className
       )}
     >
-      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
+      {/*
+        allowlist: disparador de orden — no hay primitiva en Cadence. Un
+        `<button>` llega con `text-transform: none` del navegador y pierde las
+        mayúsculas del `TH`; por eso las repite y hereda el resto. Canónico:
+        DispersionTable.
+      */}
       <button
         onClick={() => handleSort(field)}
         className={cn(
-          'flex items-center gap-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white',
+          'flex items-center gap-2 font-[inherit] text-[inherit] uppercase tracking-[inherit] text-fg-subtle transition-colors hover:text-fg',
           align === 'center' && 'mx-auto',
           align === 'right' && 'ml-auto'
         )}
@@ -202,7 +207,7 @@ export function ComisionesTable({
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Total Comisiones */}
-        <div className="p-4 rounded-xl bg-success-soft dark:bg-success/12 text-white">
+        <div className="p-4 rounded-xl bg-success-soft dark:bg-success/10 text-fg">
           <div className="flex items-center gap-2 mb-2">
             <CurrencyDollar className="w-5 h-5 text-success" />
             <span className="text-sm font-medium text-success">{t('inmobiliaria.finance.commissionsTable.totalCommissions')}</span>
@@ -211,7 +216,7 @@ export function ComisionesTable({
         </div>
 
         {/* Promedio por Agente */}
-        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-card">
+        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-card">
           <div className="flex items-center gap-2 mb-2">
             <Users className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
@@ -237,7 +242,7 @@ export function ComisionesTable({
         </div>
 
         {/* Cierres Totales */}
-        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-card">
+        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-card">
           <div className="flex items-center gap-2 mb-2">
             <ChartLineUp className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
@@ -266,10 +271,10 @@ export function ComisionesTable({
       </div>
 
       {/* Data Table */}
-      <div className="overflow-x-auto rounded-xl border border-border dark:border-strong bg-surface dark:bg-card">
+      <div className="overflow-x-auto rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-card">
         <Table className="min-w-[800px]">
           <TableHeader>
-            <TableRow className="border-b border-faint dark:border-strong">
+            <TableRow className="border-b border-border-faint dark:border-border-strong">
               <SortableHeader field="rank" align="center" className="w-16">
                 #
               </SortableHeader>
@@ -302,7 +307,7 @@ export function ComisionesTable({
                   transition={{ delay: index * 0.03 }}
                   onClick={() => onAgentClick?.(agente.agenteId)}
                   className={cn(
-                    'border-b border-faint dark:border-strong transition-colors',
+                    'border-b border-border-faint dark:border-border-strong transition-colors',
                     onAgentClick && 'cursor-pointer hover:bg-surface-muted dark:hover:bg-muted/20',
                     isFirst && 'bg-warning-soft/50 dark:bg-warning/10'
                   )}
@@ -313,9 +318,9 @@ export function ComisionesTable({
                       <div
                         className={cn(
                           'w-8 h-8 mx-auto rounded-full flex items-center justify-center font-bold text-sm',
-                          agente.rank === 1 && 'bg-warning-soft dark:bg-warning/12 text-warning',
+                          agente.rank === 1 && 'bg-warning-soft dark:bg-warning/10 text-warning',
                           agente.rank === 2 && 'bg-gradient-to-br from-[#D5D1CA] to-[#B3AEA5] text-fg',
-                          agente.rank === 3 && 'bg-warning-soft dark:bg-warning/12 text-warning'
+                          agente.rank === 3 && 'bg-warning-soft dark:bg-warning/10 text-warning'
                         )}
                       >
                         {agente.rank}
@@ -334,7 +339,7 @@ export function ComisionesTable({
                         className={cn(
                           'w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-semibold shrink-0',
                           isFirst
-                            ? 'bg-warning-soft dark:bg-warning/12'
+                            ? 'bg-warning-soft dark:bg-warning/10'
                             : 'bg-gradient-to-br from-primary to-[#726E68]'
                         )}
                       >
@@ -424,8 +429,8 @@ export function ComisionesTable({
                           className={cn(
                             'h-full rounded-full',
                             isFirst
-                              ? 'bg-warning-soft dark:bg-warning/12'
-                              : 'bg-primary-soft dark:bg-primary/12'
+                              ? 'bg-warning-soft dark:bg-warning/10'
+                              : 'bg-primary-soft dark:bg-primary/10'
                           )}
                         />
                       </div>

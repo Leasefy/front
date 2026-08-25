@@ -44,6 +44,60 @@ export function stageDisplayName(stage: CarteraStage, locale: string): string {
   return full.split(' · ')[0]
 }
 
+/** Rango de días de la etapa, sin el nombre. `null` para las que no tienen. */
+export function stageDayRange(stage: CarteraStage, locale: string): string | null {
+  const full = locale === 'es' ? STAGE_LABELS_ES[stage] : STAGE_LABELS_EN[stage]
+  const [, rango] = full.split(' · ')
+  return rango ?? null
+}
+
+// =============================================================================
+// Qué HACE el agente en cada etapa
+// =============================================================================
+
+/**
+ * La etapa no es una etiqueta: es el plan de contacto que el agente va a
+ * ejecutar. Un operador que ve «S2» en un desplegable no tiene forma de saber
+ * que está eligiendo «llamar los días 20, 30 y 40», y menos que S4 y S5
+ * significan que el agente DEJA de llamar.
+ *
+ * Espejo de `CADENCE_CALENDAR` en
+ * `agent/src/cartera/cadence-orchestrator.ts`. Los días se cuentan desde el
+ * primer vencimiento impago (negativos = antes de la fecha de pago).
+ *
+ * ⚠️ Dos cosas que este texto NO dice, a propósito:
+ *  - Los correos del calendario (S1 día 3, S2 día 35) están detrás de
+ *    `DEBTOR_EMAIL_ENABLED` y por defecto NO se planifican. Prometerlos sería
+ *    prometer algo que no pasa.
+ *  - Una inmobiliaria puede tener su propio calendario
+ *    (`AgencyPolicy.cadenceConfig`). Por eso la UI lo presenta como el plan
+ *    por defecto, no como una garantía.
+ */
+export const STAGE_ACCIONES_ES: Record<CarteraStage, string> = {
+  S0: 'Avisa ANTES de que venza: WhatsApp y llamada 7 y 3 días antes, y una llamada el día del vencimiento.',
+  S1: 'WhatsApp el día 1 de mora, y llamadas los días 5 y 12.',
+  S2: 'Llama los días 20, 30 y 40. El día 25 avisa por WhatsApp que la deuda puede reportarse a centrales de riesgo.',
+  S3: 'Una sola llamada, el día 50, para anunciar la carta pre-jurídica.',
+  S4: 'El agente DEJA de gestionar. El caso queda en manos de la aseguradora.',
+  S5: 'El agente DEJA de gestionar. El caso queda en manos del equipo jurídico.',
+  SX: 'Sólo llama al fiador, y únicamente si hay uno registrado. Al deudor no lo contacta.',
+}
+
+export const STAGE_ACCIONES_EN: Record<CarteraStage, string> = {
+  S0: 'Reaches out BEFORE the due date: WhatsApp and a call 7 and 3 days ahead, plus a call on the due date.',
+  S1: 'WhatsApp on day 1 of delinquency, then calls on days 5 and 12.',
+  S2: 'Calls on days 20, 30 and 40. On day 25 it warns over WhatsApp that the debt may be reported to credit bureaus.',
+  S3: 'A single call, on day 50, announcing the pre-judicial letter.',
+  S4: 'The agent STOPS working the case. The insurer takes over.',
+  S5: 'The agent STOPS working the case. The legal team takes over.',
+  SX: 'Only calls the guarantor, and only if one is on file. The debtor is not contacted.',
+}
+
+/** Qué hará el agente si el caso queda en esta etapa. */
+export function stageAgentPlan(stage: CarteraStage, locale: string): string {
+  return locale === 'es' ? STAGE_ACCIONES_ES[stage] : STAGE_ACCIONES_EN[stage]
+}
+
 // =============================================================================
 // Stage color utilities
 // =============================================================================

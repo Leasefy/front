@@ -76,14 +76,14 @@ type SortDirection = 'asc' | 'desc';
 // ============================================================================
 
 const PRIORITY_STYLES: Record<MantenimientoPriority, { bg: string; text: string; labelKey: string }> = {
-  low: { bg: 'bg-fg-muted dark:bg-fg-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
+  low: { bg: 'bg-surface-muted dark:bg-surface-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.priorityLow' },
   medium: { bg: 'bg-primary-soft', text: 'text-primary', labelKey: 'inmobiliaria.mantenimiento.priorityMedium' },
   high: { bg: 'bg-warning-soft', text: 'text-warning', labelKey: 'inmobiliaria.mantenimiento.priorityHigh' },
   emergency: { bg: 'bg-danger-soft', text: 'text-danger', labelKey: 'inmobiliaria.mantenimiento.priorityEmergency' },
 };
 
 const STATUS_STYLES: Record<MantenimientoStatus, { bg: string; text: string; labelKey: string; icon: React.ElementType }> = {
-  reported: { bg: 'bg-fg-muted dark:bg-fg-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: ListBullets },
+  reported: { bg: 'bg-surface-muted dark:bg-surface-muted', text: 'text-fg-muted dark:text-fg-muted', labelKey: 'inmobiliaria.mantenimiento.statusReported', icon: ListBullets },
   quoted: { bg: 'bg-primary-soft', text: 'text-primary', labelKey: 'inmobiliaria.mantenimiento.statusQuoted', icon: CurrencyCircleDollar },
   approved: { bg: 'bg-success-soft', text: 'text-success', labelKey: 'inmobiliaria.mantenimiento.statusApproved', icon: Check },
   in_progress: { bg: 'bg-warning-soft', text: 'text-warning', labelKey: 'inmobiliaria.mantenimiento.statusInProgress', icon: Clock },
@@ -145,7 +145,7 @@ function SummaryCards({ data, t }: { data: SolicitudMantenimiento[]; t: (key: st
 
   const cards = [
     { labelKey: 'inmobiliaria.mantenimiento.totalLabel', value: stats.total, color: 'bg-primary' },
-    { labelKey: 'inmobiliaria.mantenimiento.statusReported', value: stats.reported, color: 'bg-fg-muted' },
+    { labelKey: 'inmobiliaria.mantenimiento.statusReported', value: stats.reported, color: 'bg-surface-muted' },
     { labelKey: 'inmobiliaria.mantenimiento.statusQuoted', value: stats.quoted, color: 'bg-primary' },
     { labelKey: 'inmobiliaria.mantenimiento.statusApproved', value: stats.approved, color: 'bg-success' },
     { labelKey: 'inmobiliaria.mantenimiento.statusInProgress', value: stats.in_progress, color: 'bg-warning' },
@@ -157,7 +157,7 @@ function SummaryCards({ data, t }: { data: SolicitudMantenimiento[]; t: (key: st
       {cards.map((card) => (
         <div
           key={card.labelKey}
-          className="p-4 rounded-xl bg-surface dark:bg-[#14130F] border border-border dark:border-strong"
+          className="p-4 rounded-xl bg-surface dark:bg-[#14130F] border border-border dark:border-border-strong"
         >
           <div className="flex items-center gap-2 mb-1">
             <div className={cn('w-2 h-2 rounded-full', card.color)} />

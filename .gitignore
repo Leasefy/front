@@ -18,6 +18,11 @@
 
 # next.js
 /.next/
+# Cualquier NEXT_DIST_DIR propio: se usan para construir sin pisar el `.next`
+# del dev server que alguien tenga corriendo. Antes sólo estaba
+# `/.next-build/`, así que un `.next-build-loquesea` quedaba sin ignorar y se
+# colaba en el `git status`.
+/.next-*/
 /out/
 
 # production
@@ -33,15 +38,23 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — denegar por defecto.
+#
+# Antes eran cinco patrones concretos y cualquier variante quedaba afuera:
+# un `.env.local.bak-3000` vivía sin ignorar, a un `git add -A` de entrar en
+# la historia del repo. Con secretos el criterio va al revés: se ignora TODO
+# lo que empiece por `.env`, y `.env.example` es la excepción explícita.
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
 
 # Keep .env.example tracked for documentation
 !.env.example
+
+# Copias de seguridad hechas a mano: casi siempre de un archivo de config, y
+# por eso casi siempre con credenciales adentro.
+*.bak
+*.bak-*
+*.backup
 
 # vercel
 .vercel
@@ -63,3 +76,6 @@ next-env.d.ts
 /*.webp
 /*.gif
 /*.avif
+
+# Volcado de Redis local (aparece al correr redis-server desde la raíz del repo).
+dump.rdb

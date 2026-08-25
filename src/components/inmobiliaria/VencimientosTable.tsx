@@ -200,10 +200,16 @@ export function VencimientosTable({
     className?: string;
   }) => (
     <TableHead className={cn('text-left p-4', className)}>
-      {/* allowlist: table column-sort trigger — no Cadence primitive (DataTable has no sort) */}
+      {/*
+        allowlist: disparador de orden — no hay primitiva en Cadence (DataTable
+        no ordena). El navegador le pone `text-transform: none` a todo control
+        de formulario, así que un `<button>` dentro del `TH` PIERDE las
+        mayúsculas que el encabezado hereda: por eso el botón repite `uppercase`
+        y hereda el resto con `inherit`. Patrón canónico en DispersionTable.
+      */}
       <button
         onClick={() => handleSort(field)}
-        className="flex items-center gap-2 text-xs font-semibold text-fg-muted dark:text-fg-subtle hover:text-fg dark:hover:text-white"
+        className="flex items-center gap-2 font-[inherit] text-[inherit] uppercase tracking-[inherit] text-fg-subtle transition-colors hover:text-fg"
       >
         {children}
         {sortField === field && <SortIcon className="w-3.5 h-3.5" />}
@@ -218,7 +224,7 @@ export function VencimientosTable({
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Proximos 30 dias */}
-        <div className="p-4 rounded-xl bg-danger-soft dark:bg-danger/12 text-white">
+        <div className="p-4 rounded-xl bg-danger-soft dark:bg-danger/10 text-fg">
           <div className="flex items-center gap-2 mb-1">
             <Warning className="w-5 h-5 text-danger" weight="fill" />
             <span className="text-sm font-medium text-danger">{t('inmobiliaria.finance.expirations.critical30d')}</span>
@@ -254,7 +260,7 @@ export function VencimientosTable({
         </div>
 
         {/* Total */}
-        <div className="p-4 rounded-xl border border-border dark:border-strong bg-surface dark:bg-card">
+        <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-card">
           <div className="flex items-center gap-2 mb-1">
             <HouseLine className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
             <span className="text-sm font-medium text-fg-muted dark:text-fg-subtle">
@@ -361,10 +367,10 @@ export function VencimientosTable({
       </div>
 
       {/* Data Table */}
-      <div className="overflow-x-auto rounded-xl border border-border dark:border-strong bg-surface dark:bg-card">
+      <div className="overflow-x-auto rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-card">
         <Table className="min-w-[1000px]">
           <TableHeader>
-            <TableRow className="border-b border-faint dark:border-strong">
+            <TableRow className="border-b border-border-faint dark:border-border-strong">
               <TableHead className="w-12 p-4">
                 <Checkbox
                   checked={
@@ -398,7 +404,7 @@ export function VencimientosTable({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.02 }}
                   className={cn(
-                    'border-b border-faint dark:border-strong transition-colors',
+                    'border-b border-border-faint dark:border-border-strong transition-colors',
                     isSelected && 'bg-primary-soft',
                     !isSelected && 'hover:bg-surface-muted dark:hover:bg-muted/20'
                   )}

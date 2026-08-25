@@ -27,6 +27,7 @@ import {
 import { PageGuard } from '@/components/auth/PageGuard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { MoneyInput } from '@/components/ui/money-input'
 import {
   Select,
   SelectContent,
@@ -202,28 +203,24 @@ function EstudioNuevo() {
               <label htmlFor="canon" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.inmueble.canon`, 'Canon mensual (COP)')}
               </label>
-              <Input
+              <MoneyInput
                 id="canon"
-                type="number"
-                inputMode="numeric"
-                min="0"
                 value={form.canon}
-                onChange={(e) => set('canon', e.target.value)}
-                placeholder="2.500.000"              />
+                onChange={(crudo) => set('canon', crudo)}
+                placeholder="2.500.000"
+              />
             </div>
 
             <div>
               <label htmlFor="administracion" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.inmueble.administracion`, 'Administración (COP)')}
               </label>
-              <Input
+              <MoneyInput
                 id="administracion"
-                type="number"
-                inputMode="numeric"
-                min="0"
                 value={form.administracion}
-                onChange={(e) => set('administracion', e.target.value)}
-                placeholder="350.000"              />
+                onChange={(crudo) => set('administracion', crudo)}
+                placeholder="350.000"
+              />
             </div>
 
             <div className="sm:col-span-2">

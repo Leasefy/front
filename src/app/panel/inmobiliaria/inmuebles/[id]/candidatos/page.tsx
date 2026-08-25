@@ -18,8 +18,8 @@ import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { CandidateDrawer } from '@/components/inmobiliaria/CandidateDrawer';
-import { ModalAvisarNoElegidos } from '@/components/inmobiliaria/ModalAvisarNoElegidos';
+import { type ActionType } from '@/components/inmobiliaria/AccionDePostulacion';
+import { useDecisionDeCandidato } from '@/components/inmobiliaria/use-decision-de-candidato';
 import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
 import { useContracts } from '@/lib/hooks/useContracts';
 import type { LandlordCandidate, LandlordApplicationStatus } from '@/lib/api/applications.types';
@@ -65,124 +65,6 @@ const SCORE_COLORS: Record<string, string> = {
   C: 'text-warning bg-warning-soft',
   D: 'text-danger bg-danger-soft',
 };
-
-// ─── Action modal ─────────────────────────────────────────────────────────────
-
-type ActionType = 'approve' | 'reject' | 'request-info';
-
-type ConfirmVariant = 'default' | 'destructive';
-
-const ACTION_CONFIG: Record<
-  ActionType,
-  { title: string; label: string; placeholder: string; required: boolean; confirmLabel: string; confirmVariant: ConfirmVariant }
-> = {
-  approve: {
-    title: 'Aprobar candidato',
-    label: 'Mensaje al candidato (opcional)',
-    placeholder: 'Mensaje que verá el candidato...',
-    required: false,
-    confirmLabel: 'Aprobar',
-    confirmVariant: 'default',
-  },
-  reject: {
-    title: 'Rechazar postulación',
-    label: 'Motivo del rechazo',
-    placeholder: 'Explica el motivo del rechazo al candidato...',
-    required: true,
-    confirmLabel: 'Rechazar',
-    confirmVariant: 'destructive',
-  },
-  'request-info': {
-    title: 'Solicitar información',
-    label: 'Mensaje al candidato',
-    placeholder: '¿Qué información adicional necesitas?',
-    required: true,
-    confirmLabel: 'Enviar solicitud',
-    confirmVariant: 'default',
-  },
-};
-
-function ActionModal({
-  type,
-  candidateName,
-  onConfirm,
-  onClose,
-}: {
-  type: ActionType;
-  candidateName: string;
-  onConfirm: (text: string) => Promise<void>;
-  onClose: () => void;
-}) {
-  const cfg = ACTION_CONFIG[type];
-  const [text, setText] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  // Error de una ACCIÓN, no de carga: acá el mensaje sí se muestra tal cual,
-  // porque describe lo que la persona acaba de intentar hacer.
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (cfg.required && !text.trim()) return;
-    setIsSubmitting(true);
-    setError(null);
-    try {
-      await onConfirm(text.trim());
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al procesar la acción');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-card rounded-xl border border-border">
-        <div className="px-6 py-4 border-b border-border">
-          <h2 className="text-base font-semibold text-fg">{cfg.title}</h2>
-          <p className="text-sm text-fg-muted mt-0.5">{candidateName}</p>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-fg">{cfg.label}</label>
-            <Textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={cfg.placeholder}
-              rows={3}
-              autoFocus
-              className="resize-none"
-            />
-          </div>
-
-          {error && <p className="text-sm text-danger">{error}</p>}
-
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              hideArrow
-              onClick={onClose}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              variant={cfg.confirmVariant}
-              hideArrow
-              isLoading={isSubmitting}
-              disabled={(cfg.required && !text.trim()) || isSubmitting}
-              className="flex-1"
-            >
-              {cfg.confirmLabel}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
 
 // ─── Row actions ──────────────────────────────────────────────────────────────
 
@@ -233,7 +115,7 @@ function CandidateActions({
 
   if (status === 'UNDER_REVIEW') {
     return (
-      <div className="flex items-center gap-1 flex-wrap">
+      <div className="flex items-center gap-1">
         <Button
           variant="ghost"
           size="sm"
@@ -242,15 +124,6 @@ function CandidateActions({
           className={cn(COARSE_HIT_AREA, 'bg-success-soft text-success hover:bg-success-soft/80 whitespace-nowrap')}
         >
           Aprobar
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          hideArrow
-          onClick={() => onAction('request-info', candidate)}
-          className={cn(COARSE_HIT_AREA, 'bg-warning-soft text-warning hover:bg-warning-soft/80 whitespace-nowrap')}
-        >
-          Pedir info
         </Button>
         <Button
           variant="ghost"
@@ -345,16 +218,9 @@ function CandidatosContent() {
   } = useTablePagination(candidates);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
-  const [actionModal, setActionModal] = useState<{
-    type: ActionType;
-    candidate: LandlordCandidate;
-  } | null>(null);
-  const [selectedCandidate, setSelectedCandidate] = useState<LandlordCandidate | null>(null);
   // Paso 9 del recorrido: comparar. Se limita a 4 porque más no entra sin
   // scroll horizontal, y comparar con scroll no es comparar.
   const [paraComparar, setParaComparar] = useState<Set<string>>(() => new Set());
-  // Paso 10: a quién elegimos, y a quiénes hay que avisarles.
-  const [eligiendo, setEligiendo] = useState<LandlordCandidate | null>(null);
 
   // Cargamos contratos del landlord/agencia para saber cuáles aplicaciones ya tienen contrato.
   // Permite mostrar "Ver contrato" en vez de "Crear contrato" en la fila correspondiente.
@@ -412,6 +278,16 @@ function CandidatosContent() {
   useAutoRefresh(fetchData);
 
   /**
+   * El cajón y las cuatro decisiones — los mismos que monta la tarjeta
+   * «Candidatos» dentro del inmueble. `hermanos` son todos los postulantes de
+   * ESTA propiedad: es lo que hace que aprobar a uno le avise a los demás.
+   */
+  const { abrir, pedirAccion, cajon } = useDecisionDeCandidato({
+    hermanos: candidates,
+    onCambio: fetchData,
+  });
+
+  /**
    * Llegar directo a una persona: `?candidato=<id>` abre su cajón apenas
    * cargan los candidatos.
    *
@@ -430,47 +306,8 @@ function CandidatosContent() {
     const encontrado = candidates.find((c) => c.id === candidatoDeLaUrl);
     if (!encontrado) return;
     abiertoPorUrl.current = true;
-    setSelectedCandidate(encontrado);
-  }, [candidatoDeLaUrl, candidates]);
-
-  const handleAction = useCallback((type: ActionType, candidate: LandlordCandidate) => {
-    // Aprobar a uno tiene una consecuencia sobre los demás: quedan esperando
-    // una respuesta que se les prometió. Cuando hay más gente en juego, la
-    // aprobación pasa por el modal que se hace cargo de eso (paso 10) en vez
-    // del formulario suelto. Con un solo candidato no hay nada que decidir.
-    if (type === 'approve') {
-      const hayOtrosEsperando = candidates.some(
-        (c) =>
-          c.id !== candidate.id &&
-          c.status !== 'REJECTED' &&
-          c.status !== 'WITHDRAWN' &&
-          c.status !== 'APPROVED',
-      );
-      if (hayOtrosEsperando) {
-        setEligiendo(candidate);
-        return;
-      }
-    }
-    setActionModal({ type, candidate });
-  }, [candidates]);
-
-  const handleConfirmAction = useCallback(async (text: string) => {
-    if (!actionModal) return;
-    const { type, candidate } = actionModal;
-    const id = candidate.id;
-    switch (type) {
-      case 'approve':
-        await landlordApplicationsApi.approve(id, text ? { message: text } : {});
-        break;
-      case 'reject':
-        await landlordApplicationsApi.reject(id, text);
-        break;
-      case 'request-info':
-        await landlordApplicationsApi.requestInfo(id, text);
-        break;
-    }
-    await fetchData();
-  }, [actionModal, fetchData]);
+    abrir(encontrado);
+  }, [candidatoDeLaUrl, candidates, abrir]);
 
   // Stats — solo dos destinos posibles: en revisión o aprobado (docs/VOCABULARIO.md).
   const activeCount   = candidates.filter(
@@ -584,7 +421,7 @@ function CandidatosContent() {
                   return (
                     <TableRow
                       key={candidate.id}
-                      onClick={() => setSelectedCandidate(candidate)}
+                      onClick={() => abrir(candidate)}
                       className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
                     >
                       {/* Comparar — el clic acá NO abre la ficha */}
@@ -667,7 +504,7 @@ function CandidatosContent() {
                         <CandidateActions
                           candidate={candidate}
                           existingContract={getContractByApplicationId(candidate.id)}
-                          onAction={handleAction}
+                          onAction={pedirAccion}
                         />
                       </TableCell>
                     </TableRow>
@@ -743,39 +580,8 @@ function CandidatosContent() {
         </div>
       )}
 
-      {/* Paso 10 — elegir a uno y avisarle a los demás */}
-      {eligiendo && (
-        <ModalAvisarNoElegidos
-          elegido={eligiendo}
-          otros={candidates.filter((c) => c.id !== eligiendo.id)}
-          onCerrar={() => setEligiendo(null)}
-          onListo={() => {
-            setEligiendo(null);
-            void fetchData();
-          }}
-        />
-      )}
-
-      {/* Action modal */}
-      {actionModal && (
-        <ActionModal
-          type={actionModal.type}
-          candidateName={actionModal.candidate.tenantName || actionModal.candidate.id.slice(0, 8)}
-          onConfirm={handleConfirmAction}
-          onClose={() => setActionModal(null)}
-        />
-      )}
-
-      {/* Candidate detail drawer (AI scoring + smart matching) */}
-      <CandidateDrawer
-        candidate={selectedCandidate}
-        onClose={() => setSelectedCandidate(null)}
-        onAction={(type, candidate) => {
-          setSelectedCandidate(null);
-          setActionModal({ type, candidate });
-        }}
-        onReevaluated={fetchData}
-      />
+      {/* El cajón con el análisis, las cuatro acciones y el paso 10 */}
+      {cajon}
     </div>
   );
 }

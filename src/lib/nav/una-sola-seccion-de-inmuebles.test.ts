@@ -50,7 +50,14 @@ function archivosDeCodigo(dir: string, encontrados: string[] = []): string[] {
 describe('una sola sección de inmuebles', () => {
   it('nadie enlaza ya a /portafolio ni a /propiedades del panel', () => {
     const culpables = archivosDeCodigo(RAIZ)
-      .map((ruta) => ({ ruta: relative(RAIZ, ruta), texto: readFileSync(ruta, 'utf8') }))
+      // Separadores a '/': `relative` devuelve '\' en Windows y la allowlist
+      // está escrita con '/', así que sin normalizar el test se acusaba A SÍ
+      // MISMO — verde en el CI (Linux) y rojo en cualquier máquina Windows.
+      // Mismo criterio que `cuatro-estados.test.ts`.
+      .map((ruta) => ({
+        ruta: relative(RAIZ, ruta).replace(/\\/g, '/'),
+        texto: readFileSync(ruta, 'utf8'),
+      }))
       .filter(({ ruta }) => !PUEDEN_NOMBRARLAS.has(ruta))
       .filter(({ texto }) =>
         texto.includes('panel/inmobiliaria/portafolio') ||

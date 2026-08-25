@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import { ArrowLeft, ChatText, ClipboardText, Buildings, Copy, Check } from '@phosphor-icons/react'
+import { ChatText, ClipboardText, Buildings, Copy, Check } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { useRetencionCaso } from '@/lib/hooks/retencion/use-retencion'
 import { formatCop } from '@/lib/data/mock-retencion'
 import type { CaseBundle, NoSource, RetentionState, TaskStatus } from '@/lib/types/retencion'
 import { CasoSidebar } from './CasoSidebar'
+import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 
 const STATE_LABEL: Record<RetentionState, string> = {
   saludable: 'Saludable',
@@ -54,12 +54,10 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
 
   return (
     <main className="p-6 lg:p-8 space-y-5">
-      <Link
+      <VolverALaLista
         href="/panel/inmobiliaria/ai/retencion/bandeja"
-        className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
-      >
-        <ArrowLeft size={15} /> Bandeja de riesgos
-      </Link>
+        label="Volver a la bandeja de riesgos"
+      />
 
       {/* Header */}
       <header className="flex flex-wrap items-center gap-3">

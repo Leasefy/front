@@ -19,12 +19,23 @@ const listCarriers = vi.fn()
 const createCarrier = vi.fn()
 const updateCarrier = vi.fn()
 const deleteCarrier = vi.fn()
+// La pantalla tambien monta <PreScoringConfigCard>, que carga su config del
+// MISMO modulo con `useApiQuery`. Sin estas dos, el mock las dejaba en
+// `undefined`: el efecto de la card explotaba con «getPreScoringConfig is not
+// a function», el rechazo caia fuera del `act` del test y el `unmount` del
+// afterEach se topaba con trabajo concurrente a medio hacer — «Should not
+// already be working», los cinco tests en rojo por algo que no estaban
+// probando.
+const getPreScoringConfig = vi.fn()
+const updatePreScoringConfig = vi.fn()
 
 vi.mock('@/lib/admin/cotizador', () => ({
   listCarriers: (signal?: AbortSignal) => listCarriers(signal),
   createCarrier: (body: unknown) => createCarrier(body),
   updateCarrier: (name: string, body: unknown) => updateCarrier(name, body),
   deleteCarrier: (name: string) => deleteCarrier(name),
+  getPreScoringConfig: (signal?: AbortSignal) => getPreScoringConfig(signal),
+  updatePreScoringConfig: (body: unknown) => updatePreScoringConfig(body),
 }))
 
 import CotizadorPage from './page'
@@ -76,6 +87,12 @@ beforeEach(() => {
   createCarrier.mockReset()
   updateCarrier.mockReset()
   deleteCarrier.mockReset()
+  getPreScoringConfig.mockReset()
+  getPreScoringConfig.mockResolvedValue({
+    authorizationWaitHours: 48,
+    resultReuseTtlHours: 48,
+  })
+  updatePreScoringConfig.mockReset()
   window.confirm = vi.fn().mockReturnValue(true)
 })
 

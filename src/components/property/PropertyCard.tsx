@@ -62,9 +62,14 @@ export function PropertyCard({
   // or blank entries, and `next/image` warns (and preloads an empty href) on
   // `src=""`. If nothing usable is left, fall back to the shared placeholder.
   const PLACEHOLDER = '/placeholder-property.svg';
+  // `trim()` y no `length > 0`: la base trae entradas de puros espacios, y
+  // `next/image` no las trata como vacías — las intenta resolver como ruta
+  // relativa y tira «Failed to parse src "   "», que rompe el render entero
+  // de la tarjeta en vez de degradar a placeholder.
   const isNonEmpty = (src: unknown): src is string =>
-    typeof src === 'string' && src.length > 0;
+    typeof src === 'string' && src.trim().length > 0;
   const gallery = (images ?? []).filter(isNonEmpty);
+  const sinFotos = gallery.length === 0 && !isNonEmpty(thumbnailUrl);
   const allImages =
     gallery.length > 0
       ? gallery
@@ -143,6 +148,15 @@ export function PropertyCard({
             priority={i === 0}
           />
         ))}
+
+        {sinFotos && (
+          <div
+            data-testid="inmueble-sin-fotos"
+            className="absolute inset-0 flex items-center justify-center text-sm font-medium text-fg-muted"
+          >
+            Sin fotos
+          </div>
+        )}
 
         {/* Subtle bottom gradient for depth */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

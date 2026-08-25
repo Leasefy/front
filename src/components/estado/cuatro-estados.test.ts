@@ -26,8 +26,50 @@ import { join, relative } from 'node:path'
 const RAIZ = process.cwd()
 const CARPETAS = ['src/app', 'src/components']
 
-/** Toma datos de un hook propio (los de `@/lib/hooks` van todos por useApiData). */
-const USA_HOOK_DE_DATOS = /from '@\/lib\/hooks/
+/**
+ * ¿Este hook de `@/lib/hooks` sale a la red?
+ *
+ * Antes esto se daba por sentado: cualquier `from '@/lib/hooks'` contaba como
+ * hook de datos. Dejó de ser cierto — en esa carpeta también viven hooks de UI
+ * pura (paginación de tabla, atajos de teclado, polling por visibilidad), y una
+ * pantalla presentacional que sólo pagina una lista que le llega por props
+ * quedaba acusada de «pintar un vacío sin mirar el error» cuando no tiene
+ * ninguna petición que pueda fallar. `ActaEntregaView` fue la primera; envolver
+ * eso en `<EstadoDeDatos>` habría sido empeorar el código para callar el test.
+ *
+ * Ahora se deriva del contenido del hook en vez de suponerlo, así la regla
+ * sigue valiendo cuando alguien agregue el próximo hook de UI.
+ */
+const HOOK_HABLA_CON_LA_RED = /useApiData|apiClient|agentAuthHeaders|fetch\(|@\/lib\/api\//
+
+/** Los módulos de `@/lib/hooks` que sí traen datos de algún lado. */
+const HOOKS_DE_DATOS: string[] = (function () {
+  const raiz = join(RAIZ, 'src/lib/hooks')
+  const encontrados: string[] = []
+  const recorrer = (dir: string) => {
+    for (const entrada of readdirSync(dir, { withFileTypes: true })) {
+      const ruta = join(dir, entrada.name)
+      if (entrada.isDirectory()) {
+        recorrer(ruta)
+      } else if (/\.tsx?$/.test(entrada.name) && !entrada.name.includes('.test.')) {
+        if (HOOK_HABLA_CON_LA_RED.test(readFileSync(ruta, 'utf8'))) {
+          // `src/lib/hooks/ai/use-x.ts` → `@/lib/hooks/ai/use-x`
+          encontrados.push(
+            '@/lib/hooks/' +
+              relative(raiz, ruta).replace(/\\/g, '/').replace(/\.tsx?$/, ''),
+          )
+        }
+      }
+    }
+  }
+  recorrer(raiz)
+  return encontrados
+})()
+
+/** Toma datos de un hook propio que efectivamente sale a la red. */
+function usaHookDeDatos(src: string): boolean {
+  return HOOKS_DE_DATOS.some((h) => src.includes(`from '${h}'`))
+}
 /** Pinta algún estado vacío. */
 const PINTA_VACIO = /EmptyState|Sin .*aún|No hay/
 /** Mira el fallo de alguna forma. */
@@ -42,17 +84,8 @@ const MIRA_EL_ERROR = /\berror\b|isError/
  * `portafolio/page.tsx`, que fueron las dos primeras.
  */
 const VACIO_SIN_MIRAR_EL_ERROR = [
-  'src/app/inquilino/guardados/page.tsx',
-  'src/app/inquilino/pagos/page.tsx',
-  'src/app/inquilino/para-ti/page.tsx',
   'src/app/panel/inmobiliaria/ai/asegurabilidad/[quoteId]/RecomendacionRail.tsx',
-  'src/app/panel/inmobiliaria/ai/asegurabilidad/costos/page.tsx',
-  'src/components/tenant/RecommendedProperties.tsx',
-  'src/components/messages/MessagesWidget.tsx',
-  'src/components/lease/LeaseExpandableItem.tsx',
-  'src/components/inmobiliaria/cotizador/WizardStep3Config.tsx',
   'src/components/inmobiliaria/cobranza/TopScriptsTable.tsx',
-  'src/components/inmobiliaria/cobranza/CobranzaAnaliticaResumen.tsx',
 ]
 
 /**
@@ -100,7 +133,7 @@ describe('un error no se pinta como un vacío', () => {
     const encontradas = TODAS.filter((archivo) => {
       const src = readFileSync(archivo, 'utf8')
       return (
-        USA_HOOK_DE_DATOS.test(src) && PINTA_VACIO.test(src) && !MIRA_EL_ERROR.test(src)
+        usaHookDeDatos(src) && PINTA_VACIO.test(src) && !MIRA_EL_ERROR.test(src)
       )
     }).map(ruta)
 

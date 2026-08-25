@@ -9713,7 +9713,9 @@
         "sobreTope": "Above what we can back",
         "sobreConsultado": "Above what you asked about",
         "consultaste": "You asked about",
-        "asesorRevisa": "an advisor can review it"
+        "asesorRevisa": "an advisor can review it",
+        "codeudorAria": "How can I still apply?",
+        "codeudorHint": "You can apply using another person's profile (a co-signer) so they take on the lease for you."
       },
       "porMes": "/mo",
       "proceso": {
@@ -9723,6 +9725,11 @@
       "rechazado": {
         "titulo": "We cannot approve you right now",
         "texto": "This is not a final no. There are ways forward."
+      },
+      "alerta": {
+        "canon": "This property's rent",
+        "superaTope": "is above your approved cap of",
+        "codeudor": "You can apply using another person's profile (a co-signer) who does qualify for this amount."
       }
     },
     "resultado": {

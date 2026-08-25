@@ -97,6 +97,24 @@ export function FalloDeCarga({
   // `onReintentar` que inicia un cobro.
   const PISO_VISIBLE_MS = 400
   const [reintentando, setReintentando] = useState(false)
+
+  // ── La referencia que el copy promete ──────────────────────────────────
+  // La descripcion dice «escribinos con la referencia de abajo» y no habia
+  // ninguna: se le pedia a la persona un dato que nunca le mostramos. Esto es
+  // lo que le sirve a soporte para encontrar el evento en los logs —status y
+  // hora—, sin filtrar el mensaje crudo del backend, que sigue viviendo solo
+  // en el nodo `sr-only` de diagnostico.
+  //
+  // Se calcula UNA vez al montar (inicializador de useState, no en el cuerpo):
+  // si se recomputara en cada render, la referencia cambiaria mientras la
+  // persona la esta copiando.
+  const [referencia] = useState(() => {
+    const ahora = new Date()
+    const hhmm =
+      String(ahora.getHours()).padStart(2, '0') +
+      String(ahora.getMinutes()).padStart(2, '0')
+    return `${fallo.status ?? fallo.tipo.toUpperCase().slice(0, 3)}-${hhmm}`
+  })
   const vivo = useRef(true)
   useEffect(() => {
     vivo.current = true
@@ -139,6 +157,9 @@ export function FalloDeCarga({
         <p className="text-[15px] font-semibold text-fg">{fallo.titulo}</p>
         <p className="mx-auto max-w-sm text-sm leading-relaxed text-fg-muted">
           {fallo.descripcion}
+        </p>
+        <p className="text-xs text-fg-subtle">
+          Referencia: <span className="font-mono tabular-nums">{referencia}</span>
         </p>
       </div>
 

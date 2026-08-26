@@ -20,6 +20,7 @@ import {
   ArrowSquareOut,
   Users,
   Trash,
+  WarningCircle,
 } from '@phosphor-icons/react';
 import { IconButton } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
@@ -39,14 +40,25 @@ import {
   DropdownListItem,
   DropdownListTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { Consignacion, PropertyAvailability } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+import type {
+  Consignacion,
+  PropertyAvailability,
+  PortafolioRow,
+  InmuebleSinConsignacion,
+} from '@/lib/types/inmobiliaria';
+import { formatCurrency, portafolioRowKey } from '@/lib/types/inmobiliaria';
 
 type SortField = 'propertyTitle' | 'propertyZone' | 'monthlyRent' | 'commissionPercent' | 'availability';
 type SortDirection = 'asc' | 'desc';
 
 interface ConsignacionTableProps {
-  consignaciones: Consignacion[];
+  /**
+   * T-0030: la tabla del portafolio ahora mezcla dos fuentes — mandatos
+   * reales (`Consignacion`) y propiedades sin mandato
+   * (`InmuebleSinConsignacion`, `GET /inmobiliaria/inmuebles/sin-consignacion`,
+   * contract.md T-0030 §3). `kind` discrimina cada fila; ver `PortafolioRow`.
+   */
+  consignaciones: PortafolioRow[];
   propietariosMap?: Record<string, string>; // id -> name
   agentesMap?: Record<string, { name: string; avatar?: string }>; // id -> { name, avatar }
   onView: (consignacion: Consignacion) => void;
@@ -61,9 +73,20 @@ interface ConsignacionTableProps {
   onVerAviso?: (consignacion: Consignacion) => void;
   onCandidatos?: (consignacion: Consignacion) => void;
   onEliminar?: (consignacion: Consignacion) => void;
+  /**
+   * R4 (T-0030): activar el alert de una fila sin mandato va DIRECTO a
+   * llenarlo, prefiltrado con esta misma fila — nunca a una pantalla de
+   * edición genérica ni a una ruta clavada por id de consignación (no lo
+   * tiene). Ver contract.md T-0030 §3.4.
+   */
+  onCompletarMandato?: (inmueble: InmuebleSinConsignacion) => void;
 }
 
-// Property type icons
+// Property type icons. Total lookup vía `getPropertyIcon` — nunca indexar
+// este record a mano: `ROOM` (T-0030) no tiene entrada acá porque
+// `ConsignacionPropertyType` (back) no lo incluye, y usar `undefined` como
+// componente tira "Element type is invalid" y desmonta la tabla ENTERA, no
+// una fila (contract.md T-0030 §3.2, "ROOM trap").
 const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementType> = {
   apartment: Buildings,
   house: House,
@@ -72,6 +95,15 @@ const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementTyp
   office: Briefcase,
   warehouse: Warehouse,
 };
+
+function getPropertyIcon(propertyType: string): React.ElementType {
+  return (
+    PROPERTY_TYPE_ICONS[propertyType as Consignacion['propertyType']] ??
+    // 'room' degrada al ícono de apartamento — mismo criterio que el mapper
+    // del front para el filtro de tipo (contract.md T-0030 §3.2).
+    Buildings
+  );
+}
 
 // Availability status (labels resolved via i18n in component) → Cadence Badge variant
 const AVAILABILITY_COLORS: Record<
@@ -110,6 +142,7 @@ export function ConsignacionTable({
   onVerAviso,
   onCandidatos,
   onEliminar,
+  onCompletarMandato,
 }: ConsignacionTableProps) {
   const { t } = useI18n();
   const [sortField, setSortField] = useState<SortField>('propertyTitle');
@@ -138,12 +171,17 @@ export function ConsignacionTable({
           bVal = b.monthlyRent;
           break;
         case 'commissionPercent':
-          aVal = a.commissionPercent;
-          bVal = b.commissionPercent;
+          // Una fila sin mandato no tiene comisión — no es 0 (eso mentiría
+          // "comisión cero"), es "no aplica". La hundimos al fondo del orden
+          // ascendente con un centinela en vez de romper el comparador.
+          aVal = a.kind === 'consignacion' ? a.commissionPercent : -1;
+          bVal = b.kind === 'consignacion' ? b.commissionPercent : -1;
           break;
         case 'availability':
-          aVal = a.availability;
-          bVal = b.availability;
+          // Mismo criterio: sin mandato no hay `availability` (contract.md
+          // T-0030 §3.2, "availability trap"). Nunca leerla sin guardar.
+          aVal = a.kind === 'consignacion' ? a.availability : '~sin-mandato';
+          bVal = b.kind === 'consignacion' ? b.availability : '~sin-mandato';
           break;
       }
 
@@ -231,29 +269,39 @@ export function ConsignacionTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedConsignaciones.map((consignacion, index) => {
-            const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType];
-            const availability = AVAILABILITY_COLORS[consignacion.availability];
-            const propietarioName = propietariosMap[consignacion.propietarioId];
-            const agenteInfo = agentesMap[consignacion.agenteId];
+          {sortedConsignaciones.map((row, index) => {
+            const rowKey = portafolioRowKey(row);
+            const PropertyIcon = getPropertyIcon(row.propertyType);
+            const availability =
+              row.kind === 'consignacion'
+                ? AVAILABILITY_COLORS[row.availability] ?? AVAILABILITY_COLORS.available
+                : null;
+            const propietarioName =
+              row.kind === 'consignacion' ? propietariosMap[row.propietarioId] : undefined;
+            const agenteInfo = row.kind === 'consignacion' ? agentesMap[row.agenteId] : undefined;
+            const zoneText = row.propertyZone?.trim() ? row.propertyZone : null;
+
+            const handleCompletarMandato = () => {
+              if (row.kind === 'sinMandato') onCompletarMandato?.(row);
+            };
 
             return (
               <motion.tr
-                key={consignacion.id}
+                key={rowKey}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.02 }}
-                onClick={() => onView(consignacion)}
+                onClick={() => (row.kind === 'consignacion' ? onView(row) : handleCompletarMandato())}
                 className="border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors"
               >
                 {/* Property */}
                 <TableCell className="p-4">
                   <div className="flex items-center gap-3">
-                    {consignacion.propertyThumbnail ? (
+                    {row.propertyThumbnail ? (
                       <div className="w-12 h-12 rounded-md overflow-hidden shrink-0">
                         <img
-                          src={consignacion.propertyThumbnail}
-                          alt={consignacion.propertyTitle}
+                          src={row.propertyThumbnail}
+                          alt={row.propertyTitle}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -264,10 +312,10 @@ export function ConsignacionTable({
                     )}
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate max-w-[200px]">
-                        {consignacion.propertyTitle}
+                        {row.propertyTitle}
                       </p>
                       <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                        {consignacion.propertyAddress}
+                        {row.propertyAddress}
                       </p>
                     </div>
                   </div>
@@ -278,11 +326,14 @@ export function ConsignacionTable({
                   <div className="flex items-center gap-1.5">
                     <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-foreground truncate">
-                        {consignacion.propertyZone}
-                      </p>
+                      {/* Zona vacía (posible en el back, contract.md T-0030
+                          §3.2) → se omite la línea entera, nunca un renglón
+                          en blanco arriba de la ciudad. */}
+                      {zoneText && (
+                        <p className="text-foreground truncate">{zoneText}</p>
+                      )}
                       <p className="text-sm text-muted-foreground">
-                        {consignacion.propertyCity}
+                        {row.propertyCity}
                       </p>
                     </div>
                   </div>
@@ -298,7 +349,7 @@ export function ConsignacionTable({
                 <TableCell className="p-4 whitespace-nowrap">
                   <div>
                     <p className="font-semibold text-foreground tabular-nums">
-                      {formatCurrency(consignacion.monthlyRent)}
+                      {formatCurrency(row.monthlyRent)}
                     </p>
                     {/*
                       Antes: `consignacion.adminFee && consignacion.adminFee > 0 && (…)`.
@@ -306,20 +357,26 @@ export function ConsignacionTable({
                       y React pinta ese cero: quedaba un «0» suelto debajo del canon,
                       que se ve igual que un importe partido en dos renglones.
                     */}
-                    {consignacion.adminFee != null && consignacion.adminFee > 0 && (
+                    {row.adminFee != null && row.adminFee > 0 && (
                       <p className="text-xs text-muted-foreground tabular-nums">
-                        {t('inmobiliaria.consignaciones.table.adminFee', { amount: formatCurrency(consignacion.adminFee) })}
+                        {t('inmobiliaria.consignaciones.table.adminFee', { amount: formatCurrency(row.adminFee) })}
                       </p>
                     )}
                   </div>
                 </TableCell>
 
-                {/* Commission */}
+                {/* Commission — no existe sin mandato (contract.md T-0030
+                    §3.2: no hay `commissionPercent` de una consignación que
+                    no existe todavía). */}
                 <TableCell className="p-4">
-                  <Badge variant="secondary" className="gap-1 tabular-nums">
-                    <Percent className="w-3.5 h-3.5" />
-                    {consignacion.commissionPercent}%
-                  </Badge>
+                  {row.kind === 'consignacion' ? (
+                    <Badge variant="secondary" className="gap-1 tabular-nums">
+                      <Percent className="w-3.5 h-3.5" />
+                      {row.commissionPercent}%
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
 
                 {/* Propietario */}
@@ -364,18 +421,35 @@ export function ConsignacionTable({
                   )}
                 </TableCell>
 
-                {/* Status */}
+                {/* Status — sin mandato, el Estado ES el alert de R4: no hay
+                    `availability` que pintar (contract.md T-0030 §3.2,
+                    "availability trap"), así que la celda entera se vuelve el
+                    disparador que manda a llenar el mandato. */}
                 <TableCell className="p-4">
-                  <Badge variant={availability.variant}>
-                    {t(availability.labelKey)}
-                  </Badge>
+                  {availability ? (
+                    <Badge variant={availability.variant}>
+                      {t(availability.labelKey)}
+                    </Badge>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCompletarMandato();
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1 text-xs font-medium text-warning hover:opacity-80 transition-opacity"
+                    >
+                      <WarningCircle className="w-3.5 h-3.5" weight="fill" />
+                      {t('inmobiliaria.consignaciones.table.missingMandate')}
+                    </button>
+                  )}
                 </TableCell>
 
                 {/* Actions */}
                 <TableCell className="p-4" onClick={(e) => e.stopPropagation()}>
                   <DropdownList
-                    open={openMenuId === consignacion.id}
-                    onOpenChange={(o) => setOpenMenuId(o ? consignacion.id : null)}
+                    open={openMenuId === rowKey}
+                    onOpenChange={(o) => setOpenMenuId(o ? rowKey : null)}
                   >
                     <DropdownListTrigger asChild>
                       <IconButton
@@ -386,62 +460,80 @@ export function ConsignacionTable({
                       />
                     </DropdownListTrigger>
                     <DropdownListContent align="end" className="w-40">
-                      <DropdownListItem
-                        className="gap-3"
-                        onClick={() => onView(consignacion)}
-                      >
-                        <Eye className="w-4 h-4" />
-                        <span className="text-sm">{t('inmobiliaria.consignaciones.table.viewDetail')}</span>
-                      </DropdownListItem>
-                      <DropdownListItem
-                        className="gap-3"
-                        onClick={() => onEdit(consignacion)}
-                      >
-                        <PencilSimple className="w-4 h-4" />
-                        <span className="text-sm">{t('inmobiliaria.consignaciones.table.edit')}</span>
-                      </DropdownListItem>
-                      {onAgendarCita && (
+                      {row.kind === 'consignacion' ? (
+                        <>
+                          <DropdownListItem
+                            className="gap-3"
+                            onClick={() => onView(row)}
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span className="text-sm">{t('inmobiliaria.consignaciones.table.viewDetail')}</span>
+                          </DropdownListItem>
+                          <DropdownListItem
+                            className="gap-3"
+                            onClick={() => onEdit(row)}
+                          >
+                            <PencilSimple className="w-4 h-4" />
+                            <span className="text-sm">{t('inmobiliaria.consignaciones.table.edit')}</span>
+                          </DropdownListItem>
+                          {onAgendarCita && (
+                            <DropdownListItem
+                              className="gap-3"
+                              onClick={() => onAgendarCita(row)}
+                            >
+                              <CalendarPlus className="w-4 h-4" />
+                              <span className="text-sm">{t('inmobiliaria.agenda.pedirCita')}</span>
+                            </DropdownListItem>
+                          )}
+                          {onCandidatos && (
+                            <DropdownListItem
+                              className="gap-3"
+                              onClick={() => onCandidatos(row)}
+                            >
+                              <Users className="w-4 h-4" />
+                              <span className="text-sm">
+                                {t('inmobiliaria.inmuebles.acciones.candidatos')}
+                              </span>
+                            </DropdownListItem>
+                          )}
+                          {/* El aviso público sólo existe si hay inmueble: un
+                              mandato de la migración de cartera puede no tenerlo
+                              todavía, y un enlace a la nada no es una acción. */}
+                          {onVerAviso && row.propertyId && (
+                            <DropdownListItem
+                              className="gap-3"
+                              onClick={() => onVerAviso(row)}
+                            >
+                              <ArrowSquareOut className="w-4 h-4" />
+                              <span className="text-sm">
+                                {t('inmobiliaria.inmuebles.acciones.verAviso')}
+                              </span>
+                            </DropdownListItem>
+                          )}
+                          {onEliminar && (
+                            <DropdownListItem
+                              className="gap-3 text-danger focus:text-danger"
+                              onClick={() => onEliminar(row)}
+                            >
+                              <Trash className="w-4 h-4" />
+                              <span className="text-sm">
+                                {t('inmobiliaria.inmuebles.acciones.eliminar')}
+                              </span>
+                            </DropdownListItem>
+                          )}
+                        </>
+                      ) : (
+                        // Sin mandato: nada consignación-keyed — no hay `id`
+                        // de consignación al que navegar (contract.md T-0030
+                        // §3.2 lo omite a propósito). La única acción posible
+                        // es completar el mandato.
                         <DropdownListItem
                           className="gap-3"
-                          onClick={() => onAgendarCita(consignacion)}
+                          onClick={handleCompletarMandato}
                         >
-                          <CalendarPlus className="w-4 h-4" />
-                          <span className="text-sm">{t('inmobiliaria.agenda.pedirCita')}</span>
-                        </DropdownListItem>
-                      )}
-                      {onCandidatos && (
-                        <DropdownListItem
-                          className="gap-3"
-                          onClick={() => onCandidatos(consignacion)}
-                        >
-                          <Users className="w-4 h-4" />
+                          <WarningCircle className="w-4 h-4" />
                           <span className="text-sm">
-                            {t('inmobiliaria.inmuebles.acciones.candidatos')}
-                          </span>
-                        </DropdownListItem>
-                      )}
-                      {/* El aviso público sólo existe si hay inmueble: un
-                          mandato de la migración de cartera puede no tenerlo
-                          todavía, y un enlace a la nada no es una acción. */}
-                      {onVerAviso && consignacion.propertyId && (
-                        <DropdownListItem
-                          className="gap-3"
-                          onClick={() => onVerAviso(consignacion)}
-                        >
-                          <ArrowSquareOut className="w-4 h-4" />
-                          <span className="text-sm">
-                            {t('inmobiliaria.inmuebles.acciones.verAviso')}
-                          </span>
-                        </DropdownListItem>
-                      )}
-                      {onEliminar && (
-                        <DropdownListItem
-                          className="gap-3 text-danger focus:text-danger"
-                          onClick={() => onEliminar(consignacion)}
-                        >
-                          <Trash className="w-4 h-4" />
-                          <span className="text-sm">
-                            {t('inmobiliaria.inmuebles.acciones.eliminar')}
+                            {t('inmobiliaria.consignaciones.table.missingMandate')}
                           </span>
                         </DropdownListItem>
                       )}

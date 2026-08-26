@@ -14,6 +14,8 @@ import type {
   AgenteFormData,
   Consignacion,
   ConsignacionFormData,
+  BackendInmuebleSinConsignacion,
+  InmuebleSinConsignacion,
   PipelineItem,
   PipelineStage,
   Cobro,
@@ -454,6 +456,40 @@ export const consignacionesApi = {
 
   async delete(id: string): Promise<void> {
     await apiClient.delete(`${BASE}/consignaciones/${id}`);
+  },
+};
+
+// ============================================================================
+// Inmuebles sin consignación (T-0030) — read-only, second source of the
+// portfolio table. Contract.md T-0030 §3.1/§3.2/§4.1: hand-mirrored, NOT
+// typed from generated/back.ts.
+// ============================================================================
+
+/**
+ * `GET /inmobiliaria/inmuebles/sin-consignacion` returns raw UPPER_SNAKE
+ * enums, same convention as `RawConsignacion` above.
+ */
+export function normalizeInmuebleSinConsignacion(
+  raw: BackendInmuebleSinConsignacion,
+): InmuebleSinConsignacion {
+  const lower = (v: string) => v.toLowerCase();
+  return {
+    ...raw,
+    propertyType: lower(raw.propertyType) as InmuebleSinConsignacion['propertyType'],
+    status: lower(raw.status) as InmuebleSinConsignacion['status'],
+  };
+}
+
+export const inmueblesApi = {
+  /**
+   * No query params, no pagination (contract §3.1.2) — the portfolio page
+   * filters/paginates entirely client-side, same as `consignacionesApi.getAll`.
+   */
+  async getSinConsignacion(): Promise<InmuebleSinConsignacion[]> {
+    const raw = await apiClient.get<BackendInmuebleSinConsignacion[]>(
+      `${BASE}/inmuebles/sin-consignacion`,
+    );
+    return raw.map(normalizeInmuebleSinConsignacion);
   },
 };
 

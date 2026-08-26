@@ -27,7 +27,7 @@
  * bg-card/surface-muted, border-border).
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -62,9 +62,10 @@ import {
   type PaymentsFunnelItem,
 } from '@/lib/hooks/cobranza/use-payments-funnel'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
+import { useDebtorDetail } from '@/lib/hooks/cobranza/use-debtor-detail'
+import { useAgreementOffer } from '@/lib/hooks/cobranza/use-agreement-offer'
+import { reformatearMiles, parseMiles, formatMiles } from '@/lib/cobranza/formato-miles'
 import {
-  useAgreementPropose,
-  type AgreementProposalDraft,
   type CarteraStage,
 } from '@/lib/hooks/cobranza/use-agreement-propose'
 import { usePromises } from '@/lib/hooks/cobranza/use-promises'
@@ -303,7 +304,7 @@ const CONSECUENCIAS = [
 
 const NUM_CUOTAS_OPCIONES = [2, 3, 4, 6, 9, 12]
 
-function CrearAcuerdoForm() {
+function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
   const { formatCurrency } = useI18n()
 
   // Deudor → fuente real de debtorId + etapa (requeridos por el endpoint). Sólo
@@ -326,13 +327,22 @@ function CrearAcuerdoForm() {
   // una invariante — por eso se enuncia, no se ofrece como interruptor.
   const [notificarPropietario, setNotificarPropietario] = useState<boolean>(true)
 
-  // POST de la propuesta + borrador devuelto por el motor de planes.
-  const { propose, isSubmitting, error, notDeployed, reset } = useAgreementPropose()
-  const [draft, setDraft] = useState<AgreementProposalDraft | null>(null)
+  // El POST que SÍ persiste la propuesta (status 'offered', pendiente de
+  // aprobación). Antes «Guardar» llamaba a propose y nada quedaba en la base.
+  const { offer, isSubmitting, error, notDeployed, reset } = useAgreementOffer()
 
-  const total = Number(totalAdeudado) || 0
-  const interesesNum = Number(intereses) || 0
-  const inicial = Number(cuotaInicial) || 0
+  // La deuda REAL del deudor: al elegirlo, se autocompleta «Valor total
+  // adeudado» con lo que dice la base (kpis.totalOwed). El usuario puede
+  // sobreescribirlo; el resto de condiciones las pone él.
+  const { data: detalleDeudor } = useDebtorDetail({ debtorId })
+  const deudaReal =
+    debtorId !== '' && detalleDeudor?.id === debtorId
+      ? (detalleDeudor.kpis?.totalOwed ?? null)
+      : null
+
+  const total = parseMiles(totalAdeudado) ?? 0
+  const interesesNum = parseMiles(intereses) ?? 0
+  const inicial = parseMiles(cuotaInicial) ?? 0
   const cuotas = Number(numCuotas) || 0
 
   const consecuenciaLabel =
@@ -343,6 +353,17 @@ function CrearAcuerdoForm() {
     [debtoresNegociables, debtorId],
   )
 
+  // Autocompleta el total con la deuda real UNA vez por deudor: si el usuario
+  // luego lo edita, no se lo volvemos a pisar (se recuerda el último deudor
+  // autocompletado). Cambiar de deudor vuelve a traer su deuda.
+  const [autoLlenadoPara, setAutoLlenadoPara] = useState<string | null>(null)
+  useEffect(() => {
+    if (deudaReal != null && deudaReal > 0 && autoLlenadoPara !== debtorId) {
+      setTotalAdeudado(formatMiles(deudaReal))
+      setAutoLlenadoPara(debtorId)
+    }
+  }, [deudaReal, debtorId, autoLlenadoPara])
+
   const hasPreview = total > 0 && cuotas > 0
   // Se puede guardar la propuesta cuando hay deudor + deuda total válida y los
   // intereses no superan el total (regla del motor).
@@ -351,19 +372,19 @@ function CrearAcuerdoForm() {
 
   async function handleSubmit() {
     if (!selectedDebtor || total <= 0) return
-    setDraft(null)
-    const result = await propose({
+    const result = await offer({
       debtorId: selectedDebtor.id,
       stage: selectedDebtor.currentStage,
       totalDueCop: Math.round(total),
       interestsCop: Math.round(interesesNum),
     })
-    if (result) setDraft(result)
+    // Persistió: el plan queda 'offered' (pendiente aprobación). Se cierra el
+    // modal y se recarga la lista para que la propuesta aparezca ahí.
+    if (result) onCreada()
   }
 
-  // Al editar cualquier condición clave, limpiamos el resultado/avisos previos.
+  // Al editar cualquier condición clave, limpiamos los avisos previos.
   function clearFeedback() {
-    if (draft) setDraft(null)
     if (error || notDeployed) reset()
   }
 
@@ -427,13 +448,12 @@ function CrearAcuerdoForm() {
             </label>
             <Input
               id="acuerdo-total"
-              type="number"
+              type="text"
               inputMode="numeric"
-              min={0}
               placeholder="Ej. 2.400.000"
               value={totalAdeudado}
               onChange={(e) => {
-                setTotalAdeudado(e.target.value)
+                setTotalAdeudado(reformatearMiles(e.target.value))
                 clearFeedback()
               }}
             />
@@ -445,13 +465,12 @@ function CrearAcuerdoForm() {
             </label>
             <Input
               id="acuerdo-intereses"
-              type="number"
+              type="text"
               inputMode="numeric"
-              min={0}
               placeholder="Ej. 180.000"
               value={intereses}
               onChange={(e) => {
-                setIntereses(e.target.value)
+                setIntereses(reformatearMiles(e.target.value))
                 clearFeedback()
               }}
             />
@@ -463,12 +482,11 @@ function CrearAcuerdoForm() {
             </label>
             <Input
               id="acuerdo-inicial"
-              type="number"
+              type="text"
               inputMode="numeric"
-              min={0}
               placeholder="Ej. 600.000"
               value={cuotaInicial}
-              onChange={(e) => setCuotaInicial(e.target.value)}
+              onChange={(e) => setCuotaInicial(reformatearMiles(e.target.value))}
             />
           </div>
 
@@ -627,14 +645,10 @@ function CrearAcuerdoForm() {
         </div>
       </form>
 
-      {/* Columna derecha — borrador real (tras guardar) o vista previa local */}
+      {/* Columna derecha — vista previa local mientras se arma el acuerdo. */}
       <div className="space-y-3">
-        <h3 className="text-base font-semibold text-fg">
-          {draft ? 'Propuesta guardada' : 'Vista previa'}
-        </h3>
-        {draft ? (
-          <DraftGuardadoCard draft={draft} />
-        ) : hasPreview ? (
+        <h3 className="text-base font-semibold text-fg">Vista previa</h3>
+        {hasPreview ? (
           <AcuerdoPropuestoCard
             totalAdeudado={total}
             cuotaInicial={inicial}
@@ -651,118 +665,6 @@ function CrearAcuerdoForm() {
             </p>
           </div>
         )}
-      </div>
-    </div>
-  )
-}
-
-// ── Card de borrador guardado (resultado real del motor de planes) ──────────────
-
-function DraftGuardadoCard({ draft }: { draft: AgreementProposalDraft }) {
-  const { formatCurrency, formatDate } = useI18n()
-
-  const discountLabel =
-    draft.discountKind === 'intereses_total'
-      ? 'Condonación total de intereses'
-      : draft.discountKind === 'intereses_parcial'
-        ? 'Condonación parcial de intereses'
-        : 'Sin descuento'
-
-  return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      {/* Cabecera de éxito */}
-      <div className="flex items-center justify-between gap-2 px-5 py-3 bg-success-soft border-b border-border">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="w-8 h-8 rounded-lg bg-card flex items-center justify-center shrink-0">
-            <CheckCircle className="w-4 h-4 text-success" weight="duotone" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-fg">Propuesta creada</p>
-            <p className="text-xs text-fg-muted">Pendiente de aprobación humana</p>
-          </div>
-        </div>
-        <Badge variant="warning" className="shrink-0">
-          <Clock className="w-3 h-3" aria-hidden="true" />
-          Pendiente aprobación
-        </Badge>
-      </div>
-
-      {/* Desglose calculado por el motor */}
-      <dl className="grid grid-cols-2 gap-px bg-border">
-        <div className="bg-card p-4 space-y-0.5">
-          <dt className="text-xs text-fg-muted">Total efectivo</dt>
-          <dd className="text-sm font-semibold tabular-nums text-fg">
-            {copFormat(draft.effectiveTotalCop, formatCurrency)}
-          </dd>
-        </div>
-        <div className="bg-card p-4 space-y-0.5">
-          <dt className="text-xs text-fg-muted">Pago inicial</dt>
-          <dd className="text-sm font-semibold tabular-nums text-success">
-            {copFormat(draft.initialAmountCop, formatCurrency)}
-          </dd>
-        </div>
-        <div className="bg-card p-4 space-y-0.5">
-          <dt className="text-xs text-fg-muted">Descuento aplicado</dt>
-          <dd className="text-sm font-semibold tabular-nums text-fg">
-            {draft.discountAppliedPct}%
-          </dd>
-        </div>
-        <div className="bg-card p-4 space-y-0.5">
-          <dt className="text-xs text-fg-muted">Ahorro</dt>
-          <dd className="text-sm font-semibold tabular-nums text-fg">
-            {copFormat(draft.discountAmountCop, formatCurrency)}
-          </dd>
-        </div>
-      </dl>
-
-      {/* Tipo de descuento + cuotas calculadas */}
-      <div className="px-5 py-4 space-y-3 border-t border-border">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-fg-muted">Descuento:</span>
-          <span className="font-medium text-fg">{discountLabel}</span>
-        </div>
-        {draft.installments.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
-              Plan de cuotas
-            </p>
-            <ul className="space-y-1">
-              {draft.installments.map((cuota) => (
-                <li
-                  key={cuota.number}
-                  className="flex items-center justify-between text-sm border-b border-border last:border-0 py-1"
-                >
-                  <span className="text-fg-muted">
-                    Cuota {cuota.number} ·{' '}
-                    {formatDate(new Date(cuota.dueDate), {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </span>
-                  <span className="font-medium tabular-nums text-fg">
-                    {copFormat(cuota.amountCop, formatCurrency)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-
-      {/* Cross-link a la aprobación real (T-323: aquí NO se aprueba ni activa). */}
-      <div className="flex items-start gap-2 px-5 py-4 border-t border-border bg-surface-muted">
-        <Info className="w-4 h-4 text-fg-muted shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
-        <p className="text-xs text-fg-muted leading-relaxed">
-          La propuesta quedó pendiente de aprobación. La aprobación final se realiza desde el{' '}
-          <Link
-            href={`${BASE}/pagos`}
-            className="text-primary underline-offset-4 hover:underline font-medium"
-          >
-            detalle del plan de pago
-          </Link>
-          , donde un humano la revisa y la activa.
-        </p>
       </div>
     </div>
   )
@@ -982,7 +884,12 @@ function AcuerdosContent() {
           <DialogHeader>
             <DialogTitle>Nuevo acuerdo de pago</DialogTitle>
           </DialogHeader>
-          <CrearAcuerdoForm />
+          <CrearAcuerdoForm
+            onCreada={() => {
+              setCrearAbierto(false)
+              recargar()
+            }}
+          />
 
           {/* Acá vivía un enlace a Configuración §Negociación para «crear un
               acuerdo general». Se sacó: armar el marco de los acuerdos no es un

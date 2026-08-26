@@ -2558,6 +2558,11 @@
         "table": "Table",
         "cards": "Cards"
       },
+      "degradedNotice": {
+        "title": "We couldn't load imported properties without a mandate",
+        "description": "Your portfolio is still showing what did load. A recent property may be missing.",
+        "retry": "Retry"
+      },
       "detail": {
         "title": "Property Details",
         "info": "Information",
@@ -2917,7 +2922,24 @@
         "edit": "Edit",
         "emptyTitle": "No properties found",
         "emptyDescription": "Adjust the filters or add a new consignment",
-        "adminFee": "+ {{amount}} admin"
+        "adminFee": "+ {{amount}} admin",
+        "missingMandate": "Missing mandate"
+      },
+      "mandateDialog": {
+        "title": "Complete the mandate",
+        "subtitle": "Finish consigning \"{{title}}\": we already have the property's data, only the mandate is missing.",
+        "propietarioLabel": "Owner",
+        "commissionLabel": "Agency commission",
+        "contractDateLabel": "Contract date",
+        "agenteLabel": "Assigned agent (optional)",
+        "cancel": "Cancel",
+        "confirm": "Complete mandate",
+        "toasts": {
+          "successTitle": "Mandate completed",
+          "successDesc": "\"{{title}}\" now has a mandate and commission.",
+          "alreadyExistsTitle": "That mandate already existed — we refreshed your portfolio.",
+          "errorDesc": "We couldn't complete the mandate. Try again in a moment."
+        }
       },
       "detail": {
         "propertyInfo": "Property Information",

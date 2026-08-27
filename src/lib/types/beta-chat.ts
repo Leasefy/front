@@ -105,7 +105,19 @@ export type ResponseType = 'informative' | 'actionable';
 export interface ResponseAction {
   id: string;
   label: string;
-  /** Route within the app (e.g. '/panel/propiedades') */
+  /**
+   * Lo que se le pregunta al asistente al tocar la acción.
+   *
+   * Es el comportamiento PRINCIPAL (Nico, 2026-08-27: «todas estas acciones
+   * deben verse reflejadas en el chat, porque para eso es ese chat, no para
+   * que lo lleves a otro lado»). Cuando falta, se usa el `label`, que ya viene
+   * redactado como una petición («Ver resumen de cobranza de hoy»).
+   */
+  prompt?: string;
+  /**
+   * Sección de la app relacionada. Deja de ser lo que hace el botón y pasa a
+   * ser una salida SECUNDARIA, para cuando de verdad querés ir a la pantalla.
+   */
   href?: string;
   /** Phosphor icon name */
   icon: string;

@@ -9565,7 +9565,8 @@
     },
     "response": {
       "actionable": "Accionable",
-      "informative": "Informativo"
+      "informative": "Informativo",
+      "openSection": "Abrir la sección"
     },
     "workspace": {
       "stepsTitle": "Pasos del analisis",

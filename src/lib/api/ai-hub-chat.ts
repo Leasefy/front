@@ -146,6 +146,10 @@ export function suggestedActionToResponseAction(
   return {
     id: `act_${index}_${action.target}`,
     label: action.label,
+    // El label del back ya viene redactado como petición, así que sirve tal
+    // cual de prompt: tocar la acción le PREGUNTA al asistente en vez de
+    // sacarte de la conversación.
+    prompt: action.label,
     href: targetToHref(action.target),
     icon: TARGET_ICON[action.target] ?? 'ArrowRight',
     variant: index === 0 ? 'primary' : 'secondary',

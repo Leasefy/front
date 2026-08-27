@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /** «0:51» — minutos:segundos, como el reloj de Manus. */
 export function formatElapsed(ms: number): string {
@@ -25,4 +25,27 @@ export function useElapsed(desde: Date | null | undefined, corriendo: boolean): 
   }, [corriendo]);
   if (!desde) return 0;
   return ahora - desde.getTime();
+}
+
+/**
+ * Desde cuándo está activo un estado booleano (p. ej. «pensando»).
+ *
+ * El hook del chat no guarda cuándo empezó a pensar; sin esto el reloj del
+ * panel decía 0:00 mientras el asistente pensaba (Nico: «no veo que el
+ * tiempo sume»). Se fija al pasar a `true` y se suelta al pasar a `false`.
+ */
+export function useSince(activo: boolean): Date | null {
+  const ref = useRef<Date | null>(null);
+  const [, tick] = useState(0);
+  useEffect(() => {
+    if (activo && ref.current === null) {
+      ref.current = new Date();
+      tick((n) => n + 1);
+    }
+    if (!activo && ref.current !== null) {
+      ref.current = null;
+      tick((n) => n + 1);
+    }
+  }, [activo]);
+  return ref.current;
 }

@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n';
 import type { AgentActivityBlock, AgentExecution } from '@/lib/types/beta-chat';
 import { AGENT_METADATA } from '@/lib/types/beta-chat';
 import { ChatOrb } from './ChatOrb';
-import { useElapsed, formatElapsed } from './useElapsed';
+import { useElapsed, useSince, formatElapsed } from './useElapsed';
 
 interface AgentTaskProgressProps {
   /** Bloque vivo; `null` cuando no hay agentes corriendo. */
@@ -42,7 +42,11 @@ export function AgentTaskProgress({ activity, thinking, className }: AgentTaskPr
   const enCurso =
     agentes.find((a) => a.status === 'running' || a.status === 'dispatching') ?? null;
   const hechos = agentes.filter((a) => a.status === 'completed' || a.status === 'failed').length;
-  const ms = useElapsed(enCurso?.startedAt ?? activity?.startedAt, Boolean(enCurso) || thinking);
+  const pensandoDesde = useSince(thinking);
+  const ms = useElapsed(
+    enCurso?.startedAt ?? activity?.startedAt ?? pensandoDesde,
+    Boolean(enCurso) || thinking
+  );
 
   const visible = thinking || agentes.length > 0;
   if (!visible) return null;

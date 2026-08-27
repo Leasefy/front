@@ -153,10 +153,28 @@ function deserializeConversations(json: string): Conversation[] {
     return parsed.map((c) => ({
       id: c.id,
       title: c.title,
-      messages: c.messages.map((m) => ({
-        ...m,
-        timestamp: new Date(m.timestamp),
-      })),
+      messages: c.messages.map((m) => {
+        // Un mensaje guardado a mitad de vuelo (`sending` / `streaming`) no
+        // tiene ninguna petición viva detrás cuando se recarga la página:
+        // se quedaba mostrando el orbe para siempre (Nico, 2026-08-27: «¿por
+        // qué quedan ahí solos?»). Se cierra como interrumpido, con texto, y
+        // así el avatar pasa al de marca y «Rehacer» sigue disponible.
+        const enVuelo =
+          m.role === 'assistant' && (m.status === 'sending' || m.status === 'streaming');
+        return {
+          ...m,
+          timestamp: new Date(m.timestamp),
+          ...(enVuelo
+            ? {
+                status: 'complete' as const,
+                content:
+                  m.content.trim().length > 0
+                    ? m.content
+                    : 'Esta respuesta se interrumpió al recargar la página. Vuelve a preguntar o toca «Volver a generar».',
+              }
+            : {}),
+        };
+      }),
       createdAt: new Date(c.createdAt),
       updatedAt: new Date(c.updatedAt),
     }));

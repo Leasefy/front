@@ -9614,7 +9614,17 @@
       "thinking": "Thinking about your question…",
       "finishing": "Writing the answer…",
       "progress": "Task progress",
-      "workingAs": "Checking with the {{agent}} agent…"
+      "workingAs": "Checking with the {{agent}} agent…",
+      "phase": {
+        "reading": "Reading your question",
+        "deciding": "Deciding how to solve it",
+        "longer": "Still on it"
+      },
+      "hint": {
+        "reading": "Understanding what you need and what data I have.",
+        "deciding": "Choosing which agents to consult and in what order.",
+        "longer": "Taking longer than usual — nothing's lost, still working."
+      }
     }
   },
   "landlordProfile": {

@@ -14,11 +14,11 @@ import { ChatOrb } from './ChatOrb';
 export function TypingIndicator({ className }: { className?: string }) {
   return (
     <div className={cn('flex items-center gap-1', className)}>
-      {/* 40px, más grande que el avatar de 24: ESTE es el que se mira mientras
+      {/* 44px, más grande que el avatar de 26: ESTE es el que se mira mientras
           se espera, y es el momento en que tiene que lucir. El -ml compensa el
-          margen que la caja reserva para las ondas, para que el cuerpo del orbe
-          caiga donde caía la marca y no corra el texto de abajo. */}
-      <ChatOrb size={40} className="-ml-[24px]" label="Generando respuesta" />
+          margen que la caja reserva para el resplandor ((box − size) / 2), para
+          que el cuerpo del orbe caiga donde caía la marca y no corra el texto. */}
+      <ChatOrb size={44} className="-ml-[20px]" label="Generando respuesta" />
     </div>
   );
 }

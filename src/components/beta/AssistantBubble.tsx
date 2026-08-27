@@ -113,7 +113,7 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
           chica y un segundo indicador compitiendo por decir lo mismo. */}
       {isSending || isStreamingThis ? (
         <div className="flex-shrink-0 w-6 mt-0.5 flex items-start justify-center">
-          <ChatOrb size={24} className="-mt-[15px] -ml-[15px]" label="Generando respuesta" />
+          <ChatOrb size={26} className="-mt-[12px] -ml-[12px]" label="Generando respuesta" />
         </div>
       ) : (
         <div className="flex-shrink-0 w-6 h-6 mt-0.5 rounded-sm bg-surface-muted flex items-center justify-center">

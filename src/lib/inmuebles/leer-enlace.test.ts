@@ -194,6 +194,28 @@ describe('defectos encontrados contra una ficha real', () => {
     expect(r.barrio?.valor).toBe('Teusaquillo');
   });
 
+  it('no deja que un departamento se cuele como barrio (T-0030 WU-3, defecto real: Itagüí/Antioquia)', () => {
+    // Importación real: addressRegion="Antioquia" (departamento, NO ciudad),
+    // addressLocality="Itagüí" (sí es ciudad — está en CIUDADES). esCiudad()
+    // elige bien la ciudad, pero el sobrante ("Antioquia") se asignaba SIN
+    // preguntar si era plausible que fuera un barrio. Un import real produjo
+    // `neighborhood: "Antioquia"`.
+    const html = `
+<html><head>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"Apartment",
+   "name":"Apartamento en Itagüí",
+   "address":{"@type":"PostalAddress","streetAddress":"Calle 52 Sur # 48-30",
+     "addressLocality":"Itagüí","addressRegion":"Antioquia"},
+   "offers":{"@type":"Offer","price":"1500000","priceCurrency":"COP"}}
+  </script>
+</head><body></body></html>`;
+    const r = leerInmuebleDeHtml(html, 'https://x.co/itagui-1');
+
+    expect(r.ciudad?.valor).toBe('Itagüí');
+    expect(r.barrio).toBeUndefined();
+  });
+
   it('trae la galería del inmueble y NO las fotos de los similares', () => {
     // La ficha real traía 93 URLs de imágenes de 89 inmuebles distintos: el
     // carrusel de «similares» viaja embebido. Sólo 14 eran del apartamento

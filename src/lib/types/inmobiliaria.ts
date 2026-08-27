@@ -187,6 +187,77 @@ export interface ConsignacionFormData {
 }
 
 // ============================================================================
+// Inmueble sin consignación (T-0030) — a Property with no mandate yet
+// ============================================================================
+//
+// `GET /inmobiliaria/inmuebles/sin-consignacion` (contract.md T-0030 §3.1/§3.2).
+// A read-only surface for properties (imported via link, or left mandate-less
+// by an aborted manual wizard) that have no `Consignacion` in this agency, so
+// they never appear in `GET /inmobiliaria/consignaciones`. Deliberately has
+// no `id` — see `portafolioRowKey` below.
+
+/** `PropertyType` (back) has 7 members; `ConsignacionPropertyType` has 6 — no `ROOM`. */
+export type PropertyTypeAmplio = Consignacion['propertyType'] | 'room';
+
+/** `Property.status` (Prisma `PropertyStatus`), lower-cased for the front. */
+export type PropertyStatusSinConsignacion = 'draft' | 'available' | 'rented' | 'pending' | 'reserved';
+
+/**
+ * Raw shape of `GET /inmobiliaria/inmuebles/sin-consignacion`
+ * (`InmuebleSinConsignacionResponseDto`, back, UPPER_SNAKE enums).
+ * Hand-mirrored per `engineering/FRONTEND.md` §4 (mirror-and-map) — MUST NOT
+ * be typed from `generated/back.ts` (contract.md T-0030 §4.1).
+ */
+export interface BackendInmuebleSinConsignacion {
+  propertyId: string;
+  propertyTitle: string;
+  propertyAddress: string;
+  propertyCity: string;
+  /** May be `''` — DB allows an empty, non-null neighborhood. */
+  propertyZone: string;
+  propertyType: string;
+  propertyThumbnail: string | null;
+  monthlyRent: number;
+  adminFee: number;
+  status: string;
+  createdAt: string;
+}
+
+/** Front-normalized row for a property with no mandate yet (lower-cased enums). */
+export interface InmuebleSinConsignacion {
+  propertyId: string;
+  propertyTitle: string;
+  propertyAddress: string;
+  propertyCity: string;
+  propertyZone: string;
+  propertyType: PropertyTypeAmplio;
+  propertyThumbnail: string | null;
+  monthlyRent: number;
+  adminFee: number;
+  status: PropertyStatusSinConsignacion;
+  createdAt: string;
+}
+
+/**
+ * The unified row the portfolio page renders — either a real mandate
+ * (`Consignacion`) or a mandate-less property (`InmuebleSinConsignacion`).
+ * `kind` is a front-only discriminator, stamped at merge time: the wire never
+ * sends one on either source (contract §3.2 — "the front already knows which
+ * array a row came from").
+ */
+export type PortafolioRow =
+  | ({ kind: 'consignacion' } & Consignacion)
+  | ({ kind: 'sinMandato' } & InmuebleSinConsignacion);
+
+/**
+ * Stable React key. Never bare `propertyId` for a mandate-less row — it would
+ * read as a consignación id to the next maintainer (contract §3.2).
+ */
+export function portafolioRowKey(row: PortafolioRow): string {
+  return row.kind === 'consignacion' ? row.id : `property:${row.propertyId}`;
+}
+
+// ============================================================================
 // Pipeline de Arriendos (Rental Pipeline)
 // ============================================================================
 

@@ -23,6 +23,41 @@ export const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   'Santa Marta': { lat: 11.2404, lng: -74.199 },
   'Manizales': { lat: 5.0689, lng: -75.5174 },
   'Cúcuta': { lat: 7.8939, lng: -72.5078 },
+  /**
+   * T-0030 WU-3 — this table used to stop at 10 cities while
+   * `leer-enlace.ts`'s own `CIUDADES` set already recognizes 32 as valid
+   * Colombian cities. A recognized-but-missing city (live case: Itagüí)
+   * fell all the way through to `source: 'none'`, silently dropping both
+   * coordinates on an already-successful (200, empty `results`) geocode
+   * call. These 22 close the gap so every city the import pipeline accepts
+   * also has a fallback centroid — sourced from each city's public Wikipedia
+   * infobox coordinates, same precision level as the ten above. This is NOT
+   * an invitation to guess a centroid for an unrecognized city; `source:
+   * 'none'` stays correct for those (see `getCityCoordinates`/
+   * `resolvePropertyCoordinates` below).
+   */
+  'Ibagué': { lat: 4.433, lng: -75.233 },
+  'Villavicencio': { lat: 4.15, lng: -73.633 },
+  'Armenia': { lat: 4.53, lng: -75.68 },
+  'Neiva': { lat: 2.9345, lng: -75.2809 },
+  'Popayán': { lat: 2.4542, lng: -76.6092 },
+  'Montería': { lat: 8.75, lng: -75.883 },
+  'Pasto': { lat: 1.2078, lng: -77.2772 },
+  'Soacha': { lat: 4.5872, lng: -74.2214 },
+  'Envigado': { lat: 6.1719, lng: -75.5803 },
+  'Itagüí': { lat: 6.1667, lng: -75.6167 },
+  'Bello': { lat: 6.3373, lng: -75.558 },
+  'Sabaneta': { lat: 6.15, lng: -75.6 },
+  'Chía': { lat: 4.85, lng: -74.05 },
+  'Cajicá': { lat: 4.9167, lng: -74.0333 },
+  'Zipaquirá': { lat: 5.0333, lng: -74.0 },
+  'Rionegro': { lat: 6.155, lng: -75.3889 },
+  'Floridablanca': { lat: 7.217, lng: -73.067 },
+  'Palmira': { lat: 3.583, lng: -76.25 },
+  'Tuluá': { lat: 4.083, lng: -76.2 },
+  'Valledupar': { lat: 10.483, lng: -73.25 },
+  'Sincelejo': { lat: 9.295, lng: -75.3961 },
+  'Riohacha': { lat: 11.5442, lng: -72.9069 },
 };
 
 /** Lookup city coordinates with accent-insensitive fallback */

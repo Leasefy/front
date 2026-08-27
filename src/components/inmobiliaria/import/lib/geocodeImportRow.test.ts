@@ -61,4 +61,18 @@ describe('geocodeImportRow', () => {
 
     expect(result).toEqual({ lat: undefined, lng: undefined, source: 'none' });
   });
+
+  it('falls back to the Itagüí city center instead of dropping coordinates (T-0030 WU-3, real defect)', async () => {
+    // Live evidence: LocationIQ answered 200 with an empty `results` array
+    // for a real Itagüí address, and the city-center fallback had no entry
+    // for Itagüí either — both coordinates came back `undefined` and were
+    // silently omitted from the create payload.
+    autocompleteMock.mockResolvedValue([]);
+
+    const result = await geocodeImportRow({ propertyAddress: 'Calle 52 Sur # 48-30', propertyCity: 'Itagüí' });
+
+    expect(result.source).toBe('city');
+    expect(result.lat).not.toBeUndefined();
+    expect(result.lng).not.toBeUndefined();
+  });
 });

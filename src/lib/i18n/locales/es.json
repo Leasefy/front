@@ -2559,6 +2559,11 @@
         "table": "Tabla",
         "cards": "Cards"
       },
+      "degradedNotice": {
+        "title": "No pudimos cargar los inmuebles importados sin mandato",
+        "description": "Tu portafolio se sigue mostrando con lo que sí cargó. Puede faltar alguna propiedad reciente.",
+        "retry": "Reintentar"
+      },
       "detail": {
         "title": "Detalle de Propiedad",
         "info": "Información",
@@ -2728,6 +2733,28 @@
         "toast": {
           "successTitle": "Importación exitosa",
           "successDesc": "{{count}} propiedades importadas correctamente"
+        },
+        "mandateBatch": {
+          "title": "Asignar mandato",
+          "subtitle": "{{count}} propiedades quedaron sin mandato. Completalo ahora para todas a la vez, o hacelo después desde el portafolio.",
+          "propertiesListLabel": "Propiedades",
+          "propietarioLabel": "Propietario",
+          "commissionLabel": "Comisión de la agencia",
+          "contractDateLabel": "Fecha del contrato",
+          "agenteLabel": "Agente asignado (opcional)",
+          "skip": "Hacerlo después",
+          "confirm": "Asignar mandato a todas",
+          "toasts": {
+            "allSucceededTitle": "Mandatos completados",
+            "allSucceededDesc": "{{count}} propiedades ya tienen mandato y comisión.",
+            "partialTitle": "Mandato parcial",
+            "partialDesc": "{{succeeded}} propiedades quedaron con mandato, {{failed}} no. Completalas desde el portafolio.",
+            "allFailedTitle": "No se pudo asignar el mandato",
+            "allFailedDesc": "Ninguna propiedad quedó con mandato. Completalas desde el portafolio cuando quieras.",
+            "publishPartialTitle": "Mandato guardado; falta publicar algunas",
+            "publishPartialDesc": "{{count}} propiedades quedaron con mandato pero no se pudieron publicar. Abrilas desde el portafolio y publicalas cuando quieras — no las cargues de nuevo.",
+            "errorDesc": "No pudimos guardar el propietario. Probá de nuevo en un momento."
+          }
         }
       },
       "software": {
@@ -2918,7 +2945,27 @@
         "edit": "Editar",
         "emptyTitle": "No se encontraron propiedades",
         "emptyDescription": "Ajusta los filtros o agrega una nueva consignación",
-        "adminFee": "+ {{amount}} admin"
+        "adminFee": "+ {{amount}} admin",
+        "missingMandate": "Falta mandato"
+      },
+      "mandateDialog": {
+        "title": "Completar mandato",
+        "subtitle": "Termina de consignar «{{title}}»: ya tenemos los datos del inmueble, sólo faltan los del mandato.",
+        "propietarioLabel": "Propietario",
+        "commissionLabel": "Comisión de la agencia",
+        "contractDateLabel": "Fecha del contrato",
+        "agenteLabel": "Agente asignado (opcional)",
+        "cancel": "Cancelar",
+        "confirm": "Completar mandato",
+        "toasts": {
+          "successTitle": "Mandato completado",
+          "successDesc": "«{{title}}» ya tiene mandato y comisión, y quedó publicado.",
+          "alreadyExistsTitle": "Ese mandato ya existía — actualizamos tu portafolio.",
+          "publishErrorTitle": "El mandato quedó guardado; falta publicar el inmueble",
+          "publishErrorDesc": "{{reason}} Abrilo desde el portafolio y publicalo cuando quieras — no lo cargues de nuevo.",
+          "publishErrorFallbackReason": "No pudimos publicarlo.",
+          "errorDesc": "No pudimos completar el mandato. Probá de nuevo en un momento."
+        }
       },
       "detail": {
         "propertyInfo": "Información de Propiedad",

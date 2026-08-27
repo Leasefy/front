@@ -35,4 +35,24 @@ describe('resolvePropertyCoordinates', () => {
     const result = resolvePropertyCoordinates({ city: 'medellin' });
     expect(result).toEqual({ lat: 6.2442, lng: -75.5812, source: 'city' });
   });
+
+  it('resolves Itagüí instead of silently dropping the coordinates (T-0030 WU-3, real defect)', () => {
+    // A live import produced `latitude: null, longitude: null` for an
+    // Itagüí property immediately after a 200 from the geocoder (empty
+    // `results`) because Itagüí — a real, common Aburrá Valley city, already
+    // recognized as valid by leer-enlace.ts's own CIUDADES set — had no
+    // entry in CITY_COORDINATES. Omitting coordinates for a real city is a
+    // regression, not honesty; honesty is only owed to a city we don't know.
+    const result = resolvePropertyCoordinates({ city: 'Itagüí' });
+    expect(result.source).toBe('city');
+    expect(result.lat).not.toBeUndefined();
+    expect(result.lng).not.toBeUndefined();
+  });
+
+  it('still returns "none" for a city genuinely absent from the table', () => {
+    // The fix must not turn every unresolved city into a fabricated
+    // centroid — only real, recognized Colombian cities get one.
+    const result = resolvePropertyCoordinates({ city: 'Ciudad Inexistente' });
+    expect(result).toEqual({ lat: undefined, lng: undefined, source: 'none' });
+  });
 });

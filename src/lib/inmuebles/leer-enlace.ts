@@ -306,6 +306,33 @@ const CIUDADES = new Set(
 );
 
 /**
+ * Los 32 departamentos de Colombia (+ Bogotá D.C., aunque esa ya está en
+ * CIUDADES). Existe para el mismo motivo que CIUDADES pero al revés: un valor
+ * que ES un departamento NUNCA es plausible como barrio, y antes de esto se
+ * asignaba igual — T-0030 WU-3, defecto real: una ficha con
+ * `addressRegion: "Antioquia"` + `addressLocality: "Itagüí"` dejaba
+ * `neighborhood: "Antioquia"` en el inmueble creado.
+ */
+const DEPARTAMENTOS = new Set(
+  [
+    'amazonas', 'antioquia', 'arauca', 'atlantico', 'bolivar', 'boyaca',
+    'caldas', 'caqueta', 'casanare', 'cauca', 'cesar', 'choco', 'cordoba',
+    'cundinamarca', 'guainia', 'guaviare', 'huila', 'la guajira', 'magdalena',
+    'meta', 'narino', 'norte de santander', 'putumayo', 'quindio',
+    'risaralda', 'san andres y providencia', 'santander', 'sucre', 'tolima',
+    'valle del cauca', 'vaupes', 'vichada',
+  ],
+);
+
+function normalizarNombre(nombre: string): string {
+  return nombre
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+/**
  * Nomenclatura colombiana: `Calle 39A # 25-14`, `Cra. 13 No. 53-20`,
  * `Diagonal 40 # 20-15`, `Kr 13 # 45 - 11`.
  *
@@ -326,12 +353,17 @@ const DIRECCION_COLOMBIANA =
 
 function esCiudad(nombre: string | undefined): boolean {
   if (!nombre) return false;
-  const normalizado = nombre
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim();
-  return CIUDADES.has(normalizado);
+  return CIUDADES.has(normalizarNombre(nombre));
+}
+
+/**
+ * Un departamento no es un barrio, nunca. Se usa para vetar la asignación
+ * "lo que sobra es barrio" cuando lo que sobra es en realidad el
+ * departamento — ver DEPARTAMENTOS arriba.
+ */
+function esDepartamento(nombre: string | undefined): boolean {
+  if (!nombre) return false;
+  return DEPARTAMENTOS.has(normalizarNombre(nombre));
 }
 
 /**
@@ -520,13 +552,18 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
       const region = comoTexto(d.addressRegion);
 
       // Cuál de los dos es la ciudad se decide mirando el VALOR, no el nombre
-      // del campo. El otro, si lo hay, es el barrio.
+      // del campo. El otro, SI ES PLAUSIBLE que sea un barrio, es el barrio —
+      // un departamento (`esDepartamento`) nunca lo es (T-0030 WU-3: una
+      // ficha real con addressRegion="Antioquia" dejaba
+      // `neighborhood: "Antioquia"` sin esta guarda).
       if (esCiudad(region) && !esCiudad(localidad)) {
         leido.ciudad ??= conFuente(region, 'address.addressRegion');
-        leido.barrio ??= conFuente(localidad, 'address.addressLocality');
+        if (!esDepartamento(localidad)) leido.barrio ??= conFuente(localidad, 'address.addressLocality');
       } else {
         leido.ciudad ??= conFuente(localidad, 'address.addressLocality');
-        if (!esCiudad(region)) leido.barrio ??= conFuente(region, 'address.addressRegion');
+        if (!esCiudad(region) && !esDepartamento(region)) {
+          leido.barrio ??= conFuente(region, 'address.addressRegion');
+        }
       }
     } else if (typeof direccion === 'string') {
       leido.direccion ??= conFuente(direccion.trim(), 'address');

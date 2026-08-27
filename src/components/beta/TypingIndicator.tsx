@@ -64,7 +64,17 @@ export function TypingIndicator({ historyCount = 0, snapshot, className }: Typin
 
   return (
     <div className={cn('flex items-start gap-3', className)}>
-      <div className="mt-0.5 flex w-7 shrink-0 items-center justify-center">
+      {/* El orbe se alinea por ARRIBA con el título, no por el centro (Nico,
+          2026-08-27: «dejá el título pegado al tope de arriba del orbe, mirá
+          que está como en el centro»). Es la misma geometría que el avatar de
+          una respuesta: la marca arranca donde arranca el texto.
+
+          El desfase medido en la página era de 8px, y no es arbitrario: el
+          canvas del orbe mide 1,9× su tamaño (el resplandor necesita margen) y
+          el disco visible queda centrado ahí adentro, mientras que la primera
+          línea del título pierde 4px de interlineado antes de dibujar la letra.
+          `mt-[10px]` = los 2px que ya tenía + esos 8. */}
+      <div className="mt-[10px] flex w-7 shrink-0 items-center justify-center">
         <ChatOrb size={28} className="-mt-[13px] -ml-[13px]" label={null} />
       </div>
       <div className="min-w-0 flex-1 pt-[3px]">

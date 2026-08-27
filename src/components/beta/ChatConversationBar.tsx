@@ -43,7 +43,20 @@ export function ChatConversationBar({ onSelectTemplate, className }: ChatConvers
     <div
       className={cn(
         'relative z-30 flex shrink-0 items-center justify-between gap-3',
-        'border-b border-surface-muted bg-bg/80 px-4 py-2 backdrop-blur sm:px-6',
+        // Franja propia, no una fila flotando (Nico, 2026-08-27: «separar con
+        // una línea o algo lo de plantillas + terminar conversación del chat»).
+        //
+        // Iba con `border-surface-muted`, casi del color del fondo. Pero el
+        // borde solo no alcanzaba: el lienzo del chat es `--background`
+        // (#FAFAF9) y el header `--bg` (#fbfaf9) — el mismo color a ojo —, así
+        // que las tres zonas se leían como un bloque y el pelo de #E5E2DC del
+        // header se perdía en el medio. `bg-surface` (blanco puro) le da a la
+        // franja un relleno que SÍ contrasta, y entonces las dos fronteras
+        // —header↕franja y franja↕chat— se leen de verdad.
+        //
+        // Sin borde SUPERIOR a propósito: el header ya trae el suyo
+        // (`PlanHeader`, `border-b border-border`) y dos pegados dan raya doble.
+        'border-b border-border bg-surface px-4 py-2 sm:px-6',
         className
       )}
     >

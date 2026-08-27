@@ -105,7 +105,10 @@ export const contratosSource: SearchSource = {
             label: STATUS_LABELS_ES[item.status] ?? item.status,
             color: STATUS_COLORS[item.status] ?? 'neutral',
           },
-          ...(item.monthlyRent > 0
+          // Un contrato MIGRADO sparse (T-0031) puede tener `monthlyRent` en
+          // `null` — el badge simplemente se omite (igual que hoy se omite
+          // para un canon en 0), nunca se muestra "$ 0".
+          ...(item.monthlyRent != null && item.monthlyRent > 0
             ? [{ label: formatCOP(item.monthlyRent), color: 'neutral' as const }]
             : []),
         ],

@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { comoEntero, comoFecha, comoUso, textoOpcional } from './leer-celdas'
+import { comoEntero, comoFecha, comoPeriodicidad, comoUso, hayValor, textoOpcional } from './leer-celdas'
 
 describe('plata que viene de una hoja de cálculo', () => {
   it('lee «$ 2.400.000» como 2400000, no como NaN', () => {
@@ -94,5 +94,42 @@ describe('texto opcional', () => {
 
   it('conserva el valor cuando lo hay, sin espacios de más', () => {
     expect(textoOpcional('  3105551234 ')).toBe('3105551234')
+  })
+})
+
+describe('hayValor', () => {
+  it('una columna que no mapeó a nada (undefined) no tiene valor', () => {
+    expect(hayValor(undefined)).toBe(false)
+  })
+
+  it('una columna mapeada con la celda vacía tampoco tiene valor', () => {
+    expect(hayValor('')).toBe(false)
+    expect(hayValor('   ')).toBe(false)
+    expect(hayValor(null)).toBe(false)
+  })
+
+  it('cualquier otra cosa sí tiene valor, incluido el número 0', () => {
+    expect(hayValor('algo')).toBe(true)
+    expect(hayValor(0)).toBe(true)
+  })
+})
+
+describe('periodicidad', () => {
+  it.each([
+    ['Mensual', 'MENSUAL'],
+    ['bimestral', 'BIMESTRAL'],
+    ['Trimestral', 'TRIMESTRAL'],
+    ['SEMESTRAL', 'SEMESTRAL'],
+    ['anual', 'ANUAL'],
+  ])('«%s» → %s', (entrada, esperado) => {
+    expect(comoPeriodicidad(entrada)).toBe(esperado)
+  })
+
+  it('lo que no reconoce queda sin definir, no inventa "mensual"', () => {
+    // El back ya tiene su propio default para cuando falta — duplicarlo acá
+    // dejaría dos lugares decidiendo lo mismo y uno de los dos se desactualiza.
+    expect(comoPeriodicidad('')).toBeUndefined()
+    expect(comoPeriodicidad(null)).toBeUndefined()
+    expect(comoPeriodicidad('cada dos meses')).toBeUndefined()
   })
 })

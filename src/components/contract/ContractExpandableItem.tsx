@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatDate } from '@/lib/format';
+import { formatCanon, formatVigencia } from './ContractExpandableItem.format';
 import { Button } from '@/components/ui/button';
 import { FileText, CaretDown, CheckCircle, Clock, PencilLine, Download, PaperPlaneTilt, Phone, Envelope } from '@phosphor-icons/react';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
@@ -173,7 +174,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
           {/* Rent amount */}
           <div className="text-right flex-shrink-0 mr-2">
             <p className="text-lg font-semibold text-fg">
-              {formatCurrency(contract.monthlyRent)}
+              {formatCanon(contract.monthlyRent)}
             </p>
             <p className="text-xs text-fg-muted">/mes</p>
           </div>
@@ -207,7 +208,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
                 <div className="flex justify-between items-baseline">
                   <span className="text-sm text-fg-muted">Vigencia</span>
                   <span className="text-sm text-fg">
-                    {formatDate(contract.startDate)} – {formatDate(contract.endDate)}
+                    {formatVigencia(contract.startDate, contract.endDate)}
                   </span>
                 </div>
                 <div className="flex justify-between items-baseline">

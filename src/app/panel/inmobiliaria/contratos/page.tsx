@@ -15,6 +15,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { fmtCop } from './format';
 import {
   FileText,
   Warning,
@@ -42,14 +43,6 @@ import {
 } from '@/lib/types/contract';
 
 // ── Format helpers ───────────────────────────────────────────────────────────
-
-function fmtCop(val: number): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0,
-  }).format(val || 0);
-}
 
 function fmtDate(iso: string | null | undefined, locale: string): string {
   if (!iso) return '—';

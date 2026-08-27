@@ -231,11 +231,29 @@ export const contractsApi = {
    * siempre falta algo.
    */
   migracion: {
-    /** 1. Deja las filas listas para revisar. NO crea contratos. */
-    async preparar(contratos: FilaAMigrar[], lote?: string): Promise<ResumenLote> {
-      return apiClient.post<ResumenLote>('/contracts/migrar/preparar', {
+    /**
+     * 1. Deja las filas listas para revisar. NO crea contratos.
+     *
+     * Encola un job — `202` con `EstadoDeLote`, no `201` con `ResumenLote`
+     * (contrato §3.2.A). El `lote` de la respuesta es SIEMPRE del servidor.
+     *
+     * `idempotencyKey` es lo que hace que un doble click o un reintento tras
+     * una conexión caída no dupliquen el lote: la MISMA fila del archivo,
+     * dos veces, cae en el mismo lote. Se genera una vez por archivo leído
+     * (ver `generarIdempotencyKey` en `MigrarContratos.tsx`) y se reusa en
+     * cada reintento de ESE archivo.
+     *
+     * `lote` sigue existiendo en el request a propósito (§11-J5 del
+     * contrato): el back lo acepta e ignora, para que un front viejo que
+     * todavía lo manda no choque contra `forbidNonWhitelisted`. Este front
+     * ya no genera un id acá — lo hacía colisionar entre dos archivos
+     * parecidos (N2).
+     */
+    async preparar(contratos: FilaAMigrar[], idempotencyKey?: string): Promise<EstadoDeLote> {
+      return apiClient.post<EstadoDeLote>('/contracts/migrar/preparar', {
         contratos,
-        lote,
+        lote: undefined,
+        idempotencyKey,
       });
     },
 
@@ -277,6 +295,8 @@ export const contractsApi = {
           telefono?: string;
           comisionPorcentaje?: number;
         };
+        /** El bulk exit de N12 (contract.md §3.2.B5). */
+        paymentDay?: number;
       },
     ): Promise<ResultadoMasivo> {
       return apiClient.patch<ResultadoMasivo>('/contracts/migrar/filas', {
@@ -297,6 +317,17 @@ export const contractsApi = {
      */
     async lotesAbiertos(): Promise<LoteAbierto[]> {
       return apiClient.get<LoteAbierto[]>('/contracts/migrar/lotes');
+    },
+
+    /**
+     * 1-bis. El estado de UN lote — contrato §3.2.A2. Misma forma que el
+     * `202` de `preparar()`; ésta es la ruta que se sondea mientras
+     * `estado ∈ {ENCOLADO, PROCESANDO}` (§11-J9: cada 3s, techo de 10min).
+     * El sondeo es una conveniencia mientras la pestaña sigue abierta —
+     * nunca el mecanismo de finalización (`use-estado-de-lote.ts`).
+     */
+    async estadoDeLote(lote: string): Promise<EstadoDeLote> {
+      return apiClient.get<EstadoDeLote>(`/contracts/migrar/lotes/${encodeURIComponent(lote)}`);
     },
 
     /** Corregir una fila. Pasa sola a LISTO cuando ya no le falta nada. */
@@ -521,15 +552,24 @@ function mapBackendContractRejection(br: BackendContractRejection): ContractReje
 // Migración de cartera
 // ============================================================================
 
-/** Una fila del archivo, como viene. La dirección, no nuestro uuid. */
+/**
+ * Una fila del archivo, como viene. La dirección, no nuestro uuid.
+ *
+ * Casi todo es opcional A PROPÓSITO, igual que en `MigrarContratoDto`
+ * (`back/src/contracts/dto/migrar-contrato.dto.ts`): el archivo del owner
+ * puede no traer una columna, y lo que falta se manda ausente, nunca un
+ * default inventado (`armar-fila.ts` es donde se decide eso). `direccion` e
+ * `inquilino` son la excepción — el DTO los exige siempre presentes, aunque
+ * vacíos.
+ */
 export interface FilaAMigrar {
   direccion: string;
   inquilino: { nombre: string; correo: string; telefono?: string; documento?: string };
-  startDate: string;
-  endDate: string;
-  monthlyRent: number;
+  startDate?: string;
+  endDate?: string;
+  monthlyRent?: number;
   deposit?: number;
-  paymentDay: number;
+  paymentDay?: number;
   /** Sin esto no se puede liquidar: vivienda va sin IVA, comercial con IVA. */
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
   periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
@@ -553,7 +593,8 @@ export type Faltante =
   | 'inquilino_nombre'
   | 'fechas'
   | 'canon'
-  | 'uso';
+  | 'uso'
+  | 'dia_de_pago';
 
 export interface InmuebleCandidato {
   id: string;
@@ -575,6 +616,13 @@ export interface FilaDeMigracion {
   estado: EstadoMigracion;
   faltantes: Faltante[];
   contractId: string | null;
+  /**
+   * Decisiones explícitas del usuario que anulan un chequeo automático.
+   * Ausente/`undefined` se trata como `[]` — nunca indexar sin default
+   * (contract.md §3.2.B6). Hoy el único valor posible es
+   * `'inmueble_ocupado'`.
+   */
+  overrides?: string[];
 }
 
 export interface CambiosDeFila {
@@ -586,6 +634,8 @@ export interface CambiosDeFila {
   startDate?: string;
   endDate?: string;
   paymentDay?: number;
+  /** "Sé que está ocupado, seguir igual" — contract.md §3.2.B4/J7. */
+  permitirInmuebleOcupado?: boolean;
 }
 
 /**
@@ -608,11 +658,23 @@ export interface ConceptoDelContrato {
   recurrente: boolean;
 }
 
-/** Un lote a medio migrar, para poder retomarlo. */
+/**
+ * Un lote a medio migrar, para poder retomarlo.
+ *
+ * F1 (contract.md §3.2.A3, §5 P10) — `estado`/`total`/`creadoEn` son
+ * **opcionales, nuevos**: un lote anterior a T-0031 no tiene fila
+ * `MigracionLote` y legítimamente los omite (`lotesAbiertos()` hace
+ * left-join). Ausencia ⇒ el front asume `estado: 'LISTO'` (ya no encolado,
+ * simplemente sin `MigracionLote` que lo diga) y `total` cae a
+ * `pendientes + listos`.
+ */
 export interface LoteAbierto {
   lote: string;
   pendientes: number;
   listos: number;
+  estado?: EstadoLoteMigracion;
+  total?: number;
+  creadoEn?: string;
 }
 
 export interface PaginaDeFilas {
@@ -637,6 +699,34 @@ export interface ResumenLote {
   listos: number;
   activados: number;
   descartados: number;
+}
+
+export type EstadoLoteMigracion = 'ENCOLADO' | 'PROCESANDO' | 'LISTO' | 'FALLIDO';
+
+/**
+ * Superset estructural de `ResumenLote` — mismos nombres y significado en
+ * `total/pendientes/listos/activados/descartados` (contrato §3.2.A2), a
+ * propósito: es lo que hace que un front viejo no reviente al recibir esta
+ * forma en vez de `ResumenLote`, aunque quede mostrando un lote vacío.
+ *
+ * `POST /contracts/migrar/preparar` devuelve esto con `202`. El `lote` es
+ * SIEMPRE del servidor — el id armado en el cliente (`lote-${filas.length}-…`)
+ * podía colisionar entre dos archivos parecidos.
+ */
+export interface EstadoDeLote {
+  lote: string;
+  estado: EstadoLoteMigracion;
+  total: number;
+  procesadas: number;
+  pendientes: number;
+  listos: number;
+  activados: number;
+  descartados: number;
+  /** Sólo diagnóstico — nunca condicionar comportamiento a esto. */
+  jobId?: string | null;
+  /** Sólo cuando `estado === 'FALLIDO'`. Español, para mostrar tal cual. */
+  error?: string | null;
+  creadoEn?: string;
 }
 
 export interface ResultadoDeFila {

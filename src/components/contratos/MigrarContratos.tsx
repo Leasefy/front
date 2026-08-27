@@ -9,13 +9,14 @@
  *
  * ── Tres cosas que la pantalla hace a propósito ─────────────────────────────
  *
- * 1. **Muestra POR QUÉ mapeó cada columna.** El auto-mapeo se equivoca con
- *    confianza alta —«Celular arrendatario» ya terminó guardado como teléfono
- *    del propietario— y un mapeo sin explicación sólo se puede aceptar o
- *    rechazar entero.
- * 2. **No deja importar sin el uso del inmueble.** Vivienda va sin IVA y
- *    comercial con IVA: un contrato sin ese dato no se puede liquidar, y las
- *    dos facturas se ven igual de correctas.
+ * 1. **Muestra POR QUÉ mapeó cada columna, y deja corregirlo a mano.** El
+ *    auto-mapeo se equivoca con confianza alta —«Celular arrendatario» ya
+ *    terminó guardado como teléfono del propietario— y un mapeo sin
+ *    explicación sólo se puede aceptar o rechazar entero.
+ * 2. **No exige ninguna columna para poder revisar.** «No puedo exigir un
+ *    archivo estándar porque todos los clientes pueden subir Excel
+ *    diferentes» (el owner). Lo que no se mapeó se avisa — información, no
+ *    una pared — y se completa fila por fila en la lista de trabajo.
  * 3. **El reporte final distingue creado / omitido / fallido, con la fila.**
  *    Un "1.200 procesados" que esconde 300 saltados es peor que un error.
  */
@@ -24,6 +25,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ArrowRight,
   CheckCircle,
+  Clock,
   FileArrowUp,
   Info,
   Warning,
@@ -41,32 +43,35 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile'
 import {
-  faltantes,
   mapearColumnas,
+  remapear,
+  sinMapear,
   type CampoDeContrato,
   type MapeoDeColumna,
 } from '@/lib/contratos/columnas-de-contrato'
+import { armarFilaAMigrar } from '@/lib/contratos/armar-fila'
+import { generarIdempotencyKey } from '@/lib/contratos/idempotencia'
 import {
   contractsApi,
-  type FilaAMigrar,
   type FilaDeMigracion,
   type LoteAbierto,
   type ResumenActivacion,
   type ResumenLote,
 } from '@/lib/api/contracts.service'
+import { useEstadoDeLote } from '@/lib/hooks/use-estado-de-lote'
 import { FaltantesDeFila } from './FaltantesDeFila'
 import { ResolucionMasiva } from './ResolucionMasiva'
+import { ProgresoDeLote } from './ProgresoDeLote'
 import { Pagination } from '@/components/ui/pagination'
-import {
-  comoEntero,
-  comoFecha,
-  comoUso,
-  normalizar,
-  textoOpcional,
-  valorDe,
-} from '@/lib/contratos/leer-celdas'
 
 const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   direccionInmueble: 'Dirección del inmueble',
@@ -84,6 +89,12 @@ const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   comision: 'Comisión',
 }
 
+/** Todos los campos posibles, para ofrecerlos en el selector de remapeo. */
+const CAMPOS = Object.keys(NOMBRE_DE_CAMPO) as CampoDeContrato[]
+
+/** Sentinel de Radix: un `<Select>` no admite `value=""`. */
+const IGNORAR = '__ignorar__'
+
 type Fila = Record<string, unknown>
 
 /**
@@ -96,6 +107,7 @@ const POR_PAGINA = 25
 
 export function MigrarContratos() {
   const [filas, setFilas] = useState<Fila[]>([])
+  const [encabezados, setEncabezados] = useState<string[]>([])
   const [mapeo, setMapeo] = useState<MapeoDeColumna[]>([])
   const [invitar, setInvitar] = useState(true)
   const [cargando, setCargando] = useState(false)
@@ -110,7 +122,26 @@ export function MigrarContratos() {
 
   const [lotesAbiertos, setLotesAbiertos] = useState<LoteAbierto[]>([])
 
-  const faltan = useMemo(() => faltantes(mapeo), [mapeo])
+  // Ítem 1 del brief WU-4: sondeo mientras el lote sigue ENCOLADO/PROCESANDO
+  // (contrato §11-J9) — es una conveniencia mientras la pestaña sigue
+  // abierta, nunca el mecanismo de finalización.
+  const { estado: estadoLote, agotado } = useEstadoDeLote(lote)
+
+  /**
+   * Una clave por archivo leído (no por click): si `preparar()` se reintenta
+   * para ESTE mismo archivo, cae en el mismo lote en vez de duplicarlo.
+   */
+  const [idempotencyKey, setIdempotencyKey] = useState('')
+
+  const noMapeados = useMemo(() => sinMapear(mapeo), [mapeo])
+
+  const cambiarMapeo = useCallback((columna: string, campo: CampoDeContrato | null) => {
+    setMapeo((actual) => remapear(actual, columna, campo))
+  }, [])
+
+  const restablecerMapeo = useCallback(() => {
+    setMapeo(mapearColumnas(encabezados))
+  }, [encabezados])
 
   const leerArchivo = useCallback(async (archivo: File) => {
     setError(null)
@@ -118,10 +149,13 @@ export function MigrarContratos() {
     try {
       const { rows, headers } = await parseSpreadsheetFile(archivo)
       setFilas(rows as Fila[])
+      setEncabezados(headers)
       setMapeo(mapearColumnas(headers))
+      setIdempotencyKey(generarIdempotencyKey())
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No pudimos leer el archivo.')
       setFilas([])
+      setEncabezados([])
       setMapeo([])
     }
   }, [])
@@ -163,38 +197,28 @@ export function MigrarContratos() {
     setCargando(true)
     setError(null)
     try {
-      const aMigrar: FilaAMigrar[] = filas.map((fila) => {
-        const v = (campo: CampoDeContrato) => valorDe(fila, mapeo, campo)
-        return {
-          direccion: String(v('direccionInmueble') ?? ''),
-          inquilino: {
-            nombre: String(v('inquilinoNombre') ?? ''),
-            correo: String(v('inquilinoCorreo') ?? ''),
-            telefono: textoOpcional(v('inquilinoTelefono')),
-            documento: textoOpcional(v('inquilinoDocumento')),
-          },
-          startDate: comoFecha(v('fechaInicio')),
-          endDate: comoFecha(v('fechaFin')),
-          monthlyRent: comoEntero(v('canon')),
-          deposit: v('deposito') != null ? comoEntero(v('deposito')) : undefined,
-          paymentDay: comoEntero(v('diaDePago')) || 1,
-          usoInmueble: comoUso(v('uso')),
-          comisionPorcentaje:
-            v('comision') != null ? Number(v('comision')) || undefined : undefined,
-        }
-      })
+      // Cada campo mapeado viaja; lo que no se mapeó (o quedó vacío) viaja
+      // ausente, nunca un default inventado — ver `armar-fila.ts`.
+      const aMigrar = filas.map((fila) => armarFilaAMigrar(fila, mapeo))
 
-      const elLote = `lote-${filas.length}-${aMigrar[0]?.direccion?.slice(0, 8) ?? 'x'}`
-      const r = await contractsApi.migracion.preparar(aMigrar, elLote)
-      setLote(elLote)
-      setResumen(r)
-      await refrescar(elLote)
+      const r = await contractsApi.migracion.preparar(aMigrar, idempotencyKey)
+      // El lote es SIEMPRE del servidor (contrato §3.2.A2) — generarlo acá
+      // podía colisionar entre dos archivos parecidos (N2).
+      //
+      // OJO: no se llama a `refrescar()` acá. `preparar()` encola el job —
+      // recién resuelto, la lista de trabajo está prácticamente vacía
+      // (`procesadas: 0`). Mostrarla así era el hueco que WU-1 dejó
+      // explícito para WU-4: la pantalla de espera (`<ProgresoDeLote>`,
+      // debajo) se muestra en su lugar hasta que `estadoLote.estado ===
+      // 'LISTO'`, momento en el que el efecto de abajo llama a `refrescar`.
+      setResumen(null)
+      setLote(r.lote)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No pudimos preparar la migración.')
     } finally {
       setCargando(false)
     }
-  }, [filas, mapeo, refrescar])
+  }, [filas, mapeo, idempotencyKey])
 
   const activar = useCallback(async () => {
     if (!lote) return
@@ -231,21 +255,38 @@ export function MigrarContratos() {
     }
   }, [])
 
-  const retomar = useCallback(
-    async (elLote: string) => {
-      setCargando(true)
-      setError(null)
-      try {
-        setLote(elLote)
-        await refrescar(elLote)
-      } catch (e) {
+  const retomar = useCallback((elLote: string) => {
+    setError(null)
+    // Igual que en `preparar()`: si el lote retomado todavía está
+    // ENCOLADO/PROCESANDO (p.ej. se reabrió el importador mientras el job
+    // seguía corriendo), no hay lista de trabajo que mostrar todavía — el
+    // efecto de abajo llama a `refrescar` recién cuando `estadoLote.estado
+    // === 'LISTO'`.
+    setResumen(null)
+    setLote(elLote)
+  }, [])
+
+  /*
+   * El lote pasó a LISTO (por el sondeo de `useEstadoDeLote`, o porque ya
+   * lo estaba desde `lotesAbiertos()`): recién ahí tiene sentido cargar la
+   * lista de trabajo real.
+   */
+  useEffect(() => {
+    if (!lote) return
+    if (estadoLote?.estado === 'LISTO') {
+      refrescar(lote).catch((e) => {
         setError(e instanceof Error ? e.message : 'No pudimos abrir ese lote.')
-      } finally {
-        setCargando(false)
-      }
-    },
-    [refrescar],
-  )
+      })
+    }
+  }, [lote, estadoLote?.estado, refrescar])
+
+  // ── Hay un lote pero todavía no está LISTO: pantalla de espera ───────────
+  // Ítem 1 del brief — mostrar progreso mientras el usuario elige esperar, y
+  // dejar explícito que cerrar la pestaña es seguro (el lote es durable
+  // server-side; la notificación avisa igual — contrato §3.2.C).
+  if (lote && !resumen) {
+    return <ProgresoDeLote estado={estadoLote} agotado={agotado} />
+  }
 
   // ── Ya se preparó: lista de trabajo ──────────────────────────────────────
   if (resumen && lote) {
@@ -269,8 +310,10 @@ export function MigrarContratos() {
           setResumen(null)
           setLote(null)
           setFilas([])
+          setEncabezados([])
           setMapeo([])
           setActivacion(null)
+          setIdempotencyKey('')
         }}
       />
     )
@@ -285,23 +328,42 @@ export function MigrarContratos() {
           <p className="text-sm font-medium text-foreground">
             Tenés una migración sin terminar
           </p>
-          {lotesAbiertos.map((l) => (
-            <div key={l.lote} className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm text-muted-foreground">
-                <span className="text-foreground">{l.lote}</span> · {l.pendientes}{' '}
-                {l.pendientes === 1 ? 'fila pendiente' : 'filas pendientes'}
-                {l.listos > 0 ? ` · ${l.listos} listas para activar` : ''}
-              </p>
-              <Button
-                size="sm"
-                hideArrow
-                disabled={cargando}
-                onClick={() => void retomar(l.lote)}
-              >
-                Retomar
-              </Button>
-            </div>
-          ))}
+          {lotesAbiertos.map((l) => {
+            // F1 (contrato §3.2.A3) — `estado` ausente es un lote anterior
+            // a T-0031 (sin fila `MigracionLote`): se trata como LISTO,
+            // igual que hoy.
+            const procesando = l.estado === 'ENCOLADO' || l.estado === 'PROCESANDO'
+            return (
+              <div key={l.lote} className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-muted-foreground">
+                  <span className="text-foreground">{l.lote}</span>
+                  {procesando ? (
+                    <span className="inline-flex items-center gap-1 text-primary">
+                      {' · '}
+                      <Clock className="h-3 w-3" />
+                      {l.total != null
+                        ? `procesando ${l.pendientes + l.listos} / ${l.total}`
+                        : 'procesando'}
+                    </span>
+                  ) : (
+                    <>
+                      {' · '}
+                      {l.pendientes} {l.pendientes === 1 ? 'fila pendiente' : 'filas pendientes'}
+                      {l.listos > 0 ? ` · ${l.listos} listas para activar` : ''}
+                    </>
+                  )}
+                </p>
+                <Button
+                  size="sm"
+                  hideArrow
+                  disabled={cargando}
+                  onClick={() => retomar(l.lote)}
+                >
+                  Retomar
+                </Button>
+              </div>
+            )
+          })}
           <p className="text-xs text-muted-foreground">
             Si volvés a subir el mismo archivo, las filas se duplican.
           </p>
@@ -341,15 +403,28 @@ export function MigrarContratos() {
 
       {mapeo.length > 0 ? (
         <Card className="space-y-4 p-6">
-          <div className="space-y-1">
-            <h2 className="text-sm font-medium text-foreground">
-              Así entendimos tus columnas
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              {filas.length} contratos en el archivo. Revisá el mapeo antes de
-              seguir: «arrendador» es el propietario y «arrendatario» es el
-              inquilino, y se parecen demasiado.
-            </p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <h2 className="text-sm font-medium text-foreground">
+                Así entendimos tus columnas
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {filas.length} contratos en el archivo. Revisá el mapeo antes de
+                seguir, y corregí a mano lo que haga falta: «arrendador» es el
+                propietario y «arrendatario» es el inquilino, y se parecen
+                demasiado.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              hideArrow
+              onClick={restablecerMapeo}
+              className="shrink-0 text-xs"
+            >
+              Restablecer
+            </Button>
           </div>
 
           <div className="overflow-x-auto">
@@ -366,14 +441,31 @@ export function MigrarContratos() {
                   <TableRow key={m.columna}>
                     <TableCell className="font-medium">{m.columna}</TableCell>
                     <TableCell>
-                      {m.campo ? (
-                        NOMBRE_DE_CAMPO[m.campo]
-                      ) : (
-                        <span className="text-muted-foreground">Sin usar</span>
-                      )}
+                      <Select
+                        value={m.campo ?? IGNORAR}
+                        onValueChange={(v) =>
+                          cambiarMapeo(m.columna, v === IGNORAR ? null : (v as CampoDeContrato))
+                        }
+                      >
+                        <SelectTrigger className="w-full min-w-[200px]" data-testid={`mapeo-${m.columna}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={IGNORAR}>Ignorar</SelectItem>
+                          {CAMPOS.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {NOMBRE_DE_CAMPO[c]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {m.porque ? `coincidió con «${m.porque}»` : '—'}
+                      {m.isManual
+                        ? 'elegido a mano'
+                        : m.porque
+                          ? `coincidió con «${m.porque}»`
+                          : '—'}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -381,24 +473,29 @@ export function MigrarContratos() {
             </Table>
           </div>
 
-          {faltan.length > 0 ? (
-            <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning-soft p-3">
-              <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-              <div className="space-y-1 text-sm text-foreground">
-                <p className="font-medium">
-                  Falta {faltan.length === 1 ? 'una columna' : `${faltan.length} columnas`}
+          {/* Informativo, no bloquea: cualquier archivo se puede revisar. */}
+          {noMapeados.length > 0 ? (
+            <div className="flex items-start gap-2 rounded-md border border-border bg-info-soft p-3">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
+              <div>
+                <p className="text-sm font-medium text-info">
+                  {noMapeados.length === 1
+                    ? 'Una columna no se mapeó'
+                    : `${noMapeados.length} columnas no se mapearon`}
                 </p>
-                <p className="text-muted-foreground">
-                  {faltan.map((c) => NOMBRE_DE_CAMPO[c]).join(' · ')}
+                <p className="mt-0.5 text-body-sm text-fg-muted">
+                  {noMapeados.map((c) => NOMBRE_DE_CAMPO[c]).join(' · ')} — podés
+                  completarlos fila por fila después de revisar.
                 </p>
               </div>
             </div>
           ) : null}
 
-          {/* No dice "importar": todavía no se crea nada. */}
+          {/* No dice "importar": todavía no se crea nada. Sin gate de
+              columnas: cualquier archivo llega a la lista de trabajo. */}
           <Button
             onClick={() => void preparar()}
-            disabled={faltan.length > 0 || filas.length === 0 || cargando}
+            disabled={filas.length === 0 || cargando}
             isLoading={cargando}
             hideArrow
           >

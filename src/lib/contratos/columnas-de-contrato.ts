@@ -167,6 +167,8 @@ export interface MapeoDeColumna {
   campo: CampoDeContrato | null
   /** Qué término del diccionario empató. Vacío si no empató nada. */
   porque: string
+  /** La persona lo corrigió a mano — no es el resultado del auto-mapeo. */
+  isManual?: boolean
 }
 
 /**
@@ -202,8 +204,16 @@ export function mapearColumnas(encabezados: string[]): MapeoDeColumna[] {
   })
 }
 
-/** Los campos sin los cuales no se puede crear el contrato. */
-export const OBLIGATORIOS: CampoDeContrato[] = [
+/**
+ * Los campos que más importan para poder liquidar y facturar un contrato.
+ *
+ * Ya NO bloquean el import — «no puedo exigir un archivo estándar porque
+ * todos los clientes pueden subir Excel diferentes» (owner). Sólo alimentan
+ * el aviso informativo: qué conviene completar después de revisar. `uso` no
+ * es capricho: vivienda va sin IVA y comercial no, y una factura sin IVA se
+ * ve idéntica a una a la que se le olvidó el IVA.
+ */
+export const CAMPOS_CLAVE: CampoDeContrato[] = [
   'direccionInmueble',
   'inquilinoNombre',
   'inquilinoCorreo',
@@ -215,14 +225,39 @@ export const OBLIGATORIOS: CampoDeContrato[] = [
 ]
 
 /**
- * Qué falta para poder importar.
- *
- * `uso` está entre los obligatorios y no es capricho: el arrendamiento de
- * vivienda está excluido de IVA y el comercial no. Un contrato sin uso no se
- * puede liquidar — y una factura sin IVA se ve idéntica a una a la que se le
- * olvidó el IVA.
+ * Qué campos clave no se mapearon a ninguna columna. Informativo, no bloquea:
+ * la lista de trabajo (`FaltantesDeFila`) es donde se completan fila por
+ * fila después.
  */
-export function faltantes(mapeo: MapeoDeColumna[]): CampoDeContrato[] {
+export function sinMapear(mapeo: MapeoDeColumna[]): CampoDeContrato[] {
   const mapeados = new Set(mapeo.map((m) => m.campo).filter(Boolean))
-  return OBLIGATORIOS.filter((c) => !mapeados.has(c))
+  return CAMPOS_CLAVE.filter((c) => !mapeados.has(c))
+}
+
+/**
+ * Aplica un remapeo manual de UNA columna.
+ *
+ * Puerto de la interacción de `StepColumnMapping.tsx` (importador de
+ * inmuebles) a este diccionario — `CampoDeContrato`/`MapeoDeColumna`, nunca
+ * `ColumnMapping`/`TARGET_FIELDS`, que bloquea a propósito palabras de
+ * inquilino que acá son justo lo que se necesita.
+ *
+ * Si el campo elegido ya lo reclamaba otra columna, esa otra lo pierde: dos
+ * columnas apuntando al mismo campo pisarían el dato en silencio, igual que
+ * en el auto-mapeo.
+ */
+export function remapear(
+  mapeo: MapeoDeColumna[],
+  columna: string,
+  campo: CampoDeContrato | null,
+): MapeoDeColumna[] {
+  return mapeo.map((m) => {
+    if (m.columna === columna) {
+      return { columna, campo, porque: '', isManual: true }
+    }
+    if (campo && m.campo === campo && m.columna !== columna) {
+      return { ...m, campo: null, porque: '', isManual: true }
+    }
+    return m
+  })
 }

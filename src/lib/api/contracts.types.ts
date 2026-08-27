@@ -28,7 +28,12 @@ export interface BackendContract {
   id: string;
   applicationId?: string;
   propertyId: string;
-  tenantId: string;
+  /**
+   * `null` en un contrato MIGRADO sin correo de inquilino (T-0031, D2/D4) —
+   * el `Contract` existe igual, sin usuario inquilino asociado. No es un
+   * dato ausente por error.
+   */
+  tenantId: string | null;
   landlordId: string;
   status: string;
 
@@ -48,10 +53,16 @@ export interface BackendContract {
   propertyAdminFee: number | null;
 
   // ─── Terms (editables vía PATCH antes de firmas) ─────────────────────────
-  monthlyRent: number;
-  startDate: string;
-  endDate: string;
-  paymentDay: number;                // backend usa `paymentDay` (el front lo mapea a paymentDueDay)
+  /**
+   * `null` en un contrato MIGRADO sin ese dato (T-0031, M2, D6 — nunca `0`
+   * como sentinela de "desconocido"). `monthlyRent`/`startDate`/`endDate`/
+   * `paymentDay` son las 5 columnas que la CHECK `contracts_native_complete`
+   * exige completas sólo para `contractOrigin !== 'MIGRATED'`.
+   */
+  monthlyRent: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  paymentDay: number | null;         // backend usa `paymentDay` (el front lo mapea a paymentDueDay)
 
   // ─── Administración (NO viajan en el documento firmado) ──────────────────
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL' | null;

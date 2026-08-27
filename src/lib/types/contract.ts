@@ -254,7 +254,12 @@ export interface Contract {
   id: string;
   applicationId?: string;
   propertyId: string;
-  tenantId: string;
+  /**
+   * `null` en un contrato MIGRADO (T-0031) sin correo de inquilino — existe
+   * como `Contract` igual, sin usuario inquilino asociado. No es un dato
+   * ausente por error: es el estado real de una cartera migrada a medias.
+   */
+  tenantId: string | null;
   landlordId: string;
   status: ContractStatus;
 
@@ -270,12 +275,19 @@ export interface Contract {
   landlordEmail: string;
   landlordDocument: string;
 
-  // Contract terms
-  monthlyRent: number;
+  /**
+   * `null` en un contrato MIGRADO sin ese dato (T-0031, D6 — nunca `0`/una
+   * fecha inventada como sentinela de "desconocido"). Un renderizador que
+   * recibe `null` acá DEBE mostrarlo como ausente — nunca formatear un
+   * valor por default (`formatCurrency`/`formatDate` de `@/lib/format`
+   * NO son null-safe en el sentido correcto para estos campos: resuelven a
+   * "$ 0"/epoch, indistinguible de un dato real).
+   */
+  monthlyRent: number | null;
   adminFee: number;
-  startDate: string;      // ISO date
-  endDate: string;        // ISO date
-  paymentDueDay: number;  // 1-28
+  startDate: string | null;      // ISO date
+  endDate: string | null;        // ISO date
+  paymentDueDay: number | null;  // 1-28
 
   // ─── Administración ───────────────────────────────────────────────────────
   // No viajan en el documento firmado: corregirlos no invalida ninguna firma.

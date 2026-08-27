@@ -34,7 +34,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
-import { formatCurrency } from '@/lib/format';
+import { formatDate, formatCanon } from './format';
 import { Button } from '@/components/ui/button';
 import { Spinner, Badge } from '@/components/ui';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -306,7 +306,7 @@ function ContratoDetalleContent() {
           <InfoCard title="Términos" icon={Calendar}>
             <InfoRow label="Inicio" value={formatDate(contract.startDate)} />
             <InfoRow label="Fin" value={formatDate(contract.endDate)} />
-            <InfoRow label="Canon" value={formatCurrency(contract.monthlyRent)} />
+            <InfoRow label="Canon" value={formatCanon(contract.monthlyRent)} />
             <InfoRow label="Día de pago" value={contract.paymentDueDay ? `Día ${contract.paymentDueDay}` : null} />
           </InfoCard>
 
@@ -669,18 +669,6 @@ function InfoRow({ label, value }: { label: string; value: string | number | nul
       <span className="text-foreground font-medium text-right">{display}</span>
     </div>
   );
-}
-
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString('es-CO', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
 }
 
 // ─── Export ──────────────────────────────────────────────────────────────────

@@ -223,6 +223,15 @@ export interface ChatMessage {
   actionProposals?: ActionProposal[];
   /** "Estado de hoy" KPI snapshot from the backend (rendered as a data card). */
   snapshot?: ChatSnapshot;
+  /**
+   * Valoración del usuario sobre esta respuesta (pulgar arriba/abajo).
+   *
+   * Se guarda en el mensaje —y por lo tanto sobrevive el localStorage, que
+   * serializa el mensaje entero— para que el pulgar quede marcado al volver a
+   * la conversación. HOY NO SALE DE ACÁ: no existe endpoint de feedback, así
+   * que es memoria local, no una señal que llegue a nadie.
+   */
+  feedback?: 'up' | 'down' | null;
 }
 
 export interface Conversation {

@@ -1,9 +1,12 @@
 'use client';
 
-import { Copy, ArrowsClockwise, ThumbsUp, ThumbsDown } from '@phosphor-icons/react';
-import type { Icon } from '@phosphor-icons/react';
-import { IconButton } from '@leasefy/cadence';
+import { useState } from 'react';
+import { Copy, Check, ArrowsClockwise, ThumbsUp, ThumbsDown } from '@phosphor-icons/react';
+import { IconButton, Tooltip } from '@leasefy/cadence';
+import { toast } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
+import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { LeasefyMark } from './LeasefyMark';
@@ -15,22 +18,92 @@ interface AssistantBubbleProps {
   className?: string;
 }
 
-const ACTION_BUTTONS: { icon: Icon; label: string }[] = [
-  { icon: Copy, label: 'Copy' },
-  { icon: ArrowsClockwise, label: 'Regenerate' },
-  { icon: ThumbsUp, label: 'Like' },
-  { icon: ThumbsDown, label: 'Dislike' },
-];
+/**
+ * Copia al portapapeles con respaldo.
+ *
+ * `navigator.clipboard` no existe fuera de un contexto seguro (http:// que no
+ * sea localhost) ni en navegadores viejos, y ahí lanzaba una promesa
+ * rechazada que nadie atrapaba: el botón "funcionaba" sin copiar nada.
+ */
+async function copiarAlPortapapeles(texto: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(texto);
+      return true;
+    }
+  } catch {
+    /* cae al respaldo */
+  }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = texto;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * AssistantBubble - Clean left-aligned assistant message.
  * Small icon + flowing text (no bubble container).
- * Action icons (copy, regenerate, thumbs) shown below completed messages.
+ *
+ * Las cuatro acciones de abajo (copiar · rehacer · pulgares) existían dibujadas
+ * desde el rediseño, con `aria-label` y SIN un solo `onClick` (Nico,
+ * 2026-08-27: «nada de esas acciones funciona, no tienen tooltips, toasts,
+ * función real»). Cada una hace ahora lo que dice, avisa que lo hizo, y se
+ * explica al pasar el mouse.
  */
 export function AssistantBubble({ message, streamingContent, className }: AssistantBubbleProps) {
-  const isStreaming = message.status === 'streaming';
+  const { t } = useI18n();
+  const { regenerateResponse, rateMessage, isThinking, isStreaming, isAgentsRunning } =
+    useBetaChatContext();
+  const [copiado, setCopiado] = useState(false);
+
+  const isStreamingThis = message.status === 'streaming';
   const isSending = message.status === 'sending';
-  const displayContent = isStreaming && streamingContent ? streamingContent : message.content;
+  const displayContent = isStreamingThis && streamingContent ? streamingContent : message.content;
+  const ocupado = isThinking || isStreaming || isAgentsRunning;
+
+  const handleCopiar = async () => {
+    const ok = await copiarAlPortapapeles(message.content);
+    if (!ok) {
+      toast.error(t('beta.actions.copyError'));
+      return;
+    }
+    setCopiado(true);
+    toast.success(t('beta.actions.copied'));
+    window.setTimeout(() => setCopiado(false), 1800);
+  };
+
+  const handleRehacer = () => {
+    // El guard también vive en el hook; acá evita además el toast alegre
+    // mientras hay un turno corriendo.
+    if (ocupado) {
+      toast.info(t('beta.actions.busy'));
+      return;
+    }
+    regenerateResponse(message.id);
+    toast.info(t('beta.actions.regenerating'));
+  };
+
+  const handlePulgar = (rating: 'up' | 'down') => {
+    const quitando = message.feedback === rating;
+    rateMessage(message.id, rating);
+    toast.success(
+      quitando
+        ? t('beta.actions.feedbackRemoved')
+        : rating === 'up'
+          ? t('beta.actions.feedbackUp')
+          : t('beta.actions.feedbackDown')
+    );
+  };
 
   return (
     <div className={cn('flex gap-3', className)}>
@@ -50,22 +123,83 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
           <>
             {/* Content — no bubble, just flowing text */}
             <div className="text-[14px] leading-relaxed text-foreground">
-              <MarkdownRenderer content={displayContent} isStreaming={isStreaming} />
+              <MarkdownRenderer content={displayContent} isStreaming={isStreamingThis} />
             </div>
 
             {/* Action icons — only when complete */}
             {message.status === 'complete' && (
               <div className="flex items-center gap-0.5 mt-2">
-                {ACTION_BUTTONS.map(({ icon: ActionIcon, label }) => (
+                <Tooltip content={copiado ? t('beta.actions.copied') : t('beta.actions.copy')}>
                   <IconButton
-                    key={label}
                     type="button"
-                    icon={<ActionIcon className="w-3.5 h-3.5" />}
+                    icon={
+                      copiado ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />
+                    }
                     variant="ghost"
-                    className="p-1.5 rounded-sm text-fg-subtle hover:text-fg-muted hover:bg-surface-muted"
-                    aria-label={label}
+                    onClick={() => void handleCopiar()}
+                    className={cn(
+                      'p-1.5 rounded-sm hover:bg-surface-muted',
+                      copiado ? 'text-primary' : 'text-fg-subtle hover:text-fg-muted'
+                    )}
+                    aria-label={t('beta.actions.copy')}
                   />
-                ))}
+                </Tooltip>
+
+                <Tooltip content={t('beta.actions.regenerate')}>
+                  <IconButton
+                    type="button"
+                    icon={<ArrowsClockwise className="w-3.5 h-3.5" />}
+                    variant="ghost"
+                    onClick={handleRehacer}
+                    disabled={ocupado}
+                    className="p-1.5 rounded-sm text-fg-subtle hover:text-fg-muted hover:bg-surface-muted disabled:opacity-40"
+                    aria-label={t('beta.actions.regenerate')}
+                  />
+                </Tooltip>
+
+                <Tooltip content={t('beta.actions.like')}>
+                  <IconButton
+                    type="button"
+                    icon={
+                      <ThumbsUp
+                        className="w-3.5 h-3.5"
+                        weight={message.feedback === 'up' ? 'fill' : 'regular'}
+                      />
+                    }
+                    variant="ghost"
+                    onClick={() => handlePulgar('up')}
+                    aria-pressed={message.feedback === 'up'}
+                    className={cn(
+                      'p-1.5 rounded-sm hover:bg-surface-muted',
+                      message.feedback === 'up'
+                        ? 'text-primary'
+                        : 'text-fg-subtle hover:text-fg-muted'
+                    )}
+                    aria-label={t('beta.actions.like')}
+                  />
+                </Tooltip>
+
+                <Tooltip content={t('beta.actions.dislike')}>
+                  <IconButton
+                    type="button"
+                    icon={
+                      <ThumbsDown
+                        className="w-3.5 h-3.5"
+                        weight={message.feedback === 'down' ? 'fill' : 'regular'}
+                      />
+                    }
+                    variant="ghost"
+                    onClick={() => handlePulgar('down')}
+                    aria-pressed={message.feedback === 'down'}
+                    className={cn(
+                      'p-1.5 rounded-sm hover:bg-surface-muted',
+                      message.feedback === 'down'
+                        ? 'text-danger'
+                        : 'text-fg-subtle hover:text-fg-muted'
+                    )}
+                    aria-label={t('beta.actions.dislike')}
+                  />
+                </Tooltip>
               </div>
             )}
           </>

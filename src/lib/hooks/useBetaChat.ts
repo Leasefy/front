@@ -249,6 +249,10 @@ export interface UseBetaChatReturn {
   // Agent activity aggregation
   allAgentActivities: AgentActivityEntry[];
 
+  // Message actions (acciones bajo cada respuesta)
+  regenerateResponse: (assistantMessageId: string) => void;
+  rateMessage: (messageId: string, rating: 'up' | 'down') => void;
+
   // Conversation management
   conversations: Conversation[];
   activeConversationId: string | null;
@@ -1071,6 +1075,84 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   );
 
   // ========================================================================
+  // Message actions
+  // ========================================================================
+
+  /**
+   * Pedido de regeneración en vuelo.
+   *
+   * No se puede recortar la conversación y llamar a `sendMessage` en el mismo
+   * tick: `sendMessage` está memoizado sobre `conversations` y arma el
+   * historial desde ese valor, así que la versión que tengo en la mano todavía
+   * incluye los mensajes que acabo de quitar — y el modelo recibiría de
+   * historial la respuesta que estamos rehaciendo. El efecto de abajo dispara
+   * cuando el estado recortado ya aterrizó.
+   */
+  const regeneracionPendienteRef = useRef<string | null>(null);
+
+  /**
+   * Rehace la última respuesta del asistente.
+   *
+   * Recorta desde el mensaje del usuario que la originó (inclusive) y lo vuelve
+   * a enviar: así el turno se rehace entero por el mismo camino que cualquier
+   * otro (SSE con respaldo POST), sin duplicar la lógica de red.
+   */
+  const regenerateResponse = useCallback(
+    (assistantMessageId: string) => {
+      if (isThinking || isStreaming || isAgentsRunning || !activeConversationId) return;
+      const conv = conversations.find((c) => c.id === activeConversationId);
+      if (!conv) return;
+
+      const idx = conv.messages.findIndex((m) => m.id === assistantMessageId);
+      if (idx < 1) return;
+
+      // El mensaje de usuario más cercano hacia atrás. Se busca en vez de
+      // asumir `idx - 1` porque entre medio puede haber bloques de sistema.
+      let u = idx - 1;
+      while (u >= 0 && conv.messages[u].role !== 'user') u -= 1;
+      if (u < 0) return;
+
+      const texto = conv.messages[u].content;
+      if (!texto.trim()) return;
+
+      const conversationId = activeConversationId;
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === conversationId
+            ? { ...c, messages: c.messages.slice(0, u), updatedAt: new Date() }
+            : c
+        )
+      );
+      regeneracionPendienteRef.current = texto;
+    },
+    [isThinking, isStreaming, isAgentsRunning, activeConversationId, conversations]
+  );
+
+  /** Marca el pulgar. Volver a tocar el mismo pulgar lo quita. */
+  const rateMessage = useCallback(
+    (messageId: string, rating: 'up' | 'down') => {
+      setConversations((prev) =>
+        prev.map((c) => ({
+          ...c,
+          messages: c.messages.map((m) =>
+            m.id === messageId ? { ...m, feedback: m.feedback === rating ? null : rating } : m
+          ),
+        }))
+      );
+    },
+    []
+  );
+
+  useEffect(() => {
+    const texto = regeneracionPendienteRef.current;
+    if (texto === null) return;
+    regeneracionPendienteRef.current = null;
+    sendMessage(texto);
+    // Depende de `conversations` a propósito: es el cambio de ese estado (el
+    // recorte) lo que habilita este envío con el historial ya correcto.
+  }, [conversations, sendMessage]);
+
+  // ========================================================================
   // Conversation CRUD
   // ========================================================================
 
@@ -1404,6 +1486,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
 
     // Agent activity aggregation
     allAgentActivities,
+
+    // Message actions
+    regenerateResponse,
+    rateMessage,
 
     // Conversation management
     conversations,

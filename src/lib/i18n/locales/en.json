@@ -9594,6 +9594,19 @@
       "endConfirm": "End and start another?",
       "endYes": "End",
       "endCancel": "Cancel"
+    },
+    "actions": {
+      "copy": "Copy response",
+      "copied": "Response copied",
+      "copyError": "Couldn't copy. Select the text and press Cmd+C.",
+      "regenerate": "Regenerate",
+      "regenerating": "Generating again…",
+      "busy": "Wait for the current response to finish.",
+      "like": "Helpful response",
+      "dislike": "Unhelpful response",
+      "feedbackUp": "Thanks — marked as helpful",
+      "feedbackDown": "Thanks — marked as unhelpful",
+      "feedbackRemoved": "Rating removed"
     }
   },
   "landlordProfile": {

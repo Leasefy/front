@@ -48,9 +48,13 @@ function TaskRow({ agent, esUltima }: { agent: AgentExecution; esUltima: boolean
 
       <div className="min-w-0 flex-1 pb-3">
         <div className="flex items-baseline justify-between gap-3">
+          {/* Dos líneas como máximo. Visto en vivo: el backend manda como
+              «tarea» un párrafo entero con todo el contexto, y en el hilo
+              pesa como un mensaje más. Lo que sigue lo cuenta el title. */}
           <span
+            title={label}
             className={cn(
-              'font-body text-[14px] leading-snug',
+              'line-clamp-2 font-body text-[14px] leading-snug',
               corriendo ? 'text-fg' : agent.status === 'failed' ? 'text-fg' : 'text-fg-muted'
             )}
           >

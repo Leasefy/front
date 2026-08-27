@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { toast } from '@/components/ui';
-import { ChatCircleDots, ArrowRight, Trash, Check, X } from '@phosphor-icons/react';
+import { ArrowRight, Trash, Check, X } from '@phosphor-icons/react';
+import { LeasefyMark } from './LeasefyMark';
 import { PromptComposer, Eyebrow } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -125,8 +126,8 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
                   <div
                     key={conv.id}
                     className={cn(
-                      'group relative flex items-start gap-3 rounded-[18px] border border-border bg-surface px-4 py-3.5',
-                      'transition-colors duration-150 hover:border-border-strong',
+                      'group relative flex items-center gap-3.5 rounded-[18px] border border-border bg-surface px-4 py-3.5',
+                      'transition-all duration-200 hover:border-border-strong hover:shadow-[0_6px_20px_-12px_rgba(20,19,15,0.18)] hover:-translate-y-px',
                       confirmando && 'border-border-strong'
                     )}
                   >
@@ -139,22 +140,32 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
                         'outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-[12px]'
                       )}
                     >
+                      {/* La marca en vez de un icono genérico de chat: es una
+                          conversación CON Laura, y al pasar el mouse el tile
+                          se enciende al azul de marca — el mismo avatar que
+                          firma cada respuesta. */}
                       <span
                         aria-hidden
-                        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-muted text-fg-muted"
+                        className={cn(
+                          'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
+                          'bg-primary/10 text-primary transition-colors duration-200',
+                          'group-hover:bg-[#1A40FF] group-hover:text-white'
+                        )}
                       >
-                        <ChatCircleDots size={16} />
+                        <LeasefyMark className="w-[18px] h-auto" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="flex items-baseline justify-between gap-2">
-                          <span className="truncate font-body text-[13.5px] font-medium text-fg">
+                        <span className="flex items-baseline gap-2">
+                          <span className="truncate font-body text-[14.5px] font-semibold text-fg">
                             {conv.title}
                           </span>
-                          <span className="shrink-0 font-body text-[11.5px] text-fg-subtle">
+                          <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.06em] text-fg-subtle">
                             {haceCuanto(conv.updatedAt, ahora)}
+                            {' · '}
+                            {conv.messageCount} {t(conv.messageCount === 1 ? 'beta.conversations.message' : 'beta.conversations.messages')}
                           </span>
                         </span>
-                        <span className="mt-0.5 line-clamp-1 block font-body text-[12.5px] leading-snug text-fg-muted">
+                        <span className="mt-1 line-clamp-1 block font-body text-[13px] leading-snug text-fg-muted">
                           {conv.preview}
                         </span>
                       </span>
@@ -211,9 +222,9 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
                           <Trash size={14} />
                         </button>
                         <ArrowRight
-                          size={15}
+                          size={16}
                           aria-hidden
-                          className="text-fg-subtle transition-transform duration-150 group-hover:translate-x-0.5"
+                          className="text-fg-subtle transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary"
                         />
                       </span>
                     )}

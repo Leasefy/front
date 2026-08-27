@@ -133,7 +133,7 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
         ) : (
           <>
             {/* Content — no bubble, just flowing text */}
-            <div className="text-[14px] leading-relaxed text-foreground">
+            <div className="text-[16px] leading-[1.6] text-foreground">
               <MarkdownRenderer content={displayContent} isStreaming={isStreamingThis} />
             </div>
 

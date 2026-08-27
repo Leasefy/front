@@ -6,7 +6,7 @@ import { useI18n } from '@/lib/i18n';
 import type { ChatSnapshot } from '@/lib/types/beta-chat';
 import { AGENT_METADATA } from '@/lib/types/beta-chat';
 import { ChatOrb } from './ChatOrb';
-import { useElapsed, useSince, formatElapsed } from './useElapsed';
+import { useElapsed, useSince } from './useElapsed';
 
 interface TypingIndicatorProps {
   /** Mensajes previos que el asistente está leyendo como contexto. */
@@ -68,17 +68,15 @@ export function TypingIndicator({ historyCount = 0, snapshot, className }: Typin
         <ChatOrb size={28} className="-mt-[13px] -ml-[13px]" label={null} />
       </div>
       <div className="min-w-0 flex-1 pt-[3px]">
-        <div className="flex items-baseline gap-3">
-          <p role="status" className="font-body text-[14px] text-fg">
-            {t(`beta.tasks.phase.${fase}`)}
-          </p>
-          <span className="font-mono text-[11.5px] tabular-nums text-fg-subtle">
-            {formatElapsed(ms)}
-          </span>
-        </div>
+        {/* Sin reloj acá: ya está en el panel del compositor, y dos relojes
+            iguales a la vista compiten (Nico: «quita eso del tiempo pero sólo
+            en el del chat»). El tiempo sigue midiéndose para las fases. */}
+        <p role="status" className="font-body text-[16px] text-fg">
+          {t(`beta.tasks.phase.${fase}`)}
+        </p>
         <p
           key={linea}
-          className="mt-1 font-body text-[12.5px] text-fg-subtle animate-in fade-in slide-in-from-bottom-1 duration-300"
+          className="mt-1 font-body text-[13.5px] text-fg-subtle animate-in fade-in slide-in-from-bottom-1 duration-300"
         >
           {linea}
         </p>

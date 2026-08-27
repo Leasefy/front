@@ -225,7 +225,11 @@ export function ResponseCard({
             'rounded-xl',
             'bg-neutral-50 dark:bg-neutral-800/40',
             'border border-neutral-100 dark:border-neutral-800',
-            'px-4 py-3'
+            'px-4 py-3',
+            // Mismo cuerpo que la respuesta simple (Nico: «el texto que se
+            // responde en 16px»), para que no cambie de tamaño según venga
+            // en tarjeta o en burbuja.
+            'text-[16px] leading-[1.6]'
           )}
         >
           <MarkdownRenderer

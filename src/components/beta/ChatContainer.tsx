@@ -103,23 +103,46 @@ export function ChatContainer({ className }: ChatContainerProps) {
   } = useBetaChatContext();
 
   const [workspaceMessageId, setWorkspaceMessageId] = useState<string | null>(null);
+  // El contenedor de mensajes sólo existe con mensajes; el listener de scroll
+  // se engancha cuando aparece.
+  const hasMessagesForScroll = messages.length > 0;
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesAreaRef = useRef<HTMLDivElement>(null);
   const lastWorkspaceTriggerId = useRef<string | null>(null);
 
-  /** Check if user is near the bottom of the scroll container */
-  const isNearBottom = useCallback((): boolean => {
-    const container = messagesAreaRef.current;
-    if (!container) return true;
-    return container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-  }, []);
-
-  // Smart auto-scroll: only scroll if user is near bottom
+  // ── Auto-scroll que sigue la respuesta (patrón Claude / ChatGPT) ──────────
+  //
+  // Nico, 2026-08-27: «cuando llega algo nuevo le toca a uno hacer scroll
+  // down, y no debería: él debería ir haciendo el scroll».
+  //
+  // Lo que había medía «¿estás cerca del fondo?» DENTRO del efecto, o sea
+  // DESPUÉS de que el contenido nuevo ya se pintó. Un párrafo largo o un
+  // bloque de agentes hacía crecer `scrollHeight` más de 100px de golpe, la
+  // medición concluía «el usuario se alejó del fondo» y no bajaba — justo
+  // cuando más contenido llegaba. La pregunta correcta no es dónde está el
+  // scroll ahora, sino qué hizo el USUARIO: si él no se despegó del fondo,
+  // se lo sigue; si subió a leer algo, se lo respeta hasta que vuelva abajo.
+  // Eso se sabe escuchando el scroll, no midiendo después del render.
+  const siguiendo = useRef(true);
   useEffect(() => {
-    if (isNearBottom()) {
-      scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages, streamingContent, isThinking, activeAgentBlock, isAgentsRunning, isNearBottom]);
+    const el = messagesAreaRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      siguiendo.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [hasMessagesForScroll]);
+
+  useEffect(() => {
+    if (!siguiendo.current) return;
+    const el = messagesAreaRef.current;
+    if (!el) return;
+    // Directo, sin `smooth`: durante el streaming llegan varios cambios por
+    // segundo y una animación encadenada sobre otra tartamudea; el salto
+    // inmediato al fondo es lo que hacen Claude y ChatGPT.
+    el.scrollTop = el.scrollHeight;
+  }, [messages, streamingContent, isThinking, activeAgentBlock, isAgentsRunning]);
 
   // Auto-enter workspace mode when an actionable response with steps completes
   useEffect(() => {

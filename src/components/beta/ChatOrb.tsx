@@ -166,7 +166,7 @@ function mountOrb(canvas: HTMLCanvasElement, reducedMotion: boolean): (() => voi
     antialias: true,
     powerPreference: 'low-power',
   });
-  if (!gl) return null;
+  if (!gl || gl.isContextLost()) return null;
 
   const vs = compile(gl, gl.VERTEX_SHADER, VERT);
   const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG);
@@ -215,9 +215,7 @@ function mountOrb(canvas: HTMLCanvasElement, reducedMotion: boolean): (() => voi
   // siendo un orbe.
   if (reducedMotion) {
     draw();
-    return () => {
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
-    };
+    return () => {};
   }
 
   // No dibujar lo que nadie ve: pestaña oculta o canvas fuera de pantalla.
@@ -247,7 +245,13 @@ function mountOrb(canvas: HTMLCanvasElement, reducedMotion: boolean): (() => voi
     cancelAnimationFrame(raf);
     document.removeEventListener('visibilitychange', onVis);
     io.disconnect();
-    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    // NO se llama `loseContext()` acá. Parece limpio, y fue el bug del
+    // círculo blanco (Nico, 2026-08-27): en desarrollo React monta cada
+    // efecto dos veces (StrictMode), y el segundo montaje reutiliza el MISMO
+    // canvas — con el contexto ya perdido, todo `compileShader` devuelve
+    // false con log vacío, y el orbe caía al fallback. Los shaders compilaban
+    // perfecto (verificado en el navegador real, ANGLE Metal / M3 Pro). El
+    // navegador libera el contexto solo cuando el canvas sale del DOM.
   };
 }
 
@@ -286,9 +290,18 @@ export function ChatOrb({ size = 30, className, label = null }: ChatOrbProps) {
     canvas.height = Math.round(box * dpr);
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     const unmount = mountOrb(canvas, reduced);
-    if (!unmount) canvas.dataset.fallback = '1';
+    if (!unmount) {
+      // Sin WebGL: una esfera con degradado, en línea para no depender de que
+      // Tailwind haya generado una clase arbitraria con paréntesis y comas.
+      canvas.style.borderRadius = '9999px';
+      canvas.style.width = `${size}px`;
+      canvas.style.height = `${size}px`;
+      canvas.style.background =
+        'radial-gradient(circle at 35% 30%, #2bb5e8 0%, #1a40ff 45%, #04081f 100%)';
+      canvas.style.boxShadow = '0 0 12px rgba(26,64,255,0.35)';
+    }
     return () => unmount?.();
-  }, [box]);
+  }, [box, size]);
 
   return (
     <span
@@ -298,14 +311,7 @@ export function ChatOrb({ size = 30, className, label = null }: ChatOrbProps) {
       aria-label={label ?? undefined}
       aria-hidden={label ? undefined : true}
     >
-      <canvas
-        ref={ref}
-        style={{ width: box, height: box, display: 'block' }}
-        className={cn(
-          // Fallback sin WebGL: una esfera con degradado, para no dejar un hueco.
-          'data-[fallback]:rounded-full data-[fallback]:bg-[radial-gradient(circle_at_35%_30%,#2bb5e8_0%,#1a40ff_45%,#04081f_100%)]'
-        )}
-      />
+      <canvas ref={ref} style={{ width: box, height: box, display: 'block' }} />
     </span>
   );
 }

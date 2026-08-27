@@ -98,7 +98,22 @@ function generateTitle(text: string): string {
 function getPreview(messages: ChatMessage[]): string {
   if (messages.length === 0) return 'Nueva conversacion';
   const last = messages[messages.length - 1];
-  const text = last.content.replace(/\n/g, ' ').trim();
+  // Sin markdown crudo en el preview: el historial mostraba «**Deudores
+  // activos» y «- ** El resumen…» — los asteriscos y guiones del formato
+  // metidos en una línea de texto plano. Se quitan las marcas, no el texto.
+  const text = last.content
+    .replace(/```[\s\S]*?```/g, ' ')          // bloques de código
+    .replace(/`([^`]*)`/g, '$1')                // código en línea
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1') // links e imágenes → su texto
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')        // encabezados
+    .replace(/^\s*[-*+]\s+/gm, '')             // viñetas
+    .replace(/^\s*\d+\.\s+/gm, '')            // listas numeradas
+    .replace(/(\*\*|__)(.*?)\1/g, '$2')        // negrita
+    .replace(/(\*|_)(.*?)\1/g, '$2')           // cursiva
+    .replace(/^\s*>\s?/gm, '')                 // citas
+    .replace(/\n/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
   if (text.length <= PREVIEW_MAX_LENGTH) return text;
   return text.slice(0, PREVIEW_MAX_LENGTH).replace(/\s+\S*$/, '') + '...';
 }

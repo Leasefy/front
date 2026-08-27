@@ -9416,7 +9416,7 @@
       "emptySearch": "Sin resultados",
       "messages": "mensajes",
       "message": "mensaje",
-      "confirmDelete": "Confirmar eliminar",
+      "confirmDelete": "¿Eliminar esta conversación?",
       "deleteConversation": "Eliminar conversacion",
       "deleted": "Conversación borrada"
     },

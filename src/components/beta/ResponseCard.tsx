@@ -12,11 +12,9 @@ import {
   GearSix,
   Buildings,
   ArrowRight,
-  ArrowSquareOut,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { Button, Badge } from '@/components/ui';
-import { Tooltip } from '@leasefy/cadence';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -117,44 +115,30 @@ function ActionButton({
   onAsk: (prompt: string) => void;
   disabled: boolean;
 }) {
-  const { t } = useI18n();
   const ActionIcon = ICON_MAP[action.icon];
   // primary → DS primary pill (drops the old mono-uppercase anti-pattern);
   // secondary → outline; ghost → ghost.
   const variant =
     action.variant === 'primary' ? 'default' : action.variant === 'secondary' ? 'outline' : 'ghost';
 
+  // Sin la salida secundaria a la sección. La primera versión dejaba un
+  // iconito de «abrir» al lado de cada pastilla y Nico lo vio enseguida:
+  // «no se entiende ese botón, se siente muy raro». Tres iconos huérfanos en
+  // fila se leen como ruido, no como opción. La sección sigue a un clic en la
+  // barra lateral; acá el botón hace UNA cosa: preguntarle al asistente.
   return (
-    <span className="inline-flex shrink-0 items-center gap-1">
-      <Button
-        type="button"
-        variant={variant}
-        size="sm"
-        hideArrow
-        disabled={disabled}
-        onClick={() => onAsk(action.prompt ?? action.label)}
-        className="gap-1.5 rounded-md shrink-0"
-      >
-        {ActionIcon && <ActionIcon className="w-3.5 h-3.5" weight="duotone" />}
-        {action.label}
-      </Button>
-
-      {action.href && (
-        <Tooltip content={t('beta.response.openSection')}>
-          <a
-            href={action.href}
-            aria-label={t('beta.response.openSection')}
-            className={cn(
-              'inline-flex h-7 w-7 items-center justify-center rounded-md text-fg-subtle',
-              'transition-colors duration-150 hover:bg-surface-muted hover:text-fg-muted',
-              'outline-none focus-visible:ring-2 focus-visible:ring-ring'
-            )}
-          >
-            <ArrowSquareOut className="h-3.5 w-3.5" />
-          </a>
-        </Tooltip>
-      )}
-    </span>
+    <Button
+      type="button"
+      variant={variant}
+      size="sm"
+      hideArrow
+      disabled={disabled}
+      onClick={() => onAsk(action.prompt ?? action.label)}
+      className="gap-1.5 rounded-md shrink-0"
+    >
+      {ActionIcon && <ActionIcon className="w-3.5 h-3.5" weight="duotone" />}
+      {action.label}
+    </Button>
   );
 }
 

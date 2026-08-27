@@ -30,6 +30,7 @@ vi.mock('@/lib/api/contracts.service', () => ({
       registrarPropietario: vi.fn(),
       descartar: vi.fn(),
       activar: vi.fn(),
+      estadoDeLote: vi.fn(),
     },
   },
 }))
@@ -111,10 +112,25 @@ describe('<MigrarContratos> — sin gate de columnas', () => {
       activados: 0,
       descartados: 0,
     })
+    // WU-4, ítem 1: `preparar()` sólo encola el job — el sondeo
+    // (`useEstadoDeLote`) es quien decide cuándo ya hay lista de trabajo.
+    // Resuelve LISTO directamente: este test cubre el payload enviado y el
+    // arribo final a la lista de trabajo, no la espera intermedia (eso lo
+    // cubre el test siguiente).
+    vi.mocked(contractsApi.migracion.estadoDeLote).mockResolvedValue({
+      lote: 'lote-servidor-1',
+      estado: 'LISTO',
+      total: 1,
+      procesadas: 1,
+      pendientes: 1,
+      listos: 0,
+      activados: 0,
+      descartados: 0,
+    })
     vi.mocked(contractsApi.migracion.resumen).mockResolvedValue({
       lote: 'lote-servidor-1',
       total: 1,
-      pendientes: 0,
+      pendientes: 1,
       listos: 0,
       activados: 0,
       descartados: 0,
@@ -128,7 +144,9 @@ describe('<MigrarContratos> — sin gate de columnas', () => {
 
     await act(async () => {
       boton?.click()
-      await new Promise((r) => setTimeout(r, 0))
+      // Varias vueltas de microtask: preparar() → efecto de sondeo →
+      // estadoDeLote() → efecto de refrescar() → resumen()+filas().
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0))
     })
 
     // Server-issued lote: la fila que llega a `preparar()` no debe llevar un
@@ -150,6 +168,49 @@ describe('<MigrarContratos> — sin gate de columnas', () => {
     })
 
     expect(container.querySelector('[data-testid="lista-de-trabajo"]')).toBeTruthy()
+  })
+
+  it('mientras el lote sigue ENCOLADO/PROCESANDO, muestra progreso — nunca la lista de trabajo vacía', async () => {
+    render()
+    await esperar()
+    await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
+    const boton = botonRevisar()
+
+    vi.mocked(contractsApi.migracion.preparar).mockResolvedValue({
+      lote: 'lote-servidor-2',
+      estado: 'ENCOLADO',
+      total: 1,
+      procesadas: 0,
+      pendientes: 0,
+      listos: 0,
+      activados: 0,
+      descartados: 0,
+    })
+    // El job sigue corriendo — nunca resuelve LISTO en este test.
+    vi.mocked(contractsApi.migracion.estadoDeLote).mockResolvedValue({
+      lote: 'lote-servidor-2',
+      estado: 'PROCESANDO',
+      total: 1,
+      procesadas: 0,
+      pendientes: 0,
+      listos: 0,
+      activados: 0,
+      descartados: 0,
+    })
+
+    await act(async () => {
+      boton?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    // WU-1 dejó este hueco explícito: sin espera, acá se hubiera mostrado
+    // una lista de trabajo con "0 pendientes" — indistinguible de "no queda
+    // nada por hacer" cuando en realidad el job ni terminó.
+    expect(container.querySelector('[data-testid="lote-progreso"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="lista-de-trabajo"]')).toBeNull()
+    // `resumen()` no se llama para ESTE lote mientras no hay nada que
+    // mostrar todavía.
+    expect(contractsApi.migracion.resumen).not.toHaveBeenCalledWith('lote-servidor-2')
   })
 
   it('muestra un selector de remapeo por columna y un botón para restablecer', async () => {

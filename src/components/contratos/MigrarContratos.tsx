@@ -25,6 +25,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ArrowRight,
   CheckCircle,
+  Clock,
   FileArrowUp,
   Info,
   Warning,
@@ -66,8 +67,10 @@ import {
   type ResumenActivacion,
   type ResumenLote,
 } from '@/lib/api/contracts.service'
+import { useEstadoDeLote } from '@/lib/hooks/use-estado-de-lote'
 import { FaltantesDeFila } from './FaltantesDeFila'
 import { ResolucionMasiva } from './ResolucionMasiva'
+import { ProgresoDeLote } from './ProgresoDeLote'
 import { Pagination } from '@/components/ui/pagination'
 
 const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
@@ -118,6 +121,11 @@ export function MigrarContratos() {
   const [activacion, setActivacion] = useState<ResumenActivacion | null>(null)
 
   const [lotesAbiertos, setLotesAbiertos] = useState<LoteAbierto[]>([])
+
+  // Ítem 1 del brief WU-4: sondeo mientras el lote sigue ENCOLADO/PROCESANDO
+  // (contrato §11-J9) — es una conveniencia mientras la pestaña sigue
+  // abierta, nunca el mecanismo de finalización.
+  const { estado: estadoLote, agotado } = useEstadoDeLote(lote)
 
   /**
    * Una clave por archivo leído (no por click): si `preparar()` se reintenta
@@ -196,15 +204,21 @@ export function MigrarContratos() {
       const r = await contractsApi.migracion.preparar(aMigrar, idempotencyKey)
       // El lote es SIEMPRE del servidor (contrato §3.2.A2) — generarlo acá
       // podía colisionar entre dos archivos parecidos (N2).
+      //
+      // OJO: no se llama a `refrescar()` acá. `preparar()` encola el job —
+      // recién resuelto, la lista de trabajo está prácticamente vacía
+      // (`procesadas: 0`). Mostrarla así era el hueco que WU-1 dejó
+      // explícito para WU-4: la pantalla de espera (`<ProgresoDeLote>`,
+      // debajo) se muestra en su lugar hasta que `estadoLote.estado ===
+      // 'LISTO'`, momento en el que el efecto de abajo llama a `refrescar`.
+      setResumen(null)
       setLote(r.lote)
-      setResumen(r)
-      await refrescar(r.lote)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No pudimos preparar la migración.')
     } finally {
       setCargando(false)
     }
-  }, [filas, mapeo, idempotencyKey, refrescar])
+  }, [filas, mapeo, idempotencyKey])
 
   const activar = useCallback(async () => {
     if (!lote) return
@@ -241,21 +255,38 @@ export function MigrarContratos() {
     }
   }, [])
 
-  const retomar = useCallback(
-    async (elLote: string) => {
-      setCargando(true)
-      setError(null)
-      try {
-        setLote(elLote)
-        await refrescar(elLote)
-      } catch (e) {
+  const retomar = useCallback((elLote: string) => {
+    setError(null)
+    // Igual que en `preparar()`: si el lote retomado todavía está
+    // ENCOLADO/PROCESANDO (p.ej. se reabrió el importador mientras el job
+    // seguía corriendo), no hay lista de trabajo que mostrar todavía — el
+    // efecto de abajo llama a `refrescar` recién cuando `estadoLote.estado
+    // === 'LISTO'`.
+    setResumen(null)
+    setLote(elLote)
+  }, [])
+
+  /*
+   * El lote pasó a LISTO (por el sondeo de `useEstadoDeLote`, o porque ya
+   * lo estaba desde `lotesAbiertos()`): recién ahí tiene sentido cargar la
+   * lista de trabajo real.
+   */
+  useEffect(() => {
+    if (!lote) return
+    if (estadoLote?.estado === 'LISTO') {
+      refrescar(lote).catch((e) => {
         setError(e instanceof Error ? e.message : 'No pudimos abrir ese lote.')
-      } finally {
-        setCargando(false)
-      }
-    },
-    [refrescar],
-  )
+      })
+    }
+  }, [lote, estadoLote?.estado, refrescar])
+
+  // ── Hay un lote pero todavía no está LISTO: pantalla de espera ───────────
+  // Ítem 1 del brief — mostrar progreso mientras el usuario elige esperar, y
+  // dejar explícito que cerrar la pestaña es seguro (el lote es durable
+  // server-side; la notificación avisa igual — contrato §3.2.C).
+  if (lote && !resumen) {
+    return <ProgresoDeLote estado={estadoLote} agotado={agotado} />
+  }
 
   // ── Ya se preparó: lista de trabajo ──────────────────────────────────────
   if (resumen && lote) {
@@ -297,23 +328,42 @@ export function MigrarContratos() {
           <p className="text-sm font-medium text-foreground">
             Tenés una migración sin terminar
           </p>
-          {lotesAbiertos.map((l) => (
-            <div key={l.lote} className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm text-muted-foreground">
-                <span className="text-foreground">{l.lote}</span> · {l.pendientes}{' '}
-                {l.pendientes === 1 ? 'fila pendiente' : 'filas pendientes'}
-                {l.listos > 0 ? ` · ${l.listos} listas para activar` : ''}
-              </p>
-              <Button
-                size="sm"
-                hideArrow
-                disabled={cargando}
-                onClick={() => void retomar(l.lote)}
-              >
-                Retomar
-              </Button>
-            </div>
-          ))}
+          {lotesAbiertos.map((l) => {
+            // F1 (contrato §3.2.A3) — `estado` ausente es un lote anterior
+            // a T-0031 (sin fila `MigracionLote`): se trata como LISTO,
+            // igual que hoy.
+            const procesando = l.estado === 'ENCOLADO' || l.estado === 'PROCESANDO'
+            return (
+              <div key={l.lote} className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-muted-foreground">
+                  <span className="text-foreground">{l.lote}</span>
+                  {procesando ? (
+                    <span className="inline-flex items-center gap-1 text-primary">
+                      {' · '}
+                      <Clock className="h-3 w-3" />
+                      {l.total != null
+                        ? `procesando ${l.pendientes + l.listos} / ${l.total}`
+                        : 'procesando'}
+                    </span>
+                  ) : (
+                    <>
+                      {' · '}
+                      {l.pendientes} {l.pendientes === 1 ? 'fila pendiente' : 'filas pendientes'}
+                      {l.listos > 0 ? ` · ${l.listos} listas para activar` : ''}
+                    </>
+                  )}
+                </p>
+                <Button
+                  size="sm"
+                  hideArrow
+                  disabled={cargando}
+                  onClick={() => retomar(l.lote)}
+                >
+                  Retomar
+                </Button>
+              </div>
+            )
+          })}
           <p className="text-xs text-muted-foreground">
             Si volvés a subir el mismo archivo, las filas se duplican.
           </p>

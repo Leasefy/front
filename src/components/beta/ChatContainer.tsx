@@ -16,6 +16,7 @@ import { AgentActivityIndicator } from './AgentActivityIndicator';
 import { ResponseCard } from './ResponseCard';
 import { WorkspaceView } from './WorkspaceView';
 import { DecisionCard } from './DecisionCard';
+import { ChatConversationBar } from './ChatConversationBar';
 
 interface ChatContainerProps {
   className?: string;
@@ -174,6 +175,12 @@ export function ChatContainer({ className }: ChatContainerProps) {
     >
       {hasMessages ? (
         <>
+          {/* Barra de conversación — plantillas siempre alcanzables + terminar.
+              Sin esto, escribir el primer mensaje tapaba el estado-0 para
+              siempre: no había forma de volver a las plantillas ni de cerrar
+              la conversación y empezar otra (Nico, 2026-08-27). */}
+          <ChatConversationBar onSelectTemplate={sendMessage} />
+
           {/* Messages area */}
           {/* data-lenis-prevent: Lenis hijacks wheel events globally; without it
               this nested scroller only moves via the scrollbar. Scrollbar is

@@ -1,11 +1,15 @@
 'use client';
 
-import { PromptComposer, AgentSuggestionCard, Eyebrow } from '@leasefy/cadence';
+import { useState } from 'react';
+import { ChatCircleDots, ArrowRight } from '@phosphor-icons/react';
+import { PromptComposer, Eyebrow } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { useBetaChatContext } from '@/lib/context/BetaChatContext';
+import { ChatTemplatesMenu } from './ChatTemplates';
 
 // ============================================================================
-// Types & Constants
+// Types
 // ============================================================================
 
 interface BetaWelcomeProps {
@@ -15,26 +19,17 @@ interface BetaWelcomeProps {
   className?: string;
 }
 
-interface PromptChip {
-  id: string;
-  titleKey: string;
-  descKey: string;
-  gradient: string;
-}
-
-// §33 "Sugerencias · Agentes Leasefy" — one gradient monogram per domain.
-const PROMPT_CHIPS: PromptChip[] = [
-  { id: 'cobros', titleKey: 'beta.welcome.prompts.cobros', descKey: 'beta.welcome.prompts.cobros_desc', gradient: 'linear-gradient(140deg,#1F8A5B,#7DE08A)' },
-  { id: 'propiedades', titleKey: 'beta.welcome.prompts.propiedades', descKey: 'beta.welcome.prompts.propiedades_desc', gradient: 'linear-gradient(140deg,#1A40FF,#2BB5E8)' },
-  { id: 'contratos', titleKey: 'beta.welcome.prompts.contratos', descKey: 'beta.welcome.prompts.contratos_desc', gradient: 'linear-gradient(140deg,#8E7BF0,#F5A878)' },
-  { id: 'mantenimiento', titleKey: 'beta.welcome.prompts.mantenimiento', descKey: 'beta.welcome.prompts.mantenimiento_desc', gradient: 'linear-gradient(140deg,#2BB5E8,#1A40FF)' },
-  { id: 'candidatos', titleKey: 'beta.welcome.prompts.candidatos', descKey: 'beta.welcome.prompts.candidatos_desc', gradient: 'linear-gradient(140deg,#1A40FF,#2BB5E8)' },
-  { id: 'reportes', titleKey: 'beta.welcome.prompts.reportes', descKey: 'beta.welcome.prompts.reportes_desc', gradient: 'linear-gradient(140deg,#1F8A5B,#7DE08A)' },
-];
-
-/** First grapheme of a title for the monogram tile. */
-function monogram(title: string): string {
-  return title.trim().charAt(0).toUpperCase() || '·';
+/** «hace 3 h», «ayer», «12 ago» — sin traer una librería de fechas. */
+function haceCuanto(fecha: Date, ahora: Date): string {
+  const min = Math.floor((ahora.getTime() - fecha.getTime()) / 60000);
+  if (min < 1) return 'ahora';
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.floor(h / 24);
+  if (d === 1) return 'ayer';
+  if (d < 7) return `hace ${d} días`;
+  return fecha.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
 }
 
 // ============================================================================
@@ -42,13 +37,23 @@ function monogram(title: string): string {
 // ============================================================================
 
 /**
- * BetaWelcome — state-0 (empty) chat, rebuilt to the cadence §33 design:
- * the greeting, the framed <PromptComposer>, and the "Sugerencias · Agentes
- * Leasefy" grid of <AgentSuggestionCard>. Sending (or picking a suggestion)
- * calls onPromptClick — the same `sendMessage` handler as before.
+ * BetaWelcome — estado-0 del chat.
+ *
+ * Cambio de producto (Nico, 2026-08-27): donde estaban las seis tarjetas de
+ * sugerencias va ahora el HISTORIAL de conversaciones, para poder retomar un
+ * contexto en vez de empezar siempre de cero. Las seis acciones no se
+ * perdieron: se mudaron al menú del botón «Plantillas» (`ChatTemplates.tsx`),
+ * que hasta hoy era un botón dibujado sin nada detrás.
  */
 export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
   const { t } = useI18n();
+  const { filteredSummaries, switchConversation } = useBetaChatContext();
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const ahora = new Date();
+
+  // Sólo las que tienen algo adentro: la conversación vacía recién creada es
+  // justamente esta pantalla, listarla sería ofrecerle volver a donde está.
+  const historial = filteredSummaries.filter((c) => c.messageCount > 0).slice(0, 6);
 
   return (
     <div className={cn('flex min-h-full flex-col items-center justify-center px-4 py-12 sm:px-6', className)}>
@@ -58,34 +63,79 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
           {t('beta.welcome.heroTitle')}
         </h1>
 
-        {/* Prompt composer (state 0) */}
-        <PromptComposer
-          className="w-full"
-          onSend={(text) => onPromptClick?.(text)}
-          onAttach={() => {}}
-          onTemplates={() => {}}
-          placeholder={t('beta.chat.placeholder')}
-        />
+        {/* Prompt composer (state 0) — el menú se ancla a este contenedor */}
+        <div className="relative w-full">
+          <PromptComposer
+            className="w-full"
+            onSend={(text) => onPromptClick?.(text)}
+            onTemplates={() => setTemplatesOpen((v) => !v)}
+            placeholder={t('beta.chat.placeholder')}
+          />
+          <ChatTemplatesMenu
+            open={templatesOpen}
+            onClose={() => setTemplatesOpen(false)}
+            onSelect={(prompt) => onPromptClick?.(prompt)}
+          />
+        </div>
 
-        {/* Sugerencias · Agentes Leasefy */}
+        {/* Historial de conversaciones */}
         <div className="mt-8 w-full">
-          <Eyebrow className="mb-3.5 px-1">{t('beta.welcome.suggestionsLabel')}</Eyebrow>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {PROMPT_CHIPS.map((chip) => {
-              const title = t(chip.titleKey);
-              const desc = t(chip.descKey);
-              return (
-                <AgentSuggestionCard
-                  key={chip.id}
-                  initials={monogram(title)}
-                  gradient={chip.gradient}
-                  title={title}
-                  description={desc}
-                  onSelect={() => onPromptClick?.(desc)}
-                />
-              );
-            })}
-          </div>
+          <Eyebrow className="mb-3.5 px-1">{t('beta.welcome.historyLabel')}</Eyebrow>
+
+          {historial.length === 0 ? (
+            <div className="rounded-[18px] border border-dashed border-border px-5 py-8 text-center">
+              <p className="font-body text-[13.5px] text-fg-muted">
+                {t('beta.welcome.historyEmpty')}
+              </p>
+              <button
+                type="button"
+                onClick={() => setTemplatesOpen(true)}
+                className="mt-2.5 font-body text-[13px] font-medium text-primary underline-offset-4 hover:underline"
+              >
+                {t('beta.welcome.historyEmptyCta')}
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {historial.map((conv) => (
+                <button
+                  key={conv.id}
+                  type="button"
+                  onClick={() => switchConversation(conv.id)}
+                  className={cn(
+                    'group flex items-start gap-3 rounded-[18px] border border-border bg-surface px-4 py-3.5 text-left',
+                    'transition-colors duration-150 hover:border-border-strong',
+                    'outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-muted text-fg-muted"
+                  >
+                    <ChatCircleDots size={16} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="truncate font-body text-[13.5px] font-medium text-fg">
+                        {conv.title}
+                      </span>
+                      <span className="shrink-0 font-body text-[11.5px] text-fg-subtle">
+                        {haceCuanto(conv.updatedAt, ahora)}
+                      </span>
+                    </span>
+                    <span className="mt-0.5 line-clamp-2 block font-body text-[12.5px] leading-snug text-fg-muted">
+                      {conv.preview}
+                    </span>
+                  </span>
+                  <ArrowRight
+                    size={15}
+                    aria-hidden
+                    className="mt-1 shrink-0 text-fg-subtle transition-transform duration-150 group-hover:translate-x-0.5"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

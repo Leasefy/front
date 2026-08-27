@@ -9558,7 +9558,10 @@
         "candidatos_desc": "Muestra los candidatos pre-filtrados",
         "reportes": "Reportes",
         "reportes_desc": "Genera un reporte financiero del mes"
-      }
+      },
+      "historyLabel": "Conversaciones recientes",
+      "historyEmpty": "Todavía no tienes conversaciones guardadas. Las que empieces van a aparecer acá para que puedas retomarlas.",
+      "historyEmptyCta": "Ver plantillas para empezar"
     },
     "response": {
       "actionable": "Accionable",
@@ -9582,6 +9585,16 @@
       "chatPanel": "Panel de chat",
       "noSteps": "Sin pasos definidos",
       "stepsProgress": "{{completed}} de {{total}} completados"
+    },
+    "templates": {
+      "button": "Plantillas",
+      "title": "Plantillas"
+    },
+    "conversation": {
+      "end": "Terminar conversación",
+      "endConfirm": "¿Terminar y empezar otra?",
+      "endYes": "Terminar",
+      "endCancel": "Cancelar"
     }
   },
   "landlordProfile": {

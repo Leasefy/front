@@ -9624,6 +9624,11 @@
         "reading": "Understanding what you need and what data I have.",
         "deciding": "Choosing which agents to consult and in what order.",
         "longer": "Taking longer than usual — nothing's lost, still working."
+      },
+      "fact": {
+        "history": "Reading the conversation context ({{n}} messages).",
+        "snapshot": "Today's status received: {{deudores}} active debtors, {{escalaciones}} pending escalations.",
+        "agents": "Available agents: {{agentes}}."
       }
     }
   },

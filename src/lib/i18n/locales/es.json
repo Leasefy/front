@@ -9625,6 +9625,11 @@
         "reading": "Entendiendo qué necesitas y con qué datos cuento.",
         "deciding": "Eligiendo qué agentes consultar y en qué orden.",
         "longer": "Está tomando más de lo normal — no se perdió nada, sigo trabajando."
+      },
+      "fact": {
+        "history": "Leyendo el contexto de la conversación ({{n}} mensajes).",
+        "snapshot": "Estado de hoy recibido: {{deudores}} deudores activos, {{escalaciones}} escalaciones pendientes.",
+        "agents": "Agentes disponibles: {{agentes}}."
       }
     }
   },

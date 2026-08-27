@@ -392,7 +392,13 @@ export function ChatContainer({ className }: ChatContainerProps) {
               })}
 
               {/* Typing indicator shown during the thinking delay */}
-              {isThinking && <TypingIndicator />}
+              {isThinking && (
+                <TypingIndicator
+                  // El par pendiente (pregunta + placeholder) no es contexto leído.
+                  historyCount={Math.max(0, messages.length - 2)}
+                  snapshot={messages[messages.length - 1]?.snapshot ?? null}
+                />
+              )}
 
               {/* Scroll sentinel */}
               <div ref={scrollRef} />

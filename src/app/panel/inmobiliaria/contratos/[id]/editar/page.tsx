@@ -34,6 +34,7 @@ import {
 } from '@/lib/hooks/useContracts';
 import type { InsuranceTier, UpdateContractDto } from '@/lib/api/contracts.types';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { isoToInputDate } from './iso-to-input-date';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -45,16 +46,6 @@ interface FormState {
   deposit: string;
   paymentDay: string;
   insuranceTier: InsuranceTier;
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function isoToInputDate(iso: string): string {
-  try {
-    return new Date(iso).toISOString().slice(0, 10);
-  } catch {
-    return '';
-  }
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────

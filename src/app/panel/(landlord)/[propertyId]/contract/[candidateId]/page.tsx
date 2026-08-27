@@ -635,7 +635,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                           <InsuranceSelector
                             selected={selectedInsurance}
                             onSelect={setSelectedInsurance}
-                            monthlyRent={contract.monthlyRent}
+                            monthlyRent={contract.monthlyRent ?? undefined}
                           />
                         </div>
                       )}

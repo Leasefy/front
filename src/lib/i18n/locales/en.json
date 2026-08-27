@@ -9416,7 +9416,8 @@
       "messages": "messages",
       "message": "message",
       "confirmDelete": "Confirm delete",
-      "deleteConversation": "Delete conversation"
+      "deleteConversation": "Delete conversation",
+      "deleted": "Conversation deleted"
     },
     "agents": {
       "dispatching": "Dispatching agents...",

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ChatCircleDots, ArrowRight } from '@phosphor-icons/react';
+import { toast } from '@/components/ui';
+import { ChatCircleDots, ArrowRight, Trash, Check, X } from '@phosphor-icons/react';
 import { PromptComposer, Eyebrow } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -47,7 +48,8 @@ function haceCuanto(fecha: Date, ahora: Date): string {
  */
 export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
   const { t } = useI18n();
-  const { filteredSummaries, switchConversation } = useBetaChatContext();
+  const { filteredSummaries, switchConversation, deleteConversation } = useBetaChatContext();
+  const [borrando, setBorrando] = useState<string | null>(null);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const ahora = new Date();
 
@@ -101,43 +103,110 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
                cada tarjeta quedaba angosta y el preview —que es lo que te dice
                si es LA conversación que buscabas— se cortaba a media frase. */
             <div className="flex flex-col gap-2.5">
-              {historial.map((conv) => (
-                <button
-                  key={conv.id}
-                  type="button"
-                  onClick={() => switchConversation(conv.id)}
-                  className={cn(
-                    'group flex items-start gap-3 rounded-[18px] border border-border bg-surface px-4 py-3.5 text-left',
-                    'transition-colors duration-150 hover:border-border-strong',
-                    'outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                  )}
-                >
-                  <span
-                    aria-hidden
-                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-muted text-fg-muted"
+              {historial.map((conv) => {
+                const confirmando = borrando === conv.id;
+                return (
+                  /* La tarjeta es un <div> con DOS botones hermanos — abrir y
+                     borrar — porque un botón dentro de otro es HTML inválido
+                     y el clic en la papelera abriría la conversación. */
+                  <div
+                    key={conv.id}
+                    className={cn(
+                      'group relative flex items-start gap-3 rounded-[18px] border border-border bg-surface px-4 py-3.5',
+                      'transition-colors duration-150 hover:border-border-strong',
+                      confirmando && 'border-border-strong'
+                    )}
                   >
-                    <ChatCircleDots size={16} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-baseline justify-between gap-2">
-                      <span className="truncate font-body text-[13.5px] font-medium text-fg">
-                        {conv.title}
+                    <button
+                      type="button"
+                      onClick={() => switchConversation(conv.id)}
+                      disabled={confirmando}
+                      className={cn(
+                        'flex min-w-0 flex-1 items-start gap-3 text-left',
+                        'outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-[12px]'
+                      )}
+                    >
+                      <span
+                        aria-hidden
+                        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-muted text-fg-muted"
+                      >
+                        <ChatCircleDots size={16} />
                       </span>
-                      <span className="shrink-0 font-body text-[11.5px] text-fg-subtle">
-                        {haceCuanto(conv.updatedAt, ahora)}
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-baseline justify-between gap-2">
+                          <span className="truncate font-body text-[13.5px] font-medium text-fg">
+                            {conv.title}
+                          </span>
+                          <span className="shrink-0 font-body text-[11.5px] text-fg-subtle">
+                            {haceCuanto(conv.updatedAt, ahora)}
+                          </span>
+                        </span>
+                        <span className="mt-0.5 line-clamp-1 block font-body text-[12.5px] leading-snug text-fg-muted">
+                          {conv.preview}
+                        </span>
                       </span>
-                    </span>
-                    <span className="mt-0.5 line-clamp-1 block font-body text-[12.5px] leading-snug text-fg-muted">
-                      {conv.preview}
-                    </span>
-                  </span>
-                  <ArrowRight
-                    size={15}
-                    aria-hidden
-                    className="mt-1 shrink-0 text-fg-subtle transition-transform duration-150 group-hover:translate-x-0.5"
-                  />
-                </button>
-              ))}
+                    </button>
+
+                    {/* Borrar (Nico, 2026-08-27: «tenemos que dar la posibilidad
+                        de borrar las conversaciones»). Papelera que aparece al
+                        pasar el mouse o con el teclado; confirma EN LÍNEA
+                        porque borrar un hilo no se deshace, y un diálogo modal
+                        por una tarjeta es demasiado ceremonia. */}
+                    {confirmando ? (
+                      <span className="flex shrink-0 items-center gap-1 self-center">
+                        <span className="hidden font-body text-[12px] text-fg-muted sm:inline">
+                          {t('beta.conversations.confirmDelete')}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            deleteConversation(conv.id);
+                            setBorrando(null);
+                            toast.success(t('beta.conversations.deleted'));
+                          }}
+                          className={cn(
+                            'inline-flex items-center gap-1 rounded-full bg-danger px-2.5 py-[4px]',
+                            'font-body text-[12px] font-medium text-white',
+                            'transition-opacity hover:opacity-90 outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                          )}
+                        >
+                          <Check size={12} weight="bold" />
+                          {t('beta.conversations.deleteConfirm')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBorrando(null)}
+                          aria-label={t('beta.conversation.endCancel')}
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-muted hover:text-fg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ) : (
+                      <span className="flex shrink-0 items-center gap-1 self-center">
+                        <button
+                          type="button"
+                          onClick={() => setBorrando(conv.id)}
+                          aria-label={t('beta.conversations.deleteConversation')}
+                          title={t('beta.conversations.deleteConversation')}
+                          className={cn(
+                            'inline-flex h-7 w-7 items-center justify-center rounded-full text-fg-subtle',
+                            'opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100',
+                            'hover:bg-surface-muted hover:text-danger outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                          )}
+                        >
+                          <Trash size={14} />
+                        </button>
+                        <ArrowRight
+                          size={15}
+                          aria-hidden
+                          className="text-fg-subtle transition-transform duration-150 group-hover:translate-x-0.5"
+                        />
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

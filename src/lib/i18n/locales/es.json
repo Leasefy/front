@@ -9417,7 +9417,8 @@
       "messages": "mensajes",
       "message": "mensaje",
       "confirmDelete": "Confirmar eliminar",
-      "deleteConversation": "Eliminar conversacion"
+      "deleteConversation": "Eliminar conversacion",
+      "deleted": "Conversación borrada"
     },
     "agents": {
       "dispatching": "Despachando agentes...",

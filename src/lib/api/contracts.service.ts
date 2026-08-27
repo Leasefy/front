@@ -319,6 +319,17 @@ export const contractsApi = {
       return apiClient.get<LoteAbierto[]>('/contracts/migrar/lotes');
     },
 
+    /**
+     * 1-bis. El estado de UN lote — contrato §3.2.A2. Misma forma que el
+     * `202` de `preparar()`; ésta es la ruta que se sondea mientras
+     * `estado ∈ {ENCOLADO, PROCESANDO}` (§11-J9: cada 3s, techo de 10min).
+     * El sondeo es una conveniencia mientras la pestaña sigue abierta —
+     * nunca el mecanismo de finalización (`use-estado-de-lote.ts`).
+     */
+    async estadoDeLote(lote: string): Promise<EstadoDeLote> {
+      return apiClient.get<EstadoDeLote>(`/contracts/migrar/lotes/${encodeURIComponent(lote)}`);
+    },
+
     /** Corregir una fila. Pasa sola a LISTO cuando ya no le falta nada. */
     async resolver(id: string, cambios: CambiosDeFila): Promise<FilaDeMigracion> {
       return apiClient.patch<FilaDeMigracion>(`/contracts/migrar/filas/${id}`, cambios);
@@ -647,11 +658,23 @@ export interface ConceptoDelContrato {
   recurrente: boolean;
 }
 
-/** Un lote a medio migrar, para poder retomarlo. */
+/**
+ * Un lote a medio migrar, para poder retomarlo.
+ *
+ * F1 (contract.md §3.2.A3, §5 P10) — `estado`/`total`/`creadoEn` son
+ * **opcionales, nuevos**: un lote anterior a T-0031 no tiene fila
+ * `MigracionLote` y legítimamente los omite (`lotesAbiertos()` hace
+ * left-join). Ausencia ⇒ el front asume `estado: 'LISTO'` (ya no encolado,
+ * simplemente sin `MigracionLote` que lo diga) y `total` cae a
+ * `pendientes + listos`.
+ */
 export interface LoteAbierto {
   lote: string;
   pendientes: number;
   listos: number;
+  estado?: EstadoLoteMigracion;
+  total?: number;
+  creadoEn?: string;
 }
 
 export interface PaginaDeFilas {

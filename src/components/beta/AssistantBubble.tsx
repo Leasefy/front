@@ -112,12 +112,18 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
           identidad y de indicador de carga a la vez, y evita tener la marca
           chica y un segundo indicador compitiendo por decir lo mismo. */}
       {isSending || isStreamingThis ? (
-        <div className="flex-shrink-0 w-6 mt-0.5 flex items-start justify-center">
-          <ChatOrb size={26} className="-mt-[12px] -ml-[12px]" label="Generando respuesta" />
+        <div className="flex-shrink-0 w-7 mt-0.5 flex items-start justify-center">
+          <ChatOrb size={28} className="-mt-[13px] -ml-[13px]" label="Generando respuesta" />
         </div>
       ) : (
-        <div className="flex-shrink-0 w-6 h-6 mt-0.5 rounded-sm bg-surface-muted flex items-center justify-center">
-          <LeasefyMark className="w-3.5 h-auto text-primary" />
+        /* Avatar final = el monograma de marca tal como viene en
+           «Leasefy Monogram White on Blue.svg»: círculo azul #1A40FF con el
+           trazo blanco. Antes era un cuadrado gris con el trazo azul, más
+           chico (Nico, 2026-08-27: «un poquito más grande, círculo y no
+           cuadrado, con el nuevo logo»). 28px, el mismo diámetro que el orbe
+           mientras escribe, para que el cambio orbe→marca no salte. */
+        <div className="flex-shrink-0 w-7 h-7 mt-0.5 rounded-full bg-[#1A40FF] flex items-center justify-center">
+          <LeasefyMark className="w-4 h-auto text-white" />
         </div>
       )}
 

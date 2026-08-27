@@ -82,17 +82,24 @@ void main() {
   float r = length(p);
   float ang = atan(p.y, p.x);
 
-  // 1. Silueta que tiembla: el radio del borde depende del ángulo y del tiempo.
-  float wob = fbm(vec2(cos(ang), sin(ang)) * 1.1 + t * 0.30);
-  float edge = 0.62 + (wob - 0.5) * 0.05;
+  // 1. Silueta IRREGULAR (Nico: «que el orbe sea irregular»): dos escalas de
+  //    ruido sobre el ángulo — lóbulos grandes que se mueven lento y un
+  //    rizado fino más rápido — para que sea una gota viva, no un círculo con
+  //    temblor. Antes iba a 0.05 de amplitud y se leía como esfera.
+  vec2 dir = vec2(cos(ang), sin(ang));
+  float lobes = fbm(dir * 1.3 + t * 0.55);
+  float ripple = fbm(dir * 4.0 - t * 0.9);
+  float edge = 0.60 + (lobes - 0.5) * 0.16 + (ripple - 0.5) * 0.05;
 
   // 2. Líquido interior por distorsión de dominio.
   vec2 q = p * 1.9;
+  // Más rápido que antes (0.18 / 0.14 / 0.05): «que se sienta más
+  // movimiento». El líquido tiene que verse fluir, no derivar.
   vec2 warp = vec2(
-    fbm(q + vec2(0.0, 0.0) + t * 0.18),
-    fbm(q + vec2(5.2, 1.3) - t * 0.14)
+    fbm(q + vec2(0.0, 0.0) + t * 0.42),
+    fbm(q + vec2(5.2, 1.3) - t * 0.33)
   );
-  float liquid = fbm(q + 2.6 * warp + vec2(1.7, 9.2) + t * 0.05);
+  float liquid = fbm(q + 2.8 * warp + vec2(1.7, 9.2) + t * 0.14);
 
   // Profundidad: abajo más denso (casi negro), arriba más claro (cian).
   float depth = clamp(liquid * 1.10 + p.y * 0.32 + 0.06, 0.0, 1.0);
@@ -110,11 +117,11 @@ void main() {
   col = mix(col, pearl, smoothstep(0.88, 1.00, depth));
 
   // 3. Estrías: finas, horizontales, siguen el líquido.
-  float stri = sin(p.y * 95.0 + liquid * 14.0 + t * 0.6);
+  float stri = sin(p.y * 95.0 + liquid * 14.0 + t * 1.4);
   col *= 1.0 + 0.07 * stri * smoothstep(0.0, 0.35, 0.62 - r);
 
   // 4. Filo nacarado, grueso e irregular.
-  float rimNoise = fbm(vec2(ang * 2.0, r * 6.0) + t * 0.2);
+  float rimNoise = fbm(vec2(ang * 2.0, r * 6.0) + t * 0.5);
   float rimIn = edge - 0.17 - rimNoise * 0.10;
   float rim = smoothstep(rimIn, edge - 0.02, r);
   col = mix(col, pearl, rim * 0.94);

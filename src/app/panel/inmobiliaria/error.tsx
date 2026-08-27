@@ -47,8 +47,8 @@ export default function ErrorDelPanel({
             Esta sección se rompió
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-            Fue un problema nuestro, no tuyo. Volvé a cargarla; si sigue igual,
-            escribinos con la referencia de abajo.
+            Fue un problema nuestro, no tuyo. Vuelve a cargarla; si sigue igual,
+            escríbenos con la referencia de abajo.
           </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2">

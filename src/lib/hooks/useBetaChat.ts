@@ -1055,7 +1055,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             finalizeError(
               assistantId,
               conversationId,
-              'No pude conectarme con el asistente en este momento. Intentá de nuevo en un momento.'
+              'No pude conectarme con el asistente en este momento. Intenta de nuevo en un momento.'
             );
           }
         }

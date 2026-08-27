@@ -9600,10 +9600,10 @@
     "actions": {
       "copy": "Copiar respuesta",
       "copied": "Respuesta copiada",
-      "copyError": "No pude copiar. Seleccioná el texto y usá Cmd+C.",
+      "copyError": "No pude copiar. Selecciona el texto y usa Cmd+C.",
       "regenerate": "Volver a generar",
       "regenerating": "Generando de nuevo…",
-      "busy": "Esperá a que termine la respuesta en curso.",
+      "busy": "Espera a que termine la respuesta en curso.",
       "like": "Respuesta útil",
       "dislike": "Respuesta poco útil",
       "feedbackUp": "Gracias — marcada como útil",

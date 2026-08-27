@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Cards, Check, X } from '@phosphor-icons/react';
+import { Cards, Check, X, ArrowUUpLeft } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
@@ -43,20 +43,17 @@ export function ChatConversationBar({ onSelectTemplate, className }: ChatConvers
     <div
       className={cn(
         'relative z-30 flex shrink-0 items-center justify-between gap-3',
-        // Franja propia, no una fila flotando (Nico, 2026-08-27: «separar con
-        // una línea o algo lo de plantillas + terminar conversación del chat»).
+        // Franja separada por la LÍNEA, no por el relleno (Nico, 2026-08-27:
+        // «¿por qué fondo blanco? manejala con el mismo fondo de todo»).
         //
-        // Iba con `border-surface-muted`, casi del color del fondo. Pero el
-        // borde solo no alcanzaba: el lienzo del chat es `--background`
-        // (#FAFAF9) y el header `--bg` (#fbfaf9) — el mismo color a ojo —, así
-        // que las tres zonas se leían como un bloque y el pelo de #E5E2DC del
-        // header se perdía en el medio. `bg-surface` (blanco puro) le da a la
-        // franja un relleno que SÍ contrasta, y entonces las dos fronteras
-        // —header↕franja y franja↕chat— se leen de verdad.
+        // Probé `bg-surface` (blanco puro) para ganar contraste, y era ganar lo
+        // que no había que ganar: una banda blanca dentro de una interfaz
+        // crema se lee como otro componente pegado encima. Hereda el fondo y
+        // que separe el borde, que es lo que hace el header.
         //
         // Sin borde SUPERIOR a propósito: el header ya trae el suyo
         // (`PlanHeader`, `border-b border-border`) y dos pegados dan raya doble.
-        'border-b border-border bg-surface px-4 py-2 sm:px-6',
+        'border-b border-border px-4 py-2 sm:px-6',
         className
       )}
     >
@@ -125,11 +122,17 @@ export function ChatConversationBar({ onSelectTemplate, className }: ChatConvers
           type="button"
           onClick={() => setConfirmandoFin(true)}
           className={cn(
+            // Pastilla como la de Plantillas, pero en reposo sin borde: es la
+            // acción secundaria de la franja y no debe pesar lo mismo. El borde
+            // aparece al acercarse, que es cuando importa que se vea tocable —
+            // antes era texto suelto y ni parecía un control.
+            'group inline-flex items-center gap-[7px] rounded-full border border-transparent px-[11px] py-[6px]',
             'font-body text-[12.5px] font-medium text-fg-muted',
-            'transition-colors duration-150 hover:text-fg',
-            'outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full px-2 py-1'
+            'transition-colors duration-150 hover:border-border hover:bg-surface hover:text-fg',
+            'outline-none focus-visible:ring-2 focus-visible:ring-ring'
           )}
         >
+          <ArrowUUpLeft size={13} className="text-fg-subtle transition-colors group-hover:text-fg-muted" />
           {t('beta.conversation.end')}
         </button>
       )}

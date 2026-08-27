@@ -1,22 +1,24 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { LeasefyMark } from './LeasefyMark';
+import { ChatOrb } from './ChatOrb';
 
 /**
- * TypingIndicator - Simple bounce dots matching the assistant icon style.
+ * TypingIndicator — el orbe mientras Laura piensa.
+ *
+ * Reemplaza los tres puntitos rebotando junto al logo (Nico, 2026-08-27:
+ * «quiero algo top que la gente diga wow al verlo cargando»). El orbe hace de
+ * avatar Y de indicador a la vez, así que no se dibuja además la marca chica:
+ * dos cosas identificando al mismo hablante compiten entre sí.
  */
 export function TypingIndicator({ className }: { className?: string }) {
   return (
-    <div className={cn('flex gap-3', className)}>
-      <div className="flex-shrink-0 w-6 h-6 rounded-sm bg-surface-muted flex items-center justify-center">
-        <LeasefyMark className="w-3.5 h-auto text-primary" />
-      </div>
-      <div className="flex items-center gap-1.5 py-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-border-strong animate-bounce [animation-delay:0ms]" />
-        <span className="w-1.5 h-1.5 rounded-full bg-border-strong animate-bounce [animation-delay:150ms]" />
-        <span className="w-1.5 h-1.5 rounded-full bg-border-strong animate-bounce [animation-delay:300ms]" />
-      </div>
+    <div className={cn('flex items-center gap-1', className)}>
+      {/* 40px, más grande que el avatar de 24: ESTE es el que se mira mientras
+          se espera, y es el momento en que tiene que lucir. El -ml compensa el
+          margen que la caja reserva para las ondas, para que el cuerpo del orbe
+          caiga donde caía la marca y no corra el texto de abajo. */}
+      <ChatOrb size={40} className="-ml-[24px]" label="Generando respuesta" />
     </div>
   );
 }

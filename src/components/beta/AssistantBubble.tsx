@@ -10,6 +10,7 @@ import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { LeasefyMark } from './LeasefyMark';
+import { ChatOrb } from './ChatOrb';
 
 interface AssistantBubbleProps {
   message: ChatMessage;
@@ -107,18 +108,22 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
 
   return (
     <div className={cn('flex gap-3', className)}>
-      {/* AI icon — real Leasefy mark */}
-      <div className="flex-shrink-0 w-6 h-6 mt-0.5 rounded-sm bg-surface-muted flex items-center justify-center">
-        <LeasefyMark className="w-3.5 h-auto text-primary" />
-      </div>
+      {/* Avatar. Mientras la respuesta se está generando ES el orbe: hace de
+          identidad y de indicador de carga a la vez, y evita tener la marca
+          chica y un segundo indicador compitiendo por decir lo mismo. */}
+      {isSending || isStreamingThis ? (
+        <div className="flex-shrink-0 w-6 mt-0.5 flex items-start justify-center">
+          <ChatOrb size={24} className="-mt-[15px] -ml-[15px]" label="Generando respuesta" />
+        </div>
+      ) : (
+        <div className="flex-shrink-0 w-6 h-6 mt-0.5 rounded-sm bg-surface-muted flex items-center justify-center">
+          <LeasefyMark className="w-3.5 h-auto text-primary" />
+        </div>
+      )}
 
       <div className="flex-1 min-w-0">
         {isSending ? (
-          <span className="inline-flex gap-1.5 py-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-border-strong animate-bounce [animation-delay:0ms]" />
-            <span className="w-1.5 h-1.5 rounded-full bg-border-strong animate-bounce [animation-delay:150ms]" />
-            <span className="w-1.5 h-1.5 rounded-full bg-border-strong animate-bounce [animation-delay:300ms]" />
-          </span>
+          <span className="sr-only">Generando respuesta</span>
         ) : (
           <>
             {/* Content — no bubble, just flowing text */}

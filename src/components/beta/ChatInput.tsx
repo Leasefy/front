@@ -25,6 +25,12 @@ interface ChatInputProps {
   variant?: 'default' | 'hero';
   /** §17G @-mention options (agentes & personas). */
   mentionOptions?: MentionOption[];
+  /**
+   * Bloque que se apoya SOBRE la caja de texto, fusionado con ella (mismo
+   * borde, esquinas compartidas). Lo usa el progreso de la tarea: suelto
+   * encima del compositor se veía «separado del chat» (Nico, 2026-08-27).
+   */
+  topSlot?: React.ReactNode;
 }
 
 // §17G default mentions — the domain agents (seed; the app can override).
@@ -140,7 +146,7 @@ export function ChatInput({
   className,
   variant = 'default',
   mentionOptions = DEFAULT_MENTIONS,
-}: ChatInputProps) {
+  topSlot,}: ChatInputProps) {
   const { t } = useI18n();
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -457,11 +463,16 @@ export function ChatInput({
     // indicator the safe-area inset wins so the input clears it.
     <div className={cn('px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2', className)}>
       <div className="max-w-3xl mx-auto">
+        {topSlot && (
+          <div className="rounded-t-xl border border-b-0 border-border bg-surface">
+            {topSlot}
+          </div>
+        )}
         <div
           className={cn(
             'relative flex items-end gap-2',
             'px-4 py-2',
-            'rounded-xl',
+            topSlot ? 'rounded-b-xl rounded-t-none' : 'rounded-xl',
             'bg-surface',
             'border border-border',
             'shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]',

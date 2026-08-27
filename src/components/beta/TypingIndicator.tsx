@@ -1,24 +1,32 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { ChatOrb } from './ChatOrb';
 
 /**
- * TypingIndicator — el orbe mientras Laura piensa.
+ * TypingIndicator — Laura pensando, antes del primer despacho.
  *
- * Reemplaza los tres puntitos rebotando junto al logo (Nico, 2026-08-27:
- * «quiero algo top que la gente diga wow al verlo cargando»). El orbe hace de
- * avatar Y de indicador a la vez, así que no se dibuja además la marca chica:
- * dos cosas identificando al mismo hablante compiten entre sí.
+ * Orbe del MISMO tamaño que el avatar (Nico, 2026-08-27: «es demasiado grande
+ * ese orbe») más una línea que dice qué está pasando. En esta fase lo único
+ * cierto es que el modelo está leyendo la pregunta y decidiendo qué hacer —
+ * eso es lo que se dice. En cuanto despacha agentes, `AgentTaskThread` toma
+ * el relevo con las tareas reales; cuando empieza a escribir, el orbe pasa a
+ * ser el avatar del mensaje. Cada fase cuenta lo suyo, ninguna inventa pasos.
  */
 export function TypingIndicator({ className }: { className?: string }) {
+  const { t } = useI18n();
   return (
-    <div className={cn('flex items-center gap-1', className)}>
-      {/* 44px, más grande que el avatar de 26: ESTE es el que se mira mientras
-          se espera, y es el momento en que tiene que lucir. El -ml compensa el
-          margen que la caja reserva para el resplandor ((box − size) / 2), para
-          que el cuerpo del orbe caiga donde caía la marca y no corra el texto. */}
-      <ChatOrb size={44} className="-ml-[20px]" label="Generando respuesta" />
+    <div className={cn('flex items-center gap-3', className)}>
+      <div className="flex w-6 shrink-0 items-center justify-center">
+        <ChatOrb size={24} label={null} />
+      </div>
+      <p
+        role="status"
+        className="font-body text-[14px] text-fg-muted animate-pulse [animation-duration:2.2s]"
+      >
+        {t('beta.tasks.thinking')}
+      </p>
     </div>
   );
 }

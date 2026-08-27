@@ -56,11 +56,11 @@ export function AgentTaskProgress({ activity, thinking, className }: AgentTaskPr
   return (
     <div
       className={cn(
-        // Se apoya sobre el compositor: bordes de arriba redondeados, el de
-        // abajo recto para que se lea como una sola pieza con la caja de texto.
-        'mx-auto w-full max-w-3xl rounded-t-2xl border border-b-0 border-border bg-surface',
-        'shadow-[0_-6px_24px_-12px_rgba(20,19,15,0.12)]',
-        'animate-in fade-in slide-in-from-bottom-2 duration-200',
+        // Sin borde ni fondo propios: vive en el `topSlot` de <ChatInput>, que
+        // lo fusiona con la caja de texto. Con chrome propio quedaba una
+        // pieza suelta flotando encima (Nico: «se siente raro, separado»).
+        'w-full border-b border-surface-muted',
+        'animate-in fade-in slide-in-from-bottom-1 duration-200',
         className
       )}
     >
@@ -70,14 +70,14 @@ export function AgentTaskProgress({ activity, thinking, className }: AgentTaskPr
         onClick={() => setAbierto((v) => !v)}
         aria-expanded={abierto}
         className={cn(
-          'flex w-full items-center gap-3 px-4 py-2.5 text-left',
-          'outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-t-2xl'
+          'flex w-full items-center gap-3 px-4 py-2 text-left',
+          'outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-t-xl'
         )}
       >
         <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-          <ChatOrb size={15} label={null} />
+          <ChatOrb size={14} label={null} />
         </span>
-        <span className="min-w-0 flex-1 truncate font-body text-[14px] font-medium text-fg">
+        <span className="min-w-0 flex-1 truncate font-body text-[13.5px] font-medium text-fg">
           {titulo}
         </span>
         <span className="shrink-0 border-l border-border pl-3 font-mono text-[12px] tabular-nums text-fg-subtle">

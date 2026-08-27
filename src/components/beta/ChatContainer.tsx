@@ -233,7 +233,20 @@ export function ChatContainer({ className }: ChatContainerProps) {
 
                 // "Estado de hoy" KPI glance — rendered under the reply when the
                 // backend (or mock) attached a snapshot to this turn.
-                const snapshotCard = message.snapshot ? (
+                // Sólo cuando los números CAMBIARON respecto a la última vez
+                // que se mostraron (Nico, 2026-08-27: «no repitas esta
+                // información en cada respuesta»). El backend adjunta el
+                // snapshot en cada turno; repetir cinco tarjetas idénticas
+                // debajo de cada respuesta es ruido, no información.
+                const snapshotPrevio = messages
+                  .slice(0, index)
+                  .reverse()
+                  .find((m) => m.role === 'assistant' && m.snapshot)?.snapshot;
+                const snapshotEsNuevo =
+                  message.snapshot &&
+                  (!snapshotPrevio ||
+                    JSON.stringify(snapshotPrevio) !== JSON.stringify(message.snapshot));
+                const snapshotCard = snapshotEsNuevo && message.snapshot ? (
                   <ChatDataCard tiles={snapshotTiles(message.snapshot)} />
                 ) : null;
 
@@ -386,15 +399,18 @@ export function ChatContainer({ className }: ChatContainerProps) {
             </div>
           </div>
 
-          {/* Progreso de la tarea, pegado al compositor (patrón Manus): sólo
-              mientras hay trabajo; al terminar desaparece y el hilo queda
-              como registro. */}
-          <div className="px-4 sm:px-6">
-            <AgentTaskProgress activity={activeAgentBlock} thinking={isThinking} />
-          </div>
-
-          {/* Chat input - floating at bottom */}
-          <ChatInput onSend={sendMessage} disabled={isBusy} />
+          {/* Chat input, con el progreso de la tarea FUSIONADO encima (patrón
+              Manus): sólo mientras hay trabajo; al terminar desaparece y el
+              hilo queda como registro. */}
+          <ChatInput
+            onSend={sendMessage}
+            disabled={isBusy}
+            topSlot={
+              isThinking || (activeAgentBlock && activeAgentBlock.agents.length > 0) ? (
+                <AgentTaskProgress activity={activeAgentBlock} thinking={isThinking} />
+              ) : null
+            }
+          />
         </>
       ) : (
         /* Empty state — Manus-style: greeting + hero input + pills, all centered */

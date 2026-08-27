@@ -2733,6 +2733,26 @@
         "toast": {
           "successTitle": "Importación exitosa",
           "successDesc": "{{count}} propiedades importadas correctamente"
+        },
+        "mandateBatch": {
+          "title": "Asignar mandato",
+          "subtitle": "{{count}} propiedades quedaron sin mandato. Completalo ahora para todas a la vez, o hacelo después desde el portafolio.",
+          "propertiesListLabel": "Propiedades",
+          "propietarioLabel": "Propietario",
+          "commissionLabel": "Comisión de la agencia",
+          "contractDateLabel": "Fecha del contrato",
+          "agenteLabel": "Agente asignado (opcional)",
+          "skip": "Hacerlo después",
+          "confirm": "Asignar mandato a todas",
+          "toasts": {
+            "allSucceededTitle": "Mandatos completados",
+            "allSucceededDesc": "{{count}} propiedades ya tienen mandato y comisión.",
+            "partialTitle": "Mandato parcial",
+            "partialDesc": "{{succeeded}} propiedades quedaron con mandato, {{failed}} no. Completalas desde el portafolio.",
+            "allFailedTitle": "No se pudo asignar el mandato",
+            "allFailedDesc": "Ninguna propiedad quedó con mandato. Completalas desde el portafolio cuando quieras.",
+            "errorDesc": "No pudimos guardar el propietario. Probá de nuevo en un momento."
+          }
         }
       },
       "software": {

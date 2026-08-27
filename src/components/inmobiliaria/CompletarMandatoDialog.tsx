@@ -94,6 +94,28 @@ export function buildMandatoPayload(
   return payload;
 }
 
+/**
+ * Creates or updates the propietario if the selector produced one, and
+ * returns the id to send on the mandate payload. Shared with the batch
+ * completion flow (`CompletarMandatosLoteDialog`, T-0030 WU-3) so the
+ * temp-id/create-vs-update rule lives in exactly one place.
+ */
+export async function persistPropietarioIfNeeded(
+  propietarioId: string,
+  newPropietarioData: PropietarioFormData | undefined,
+): Promise<string> {
+  const isTempId = propietarioId.startsWith('new-');
+  if (isTempId && newPropietarioData) {
+    const created = await propietariosApi.create(newPropietarioData);
+    return created.id;
+  }
+  if (newPropietarioData) {
+    // An existing propietario, edited again via "Editar" — same id, PUT.
+    await propietariosApi.update(propietarioId, newPropietarioData);
+  }
+  return propietarioId;
+}
+
 interface CompletarMandatoDialogProps {
   /** `null` closes the dialog — controlled by the parent's selected row. */
   inmueble: InmuebleSinConsignacion | null;
@@ -150,15 +172,7 @@ export function CompletarMandatoDialog({
     setFormError(null);
 
     try {
-      let finalPropietarioId = propietarioId!;
-      const isTempId = finalPropietarioId.startsWith('new-');
-      if (isTempId && newPropietarioData) {
-        const created = await propietariosApi.create(newPropietarioData);
-        finalPropietarioId = created.id;
-      } else if (newPropietarioData) {
-        // An existing propietario, edited again via "Editar" — same id, PUT.
-        await propietariosApi.update(finalPropietarioId, newPropietarioData);
-      }
+      const finalPropietarioId = await persistPropietarioIfNeeded(propietarioId!, newPropietarioData);
 
       const selectedAgente = agentes.find((a) => a.id === agenteId);
       const payload = buildMandatoPayload(inmueble, {

@@ -2732,6 +2732,26 @@
         "toast": {
           "successTitle": "Import successful",
           "successDesc": "{{count}} properties imported successfully"
+        },
+        "mandateBatch": {
+          "title": "Assign mandate",
+          "subtitle": "{{count}} properties are missing a mandate. Complete it now for all of them at once, or do it later from the portfolio.",
+          "propertiesListLabel": "Properties",
+          "propietarioLabel": "Owner",
+          "commissionLabel": "Agency commission",
+          "contractDateLabel": "Contract date",
+          "agenteLabel": "Assigned agent (optional)",
+          "skip": "Do it later",
+          "confirm": "Assign mandate to all",
+          "toasts": {
+            "allSucceededTitle": "Mandates completed",
+            "allSucceededDesc": "{{count}} properties now have a mandate and commission.",
+            "partialTitle": "Partial mandate",
+            "partialDesc": "{{succeeded}} properties got a mandate, {{failed}} did not. Complete them from the portfolio.",
+            "allFailedTitle": "Couldn't assign the mandate",
+            "allFailedDesc": "No property got a mandate. Complete them from the portfolio whenever you want.",
+            "errorDesc": "We couldn't save the owner. Try again in a moment."
+          }
         }
       },
       "software": {

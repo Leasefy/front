@@ -19,10 +19,28 @@ import { toast } from '@/components/ui/toast';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { uploadPropertyPhotos } from '@/lib/api/property-photos';
 import { traerFotoComoArchivo } from '@/lib/inmuebles/enlaces.service';
+import { usePropietarios, useAgentes } from '@/lib/hooks/useInmobiliaria';
+import type { Property } from '@/lib/types/property';
 import { faltantesParaElBack } from '../lib/requisitosDelBack';
 import { geocodeImportRow, GEOCODE_ROW_DELAY_MS } from '../lib/geocodeImportRow';
+import { inmuebleParaMandato } from '../lib/inmuebleParaMandato';
+import { CompletarMandatosLoteDialog } from '../CompletarMandatosLoteDialog';
 import { RanuraDelPie, type ImportStepProps } from '../ImportWizard';
 import type { ImportProperty } from '../lib/importTypes';
+
+/**
+ * Lo que hace falta para cerrar la importación DESPUÉS de que el modal de
+ * mandato (R1) se resuelva — se hizo o se saltó, da igual. Separado del
+ * cierre porque el modal es opcional y asíncrono: el resumen final no puede
+ * calcularse hasta que el usuario decide.
+ */
+interface ResumenPendiente {
+  created: number;
+  failed: number;
+  geocodedCount: number;
+  fotosSubidas: number;
+  fotosFallidas: number;
+}
 
 /**
  * Los requisitos del back viven en `lib/requisitosDelBack.ts` y ahora se
@@ -81,6 +99,14 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
   const [progress, setProgress] = useState(0);
   const [currentItem, setCurrentItem] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+
+  // R1 — el modal de mandato al terminar de importar. `mandateProperties`
+  // no-nulo dispara el modal; `resumenPendiente` guarda lo que falta para
+  // cerrar (toast + pantalla de éxito) hasta que el usuario decide algo.
+  const [mandateProperties, setMandateProperties] = useState<Property[] | null>(null);
+  const [resumenPendiente, setResumenPendiente] = useState<ResumenPendiente | null>(null);
+  const { propietarios: propietariosDelLote } = usePropietarios();
+  const { agentes: agentesDelLote } = useAgentes();
 
   const properties = state.properties;
   const selectedProperties = properties.filter((p) => p.selected && !p.hasErrors);
@@ -186,7 +212,7 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     // pedir eso es pedir que fallen. Ahora van de a EN_PARALELO.
     const EN_PARALELO = 6;
     let done = 0;
-    const results: PromiseSettledResult<unknown>[] = [];
+    const results: PromiseSettledResult<Property>[] = [];
     // Los que quedaron creados Y traen fotos del enlace de origen.
     const conFotos: { id: string; imagenes: string[] }[] = [];
 
@@ -288,6 +314,41 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
       return;
     }
 
+    const resumen: ResumenPendiente = { created, failed, geocodedCount, fotosSubidas, fotosFallidas };
+
+    // R1 — antes de la pantalla de éxito, ofrecer el modal de mandato para
+    // TODO lo que se creó. `results[i]` corresponde a `aCrear[i]` (mismo
+    // orden — el batching en tandas de EN_PARALELO no lo revuelve).
+    //
+    // Nunca publica nada: contract.md T-0030 §3.4/§8 deja el auto-publish
+    // fuera de alcance de esta tarea a propósito. El inmueble queda DRAFT,
+    // con o sin mandato — CompletarMandatosLoteDialog sólo llama
+    // POST /inmobiliaria/consignaciones (submitMandatosLote), nunca
+    // PATCH /properties/:id.
+    const creadas = results
+      .map((r) => (r.status === 'fulfilled' ? r.value : null))
+      .filter((p): p is Property => p !== null);
+
+    if (creadas.length > 0) {
+      setResumenPendiente(resumen);
+      setMandateProperties(creadas);
+      return;
+    }
+
+    finalizarImportacion(resumen);
+  };
+
+  /**
+   * Cierra la importación: la pantalla de éxito y el toast de resumen. Se
+   * llama directo cuando no hubo nada que crear, o después de que el modal
+   * de mandato (R1) se resuelve — completado o salteado, da igual (R2: si
+   * se saltea, no se crea nada más, y la fila ya sale en el portafolio con
+   * la alerta de WU-2).
+   */
+  const finalizarImportacion = (resumen: ResumenPendiente) => {
+    const { created, failed, geocodedCount, fotosSubidas, fotosFallidas } = resumen;
+    setMandateProperties(null);
+    setResumenPendiente(null);
     setErrorDeImportacion(null);
 
     updateState({ importedCount: created, importProgress: 100 });
@@ -596,6 +657,19 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
           está montada se dibuja acá, para no quedarse sin botón. */}
       {ranuraDelPie ? createPortal(botonImportar, ranuraDelPie) : (
         <div className="flex justify-end">{botonImportar}</div>
+      )}
+
+      {/* R1 — el modal de mandato, al terminar de importar. Saltable: si se
+          cierra sin completar, no se crea nada más (R2) y la fila ya sale en
+          el portafolio con la alerta "Falta mandato" (WU-2). */}
+      {mandateProperties && mandateProperties.length > 0 && resumenPendiente && (
+        <CompletarMandatosLoteDialog
+          inmuebles={mandateProperties.map(inmuebleParaMandato)}
+          propietarios={propietariosDelLote}
+          agentes={agentesDelLote}
+          onClose={() => finalizarImportacion(resumenPendiente)}
+          onDone={() => finalizarImportacion(resumenPendiente)}
+        />
       )}
     </div>
   );

@@ -52,6 +52,10 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
     titulo: 'Falta el uso del inmueble',
     porque: 'Decide el IVA: vivienda está excluida y comercial no.',
   },
+  dia_de_pago: {
+    titulo: 'Falta el día de pago',
+    porque: 'Sin él no se puede programar el cobro ni los recordatorios de vencimiento.',
+  },
 }
 
 interface Props {
@@ -90,6 +94,9 @@ export function FaltantesDeFila({ fila, onResuelta }: Props) {
           <div className="mt-3">
             {f === 'inmueble' || f === 'inmueble_ambiguo' ? (
               <ElegirInmueble fila={fila} ocupado={ocupado} correr={correr} />
+            ) : null}
+            {f === 'inmueble_ocupado' ? (
+              <InmuebleOcupado fila={fila} ocupado={ocupado} correr={correr} />
             ) : null}
             {f === 'propietario' ? (
               <RegistrarPropietario fila={fila} ocupado={ocupado} correr={correr} />
@@ -148,6 +155,20 @@ export function FaltantesDeFila({ fila, onResuelta }: Props) {
             ) : null}
             {f === 'fechas' ? (
               <Fechas fila={fila} ocupado={ocupado} correr={correr} />
+            ) : null}
+            {f === 'dia_de_pago' ? (
+              <CampoSimple
+                etiqueta="Día de pago (1-28)"
+                tipo="number"
+                ocupado={ocupado}
+                onGuardar={(v) => {
+                  const dia = Number(v)
+                  if (!Number.isFinite(dia) || dia < 1 || dia > 28) return
+                  correr(() =>
+                    contractsApi.migracion.resolver(fila.id, { paymentDay: dia }),
+                  )
+                }}
+              />
             ) : null}
           </div>
         </div>
@@ -235,6 +256,47 @@ function ElegirInmueble({
           El inmueble no está cargado — crearlo
         </Button>
       )}
+    </div>
+  )
+}
+
+/**
+ * La salida de `inmueble_ocupado` (N11/§3.2.B4/J7). Antes de esto la fila
+ * quedaba en un estado que `EXPLICACION` describía y el render no ofrecía
+ * cómo resolver — exactamente el dead end que nace cuando `EXPLICACION` y el
+ * `if` del render se editan por separado. Dos salidas, no una: reasignar el
+ * inmueble (reusa `<ElegirInmueble>`, misma pantalla que resuelve `inmueble`/
+ * `inmueble_ambiguo`) o aceptar explícitamente que ya está ocupado y seguir
+ * igual — se persiste en `MigracionContrato.overrides`, nunca se pierde al
+ * recargar.
+ */
+function InmuebleOcupado({
+  fila,
+  ocupado,
+  correr,
+}: {
+  fila: FilaDeMigracion
+  ocupado: boolean
+  correr: (a: () => Promise<FilaDeMigracion>) => Promise<void>
+}) {
+  return (
+    <div className="space-y-3">
+      <ElegirInmueble fila={fila} ocupado={ocupado} correr={correr} />
+      <Button
+        variant="outline"
+        size="sm"
+        hideArrow
+        disabled={ocupado}
+        onClick={() =>
+          void correr(() =>
+            contractsApi.migracion.resolver(fila.id, {
+              permitirInmuebleOcupado: true,
+            }),
+          )
+        }
+      >
+        Sé que está ocupado, seguir igual
+      </Button>
     </div>
   )
 }

@@ -295,6 +295,8 @@ export const contractsApi = {
           telefono?: string;
           comisionPorcentaje?: number;
         };
+        /** El bulk exit de N12 (contract.md §3.2.B5). */
+        paymentDay?: number;
       },
     ): Promise<ResultadoMasivo> {
       return apiClient.patch<ResultadoMasivo>('/contracts/migrar/filas', {
@@ -580,7 +582,8 @@ export type Faltante =
   | 'inquilino_nombre'
   | 'fechas'
   | 'canon'
-  | 'uso';
+  | 'uso'
+  | 'dia_de_pago';
 
 export interface InmuebleCandidato {
   id: string;
@@ -602,6 +605,13 @@ export interface FilaDeMigracion {
   estado: EstadoMigracion;
   faltantes: Faltante[];
   contractId: string | null;
+  /**
+   * Decisiones explícitas del usuario que anulan un chequeo automático.
+   * Ausente/`undefined` se trata como `[]` — nunca indexar sin default
+   * (contract.md §3.2.B6). Hoy el único valor posible es
+   * `'inmueble_ocupado'`.
+   */
+  overrides?: string[];
 }
 
 export interface CambiosDeFila {
@@ -613,6 +623,8 @@ export interface CambiosDeFila {
   startDate?: string;
   endDate?: string;
   paymentDay?: number;
+  /** "Sé que está ocupado, seguir igual" — contract.md §3.2.B4/J7. */
+  permitirInmuebleOcupado?: boolean;
 }
 
 /**

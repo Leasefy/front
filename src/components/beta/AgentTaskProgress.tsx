@@ -14,61 +14,95 @@ interface AgentTaskProgressProps {
   activity: AgentActivityBlock | null;
   /** Antes del primer despacho: el asistente está pensando. */
   thinking: boolean;
+  /** Ya está escribiendo la respuesta. */
+  streaming: boolean;
   className?: string;
 }
 
-function Glifo({ agent }: { agent: AgentExecution }) {
-  if (agent.status === 'running' || agent.status === 'dispatching')
-    return <ChatOrb size={13} label={null} />;
-  if (agent.status === 'completed') return <Check size={13} weight="bold" className="text-success-700" />;
-  if (agent.status === 'failed') return <X size={13} weight="bold" className="text-danger" />;
+type Estado = 'done' | 'running' | 'pending' | 'failed';
+interface Paso { id: string; label: string; estado: Estado; startedAt?: Date; sub?: string }
+
+function Glifo({ estado }: { estado: Estado }) {
+  if (estado === 'running') return <ChatOrb size={13} label={null} />;
+  if (estado === 'done') return <Check size={13} weight="bold" className="text-success-700" />;
+  if (estado === 'failed') return <X size={13} weight="bold" className="text-danger" />;
   return <Clock size={13} className="text-fg-subtle" />;
 }
 
+function estadoDeAgente(a: AgentExecution): Estado {
+  if (a.status === 'completed') return 'done';
+  if (a.status === 'failed') return 'failed';
+  return 'running';
+}
+
 /**
- * AgentTaskProgress — el progreso de la tarea, pegado al compositor.
+ * AgentTaskProgress — el progreso de la tarea, fusionado con el compositor.
  *
- * La otra mitad del patrón de Manus: mientras el hilo cuenta la historia, este
- * panel es el «dónde vamos». Cerrado, una línea: la tarea en curso, su reloj y
- * «3 / 5». Abierto, la lista completa con ✓ hecho · orbe en curso · reloj
- * pendiente. Vive sólo mientras hay trabajo (pensando o agentes corriendo);
- * cuando termina, desaparece y el hilo queda como registro.
+ * Nico, 2026-08-27: «cuando abro el dropdown no muestra nada… te dije que
+ * hicieras algo así [Manus]: paso a paso todo lo que los agentes están
+ * haciendo, lo que le falta hacer».
+ *
+ * Antes sólo listaba agentes despachados, y mientras piensa no hay ninguno:
+ * desplegable vacío. Pero cada turno tiene un plan REAL y fijo — entender la
+ * pregunta → consultar agentes → redactar la respuesta — y esos tres pasos
+ * son ciertos siempre, así que se muestran como checklist. Cuando el backend
+ * despacha agentes, el paso del medio se abre en una fila por agente con su
+ * tarea real, estado y reloj. Nada acá es inventado: son las fases por las
+ * que pasa de verdad cada respuesta, y los despachos que de verdad ocurren.
  */
-export function AgentTaskProgress({ activity, thinking, className }: AgentTaskProgressProps) {
+export function AgentTaskProgress({ activity, thinking, streaming, className }: AgentTaskProgressProps) {
   const { t } = useI18n();
   const [abierto, setAbierto] = useState(false);
 
   const agentes = activity?.agents ?? [];
-  const enCurso =
-    agentes.find((a) => a.status === 'running' || a.status === 'dispatching') ?? null;
-  const hechos = agentes.filter((a) => a.status === 'completed' || a.status === 'failed').length;
+  const hayAgentes = agentes.length > 0;
+  const agenteEnCurso = agentes.find((a) => a.status === 'running' || a.status === 'dispatching') ?? null;
   const pensandoDesde = useSince(thinking);
-  const ms = useElapsed(
-    enCurso?.startedAt ?? activity?.startedAt ?? pensandoDesde,
-    Boolean(enCurso) || thinking
-  );
+  const escribiendoDesde = useSince(streaming);
 
-  const visible = thinking || agentes.length > 0;
+  // ── El plan ────────────────────────────────────────────────────────────
+  const pasos: Paso[] = [];
+  pasos.push({
+    id: 'entender',
+    label: t('beta.tasks.plan.understand'),
+    estado: thinking && !hayAgentes ? 'running' : 'done',
+    startedAt: pensandoDesde ?? undefined,
+  });
+  if (hayAgentes) {
+    for (const a of agentes) {
+      pasos.push({
+        id: a.id,
+        label: a.taskDescription || AGENT_METADATA[a.agentType].label,
+        estado: estadoDeAgente(a),
+        startedAt: a.startedAt,
+        sub: t('beta.tasks.workingAs', { agent: AGENT_METADATA[a.agentType].label }),
+      });
+    }
+  } else {
+    pasos.push({ id: 'agentes', label: t('beta.tasks.plan.consult'), estado: streaming ? 'done' : 'pending' });
+  }
+  pasos.push({
+    id: 'redactar',
+    label: t('beta.tasks.plan.write'),
+    estado: streaming ? 'running' : 'pending',
+    startedAt: escribiendoDesde ?? undefined,
+  });
+
+  const enCurso = pasos.find((p) => p.estado === 'running') ?? null;
+  const hechos = pasos.filter((p) => p.estado === 'done' || p.estado === 'failed').length;
+  const ms = useElapsed(enCurso?.startedAt ?? agenteEnCurso?.startedAt ?? pensandoDesde, Boolean(enCurso));
+
+  const visible = thinking || hayAgentes || streaming;
   if (!visible) return null;
-
-  const titulo = enCurso
-    ? enCurso.taskDescription || AGENT_METADATA[enCurso.agentType].label
-    : thinking
-      ? t('beta.tasks.thinking')
-      : t('beta.tasks.finishing');
 
   return (
     <div
       className={cn(
-        // Sin borde ni fondo propios: vive en el `topSlot` de <ChatInput>, que
-        // lo fusiona con la caja de texto. Con chrome propio quedaba una
-        // pieza suelta flotando encima (Nico: «se siente raro, separado»).
         'w-full border-b border-surface-muted',
         'animate-in fade-in slide-in-from-bottom-1 duration-200',
         className
       )}
     >
-      {/* Cabecera — siempre visible */}
       <button
         type="button"
         onClick={() => setAbierto((v) => !v)}
@@ -82,53 +116,49 @@ export function AgentTaskProgress({ activity, thinking, className }: AgentTaskPr
           <ChatOrb size={14} label={null} />
         </span>
         <span className="min-w-0 flex-1 truncate font-body text-[13.5px] font-medium text-fg">
-          {titulo}
+          {enCurso?.label ?? t('beta.tasks.finishing')}
         </span>
         <span className="shrink-0 border-l border-border pl-3 font-mono text-[12px] tabular-nums text-fg-subtle">
           {formatElapsed(ms)}
         </span>
-        {agentes.length > 0 && (
-          <span className="shrink-0 font-body text-[13px] tabular-nums text-fg-muted">
-            {hechos} / {agentes.length}
-          </span>
-        )}
+        <span className="shrink-0 font-body text-[13px] tabular-nums text-fg-muted">
+          {hechos} / {pasos.length}
+        </span>
         <CaretDown
           size={14}
-          className={cn(
-            'shrink-0 text-fg-subtle transition-transform duration-200',
-            abierto && 'rotate-180'
-          )}
+          className={cn('shrink-0 text-fg-subtle transition-transform duration-200', abierto && 'rotate-180')}
         />
       </button>
 
-      {/* Lista — al abrir */}
-      {abierto && agentes.length > 0 && (
+      {abierto && (
         <div className="border-t border-surface-muted px-4 pb-3 pt-2.5">
           <p className="mb-2 font-body text-[12.5px] text-fg-subtle">{t('beta.tasks.progress')}</p>
           <ul className="m-0 list-none space-y-2 p-0">
-            {agentes.map((a) => {
-              const corre = a.status === 'running' || a.status === 'dispatching';
-              return (
-                <li key={a.id} className="flex items-center gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                    <Glifo agent={a} />
-                  </span>
+            {pasos.map((p) => (
+              <li key={p.id} className="flex items-start gap-3">
+                <span className="mt-[2px] flex h-5 w-5 shrink-0 items-center justify-center">
+                  <Glifo estado={p.estado} />
+                </span>
+                <span className="min-w-0 flex-1">
                   <span
                     className={cn(
-                      'min-w-0 flex-1 truncate font-body text-[13.5px]',
-                      corre ? 'text-fg' : a.status === 'completed' ? 'text-fg-muted' : 'text-fg-subtle'
+                      'line-clamp-2 font-body text-[13.5px]',
+                      p.estado === 'running' ? 'text-fg' : p.estado === 'done' ? 'text-fg-muted' : 'text-fg-subtle'
                     )}
                   >
-                    {a.taskDescription || AGENT_METADATA[a.agentType].label}
+                    {p.label}
                   </span>
-                  {corre && (
-                    <span className="shrink-0 border-l border-border pl-3 font-mono text-[11.5px] tabular-nums text-fg-subtle">
-                      {formatElapsed(ms)}
-                    </span>
+                  {p.estado === 'running' && p.sub && (
+                    <span className="block font-body text-[12px] text-fg-subtle">{p.sub}</span>
                   )}
-                </li>
-              );
-            })}
+                </span>
+                {p.estado === 'running' && (
+                  <span className="shrink-0 border-l border-border pl-3 font-mono text-[11.5px] tabular-nums text-fg-subtle">
+                    {formatElapsed(ms)}
+                  </span>
+                )}
+              </li>
+            ))}
           </ul>
         </div>
       )}

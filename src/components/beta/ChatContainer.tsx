@@ -412,8 +412,12 @@ export function ChatContainer({ className }: ChatContainerProps) {
             onSend={sendMessage}
             disabled={isBusy}
             topSlot={
-              isThinking || (activeAgentBlock && activeAgentBlock.agents.length > 0) ? (
-                <AgentTaskProgress activity={activeAgentBlock} thinking={isThinking} />
+              isThinking || isStreaming || (activeAgentBlock && activeAgentBlock.agents.length > 0) ? (
+                <AgentTaskProgress
+                  activity={activeAgentBlock}
+                  thinking={isThinking}
+                  streaming={isStreaming}
+                />
               ) : null
             }
           />

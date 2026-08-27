@@ -9629,6 +9629,11 @@
         "history": "Reading the conversation context ({{n}} messages).",
         "snapshot": "Today's status received: {{deudores}} active debtors, {{escalaciones}} pending escalations.",
         "agents": "Available agents: {{agentes}}."
+      },
+      "plan": {
+        "understand": "Understand the question",
+        "consult": "Consult the agents",
+        "write": "Write the answer"
       }
     }
   },

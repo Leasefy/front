@@ -68,7 +68,16 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
         {/* Prompt composer (state 0) — el menú se ancla a este contenedor */}
         <div className="relative w-full">
           <PromptComposer
-            className="w-full"
+            // `[&>div:first-child]:hidden` oculta la fila de «Adjuntar
+            // contexto» + chips. Ese botón viene del mockup de Cadence
+            // (adjuntar un inmueble / inquilino / contrato como alcance de la
+            // pregunta) y NUNCA se construyó: el backend del chat sólo recibe
+            // mensaje e historial. En cadence se dibuja sin condición, así que
+            // quitarlo de verdad es cortar versión del DS — hasta entonces, no
+            // se muestra un control que no hace nada (Nico, 2026-08-27: «doy
+            // clic y no funciona»). Como nunca se pasan `contexts`, la fila no
+            // tenía nada más.
+            className="w-full [&>div:first-child]:hidden"
             onSend={(text) => onPromptClick?.(text)}
             onTemplates={() => setTemplatesOpen((v) => !v)}
             placeholder={t('beta.chat.placeholder')}

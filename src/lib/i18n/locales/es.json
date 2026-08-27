@@ -9634,7 +9634,14 @@
       "plan": {
         "understand": "Entender la pregunta",
         "consult": "Consultar a los agentes",
-        "write": "Redactar la respuesta"
+        "write": "Redactar la respuesta",
+        "snapshot": "Revisar el estado de tu cartera",
+        "consultAgent": "Consultar al especialista de {{agent}}"
+      },
+      "detail": {
+        "cartera": "{{deudores}} deudores en gestión · {{escalaciones}} escalaciones · {{prejuridico}} en prejurídico",
+        "carteraVacia": "Sin datos de cartera para esta agencia",
+        "toolRunning": "Consultando {{herramienta}}"
       }
     }
   },

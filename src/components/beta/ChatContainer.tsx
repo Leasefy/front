@@ -98,6 +98,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
     streamingContent,
     activeAgentBlock,
     isAgentsRunning,
+    turnSteps,
     retryAgent,
     selectDecisionOption,
   } = useBetaChatContext();
@@ -260,10 +261,10 @@ export function ChatContainer({ className }: ChatContainerProps) {
 
                 // Agentes corriendo: la tarea EN el hilo, a la manera de Manus
                 // (filas planas + reloj vivo), en vez de la tarjeta con borde.
-                if (isLastAssistant && isAgentsRunning && activeAgentBlock) {
+                if (isLastAssistant && isAgentsRunning && turnSteps.length > 0) {
                   return (
                     <div key={message.id} className="space-y-3 animate-fade-in">
-                      <AgentTaskThread activity={activeAgentBlock} />
+                      <AgentTaskThread steps={turnSteps} />
                     </div>
                   );
                 }
@@ -411,15 +412,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
           <ChatInput
             onSend={sendMessage}
             disabled={isBusy}
-            topSlot={
-              isThinking || isStreaming || (activeAgentBlock && activeAgentBlock.agents.length > 0) ? (
-                <AgentTaskProgress
-                  activity={activeAgentBlock}
-                  thinking={isThinking}
-                  streaming={isStreaming}
-                />
-              ) : null
-            }
+            topSlot={turnSteps.length > 0 ? <AgentTaskProgress steps={turnSteps} /> : null}
           />
         </>
       ) : (

@@ -1,99 +1,85 @@
 'use client';
 
 import { useState } from 'react';
-import { CaretDown, Check, X, Clock } from '@phosphor-icons/react';
+import { CaretDown } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import type { AgentActivityBlock, AgentExecution } from '@/lib/types/beta-chat';
-import { AGENT_METADATA } from '@/lib/types/beta-chat';
+import type { TurnStep } from '@/lib/types/beta-chat';
 import { ChatOrb } from './ChatOrb';
-import { useElapsed, useSince, formatElapsed } from './useElapsed';
+import { GlifoPaso, useTextoPaso, useRelojPaso, ClasePaso } from './turn-steps';
 
 interface AgentTaskProgressProps {
-  /** Bloque vivo; `null` cuando no hay agentes corriendo. */
-  activity: AgentActivityBlock | null;
-  /** Antes del primer despacho: el asistente está pensando. */
-  thinking: boolean;
-  /** Ya está escribiendo la respuesta. */
-  streaming: boolean;
+  /** Los pasos del turno en curso, en orden. Vacío = no hay turno. */
+  steps: TurnStep[];
   className?: string;
 }
 
-type Estado = 'done' | 'running' | 'pending' | 'failed';
-interface Paso { id: string; label: string; estado: Estado; startedAt?: Date; sub?: string }
+function Fila({ step }: { step: TurnStep }) {
+  const { label, detail } = useTextoPaso(step);
+  const reloj = useRelojPaso(step);
 
-function Glifo({ estado }: { estado: Estado }) {
-  if (estado === 'running') return <ChatOrb size={13} label={null} />;
-  if (estado === 'done') return <Check size={13} weight="bold" className="text-success-700" />;
-  if (estado === 'failed') return <X size={13} weight="bold" className="text-danger" />;
-  return <Clock size={13} className="text-fg-subtle" />;
+  return (
+    <li className={cn('flex items-start gap-3', step.kind === 'herramienta' && 'pl-6')}>
+      <span className="mt-[2px] flex h-5 w-5 shrink-0 items-center justify-center">
+        <GlifoPaso estado={step.status} size={13} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span title={label} className={cn('line-clamp-2 font-body text-[13.5px]', ClasePaso(step.status))}>
+          {label}
+        </span>
+        {detail && (
+          <span className="mt-0.5 block line-clamp-2 font-body text-[12px] text-fg-subtle" title={detail}>
+            {detail}
+          </span>
+        )}
+      </span>
+      {reloj && (
+        <span className="shrink-0 border-l border-border pl-3 font-mono text-[11.5px] tabular-nums text-fg-subtle">
+          {reloj}
+        </span>
+      )}
+    </li>
+  );
 }
 
-function estadoDeAgente(a: AgentExecution): Estado {
-  if (a.status === 'completed') return 'done';
-  if (a.status === 'failed') return 'failed';
-  return 'running';
+/** Encabezado: hay que llamar hooks del paso en curso, y va en su propio componente. */
+function Encabezado({ step }: { step: TurnStep }) {
+  const { label } = useTextoPaso(step);
+  const reloj = useRelojPaso(step);
+  return (
+    <>
+      <span className="min-w-0 flex-1 truncate font-body text-[13.5px] font-medium text-fg">{label}</span>
+      {reloj && (
+        <span className="shrink-0 border-l border-border pl-3 font-mono text-[12px] tabular-nums text-fg-subtle">
+          {reloj}
+        </span>
+      )}
+    </>
+  );
 }
 
 /**
- * AgentTaskProgress — el progreso de la tarea, fusionado con el compositor.
+ * AgentTaskProgress — el plan del turno, fusionado con el compositor.
  *
- * Nico, 2026-08-27: «cuando abro el dropdown no muestra nada… te dije que
- * hicieras algo así [Manus]: paso a paso todo lo que los agentes están
- * haciendo, lo que le falta hacer».
+ * ── Por qué así (Nico, 2026-08-27) ────────────────────────────────────────
+ * «Dejaste solo como 3 tareas siempre y ya, nada inteligente; quiero que
+ * muestre según el contexto las diferentes tareas».
  *
- * Antes sólo listaba agentes despachados, y mientras piensa no hay ninguno:
- * desplegable vacío. Pero cada turno tiene un plan REAL y fijo — entender la
- * pregunta → consultar agentes → redactar la respuesta — y esos tres pasos
- * son ciertos siempre, así que se muestran como checklist. Cuando el backend
- * despacha agentes, el paso del medio se abre en una fila por agente con su
- * tarea real, estado y reloj. Nada acá es inventado: son las fases por las
- * que pasa de verdad cada respuesta, y los despachos que de verdad ocurren.
+ * La lista ya no se arma acá. Viene del hook, que la construye con los eventos
+ * REALES del turno: el `snapshot` (con las cifras de la agencia), cada
+ * despacho con la tarea que el orquestador le escribió al especialista, el
+ * resumen con que ese especialista contesta, y los pasos internos que el
+ * backend reporte. Por eso preguntar por la cartera y pedir una cotización
+ * muestran planes distintos: hacen cosas distintas.
  */
-export function AgentTaskProgress({ activity, thinking, streaming, className }: AgentTaskProgressProps) {
+export function AgentTaskProgress({ steps, className }: AgentTaskProgressProps) {
   const { t } = useI18n();
   const [abierto, setAbierto] = useState(false);
 
-  const agentes = activity?.agents ?? [];
-  const hayAgentes = agentes.length > 0;
-  const agenteEnCurso = agentes.find((a) => a.status === 'running' || a.status === 'dispatching') ?? null;
-  const pensandoDesde = useSince(thinking);
-  const escribiendoDesde = useSince(streaming);
+  if (steps.length === 0) return null;
 
-  // ── El plan ────────────────────────────────────────────────────────────
-  const pasos: Paso[] = [];
-  pasos.push({
-    id: 'entender',
-    label: t('beta.tasks.plan.understand'),
-    estado: thinking && !hayAgentes ? 'running' : 'done',
-    startedAt: pensandoDesde ?? undefined,
-  });
-  if (hayAgentes) {
-    for (const a of agentes) {
-      pasos.push({
-        id: a.id,
-        label: a.taskDescription || AGENT_METADATA[a.agentType].label,
-        estado: estadoDeAgente(a),
-        startedAt: a.startedAt,
-        sub: t('beta.tasks.workingAs', { agent: AGENT_METADATA[a.agentType].label }),
-      });
-    }
-  } else {
-    pasos.push({ id: 'agentes', label: t('beta.tasks.plan.consult'), estado: streaming ? 'done' : 'pending' });
-  }
-  pasos.push({
-    id: 'redactar',
-    label: t('beta.tasks.plan.write'),
-    estado: streaming ? 'running' : 'pending',
-    startedAt: escribiendoDesde ?? undefined,
-  });
-
-  const enCurso = pasos.find((p) => p.estado === 'running') ?? null;
-  const hechos = pasos.filter((p) => p.estado === 'done' || p.estado === 'failed').length;
-  const ms = useElapsed(enCurso?.startedAt ?? agenteEnCurso?.startedAt ?? pensandoDesde, Boolean(enCurso));
-
-  const visible = thinking || hayAgentes || streaming;
-  if (!visible) return null;
+  const enCurso = steps.find((p) => p.status === 'running') ?? null;
+  const hechos = steps.filter((p) => p.status === 'done' || p.status === 'failed').length;
 
   return (
     <div
@@ -115,14 +101,15 @@ export function AgentTaskProgress({ activity, thinking, streaming, className }: 
         <span className="flex h-5 w-5 shrink-0 items-center justify-center">
           <ChatOrb size={14} label={null} />
         </span>
-        <span className="min-w-0 flex-1 truncate font-body text-[13.5px] font-medium text-fg">
-          {enCurso?.label ?? t('beta.tasks.finishing')}
-        </span>
-        <span className="shrink-0 border-l border-border pl-3 font-mono text-[12px] tabular-nums text-fg-subtle">
-          {formatElapsed(ms)}
-        </span>
+        {enCurso ? (
+          <Encabezado step={enCurso} />
+        ) : (
+          <span className="min-w-0 flex-1 truncate font-body text-[13.5px] font-medium text-fg">
+            {t('beta.tasks.finishing')}
+          </span>
+        )}
         <span className="shrink-0 font-body text-[13px] tabular-nums text-fg-muted">
-          {hechos} / {pasos.length}
+          {hechos} / {steps.length}
         </span>
         <CaretDown
           size={14}
@@ -134,30 +121,8 @@ export function AgentTaskProgress({ activity, thinking, streaming, className }: 
         <div className="border-t border-surface-muted px-4 pb-3 pt-2.5">
           <p className="mb-2 font-body text-[12.5px] text-fg-subtle">{t('beta.tasks.progress')}</p>
           <ul className="m-0 list-none space-y-2 p-0">
-            {pasos.map((p) => (
-              <li key={p.id} className="flex items-start gap-3">
-                <span className="mt-[2px] flex h-5 w-5 shrink-0 items-center justify-center">
-                  <Glifo estado={p.estado} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span
-                    className={cn(
-                      'line-clamp-2 font-body text-[13.5px]',
-                      p.estado === 'running' ? 'text-fg' : p.estado === 'done' ? 'text-fg-muted' : 'text-fg-subtle'
-                    )}
-                  >
-                    {p.label}
-                  </span>
-                  {p.estado === 'running' && p.sub && (
-                    <span className="block font-body text-[12px] text-fg-subtle">{p.sub}</span>
-                  )}
-                </span>
-                {p.estado === 'running' && (
-                  <span className="shrink-0 border-l border-border pl-3 font-mono text-[11.5px] tabular-nums text-fg-subtle">
-                    {formatElapsed(ms)}
-                  </span>
-                )}
-              </li>
+            {steps.map((p) => (
+              <Fila key={p.id} step={p} />
             ))}
           </ul>
         </div>

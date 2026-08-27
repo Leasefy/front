@@ -187,6 +187,12 @@ export interface ChatStreamHandlers {
   onDispatchResult?: (dispatch: BackendDispatch) => void;
   /** Called for each `action_proposal` SSE event (F5). */
   onActionProposal?: (proposal: BackendActionProposal) => void;
+  /**
+   * Un paso INTERNO del especialista despachado: la herramienta que acabó de
+   * ejecutar, ya traducida a lenguaje de operador por el backend. Es lo que
+   * llena el silencio entre `dispatch_start` y `dispatch_result`.
+   */
+  onToolStep?: (step: { agent: BackendDispatchAgent; tool: string; label: string }) => void;
   onDone?: (final: {
     responseText: string;
     suggestedActions: BackendSuggestedAction[];
@@ -253,6 +259,18 @@ export function handleSSEEvent(
     case 'dispatch_result':
       if (obj.dispatch) handlers.onDispatchResult?.(obj.dispatch as BackendDispatch);
       break;
+    case 'tool_step': {
+      const tool = obj.tool;
+      const label = obj.label;
+      if (typeof tool === 'string' && tool) {
+        handlers.onToolStep?.({
+          agent: obj.agent as BackendDispatchAgent,
+          tool,
+          label: typeof label === 'string' && label ? label : tool,
+        });
+      }
+      break;
+    }
     case 'action_proposal': {
       // Validate the minimum required fields before forwarding (D-42-03 fail-open).
       const workItemId = obj.workItemId;

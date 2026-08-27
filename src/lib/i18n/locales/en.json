@@ -9633,7 +9633,14 @@
       "plan": {
         "understand": "Understand the question",
         "consult": "Consult the agents",
-        "write": "Write the answer"
+        "write": "Write the answer",
+        "snapshot": "Check your portfolio status",
+        "consultAgent": "Consult the {{agent}} specialist"
+      },
+      "detail": {
+        "cartera": "{{deudores}} debtors in management · {{escalaciones}} escalations · {{prejuridico}} pre-legal",
+        "carteraVacia": "No portfolio data for this agency",
+        "toolRunning": "Querying {{herramienta}}"
       }
     }
   },

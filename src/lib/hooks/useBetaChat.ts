@@ -28,9 +28,11 @@ import {
   suggestedActionToResponseAction,
   backendAgentToFrontType,
   executeAction,
+  resolveChatApproval,
   type BackendDispatch,
   type BackendSuggestedAction,
   type BackendActionProposal,
+  type BackendPendingApproval,
   type BackendSnapshot,
 } from '@/lib/api/ai-hub-chat';
 
@@ -1069,6 +1071,24 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               status: 'done',
             });
           },
+          // Acción vinculante propuesta por un especialista. Se convierte en la
+          // tarjeta de decisión que ya existe; `pendingDecisionRef` la adjunta
+          // al mensaje cuando termina de escribirse, igual que cualquier otra.
+          onPendingApproval: (approval: BackendPendingApproval) => {
+            pendingDecisionRef.current = {
+              id: approval.id,
+              approvalId: approval.id,
+              title: approval.title,
+              description: approval.description,
+              category: backendAgentToFrontType(approval.agent),
+              options: approval.options.map((o) => ({
+                id: o.id,
+                label: o.label,
+                description: o.description,
+                recommendation: o.recommendation,
+              })),
+            };
+          },
           // F5: action_proposal events — append to the assistant message (D-42-03 fail-open).
           onActionProposal: (proposal: BackendActionProposal) => {
             try {
@@ -1416,6 +1436,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
 
       // Find the option label for the user response message
       let optionLabel = '';
+      let aprobacion: string | undefined;
       setConversations((prev) =>
         prev.map((c) => {
           if (c.id !== activeConversationId) return c;
@@ -1425,6 +1446,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               if (m.id !== messageId || !m.decision) return m;
               const option = m.decision.options.find((o) => o.id === optionId);
               if (option) optionLabel = option.label;
+              aprobacion = m.decision.approvalId;
               return {
                 ...m,
                 decision: {
@@ -1439,6 +1461,21 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         })
       );
 
+      // Una aprobación se REGISTRA en el backend (señal de aprendizaje) y no
+      // abre otro turno: la acción no se ejecuta acá, se ejecuta en su frente,
+      // así que pedirle al modelo que opine de nuevo sólo gastaría un turno.
+      if (aprobacion && agencyId) {
+        void resolveChatApproval({
+          agencyId,
+          approvalId: aprobacion,
+          outcome: optionId === 'cancel' ? 'rejected' : 'approved',
+        }).catch(() => {
+          // Fail-soft: la tarjeta ya quedó marcada; no se rompe la conversación.
+          console.warn('[useBetaChat] no se pudo registrar la decisión de aprobación');
+        });
+        return;
+      }
+
       // Send a user message confirming the selection, then trigger a mock response
       if (optionLabel) {
         // Small delay so the decision card updates visually first
@@ -1447,7 +1484,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         }, 300);
       }
     },
-    [activeConversationId, sendMessage]
+    [activeConversationId, sendMessage, agencyId]
   );
 
   // ========================================================================

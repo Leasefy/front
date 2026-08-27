@@ -64,6 +64,30 @@ export interface BackendSuggestedAction {
   target: BackendActionTarget;
 }
 
+/**
+ * Acción VINCULANTE que un especialista propuso y que el chat NO ejecuta.
+ *
+ * El agente la manda por el evento `pending_approval`; el front la muestra como
+ * tarjeta de decisión. Resolverla NO ejecuta nada: registra la decisión del
+ * operador (el backend la usa como señal de aprendizaje) y la ejecución sigue
+ * viviendo en el frente correspondiente.
+ */
+export interface BackendPendingApproval {
+  id: string;
+  agent: BackendDispatchAgent;
+  actionType: string;
+  title: string;
+  description: string;
+  payloadPreview: Record<string, string>;
+  options: {
+    id: string;
+    label: string;
+    description: string;
+    recommendation: 'recommended' | 'neutral' | 'not_recommended';
+  }[];
+  requiresApproval: true;
+}
+
 export interface BackendDispatch {
   agent: BackendDispatchAgent;
   taskDescription: string;
@@ -193,6 +217,13 @@ export interface ChatStreamHandlers {
    * llena el silencio entre `dispatch_start` y `dispatch_result`.
    */
   onToolStep?: (step: { agent: BackendDispatchAgent; tool: string; label: string }) => void;
+  /**
+   * Un especialista propuso una acción vinculante que necesita el visto bueno
+   * de una persona. Sin este manejador el evento se perdía en silencio: el
+   * agente lo emitía y el front no tenía el caso, así que el operador nunca se
+   * enteraba de que había algo esperándolo.
+   */
+  onPendingApproval?: (approval: BackendPendingApproval) => void;
   onDone?: (final: {
     responseText: string;
     suggestedActions: BackendSuggestedAction[];
@@ -259,6 +290,13 @@ export function handleSSEEvent(
     case 'dispatch_result':
       if (obj.dispatch) handlers.onDispatchResult?.(obj.dispatch as BackendDispatch);
       break;
+    case 'pending_approval': {
+      const ap = obj.approval as BackendPendingApproval | undefined;
+      if (ap && typeof ap.id === 'string' && Array.isArray(ap.options) && ap.options.length > 0) {
+        handlers.onPendingApproval?.(ap);
+      }
+      break;
+    }
     case 'tool_step': {
       const tool = obj.tool;
       const label = obj.label;
@@ -350,6 +388,28 @@ export async function postChatTurn(args: {
   });
   if (!res.ok) throw new Error(`ai-hub chat ${res.status}`);
   return (await res.json()) as BackendChatResponse;
+}
+
+/**
+ * Registra la decisión del operador sobre una acción vinculante propuesta.
+ *
+ * 🔴 NO ejecuta la acción — el propio endpoint lo dice: «Does NOT execute the
+ * binding action — that stays gated in the agent's frente». Lo que hace es
+ * dejar constancia de si la propuesta se aceptó o no, que es la señal con la
+ * que el chat aprende. La UI tiene que decirlo con esas palabras.
+ */
+export async function resolveChatApproval(args: {
+  agencyId: string;
+  approvalId: string;
+  outcome: 'approved' | 'rejected';
+}): Promise<void> {
+  const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/approvals/${encodeURIComponent(args.approvalId)}/resolve`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+    body: JSON.stringify({ outcome: args.outcome }),
+  });
+  if (!res.ok) throw new Error(`ai-hub approval ${res.status}`);
 }
 
 /**

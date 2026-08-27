@@ -103,6 +103,8 @@ describe('handleSSEEvent', () => {
       onMessage: (t, a) => calls.push(`message:${t}:${a.length}`),
       onDispatchStart: (ag, t) => calls.push(`start:${ag}:${t}`),
       onDispatchResult: (d) => calls.push(`result:${d.agent}:${d.status}`),
+      onToolStep: (p) => calls.push(`tool:${p.agent}:${p.tool}:${p.label}`),
+      onPendingApproval: (a) => calls.push(`approval:${a.id}:${a.options.length}`),
       onDone: (f) => calls.push(`done:${f.dispatches.length}`),
       onError: (m) => calls.push(`error:${m}`),
     };
@@ -116,6 +118,42 @@ describe('handleSSEEvent', () => {
       handlers,
     );
     expect(calls).toEqual(['message:hola:1']);
+  });
+
+  it('reporta un paso interno del especialista con su etiqueta', () => {
+    const { calls, handlers } = collect();
+    handleSSEEvent(
+      'event: tool_step\ndata: {"type":"tool_step","agent":"cobranza","tool":"checkAgencyPolicy","label":"Revisar los límites que autorizó la inmobiliaria"}',
+      handlers,
+    );
+    expect(calls).toEqual(['tool:cobranza:checkAgencyPolicy:Revisar los límites que autorizó la inmobiliaria']);
+  });
+
+  it('cae al nombre crudo de la herramienta cuando no viene etiqueta', () => {
+    const { calls, handlers } = collect();
+    handleSSEEvent(
+      'event: tool_step\ndata: {"type":"tool_step","agent":"cotizador","tool":"quoteSura"}',
+      handlers,
+    );
+    expect(calls).toEqual(['tool:cotizador:quoteSura:quoteSura']);
+  });
+
+  it('entrega la aprobación pendiente que antes se perdía', () => {
+    const { calls, handlers } = collect();
+    handleSSEEvent(
+      'event: pending_approval\ndata: {"type":"pending_approval","approval":{"id":"approval-pagos-send_cobro-1","agent":"pagos","actionType":"send_cobro","title":"Confirmar acción de pagos","description":"Enviar el cobro","payloadPreview":{},"options":[{"id":"approve","label":"Aprobar","description":"","recommendation":"neutral"},{"id":"cancel","label":"Cancelar","description":"","recommendation":"neutral"}],"requiresApproval":true}}',
+      handlers,
+    );
+    expect(calls).toEqual(['approval:approval-pagos-send_cobro-1:2']);
+  });
+
+  it('ignora una aprobación sin opciones en vez de dibujar una tarjeta muerta', () => {
+    const { calls, handlers } = collect();
+    handleSSEEvent(
+      'event: pending_approval\ndata: {"type":"pending_approval","approval":{"id":"x","options":[]}}',
+      handlers,
+    );
+    expect(calls).toEqual([]);
   });
 
   it('dispatches dispatch_start then dispatch_result', () => {

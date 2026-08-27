@@ -34,7 +34,7 @@ function Fila({ step }: { step: TurnStep }) {
         )}
       </span>
       {reloj && (
-        <span className="shrink-0 border-l border-border pl-3 font-mono text-[11.5px] tabular-nums text-fg-subtle">
+        <span className="shrink-0 pl-3 font-mono text-[11.5px] tabular-nums text-fg-subtle">
           {reloj}
         </span>
       )}
@@ -50,7 +50,7 @@ function Encabezado({ step }: { step: TurnStep }) {
     <>
       <span className="min-w-0 flex-1 truncate font-body text-[13.5px] font-medium text-fg">{label}</span>
       {reloj && (
-        <span className="shrink-0 border-l border-border pl-3 font-mono text-[12px] tabular-nums text-fg-subtle">
+        <span className="shrink-0 pl-3 font-mono text-[12px] tabular-nums text-fg-subtle">
           {reloj}
         </span>
       )}

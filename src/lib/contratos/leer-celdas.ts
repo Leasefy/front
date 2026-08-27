@@ -32,6 +32,17 @@ export function textoOpcional(v: unknown): string | undefined {
 }
 
 /**
+ * Si la celda trae algo. `null`/`undefined` es una columna que no mapeó a
+ * nada; `''` es una columna mapeada con la celda vacía. Los dos casos son
+ * "no sé", y ninguno de los dos debe convertirse en un valor inventado
+ * (0, la fecha de hoy, "vivienda") — eso es justo lo que el back no puede
+ * distinguir de un dato real una vez que llega.
+ */
+export function hayValor(v: unknown): boolean {
+  return v != null && String(v).trim() !== ''
+}
+
+/**
  * Un número que viene de una hoja de cálculo puede traer `$`, puntos de miles
  * y coma decimal. `Number('$ 2.400.000')` da NaN, y un NaN silencioso se
  * guarda como canon 0: el contrato queda cobrando nada y nadie ve un error.
@@ -72,4 +83,24 @@ export function comoFecha(v: unknown): string {
  */
 export function comoUso(v: unknown): 'VIVIENDA' | 'COMERCIAL' {
   return /comerc|local|oficina|bodega/i.test(String(v ?? '')) ? 'COMERCIAL' : 'VIVIENDA'
+}
+
+export type Periodicidad = 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL'
+
+const PERIODICIDADES: Record<string, Periodicidad> = {
+  mensual: 'MENSUAL',
+  bimestral: 'BIMESTRAL',
+  trimestral: 'TRIMESTRAL',
+  semestral: 'SEMESTRAL',
+  anual: 'ANUAL',
+}
+
+/**
+ * A diferencia de `comoUso`, acá NO hay «ante la duda». El back ya trae su
+ * propio default (`MENSUAL`) para cuando el campo falta — inventar uno acá
+ * duplicaría esa decisión y, el día que cambie, quedaría un default viejo
+ * escondido en el front.
+ */
+export function comoPeriodicidad(v: unknown): Periodicidad | undefined {
+  return PERIODICIDADES[normalizar(String(v ?? ''))]
 }

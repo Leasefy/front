@@ -139,9 +139,12 @@ export function MarkdownRenderer({
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
         {content}
       </ReactMarkdown>
-      {isStreaming && (
-        <span className="inline-block w-0.5 h-4 bg-primary ml-0.5 align-middle animate-pulse" />
-      )}
+      {/* Sin cursor de streaming (Nico, 2026-08-27: «esa barra azul que da como
+          abajo no debería ir ahí, se ve súper raro»). Era un `inline-block`
+          agregado DESPUÉS del markdown, y como el markdown cierra en un <p> de
+          bloque, el cursor caía a una línea propia: una rayita azul suelta con
+          su renglón de aire debajo del texto. Además ya no hace falta — el
+          orbe del avatar dice que se está generando, y lo dice mejor. */}
     </div>
   );
 }

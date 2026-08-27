@@ -96,7 +96,11 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            /* Una sola columna, de lado a lado (Nico, 2026-08-27: «que vaya
+               de lado a lado para que no quede tan pequeña»). En dos columnas
+               cada tarjeta quedaba angosta y el preview —que es lo que te dice
+               si es LA conversación que buscabas— se cortaba a media frase. */
+            <div className="flex flex-col gap-2.5">
               {historial.map((conv) => (
                 <button
                   key={conv.id}
@@ -123,7 +127,7 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
                         {haceCuanto(conv.updatedAt, ahora)}
                       </span>
                     </span>
-                    <span className="mt-0.5 line-clamp-2 block font-body text-[12.5px] leading-snug text-fg-muted">
+                    <span className="mt-0.5 line-clamp-1 block font-body text-[12.5px] leading-snug text-fg-muted">
                       {conv.preview}
                     </span>
                   </span>

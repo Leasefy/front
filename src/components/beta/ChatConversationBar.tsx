@@ -84,7 +84,20 @@ export function ChatConversationBar({ onSelectTemplate, className }: ChatConvers
 
       {/* Terminar conversación */}
       {confirmandoFin ? (
-        <div className="flex items-center gap-1.5">
+        /* La confirmación es UNA pieza, no tres cosas sueltas.
+         *
+         * Antes eran texto + pastilla + equis flotando cada uno por su lado, y
+         * se leía como un accidente (Nico, 2026-08-27: «esto hazlo más bonito
+         * también»). Ahora van dentro de una cápsula con borde: se entiende que
+         * la pregunta y las dos salidas son el mismo momento, y de paso el
+         * bloque ocupa el lugar exacto que dejó el botón. */
+        <div
+          className={cn(
+            'flex items-center gap-1 rounded-full border border-border bg-surface py-[3px] pl-3 pr-[3px]',
+            'shadow-[0_1px_3px_rgba(20,19,15,0.05)]',
+            'animate-in fade-in slide-in-from-right-1 duration-150'
+          )}
+        >
           <span className="hidden font-body text-[12.5px] text-fg-muted sm:inline">
             {t('beta.conversation.endConfirm')}
           </span>
@@ -95,13 +108,13 @@ export function ChatConversationBar({ onSelectTemplate, className }: ChatConvers
               setConfirmandoFin(false);
             }}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-[11px] py-[5px]',
-              'font-body text-[12.5px] font-medium text-fg',
-              'transition-colors duration-150 hover:border-border-strong',
+              'inline-flex items-center gap-1.5 rounded-full bg-fg px-3 py-[5px]',
+              'font-body text-[12.5px] font-medium text-bg',
+              'transition-opacity duration-150 hover:opacity-85',
               'outline-none focus-visible:ring-2 focus-visible:ring-ring'
             )}
           >
-            <Check size={13} />
+            <Check size={12} weight="bold" />
             {t('beta.conversation.endYes')}
           </button>
           <button
@@ -109,7 +122,7 @@ export function ChatConversationBar({ onSelectTemplate, className }: ChatConvers
             onClick={() => setConfirmandoFin(false)}
             aria-label={t('beta.conversation.endCancel')}
             className={cn(
-              'inline-flex h-[25px] w-[25px] items-center justify-center rounded-full text-fg-subtle',
+              'inline-flex h-[26px] w-[26px] items-center justify-center rounded-full text-fg-subtle',
               'transition-colors duration-150 hover:bg-surface-muted hover:text-fg',
               'outline-none focus-visible:ring-2 focus-visible:ring-ring'
             )}

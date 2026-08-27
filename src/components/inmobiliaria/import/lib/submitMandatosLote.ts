@@ -1,11 +1,16 @@
 /**
  * submitMandatosLote — creates the mandate for a whole batch of just-imported
- * properties with ONE shared set of terms (T-0030 WU-3, Slice A / R1).
+ * properties with ONE shared set of terms (T-0030 WU-3, Slice A / R1),
+ * publishing each one afterwards (T-0030 WU-4, contract.md §3.4 amendment
+ * A-1.1).
  *
- * Reuses `buildMandatoPayload` (T-0030 WU-2) as-is — the per-row omission
- * rules (ROOM, empty zone, null thumbnail, zero adminFee) are exactly the
- * same for a batch row as for the single-row completion dialog; there is no
- * batch-specific wire shape here, only the loop and the outcome bookkeeping.
+ * Delegates the per-property "mandate, then publish" outcome to
+ * `completeMandatoAndPublish` (T-0030 WU-2/WU-4,
+ * `CompletarMandatoDialog.tsx`) — the ordering rule (mandate first, publish
+ * only on success, 409 counts as success, a failed publish never rolls back
+ * a good mandate) lives in exactly one place and is identical for both
+ * completion paths. There is no batch-specific wire shape or publish logic
+ * here, only the loop and the outcome bookkeeping.
  *
  * Runs sequentially, not in parallel: a batch mandate assignment is not on
  * the hot path the way geocoding 200 rows is (StepConfirmImport.tsx already
@@ -13,24 +18,25 @@
  * without extra bookkeeping.
  */
 
-import { ApiError } from '@/lib/api/client';
-import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
-import { buildMandatoPayload, type MandatoFormValues } from '@/components/inmobiliaria/CompletarMandatoDialog';
+import {
+  completeMandatoAndPublish,
+  type MandatoFormValues,
+  type MandatoOutcome,
+} from '@/components/inmobiliaria/CompletarMandatoDialog';
 import type { InmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
 
-export interface MandatoLoteOutcome {
-  propertyId: string;
-  propertyTitle: string;
-  status: 'created' | 'alreadyExists' | 'failed';
-  /** Present only when status === 'failed'. */
-  errorMessage?: string;
-}
+/** @deprecated kept as an alias — use `MandatoOutcome` directly. */
+export type MandatoLoteOutcome = MandatoOutcome;
 
 export interface MandatoLoteResult {
   outcomes: MandatoLoteOutcome[];
   /** created + alreadyExists — both leave the property WITH a mandate. */
   succeededCount: number;
   failedCount: number;
+  /** Of the succeeded ones, how many also got PATCHed to AVAILABLE. */
+  publishedCount: number;
+  /** succeededCount - publishedCount — mandate kept, publish failed. */
+  publishFailedCount: number;
 }
 
 export async function submitMandatosLote(
@@ -40,54 +46,18 @@ export async function submitMandatosLote(
   const outcomes: MandatoLoteOutcome[] = [];
 
   for (const inmueble of inmuebles) {
-    try {
-      const payload = buildMandatoPayload(inmueble, values);
-      // Same documented, contract-safe assertion CompletarMandatoDialog uses
-      // for this exact payload shape (propertyZone/propertyType optional
-      // here, required on ConsignacionFormData — toConsignacionPayload just
-      // spreads whatever keys are present).
-      await consignacionesApi.create(
-        payload as unknown as Parameters<typeof consignacionesApi.create>[0],
-      );
-      outcomes.push({
-        propertyId: inmueble.propertyId,
-        propertyTitle: inmueble.propertyTitle,
-        status: 'created',
-      });
-    } catch (error) {
-      // contract.md T-0030 §3.3 — a duplicate mandate is success-equivalent:
-      // the mandate exists, which is what the user wanted.
-      if (error instanceof ApiError && error.status === 409) {
-        outcomes.push({
-          propertyId: inmueble.propertyId,
-          propertyTitle: inmueble.propertyTitle,
-          status: 'alreadyExists',
-        });
-        continue;
-      }
-      // A genuine failure — this property must NOT be reported as mandated.
-      // It stays in the mandate-less list (WU-2's portfolio merge already
-      // surfaces it with the "Falta mandato" alert); nothing here silently
-      // upgrades it to "done".
-      const errorMessage =
-        error instanceof ApiError && error.messages
-          ? error.messages.join(' · ')
-          : error instanceof Error && error.message
-            ? error.message
-            : 'Error desconocido';
-      outcomes.push({
-        propertyId: inmueble.propertyId,
-        propertyTitle: inmueble.propertyTitle,
-        status: 'failed',
-        errorMessage,
-      });
-    }
+    outcomes.push(await completeMandatoAndPublish(inmueble, values));
   }
 
   const failedCount = outcomes.filter((o) => o.status === 'failed').length;
+  const succeededCount = outcomes.length - failedCount;
+  const publishedCount = outcomes.filter((o) => o.published).length;
+
   return {
     outcomes,
-    succeededCount: outcomes.length - failedCount,
+    succeededCount,
     failedCount,
+    publishedCount,
+    publishFailedCount: succeededCount - publishedCount,
   };
 }

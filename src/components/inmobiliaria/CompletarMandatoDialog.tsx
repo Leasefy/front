@@ -16,6 +16,7 @@ import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/lib/auth/use-auth';
 import { ApiError } from '@/lib/api/client';
 import { consignacionesApi, propietariosApi } from '@/lib/api/inmobiliaria.service';
+import { propertiesApi } from '@/lib/api/properties.service';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import type {
   InmuebleSinConsignacion,
@@ -116,6 +117,101 @@ export async function persistPropietarioIfNeeded(
   return propietarioId;
 }
 
+function extractErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError && error.messages) return error.messages.join(' · ');
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}
+
+/**
+ * Outcome of completing one property's mandate, and then publishing it.
+ * Shared shape between the single-row dialog here and the batch modal
+ * (`submitMandatosLote.ts`, T-0030 WU-3/WU-4) so both report the same way.
+ */
+export interface MandatoOutcome {
+  propertyId: string;
+  propertyTitle: string;
+  status: 'created' | 'alreadyExists' | 'failed';
+  /** Whether `PATCH /properties/:id { status: 'AVAILABLE' }` succeeded. */
+  published: boolean;
+  /** Present only when `status === 'failed'` — the mandate call itself failed. */
+  mandateErrorMessage?: string;
+  /** Present only when the mandate succeeded but the publish PATCH failed. */
+  publishErrorMessage?: string;
+}
+
+/**
+ * Completes the mandate for one property and, only if that succeeded
+ * (including a `409` — the mandate already exists), publishes it.
+ * Contract.md T-0030 §3.4, amendment A-1.1 — completing the mandate
+ * publishes the property. Binding order, both MUSTs:
+ *
+ *   1. `POST /inmobiliaria/consignaciones` first.
+ *   2. Only if that succeeded, `PATCH /properties/:id { status: 'AVAILABLE' }`.
+ *
+ * The ordering and the "never roll back a good mandate" rule are the exact
+ * pattern `ConsignacionWizard.tsx:360-389` already proved correct — publish
+ * LAST, and a publish failure is reported honestly (`published: false`),
+ * never silently retried, never used to undo the mandate that already
+ * succeeded.
+ *
+ * Shared by BOTH completion paths — this single-row dialog and the batch
+ * modal (`submitMandatosLote.ts`) — so the ordering/rollback rules live in
+ * exactly one place and cannot drift between them.
+ */
+export async function completeMandatoAndPublish(
+  inmueble: InmuebleSinConsignacion,
+  values: MandatoFormValues,
+): Promise<MandatoOutcome> {
+  const base = { propertyId: inmueble.propertyId, propertyTitle: inmueble.propertyTitle };
+
+  let status: 'created' | 'alreadyExists';
+  try {
+    const payload = buildMandatoPayload(inmueble, values);
+    // Same documented, contract-safe assertion the dialog's own submit uses
+    // for this exact payload shape (propertyZone/propertyType optional
+    // here, required on ConsignacionFormData — toConsignacionPayload just
+    // spreads whatever keys are present).
+    await consignacionesApi.create(
+      payload as unknown as Parameters<typeof consignacionesApi.create>[0],
+    );
+    status = 'created';
+  } catch (error) {
+    // contract.md T-0030 §3.3 — a duplicate mandate is success-equivalent:
+    // the mandate exists, which is what the user wanted, so it still
+    // publishes below.
+    if (error instanceof ApiError && error.status === 409) {
+      status = 'alreadyExists';
+    } else {
+      // A genuine mandate failure. Never publish a property whose mandate
+      // call failed — that is the exact failure this whole task exists to
+      // prevent.
+      return {
+        ...base,
+        status: 'failed',
+        published: false,
+        mandateErrorMessage: extractErrorMessage(error, 'Error desconocido'),
+      };
+    }
+  }
+
+  try {
+    await propertiesApi.update(inmueble.propertyId, { status: 'AVAILABLE' });
+    return { ...base, status, published: true };
+  } catch (error) {
+    // The mandate is the durable outcome; the publish is a follow-on. A
+    // failed PATCH does NOT invalidate a good mandate — report the partial
+    // state honestly instead of rolling back or claiming a publish that
+    // did not happen.
+    return {
+      ...base,
+      status,
+      published: false,
+      publishErrorMessage: extractErrorMessage(error, 'Error desconocido'),
+    };
+  }
+}
+
 interface CompletarMandatoDialogProps {
   /** `null` closes the dialog — controlled by the parent's selected row. */
   inmueble: InmuebleSinConsignacion | null;
@@ -173,48 +269,57 @@ export function CompletarMandatoDialog({
 
     try {
       const finalPropietarioId = await persistPropietarioIfNeeded(propietarioId!, newPropietarioData);
-
       const selectedAgente = agentes.find((a) => a.id === agenteId);
-      const payload = buildMandatoPayload(inmueble, {
+
+      const outcome = await completeMandatoAndPublish(inmueble, {
         propietarioId: finalPropietarioId,
         commissionPercent,
         contractDate,
         agenteUserId: selectedAgente?.userId ?? (agenteId ? undefined : user?.id),
       });
 
-      // `consignacionesApi.create` types `propertyZone`/`propertyType` as
-      // required (the 6-step wizard always collects them). This flow
-      // legitimately omits them (empty zone, ROOM type — see
-      // `buildMandatoPayload` above). Runtime is unaffected:
-      // `toConsignacionPayload` just spreads whatever keys are present.
-      await consignacionesApi.create(
-        payload as unknown as Parameters<typeof consignacionesApi.create>[0],
-      );
+      if (outcome.status === 'failed') {
+        setFormError(
+          outcome.mandateErrorMessage ?? t('inmobiliaria.consignaciones.mandateDialog.toasts.errorDesc'),
+        );
+        return;
+      }
 
-      toast.success(t('inmobiliaria.consignaciones.mandateDialog.toasts.successTitle'), {
-        description: t('inmobiliaria.consignaciones.mandateDialog.toasts.successDesc', {
-          title: inmueble.propertyTitle,
-        }),
-      });
+      // contract.md T-0030 §3.3 — a duplicate mandate is success-equivalent:
+      // the mandate exists, which is what the user wanted. MUST NOT show a
+      // red failure.
+      if (outcome.status === 'alreadyExists') {
+        toast.info(t('inmobiliaria.consignaciones.mandateDialog.toasts.alreadyExistsTitle'));
+      } else if (outcome.published) {
+        toast.success(t('inmobiliaria.consignaciones.mandateDialog.toasts.successTitle'), {
+          description: t('inmobiliaria.consignaciones.mandateDialog.toasts.successDesc', {
+            title: inmueble.propertyTitle,
+          }),
+        });
+      }
+
+      // contract.md T-0030 §3.4, amendment A-1.1 — a failed PATCH does NOT
+      // invalidate the mandate. Report the partial state honestly instead
+      // of rolling back or claiming a publish that did not happen.
+      if (!outcome.published) {
+        toast.error(t('inmobiliaria.consignaciones.mandateDialog.toasts.publishErrorTitle'), {
+          description: t('inmobiliaria.consignaciones.mandateDialog.toasts.publishErrorDesc', {
+            reason:
+              outcome.publishErrorMessage ??
+              t('inmobiliaria.consignaciones.mandateDialog.toasts.publishErrorFallbackReason'),
+          }),
+        });
+      }
+
+      // The mandate exists either way (created or alreadyExists) — the row
+      // moves out of the mandate-less list regardless of publish outcome,
+      // so both sources MUST refetch here (contract §3.4).
       onCompleted();
       onClose();
     } catch (error) {
-      // contract.md T-0030 §3.3 — a duplicate mandate is success-equivalent:
-      // the mandate exists, which is what the user wanted. MUST NOT show a
-      // red failure, MUST still refetch both sources and close.
-      if (error instanceof ApiError && error.status === 409) {
-        toast.info(t('inmobiliaria.consignaciones.mandateDialog.toasts.alreadyExistsTitle'));
-        onCompleted();
-        onClose();
-        return;
-      }
-      const description =
-        error instanceof ApiError && error.messages
-          ? error.messages.join(' · ')
-          : error instanceof Error && error.message
-            ? error.message
-            : t('inmobiliaria.consignaciones.mandateDialog.toasts.errorDesc');
-      setFormError(description);
+      // The propietario create/update step itself failed — nothing was
+      // submitted yet.
+      setFormError(extractErrorMessage(error, t('inmobiliaria.consignaciones.mandateDialog.toasts.errorDesc')));
     } finally {
       setIsSubmitting(false);
     }

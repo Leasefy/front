@@ -23,7 +23,8 @@ import { persistPropietarioIfNeeded } from '@/components/inmobiliaria/CompletarM
 import { submitMandatosLote, type MandatoLoteResult } from './lib/submitMandatosLote';
 
 /**
- * The end-of-import mandate modal — T-0030 WU-3, Slice A (R1).
+ * The end-of-import mandate modal — T-0030 WU-3, Slice A (R1), extended by
+ * WU-4 for auto-publish.
  *
  * One shared form (propietario, commission, contract date, agent) applies to
  * EVERY property just imported ("apply to all", per the owner's ruling in
@@ -31,10 +32,11 @@ import { submitMandatosLote, type MandatoLoteResult } from './lib/submitMandatos
  * closing it creates nothing further, matching R2 — the properties stay
  * DRAFT with no mandate, already surfaced by WU-2's portfolio alert.
  *
- * Does NOT publish anything. Contract.md T-0030 §3.4/§8 explicitly keeps
- * publishing out of scope for this task; this dialog only ever calls
- * `POST /inmobiliaria/consignaciones` (via `submitMandatosLote`), never
- * `PATCH /properties/:id`.
+ * Completing a mandate publishes the property (contract.md T-0030 §3.4,
+ * amendment A-1.1) — mandate first, publish second, and only for
+ * properties whose mandate actually succeeded. `submitMandatosLote`
+ * (via `completeMandatoAndPublish`) does the mandate+publish call per
+ * property; this dialog only summarizes the outcomes.
  */
 export interface CompletarMandatosLoteDialogProps {
   inmuebles: InmuebleSinConsignacion[];
@@ -86,7 +88,7 @@ export function CompletarMandatosLoteDialog({
         agenteUserId: selectedAgente?.userId ?? (agenteId ? undefined : user?.id),
       });
 
-      if (result.failedCount === 0) {
+      if (result.failedCount === 0 && result.publishFailedCount === 0) {
         toast.success(t('inmobiliaria.import.confirm.mandateBatch.toasts.allSucceededTitle'), {
           description: t('inmobiliaria.import.confirm.mandateBatch.toasts.allSucceededDesc', {
             count: result.succeededCount,
@@ -95,6 +97,15 @@ export function CompletarMandatosLoteDialog({
       } else if (result.succeededCount === 0) {
         toast.error(t('inmobiliaria.import.confirm.mandateBatch.toasts.allFailedTitle'), {
           description: t('inmobiliaria.import.confirm.mandateBatch.toasts.allFailedDesc'),
+        });
+      } else if (result.failedCount === 0) {
+        // contract.md §3.4, amendment A-1.1 — every mandate is kept; only
+        // the publish step failed for some. Report honestly, don't imply a
+        // full failure — the mandate is the durable outcome.
+        toast.warning(t('inmobiliaria.import.confirm.mandateBatch.toasts.publishPartialTitle'), {
+          description: t('inmobiliaria.import.confirm.mandateBatch.toasts.publishPartialDesc', {
+            count: result.publishFailedCount,
+          }),
         });
       } else {
         toast.warning(t('inmobiliaria.import.confirm.mandateBatch.toasts.partialTitle'), {

@@ -1,5 +1,6 @@
 /**
- * CompletarMandatoDialog.test.tsx — T-0030 WU-2, R4 completion path.
+ * CompletarMandatoDialog.test.tsx — T-0030 WU-2, R4 completion path,
+ * extended by WU-4 for auto-publish (contract.md §3.4, amendment A-1.1).
  *
  * `buildMandatoPayload` is the "no second round-trip" promise of contract.md
  * T-0030 §3.2/§3.4: every field but the ones the user enters comes straight
@@ -13,6 +14,15 @@
  *     already applies on read).
  *   - `propertyId` is always sent — omitting it orphans the mandate.
  *
+ * `completeMandatoAndPublish` is the shared "mandate, then publish" outcome
+ * used by BOTH completion paths (this dialog and the batch modal,
+ * `submitMandatosLote.ts`) — contract.md §3.4's four binding rules:
+ *   1. mandate succeeds → publish is issued
+ *   2. mandate returns 409 → publish is still issued (409 is success-equivalent)
+ *   3. mandate fails → publish is never issued
+ *   4. mandate succeeds but publish fails → the mandate is kept, reported
+ *      as mandated-but-not-published, nothing rolled back
+ *
  * A smoke-render test also guards that opening the dialog on a ROOM /
  * empty-zone row (the same crash-prone shape as ConsignacionTable's traps)
  * does not throw.
@@ -22,6 +32,7 @@ import * as React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
+import { ApiError } from '@/lib/api/client';
 import type { InmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
 
 void React;
@@ -50,7 +61,26 @@ vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }));
 
-import { CompletarMandatoDialog, buildMandatoPayload } from './CompletarMandatoDialog';
+const createMock = vi.fn();
+const updatePropertyMock = vi.fn();
+
+vi.mock('@/lib/api/inmobiliaria.service', () => ({
+  consignacionesApi: {
+    create: (...args: unknown[]) => createMock(...args),
+  },
+  propietariosApi: {
+    create: vi.fn(),
+    update: vi.fn(),
+  },
+}));
+
+vi.mock('@/lib/api/properties.service', () => ({
+  propertiesApi: {
+    update: (...args: unknown[]) => updatePropertyMock(...args),
+  },
+}));
+
+import { CompletarMandatoDialog, buildMandatoPayload, completeMandatoAndPublish } from './CompletarMandatoDialog';
 
 function makeInmueble(overrides: Partial<InmuebleSinConsignacion> = {}): InmuebleSinConsignacion {
   return {
@@ -126,6 +156,60 @@ describe('buildMandatoPayload — the no-second-round-trip mapping (contract §3
 
     const withoutAgent = buildMandatoPayload(makeInmueble(), values);
     expect(withoutAgent.agenteUserId).toBeUndefined();
+  });
+});
+
+const VALUES = { propietarioId: 'owner-1', commissionPercent: 12, contractDate: '2026-08-26' };
+
+describe('completeMandatoAndPublish — mandate first, publish second (contract §3.4, A-1.1)', () => {
+  beforeEach(() => {
+    createMock.mockReset();
+    updatePropertyMock.mockReset();
+    updatePropertyMock.mockResolvedValue({});
+  });
+
+  it('rule 1 — mandate succeeds → PATCH { status: AVAILABLE } is issued for that property', async () => {
+    createMock.mockResolvedValue({});
+
+    const outcome = await completeMandatoAndPublish(makeInmueble({ propertyId: 'prop-1' }), VALUES);
+
+    expect(updatePropertyMock).toHaveBeenCalledWith('prop-1', { status: 'AVAILABLE' });
+    expect(outcome.status).toBe('created');
+    expect(outcome.published).toBe(true);
+  });
+
+  it('rule 2 — mandate returns 409 → publish is still issued', async () => {
+    createMock.mockRejectedValueOnce(new ApiError(409, 'A mandate already exists'));
+
+    const outcome = await completeMandatoAndPublish(makeInmueble({ propertyId: 'prop-1' }), VALUES);
+
+    expect(updatePropertyMock).toHaveBeenCalledWith('prop-1', { status: 'AVAILABLE' });
+    expect(outcome.status).toBe('alreadyExists');
+    expect(outcome.published).toBe(true);
+  });
+
+  it('rule 3 — mandate fails → publish is never issued', async () => {
+    createMock.mockRejectedValueOnce(new ApiError(400, 'Propietario not found'));
+
+    const outcome = await completeMandatoAndPublish(makeInmueble({ propertyId: 'prop-1' }), VALUES);
+
+    expect(updatePropertyMock).not.toHaveBeenCalled();
+    expect(outcome.status).toBe('failed');
+    expect(outcome.published).toBe(false);
+    expect(outcome.mandateErrorMessage).toBe('Propietario not found');
+  });
+
+  it('rule 4 — mandate succeeds but PATCH fails → mandate is kept, reported honestly, nothing rolled back', async () => {
+    createMock.mockResolvedValue({});
+    updatePropertyMock.mockRejectedValueOnce(new ApiError(402, 'Plan cap reached'));
+
+    const outcome = await completeMandatoAndPublish(makeInmueble({ propertyId: 'prop-1' }), VALUES);
+
+    expect(createMock).toHaveBeenCalledTimes(1);
+    expect(outcome.status).toBe('created');
+    expect(outcome.published).toBe(false);
+    expect(outcome.publishErrorMessage).toBe('Plan cap reached');
+    // Nothing here tries to undo the mandate — no delete/rollback call exists.
   });
 });
 

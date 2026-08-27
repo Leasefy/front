@@ -2750,6 +2750,8 @@
             "partialDesc": "{{succeeded}} properties got a mandate, {{failed}} did not. Complete them from the portfolio.",
             "allFailedTitle": "Couldn't assign the mandate",
             "allFailedDesc": "No property got a mandate. Complete them from the portfolio whenever you want.",
+            "publishPartialTitle": "Mandate saved; some are still unpublished",
+            "publishPartialDesc": "{{count}} properties got a mandate but couldn't be published. Open them from the portfolio and publish them whenever you want — don't upload them again.",
             "errorDesc": "We couldn't save the owner. Try again in a moment."
           }
         }
@@ -2956,8 +2958,11 @@
         "confirm": "Complete mandate",
         "toasts": {
           "successTitle": "Mandate completed",
-          "successDesc": "\"{{title}}\" now has a mandate and commission.",
+          "successDesc": "\"{{title}}\" now has a mandate and commission, and was published.",
           "alreadyExistsTitle": "That mandate already existed — we refreshed your portfolio.",
+          "publishErrorTitle": "The mandate was saved; the property is still unpublished",
+          "publishErrorDesc": "{{reason}} Open it from the portfolio and publish it whenever you want — don't upload it again.",
+          "publishErrorFallbackReason": "We couldn't publish it.",
           "errorDesc": "We couldn't complete the mandate. Try again in a moment."
         }
       },

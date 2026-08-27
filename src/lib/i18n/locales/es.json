@@ -2751,6 +2751,8 @@
             "partialDesc": "{{succeeded}} propiedades quedaron con mandato, {{failed}} no. Completalas desde el portafolio.",
             "allFailedTitle": "No se pudo asignar el mandato",
             "allFailedDesc": "Ninguna propiedad quedó con mandato. Completalas desde el portafolio cuando quieras.",
+            "publishPartialTitle": "Mandato guardado; falta publicar algunas",
+            "publishPartialDesc": "{{count}} propiedades quedaron con mandato pero no se pudieron publicar. Abrilas desde el portafolio y publicalas cuando quieras — no las cargues de nuevo.",
             "errorDesc": "No pudimos guardar el propietario. Probá de nuevo en un momento."
           }
         }
@@ -2957,8 +2959,11 @@
         "confirm": "Completar mandato",
         "toasts": {
           "successTitle": "Mandato completado",
-          "successDesc": "«{{title}}» ya tiene mandato y comisión.",
+          "successDesc": "«{{title}}» ya tiene mandato y comisión, y quedó publicado.",
           "alreadyExistsTitle": "Ese mandato ya existía — actualizamos tu portafolio.",
+          "publishErrorTitle": "El mandato quedó guardado; falta publicar el inmueble",
+          "publishErrorDesc": "{{reason}} Abrilo desde el portafolio y publicalo cuando quieras — no lo cargues de nuevo.",
+          "publishErrorFallbackReason": "No pudimos publicarlo.",
           "errorDesc": "No pudimos completar el mandato. Probá de nuevo en un momento."
         }
       },

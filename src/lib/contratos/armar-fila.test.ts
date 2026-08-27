@@ -69,6 +69,24 @@ describe('canon, fechas y uso ausentes no inventan un valor', () => {
     expect(fila.monthlyRent).toBeUndefined()
   })
 
+  // El defecto real (1365 filas del owner): la columna SÍ está mapeada y SÍ
+  // trae algo, pero en formato anglosajón («$570,000.00»), y el parser viejo
+  // lo leía como NaN y lo guardaba como canon 0 — un contrato que cobra $0 es
+  // indistinguible de uno que nunca tuvo canon, y nadie lo nota. Ahora debe
+  // viajar AUSENTE, igual que si la columna nunca hubiera mapeado, para que
+  // el back lo marque `faltante` en vez de darlo por bueno.
+  it('canon mapeado pero ilegible (formato anglosajón mal leído) manda ausente, no 0', () => {
+    const mapeo = mapearColumnas(['Canon de arrendamiento'])
+    const fila = armarFilaAMigrar({ 'Canon de arrendamiento': '$570,000.00' }, mapeo)
+    expect(fila.monthlyRent).toBe(570_000)
+  })
+
+  it('canon mapeado con un valor verdaderamente ilegible manda ausente, no 0', () => {
+    const mapeo = mapearColumnas(['Canon de arrendamiento'])
+    const fila = armarFilaAMigrar({ 'Canon de arrendamiento': 'pendiente confirmar' }, mapeo)
+    expect(fila.monthlyRent).toBeUndefined()
+  })
+
   it('fechas sin mapear no mandan cadena vacía (400ea el lote entero contra @IsDateString)', () => {
     const mapeo = mapearColumnas(['Dirección'])
     const fila = armarFilaAMigrar({ Dirección: 'x' }, mapeo)

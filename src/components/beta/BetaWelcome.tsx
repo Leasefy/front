@@ -77,7 +77,11 @@ export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
             // se muestra un control que no hace nada (Nico, 2026-08-27: «doy
             // clic y no funciona»). Como nunca se pasan `contexts`, la fila no
             // tenía nada más.
-            className="w-full [&>div:first-child]:hidden"
+            // Al irse la fila de arriba, el área de texto quedó apretada (Nico:
+            // «quedó muy pequeño»): cadence dibuja el textarea con rows=1 y
+            // min-h 27px porque contaba con esa fila para dar aire. Se le da
+            // altura para ~3 líneas y un poco de respiro arriba.
+            className="w-full [&>div:first-child]:hidden [&>div:nth-child(2)]:pt-5 [&_textarea]:min-h-[84px]"
             onSend={(text) => onPromptClick?.(text)}
             onTemplates={() => setTemplatesOpen((v) => !v)}
             placeholder={t('beta.chat.placeholder')}

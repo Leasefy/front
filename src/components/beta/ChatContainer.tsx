@@ -13,6 +13,8 @@ import { AssistantBubble } from './AssistantBubble';
 import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
 import { AgentActivityIndicator } from './AgentActivityIndicator';
+import { AgentTaskThread } from './AgentTaskThread';
+import { AgentTaskProgress } from './AgentTaskProgress';
 import { ResponseCard } from './ResponseCard';
 import { WorkspaceView } from './WorkspaceView';
 import { DecisionCard } from './DecisionCard';
@@ -220,11 +222,12 @@ export function ChatContainer({ className }: ChatContainerProps) {
                   return null;
                 }
 
-                // During agent execution: show activity block, hide assistant bubble
+                // Agentes corriendo: la tarea EN el hilo, a la manera de Manus
+                // (filas planas + reloj vivo), en vez de la tarjeta con borde.
                 if (isLastAssistant && isAgentsRunning && activeAgentBlock) {
                   return (
                     <div key={message.id} className="space-y-3 animate-fade-in">
-                      <AgentActivityIndicator activity={activeAgentBlock} />
+                      <AgentTaskThread activity={activeAgentBlock} />
                     </div>
                   );
                 }
@@ -358,6 +361,13 @@ export function ChatContainer({ className }: ChatContainerProps) {
               {/* Scroll sentinel */}
               <div ref={scrollRef} />
             </div>
+          </div>
+
+          {/* Progreso de la tarea, pegado al compositor (patrón Manus): sólo
+              mientras hay trabajo; al terminar desaparece y el hilo queda
+              como registro. */}
+          <div className="px-4 sm:px-6">
+            <AgentTaskProgress activity={activeAgentBlock} thinking={isThinking} />
           </div>
 
           {/* Chat input - floating at bottom */}

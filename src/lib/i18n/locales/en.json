@@ -9608,6 +9608,12 @@
       "feedbackUp": "Thanks — marked as helpful",
       "feedbackDown": "Thanks — marked as unhelpful",
       "feedbackRemoved": "Rating removed"
+    },
+    "tasks": {
+      "thinking": "Thinking about your question…",
+      "finishing": "Writing the answer…",
+      "progress": "Task progress",
+      "workingAs": "Checking with the {{agent}} agent…"
     }
   },
   "landlordProfile": {

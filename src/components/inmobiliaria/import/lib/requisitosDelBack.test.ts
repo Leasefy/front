@@ -123,4 +123,19 @@ describe('escribirCampo', () => {
   it('un texto se guarda tal cual', () => {
     expect(escribirCampo(inmueble(), 'propertyZone', 'Teusaquillo').propertyZone).toBe('Teusaquillo');
   });
+
+  it('corregir la dirección a mano apaga la marca de aproximada (T-0034 WU-1)', () => {
+    // La marca existe para que la persona sepa que hay que revisar el dato.
+    // Una vez que lo escribió, dejarla prendida sería decir que sigue siendo
+    // una aproximación cuando ya no lo es.
+    const aproximada = inmueble({ propertyAddress: 'Itagüí', direccionAproximada: true });
+    const corregida = escribirCampo(aproximada, 'propertyAddress', 'Calle 39A # 25-14');
+    expect(corregida.propertyAddress).toBe('Calle 39A # 25-14');
+    expect(corregida.direccionAproximada).toBe(false);
+  });
+
+  it('escribir otro campo no toca la marca de dirección aproximada', () => {
+    const aproximada = inmueble({ propertyAddress: 'Itagüí', direccionAproximada: true });
+    expect(escribirCampo(aproximada, 'propertyZone', 'Centro').direccionAproximada).toBe(true);
+  });
 });

@@ -334,3 +334,138 @@ describe('lectura del HTML', () => {
     expect(bloques.some((b) => b.price === '1000000')).toBe(true);
   });
 });
+
+/**
+ * Fichas reales de portofinopropiedadraiz.com (T-0034), medidas por el
+ * Orquestador contra las páginas en vivo el 2026-08-26. Recortadas a lo que el
+ * lector usa: el `srcSet` real trae 16 variantes de tamaño por foto; acá
+ * quedan 2 — ya alcanzan para probar que `w=`/`q=` no duplican la foto.
+ */
+function proxyDeFoto(n: number, w: number): string {
+  const real = `https%3A%2F%2Fportofinopr.arrendasoft.co%2Fimg%2Ffotos%2F1920x1080_foto_${n}.jpg`;
+  return `/api/nuby/image-proxy?url=${real}&amp;w=${w}&amp;q=75`;
+}
+
+function imgDeFoto(n: number): string {
+  return `<img alt="Fotografía ${n} - Apartamento Arriendo Itagüi" loading="lazy" sizes="96px" srcSet="${proxyDeFoto(n, 640)} 640w, ${proxyDeFoto(n, 1920)} 1920w" src="${proxyDeFoto(n, 3840)}"/>`;
+}
+
+const FICHA_2925_PORTOFINO = `<!doctype html><html><head>
+<title>Apartamento Arriendo Itagüi | Portofino Propiedad Raíz</title>
+<meta property="og:image" content="https://portofino-propiedad-raiz.web.app/api/nuby/image-proxy?url=https%3A%2F%2Fportofinopr.arrendasoft.co%2Fimg%2Ffotos%2F1920x1080_foto_1.jpg&amp;w=1600&amp;q=75"/>
+<meta name="twitter:image" content="https://portofino-propiedad-raiz.web.app/api/nuby/image-proxy?url=https%3A%2F%2Fportofinopr.arrendasoft.co%2Fimg%2Ffotos%2F1920x1080_foto_1.jpg&amp;w=1600&amp;q=75"/>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"RealEstateListing","name":"Apartamento Arriendo Itagüi","description":"Apartamento duplex, cerca al tránsito de itagui, estación del metro, rutas integradas","address":{"@type":"PostalAddress","addressLocality":"Itagüí","addressRegion":"Antioquia","addressCountry":"CO"},"offers":{"@type":"Offer","price":1500000,"priceCurrency":"COP"},"numberOfRooms":2,"numberOfBathroomsTotal":1,"floorSize":{"@type":"QuantitativeValue","value":65,"unitCode":"MTK"}}</script>
+</head><body>
+${[1, 2, 3, 4, 5, 6, 7, 8].map(imgDeFoto).join('\n')}
+</body></html>`;
+
+const FICHA_2929_PORTOFINO_CASCARON = `<!doctype html><html><head>
+<title>Ficha de Inmueble | Portofino Propiedad Raiz</title>
+<meta property="og:image" content="https://portofinopropiedadraiz.com/og-image.png"/>
+<meta name="twitter:image" content="https://portofinopropiedadraiz.com/og-image.png"/>
+</head><body>
+<img src="/logo-portofino.png" alt="Portofino Propiedad Raíz" width="41" height="68"/>
+<img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&amp;data=algo" alt="QR Code Inmueble"/>
+<img alt="Cargando fotografía del inmueble" data-nimg="fill"/>
+</body></html>`;
+
+describe('galería ampliada — fotos que sólo están en el <img> (T-0034 WU-1, Slice A)', () => {
+  it('trae las 8 fotos de la ficha real 2925, en orden, sin duplicar por w=/q=', () => {
+    const r = leerInmuebleDeHtml(FICHA_2925_PORTOFINO, 'https://portofinopropiedadraiz.com/propiedades/2925');
+
+    expect(r.imagenes).toHaveLength(8);
+    expect(r.imagenes).toEqual([
+      'https://portofinopr.arrendasoft.co/img/fotos/1920x1080_foto_1.jpg',
+      'https://portofinopr.arrendasoft.co/img/fotos/1920x1080_foto_2.jpg',
+      'https://portofinopr.arrendasoft.co/img/fotos/1920x1080_foto_3.jpg',
+      'https://portofinopr.arrendasoft.co/img/fotos/1920x1080_foto_4.jpg',
+      'https://portofinopr.arrendasoft.co/img/fotos/1920x1080_foto_5.jpg',
+      'https://portofinopr.arrendasoft.co/img/fotos/1920x1080_foto_6.jpg',
+      'https://portofinopr.arrendasoft.co/img/fotos/1920x1080_foto_7.jpg',
+      'https://portofinopr.arrendasoft.co/img/fotos/1920x1080_foto_8.jpg',
+    ]);
+  });
+
+  it('la portada (declarada) queda primera: es la que se usa de miniatura', () => {
+    const r = leerInmuebleDeHtml(FICHA_2925_PORTOFINO, 'https://portofinopropiedadraiz.com/propiedades/2925');
+    expect(r.imagenes[0]).toBe('https://portofinopr.arrendasoft.co/img/fotos/1920x1080_foto_1.jpg');
+  });
+
+  it('la ficha 2929 es un cascarón sin fotos: NO importa el logo del sitio como si fuera una', () => {
+    const r = leerInmuebleDeHtml(
+      FICHA_2929_PORTOFINO_CASCARON,
+      'https://portofinopropiedadraiz.com/propiedades/2929',
+    );
+    expect(r.imagenes).toEqual([]);
+  });
+
+  it('no bloquea la ficha sin fotos: el resto de los datos igual falta en la lista, no un error', () => {
+    const r = leerInmuebleDeHtml(
+      FICHA_2929_PORTOFINO_CASCARON,
+      'https://portofinopropiedadraiz.com/propiedades/2929',
+    );
+    // Sin JSON-LD ni descripción esta ficha no trae nada más — el punto es que
+    // leerInmuebleDeHtml() no explota ni rechaza, sólo devuelve lo que hay.
+    expect(r.imagenes).toEqual([]);
+    expect(loQueFalta(r).length).toBeGreaterThan(0);
+  });
+
+  it('no regresa el caso que la guarda de la línea 456 protege: carpeta sin id, sólo la portada', () => {
+    // El mismo caso que ya cubre `galeriaDelMismoInmueble` (carpeta genérica
+    // `/fotos/`), ahora también a través del camino nuevo del <img>: el
+    // candidato NO comparte el patrón de nombre con el ancla (nombres
+    // distintos, ninguno numerado), así que no se prueba y no entra.
+    const html = `<html><head>
+      <meta property="og:image" content="https://cdn.co/fotos/portada.jpeg">
+      </head><body><img src="https://cdn.co/fotos/de-cualquiera.jpeg"></body></html>`;
+    const r = leerInmuebleDeHtml(html, 'https://x.co/ficha-123');
+
+    expect(r.imagenes).toEqual(['https://cdn.co/fotos/portada.jpeg']);
+  });
+});
+
+describe('dirección — no perder el primer carácter y caer a referencia o municipio (T-0034 WU-1, Slice B)', () => {
+  it('no pierde la «c» de «cerca al tránsito de itagui» (defecto real, ficha 2925)', () => {
+    const r = leerInmuebleDeHtml(FICHA_2925_PORTOFINO, 'https://portofinopropiedadraiz.com/propiedades/2925');
+
+    expect(r.direccion?.valor).toBe('cerca al tránsito de itagui');
+    expect(r.direccion?.valor.startsWith('c')).toBe(true);
+    expect(r.direccion?.valor).not.toMatch(/^erca/);
+  });
+
+  it('esa dirección es una referencia, no la exacta: la fila queda marcada como aproximada', () => {
+    const r = leerInmuebleDeHtml(FICHA_2925_PORTOFINO, 'https://portofinopropiedadraiz.com/propiedades/2925');
+    expect(r.direccionAproximada).toBe(true);
+    expect(r.ciudad?.valor).toBe('Itagüí');
+  });
+
+  it('sin dirección exacta ni referencia, cae al municipio — y sigue marcada aproximada', () => {
+    const html = `<html><head>
+      <script type="application/ld+json">
+      {"@type":"Apartment","name":"Apartamento en Bello",
+       "description":"Apartamento amplio con acabados de lujo y excelente iluminación natural.",
+       "address":{"@type":"PostalAddress","addressLocality":"Bello","addressRegion":"Antioquia"},
+       "offers":{"@type":"Offer","price":"1200000"}}
+      </script>
+    </head><body></body></html>`;
+    const r = leerInmuebleDeHtml(html, 'https://x.co/1');
+
+    expect(r.direccion?.valor).toBe('Bello');
+    expect(r.direccionAproximada).toBe(true);
+    // No bloquear: con el municipio alcanza para no pedir «dirección» de nuevo.
+    expect(loQueFalta(r)).not.toContain('dirección');
+  });
+
+  it('una dirección exacta (declarada o de la prosa) NO se marca como aproximada', () => {
+    const exacta = leerInmuebleDeHtml(CON_JSON_LD, 'https://ejemplo.com/x');
+    expect(exacta.direccion?.valor).toBe('Carrera 13 # 53-20');
+    expect(exacta.direccionAproximada).toBeFalsy();
+  });
+
+  it('sin municipio ni referencia tampoco inventa nada: sigue sin dirección', () => {
+    const r = leerInmuebleDeHtml('<html><body>Hola</body></html>', 'https://x.co/1');
+    expect(r.direccion).toBeUndefined();
+    expect(r.direccionAproximada).toBeFalsy();
+    expect(loQueFalta(r)).toContain('dirección');
+  });
+});

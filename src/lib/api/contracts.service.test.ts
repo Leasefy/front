@@ -54,6 +54,53 @@ describe('contractsApi.migracion.estadoDeLote', () => {
   })
 })
 
+/**
+ * T-0033 contract.md §3.2.G1 — `GET /contracts/migrar/filas/ids`, el read
+ * nuevo que hace posible "seleccionar las {total} del lote": trae sólo ids
+ * (nunca el `datos` JSON completo de cada fila), en el MISMO orden que
+ * `filas()`.
+ */
+describe('contractsApi.migracion.idsDeFilas', () => {
+  it('pega a GET /contracts/migrar/filas/ids?lote=... y devuelve el IdsDeFilas tal cual', async () => {
+    const body = { ids: ['f-1', 'f-2'], total: 2, truncado: false }
+    const fetchMock = mockApiGet(body)
+    globalThis.fetch = fetchMock as typeof globalThis.fetch
+
+    const result = await contractsApi.migracion.idsDeFilas('lote-1')
+
+    expect(result).toEqual(body)
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BACKEND_URL}/contracts/migrar/filas/ids?lote=lote-1`,
+      expect.objectContaining({ method: 'GET' }),
+    )
+  })
+
+  it('agrega `estado` a la query cuando se pide', async () => {
+    const body = { ids: [], total: 0, truncado: false }
+    const fetchMock = mockApiGet(body)
+    globalThis.fetch = fetchMock as typeof globalThis.fetch
+
+    await contractsApi.migracion.idsDeFilas('lote-1', 'PENDIENTE')
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BACKEND_URL}/contracts/migrar/filas/ids?lote=lote-1&estado=PENDIENTE`,
+      expect.objectContaining({ method: 'GET' }),
+    )
+  })
+
+  it('un lote truncado (§3.2.G1, MAX_IDS_MASIVA) se refleja tal cual — el front NO debe silenciarlo', async () => {
+    const body = { ids: Array.from({ length: 5_000 }, (_, i) => `f-${i}`), total: 6_500, truncado: true }
+    const fetchMock = mockApiGet(body)
+    globalThis.fetch = fetchMock as typeof globalThis.fetch
+
+    const result = await contractsApi.migracion.idsDeFilas('lote-1')
+
+    expect(result.truncado).toBe(true)
+    expect(result.ids).toHaveLength(5_000)
+    expect(result.total).toBe(6_500)
+  })
+})
+
 /** Un `BackendContract` MIGRADO sin inmueble — el mínimo que exige el tipo. */
 function contratoSinInmueble() {
   return {

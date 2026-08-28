@@ -183,6 +183,20 @@ export const contractsApi = {
   },
 
   /**
+   * PATCH /contracts/:id/inmueble — vincula un inmueble a un contrato
+   * migrado que se activó sin uno (T-0033 contract.md §3.2.D2). Sólo llena
+   * un `propertyId` nulo — no existe "desvincular". Devuelve el mismo shape
+   * que `getById`, así que reusa `mapBackendContract` sin un segundo mapper.
+   */
+  async asignarInmueble(id: string, propertyId: string): Promise<Contract> {
+    const raw = await apiClient.patch<BackendContract>(
+      `/contracts/${id}/inmueble`,
+      { propertyId },
+    );
+    return mapBackendContract(raw);
+  },
+
+  /**
    * GET /contracts/by-application/:applicationId — returns the contract tied
    * to the given application, or null if none exists.
    */

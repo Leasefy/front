@@ -253,7 +253,13 @@ export interface PerfilesDelContrato {
 export interface Contract {
   id: string;
   applicationId?: string;
-  propertyId: string;
+  /**
+   * `null` cuando el contrato es un MIGRADO al que la inmobiliaria decidió
+   * no importarle el inmueble (T-0033). Es la fuente de verdad de "¿tiene
+   * inmueble?" — clave todo render de "Sin inmueble" en esto, nunca en
+   * `propertyAddress` vacío.
+   */
+  propertyId: string | null;
   /**
    * `null` en un contrato MIGRADO (T-0031) sin correo de inquilino — existe
    * como `Contract` igual, sin usuario inquilino asociado. No es un dato

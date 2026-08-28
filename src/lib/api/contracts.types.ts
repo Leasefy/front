@@ -27,7 +27,15 @@ export interface BackendAuditEvent {
 export interface BackendContract {
   id: string;
   applicationId?: string;
-  propertyId: string;
+  /**
+   * `null` en un contrato MIGRADO al que la inmobiliaria decidió no
+   * importarle el inmueble (T-0033) — el `Contract` existe igual, aparece
+   * en la lista y el detalle como cualquier otro, sólo que dice "Sin
+   * inmueble". Es la fuente de verdad de "¿tiene inmueble?": nunca inferir
+   * eso de un `propertyAddress` vacío, que también lo produce una fila
+   * legacy anterior a las columnas de snapshot.
+   */
+  propertyId: string | null;
   /**
    * `null` en un contrato MIGRADO sin correo de inquilino (T-0031, D2/D4) —
    * el `Contract` existe igual, sin usuario inquilino asociado. No es un

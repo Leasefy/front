@@ -394,6 +394,17 @@ export const contractsApi = {
       return apiClient.delete<FilaDeMigracion>(`/contracts/migrar/filas/${id}`);
     },
 
+    /**
+     * Descarta un lote entero de una sola vez (contract.md §3.2.C). El
+     * `lote` se codifica igual que `estadoDeLote` — los lotes generados
+     * antes de que el servidor los emitiera no están garantizados URL-safe.
+     */
+    async descartarLote(lote: string): Promise<DescarteDeLote> {
+      return apiClient.delete<DescarteDeLote>(
+        `/contracts/migrar/lotes/${encodeURIComponent(lote)}`,
+      );
+    },
+
     /** 3. Convierte en contratos las filas LISTO. Sólo esas. */
     async activar(lote?: string, invitar = true): Promise<ResumenActivacion> {
       return apiClient.post<ResumenActivacion>('/contracts/migrar/activar', {
@@ -766,6 +777,21 @@ export interface ResumenLote {
    * acá ni inferirla del nombre del flag.
    */
   activables: number;
+}
+
+/**
+ * `DELETE migrar/lotes/:lote` (contract.md §3.2.C3) — resultado de
+ * descartar un lote entero. Los cuatro campos son obligatorios: es un tipo
+ * nuevo, no hay productor viejo contra el que degradar.
+ */
+export interface DescarteDeLote {
+  lote: string;
+  /** Filas que ESTA llamada movió PENDIENTE|LISTO → DESCARTADO. */
+  descartadas: number;
+  /** Filas ya ACTIVADO. Intactas — la mitad honesta de la respuesta. */
+  activadas: number;
+  /** Filas que ya estaban DESCARTADO antes de esta llamada. */
+  yaDescartadas: number;
 }
 
 export type EstadoLoteMigracion = 'ENCOLADO' | 'PROCESANDO' | 'LISTO' | 'FALLIDO';

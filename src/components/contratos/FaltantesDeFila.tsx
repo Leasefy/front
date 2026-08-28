@@ -26,7 +26,8 @@ import { contractsApi, type FilaDeMigracion } from '@/lib/api/contracts.service'
 export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
   inmueble: {
     titulo: 'No encontramos el inmueble',
-    porque: 'La dirección del archivo no coincide con ninguno de tu portafolio.',
+    porque:
+      'La dirección del archivo no coincide con ninguno de tu portafolio. No es obligatorio: podés migrar el contrato igual, sin inmueble.',
   },
   inmueble_ambiguo: {
     titulo: 'Hay más de un inmueble con esa dirección',
@@ -194,6 +195,17 @@ function ElegirInmueble({
 
   return (
     <div className="space-y-3">
+      {/*
+       * T-0033 §3.2.C2/E4 — el checklist ya no bloquea la activación (§3.2.C2):
+       * la fila igual se activa sin inmueble si el usuario presiona Activar
+       * sin resolver esto. Sin esta nota, el componente lee como "tenés que
+       * resolver esto sí o sí", que ahora es falso. No hay tercer botón: es
+       * puramente informativo.
+       */}
+      <p className="text-xs text-muted-foreground">
+        No hace falta resolver esto para migrar el contrato: si lo dejás así,
+        se va a activar igual y va a decir «Sin inmueble».
+      </p>
       {fila.candidatos.length > 0 ? (
         <div className="space-y-1.5">
           <p className="text-xs text-muted-foreground">

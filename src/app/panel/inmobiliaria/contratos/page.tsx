@@ -269,10 +269,16 @@ function ContratosContent() {
                   <TableCell className="px-5 py-4 max-w-[220px]">
                     <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
                       <House className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span className="truncate" title={`${c.propertyAddress}, ${c.propertyCity}`}>
-                        {c.propertyAddress}
-                        {c.propertyCity ? `, ${c.propertyCity}` : ''}
-                      </span>
+                      {c.propertyId === null ? (
+                        <span className="truncate" title="Sin inmueble">
+                          Sin inmueble
+                        </span>
+                      ) : (
+                        <span className="truncate" title={`${c.propertyAddress}, ${c.propertyCity}`}>
+                          {c.propertyAddress}
+                          {c.propertyCity ? `, ${c.propertyCity}` : ''}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="px-5 py-4 tabular-nums font-mono whitespace-nowrap text-foreground">

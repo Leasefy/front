@@ -151,3 +151,27 @@ describe('<FaltantesDeFila> — inmueble_ocupado ya no es un callejón sin salid
     })
   })
 })
+
+/**
+ * T-0033 contract.md §3.2.C2/E4 — el checklist ya no bloquea la
+ * activación: una fila sin inmueble se activa igual y queda "Sin
+ * inmueble". `<ElegirInmueble>` seguía leyendo como "hay que resolver
+ * esto sí o sí", que ahora es falso — gana copy explicativa, ningún
+ * botón ni acción nueva.
+ */
+describe('<FaltantesDeFila> — sin inmueble ya no lee como obligatorio (T-0033)', () => {
+  it('EXPLICACION.inmueble dice que se puede migrar igual, sin inmueble', () => {
+    expect(EXPLICACION.inmueble?.porque).toMatch(/migrar.*sin inmueble/i)
+  })
+
+  it('<ElegirInmueble> muestra la nota informativa, sin agregar un tercer botón', () => {
+    render(filaBase({ faltantes: ['inmueble'], propertyId: null, candidatos: [] }))
+
+    expect(container.textContent).toMatch(/no hace falta resolver esto/i)
+    // Las dos acciones de siempre siguen intactas: ninguna nueva aparece.
+    const botones = Array.from(container.querySelectorAll('button')).map(
+      (b) => b.textContent,
+    )
+    expect(botones).toContain('El inmueble no está cargado — crearlo')
+  })
+})

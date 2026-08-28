@@ -361,7 +361,16 @@ export function MigrarContratos() {
                     <>
                       {' · '}
                       {l.pendientes} {l.pendientes === 1 ? 'fila pendiente' : 'filas pendientes'}
-                      {l.listos > 0 ? ` · ${l.listos} listas para activar` : ''}
+                      {/*
+                       * T-0035 — leía `l.listos`: con el modo sparse prendido
+                       * eso daba SIEMPRE 0 en un lote real (todo quedaba
+                       * PENDIENTE por falta de inmueble) y la tarjeta nunca
+                       * decía que había algo para activar, aunque el back sí
+                       * podía. `activables` es la cuenta real — y evitamos
+                       * la palabra «listas», que en modo sparse incluye
+                       * filas todavía incompletas.
+                       */}
+                      {l.activables > 0 ? ` · ${l.activables} para activar` : ''}
                     </>
                   )}
                 </p>
@@ -602,7 +611,18 @@ function ListaDeTrabajo({
           <Dato etiqueta="Ya activados" valor={resumen.activados} />
         </div>
 
-        {resumen.listos > 0 ? (
+        {/*
+         * T-0035 — este bloque leía `resumen.listos`, que es exactamente lo
+         * que `activar()` toma con el modo sparse APAGADO. Con el modo
+         * sparse PRENDIDO (el default desde T-0033 WU-3), `activar()`
+         * también toma las filas PENDIENTE — y un lote real donde todas las
+         * filas quedaron sin inmueble tiene `listos: 0` con las 1.365
+         * igualmente activables. Mirar `listos` acá era el bug: el botón
+         * jamás aparecía aunque el back sí podía activarlas. `activables`
+         * (contract T-0035 §1) es la cuenta real, sea cual sea el flag —
+         * el front no necesita saber su nombre ni su valor.
+         */}
+        {resumen.activables > 0 ? (
           <>
             <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3">
               <Checkbox
@@ -618,13 +638,33 @@ function ListaDeTrabajo({
                 </span>
               </span>
             </label>
+
+            {/*
+             * `resumen.listos` son las que no les falta NADA. Todo lo que
+             * `activables` suma por encima de eso son filas PENDIENTE que
+             * el modo sparse va a activar igual, con lo que les falte —
+             * la advertencia es honesta sobre qué va a pasar, no presenta
+             * el lote como si ya estuviera resuelto (T-0035 brief, punto 2).
+             */}
+            {resumen.activables > resumen.listos ? (
+              <p
+                className="text-xs text-muted-foreground"
+                data-testid="aviso-incompletos"
+              >
+                {resumen.activables - resumen.listos} de estos contratos
+                todavía tienen algo pendiente — por ejemplo, sin inmueble
+                asignado. Se van a crear igual, van a decir «Sin inmueble» (o
+                lo que les falte), y vas a poder completarlos después.
+              </p>
+            ) : null}
+
             <Button onClick={onActivar} disabled={cargando} isLoading={cargando} hideArrow>
-              Activar {resumen.listos} contratos
+              Activar {resumen.activables} contratos
             </Button>
           </>
         ) : null}
 
-        {resumen.listos === 0 && resumen.pendientes > 0 ? (
+        {resumen.activables === 0 && resumen.pendientes > 0 ? (
           <p className="text-sm text-muted-foreground">
             Ninguno se puede activar todavía. Resolvé lo de abajo y van pasando
             a listos solos.

@@ -130,7 +130,7 @@ function filaDeMigracion(over: Partial<FilaDeMigracion> = {}): FilaDeMigracion {
  * página 1, 5 en la página 2) — el mínimo para que aparezcan tanto la
  * paginación como el control "Seleccionar las {total} del lote".
  */
-async function avanzarAListaDeTrabajo() {
+async function avanzarAListaDeTrabajo(activables = 0) {
   await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
   const b = botonRevisar()
 
@@ -161,6 +161,7 @@ async function avanzarAListaDeTrabajo() {
     listos: 0,
     activados: 0,
     descartados: 0,
+    activables,
   })
   vi.mocked(contractsApi.migracion.filas).mockResolvedValue({
     filas: Array.from({ length: 25 }, (_, i) => filaDeMigracion({ fila: i })),
@@ -220,6 +221,7 @@ describe('<MigrarContratos> — sin gate de columnas', () => {
       listos: 0,
       activados: 0,
       descartados: 0,
+      activables: 0,
     })
     vi.mocked(contractsApi.migracion.filas).mockResolvedValue({
       filas: [],
@@ -412,5 +414,147 @@ describe('<MigrarContratos> — selección across pages (§3.2.G)', () => {
     // trajo todas.
     expect(container.textContent).toContain('5')
     expect(container.textContent).toMatch(/6[.,]?500|truncad|primeras/i)
+  })
+})
+
+/**
+ * T-0035 — reproduce el defecto reportado contra una corrida real: el dueño
+ * importó 1.365 filas, todas quedaron `PENDIENTE` por falta de inmueble
+ * (`listos: 0`), y con el modo sparse prendido el back YA podía activarlas
+ * todas (`activar()` toma `LISTO` + `PENDIENTE`) — pero el front decidía si
+ * ofrecer el botón mirando `resumen.listos`, que daba 0. El botón nunca
+ * aparecía, aunque el back sí podía. `resumen.activables` es la proyección
+ * que el back expone para que el front no tenga que adivinar la política
+ * del flag (contract.md T-0035 §1).
+ */
+describe('<MigrarContratos> — activables, el botón de activar (T-0035)', () => {
+  it('con el modo sparse APAGADO (activables=0, listos=0, pendientes>0): sin botón, mensaje "ninguno se puede activar"', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(0)
+
+    expect(boton('Activar')).toBeUndefined()
+    expect(container.textContent).toContain('Ninguno se puede activar todavía')
+  })
+
+  it('con el modo sparse PRENDIDO (activables=30, listos=0): el botón aparece con la cuenta real, no con `listos`', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(30)
+
+    const btn = boton('Activar 30 contratos')
+    expect(btn).toBeTruthy()
+    expect(btn?.disabled).toBe(false)
+    // El mensaje de "ninguno se puede activar" no puede convivir con el botón.
+    expect(container.textContent).not.toContain('Ninguno se puede activar todavía')
+  })
+
+  it('cuando activables > listos, avisa CUÁNTOS quedan incompletos y qué va a pasar — no lo presenta como resuelto', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(30)
+
+    const aviso = container.querySelector('[data-testid="aviso-incompletos"]')
+    expect(aviso).toBeTruthy()
+    expect(aviso?.textContent).toContain('30')
+    expect(aviso?.textContent).toMatch(/sin inmueble/i)
+    expect(aviso?.textContent).toMatch(/completar/i)
+  })
+
+  it('cuando activables === listos (nada incompleto), no muestra el aviso de incompletos', async () => {
+    render()
+    await esperar()
+    await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
+    const b = botonRevisar()
+
+    vi.mocked(contractsApi.migracion.preparar).mockResolvedValue({
+      lote: 'lote-completo',
+      estado: 'ENCOLADO',
+      total: 5,
+      procesadas: 0,
+      pendientes: 0,
+      listos: 0,
+      activados: 0,
+      descartados: 0,
+    })
+    vi.mocked(contractsApi.migracion.estadoDeLote).mockResolvedValue({
+      lote: 'lote-completo',
+      estado: 'LISTO',
+      total: 5,
+      procesadas: 5,
+      pendientes: 0,
+      listos: 5,
+      activados: 0,
+      descartados: 0,
+    })
+    vi.mocked(contractsApi.migracion.resumen).mockResolvedValue({
+      lote: 'lote-completo',
+      total: 5,
+      pendientes: 0,
+      listos: 5,
+      activados: 0,
+      descartados: 0,
+      activables: 5,
+    })
+    vi.mocked(contractsApi.migracion.filas).mockResolvedValue({
+      filas: [],
+      total: 0,
+      pagina: 1,
+      porPagina: 25,
+    })
+
+    await act(async () => {
+      b?.click()
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(boton('Activar 5 contratos')).toBeTruthy()
+    expect(container.querySelector('[data-testid="aviso-incompletos"]')).toBeNull()
+  })
+})
+
+/**
+ * T-0035 — la tarjeta "Tenés una migración sin terminar" tenía la misma
+ * ceguera: leía `l.listos` para decidir si mostrar "N para activar".
+ */
+describe('<MigrarContratos> — lotesAbiertos usa activables, no listos (T-0035)', () => {
+  it('un lote con listos:0 y activables>0 (sparse) SÍ dice cuántas se pueden activar', async () => {
+    vi.mocked(contractsApi.migracion.lotesAbiertos).mockResolvedValue([
+      {
+        lote: 'lote-viejo',
+        pendientes: 1365,
+        listos: 0,
+        activables: 1365,
+        estado: 'LISTO',
+        total: 1365,
+        creadoEn: new Date().toISOString(),
+      },
+    ])
+
+    render()
+    await esperar()
+
+    const tarjeta = container.querySelector('[data-testid="lotes-abiertos"]')
+    expect(tarjeta?.textContent).toContain('1365 para activar')
+  })
+
+  it('un lote con activables:0 (sparse apagado, nada listo) no dice nada de activar', async () => {
+    vi.mocked(contractsApi.migracion.lotesAbiertos).mockResolvedValue([
+      {
+        lote: 'lote-viejo',
+        pendientes: 30,
+        listos: 0,
+        activables: 0,
+        estado: 'LISTO',
+        total: 30,
+        creadoEn: new Date().toISOString(),
+      },
+    ])
+
+    render()
+    await esperar()
+
+    const tarjeta = container.querySelector('[data-testid="lotes-abiertos"]')
+    expect(tarjeta?.textContent).not.toContain('para activar')
   })
 })

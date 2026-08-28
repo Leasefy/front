@@ -699,6 +699,14 @@ export interface LoteAbierto {
   lote: string;
   pendientes: number;
   listos: number;
+  /**
+   * T-0035 (contract.md T-0035 §1) — misma proyección y misma razón de ser
+   * que `ResumenLote.activables`. La tarjeta "Tenés una migración sin
+   * terminar" debe leer ESTE campo para decidir qué mostrar, nunca `listos`
+   * solo — mirar `listos` es exactamente el bug que dejaba invisible un
+   * lote de 1.365 filas sin inmueble bajo el modo sparse.
+   */
+  activables: number;
   estado?: EstadoLoteMigracion;
   total?: number;
   creadoEn?: string;
@@ -747,6 +755,17 @@ export interface ResumenLote {
   listos: number;
   activados: number;
   descartados: number;
+  /**
+   * T-0035 — cuántas de `pendientes` + `listos` activaría `POST
+   * migrar/activar` AHORA MISMO, con el estado actual del flag del back
+   * (`MIGRACION_CONTRATOS_SPARSE`). Con el flag apagado es igual a
+   * `listos` (comportamiento de siempre); con el flag prendido también
+   * cuenta `pendientes`, porque el back las toma. El front decide si
+   * ofrecer el botón de activar mirando ESTE campo, nunca `listos` solo —
+   * el back es quien conoce su propia política, no hay que reimplementarla
+   * acá ni inferirla del nombre del flag.
+   */
+  activables: number;
 }
 
 export type EstadoLoteMigracion = 'ENCOLADO' | 'PROCESANDO' | 'LISTO' | 'FALLIDO';

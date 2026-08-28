@@ -77,7 +77,14 @@ function aNumero(v: number | string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function mapBackendContract(bc: BackendContract): Contract {
+/**
+ * Exportado (T-0036 contract.md §3.2.B6) — la pantalla del detalle de
+ * contrato lo llama directo sobre `res.contrato` después de invitar al
+ * inquilino, sin pasar por un segundo `getById`. `invitarInquilino()` de
+ * abajo devuelve el `ResultadoInvitacion` CRUDO (sin mapear `contrato`)
+ * porque `invitado`/`tenantId` viajan junto a él y no hay un segundo shape.
+ */
+export function mapBackendContract(bc: BackendContract): Contract {
   return {
     id: bc.id,
     applicationId: bc.applicationId,
@@ -461,6 +468,18 @@ export const contractsApi = {
   },
 
   /**
+   * POST /contracts/:id/invitar-inquilino — invita (o vincula) al inquilino
+   * de un contrato migrado que se activó sin uno (T-0036 contract.md §3.2.B).
+   * Sin body — el back no lo espera (§0.2 no aplica: no hay DTO en esta
+   * tarea). Devuelve el wire CRUDO — `contrato` es `BackendContract` sin
+   * mapear, porque `invitado`/`tenantId` viajan junto a él y no hay un
+   * segundo shape. El caller mapea con `mapBackendContract(res.contrato)`.
+   */
+  async invitarInquilino(id: string): Promise<ResultadoInvitacion> {
+    return apiClient.post<ResultadoInvitacion>(`/contracts/${id}/invitar-inquilino`, {});
+  },
+
+  /**
    * POST /contracts/:id/remind — re-sends the pending-signature notification.
    * Rate-limited to 1 per 24h. Returns `{ remindedAt, nextAllowedAt }`.
    * Throws on 429 (too soon since last reminder).
@@ -836,4 +855,27 @@ export interface ResumenActivacion {
   fallidas: number;
   invitados: number;
   resultados: ResultadoDeFila[];
+}
+
+/**
+ * `POST /contracts/:id/invitar-inquilino` (contract.md §3.2.B3, T-0036) —
+ * resultado de invitar (o vincular) al inquilino de un contrato migrado que
+ * se activó sin uno. Los tres campos son obligatorios: tipo nuevo, no hay
+ * productor viejo contra el que degradar.
+ */
+export interface ResultadoInvitacion {
+  /**
+   * `true` = se mandó una invitación por correo. `false` = la persona ya
+   * tenía cuenta en Leasefy y sólo se vinculó — no se mandó nada. Las dos
+   * son un `200`: sin este campo la pantalla no puede distinguirlas.
+   */
+  invitado: boolean;
+  /** El usuario que quedó vinculado al contrato. Nunca null en un 200. */
+  tenantId: string;
+  /**
+   * El contrato completo, releído después del write. Mismo shape que
+   * `GET /contracts/:id` — `BackendContract`, SIN mapear. No se introduce
+   * un tercer shape.
+   */
+  contrato: BackendContract;
 }

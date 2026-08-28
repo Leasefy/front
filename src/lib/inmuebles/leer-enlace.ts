@@ -386,6 +386,56 @@ function conEtiqueta(
   return undefined;
 }
 
+/**
+ * Muchos portales no sirven la foto real: la pasan por su propio proxy de
+ * redimensionado — `/api/nuby/image-proxy?url=<real>&w=800&q=75`, o el de
+ * Next.js, `/_next/image?url=<real>&w=…`. El wrapper es ruido: dos tamaños
+ * del mismo archivo son la MISMA foto, y compararlos como strings distintos
+ * duplicaría la galería. Se desenvuelve ANTES de comparar y de deduplicar.
+ *
+ * Es una propiedad general del patrón `?url=…`, no de un proxy en particular
+ * ni de un dominio: cualquier imagen servida detrás de un parámetro `url`
+ * (absoluto o relativo a la raíz) se desenvuelve igual.
+ */
+function desenvolverProxy(cruda: string): string {
+  const m = cruda.match(/[?&]url=([^&]+)/);
+  if (!m) return cruda;
+  let interior: string;
+  try {
+    interior = decodeURIComponent(m[1]);
+  } catch {
+    return cruda;
+  }
+  // Sólo cuenta si adentro hay de verdad otra ruta — si no, `url=` podía ser
+  // cualquier otro parámetro sin relación con un proxy de imágenes.
+  if (/^https?:\/\//i.test(interior) || interior.startsWith('/')) return interior;
+  return cruda;
+}
+
+/**
+ * Nombres de archivo que casi nunca son una foto del inmueble: son el activo
+ * genérico del sitio — el que Open Graph sirve cuando la ficha no tiene fotos
+ * propias, el logo, el ícono. Es un patrón de NOMBRE, no de dominio: un
+ * portal que sirve sus fotos reales desde su propio dominio no cae acá,
+ * porque sus archivos de fotos no se llaman así.
+ *
+ * Caso real (T-0034): la ficha 2929 de portofinopropiedadraiz.com no tiene
+ * fotos propias — es un cascarón — y lo único declarado es `og-image.png`,
+ * el logo del sitio. Sin este filtro esa sería la ÚNICA imagen que se
+ * importa: el logo quedaría de portada del inmueble.
+ */
+const NOMBRE_DE_ACTIVO_GENERICO =
+  /(?:^|[-_/])(og[-_]?image|default[-_]?(?:og|share|image)|share[-_]?image|placeholder|logo|favicon|banner|avatar)(?:[-_.]|$)/i;
+
+function esActivoGenerico(url: string): boolean {
+  try {
+    const nombre = new URL(url).pathname.split('/').pop() ?? '';
+    return NOMBRE_DE_ACTIVO_GENERICO.test(nombre);
+  } catch {
+    return false;
+  }
+}
+
 /** Todas las imágenes declaradas: og:image (repetible), twitter, JSON-LD. */
 function imagenesDelHtml(html: string, jsonLd: Record<string, unknown>[], base: string): string[] {
   const urls: string[] = [];
@@ -411,7 +461,104 @@ function imagenesDelHtml(html: string, jsonLd: Record<string, unknown>[], base: 
     }
   }
 
-  return normalizarUrls(urls, base);
+  // El logo/ícono/og-image genérico NUNCA es una foto del inmueble, aunque el
+  // sitio lo declare como og:image — filtra ANTES de que se vuelva el ancla
+  // de la que cuelga todo lo demás.
+  return normalizarUrls(urls, base).filter((u) => !esActivoGenerico(u));
+}
+
+/**
+ * `<img>`/`<picture><source>` que la página ya renderiza, en orden de
+ * documento — `src` y cada URL del `srcSet` (el descriptor `Nw`/`Nx` no
+ * importa, sólo la URL).
+ */
+function etiquetasImg(html: string): string[] {
+  const urls: string[] = [];
+  const etiquetas = html.match(/<(?:img|source)\b[^>]*>/gi) ?? [];
+
+  for (const etiqueta of etiquetas) {
+    const src = etiqueta.match(/\bsrc\s*=\s*["']([^"']+)["']/i)?.[1];
+    if (src) urls.push(src);
+
+    const srcset = etiqueta.match(/\bsrcset\s*=\s*["']([^"']+)["']/i)?.[1];
+    if (srcset) {
+      for (const parte of srcset.split(',')) {
+        const u = parte.trim().split(/\s+/)[0];
+        if (u) urls.push(u);
+      }
+    }
+  }
+
+  return urls.map((u) => decodificarEntidades(u.trim()));
+}
+
+function carpetaDe(u: URL): string {
+  return u.pathname.slice(0, u.pathname.lastIndexOf('/') + 1);
+}
+
+/**
+ * Mismo archivo salvo el número de la secuencia: separa el ÚLTIMO tramo de
+ * dígitos del nombre y compara lo que queda. `foto_1.jpg` y `foto_8.jpg`
+ * comparten `foto_.jpg` con el número afuera — son la misma serie. Sin
+ * ningún dígito en el nombre no hay serie que probar.
+ */
+function mismoPatronDeArchivo(a: URL, b: URL): boolean {
+  const nombreDe = (u: URL) => u.pathname.slice(u.pathname.lastIndexOf('/') + 1);
+  const nombreA = nombreDe(a);
+  const nombreB = nombreDe(b);
+  if (nombreA === nombreB) return true;
+  if (!/\d/.test(nombreA) || !/\d/.test(nombreB)) return false;
+  const sinNumero = (nombre: string) => nombre.replace(/\d+(?!.*\d)/, '');
+  return sinNumero(nombreA) === sinNumero(nombreB);
+}
+
+/**
+ * La galería que la página RENDERIZA como `<img>`/`<picture>`, pero sólo la
+ * parte que se puede probar que es del mismo inmueble que la foto declarada
+ * (el ancla, ya cierta con certeza).
+ *
+ * ⚠️ Esto es un camino APARTE de `galeriaDelMismoInmueble` — no relaja su
+ * guarda de la carpeta con id numérico (línea ~456 más abajo), que sigue
+ * intacta y sigue siendo necesaria para su propio caso: un grep sobre TODO
+ * el HTML crudo, sin saber si lo que encuentra es una etiqueta `<img>` de
+ * verdad o un estado embebido de "similares".
+ *
+ * Acá la fuente ya es más angosta —sólo elementos `<img>`/`<source>` que el
+ * navegador de verdad pintaría— pero portales reales embeben carruseles de
+ * "similares" como `<img>` también, así que la prueba sigue haciendo falta:
+ * la carpeta (una vez desenvuelto el proxy) tiene que ser la MISMA que la
+ * del ancla, y el nombre de archivo tiene que compartir su patrón numerado.
+ * Un logo, un avatar o el ícono del WhatsApp casi nunca cumplen ninguna de
+ * las dos — y si por casualidad comparten carpeta, casi nunca comparten el
+ * patrón de nombre con el ancla (que si es él mismo el activo genérico, ya
+ * fue descartado antes de llegar acá).
+ */
+function galeriaDeImgs(html: string, declaradas: string[], base: string): string[] {
+  if (declaradas.length === 0) return [];
+
+  let anclaUrl: URL;
+  try {
+    anclaUrl = new URL(declaradas[0]);
+  } catch {
+    return [];
+  }
+  const carpetaAncla = carpetaDe(anclaUrl);
+
+  const salida: string[] = [];
+  for (const cruda of etiquetasImg(html)) {
+    const desenvuelta = desenvolverProxy(cruda);
+    let u: URL;
+    try {
+      u = new URL(desenvuelta, base);
+    } catch {
+      continue;
+    }
+    if (u.origin !== anclaUrl.origin) continue;
+    if (carpetaDe(u) !== carpetaAncla) continue;
+    if (!mismoPatronDeArchivo(anclaUrl, u)) continue;
+    salida.push(u.toString());
+  }
+  return salida;
 }
 
 /**
@@ -500,7 +647,8 @@ function normalizarUrls(urls: string[], base: string): string[] {
   for (const cruda of urls) {
     let absoluta: string;
     try {
-      absoluta = new URL(decodificarEntidades(cruda.trim()), base).toString();
+      const desenvuelta = desenvolverProxy(decodificarEntidades(cruda.trim()));
+      absoluta = new URL(desenvuelta, base).toString();
     } catch {
       continue;
     }
@@ -519,9 +667,18 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
   const jsonLd = bloquesJsonLd(html);
   const texto = textoVisible(html);
 
+  const declaradas = imagenesDelHtml(html, jsonLd, url);
   const leido: InmuebleDesdeEnlace = {
     url,
-    imagenes: galeriaDelMismoInmueble(html, imagenesDelHtml(html, jsonLd, url), url),
+    // Dos caminos que se complementan y no se pisan: el whitelist por
+    // carpeta+id de `galeriaDelMismoInmueble` (sin tocar su guarda), y la
+    // galería que la página ya renderiza como <img>, probada por patrón de
+    // nombre de archivo (Slice A, T-0034 WU-1). La portada declarada va
+    // primero en los dos, así que queda primera acá también.
+    imagenes: normalizarUrls(
+      [...galeriaDelMismoInmueble(html, declaradas, url), ...galeriaDeImgs(html, declaradas, url)],
+      url,
+    ),
     videos: videosDelHtml(html, jsonLd, url),
   };
 

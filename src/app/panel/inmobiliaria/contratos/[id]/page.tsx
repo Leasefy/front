@@ -50,6 +50,7 @@ import type { ContractStatus } from '@/lib/types/contract';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { AdministracionDelContrato } from '@/components/contratos/AdministracionDelContrato';
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
+import { InvitarInquilino } from '@/components/contratos/InvitarInquilino';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
 
@@ -92,6 +93,11 @@ function ContratoDetalleContent() {
   // Chat todavía se gate por rol porque 'mensajes' aún no es módulo del backend.
   const { isManager } = useAgencyAccess();
   const canEditContracts = canAccess('contratos', 'edit');
+  // T-0036 §3.2.B6/Y2 — el botón de invitar al inquilino gatea con el MISMO
+  // permiso que exige el back (`contratos:create`, no `contratos:edit`):
+  // usar `canEditContracts` acá mostraría el botón a un rol que el back le
+  // responde 403.
+  const canInviteTenant = canAccess('contratos', 'create');
 
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
@@ -296,6 +302,18 @@ function ContratoDetalleContent() {
           <InfoCard title="Partes" icon={User}>
             <InfoRow label="Propietario" value={contract.landlordName} />
             <InfoRow label="Inquilino" value={contract.tenantName} />
+            {/* T-0036 §3.2.B6 — la salida de un contrato migrado sin
+                inquilino: se muestra sólo mientras tenantId siga null. */}
+            {contract.tenantId === null && (
+              <div className="pt-1">
+                <InvitarInquilino
+                  contract={contract}
+                  puedeInvitar={canInviteTenant}
+                  onActualizado={(c) => setContract(c)}
+                  onConflicto={() => void refetch()}
+                />
+              </div>
+            )}
           </InfoCard>
 
           <InfoCard title="Propiedad" icon={Buildings}>

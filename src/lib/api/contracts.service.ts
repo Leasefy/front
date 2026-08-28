@@ -846,6 +846,13 @@ export interface ResultadoDeFila {
   estado: 'creado' | 'fallido';
   contratoId?: string;
   inquilinoInvitado: boolean;
+  /**
+   * T-0036 §3.2.A4 — `true` sólo cuando esta fila tenía un correo válido y
+   * quedó sin cuenta (activación con `invitar:false`, sin usuario
+   * existente). Ausente ⇒ se trata como `false` (back viejo). Mirrors
+   * `inquilinoInvitado` exactamente.
+   */
+  inquilinoPendienteDeInvitar?: boolean;
   motivo?: string;
 }
 
@@ -854,6 +861,12 @@ export interface ResumenActivacion {
   activadas: number;
   fallidas: number;
   invitados: number;
+  /**
+   * T-0036 §3.2.A4 — cuántas filas retuvieron un correo sin invitar a
+   * nadie. Ausente ⇒ NO renderizar nada — nunca `0`. Un back viejo que
+   * todavía no manda este campo no puede afirmar un conteo que no tiene.
+   */
+  porInvitar?: number;
   resultados: ResultadoDeFila[];
 }
 

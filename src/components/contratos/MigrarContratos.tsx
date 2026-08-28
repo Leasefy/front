@@ -702,6 +702,26 @@ function ListaDeTrabajo({
             </label>
 
             {/*
+             * T-0036 §3.2.A6 — destildado, esta línea antes no decía nada de
+             * lo que en realidad pasa. Surface A dejó de crear una cuenta
+             * silenciosa (I1): sin invitar, el contrato se crea igual y el
+             * correo queda guardado, pero nadie se entera hasta que alguien
+             * invite desde el contrato. Frozen: no puede insinuar nada de
+             * cobros — `CobrosService.generate` factura desde
+             * `Consignacion.monthlyRent`, no depende de un `Lease`.
+             */}
+            {!invitar ? (
+              <p
+                className="text-xs text-muted-foreground"
+                data-testid="aviso-sin-invitar"
+              >
+                No se crea ninguna cuenta: el correo del inquilino queda
+                guardado en cada contrato, y podés invitarlo cuando quieras
+                desde ahí.
+              </p>
+            ) : null}
+
+            {/*
              * `resumen.listos` son las que no les falta NADA. Todo lo que
              * `activables` suma por encima de eso son filas PENDIENTE que
              * el modo sparse va a activar igual, con lo que les falte —
@@ -820,6 +840,19 @@ function ListaDeTrabajo({
             {activacion.activadas} contratos activados
             {activacion.invitados > 0 ? ` · ${activacion.invitados} inquilinos invitados` : ''}
           </p>
+          {/*
+           * T-0036 §3.2.A4/A6 — el producto entero del cambio: cuántos
+           * correos se guardaron sin invitar a nadie. Ausente o `0` ⇒ sin
+           * línea, nunca "0 pendientes" (un back viejo que todavía no manda
+           * el campo no puede afirmar un conteo que no tiene).
+           */}
+          {activacion.porInvitar ? (
+            <p className="text-sm text-muted-foreground" data-testid="aviso-pendientes-de-invitar">
+              {activacion.porInvitar} {activacion.porInvitar === 1 ? 'inquilino queda' : 'inquilinos quedan'}{' '}
+              pendiente{activacion.porInvitar === 1 ? '' : 's'} de invitar — se hace desde cada
+              contrato.
+            </p>
+          ) : null}
           {activacion.fallidas > 0 ? (
             <ul className="space-y-1 text-sm text-muted-foreground">
               {activacion.resultados

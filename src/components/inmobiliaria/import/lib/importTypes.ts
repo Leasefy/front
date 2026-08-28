@@ -50,6 +50,13 @@ export interface ImportProperty {
   /** URLs de las fotos en el CDN de origen; se suben tras crear el inmueble. */
   imagenes?: string[];
   /**
+   * `propertyAddress` no es la dirección exacta: es una referencia que da el
+   * aviso, o el municipio, porque el portal no publica la calle. La fila
+   * sigue necesitando poder corregirse a mano — por eso el input manual
+   * tiene que seguir alcanzable aunque el campo ya no esté vacío.
+   */
+  direccionAproximada?: boolean;
+  /**
    * De dónde salió cada campo: `'json-ld'` es un dato que el sitio declara,
    * `'texto'` es algo leído de una frase. La pantalla lo muestra para que la
    * persona sepa a qué números mirarles la cara.

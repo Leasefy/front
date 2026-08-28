@@ -423,3 +423,49 @@ describe('galería ampliada — fotos que sólo están en el <img> (T-0034 WU-1,
     expect(r.imagenes).toEqual(['https://cdn.co/fotos/portada.jpeg']);
   });
 });
+
+describe('dirección — no perder el primer carácter y caer a referencia o municipio (T-0034 WU-1, Slice B)', () => {
+  it('no pierde la «c» de «cerca al tránsito de itagui» (defecto real, ficha 2925)', () => {
+    const r = leerInmuebleDeHtml(FICHA_2925_PORTOFINO, 'https://portofinopropiedadraiz.com/propiedades/2925');
+
+    expect(r.direccion?.valor).toBe('cerca al tránsito de itagui');
+    expect(r.direccion?.valor.startsWith('c')).toBe(true);
+    expect(r.direccion?.valor).not.toMatch(/^erca/);
+  });
+
+  it('esa dirección es una referencia, no la exacta: la fila queda marcada como aproximada', () => {
+    const r = leerInmuebleDeHtml(FICHA_2925_PORTOFINO, 'https://portofinopropiedadraiz.com/propiedades/2925');
+    expect(r.direccionAproximada).toBe(true);
+    expect(r.ciudad?.valor).toBe('Itagüí');
+  });
+
+  it('sin dirección exacta ni referencia, cae al municipio — y sigue marcada aproximada', () => {
+    const html = `<html><head>
+      <script type="application/ld+json">
+      {"@type":"Apartment","name":"Apartamento en Bello",
+       "description":"Apartamento amplio con acabados de lujo y excelente iluminación natural.",
+       "address":{"@type":"PostalAddress","addressLocality":"Bello","addressRegion":"Antioquia"},
+       "offers":{"@type":"Offer","price":"1200000"}}
+      </script>
+    </head><body></body></html>`;
+    const r = leerInmuebleDeHtml(html, 'https://x.co/1');
+
+    expect(r.direccion?.valor).toBe('Bello');
+    expect(r.direccionAproximada).toBe(true);
+    // No bloquear: con el municipio alcanza para no pedir «dirección» de nuevo.
+    expect(loQueFalta(r)).not.toContain('dirección');
+  });
+
+  it('una dirección exacta (declarada o de la prosa) NO se marca como aproximada', () => {
+    const exacta = leerInmuebleDeHtml(CON_JSON_LD, 'https://ejemplo.com/x');
+    expect(exacta.direccion?.valor).toBe('Carrera 13 # 53-20');
+    expect(exacta.direccionAproximada).toBeFalsy();
+  });
+
+  it('sin municipio ni referencia tampoco inventa nada: sigue sin dirección', () => {
+    const r = leerInmuebleDeHtml('<html><body>Hola</body></html>', 'https://x.co/1');
+    expect(r.direccion).toBeUndefined();
+    expect(r.direccionAproximada).toBeFalsy();
+    expect(loQueFalta(r)).toContain('dirección');
+  });
+});

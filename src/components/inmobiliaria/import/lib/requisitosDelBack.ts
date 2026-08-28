@@ -139,5 +139,11 @@ export function escribirCampo(
     valor = valorCrudo;
   }
 
-  return recalcularEstado({ ...p, [campo]: valor });
+  const actualizado: ImportProperty = { ...p, [campo]: valor };
+  // Si la persona corrige la dirección a mano, ya no es una aproximación:
+  // dejarla marcada después de que alguien la arregló sería mentir sobre el
+  // dato que hay ahora.
+  if (campo === 'propertyAddress') actualizado.direccionAproximada = false;
+
+  return recalcularEstado(actualizado);
 }

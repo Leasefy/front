@@ -50,6 +50,13 @@ export interface InmuebleDesdeEnlace {
   banos?: DatoLeido<number>;
   /** URLs absolutas, sin repetidos, en el orden en que aparecen. */
   imagenes: string[];
+  /**
+   * `direccion` no es la dirección exacta: es una referencia que da el
+   * aviso, o directamente el municipio. La pantalla tiene que poder
+   * distinguirlo — si no, el dato se ve tan sólido como uno exacto y nadie
+   * lo revisa (T-0034 WU-1, Slice B).
+   */
+  direccionAproximada?: boolean;
   /** Se leen aunque hoy el inmueble no los pueda guardar. Ver la nota al pie. */
   videos: string[];
 }
@@ -350,6 +357,27 @@ function normalizarNombre(nombre: string): string {
 // `12-34 c`, comiéndose la primera letra de la palabra siguiente.
 const DIRECCION_COLOMBIANA =
   /\b(?:calles?|cll?\.?|carreras?|cra\.?|kra\.?|kr\.?|diagonal|dg\.?|transversal|tv\.?|avenida|av\.?|autopista)\s*\.?\s*\d{1,3}[a-z]?(?:\s+bis)?(?:\s+(?:sur|norte|este|oeste))?\s*(?:#|n[oº°]\.?|nro\.?|num\.?)\s*\d{1,3}[a-z]?\s*-\s*\d{1,3}[a-z]?\b/i;
+
+/**
+ * Una referencia locacional: no una calle con número, sino cómo la gente
+ * describe DÓNDE queda algo — «cerca al tránsito de itagui», «frente al
+ * centro comercial X», «a dos cuadras del parque». Es lo segundo mejor
+ * cuando el portal no publica la dirección exacta (T-0034 WU-1, Slice B).
+ *
+ * El marcador (`cerca de`, `frente a`, …) es general — no depende del sitio.
+ * El corte es en `.`, `,`, `;` o salto de línea: sin él, «cerca al tránsito
+ * de itagui, estación del metro, rutas integradas» se guardaría entero, una
+ * frase corrida y no una referencia legible.
+ */
+const REFERENCIA_LOCACIONAL =
+  /\b(?:cerca\s+(?:de|al?)|frente\s+a|junto\s+a|al\s+lado\s+de|a\s+\d+\s*(?:cuadras?|min(?:utos)?)\s+de|diagonal\s+a)\b[^.,;\n]{0,60}/i;
+
+function referenciaLocacional(texto: string): string | undefined {
+  const m = texto.match(REFERENCIA_LOCACIONAL);
+  if (!m) return undefined;
+  const limpia = m[0].replace(/\s+/g, ' ').trim();
+  return limpia || undefined;
+}
 
 function esCiudad(nombre: string | undefined): boolean {
   if (!nombre) return false;
@@ -823,11 +851,14 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
     if (clave) leido.tipo = { valor: clave, fuente: 'texto', textoOriginal: desde.slice(0, 80) };
   }
 
+  // ⚠️ Sólo en la descripción y el título del inmueble, NUNCA en el texto
+  // suelto de la página: el pie de página trae la dirección de la
+  // inmobiliaria, y meterla acá sería ponerle al inmueble la casa de otro.
+  // Los dos intentos de abajo (dirección exacta y referencia) comparten esta
+  // misma fuente por la misma razón.
+  const propio = [leido.titulo?.valor, leido.descripcion?.valor].filter(Boolean).join(' · ');
+
   if (!leido.direccion) {
-    // ⚠️ Sólo en la descripción y el título del inmueble, NUNCA en el texto
-    // suelto de la página: el pie de página trae la dirección de la
-    // inmobiliaria, y meterla acá sería ponerle al inmueble la casa de otro.
-    const propio = [leido.titulo?.valor, leido.descripcion?.valor].filter(Boolean).join(' · ');
     const m = propio.match(DIRECCION_COLOMBIANA);
     if (m) {
       leido.direccion = {
@@ -835,6 +866,26 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
         fuente: 'texto',
         textoOriginal: m[0].trim(),
       };
+    }
+  }
+
+  // ── Sin dirección exacta: la cadena de resguardo del dueño del producto ──
+  // «si no hay dirección exacta pone una referencia si la propiedad la tiene
+  // o al menos el municipio donde se encuentre» — nunca bloquear el import
+  // por esto, pero la fila SIGUE necesitando poder corregirse, así que se
+  // marca `direccionAproximada` en los dos casos de abajo.
+  if (!leido.direccion) {
+    const referencia = referenciaLocacional(propio);
+    if (referencia) {
+      leido.direccion = { valor: referencia, fuente: 'texto', textoOriginal: referencia };
+      leido.direccionAproximada = true;
+    } else if (leido.ciudad?.valor) {
+      leido.direccion = {
+        valor: leido.ciudad.valor,
+        fuente: leido.ciudad.fuente,
+        textoOriginal: 'municipio (el portal no publica dirección ni referencia)',
+      };
+      leido.direccionAproximada = true;
     }
   }
 

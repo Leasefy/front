@@ -1,10 +1,13 @@
 /**
  * Acá es donde los datos se pierden EN SILENCIO.
  *
- * Un `$` que vuelve NaN se guarda como canon 0 —el contrato queda cobrando
- * nada— y una fecha leída al formato de EE.UU. corre el arriendo un mes.
- * Ninguna de las dos cosas da un error: se ven como números y fechas
- * perfectamente válidos.
+ * Un `$` que vuelve NaN, o un separador de miles leído al revés, corren el
+ * canon o la fecha sin que nada falle: se ven como números y fechas
+ * perfectamente válidos. La regla dura: lo que no se puede leer da
+ * `undefined`, NUNCA un valor inventado (0, una fecha truncada) — `0` es un
+ * canon legítimo (un arriendo gratuito existe), y confundirlo con "no se
+ * pudo leer" es lo que anula la protección del back (`canonDesconocido`,
+ * que sólo se activa cuando el campo llega ausente).
  */
 
 import { describe, it, expect } from 'vitest'
@@ -31,10 +34,62 @@ describe('plata que viene de una hoja de cálculo', () => {
     expect(comoEntero('2.400.000')).toBeGreaterThan(1_000_000)
   })
 
-  it('una celda vacía da 0, no NaN', () => {
-    expect(comoEntero('')).toBe(0)
-    expect(comoEntero(null)).toBe(0)
-    expect(comoEntero(undefined)).toBe(0)
+  // Formato anglosajón del export real del owner: coma de miles, punto
+  // decimal. `.replace(/\.(?=\d{3}\b)/g,'')` + `.replace(',', '.')` del código
+  // viejo dejaba el `.00` decimal y convertía la coma de miles en un segundo
+  // punto decimal — `Number('570.000.00')` es NaN. 1365 filas reales
+  // quedaron en canon 0 por esto.
+  it.each([
+    ['$570,000.00', 570_000],
+    ['$550,000.00', 550_000],
+    ['$1,250,000.00', 1_250_000],
+    ['1,234,567.89', 1_234_568],
+    ['1234567.89', 1_234_568],
+  ])('formato anglosajón «%s» → %i', (entrada, esperado) => {
+    expect(comoEntero(entrada)).toBe(esperado)
+  })
+
+  it('sigue leyendo el formato europeo: miles con punto, decimales con coma', () => {
+    expect(comoEntero('1.234.567,89')).toBe(1_234_568)
+    expect(comoEntero('570.000,00')).toBe(570_000)
+  })
+
+  it('un entero sin separadores no cambia', () => {
+    expect(comoEntero('1234567')).toBe(1_234_567)
+  })
+
+  it('decimales con coma en un número corto, sin separador de miles', () => {
+    expect(comoEntero('1234,50')).toBe(1_235) // Math.round(1234.5)
+  })
+
+  it('negativos', () => {
+    expect(comoEntero('-45000')).toBe(-45_000)
+    expect(comoEntero('-570.000,00')).toBe(-570_000)
+  })
+
+  it('un valor que ya es number se redondea y respeta', () => {
+    expect(comoEntero(2_400_000.4)).toBe(2_400_000)
+  })
+
+  // El defecto real: NUNCA fabricar un 0. Una celda ausente o un texto que no
+  // se puede leer como plata deben volver `undefined`, para que
+  // `armar-fila.ts` mande el campo AUSENTE y el back pueda marcarlo faltante
+  // en vez de darlo por un contrato que cobra $0.
+  it('una celda ausente da undefined, no 0', () => {
+    expect(comoEntero('')).toBeUndefined()
+    expect(comoEntero(null)).toBeUndefined()
+    expect(comoEntero(undefined)).toBeUndefined()
+  })
+
+  it('texto que no es plata da undefined, no 0', () => {
+    expect(comoEntero('N/A')).toBeUndefined()
+    expect(comoEntero('pendiente')).toBeUndefined()
+    expect(comoEntero('-')).toBeUndefined()
+  })
+
+  it('un number no finito da undefined, no 0', () => {
+    expect(comoEntero(NaN)).toBeUndefined()
+    expect(comoEntero(Infinity)).toBeUndefined()
   })
 })
 
@@ -59,6 +114,17 @@ describe('fechas colombianas', () => {
 
   it('una fecha de Excel que llega como Date se respeta', () => {
     expect(comoFecha(new Date('2025-06-30T00:00:00Z'))).toBe('2025-06-30')
+  })
+
+  // Mismo defecto que comoEntero: el `s.slice(0, 10)` viejo convertía CUALQUIER
+  // texto no reconocido en un string de 10 caracteres con forma de fecha —
+  // "15 de marzo" se volvía "15 de marz", una fecha inventada que ni siquiera
+  // es válida, y que además choca contra `@IsDateString()` en el back y tira
+  // TODO el lote con 400 en vez de marcar sólo esa fila como faltante.
+  it('texto que no es una fecha reconocible da undefined, no un slice inventado', () => {
+    expect(comoFecha('15 de marzo de 2025')).toBeUndefined()
+    expect(comoFecha('N/A')).toBeUndefined()
+    expect(comoFecha('pendiente')).toBeUndefined()
   })
 })
 

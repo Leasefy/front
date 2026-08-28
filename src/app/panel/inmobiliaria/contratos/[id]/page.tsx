@@ -299,6 +299,11 @@ function ContratoDetalleContent() {
           </InfoCard>
 
           <InfoCard title="Propiedad" icon={Buildings}>
+            {contract.propertyId === null && (
+              <p className="text-sm text-muted-foreground">
+                Sin inmueble vinculado.
+              </p>
+            )}
             <InfoRow label="Dirección" value={contract.propertyAddress} />
             <InfoRow label="Ciudad" value={contract.propertyCity} />
           </InfoCard>

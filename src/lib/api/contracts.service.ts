@@ -183,6 +183,20 @@ export const contractsApi = {
   },
 
   /**
+   * PATCH /contracts/:id/inmueble — vincula un inmueble a un contrato
+   * migrado que se activó sin uno (T-0033 contract.md §3.2.D2). Sólo llena
+   * un `propertyId` nulo — no existe "desvincular". Devuelve el mismo shape
+   * que `getById`, así que reusa `mapBackendContract` sin un segundo mapper.
+   */
+  async asignarInmueble(id: string, propertyId: string): Promise<Contract> {
+    const raw = await apiClient.patch<BackendContract>(
+      `/contracts/${id}/inmueble`,
+      { propertyId },
+    );
+    return mapBackendContract(raw);
+  },
+
+  /**
    * GET /contracts/by-application/:applicationId — returns the contract tied
    * to the given application, or null if none exists.
    */
@@ -303,6 +317,19 @@ export const contractsApi = {
         ids,
         ...cambios,
       });
+    },
+
+    /**
+     * "Seleccionar las {total} del lote" (contract.md §3.2.G1) — todos los
+     * ids de un lote, en el MISMO orden que `filas()`, para que el front los
+     * troceé en `CHUNK_MASIVA = 100` y se los mande a `resolverMasivo` sin
+     * traer el `datos` JSON completo de cada fila. `lote` es obligatorio: un
+     * volcado de ids de toda la agencia no es un flujo de trabajo.
+     */
+    async idsDeFilas(lote: string, estado?: EstadoMigracion): Promise<IdsDeFilas> {
+      const q = new URLSearchParams({ lote });
+      if (estado) q.set('estado', estado);
+      return apiClient.get<IdsDeFilas>(`/contracts/migrar/filas/ids?${q.toString()}`);
     },
 
     async resumen(lote?: string): Promise<ResumenLote> {
@@ -685,11 +712,32 @@ export interface PaginaDeFilas {
   porPagina: number;
 }
 
+/**
+ * `GET migrar/filas/ids` (contract.md §3.2.G1) — los ids de todo un lote, en
+ * el MISMO orden que `filas()`, para "seleccionar las {total} del lote" sin
+ * traer el `datos` JSON completo de cada fila.
+ */
+export interface IdsDeFilas {
+  ids: string[];
+  /** El total real que matchea el filtro — `=== ids.length` salvo `truncado`. */
+  total: number;
+  /** `true` cuando el lote superó el tope del back y `ids` quedó recortado.
+   *  Ausente ⇒ se trata como `false` (back viejo). */
+  truncado?: boolean;
+}
+
 /** Qué pasó con cada fila de una resolución masiva, una por una. */
 export interface ResultadoMasivo {
   pedidas: number;
   aplicadas: number;
   fallidas: Array<{ id: string; fila: number | null; motivo: string }>;
+  /**
+   * Filas saltadas por una razón estructural que reintentar no arregla
+   * (contract.md §3.2.G3) — hoy exactamente: se pidió `propietario` y la
+   * fila no tiene inmueble. Ausente/`undefined` ⇒ se trata como `[]` (back
+   * viejo). Una fila que cae acá NUNCA cae también en `fallidas`.
+   */
+  omitidas?: Array<{ id: string; fila: number | null; motivo: string }>;
 }
 
 export interface ResumenLote {

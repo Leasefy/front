@@ -129,7 +129,7 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2.5">
               <h3 className="text-base font-medium text-fg truncate">
-                {contract.propertyAddress}
+                {contract.propertyId === null ? 'Sin inmueble' : contract.propertyAddress}
               </h3>
               <span
                 className={cn(
@@ -141,7 +141,9 @@ export function ContractExpandableItem({ contract }: ContractExpandableItemProps
               </span>
             </div>
             <p className="text-sm text-fg-muted mt-0.5">
-              {contract.tenantName} · {contract.propertyCity}
+              {contract.tenantName}
+              {contract.tenantName && contract.propertyCity ? ' · ' : ''}
+              {contract.propertyCity}
             </p>
           </div>
 

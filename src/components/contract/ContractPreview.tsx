@@ -173,8 +173,10 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
         <div className="space-y-3 text-sm">
           <div>
             <p className="text-fg-muted">Direccion</p>
-            <p className="font-medium text-fg">{contract.propertyAddress}</p>
-            <p className="text-fg-muted">{contract.propertyCity}</p>
+            <p className="font-medium text-fg">
+              {contract.propertyId === null ? 'Sin inmueble' : contract.propertyAddress}
+            </p>
+            {contract.propertyCity && <p className="text-fg-muted">{contract.propertyCity}</p>}
           </div>
           <div className="flex gap-6">
             <div>

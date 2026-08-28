@@ -180,9 +180,12 @@ export function MigrarContratos() {
     setPendientes(p.filas)
     setTotalPendientes(p.total)
     setPagina(p.pagina)
-    // Lo que ya no está en pantalla no puede seguir seleccionado: aplicar algo
-    // a una fila que no se ve es exactamente lo que nadie espera.
-    setSeleccion(new Set())
+    // T-0033 §3.2.G4 — antes reseteaba `seleccion` acá, así que cambiar de
+    // página (o refrescar tras resolver una fila) borraba la selección. La
+    // única forma de aplicar algo a más de una página era repetir la masiva
+    // 55 veces. `seleccion` ahora sobrevive: se resetea explícitamente en
+    // los puntos donde el LOTE cambia (`preparar`, `retomar`,
+    // `onOtroArchivo`), nunca acá.
   }, [])
 
   /**
@@ -213,6 +216,10 @@ export function MigrarContratos() {
       // 'LISTO'`, momento en el que el efecto de abajo llama a `refrescar`.
       setResumen(null)
       setLote(r.lote)
+      // Nuevo lote entrando: una selección de un lote anterior no puede
+      // sobrevivir acá (§3.2.G4) — se resetea en los puntos donde el LOTE
+      // cambia, no en cada refresco de página.
+      setSeleccion(new Set())
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No pudimos preparar la migración.')
     } finally {
@@ -264,6 +271,8 @@ export function MigrarContratos() {
     // === 'LISTO'`.
     setResumen(null)
     setLote(elLote)
+    // Otro lote: la selección del anterior no aplica acá (§3.2.G4).
+    setSeleccion(new Set())
   }, [])
 
   /*
@@ -292,6 +301,7 @@ export function MigrarContratos() {
   if (resumen && lote) {
     return (
       <ListaDeTrabajo
+        lote={lote}
         resumen={resumen}
         pendientes={pendientes}
         totalPendientes={totalPendientes}
@@ -314,6 +324,8 @@ export function MigrarContratos() {
           setMapeo([])
           setActivacion(null)
           setIdempotencyKey('')
+          // Otro archivo, otro lote: nada de la selección anterior aplica.
+          setSeleccion(new Set())
         }}
       />
     )
@@ -514,6 +526,7 @@ export function MigrarContratos() {
  * de lo que falta con la salida al lado. Nada se perdió y nada se creó todavía.
  */
 function ListaDeTrabajo({
+  lote,
   resumen,
   pendientes,
   totalPendientes,
@@ -530,6 +543,7 @@ function ListaDeTrabajo({
   onPaginaCambia,
   onSeleccionCambia,
 }: {
+  lote: string
   resumen: ResumenLote
   pendientes: FilaDeMigracion[]
   totalPendientes: number
@@ -549,6 +563,34 @@ function ListaDeTrabajo({
   const totalPaginas = Math.max(1, Math.ceil(totalPendientes / POR_PAGINA))
   const todasMarcadas =
     pendientes.length > 0 && pendientes.every((f) => seleccion.has(f.id))
+
+  // T-0033 §3.2.G1 — "Seleccionar las {total} del lote": trae todo el
+  // conjunto de ids vía `GET migrar/filas/ids`, sin descargar el `datos` JSON
+  // de cada fila. Estado local: sólo le importa a este control.
+  const [seleccionandoTodo, setSeleccionandoTodo] = useState(false)
+  const [notaSeleccion, setNotaSeleccion] = useState<string | null>(null)
+
+  async function seleccionarTodoElLote() {
+    setSeleccionandoTodo(true)
+    setNotaSeleccion(null)
+    try {
+      const r = await contractsApi.migracion.idsDeFilas(lote, 'PENDIENTE')
+      onSeleccionCambia(new Set(r.ids))
+      // §3.2.G1 — un lote más grande que `MAX_IDS_MASIVA` nunca se aplica en
+      // silencio a un subconjunto: se dice explícitamente cuántas de cuántas.
+      setNotaSeleccion(
+        r.truncado
+          ? `Se seleccionaron las primeras ${r.ids.length} de ${r.total} — hay más de las que caben a la vez.`
+          : null,
+      )
+    } catch (e) {
+      setNotaSeleccion(
+        e instanceof Error ? e.message : 'No pudimos seleccionar todo el lote.',
+      )
+    } finally {
+      setSeleccionandoTodo(false)
+    }
+  }
 
   return (
     <div className="space-y-6" data-testid="lista-de-trabajo">
@@ -613,17 +655,40 @@ function ListaDeTrabajo({
 
       {pendientes.length > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
-            <Checkbox
-              checked={todasMarcadas}
-              onCheckedChange={(c) =>
-                onSeleccionCambia(
-                  c === true ? new Set(pendientes.map((f) => f.id)) : new Set(),
-                )
-              }
-            />
-            Seleccionar las {pendientes.length} de esta página
-          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
+              <Checkbox
+                checked={todasMarcadas}
+                onCheckedChange={(c) => {
+                  // T-0033 §3.2.G4 — antes reemplazaba TODA la selección por
+                  // la de esta página. Con selección across-pages eso borraba
+                  // lo elegido en otras páginas; ahora sólo agrega/quita las
+                  // de ESTA página, sin tocar el resto.
+                  const s = new Set(seleccion)
+                  if (c === true) pendientes.forEach((f) => s.add(f.id))
+                  else pendientes.forEach((f) => s.delete(f.id))
+                  onSeleccionCambia(s)
+                }}
+              />
+              Seleccionar las {pendientes.length} de esta página
+            </label>
+            {/* Sólo tiene sentido si hay más de lo que cabe en una página —
+                si ya está todo a la vista, el control de arriba alcanza. */}
+            {totalPendientes > pendientes.length ? (
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                hideArrow
+                disabled={seleccionandoTodo}
+                isLoading={seleccionandoTodo}
+                onClick={() => void seleccionarTodoElLote()}
+                className="text-xs"
+              >
+                Seleccionar las {totalPendientes} del lote
+              </Button>
+            ) : null}
+          </div>
           {/* El total viene del back: contar lo recibido diría «quedan 25». */}
           <p className="text-xs text-muted-foreground">
             {totalPendientes} pendientes en total
@@ -631,8 +696,15 @@ function ListaDeTrabajo({
         </div>
       ) : null}
 
+      {notaSeleccion ? (
+        <p className="text-xs text-muted-foreground" data-testid="nota-seleccion">
+          {notaSeleccion}
+        </p>
+      ) : null}
+
       {seleccion.size > 0 ? (
         <ResolucionMasiva
+          ids={Array.from(seleccion)}
           seleccionadas={pendientes.filter((f) => seleccion.has(f.id))}
           onListo={onFilaResuelta}
         />

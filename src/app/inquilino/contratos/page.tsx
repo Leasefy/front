@@ -69,11 +69,13 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
           </div>
           <div className="min-w-0">
             <h3 className="font-semibold text-fg truncate">
-              {contract.propertyAddress}
+              {contract.propertyId === null ? 'Sin inmueble' : contract.propertyAddress}
             </h3>
-            <p className="text-sm text-fg-muted">
-              {contract.propertyCity}
-            </p>
+            {contract.propertyCity && (
+              <p className="text-sm text-fg-muted">
+                {contract.propertyCity}
+              </p>
+            )}
           </div>
         </div>
         <span className={cn(

@@ -4,6 +4,7 @@
  */
 
 import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
+import { resolveListingType } from '@/lib/api/properties.mapper';
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
 import type {
   AgencyProfile,
@@ -473,10 +474,30 @@ export function normalizeInmuebleSinConsignacion(
   raw: BackendInmuebleSinConsignacion,
 ): InmuebleSinConsignacion {
   const lower = (v: string) => v.toLowerCase();
+  // contract.md T-0038 §3.2.6 — absent vs. explicit `null` are different
+  // contracts for `consignedAt`; spreading only when the raw key exists
+  // preserves that distinction instead of collapsing both to `undefined`.
+  const consignedAt: { consignedAt?: string | null } =
+    'propertyConsignedAt' in raw ? { consignedAt: raw.propertyConsignedAt } : {};
   return {
-    ...raw,
+    propertyId: raw.propertyId,
+    propertyTitle: raw.propertyTitle,
+    propertyAddress: raw.propertyAddress,
+    propertyCity: raw.propertyCity,
+    propertyZone: raw.propertyZone,
     propertyType: lower(raw.propertyType) as InmuebleSinConsignacion['propertyType'],
+    propertyThumbnail: raw.propertyThumbnail,
+    monthlyRent: raw.monthlyRent,
+    adminFee: raw.adminFee,
     status: lower(raw.status) as InmuebleSinConsignacion['status'],
+    createdAt: raw.createdAt,
+    // T-0038 §3.2 — same degradation rules as `mapBackendProperty` (C19: no
+    // silent coercion on an unrecognised listingType).
+    department: raw.propertyDepartment ?? null,
+    listingType: resolveListingType(raw.propertyListingType),
+    salePrice: raw.propertySalePrice ?? null,
+    code: raw.propertyCode,
+    ...consignedAt,
   };
 }
 

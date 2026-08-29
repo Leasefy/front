@@ -217,10 +217,24 @@ export interface BackendInmuebleSinConsignacion {
   propertyZone: string;
   propertyType: string;
   propertyThumbnail: string | null;
-  monthlyRent: number;
+  /** contract.md T-0038 §3.2 — `null` on a SALE row. Never `0` (C6). */
+  monthlyRent: number | null;
   adminFee: number;
   status: string;
   createdAt: string;
+  /** contract.md T-0038 §3.2.1 — same degradation as `Property.department`. */
+  propertyDepartment?: string | null;
+  /** contract.md T-0038 §3.2.2 — absent (older back build) degrades to RENT. */
+  propertyListingType?: string;
+  /** contract.md T-0038 §3.2.3 — `null` → no sale price. Never `0` (C6). */
+  propertySalePrice?: number | null;
+  /**
+   * contract.md T-0038 §3.2.5 — this route is already agency-guarded, so
+   * unlike `Property.code` this key is always present (not absence-as-auth).
+   */
+  propertyCode?: number;
+  /** contract.md T-0038 §3.2.6 — same route note as `propertyCode`. */
+  propertyConsignedAt?: string | null;
 }
 
 /** Front-normalized row for a property with no mandate yet (lower-cased enums). */
@@ -232,10 +246,18 @@ export interface InmuebleSinConsignacion {
   propertyZone: string;
   propertyType: PropertyTypeAmplio;
   propertyThumbnail: string | null;
-  monthlyRent: number;
+  /** contract.md T-0038 §3.2 — `null` on a SALE row. Never `0` (C6). */
+  monthlyRent: number | null;
   adminFee: number;
   status: PropertyStatusSinConsignacion;
   createdAt: string;
+  department?: string | null;
+  listingType?: 'rent' | 'sale';
+  salePrice?: number | null;
+  /** PORTFOLIO surface — this route is agency-guarded, so this is a real value, not an entitlement signal. */
+  code?: number;
+  /** `null` = entitled but unrecorded ("Sin fecha"); string = the date. */
+  consignedAt?: string | null;
 }
 
 /**

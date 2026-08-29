@@ -2,9 +2,9 @@
  * Maps backend property responses to frontend Property type
  */
 
-import type { Property, PropertyType, PropertyStatus, PropertyAmenity, AgencyProperty } from '@/lib/types/property';
+import type { Property, PropertyType, PropertyStatus, PropertyAmenity, AgencyProperty, ListingType } from '@/lib/types/property';
 import { PROPERTY_AMENITIES } from '@/lib/types/property';
-import type { BackendProperty } from './properties.types';
+import type { BackendProperty, BackendListingType } from './properties.types';
 
 // Backend UPPERCASE -> Frontend lowercase
 const TYPE_MAP: Record<string, PropertyType> = {
@@ -35,6 +35,26 @@ export const TYPE_TO_BACKEND: Record<PropertyType, string> = {
   warehouse: 'WAREHOUSE',
 };
 
+/**
+ * contract.md T-0038 §3.2.2 — wire UPPER_SNAKE -> front lowercase.
+ * `undefined` (key absent, older backend build) degrades to `'rent'`.
+ * A present-but-unrecognised value THROWS — no silent coercion (C19), the
+ * same rule `TYPE_TO_BACKEND`/`TYPE_MAP` violate-not, since `PropertyType`
+ * mapping already defaults quietly (a pre-existing, unrelated drift — not
+ * widened here).
+ */
+export function resolveListingType(raw: string | undefined): ListingType {
+  if (raw === undefined) return 'rent';
+  if (raw === 'RENT') return 'rent';
+  if (raw === 'SALE') return 'sale';
+  throw new Error(`Tipo de operación desconocido: "${raw}". No se puede mostrar esta propiedad.`);
+}
+
+export const LISTING_TYPE_TO_BACKEND: Record<ListingType, BackendListingType> = {
+  rent: 'RENT',
+  sale: 'SALE',
+};
+
 // Amenity ID -> PropertyAmenity object lookup
 const amenityMap = new Map<string, PropertyAmenity>(
   PROPERTY_AMENITIES.map((a) => [a.id, a]),
@@ -55,6 +75,13 @@ export function mapBackendProperty(bp: BackendProperty): Property {
   const imageUrls = sortedImages.map((img) => img.url);
   const thumbnailUrl = imageUrls[0] ?? '';
 
+  // contract.md T-0038 §3.2.6 — absent vs `null` are different contracts.
+  // Spreading only when the key exists is what lets `'consignedAt' in result`
+  // stay false for an unentitled reader instead of becoming `undefined` via
+  // an always-present property (which reads identically to a lost value).
+  const consignedAt: { consignedAt?: string | null } =
+    'consignedAt' in bp ? { consignedAt: bp.consignedAt } : {};
+
   return {
     id: bp.id,
     title: bp.title,
@@ -68,11 +95,20 @@ export function mapBackendProperty(bp: BackendProperty): Property {
     address: bp.address,
     latitude: bp.latitude ?? 0,
     longitude: bp.longitude ?? 0,
+    department: bp.department,
+
+    // Sale vs rent (contract.md T-0038 §3.2.2-§3.2.4)
+    listingType: resolveListingType(bp.listingType),
+    salePrice: bp.salePrice ?? null,
 
     // Pricing
     monthlyRent: bp.monthlyRent,
     adminFee: bp.adminFee,
     deposit: bp.deposit,
+    // PORTFOLIO-only (§3.2.5) — absent on the two @Public() routes. Passing
+    // through `bp.code` preserves that absence as `undefined` (never `0`).
+    code: bp.code,
+    ...consignedAt,
 
     // Features
     bedrooms: bp.bedrooms,

@@ -192,9 +192,13 @@ export function referenciaCanon(a: Aprobacion | null): Referencia | null {
  * ¿Este canon se pasa de la referencia?
  * `null` = no se puede saber. Como en `cabeEnTope`, `null` **no es** un `false`
  * disfrazado: sin dato no se marca ni se bloquea nada.
+ *
+ * `canonCop: number | null` — T-0038: a SALE listing has no `monthlyRent`
+ * (contract.md §3.2.4). A `null` canon degrades to the same "no sabemos"
+ * `null` return this function already gives an approval with no reference cap.
  */
-export function superaReferencia(canonCop: number, a: Aprobacion | null): boolean | null {
+export function superaReferencia(canonCop: number | null, a: Aprobacion | null): boolean | null {
   const ref = referenciaCanon(a)
-  if (!ref || !Number.isFinite(canonCop)) return null
+  if (!ref || canonCop === null || !Number.isFinite(canonCop)) return null
   return canonCop > ref.valorCop
 }

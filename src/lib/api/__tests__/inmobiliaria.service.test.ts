@@ -488,6 +488,11 @@ describe('inmueblesApi.getSinConsignacion — GET /inmobiliaria/inmuebles/sin-co
         adminFee: 0,
         status: 'draft',
         createdAt: '2026-08-20T00:00:00.000Z',
+        // T-0038 §3.2 — defaults when the backend fixture omits the new fields.
+        department: null,
+        listingType: 'rent',
+        salePrice: null,
+        code: undefined,
       },
     ]);
   });
@@ -521,5 +526,45 @@ describe('normalizeInmuebleSinConsignacion — the ROOM trap and the empty-zone 
 
   it('lower-cases status', () => {
     expect(normalizeInmuebleSinConsignacion(backendRow({ status: 'AVAILABLE' })).status).toBe('available');
+  });
+});
+
+// ── T-0038 §3.2 — department / listingType / salePrice / code / consignedAt ──
+
+describe('normalizeInmuebleSinConsignacion — T-0038 property-sale fields', () => {
+  it('maps a SALE row: listingType, salePrice, and null monthlyRent — never 0 (C6)', () => {
+    const result = normalizeInmuebleSinConsignacion(
+      backendRow({ propertyListingType: 'SALE', propertySalePrice: 300_000_000, monthlyRent: null }),
+    );
+    expect(result.listingType).toBe('sale');
+    expect(result.salePrice).toBe(300_000_000);
+    expect(result.monthlyRent).toBeNull();
+  });
+
+  it('defaults listingType to "rent" and salePrice/department to null when absent', () => {
+    const result = normalizeInmuebleSinConsignacion(backendRow());
+    expect(result.listingType).toBe('rent');
+    expect(result.salePrice).toBeNull();
+    expect(result.department).toBeNull();
+  });
+
+  it('throws on an unrecognised listingType instead of defaulting (C19)', () => {
+    expect(() => normalizeInmuebleSinConsignacion(backendRow({ propertyListingType: 'LEASE' }))).toThrow();
+  });
+
+  it('passes propertyCode through as code — this route is already agency-guarded, always present', () => {
+    expect(normalizeInmuebleSinConsignacion(backendRow({ propertyCode: 12 })).code).toBe(12);
+  });
+
+  it('passes propertyConsignedAt through verbatim, preserving null vs. absent', () => {
+    const withDate = normalizeInmuebleSinConsignacion(backendRow({ propertyConsignedAt: '2026-08-29' }));
+    expect(withDate.consignedAt).toBe('2026-08-29');
+
+    const withNull = normalizeInmuebleSinConsignacion(backendRow({ propertyConsignedAt: null }));
+    expect('consignedAt' in withNull).toBe(true);
+    expect(withNull.consignedAt).toBeNull();
+
+    const absent = normalizeInmuebleSinConsignacion(backendRow());
+    expect('consignedAt' in absent).toBe(false);
   });
 });

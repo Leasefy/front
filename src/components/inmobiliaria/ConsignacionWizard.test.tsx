@@ -38,6 +38,7 @@ const {
   propietariosApiMock,
   uploadPropertyPhotosMock,
   stepFivePhotosHolder,
+  stepTwoOverridesHolder,
 } = vi.hoisted(() => ({
     authState: {
       user: { id: 'user-1', email: 'user1@test.com', name: 'Test User' } as
@@ -65,6 +66,10 @@ const {
     // the whole file, same constraint step1/step2's self-fill pattern
     // already works around).
     stepFivePhotosHolder: { photos: [] as File[] },
+    // Same pattern as stepFivePhotosHolder — lets a SALE-listing test
+    // override step 2's self-filled defaults (listingType/salePrice)
+    // without a per-test vi.mock (T-0038).
+    stepTwoOverridesHolder: { overrides: {} as Record<string, unknown> },
   }))
 
 vi.mock('@/lib/i18n', () => ({
@@ -175,11 +180,17 @@ vi.mock('./ConsignacionWizardSteps', () => ({
         propertyCity: 'Bogota',
         propertyZone: 'Chapinero',
         propertyType: 'apartment',
+        // T-0038 §3.2.1/§3.2.2 — department is required in the wizard UI;
+        // listingType defaults to 'rent' (already the wizard's initial state).
+        department: 'Cundinamarca',
         monthlyRent: 1000000,
         bedrooms: 2,
         bathrooms: 1,
         area: 50,
         propertyDescription: 'Descripcion suficientemente larga para pasar la validacion del paso 2.',
+        // T-0038: a SALE-listing test overrides listingType/monthlyRent/
+        // salePrice here — see stepTwoOverridesHolder.
+        ...stepTwoOverridesHolder.overrides,
       })
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
@@ -246,6 +257,7 @@ beforeEach(() => {
   propietariosApiMock.update.mockReset()
   uploadPropertyPhotosMock.mockReset().mockResolvedValue({ uploaded: 0, failed: [] })
   stepFivePhotosHolder.photos = []
+  stepTwoOverridesHolder.overrides = {}
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -407,6 +419,69 @@ describe('<ConsignacionWizard> — publishes the property after the mandate (T-0
     // The property and the mandate already exist — same as the mandate-failure
     // catch, the wizard navigates away instead of stranding the user on a
     // now-stale form.
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
+  })
+})
+
+/**
+ * <ConsignacionWizard> — T-0038: a SALE listing gets no Consignacion mandate.
+ *
+ * A `Consignacion` is a rental agreement — `monthlyRent` (NOT NULL, unlike
+ * `Property.monthlyRent`), `minimumTerm`, `currentTenantName`. None of that
+ * applies to a sale, and sending `monthlyRent: 0` to satisfy the NOT NULL
+ * column would reproduce the exact C6 sentinel bug this task removes
+ * elsewhere. This is a judgment call not spelled out by the frozen contract
+ * for this call site — see the worker report — so it is locked here.
+ */
+describe('<ConsignacionWizard> — SALE listing skips the mandate entirely', () => {
+  async function driveToStep6ThenSubmitAsSale() {
+    stepTwoOverridesHolder.overrides = {
+      listingType: 'sale',
+      salePrice: 400_000_000,
+      monthlyRent: null,
+    }
+    await renderWizard(AGENTE_LIST)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    const submitBtn = findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment')
+    await clickButton(submitBtn)
+  }
+
+  it('creates the property with listingType sale, salePrice, and monthlyRent: null — never 0 (C6)', async () => {
+    await driveToStep6ThenSubmitAsSale()
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    const payload = propertiesApiMock.create.mock.calls[0][0]
+    expect(payload.listingType).toBe('sale')
+    expect(payload.salePrice).toBe(400_000_000)
+    expect(payload.monthlyRent).toBeNull()
+  })
+
+  it('never calls consignacionesApi.create for a SALE listing', async () => {
+    await driveToStep6ThenSubmitAsSale()
+    expect(consignacionesApiMock.create).not.toHaveBeenCalled()
+  })
+
+  it('publishes the property directly (no mandate to wait on) and shows success', async () => {
+    await driveToStep6ThenSubmitAsSale()
+
+    expect(propertiesApiMock.update).toHaveBeenCalledWith('property-1', { status: 'AVAILABLE' })
+    expect(toast.success).toHaveBeenCalled()
+    expect(toast.error).not.toHaveBeenCalled()
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
+  })
+
+  it('surfaces a publish failure honestly instead of claiming success', async () => {
+    const backendMessage = 'No se pudo publicar la propiedad.'
+    propertiesApiMock.update.mockRejectedValueOnce(new ApiError(500, backendMessage))
+
+    await driveToStep6ThenSubmitAsSale()
+
+    expect(toast.success).not.toHaveBeenCalled()
+    expect(toast.error).toHaveBeenCalledTimes(1)
     expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
   })
 })

@@ -78,6 +78,11 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     inventoryNotes: '',
     contractStartDate: new Date().toISOString().split('T')[0],
     photos: [],
+    // contract.md T-0038 §3.2.2/§3.2.6 (D5, R6) — same today-default pattern
+    // as contractStartDate, but a DIFFERENT field: consignedAt is the new
+    // property-level column, contractStartDate stays the mandate's date.
+    listingType: 'rent',
+    consignedAt: new Date().toISOString().split('T')[0],
   });
 
   // Update form data helper
@@ -91,17 +96,24 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
       case 1:
         // Must have selected or created a propietario
         return Boolean(formData.propietarioId);
-      case 2:
+      case 2: {
         // Must have property details — thresholds mirror CreatePropertyDto
         // (contract.md §3.2): bedrooms 0-20, bathrooms 1-10, area 10-10000 m²,
-        // description 20-5000 chars.
+        // description 20-5000 chars. T-0038: department is required in this
+        // UI (§3.2.1), and the price field is conditional on listingType
+        // (§3.2.2/§3.2.4) — a sale listing validates salePrice, not monthlyRent.
+        const isSaleListing = formData.listingType === 'sale';
+        const priceValid = isSaleListing
+          ? Boolean(formData.salePrice && formData.salePrice > 0)
+          : Boolean(formData.monthlyRent && formData.monthlyRent > 0);
         return Boolean(
           formData.propertyTitle &&
           formData.propertyAddress &&
           formData.propertyCity &&
           formData.propertyZone &&
+          formData.department &&
           formData.propertyType &&
-          formData.monthlyRent && formData.monthlyRent > 0 &&
+          priceValid &&
           formData.bedrooms != null && formData.bedrooms >= 0 && formData.bedrooms <= 20 &&
           formData.bathrooms != null && formData.bathrooms >= 1 && formData.bathrooms <= 10 &&
           formData.area != null && formData.area >= 10 && formData.area <= 10000 &&
@@ -109,6 +121,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
           formData.propertyDescription.length >= 20 &&
           formData.propertyDescription.length <= 5000
         );
+      }
       case 3:
         // Commission terms always valid with defaults
         return true;
@@ -128,7 +141,8 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
           formData.propertyTitle &&
           formData.propertyAddress &&
           formData.propertyCity &&
-          formData.propertyZone
+          formData.propertyZone &&
+          formData.department
         );
       default:
         return false;
@@ -267,6 +281,13 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         );
       }
 
+      // contract.md T-0038 §3.2.2/§3.2.4 — a SALE listing sends
+      // `monthlyRent: null` and `salePrice`; a RENT listing sends
+      // `monthlyRent` and no `salePrice`. Never `monthlyRent: 0` on a sale
+      // (C6) — this replaces the previous `formData.monthlyRent ?? 0`, which
+      // was a live C6 violation on this exact path.
+      const isSaleListing = formData.listingType === 'sale';
+
       const property = await propertiesApi.create({
         title:        formData.propertyTitle ?? '',
         description:  formData.propertyDescription ?? '',
@@ -276,7 +297,11 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         address:      formData.propertyAddress ?? '',
         latitude:     formData.propertyLatitude,
         longitude:    formData.propertyLongitude,
-        monthlyRent:  formData.monthlyRent ?? 0,
+        department:   formData.department,
+        listingType:  formData.listingType ?? 'rent',
+        monthlyRent:  isSaleListing ? null : (formData.monthlyRent ?? 0),
+        salePrice:    isSaleListing ? (formData.salePrice ?? null) : null,
+        consignedAt:  formData.consignedAt,
         bedrooms:     formData.bedrooms ?? 0,
         bathrooms:    formData.bathrooms ?? 1,
         area:         formData.area ?? 10,
@@ -317,6 +342,55 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
       } else if (!isAgentRole && selectedAgente?.email) {
         // Admin → assign the selected agent by email
         await propertiesApi.assignAgent(property.id, selectedAgente.email);
+      }
+
+      /**
+       * T-0038: a SALE listing gets NO `Consignacion` mandate.
+       *
+       * `Consignacion` is a RENTAL agreement — `monthlyRent` (NOT NULL on
+       * that entity, unlike `Property.monthlyRent`), `minimumTerm`,
+       * `currentTenantName`, `leaseEndDate`. None of that applies to a sale.
+       * Sending `monthlyRent: 0` here to satisfy the NOT NULL column would
+       * be exactly the C6 sentinel bug this whole task removes elsewhere
+       * (contract.md §3.5.1-B makes the same call for the back's own
+       * `ensureConsignacion` auto-sync, for the same reason).
+       *
+       * This is a judgment call the frozen contract does not spell out for
+       * this specific wizard call site — flagged in the worker report.
+       * Reusing the ALREADY-frozen "mandate-less property" surface (C10,
+       * `GET /inmobiliaria/inmuebles/sin-consignacion`) is the smallest
+       * correct extension: a sale listing behaves like any other
+       * mandate-less property. The publish-ordering invariant (contract.md
+       * §3.4/T-0018 — "never AVAILABLE before its Consignacion exists") is
+       * scoped to rentals in its own reasoning (protects commission
+       * liquidation); a sale listing has nothing to liquidate, so it
+       * publishes directly.
+       */
+      if (isSaleListing) {
+        try {
+          await propertiesApi.update(property.id, { status: 'AVAILABLE' });
+        } catch (error) {
+          console.error('Error publishing sale property:', error);
+          const reason =
+            error instanceof ApiError && error.messages
+              ? error.messages.join(' · ')
+              : error instanceof Error && error.message
+                ? error.message
+                : t('inmobiliaria.consignaciones.wizard.toasts.publishErrorFallbackReason');
+          toast.error(t('inmobiliaria.consignaciones.wizard.toasts.publishErrorTitle'), {
+            description: t('inmobiliaria.consignaciones.wizard.toasts.publishErrorDesc', { reason }),
+          });
+          router.push('/panel/inmobiliaria/inmuebles');
+          return;
+        }
+
+        toast.success(t('inmobiliaria.consignaciones.wizard.toasts.successTitle'), {
+          description: t('inmobiliaria.consignaciones.wizard.toasts.successDesc', {
+            title: formData.propertyTitle || '',
+          }),
+        });
+        router.push('/panel/inmobiliaria/inmuebles');
+        return;
       }
 
       // El mandato. `agenteUserId` es un User.id: el `Agente.id` del front es

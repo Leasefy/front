@@ -32,7 +32,7 @@ import {
 import { IconButton, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type { Propietario, Agente, PropietarioFormData, ConsignacionFormData, InventoryItem, Consignacion } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { formatCurrency, COLOMBIAN_DEPARTMENTS } from '@/lib/types/inmobiliaria';
 import { PropietarioSelector } from './PropietarioSelector';
 import { AgenteSelector } from './AgenteSelector';
 import { PropertyLocationField, type PropertyLocationValue } from '@/components/publicar/PropertyLocationField';
@@ -68,6 +68,28 @@ export interface WizardFormData extends ConsignacionFormData {
    * after the property is created.
    */
   photos: File[];
+  /**
+   * contract.md T-0038 §3.2.1 — required in this wizard's UI even though the
+   * wire keeps it optional (existing/imported rows can't all carry one).
+   * Reuses `COLOMBIAN_DEPARTMENTS` (`src/lib/types/inmobiliaria.ts`) — do not
+   * define a second list.
+   */
+  department: string;
+  /**
+   * contract.md T-0038 §3.2.2 — defaults to 'rent'. When 'sale', the canon
+   * field (`monthlyRent`) is replaced by `salePrice` in the UI and the
+   * create payload sends `monthlyRent: null` (never `0`, C6).
+   */
+  listingType: 'rent' | 'sale';
+  /** contract.md T-0038 §3.2.3 — required when `listingType === 'sale'`. */
+  salePrice?: number;
+  /**
+   * contract.md T-0038 §3.2.6 (D5, R6) — property-level "fecha de
+   * consignación", agency-only. A DIFFERENT field from `contractStartDate`
+   * above, which stays the mandate's `contractDate` (`Consignacion`, unchanged
+   * by this task). Defaults to today, same as `contractStartDate`.
+   */
+  consignedAt: string;
 }
 
 export interface StepProps {
@@ -158,12 +180,21 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
     setTouched((prev) => ({ ...prev, [field]: true }));
   };
 
+  // T-0038: the wizard makes the toggle a required form field even though the
+  // wire defaults it to RENT when absent (contract.md §3.2.2). `?? 'rent'` is
+  // display-only here — never sent as a literal default on the payload side.
+  const listingType = formData.listingType ?? 'rent';
+  const isSaleListing = listingType === 'sale';
+
   const errors: Record<string, string> = {};
   if (touched.propertyTitle && !formData.propertyTitle) errors.propertyTitle = t('inmobiliaria.consignaciones.wizard.step2.validation.titleRequired');
   if (touched.propertyAddress && !formData.propertyAddress) errors.propertyAddress = t('inmobiliaria.consignaciones.wizard.step2.validation.addressRequired');
   if (touched.propertyCity && !formData.propertyCity) errors.propertyCity = t('inmobiliaria.consignaciones.wizard.step2.validation.cityRequired');
   if (touched.propertyZone && !formData.propertyZone) errors.propertyZone = t('inmobiliaria.consignaciones.wizard.step2.validation.zoneRequired');
-  if (touched.monthlyRent && (!formData.monthlyRent || formData.monthlyRent <= 0)) errors.monthlyRent = t('inmobiliaria.consignaciones.wizard.step2.validation.rentRequired');
+  // contract.md §3.2.1 — required in this UI (the wire keeps it optional).
+  if (touched.department && !formData.department) errors.department = t('inmobiliaria.consignaciones.wizard.step2.validation.departmentRequired');
+  if (!isSaleListing && touched.monthlyRent && (!formData.monthlyRent || formData.monthlyRent <= 0)) errors.monthlyRent = t('inmobiliaria.consignaciones.wizard.step2.validation.rentRequired');
+  if (isSaleListing && touched.salePrice && (!formData.salePrice || formData.salePrice <= 0)) errors.salePrice = t('inmobiliaria.consignaciones.wizard.step2.validation.salePriceRequired');
   // Thresholds mirror CreatePropertyDto (contract.md §3.2) — bedrooms 0-20,
   // bathrooms 1-10 (0 invalid), area 10-10000 m² (0 invalid), description 20-5000 chars.
   if (touched.bedrooms && (formData.bedrooms == null || formData.bedrooms < 0 || formData.bedrooms > 20)) errors.bedrooms = t('inmobiliaria.consignaciones.wizard.step2.validation.bedroomsRequired');
@@ -303,33 +334,107 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
           </div>
         </div>
 
-        {/* Monthly Rent and Admin Fee */}
+        {/* Department — contract.md §3.2.1: required in this UI, reuses
+            COLOMBIAN_DEPARTMENTS (do not define a second list). */}
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            {t('inmobiliaria.consignaciones.wizard.step2.departmentLabel')} <span className="text-danger">*</span>
+          </label>
+          <Select
+            value={formData.department || undefined}
+            onValueChange={(v) => { updateFormData({ department: v }); handleBlur('department'); }}
+          >
+            <SelectTrigger className={cn('w-full', errors.department && 'border-danger/30')}>
+              <SelectValue placeholder={t('inmobiliaria.consignaciones.wizard.step2.departmentPlaceholder')} />
+            </SelectTrigger>
+            <SelectContent>
+              {COLOMBIAN_DEPARTMENTS.map((dept) => (
+                <SelectItem key={dept} value={dept}>
+                  {dept}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.department && (
+            <p className="text-xs text-danger flex items-center gap-1">
+              <Warning className="w-3 h-3" />
+              {errors.department}
+            </p>
+          )}
+        </div>
+
+        {/* Rent vs sale — contract.md §3.2.2 (T-0038). When 'sale', the canon
+            field below is replaced by a sale-price field; a sale listing
+            sends monthlyRent: null, never 0 (C6) — see ConsignacionWizard. */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            {t('inmobiliaria.consignaciones.wizard.step2.listingTypeLabel')} <span className="text-danger">*</span>
+          </label>
+          <RadioCardGroup
+            className="grid grid-cols-2 gap-2"
+            value={listingType}
+            onValueChange={(v) => updateFormData({ listingType: v as 'rent' | 'sale' })}
+          >
+            <RadioCard value="rent" label={t('inmobiliaria.consignaciones.wizard.step2.listingTypeRent')} />
+            <RadioCard value="sale" label={t('inmobiliaria.consignaciones.wizard.step2.listingTypeSale')} />
+          </RadioCardGroup>
+        </div>
+
+        {/* Monthly Rent (RENT) or Sale Price (SALE), and Admin Fee */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
-              {t('inmobiliaria.consignaciones.wizard.step2.monthlyRentLabel')} <span className="text-danger">*</span>
-            </label>
-            <div className="relative">
-              <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
-              <Input
-                type="text"
-                value={formData.monthlyRent ? formData.monthlyRent.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : ''}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  updateFormData({ monthlyRent: value ? parseInt(value) : 0 });
-                }}
-                onBlur={() => handleBlur('monthlyRent')}
-                placeholder={t('inmobiliaria.consignaciones.wizard.step2.monthlyRentPlaceholder')}
-                className={cn('w-full pl-10', errors.monthlyRent && 'border-danger/30')}
-              />
+          {isSaleListing ? (
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+                {t('inmobiliaria.consignaciones.wizard.step2.salePriceLabel')} <span className="text-danger">*</span>
+              </label>
+              <div className="relative">
+                <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
+                <Input
+                  type="text"
+                  value={formData.salePrice ? formData.salePrice.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : ''}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    updateFormData({ salePrice: value ? parseInt(value) : undefined });
+                  }}
+                  onBlur={() => handleBlur('salePrice')}
+                  placeholder={t('inmobiliaria.consignaciones.wizard.step2.salePricePlaceholder')}
+                  className={cn('w-full pl-10', errors.salePrice && 'border-danger/30')}
+                />
+              </div>
+              {errors.salePrice && (
+                <p className="text-xs text-danger flex items-center gap-1">
+                  <Warning className="w-3 h-3" />
+                  {errors.salePrice}
+                </p>
+              )}
             </div>
-            {errors.monthlyRent && (
-              <p className="text-xs text-danger flex items-center gap-1">
-                <Warning className="w-3 h-3" />
-                {errors.monthlyRent}
-              </p>
-            )}
-          </div>
+          ) : (
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+                {t('inmobiliaria.consignaciones.wizard.step2.monthlyRentLabel')} <span className="text-danger">*</span>
+              </label>
+              <div className="relative">
+                <CurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
+                <Input
+                  type="text"
+                  value={formData.monthlyRent ? formData.monthlyRent.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') : ''}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    updateFormData({ monthlyRent: value ? parseInt(value) : 0 });
+                  }}
+                  onBlur={() => handleBlur('monthlyRent')}
+                  placeholder={t('inmobiliaria.consignaciones.wizard.step2.monthlyRentPlaceholder')}
+                  className={cn('w-full pl-10', errors.monthlyRent && 'border-danger/30')}
+                />
+              </div>
+              {errors.monthlyRent && (
+                <p className="text-xs text-danger flex items-center gap-1">
+                  <Warning className="w-3 h-3" />
+                  {errors.monthlyRent}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
@@ -444,6 +549,28 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
               {errors.propertyDescription}
             </p>
           )}
+        </div>
+
+        {/*
+          Fecha de consignación — contract.md §3.2.6 (D5, R6). This is the
+          NEW property-level `consignedAt` column, visible only to the
+          agency. It is a DIFFERENT field from `contractStartDate` above
+          (submitted as the mandate's `contractDate` on `Consignacion`,
+          unchanged by this task) — see ConsignacionWizard.tsx.
+        */}
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            {t('inmobiliaria.consignaciones.wizard.step2.consignedAtLabel')}
+          </label>
+          <Input
+            type="date"
+            value={formData.consignedAt || ''}
+            onChange={(e) => updateFormData({ consignedAt: e.target.value })}
+            className="w-full sm:w-64"
+          />
+          <p className="text-xs text-fg-subtle">
+            {t('inmobiliaria.consignaciones.wizard.step2.consignedAtHint')}
+          </p>
         </div>
       </div>
     </div>
@@ -806,7 +933,9 @@ export function StepConfirmation({
   // Find agente info
   const agente = agentes.find((a) => a.id === formData.agenteId);
 
-  // Calculate commission
+  // T-0038 §3.2.4 — a SALE listing has no canon and no commission (no
+  // Consignacion mandate is created for one, see ConsignacionWizard.tsx).
+  const isSaleListing = formData.listingType === 'sale';
   const monthlyRent = formData.monthlyRent || 0;
   const commissionPercent = formData.commissionPercent ?? 10;
   const agencyCommission = Math.round(monthlyRent * (commissionPercent / 100));
@@ -893,21 +1022,40 @@ export function StepConfirmation({
                 {formData.propertyZone}, {formData.propertyCity}
               </p>
               <div className="flex items-center gap-4 mt-2">
-                <span className="text-lg font-bold text-fg dark:text-white">
-                  {formatCurrency(monthlyRent)}
-                  <span className="text-sm font-normal text-fg-muted">{t('inmobiliaria.consignaciones.wizard.step6.perMonth')}</span>
-                </span>
-                {formData.adminFee && (
-                  <span className="text-sm text-fg-muted dark:text-fg-subtle">
-                    + {formatCurrency(formData.adminFee)} {t('inmobiliaria.consignaciones.wizard.step6.admin')}
+                {isSaleListing ? (
+                  <span className="text-lg font-bold text-fg dark:text-white">
+                    {formData.salePrice ? formatCurrency(formData.salePrice) : t('inmobiliaria.consignaciones.wizard.step6.noSalePrice')}
                   </span>
+                ) : (
+                  <>
+                    <span className="text-lg font-bold text-fg dark:text-white">
+                      {formatCurrency(monthlyRent)}
+                      <span className="text-sm font-normal text-fg-muted">{t('inmobiliaria.consignaciones.wizard.step6.perMonth')}</span>
+                    </span>
+                    {formData.adminFee && (
+                      <span className="text-sm text-fg-muted dark:text-fg-subtle">
+                        + {formatCurrency(formData.adminFee)} {t('inmobiliaria.consignaciones.wizard.step6.admin')}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Terms Section */}
+        {/* Terms Section — T-0038: a SALE listing has no rental mandate
+            (see ConsignacionWizard.tsx), so no commission/term is created
+            for it even though step 3 stays in the flow. Showing $0 terms
+            here would misleadingly imply they'll be saved. */}
+        {isSaleListing ? (
+          <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
+            <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.termsSection')} step={3} />
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+              {t('inmobiliaria.consignaciones.wizard.step6.noTermsForSale')}
+            </p>
+          </div>
+        ) : (
         <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.termsSection')} step={3} />
           <div className="grid grid-cols-2 gap-4">
@@ -935,6 +1083,7 @@ export function StepConfirmation({
             </div>
           </div>
         </div>
+        )}
 
         {/* Agent Section */}
         <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">

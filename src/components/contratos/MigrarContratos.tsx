@@ -36,6 +36,16 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Table,
   TableBody,
   TableCell,
@@ -119,6 +129,8 @@ export function MigrarContratos() {
   const [pagina, setPagina] = useState(1)
   const [seleccion, setSeleccion] = useState<Set<string>>(new Set())
   const [activacion, setActivacion] = useState<ResumenActivacion | null>(null)
+  // T-0036 §3.2.C — descartar el lote entero, no fila por fila.
+  const [descartandoLote, setDescartandoLote] = useState(false)
 
   const [lotesAbiertos, setLotesAbiertos] = useState<LoteAbierto[]>([])
 
@@ -241,6 +253,41 @@ export function MigrarContratos() {
     }
   }, [lote, invitar, refrescar])
 
+  /**
+   * Descartar el lote entero (contract.md T-0036 §3.2.C). Nunca reintenta ni
+   * se traga un error — un 409 (`LOTE_EN_PROCESO`) o un 404 (lote
+   * desconocido) se muestra tal cual en la línea de error existente y el
+   * usuario se queda en la vista del lote. Sólo en éxito se abandona: el
+   * lote ya no tiene nada que mostrar, y quedarse sería la forma de
+   * apretar el botón dos veces.
+   */
+  const descartarLote = useCallback(async () => {
+    if (!lote) return
+    setDescartandoLote(true)
+    setError(null)
+    try {
+      await contractsApi.migracion.descartarLote(lote)
+      setResumen(null)
+      setLote(null)
+      setActivacion(null)
+      setSeleccion(new Set())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No pudimos descartar el lote.')
+    } finally {
+      setDescartandoLote(false)
+      // Tanto en éxito como en el 404 de E6 la lista de "Retomar" puede
+      // haber cambiado — refrescarla es inofensivo en el resto de los casos
+      // (E5: un lote ENCOLADO/PROCESANDO no tiene filas propias todavía y
+      // no aparecía en esta lista de todos modos, §12-Y1).
+      contractsApi.migracion
+        .lotesAbiertos()
+        .then(setLotesAbiertos)
+        .catch(() => {
+          // No poder listarlos no debe impedir seguir.
+        })
+    }
+  }, [lote])
+
   /*
    * Al entrar, buscar migraciones a medias. La lista de trabajo vivía sólo en
    * el estado del componente: recargar la borraba y la única salida era subir
@@ -313,6 +360,8 @@ export function MigrarContratos() {
         cargando={cargando}
         error={error}
         onActivar={() => void activar()}
+        descartando={descartandoLote}
+        onDescartarLote={descartarLote}
         onPaginaCambia={(p) => void refrescar(lote, p)}
         onSeleccionCambia={setSeleccion}
         onFilaResuelta={() => void refrescar(lote, pagina)}
@@ -547,6 +596,8 @@ function ListaDeTrabajo({
   cargando,
   error,
   onActivar,
+  descartando,
+  onDescartarLote,
   onFilaResuelta,
   onOtroArchivo,
   onPaginaCambia,
@@ -564,6 +615,9 @@ function ListaDeTrabajo({
   cargando: boolean
   error: string | null
   onActivar: () => void
+  /** T-0036 §3.2.C — nunca rechaza: los errores se reflejan en `error`. */
+  descartando: boolean
+  onDescartarLote: () => Promise<void>
   onFilaResuelta: () => void
   onOtroArchivo: () => void
   onPaginaCambia: (p: number) => void
@@ -578,6 +632,14 @@ function ListaDeTrabajo({
   // de cada fila. Estado local: sólo le importa a este control.
   const [seleccionandoTodo, setSeleccionandoTodo] = useState(false)
   const [notaSeleccion, setNotaSeleccion] = useState<string | null>(null)
+
+  // T-0036 §3.2.C6 — el modal de confirmación de "Descartar este lote".
+  // Vive acá (no en el padre): en éxito el padre desmonta este componente
+  // entero (deja `lote`/`resumen`), así que el modal se va con él sin
+  // necesidad de cerrarlo a mano; en error, `onDescartarLote` resuelve
+  // igual (nunca rechaza) y el `.then` de abajo lo cierra.
+  const [confirmarDescarte, setConfirmarDescarte] = useState(false)
+  const puedeDescartarLote = resumen.pendientes + resumen.listos > 0
 
   async function seleccionarTodoElLote() {
     setSeleccionandoTodo(true)
@@ -640,6 +702,26 @@ function ListaDeTrabajo({
             </label>
 
             {/*
+             * T-0036 §3.2.A6 — destildado, esta línea antes no decía nada de
+             * lo que en realidad pasa. Surface A dejó de crear una cuenta
+             * silenciosa (I1): sin invitar, el contrato se crea igual y el
+             * correo queda guardado, pero nadie se entera hasta que alguien
+             * invite desde el contrato. Frozen: no puede insinuar nada de
+             * cobros — `CobrosService.generate` factura desde
+             * `Consignacion.monthlyRent`, no depende de un `Lease`.
+             */}
+            {!invitar ? (
+              <p
+                className="text-xs text-muted-foreground"
+                data-testid="aviso-sin-invitar"
+              >
+                No se crea ninguna cuenta: el correo del inquilino queda
+                guardado en cada contrato, y podés invitarlo cuando quieras
+                desde ahí.
+              </p>
+            ) : null}
+
+            {/*
              * `resumen.listos` son las que no les falta NADA. Todo lo que
              * `activables` suma por encima de eso son filas PENDIENTE que
              * el modo sparse va a activar igual, con lo que les falte —
@@ -672,7 +754,84 @@ function ListaDeTrabajo({
         ) : null}
 
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+        {/*
+         * T-0036 §3.2.C6 — visualmente separado de Activar: uno es el
+         * camino feliz, el otro es irreversible. Sólo vive acá adentro,
+         * nunca en la tarjeta "Retomar" (§11-L5) — descartar 1.365 filas de
+         * un resumen que nadie abrió es un mis-click esperando a pasar.
+         */}
+        {puedeDescartarLote ? (
+          <div className="border-t border-border pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              hideArrow
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setConfirmarDescarte(true)}
+              data-testid="descartar-lote"
+            >
+              Descartar este lote
+            </Button>
+          </div>
+        ) : null}
       </Card>
+
+      {/* AlertDialog — shadcn, NUNCA window.confirm(). Sin type-to-confirm
+          a propósito (§11-L7): es recuperable resubiendo el archivo. */}
+      <AlertDialog
+        open={confirmarDescarte}
+        onOpenChange={(o) => {
+          if (!descartando) setConfirmarDescarte(o)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Descartar este lote?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-left">
+              <span className="block">
+                Se van a descartar {resumen.pendientes + resumen.listos}{' '}
+                {resumen.pendientes + resumen.listos === 1 ? 'fila' : 'filas'} de
+                este lote — las que todavía no están completas y las que ya
+                están listas pero sin activar. No se van a convertir en
+                contratos, y se pierde el trabajo ya hecho en ellas: inmueble
+                asignado, propietario registrado, fechas y canon corregidos.
+              </span>
+              {resumen.activados > 0 ? (
+                <span className="block">
+                  Los {resumen.activados}{' '}
+                  {resumen.activados === 1 ? 'contrato' : 'contratos'} que ya se
+                  activaron de este lote no se tocan — siguen siendo contratos
+                  reales.
+                </span>
+              ) : null}
+              <span className="block">
+                Los inmuebles y propietarios que ya se crearon a partir de este
+                archivo tampoco se borran: vas a seguir viéndolos en tu
+                portafolio.
+              </span>
+              <span className="block">
+                Podés volver a intentarlo subiendo el mismo archivo otra vez —
+                el archivo original no se modifica.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={descartando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              tone="danger"
+              disabled={descartando}
+              onClick={(e) => {
+                e.preventDefault()
+                void onDescartarLote().then(() => setConfirmarDescarte(false))
+              }}
+            >
+              {descartando ? 'Descartando...' : 'Descartar este lote'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {activacion ? (
         <Card className="space-y-2 p-6" data-testid="resultado-activacion">
@@ -681,6 +840,19 @@ function ListaDeTrabajo({
             {activacion.activadas} contratos activados
             {activacion.invitados > 0 ? ` · ${activacion.invitados} inquilinos invitados` : ''}
           </p>
+          {/*
+           * T-0036 §3.2.A4/A6 — el producto entero del cambio: cuántos
+           * correos se guardaron sin invitar a nadie. Ausente o `0` ⇒ sin
+           * línea, nunca "0 pendientes" (un back viejo que todavía no manda
+           * el campo no puede afirmar un conteo que no tiene).
+           */}
+          {activacion.porInvitar ? (
+            <p className="text-sm text-muted-foreground" data-testid="aviso-pendientes-de-invitar">
+              {activacion.porInvitar} {activacion.porInvitar === 1 ? 'inquilino queda' : 'inquilinos quedan'}{' '}
+              pendiente{activacion.porInvitar === 1 ? '' : 's'} de invitar — se hace desde cada
+              contrato.
+            </p>
+          ) : null}
           {activacion.fallidas > 0 ? (
             <ul className="space-y-1 text-sm text-muted-foreground">
               {activacion.resultados

@@ -55,6 +55,44 @@ describe('contractsApi.migracion.estadoDeLote', () => {
 })
 
 /**
+ * T-0036 contract.md §3.2.C6 — `DELETE /contracts/migrar/lotes/:lote`, el
+ * botón para cancelar un lote entero en vez de descartar fila por fila.
+ */
+describe('contractsApi.migracion.descartarLote', () => {
+  it('pega a DELETE /contracts/migrar/lotes/:lote y devuelve el DescarteDeLote tal cual', async () => {
+    const body = {
+      lote: 'lote-20260827-abc12345',
+      descartadas: 1362,
+      activadas: 3,
+      yaDescartadas: 0,
+    }
+    const fetchMock = mockApiGet(body)
+    globalThis.fetch = fetchMock as typeof globalThis.fetch
+
+    const result = await contractsApi.migracion.descartarLote('lote-20260827-abc12345')
+
+    expect(result).toEqual(body)
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BACKEND_URL}/contracts/migrar/lotes/lote-20260827-abc12345`,
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+  })
+
+  it('codifica el lote en la URL — los lotes de antes de T-0031 no están garantizados URL-safe', async () => {
+    const body = { lote: 'lote raro/1', descartadas: 1, activadas: 0, yaDescartadas: 0 }
+    const fetchMock = mockApiGet(body)
+    globalThis.fetch = fetchMock as typeof globalThis.fetch
+
+    await contractsApi.migracion.descartarLote('lote raro/1')
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BACKEND_URL}/contracts/migrar/lotes/${encodeURIComponent('lote raro/1')}`,
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+  })
+})
+
+/**
  * T-0033 contract.md §3.2.G1 — `GET /contracts/migrar/filas/ids`, el read
  * nuevo que hace posible "seleccionar las {total} del lote": trae sólo ids
  * (nunca el `datos` JSON completo de cada fila), en el MISMO orden que
@@ -166,5 +204,68 @@ describe('contractsApi.asignarInmueble', () => {
         body: JSON.stringify({ propertyId: 'prop-1' }),
       }),
     )
+  })
+})
+
+/**
+ * T-0036 contract.md §3.2.B6 — `POST /contracts/:id/invitar-inquilino`, la
+ * salida de un contrato migrado sin inquilino. A diferencia de
+ * `asignarInmueble`, esta llamada NO mapea `contrato` acá adentro: el wire
+ * trae `{ invitado, tenantId, contrato }` y `contrato` es el `BackendContract`
+ * crudo — el caller (la pantalla) es quien llama `mapBackendContract` sobre
+ * `res.contrato`, porque `invitado`/`tenantId` viajan junto a él y no hay
+ * un segundo shape para el endpoint.
+ */
+describe('contractsApi.invitarInquilino', () => {
+  it('pega a POST /contracts/:id/invitar-inquilino con {} y devuelve el ResultadoInvitacion tal cual (contrato SIN mapear)', async () => {
+    const body = {
+      invitado: true,
+      tenantId: 'usuario-1',
+      contrato: { ...contratoSinInmueble(), tenantId: 'usuario-1' },
+    }
+    const fetchMock = mockApiGet(body)
+    globalThis.fetch = fetchMock as typeof globalThis.fetch
+
+    const result = await contractsApi.invitarInquilino('c-1')
+
+    expect(result).toEqual(body)
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BACKEND_URL}/contracts/c-1/invitar-inquilino`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({}),
+      }),
+    )
+  })
+
+  it('invitado:false cuando el correo ya tenía cuenta — se vincula, sin mandar nada', async () => {
+    const body = {
+      invitado: false,
+      tenantId: 'usuario-existente',
+      contrato: { ...contratoSinInmueble(), tenantId: 'usuario-existente' },
+    }
+    const fetchMock = mockApiGet(body)
+    globalThis.fetch = fetchMock as typeof globalThis.fetch
+
+    const result = await contractsApi.invitarInquilino('c-1')
+
+    expect(result.invitado).toBe(false)
+    expect(result.tenantId).toBe('usuario-existente')
+  })
+})
+
+/**
+ * T-0036 contract.md §3.2.B6 — `mapBackendContract` tiene que quedar
+ * exportado: la pantalla del detalle lo llama directo sobre
+ * `res.contrato` después de invitar, sin pasar por un segundo `getById`.
+ */
+describe('mapBackendContract (exportado)', () => {
+  it('mapea el contrato crudo de ResultadoInvitacion igual que getById', async () => {
+    const { mapBackendContract } = await import('./contracts.service')
+    const crudo = { ...contratoSinInmueble(), tenantId: 'usuario-1' }
+
+    const mapeado = mapBackendContract(crudo as never)
+
+    expect(mapeado.tenantId).toBe('usuario-1')
   })
 })

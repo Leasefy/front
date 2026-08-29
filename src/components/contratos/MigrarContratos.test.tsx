@@ -29,6 +29,7 @@ vi.mock('@/lib/api/contracts.service', () => ({
       crearInmueble: vi.fn(),
       registrarPropietario: vi.fn(),
       descartar: vi.fn(),
+      descartarLote: vi.fn(),
       activar: vi.fn(),
       estadoDeLote: vi.fn(),
       idsDeFilas: vi.fn(),
@@ -556,5 +557,298 @@ describe('<MigrarContratos> — lotesAbiertos usa activables, no listos (T-0035)
 
     const tarjeta = container.querySelector('[data-testid="lotes-abiertos"]')
     expect(tarjeta?.textContent).not.toContain('para activar')
+  })
+})
+
+/**
+ * T-0036 contract.md §3.2.C6 — el botón para cancelar un lote entero en vez
+ * de descartar fila por fila. Vive dentro del lote abierto (§11-L5), pide
+ * confirmación (§L7: sin type-to-confirm) y, tras confirmar, deja la vista
+ * del lote — el lote desaparece de "Retomar" por el mecanismo de §3.2.C5.
+ */
+describe('<MigrarContratos> — descartar un lote entero (T-0036 §3.2.C)', () => {
+  it('el botón aparece cuando quedan pendientes/listos, y abre un modal de confirmación al click', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo()
+
+    const descartar = boton('Descartar este lote')
+    expect(descartar).toBeTruthy()
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull()
+
+    await act(async () => {
+      descartar?.click()
+    })
+
+    const dialogo = document.querySelector('[role="alertdialog"]')
+    expect(dialogo).toBeTruthy()
+    // §3.2.C6 — la confirmación tiene que decir qué se destruye y qué
+    // sobrevive antes de que el usuario la confirme.
+    expect(dialogo?.textContent).toContain('30')
+    expect(dialogo?.textContent?.toLowerCase()).toContain('archivo')
+  })
+
+  it('confirmar llama a descartarLote(lote) y deja la vista del lote', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo()
+    vi.mocked(contractsApi.migracion.descartarLote).mockResolvedValue({
+      lote: 'lote-1',
+      descartadas: 30,
+      activadas: 0,
+      yaDescartadas: 0,
+    })
+    const llamadasPrevias = vi.mocked(contractsApi.migracion.lotesAbiertos).mock.calls.length
+
+    await act(async () => {
+      boton('Descartar este lote')?.click()
+    })
+    const confirmar = Array.from(
+      document.querySelectorAll('[role="alertdialog"] button'),
+    ).find((b) => b.textContent?.includes('Descartar este lote')) as HTMLButtonElement
+
+    await act(async () => {
+      confirmar.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(contractsApi.migracion.descartarLote).toHaveBeenCalledWith('lote-1')
+    // Se fue de la vista del lote: ni la lista de trabajo ni el modal siguen.
+    expect(container.querySelector('[data-testid="lista-de-trabajo"]')).toBeNull()
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull()
+    // §3.2.C6 — "Retomar" se refresca: el lote ya no debería aparecer ahí.
+    expect(
+      vi.mocked(contractsApi.migracion.lotesAbiertos).mock.calls.length,
+    ).toBeGreaterThan(llamadasPrevias)
+  })
+
+  it('un 409 LOTE_EN_PROCESO no se traga en silencio: cierra el modal, muestra el mensaje, y NO deja la vista del lote', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo()
+    vi.mocked(contractsApi.migracion.descartarLote).mockRejectedValue(
+      new Error('Ese lote todavía se está preparando. Esperá a que termine.'),
+    )
+
+    await act(async () => {
+      boton('Descartar este lote')?.click()
+    })
+    const confirmar = Array.from(
+      document.querySelectorAll('[role="alertdialog"] button'),
+    ).find((b) => b.textContent?.includes('Descartar este lote')) as HTMLButtonElement
+
+    await act(async () => {
+      confirmar.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull()
+    // Sigue en la vista del lote — no se abandona ante un error.
+    expect(container.querySelector('[data-testid="lista-de-trabajo"]')).toBeTruthy()
+    expect(container.textContent).toContain(
+      'Ese lote todavía se está preparando. Esperá a que termine.',
+    )
+  })
+
+  it('cancelar cierra el modal sin llamar a la API', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo()
+    // `restoreAllMocks` no limpia las llamadas de un `vi.fn()` de fábrica
+    // (sólo restaura spies reales) — otros tests de este archivo ya
+    // llamaron `descartarLote`, así que se compara contra una foto previa
+    // en vez de un `not.toHaveBeenCalled()` absoluto.
+    const llamadasPrevias = vi.mocked(contractsApi.migracion.descartarLote).mock.calls.length
+
+    await act(async () => {
+      boton('Descartar este lote')?.click()
+    })
+    const cancelar = Array.from(
+      document.querySelectorAll('[role="alertdialog"] button'),
+    ).find((b) => b.textContent?.includes('Cancelar')) as HTMLButtonElement
+
+    await act(async () => {
+      cancelar.click()
+    })
+
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull()
+    expect(vi.mocked(contractsApi.migracion.descartarLote).mock.calls.length).toBe(
+      llamadasPrevias,
+    )
+    // Sigue en la vista del lote — cancelar no navega a ningún lado.
+    expect(container.querySelector('[data-testid="lista-de-trabajo"]')).toBeTruthy()
+  })
+
+  it('sin nada pendiente ni listo (todo activado o descartado), el botón no aparece', async () => {
+    render()
+    await esperar()
+    await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
+    const b = botonRevisar()
+
+    vi.mocked(contractsApi.migracion.preparar).mockResolvedValue({
+      lote: 'lote-cerrado',
+      estado: 'ENCOLADO',
+      total: 5,
+      procesadas: 0,
+      pendientes: 0,
+      listos: 0,
+      activados: 0,
+      descartados: 0,
+    })
+    vi.mocked(contractsApi.migracion.estadoDeLote).mockResolvedValue({
+      lote: 'lote-cerrado',
+      estado: 'LISTO',
+      total: 5,
+      procesadas: 5,
+      pendientes: 0,
+      listos: 0,
+      activados: 5,
+      descartados: 0,
+    })
+    vi.mocked(contractsApi.migracion.resumen).mockResolvedValue({
+      lote: 'lote-cerrado',
+      total: 5,
+      pendientes: 0,
+      listos: 0,
+      activados: 5,
+      descartados: 0,
+      activables: 0,
+    })
+    vi.mocked(contractsApi.migracion.filas).mockResolvedValue({
+      filas: [],
+      total: 0,
+      pagina: 1,
+      porPagina: 25,
+    })
+
+    await act(async () => {
+      b?.click()
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(container.querySelector('[data-testid="lista-de-trabajo"]')).toBeTruthy()
+    expect(boton('Descartar este lote')).toBeFalsy()
+  })
+})
+
+/**
+ * T-0036 contract.md §3.2.A6 — el checkbox de invitar tiene que dejar de
+ * mentir: destildado, hoy no dice nada sobre lo que realmente pasa (Surface
+ * A dejó de crear una cuenta silenciosa). Y el resumen de activación tiene
+ * que contar cuántos correos quedaron retenidos sin invitar — es el
+ * producto entero del cambio, y `invitados` sólo cuenta lo que SÍ se mandó.
+ */
+describe('<MigrarContratos> — invitar:false ya no crea nada, y el resumen lo dice (T-0036 Surface A)', () => {
+  it('con el checkbox destildado, avisa: no se crea cuenta, se guarda el correo, se invita después desde el contrato', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(30)
+
+    const label = labelConTexto('Invitar a los inquilinos al portal')
+    const checkbox = checkboxDentroDe(label)
+    await act(async () => {
+      checkbox?.click()
+    })
+
+    const aviso = container.querySelector('[data-testid="aviso-sin-invitar"]')
+    const texto = aviso?.textContent ?? ''
+    expect(texto).toMatch(/no se crea (ninguna )?cuenta/i)
+    expect(texto.toLowerCase()).toContain('correo')
+    expect(texto.toLowerCase()).toMatch(/despu[eé]s.*(contrato|invitar)|invitar.*despu[eé]s|desde ahí/i)
+    // Frozen: CobrosService.generate no depende de un Lease — este aviso no
+    // puede insinuar nada de cobros/facturación (sería falso).
+    expect(texto.toLowerCase()).not.toMatch(/cobro|factura/)
+  })
+
+  it('con el checkbox tildado (default), NO muestra el aviso de "no se crea cuenta"', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(30)
+
+    expect(container.textContent).not.toMatch(/no se crea (ninguna )?cuenta/i)
+  })
+
+  it('el resumen de activación suma una línea de "pendientes de invitar" cuando porInvitar > 0', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(1)
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: 1,
+      activadas: 1,
+      fallidas: 0,
+      invitados: 0,
+      porInvitar: 1,
+      resultados: [
+        {
+          fila: 0,
+          estado: 'creado',
+          contratoId: 'c-1',
+          inquilinoInvitado: false,
+          inquilinoPendienteDeInvitar: true,
+        },
+      ],
+    })
+
+    await act(async () => {
+      boton('Activar 1 contratos')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const tarjeta = container.querySelector('[data-testid="resultado-activacion"]')
+    const texto = (tarjeta?.textContent ?? '').toLowerCase()
+    expect(texto).toContain('1')
+    expect(texto).toMatch(/pendient.*invitar|invitar.*pendient/)
+    expect(texto).toContain('contrato')
+  })
+
+  it('el resumen de activación NO suma la línea cuando porInvitar está ausente (back viejo)', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(1)
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: 1,
+      activadas: 1,
+      fallidas: 0,
+      invitados: 1,
+      resultados: [
+        { fila: 0, estado: 'creado', contratoId: 'c-1', inquilinoInvitado: true },
+      ],
+    })
+
+    await act(async () => {
+      boton('Activar 1 contratos')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const tarjeta = container.querySelector('[data-testid="resultado-activacion"]')
+    expect((tarjeta?.textContent ?? '').toLowerCase()).not.toMatch(
+      /pendient.*invitar|invitar.*pendient/,
+    )
+  })
+
+  it('el resumen de activación NO suma la línea cuando porInvitar es 0 — nunca "0 pendientes"', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(1)
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: 1,
+      activadas: 1,
+      fallidas: 0,
+      invitados: 1,
+      porInvitar: 0,
+      resultados: [
+        { fila: 0, estado: 'creado', contratoId: 'c-1', inquilinoInvitado: true },
+      ],
+    })
+
+    await act(async () => {
+      boton('Activar 1 contratos')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const tarjeta = container.querySelector('[data-testid="resultado-activacion"]')
+    expect((tarjeta?.textContent ?? '').toLowerCase()).not.toMatch(
+      /pendient.*invitar|invitar.*pendient/,
+    )
   })
 })

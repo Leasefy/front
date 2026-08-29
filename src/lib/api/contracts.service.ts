@@ -77,7 +77,14 @@ function aNumero(v: number | string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function mapBackendContract(bc: BackendContract): Contract {
+/**
+ * Exportado (T-0036 contract.md §3.2.B6) — la pantalla del detalle de
+ * contrato lo llama directo sobre `res.contrato` después de invitar al
+ * inquilino, sin pasar por un segundo `getById`. `invitarInquilino()` de
+ * abajo devuelve el `ResultadoInvitacion` CRUDO (sin mapear `contrato`)
+ * porque `invitado`/`tenantId` viajan junto a él y no hay un segundo shape.
+ */
+export function mapBackendContract(bc: BackendContract): Contract {
   return {
     id: bc.id,
     applicationId: bc.applicationId,
@@ -394,6 +401,17 @@ export const contractsApi = {
       return apiClient.delete<FilaDeMigracion>(`/contracts/migrar/filas/${id}`);
     },
 
+    /**
+     * Descarta un lote entero de una sola vez (contract.md §3.2.C). El
+     * `lote` se codifica igual que `estadoDeLote` — los lotes generados
+     * antes de que el servidor los emitiera no están garantizados URL-safe.
+     */
+    async descartarLote(lote: string): Promise<DescarteDeLote> {
+      return apiClient.delete<DescarteDeLote>(
+        `/contracts/migrar/lotes/${encodeURIComponent(lote)}`,
+      );
+    },
+
     /** 3. Convierte en contratos las filas LISTO. Sólo esas. */
     async activar(lote?: string, invitar = true): Promise<ResumenActivacion> {
       return apiClient.post<ResumenActivacion>('/contracts/migrar/activar', {
@@ -447,6 +465,18 @@ export const contractsApi = {
   async activate(id: string): Promise<Contract> {
     const raw = await apiClient.post<BackendContract>(`/contracts/${id}/activate`);
     return mapBackendContract(raw);
+  },
+
+  /**
+   * POST /contracts/:id/invitar-inquilino — invita (o vincula) al inquilino
+   * de un contrato migrado que se activó sin uno (T-0036 contract.md §3.2.B).
+   * Sin body — el back no lo espera (§0.2 no aplica: no hay DTO en esta
+   * tarea). Devuelve el wire CRUDO — `contrato` es `BackendContract` sin
+   * mapear, porque `invitado`/`tenantId` viajan junto a él y no hay un
+   * segundo shape. El caller mapea con `mapBackendContract(res.contrato)`.
+   */
+  async invitarInquilino(id: string): Promise<ResultadoInvitacion> {
+    return apiClient.post<ResultadoInvitacion>(`/contracts/${id}/invitar-inquilino`, {});
   },
 
   /**
@@ -768,6 +798,21 @@ export interface ResumenLote {
   activables: number;
 }
 
+/**
+ * `DELETE migrar/lotes/:lote` (contract.md §3.2.C3) — resultado de
+ * descartar un lote entero. Los cuatro campos son obligatorios: es un tipo
+ * nuevo, no hay productor viejo contra el que degradar.
+ */
+export interface DescarteDeLote {
+  lote: string;
+  /** Filas que ESTA llamada movió PENDIENTE|LISTO → DESCARTADO. */
+  descartadas: number;
+  /** Filas ya ACTIVADO. Intactas — la mitad honesta de la respuesta. */
+  activadas: number;
+  /** Filas que ya estaban DESCARTADO antes de esta llamada. */
+  yaDescartadas: number;
+}
+
 export type EstadoLoteMigracion = 'ENCOLADO' | 'PROCESANDO' | 'LISTO' | 'FALLIDO';
 
 /**
@@ -801,6 +846,13 @@ export interface ResultadoDeFila {
   estado: 'creado' | 'fallido';
   contratoId?: string;
   inquilinoInvitado: boolean;
+  /**
+   * T-0036 §3.2.A4 — `true` sólo cuando esta fila tenía un correo válido y
+   * quedó sin cuenta (activación con `invitar:false`, sin usuario
+   * existente). Ausente ⇒ se trata como `false` (back viejo). Mirrors
+   * `inquilinoInvitado` exactamente.
+   */
+  inquilinoPendienteDeInvitar?: boolean;
   motivo?: string;
 }
 
@@ -809,5 +861,34 @@ export interface ResumenActivacion {
   activadas: number;
   fallidas: number;
   invitados: number;
+  /**
+   * T-0036 §3.2.A4 — cuántas filas retuvieron un correo sin invitar a
+   * nadie. Ausente ⇒ NO renderizar nada — nunca `0`. Un back viejo que
+   * todavía no manda este campo no puede afirmar un conteo que no tiene.
+   */
+  porInvitar?: number;
   resultados: ResultadoDeFila[];
+}
+
+/**
+ * `POST /contracts/:id/invitar-inquilino` (contract.md §3.2.B3, T-0036) —
+ * resultado de invitar (o vincular) al inquilino de un contrato migrado que
+ * se activó sin uno. Los tres campos son obligatorios: tipo nuevo, no hay
+ * productor viejo contra el que degradar.
+ */
+export interface ResultadoInvitacion {
+  /**
+   * `true` = se mandó una invitación por correo. `false` = la persona ya
+   * tenía cuenta en Leasefy y sólo se vinculó — no se mandó nada. Las dos
+   * son un `200`: sin este campo la pantalla no puede distinguirlas.
+   */
+  invitado: boolean;
+  /** El usuario que quedó vinculado al contrato. Nunca null en un 200. */
+  tenantId: string;
+  /**
+   * El contrato completo, releído después del write. Mismo shape que
+   * `GET /contracts/:id` — `BackendContract`, SIN mapear. No se introduce
+   * un tercer shape.
+   */
+  contrato: BackendContract;
 }

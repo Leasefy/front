@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Heart, ShareNetwork, VideoCamera, MapPin, TrendUp, Clock, Check, Calendar, Copy } from '@phosphor-icons/react';
+import { Heart, ShareNetwork, VideoCamera, MapPin, TrendUp, Clock, Check, Calendar, Copy, ChatCircle } from '@phosphor-icons/react';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { SegmentedControl } from '@leasefy/cadence';
@@ -20,11 +20,20 @@ import { seLePuedePrometerSinCodeudor } from '@/lib/api/aprobacion.service';
 
 interface StickyCTAProps {
   propertyId: string;
+  /** Monthly rent (COP). Ignored for display when `listingType === 'sale'` — see `salePrice`. */
   price: number;
   adminFee?: number;
   isWishlisted?: boolean;
   onWishlistToggle?: () => void;
   className?: string;
+  /**
+   * contract.md T-0038 §3.2.2/§3.3 — `'sale'` drops the postulación tab in
+   * favour of "Contactar" (O-1: registration required, no `@Public()` chat).
+   * Defaults to `'rent'` so existing callers keep today's behaviour.
+   */
+  listingType?: 'rent' | 'sale';
+  /** contract.md T-0038 §3.2.3 — `null`/absent renders "Sin dato", never `$0` (C6). */
+  salePrice?: number | null;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -100,9 +109,12 @@ export function StickyCTA({
   isWishlisted = false,
   onWishlistToggle,
   className,
+  listingType = 'rent',
+  salePrice,
 }: StickyCTAProps) {
   const { user, isAuthenticated, hasActiveAgencyMembership } = useAuth();
   const router = useRouter();
+  const isSaleListing = listingType === 'sale';
 
   /*
    * ¿Podemos decirle que se postula sin codeudor?
@@ -123,7 +135,7 @@ export function StickyCTA({
   const isAgencyViewer =
     !!user && (user.role === 'agency' || user.backendRole === 'AGENT' || hasActiveAgencyMembership);
 
-  const [ctaMode, setCtaMode] = useState<'apply' | 'visit'>('apply');
+  const [ctaMode, setCtaMode] = useState<'apply' | 'visit' | 'contact'>(isSaleListing ? 'contact' : 'apply');
   const [visitTextT, setVisitType] = useState<'presencial' | 'virtual'>('presencial');
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -286,16 +298,29 @@ export function StickyCTA({
 
           {/* Price */}
           <div className="mb-6 pb-6 border-b border-border">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[30px] font-mono tabular-nums font-bold text-foreground tracking-[-0.02em]">
-                {formatCurrency(price)}
-              </span>
-              <span className="text-[14px] text-muted-foreground font-medium">/mes</span>
-            </div>
-            {adminFee > 0 && (
-              <p className="text-[13px] text-muted-foreground mt-1.5">
-                + {formatCurrency(adminFee)} administración
-              </p>
+            {isSaleListing ? (
+              // contract.md T-0038 §3.2.3 — never `formatCurrency(null)`
+              // (that helper silently renders "$ 0", C6). `salePrice` is
+              // never displayed as a canon: no "/mes" suffix.
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-[30px] font-mono tabular-nums font-bold text-foreground tracking-[-0.02em]">
+                  {salePrice != null ? formatCurrency(salePrice) : 'Sin dato'}
+                </span>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-[30px] font-mono tabular-nums font-bold text-foreground tracking-[-0.02em]">
+                    {formatCurrency(price)}
+                  </span>
+                  <span className="text-[14px] text-muted-foreground font-medium">/mes</span>
+                </div>
+                {adminFee > 0 && (
+                  <p className="text-[13px] text-muted-foreground mt-1.5">
+                    + {formatCurrency(adminFee)} administración
+                  </p>
+                )}
+              </>
             )}
           </div>
 
@@ -348,20 +373,70 @@ export function StickyCTA({
           <>
           {/* Tab selector */}
           <div className="mb-6">
-            <SegmentedControl<'apply' | 'visit'>
+            {/*
+              contract.md T-0038 §3.3/§3 ledger §2.7 (O-1/O-2) — a SALE
+              listing has no postulación: "Contactar" replaces "Postularme".
+              "Agendar visita" stays, unconditionally — there is no per-agency
+              "has a visits agenda" switch (O-2).
+            */}
+            <SegmentedControl<'apply' | 'visit' | 'contact'>
               fullWidth
               value={ctaMode}
               onChange={setCtaMode}
-              aria-label="Postularme o agendar visita"
-              options={[
-                { value: 'apply', label: 'Postularme' },
-                { value: 'visit', label: 'Agendar visita' },
-              ]}
+              aria-label={isSaleListing ? 'Contactar o agendar visita' : 'Postularme o agendar visita'}
+              options={
+                isSaleListing
+                  ? [
+                      { value: 'contact', label: 'Contactar' },
+                      { value: 'visit', label: 'Agendar visita' },
+                    ]
+                  : [
+                      { value: 'apply', label: 'Postularme' },
+                      { value: 'visit', label: 'Agendar visita' },
+                    ]
+              }
             />
           </div>
 
           {/* Tab content */}
-          {ctaMode === 'apply' ? (
+          {ctaMode === 'contact' ? (
+            /* ── Contact tab (SALE listing) — O-1: registration required,
+               no @Public() contact surface. The actual chat thread is WU-5;
+               this only gates on auth and states the current capability
+               honestly instead of faking a chat UI. ── */
+            <div className="text-center py-4">
+              <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-primary-soft flex items-center justify-center">
+                <ChatCircle className="w-6 h-6 text-primary" />
+              </div>
+              {isAuthenticated ? (
+                <>
+                  <h3 className="text-[15px] font-heading font-semibold text-foreground mb-2">
+                    Muy pronto vas a poder chatear acá
+                  </h3>
+                  <p className="text-[13px] text-muted-foreground">
+                    Estamos activando la mensajería directa con la inmobiliaria. Mientras tanto, agendá una visita.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-[15px] font-heading font-semibold text-foreground mb-2">
+                    Iniciá sesión para contactar a la inmobiliaria
+                  </h3>
+                  <p className="text-[13px] text-muted-foreground mb-4">
+                    Es rápido y te permite chatear sobre esta propiedad y agendar una visita.
+                  </p>
+                  <Button
+                    type="button"
+                    hideArrow
+                    className="w-full"
+                    onClick={() => router.push(`/auth?returnUrl=${encodeURIComponent(pathname)}`)}
+                  >
+                    Iniciar sesión
+                  </Button>
+                </>
+              )}
+            </div>
+          ) : ctaMode === 'apply' ? (
             /* ── Apply tab ── */
             <div>
               <div className="space-y-2.5 mb-6">
@@ -611,13 +686,22 @@ export function StickyCTA({
 export function MobileStickyCTA({
   propertyId,
   price,
+  listingType = 'rent',
+  salePrice,
 }: {
   propertyId: string;
   price: number;
+  /** contract.md T-0038 §3.2.2/§3.3 — see `StickyCTA`'s prop doc. */
+  listingType?: 'rent' | 'sale';
+  /** contract.md T-0038 §3.2.3 — `null`/absent renders "Sin dato", never `$0` (C6). */
+  salePrice?: number | null;
 }) {
-  const { user, hasActiveAgencyMembership } = useAuth();
+  const { user, isAuthenticated, hasActiveAgencyMembership } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
   const isAgencyViewer =
     !!user && (user.role === 'agency' || user.backendRole === 'AGENT' || hasActiveAgencyMembership);
+  const isSaleListing = listingType === 'sale';
 
   const [copied, setCopied] = useState(false);
 
@@ -638,8 +722,14 @@ export function MobileStickyCTA({
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-lg font-mono tabular-nums font-bold text-foreground tracking-tight">
-              {formatCurrency(price)}
-              <span className="text-[13px] font-medium text-muted-foreground font-sans">/mes</span>
+              {isSaleListing ? (
+                salePrice != null ? formatCurrency(salePrice) : 'Sin dato'
+              ) : (
+                <>
+                  {formatCurrency(price)}
+                  <span className="text-[13px] font-medium text-muted-foreground font-sans">/mes</span>
+                </>
+              )}
             </p>
           </div>
           <div className="flex gap-2">
@@ -657,6 +747,33 @@ export function MobileStickyCTA({
                   </>
                 )}
               </Button>
+            ) : isSaleListing ? (
+              // contract.md T-0038 §3.3, ledger §2.7 O-1 — no postulación,
+              // no @Public() contact surface. Unauthenticated goes to sign-up.
+              <>
+                <Button
+                  type="button"
+                  hideArrow
+                  onClick={() =>
+                    isAuthenticated
+                      ? undefined
+                      : router.push(`/auth?returnUrl=${encodeURIComponent(pathname)}`)
+                  }
+                >
+                  Contactar
+                </Button>
+                <Button
+                  variant="outline"
+                  hideArrow
+                  onClick={() =>
+                    isAuthenticated
+                      ? undefined
+                      : router.push(`/auth?returnUrl=${encodeURIComponent(pathname)}`)
+                  }
+                >
+                  Visita
+                </Button>
+              </>
             ) : (
               <>
                 <PostularButton propertyId={propertyId} canonCop={price} hideArrow />

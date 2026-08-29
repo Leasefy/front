@@ -198,6 +198,59 @@ describe('<ConsignacionTable> — R4 alert affordance', () => {
   });
 });
 
+describe('<ConsignacionTable> — T-0038 property code + SALE listing display', () => {
+  it('renders the property code for a sinMandato row that carries one', () => {
+    render([makeSinMandatoRow({ code: 7 })]);
+    expect(container.textContent).toContain('#7');
+  });
+
+  it('renders "—" for the code when a sinMandato row has none (older backend / not entitled)', () => {
+    render([makeSinMandatoRow({ code: undefined })]);
+    // The em-dash appears for both the code cell and (possibly) other empty
+    // cells — assert the code cell specifically isn't a stray "#undefined".
+    expect(container.textContent).not.toContain('#undefined');
+    expect(container.textContent).toContain('—');
+  });
+
+  it('a real consignación row (no `code` field at all) shows "—" for code, never crashes', () => {
+    expect(() => render([{ kind: 'consignacion', ...makeConsignacion() }])).not.toThrow();
+  });
+
+  it('a SALE sinMandato row shows the sale price with a sale tag, never the (absent) monthlyRent as "$ 0"', () => {
+    render([
+      makeSinMandatoRow({
+        listingType: 'sale',
+        monthlyRent: null,
+        salePrice: 350_000_000,
+        adminFee: 0,
+      }),
+    ]);
+    expect(container.textContent).toContain('$350.000.000');
+    expect(container.textContent).not.toContain('$ 0');
+    expect(container.textContent).not.toContain('$0');
+  });
+
+  it('a SALE sinMandato row never renders an "Administración: $0" row', () => {
+    render([
+      makeSinMandatoRow({
+        listingType: 'sale',
+        monthlyRent: null,
+        salePrice: 350_000_000,
+        adminFee: 0,
+      }),
+    ]);
+    expect(container.textContent).not.toContain('admin');
+  });
+
+  it('a SALE sinMandato row with no salePrice recorded shows "—", never $0', () => {
+    render([
+      makeSinMandatoRow({ listingType: 'sale', monthlyRent: null, salePrice: null }),
+    ]);
+    expect(container.textContent).not.toContain('$ 0');
+    expect(container.textContent).not.toContain('$0');
+  });
+});
+
 describe('<ConsignacionTable> — R3/R4 actions menu is gated for mandate-less rows', () => {
   function openRowMenu() {
     const trigger = container.querySelector('[aria-label="Acciones"]');

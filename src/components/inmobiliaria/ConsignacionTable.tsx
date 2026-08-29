@@ -167,8 +167,12 @@ export function ConsignacionTable({
           bVal = `${b.propertyCity} ${b.propertyZone}`.toLowerCase();
           break;
         case 'monthlyRent':
-          aVal = a.monthlyRent;
-          bVal = b.monthlyRent;
+          // T-0038: a SALE row's `monthlyRent` is `null` (contract.md
+          // §3.2.4) — sink it to the bottom with the same sentinel pattern
+          // `commissionPercent`/`availability` already use below, rather
+          // than letting `null < number` silently misorder the column.
+          aVal = a.monthlyRent ?? -1;
+          bVal = b.monthlyRent ?? -1;
           break;
         case 'commissionPercent':
           // Una fila sin mandato no tiene comisión — no es 0 (eso mentiría
@@ -241,6 +245,19 @@ export function ConsignacionTable({
       <Table className="w-full min-w-[900px]">
         <TableHeader>
           <TableRow className="border-b border-border bg-muted/30">
+            {/*
+              T-0038 §3.2.5 (D2) — código humano-legible, por agencia/propietario.
+              Sin ordenamiento propio (ya viene ordenado por antigüedad de
+              creación desde el back) y sin sombra en `Consignacion`:
+              `GET /inmobiliaria/consignaciones` no cambió (SYSTEM-MAP.md), así
+              que sólo las filas `sinMandato` (`sin-consignacion`, sí frozen
+              con `propertyCode`) lo traen — una fila con mandato muestra `—`
+              hasta que ese endpoint también lo exponga (gap reportado, no un
+              bug de esta unidad de trabajo).
+            */}
+            <TableHead className="text-left p-4 w-16">
+              {t('inmobiliaria.consignaciones.table.code')}
+            </TableHead>
             <SortableHeader field="propertyTitle">
               {t('inmobiliaria.consignaciones.table.property')}
             </SortableHeader>
@@ -285,6 +302,11 @@ export function ConsignacionTable({
               if (row.kind === 'sinMandato') onCompletarMandato?.(row);
             };
 
+            // contract.md T-0038 §3.2.5 — PORTFOLIO-only, but only the
+            // `sinMandato` source (sin-consignacion) carries it on the wire
+            // today; `GET /inmobiliaria/consignaciones` is unchanged.
+            const propertyCode = row.kind === 'sinMandato' ? row.code : undefined;
+
             return (
               <motion.tr
                 key={rowKey}
@@ -294,6 +316,13 @@ export function ConsignacionTable({
                 onClick={() => (row.kind === 'consignacion' ? onView(row) : handleCompletarMandato())}
                 className="border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors"
               >
+                {/* Code (T-0038 §3.2.5) */}
+                <TableCell className="p-4">
+                  <span className="font-mono tabular-nums text-fg-muted text-sm">
+                    {propertyCode != null ? `#${propertyCode}` : '—'}
+                  </span>
+                </TableCell>
+
                 {/* Property */}
                 <TableCell className="p-4">
                   <div className="flex items-center gap-3">
@@ -348,16 +377,34 @@ export function ConsignacionTable({
                 */}
                 <TableCell className="p-4 whitespace-nowrap">
                   <div>
-                    <p className="font-semibold text-foreground tabular-nums">
-                      {formatCurrency(row.monthlyRent)}
-                    </p>
+                    {/*
+                      T-0038 §3.2.4 — only a `sinMandato` row can be a SALE
+                      listing (`Consignacion` has no `salePrice`, the
+                      `GET /inmobiliaria/consignaciones` wire is unchanged).
+                      `row.monthlyRent == null` is the SALE case: never
+                      `formatCurrency(null)` (it silently renders "$ 0", C6).
+                    */}
+                    {row.kind === 'sinMandato' && row.listingType === 'sale' ? (
+                      <p className="font-semibold text-foreground tabular-nums">
+                        {row.salePrice != null ? formatCurrency(row.salePrice) : '—'}
+                        <span className="ml-1 text-xs font-normal text-muted-foreground">
+                          {t('inmobiliaria.consignaciones.table.saleTag')}
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="font-semibold text-foreground tabular-nums">
+                        {row.monthlyRent != null ? formatCurrency(row.monthlyRent) : '—'}
+                      </p>
+                    )}
                     {/*
                       Antes: `consignacion.adminFee && consignacion.adminFee > 0 && (…)`.
                       Con `adminFee === 0` la primera guarda devuelve `0` —no `false`—
                       y React pinta ese cero: quedaba un «0» suelto debajo del canon,
                       que se ve igual que un importe partido en dos renglones.
+                      Tampoco se pinta en una fila en venta (contract.md §3.2.4 —
+                      "Administración: $0" no debe aparecer en un listado de venta).
                     */}
-                    {row.adminFee != null && row.adminFee > 0 && (
+                    {!(row.kind === 'sinMandato' && row.listingType === 'sale') && row.adminFee != null && row.adminFee > 0 && (
                       <p className="text-xs text-muted-foreground tabular-nums">
                         {t('inmobiliaria.consignaciones.table.adminFee', { amount: formatCurrency(row.adminFee) })}
                       </p>

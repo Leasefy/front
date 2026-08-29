@@ -96,7 +96,13 @@ const PROPERTY_TYPE_ICONS: Record<Consignacion['propertyType'], React.ElementTyp
   warehouse: Warehouse,
 };
 
-function getPropertyIcon(propertyType: string): React.ElementType {
+/**
+ * Exported — this is the ONE guarded property-type icon lookup for the
+ * whole portfolio surface (table + grid). contract-addendum-2.md's own
+ * WU-6 brief: "do not add a third unguarded map lookup" alongside this one
+ * and `ConsignacionCard`'s (now also guarded, see that file).
+ */
+export function getPropertyIcon(propertyType: string): React.ElementType {
   return (
     PROPERTY_TYPE_ICONS[propertyType as Consignacion['propertyType']] ??
     // 'room' degrada al ícono de apartamento — mismo criterio que el mapper

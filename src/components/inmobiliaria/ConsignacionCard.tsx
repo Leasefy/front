@@ -111,9 +111,17 @@ export function ConsignacionCard({
     },
   }), [t]);
 
-  const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType];
-  const availability = AVAILABILITY_COLORS[consignacion.availability];
-  const status = STATUS_COLORS[consignacion.status];
+  // Guarded — same "never index this map by hand" rule as
+  // `ConsignacionTable.tsx`'s `getPropertyIcon`/`AVAILABILITY_COLORS`
+  // fallback (confirmed crash-on-missing-key: an unmapped `propertyType`
+  // renders `undefined` as a component and unmounts the whole card tree,
+  // not just this one). Both maps are exhaustive for `Consignacion`'s own
+  // narrow types today, but a hand-indexed lookup with no fallback is a
+  // latent trap the moment either type widens — the same trap this task
+  // already found and fixed in the table.
+  const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType] ?? Buildings;
+  const availability = AVAILABILITY_COLORS[consignacion.availability] ?? AVAILABILITY_COLORS.available;
+  const status = STATUS_COLORS[consignacion.status] ?? STATUS_COLORS.active;
 
   // Compact variant - single row for list views
   if (variant === 'compact') {

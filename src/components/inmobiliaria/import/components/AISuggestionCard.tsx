@@ -43,7 +43,14 @@ const CAMPOS_EDITABLES: {
   { campo: 'propertyAddress', etiqueta: 'Dirección', tipo: 'texto' },
   { campo: 'propertyCity', etiqueta: 'Ciudad', tipo: 'texto' },
   { campo: 'propertyZone', etiqueta: 'Barrio / zona', tipo: 'texto' },
+  // T-0038 §3.2.1/§3.2.6 — department and consignedAt, agency-facing only.
+  { campo: 'propertyDepartment', etiqueta: 'Departamento', tipo: 'texto' },
+  // T-0038 §3.2.2 — free text as read from the file ("Arriendo"/"Venta");
+  // resolveImportListingType (requisitosDelBack.ts) interprets it, the same
+  // heuristic toCreatePayload/faltantesParaElBack/gapFiller already use.
+  { campo: 'listingType', etiqueta: 'Tipo de operación (arriendo/venta)', tipo: 'texto' },
   { campo: 'monthlyRent', etiqueta: 'Canon mensual', tipo: 'numero', sufijo: 'COP' },
+  { campo: 'salePrice', etiqueta: 'Precio de venta', tipo: 'numero', sufijo: 'COP' },
   { campo: 'adminFee', etiqueta: 'Administración', tipo: 'numero', sufijo: 'COP' },
   { campo: 'propertyArea', etiqueta: 'Área', tipo: 'numero', sufijo: 'm²' },
   { campo: 'bedrooms', etiqueta: 'Habitaciones', tipo: 'numero' },
@@ -51,6 +58,7 @@ const CAMPOS_EDITABLES: {
   { campo: 'commissionPercent', etiqueta: 'Comisión', tipo: 'numero', sufijo: '%' },
   { campo: 'ownerName', etiqueta: 'Propietario', tipo: 'texto' },
   { campo: 'ownerPhone', etiqueta: 'Teléfono del propietario', tipo: 'texto' },
+  { campo: 'consignedAt', etiqueta: 'Fecha de consignación', tipo: 'texto' },
 ];
 
 /** Un campo escribible. Vacío se muestra vacío, nunca como cero. */
@@ -387,10 +395,18 @@ export function AISuggestionCard({
                 {property.propertyZone}
               </span>
             )}
-            {property.monthlyRent && property.monthlyRent > 0 && (
+            {/* T-0038 §3.2.2/§3.2.4 — a SALE row shows salePrice, not the
+                (absent) monthlyRent. Never a fabricated $0 chip either way. */}
+            {property.salePrice && property.salePrice > 0 ? (
               <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-primary-soft text-primary">
-                {formatCOP(property.monthlyRent)}/mes
+                {formatCOP(property.salePrice)} (venta)
               </span>
+            ) : (
+              property.monthlyRent && property.monthlyRent > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-primary-soft text-primary">
+                  {formatCOP(property.monthlyRent)}/mes
+                </span>
+              )
             )}
           </div>
 

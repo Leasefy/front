@@ -12,6 +12,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import * as XLSX from 'xlsx'
 import { downloadTemplate } from './parseFile'
 
 let anclasClickeadas: Array<{ download: string; href: string }>
@@ -67,5 +68,22 @@ describe('descargar la plantilla', () => {
   it('no deja el <a> pegado en el documento', async () => {
     await downloadTemplate()
     expect(document.querySelectorAll('a[download]')).toHaveLength(0)
+  })
+})
+
+describe('plantilla — T-0038 §3.8 columnas nuevas', () => {
+  it('incluye Departamento, Tipo de Negocio, Precio de Venta y Fecha de Consignación, alineadas con la fila de ejemplo', async () => {
+    const spy = vi.spyOn(XLSX.utils, 'aoa_to_sheet')
+
+    await downloadTemplate()
+
+    expect(spy).toHaveBeenCalledTimes(1)
+    const [headers, exampleRow] = spy.mock.calls[0][0] as string[][]
+    for (const columna of ['Departamento', 'Tipo de Negocio', 'Precio de Venta', 'Fecha de Consignación']) {
+      expect(headers).toContain(columna)
+    }
+    // Alineación posicional: '!cols' deriva su ancho de headers.length, así
+    // que una fila de ejemplo más corta/larga correspondería al header equivocado.
+    expect(exampleRow).toHaveLength(headers.length)
   })
 })

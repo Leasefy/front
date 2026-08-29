@@ -18,7 +18,20 @@ export const COLUMN_KEYWORDS: Record<string, string[]> = {
   propertyAddress:  ['direccion del inmueble', 'direccion inmueble', 'direccion', 'address', 'ubicacion', 'calle', 'dir'],
   propertyCity:     ['ciudad', 'municipio', 'city'],
   propertyZone:     ['barrio', 'zona', 'sector', 'localidad', 'urbanizacion', 'vecindario', 'comuna'],
+  // T-0038 §3.2.1 — the department (not the municipality/city). Kept
+  // distinct from propertyCity's 'municipio'/'ciudad'.
+  propertyDepartment: ['departamento del inmueble', 'departamento de la propiedad', 'departamento'],
+  // T-0038 §3.2.2 (D2) — "tipo de negocio"/"tipo negocio" used to be
+  // blocked (ENCABEZADOS_SIN_CAMPO): Arriendo/Venta has a home now.
+  // Keywords are longer than propertyType's generic 'tipo' (4 chars) so
+  // tier1's max-score-wins comparison always prefers this field for them.
+  listingType:      ['tipo de negocio', 'tipo negocio', 'tipo de operacion', 'tipo operacion', 'arriendo o venta', 'renta o venta'],
   monthlyRent:      ['canon de arrendamiento', 'canon arrendamiento', 'valor del arriendo', 'canon mensual', 'valor arriendo', 'valor canon', 'renta mensual', 'arrendamiento', 'canon', 'arriendo', 'precio', 'alquiler', 'renta', 'mensual', 'rent'],
+  // T-0038 §3.2.3 — kept strictly more specific than monthlyRent's generic
+  // 'precio' so a bare "Precio" still degrades to monthlyRent (§3.2.2: an
+  // absent/ambiguous listingType degrades to RENT) and only an explicit
+  // "…de venta"/"…venta" header goes to salePrice.
+  salePrice:        ['precio de venta', 'precio venta', 'valor de venta', 'valor venta'],
   adminFee:         ['cuota de administracion', 'valor administracion', 'administracion mensual', 'administracion', 'admin', 'cuota admin', 'copropiedad', 'cuota'],
   commissionPercent:['porcentaje de comision', 'comision', 'fee', 'honorario', 'honorarios', 'porcentaje'],
   propertyArea:     ['area construida', 'area privada', 'metros cuadrados', 'area m2', 'area', 'metros', 'mts2', 'mts', 'm2', 'superficie', 'tamano'],
@@ -32,6 +45,10 @@ export const COLUMN_KEYWORDS: Record<string, string[]> = {
   ownerPhone:       ['telefono del propietario', 'whatsapp del propietario', 'celular del propietario', 'contacto del propietario', 'whatsapp propietario', 'telefono propietario', 'celular propietario', 'contacto propietario', 'telefono arrendador', 'celular arrendador', 'telefono del dueno', 'numero propietario', 'movil propietario', 'tel propietario', 'telefono', 'whatsapp', 'celular', 'movil', 'tel', 'phone'],
   status:           ['estado del inmueble', 'estado', 'status', 'disponibilidad'],
   notes:            ['observaciones', 'observacion', 'notas', 'comentarios', 'descripcion', 'notes'],
+  // T-0038 §3.2.6 (D5, R6) — property-level "fecha de consignación",
+  // agency-only. Distinct from any mandate/contract date field (none of
+  // which this importer maps today).
+  consignedAt:      ['fecha de consignacion', 'fecha consignacion', 'consignacion'],
 };
 
 /**
@@ -67,8 +84,10 @@ export const ENCABEZADOS_SIN_CAMPO = [
   // No hay campo de correo en la importación. Sin bloquearlo,
   // «Correo propietario» caía en ownerName por el mismo problema de longitud.
   'correo', 'email', 'e-mail',
-  // Arriendo/Venta — no es el TIPO de inmueble (apartamento, casa…).
-  'tipo de negocio', 'tipo negocio',
+  // T-0038 §3.8: "tipo de negocio"/"tipo negocio" ya NO están bloqueados —
+  // tienen destino en `listingType` (ver COLUMN_KEYWORDS). "codigo" queda
+  // bloqueado a propósito: el código es asignado por el servidor
+  // (contract.md §3.2.5) y nunca se acepta en la escritura.
 ];
 
 /**

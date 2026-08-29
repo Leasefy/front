@@ -2,6 +2,7 @@
 // Mock AI gap-filling engine — deterministic heuristic rules, no real AI backend
 
 import type { ImportProperty, AISuggestion, ParsedRow, ColumnMapping } from './importTypes';
+import { resolveImportListingType } from './requisitosDelBack';
 
 // ============================================================================
 // Rent estimates by city + property type (Colombian market data)
@@ -179,7 +180,10 @@ export function mapRowsToProperties(
   rawRows: ParsedRow[],
   columnMappings: ColumnMapping[]
 ): ImportProperty[] {
-  const numericFields = new Set(['monthlyRent', 'adminFee', 'commissionPercent', 'propertyArea', 'bedrooms', 'bathrooms']);
+  // T-0038 §3.2.3 — salePrice added; propertyDepartment/listingType/
+  // consignedAt are strings and need no entry here (the `else` branch below
+  // already handles any mapped targetField generically).
+  const numericFields = new Set(['monthlyRent', 'salePrice', 'adminFee', 'commissionPercent', 'propertyArea', 'bedrooms', 'bathrooms']);
 
   return rawRows.map((row) => {
     const prop: ImportProperty = {
@@ -273,8 +277,15 @@ export function analyzeProperties(properties: ImportProperty[]): ImportProperty[
 
     const effectiveCity = prop.propertyCity || 'Bogotá';
 
-    // Rule 1: Missing monthlyRent
-    if (!prop.monthlyRent || prop.monthlyRent === 0 || isNaN(prop.monthlyRent)) {
+    // Rule 1: Missing monthlyRent — T-0038: only for a RENT row. A SALE row's
+    // missing price is `salePrice`, and there is no comparable sale-price
+    // market-estimate table here (RENT_ESTIMATES is rent-only, Colombian
+    // market data) — suggesting a rental estimate for a sale listing's price
+    // would be a fabricated, wrong-field number, not a gap fill.
+    if (
+      resolveImportListingType(prop.listingType) === 'rent' &&
+      (!prop.monthlyRent || prop.monthlyRent === 0 || isNaN(prop.monthlyRent))
+    ) {
       const cityKey = getCityKey(effectiveCity);
       const cityEstimates = RENT_ESTIMATES[cityKey] || RENT_ESTIMATES['default'];
       const typeKey = effectiveType in cityEstimates ? effectiveType : 'apartment';

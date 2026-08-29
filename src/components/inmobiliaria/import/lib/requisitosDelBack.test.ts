@@ -3,8 +3,10 @@ import {
   faltantesParaElBack,
   recalcularEstado,
   escribirCampo,
+  resolveImportListingType,
   MINIMO_CANON,
   MINIMO_AREA,
+  MINIMO_VENTA,
 } from './requisitosDelBack';
 import type { ImportProperty } from './importTypes';
 
@@ -60,6 +62,60 @@ describe('faltantesParaElBack', () => {
     expect(f.ayuda).toContain('10');
     expect(f.sufijo).toBe('m²');
     expect(f.tipo).toBe('numero');
+  });
+});
+
+// ── T-0038 §3.2/§3.8 — SALE rows require salePrice, not monthlyRent ────────
+
+describe('resolveImportListingType — free-text CSV values (C13: origin governs validation)', () => {
+  it.each([
+    [undefined, 'rent'],
+    ['', 'rent'],
+    ['Arriendo', 'rent'],
+    ['arriendo', 'rent'],
+    ['Rent', 'rent'],
+    ['Venta', 'sale'],
+    ['venta', 'sale'],
+    ['En venta', 'sale'],
+    ['Sale', 'sale'],
+    ['For sale', 'sale'],
+  ])('%s -> %s', (raw, expected) => {
+    expect(resolveImportListingType(raw)).toBe(expected);
+  });
+
+  it('an unrecognised value degrades to rent, matching the wire default (contract.md §3.2.2)', () => {
+    expect(resolveImportListingType('¿Quién sabe?')).toBe('rent');
+  });
+});
+
+describe('faltantesParaElBack — a SALE row needs salePrice, never monthlyRent', () => {
+  function inmuebleEnVenta(parcial: Partial<ImportProperty> = {}): ImportProperty {
+    return inmueble({
+      listingType: 'Venta',
+      monthlyRent: undefined,
+      salePrice: 350_000_000,
+      ...parcial,
+    });
+  }
+
+  it('a complete SALE row (with salePrice, no monthlyRent) owes nothing', () => {
+    expect(faltantesParaElBack(inmuebleEnVenta())).toEqual([]);
+  });
+
+  it('a SALE row missing salePrice is flagged on salePrice, never on monthlyRent', () => {
+    const faltan = faltantesParaElBack(inmuebleEnVenta({ salePrice: undefined }));
+    expect(faltan.map((f) => f.campo)).toContain('salePrice');
+    expect(faltan.map((f) => f.campo)).not.toContain('monthlyRent');
+  });
+
+  it('respects the CreatePropertyDto minimum for salePrice (contract.md §3.2.3, @Min(1_000_000))', () => {
+    expect(faltantesParaElBack(inmuebleEnVenta({ salePrice: MINIMO_VENTA }))).toEqual([]);
+    expect(faltantesParaElBack(inmuebleEnVenta({ salePrice: MINIMO_VENTA - 1 }))).toHaveLength(1);
+  });
+
+  it('a RENT row (default/unset listingType) is unaffected — still requires monthlyRent (regression)', () => {
+    const faltan = faltantesParaElBack(inmueble({ monthlyRent: undefined }));
+    expect(faltan.map((f) => f.campo)).toContain('monthlyRent');
   });
 });
 

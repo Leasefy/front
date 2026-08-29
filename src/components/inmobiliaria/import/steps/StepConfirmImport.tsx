@@ -22,6 +22,7 @@ import { traerFotoComoArchivo } from '@/lib/inmuebles/enlaces.service';
 import { usePropietarios, useAgentes } from '@/lib/hooks/useInmobiliaria';
 import type { Property } from '@/lib/types/property';
 import { faltantesParaElBack } from '../lib/requisitosDelBack';
+import { toCreatePayload } from '../lib/toCreatePayload';
 import { geocodeImportRow, GEOCODE_ROW_DELAY_MS } from '../lib/geocodeImportRow';
 import { inmuebleParaMandato } from '../lib/inmuebleParaMandato';
 import { CompletarMandatosLoteDialog } from '../CompletarMandatosLoteDialog';
@@ -51,36 +52,6 @@ interface ResumenPendiente {
  * donde se comprobaban, y por eso el aviso salía en una pantalla sin un solo
  * campo editable: se veía «no se puede importar» y no había nada que hacer.
  */
-
-/**
- * La descripción sí se puede armar, porque NO se inventa nada: es el propio
- * inmueble contado con sus datos reales. El back sólo pide 20 caracteres.
- */
-function descripcionParaElBack(p: ImportProperty): string {
-  const propia = (p.notes ?? '').trim();
-  if (propia.length >= 20) return propia;
-
-  const partes = [
-    p.propertyType ? TIPO_EN_ESPANOL[p.propertyType] ?? 'Inmueble' : 'Inmueble',
-    p.propertyZone ? `en ${p.propertyZone}` : null,
-    p.propertyCity ? `, ${p.propertyCity}` : null,
-    p.propertyAddress ? `. ${p.propertyAddress}` : null,
-    propia ? `. ${propia}` : null,
-  ].filter(Boolean);
-
-  const armada = partes.join(' ').replace(/\s+,/g, ',').replace(/\s+\./g, '.');
-  // Piso duro: si el archivo venía casi vacío, igual tiene que pasar el mínimo.
-  return armada.length >= 20 ? armada : `${armada} — inmueble importado`.trim();
-}
-
-const TIPO_EN_ESPANOL: Record<string, string> = {
-  apartment: 'Apartamento',
-  house: 'Casa',
-  studio: 'Apartaestudio',
-  commercial: 'Local comercial',
-  office: 'Oficina',
-  warehouse: 'Bodega',
-};
 
 export function StepConfirmImport({ state, updateState }: ImportStepProps) {
   const router = useRouter();
@@ -134,22 +105,6 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
   // se dibuja.
   const fotosPendientes = importables.filter((p) => p.imagenes?.length).length;
   const totalDeFotos = importables.reduce((n, p) => n + (p.imagenes?.length ?? 0), 0);
-
-  // Map a parsed/AI-reviewed ImportProperty to the propertiesApi.create payload.
-  // Accepted AI suggestions are already applied onto the property fields in StepAIReview.
-  const toCreatePayload = (p: ImportProperty) => ({
-    title: p.propertyTitle || p.propertyAddress || p.propertyCity || 'Propiedad importada',
-    description: descripcionParaElBack(p),
-    type: p.propertyType ?? 'apartment',
-    city: p.propertyCity ?? '',
-    neighborhood: p.propertyZone ?? '',
-    address: p.propertyAddress ?? '',
-    monthlyRent: p.monthlyRent ?? 0,
-    bedrooms: p.bedrooms ?? 0,
-    bathrooms: p.bathrooms ?? 0,
-    area: p.propertyArea ?? 0,
-    ...(p.adminFee != null ? { adminFee: p.adminFee } : {}),
-  });
 
   const handleImport = async () => {
     if (importCount === 0) return;
@@ -329,9 +284,15 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
       .map((r) => (r.status === 'fulfilled' ? r.value : null))
       .filter((p): p is Property => p !== null);
 
-    if (creadas.length > 0) {
+    // T-0038 §3.2.4/§3.5.1-B — a SALE listing gets no rental mandate: it has
+    // no canon and `Consignacion.monthlyRent` is NOT NULL. Same reasoning
+    // ConsignacionWizard.tsx applies to the manual-creation flow. A batch
+    // that only produced sale listings skips the mandate dialog entirely.
+    const paraMandato = creadas.filter((p) => p.listingType !== 'sale');
+
+    if (paraMandato.length > 0) {
       setResumenPendiente(resumen);
-      setMandateProperties(creadas);
+      setMandateProperties(paraMandato);
       return;
     }
 

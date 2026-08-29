@@ -55,7 +55,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
     cargando: decidiendoCamino,
     prefillDirecto,
     consentText,
-  } = usePostulacionDirecta(property?.monthlyRent);
+  } = usePostulacionDirecta(property?.monthlyRent ?? undefined);
   const [postuladaId, setPostuladaId] = useState<string | null>(null);
 
   // Get pre-filled name and email from URL params (lead capture)

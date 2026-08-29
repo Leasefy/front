@@ -2933,9 +2933,11 @@
         }
       },
       "table": {
+        "code": "Code",
         "property": "Property",
         "zone": "Zone",
         "rent": "Rent",
+        "saleTag": "(sale)",
         "commission": "Commission",
         "owner": "Owner",
         "agent": "Agent",
@@ -2954,6 +2956,7 @@
         "commissionLabel": "Agency commission",
         "contractDateLabel": "Contract date",
         "agenteLabel": "Assigned agent (optional)",
+        "saleListingNotice": "This property is for sale and has no monthly rent — a rental mandate doesn't apply.",
         "cancel": "Cancel",
         "confirm": "Complete mandate",
         "toasts": {

@@ -159,6 +159,17 @@ export function PropertyMap({
             );
           }
 
+          // T-0038: a SALE point shows `salePrice`, a RENT point shows
+          // `monthlyRent` — never the other, and never a coalesced `0`
+          // (contract.md §3.2.4, C6). The backend's CHECK constraint means
+          // this is `null` only for a data-integrity edge case; skip the
+          // marker rather than fabricate a price.
+          const displayPrice =
+            point.properties.listingType === 'sale'
+              ? point.properties.salePrice
+              : point.properties.monthlyRent;
+          if (displayPrice == null) return null;
+
           return (
             <Marker
               key={point.id}
@@ -167,7 +178,7 @@ export function PropertyMap({
               anchor="center"
             >
               <PriceMarker
-                price={point.properties.monthlyRent}
+                price={displayPrice}
                 isSelected={selectedPropertyId === point.id}
                 isHovered={hoveredPropertyId === point.id}
                 onClick={() => onPropertySelect?.(point.id)}

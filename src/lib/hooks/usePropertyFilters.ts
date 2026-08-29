@@ -106,13 +106,22 @@ export function usePropertyFilters(properties: Property[]) {
         return false;
       }
 
+      // T-0038 §3.7 — a SALE listing has no `monthlyRent` (contract.md
+      // §3.2.4). The back's `NULL >= x` already excludes it from any
+      // price-filtered search; mirrored explicitly here rather than relying
+      // on `null < number`'s coercion (which only works for `minPrice`, not
+      // `maxPrice` — `null > x` coerces to `0 > x`, which does NOT exclude).
+      if ((filters.minPrice || filters.maxPrice) && property.monthlyRent == null) {
+        return false;
+      }
+
       // Min price filter
-      if (filters.minPrice && property.monthlyRent < filters.minPrice) {
+      if (filters.minPrice && property.monthlyRent! < filters.minPrice) {
         return false;
       }
 
       // Max price filter
-      if (filters.maxPrice && property.monthlyRent > filters.maxPrice) {
+      if (filters.maxPrice && property.monthlyRent! > filters.maxPrice) {
         return false;
       }
 

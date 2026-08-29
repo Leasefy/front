@@ -72,6 +72,15 @@ export function buildMandatoPayload(
   inmueble: InmuebleSinConsignacion,
   values: MandatoFormValues,
 ): MandatoWirePayload {
+  // T-0038: a SALE listing has no `monthlyRent` (contract.md §3.2.4) and no
+  // rental `Consignacion` is ever built for one (§3.5.1-B skips it on the
+  // back's own sync). `CompletarMandatoDialog`'s `isValid` blocks submission
+  // before this ever runs for a SALE row — see the component below — so this
+  // fallback is a type-safety net, never a real $0 mandate (C6).
+  if (inmueble.monthlyRent == null) {
+    throw new Error('No se puede completar un mandato de arriendo para una propiedad en venta.');
+  }
+
   const payload: MandatoWirePayload = {
     propietarioId: values.propietarioId,
     propertyId: inmueble.propertyId,
@@ -260,7 +269,10 @@ export function CompletarMandatoDialog({
 
   if (!inmueble) return null;
 
-  const isValid = Boolean(propietarioId) && commissionPercent >= 0 && Boolean(contractDate);
+  // T-0038: a SALE listing (`monthlyRent === null`, contract.md §3.2.4) has
+  // no rental mandate to complete — see `buildMandatoPayload` above.
+  const isSaleListing = inmueble.monthlyRent == null;
+  const isValid = !isSaleListing && Boolean(propietarioId) && commissionPercent >= 0 && Boolean(contractDate);
 
   const handleSubmit = async () => {
     if (!isValid || isSubmitting) return;
@@ -341,11 +353,19 @@ export function CompletarMandatoDialog({
           <div className="rounded-lg border border-border bg-surface-muted p-4 space-y-1">
             <p className="font-medium text-fg">{inmueble.propertyTitle}</p>
             <p className="text-sm text-fg-muted">{inmueble.propertyAddress}, {inmueble.propertyCity}</p>
-            <p className="text-sm font-mono tabular-nums text-fg">
-              {formatCurrency(inmueble.monthlyRent)}
-              <span className="text-fg-muted">/mes</span>
-            </p>
+            {inmueble.monthlyRent != null && (
+              <p className="text-sm font-mono tabular-nums text-fg">
+                {formatCurrency(inmueble.monthlyRent)}
+                <span className="text-fg-muted">/mes</span>
+              </p>
+            )}
           </div>
+
+          {isSaleListing && (
+            <p role="alert" className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
+              {t('inmobiliaria.consignaciones.mandateDialog.saleListingNotice')}
+            </p>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">

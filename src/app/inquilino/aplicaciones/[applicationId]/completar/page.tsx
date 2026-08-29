@@ -75,6 +75,12 @@ function buildProperty(p: NonNullable<BackendApplication['property']>): Property
     address: '',
     latitude: 0,
     longitude: 0,
+    department: null,
+    // An Application only ever exists for a RENT listing — postulación
+    // against a SALE listing is a 409 (contract.md T-0038 §3.3) — so this
+    // sub-object (BackendApplication['property']) never carries a sale price.
+    listingType: 'rent',
+    salePrice: null,
     monthlyRent: p.monthlyRent,
     adminFee: 0,
     deposit: 0,

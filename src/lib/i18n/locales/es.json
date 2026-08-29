@@ -2934,9 +2934,11 @@
         }
       },
       "table": {
+        "code": "Código",
         "property": "Propiedad",
         "zone": "Zona",
         "rent": "Canon",
+        "saleTag": "(venta)",
         "commission": "Comisión",
         "owner": "Propietario",
         "agent": "Agente",
@@ -2955,6 +2957,7 @@
         "commissionLabel": "Comisión de la agencia",
         "contractDateLabel": "Fecha del contrato",
         "agenteLabel": "Agente asignado (opcional)",
+        "saleListingNotice": "Esta propiedad está en venta y no tiene canon de arriendo — no aplica un mandato de arrendamiento.",
         "cancel": "Cancelar",
         "confirm": "Completar mandato",
         "toasts": {

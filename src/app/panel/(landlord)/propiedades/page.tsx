@@ -41,9 +41,13 @@ export default function PropiedadesPage() {
   const totalProperties = myProperties.length;
   const availableCount = myProperties.filter(p => p.status === 'available').length;
   const rentedCount = myProperties.filter(p => p.status === 'rented').length;
+  // `?? 0` here is a type-safety fallback, not a real-data path: a property
+  // with `status === 'rented'` was, by definition, leased — a SALE listing
+  // (whose `monthlyRent` is `null`, contract.md §3.2.4) never reaches this
+  // status (there is no `SOLD` member yet, contract.md §8.2).
   const totalMonthlyIncome = myProperties
     .filter(p => p.status === 'rented')
-    .reduce((sum, p) => sum + p.monthlyRent + p.adminFee, 0);
+    .reduce((sum, p) => sum + (p.monthlyRent ?? 0) + p.adminFee, 0);
 
   const getStatusBadge = (status: string) => {
     switch (status) {

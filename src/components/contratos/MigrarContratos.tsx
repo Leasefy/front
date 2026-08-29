@@ -134,6 +134,27 @@ export function MigrarContratos() {
 
   const [lotesAbiertos, setLotesAbiertos] = useState<LoteAbierto[]>([])
 
+  /**
+   * T-0039 — descartar un lote directamente desde la tarjeta "Tenés una
+   * migración sin terminar", sin tener que abrirlo primero (`retomar`). El
+   * owner lo pidió así: un lote que no se quiere continuar hoy obliga a
+   * entrar a él sólo para llegar al botón de T-0036, que vive adentro de
+   * `ListaDeTrabajo`.
+   *
+   * `resumenTarjeta` guarda de qué lote es la confirmación abierta y el
+   * `ResumenLote` fresco que la sostiene — se pide recién al clickear
+   * "Descartar", nunca antes, porque la tarjeta sólo tiene `LoteAbierto`
+   * (pendientes/listos/activables), no el desglose que la confirmación
+   * necesita mostrar (activados incluidos).
+   */
+  const [resumenTarjeta, setResumenTarjeta] = useState<{
+    lote: string
+    resumen: ResumenLote
+  } | null>(null)
+  const [cargandoResumenDe, setCargandoResumenDe] = useState<string | null>(null)
+  const [descartandoTarjeta, setDescartandoTarjeta] = useState(false)
+  const [errorTarjeta, setErrorTarjeta] = useState<string | null>(null)
+
   // Ítem 1 del brief WU-4: sondeo mientras el lote sigue ENCOLADO/PROCESANDO
   // (contrato §11-J9) — es una conveniencia mientras la pestaña sigue
   // abierta, nunca el mecanismo de finalización.
@@ -288,6 +309,54 @@ export function MigrarContratos() {
     }
   }, [lote])
 
+  /**
+   * T-0039 — abre la confirmación de "Descartar" desde la tarjeta. Pide el
+   * `resumen()` del lote ANTES de mostrar el modal: la tarjeta sólo tiene
+   * `LoteAbierto`, y la confirmación necesita el desglose completo
+   * (pendientes + listos + activados) para decir, antes de que el usuario
+   * confirme, qué se pierde y qué sobrevive — la misma copia que ya usa el
+   * modal de adentro del lote (§3.2.C6).
+   */
+  const abrirDescarteDesdeTarjeta = useCallback(async (elLote: string) => {
+    setErrorTarjeta(null)
+    setCargandoResumenDe(elLote)
+    try {
+      const r = await contractsApi.migracion.resumen(elLote)
+      setResumenTarjeta({ lote: elLote, resumen: r })
+    } catch (e) {
+      setErrorTarjeta(e instanceof Error ? e.message : 'No pudimos abrir ese lote.')
+    } finally {
+      setCargandoResumenDe(null)
+    }
+  }, [])
+
+  /**
+   * Confirma el descarte pedido desde la tarjeta. Nunca deja la tarjeta en
+   * un estado inconsistente: en éxito Y en error el modal se cierra (mismo
+   * patrón que `descartarLote` de arriba) y se refresca `lotesAbiertos()`
+   * — un 409/404 puede significar que el lote cambió de estado mientras el
+   * modal estaba abierto.
+   */
+  const confirmarDescarteDesdeTarjeta = useCallback(async () => {
+    if (!resumenTarjeta) return
+    setDescartandoTarjeta(true)
+    setErrorTarjeta(null)
+    try {
+      await contractsApi.migracion.descartarLote(resumenTarjeta.lote)
+    } catch (e) {
+      setErrorTarjeta(e instanceof Error ? e.message : 'No pudimos descartar el lote.')
+    } finally {
+      setResumenTarjeta(null)
+      setDescartandoTarjeta(false)
+      contractsApi.migracion
+        .lotesAbiertos()
+        .then(setLotesAbiertos)
+        .catch(() => {
+          // No poder listarlos no debe impedir seguir.
+        })
+    }
+  }, [resumenTarjeta])
+
   /*
    * Al entrar, buscar migraciones a medias. La lista de trabajo vivía sólo en
    * el estado del componente: recargar la borraba y la única salida era subir
@@ -423,21 +492,71 @@ export function MigrarContratos() {
                     </>
                   )}
                 </p>
-                <Button
-                  size="sm"
-                  hideArrow
-                  disabled={cargando}
-                  onClick={() => retomar(l.lote)}
-                >
-                  Retomar
-                </Button>
+                <div className="flex shrink-0 items-center gap-2">
+                  {/*
+                   * T-0039 — "Descartar" secundario, al lado de "Retomar"
+                   * (primario). El owner lo pidió para un lote que NO quiere
+                   * continuar: obligarlo a apretar "Retomar" primero para
+                   * llegar al botón de T-0036 era exactamente lo que había
+                   * que resolver. `variant="outline"` + tinte destructivo lo
+                   * mantiene secundario a propósito — esta tarjeta puede
+                   * listar varios lotes y "Retomar" sigue siendo el click
+                   * fácil, no éste.
+                   */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    hideArrow
+                    disabled={procesando || cargandoResumenDe === l.lote}
+                    isLoading={cargandoResumenDe === l.lote}
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => {
+                      // Guarda además del `disabled`: un lote PROCESANDO
+                      // devuelve 409 LOTE_EN_PROCESO si se le pide `resumen()`
+                      // igual, y el owner pidió explícitamente no dejar
+                      // llegar al usuario a ese error — se explica en la
+                      // propia tarjeta en vez (arriba, "procesando N / total").
+                      if (procesando) return
+                      void abrirDescarteDesdeTarjeta(l.lote)
+                    }}
+                    data-testid={`descartar-lote-lista-${l.lote}`}
+                  >
+                    Descartar
+                  </Button>
+                  <Button
+                    size="sm"
+                    hideArrow
+                    disabled={cargando}
+                    onClick={() => retomar(l.lote)}
+                  >
+                    Retomar
+                  </Button>
+                </div>
               </div>
             )
           })}
           <p className="text-xs text-muted-foreground">
             Si volvés a subir el mismo archivo, las filas se duplican.
           </p>
+          {errorTarjeta ? (
+            <p className="text-xs text-destructive" data-testid="error-descartar-lote-tarjeta">
+              {errorTarjeta}
+            </p>
+          ) : null}
         </Card>
+      ) : null}
+
+      {resumenTarjeta ? (
+        <DialogoDescartarLote
+          lote={resumenTarjeta.lote}
+          resumen={resumenTarjeta.resumen}
+          descartando={descartandoTarjeta}
+          onOpenChange={(o) => {
+            if (!o && !descartandoTarjeta) setResumenTarjeta(null)
+          }}
+          onConfirmar={() => void confirmarDescarteDesdeTarjeta()}
+        />
       ) : null}
 
       <Card className="p-6">
@@ -574,6 +693,91 @@ export function MigrarContratos() {
         </Card>
       ) : null}
     </div>
+  )
+}
+
+/**
+ * El modal de confirmación de "Descartar este lote" — copia y anatomía
+ * congeladas por contract.md T-0036 §3.2.C6. Dos call sites lo necesitan
+ * idéntico: `ListaDeTrabajo` (T-0036, el lote ya abierto) y la tarjeta
+ * "Tenés una migración sin terminar" (T-0039, sin abrirlo). Antes de T-0039
+ * vivía inline dentro de `ListaDeTrabajo`; se extrajo acá para que ningún
+ * call site pueda divergir por accidente — un dato o una frase que cambia en
+ * uno y no en el otro es exactamente el tipo de drift que este componente
+ * evita por construcción.
+ *
+ * `lote` se muestra en el título: la tarjeta puede listar varios lotes a la
+ * vez, así que la confirmación tiene que nombrar CUÁL se está por descartar.
+ */
+function DialogoDescartarLote({
+  lote,
+  resumen,
+  descartando,
+  onOpenChange,
+  onConfirmar,
+}: {
+  lote: string
+  resumen: ResumenLote
+  /** Nunca rechaza — ver `descartarLote`/`confirmarDescarteDesdeTarjeta`. */
+  descartando: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirmar: () => void
+}) {
+  return (
+    // AlertDialog — shadcn, NUNCA window.confirm(). Sin type-to-confirm a
+    // propósito (§11-L7): es recuperable resubiendo el archivo.
+    <AlertDialog
+      open
+      onOpenChange={(o) => {
+        if (!descartando) onOpenChange(o)
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Descartar el lote {lote}?</AlertDialogTitle>
+          <AlertDialogDescription className="space-y-2 text-left">
+            <span className="block">
+              Se van a descartar {resumen.pendientes + resumen.listos}{' '}
+              {resumen.pendientes + resumen.listos === 1 ? 'fila' : 'filas'} de
+              este lote — las que todavía no están completas y las que ya
+              están listas pero sin activar. No se van a convertir en
+              contratos, y se pierde el trabajo ya hecho en ellas: inmueble
+              asignado, propietario registrado, fechas y canon corregidos.
+            </span>
+            {resumen.activados > 0 ? (
+              <span className="block">
+                Los {resumen.activados}{' '}
+                {resumen.activados === 1 ? 'contrato' : 'contratos'} que ya se
+                activaron de este lote no se tocan — siguen siendo contratos
+                reales.
+              </span>
+            ) : null}
+            <span className="block">
+              Los inmuebles y propietarios que ya se crearon a partir de este
+              archivo tampoco se borran: vas a seguir viéndolos en tu
+              portafolio.
+            </span>
+            <span className="block">
+              Podés volver a intentarlo subiendo el mismo archivo otra vez —
+              el archivo original no se modifica.
+            </span>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={descartando}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            tone="danger"
+            disabled={descartando}
+            onClick={(e) => {
+              e.preventDefault()
+              onConfirmar()
+            }}
+          >
+            {descartando ? 'Descartando...' : 'Descartar este lote'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 
@@ -778,60 +982,15 @@ function ListaDeTrabajo({
         ) : null}
       </Card>
 
-      {/* AlertDialog — shadcn, NUNCA window.confirm(). Sin type-to-confirm
-          a propósito (§11-L7): es recuperable resubiendo el archivo. */}
-      <AlertDialog
-        open={confirmarDescarte}
-        onOpenChange={(o) => {
-          if (!descartando) setConfirmarDescarte(o)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Descartar este lote?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2 text-left">
-              <span className="block">
-                Se van a descartar {resumen.pendientes + resumen.listos}{' '}
-                {resumen.pendientes + resumen.listos === 1 ? 'fila' : 'filas'} de
-                este lote — las que todavía no están completas y las que ya
-                están listas pero sin activar. No se van a convertir en
-                contratos, y se pierde el trabajo ya hecho en ellas: inmueble
-                asignado, propietario registrado, fechas y canon corregidos.
-              </span>
-              {resumen.activados > 0 ? (
-                <span className="block">
-                  Los {resumen.activados}{' '}
-                  {resumen.activados === 1 ? 'contrato' : 'contratos'} que ya se
-                  activaron de este lote no se tocan — siguen siendo contratos
-                  reales.
-                </span>
-              ) : null}
-              <span className="block">
-                Los inmuebles y propietarios que ya se crearon a partir de este
-                archivo tampoco se borran: vas a seguir viéndolos en tu
-                portafolio.
-              </span>
-              <span className="block">
-                Podés volver a intentarlo subiendo el mismo archivo otra vez —
-                el archivo original no se modifica.
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={descartando}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              tone="danger"
-              disabled={descartando}
-              onClick={(e) => {
-                e.preventDefault()
-                void onDescartarLote().then(() => setConfirmarDescarte(false))
-              }}
-            >
-              {descartando ? 'Descartando...' : 'Descartar este lote'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {confirmarDescarte ? (
+        <DialogoDescartarLote
+          lote={lote}
+          resumen={resumen}
+          descartando={descartando}
+          onOpenChange={setConfirmarDescarte}
+          onConfirmar={() => void onDescartarLote().then(() => setConfirmarDescarte(false))}
+        />
+      ) : null}
 
       {activacion ? (
         <Card className="space-y-2 p-6" data-testid="resultado-activacion">

@@ -135,11 +135,41 @@ export interface Consignacion {
   propertyZone: string;
   propertyType: 'apartment' | 'house' | 'studio' | 'commercial' | 'office' | 'warehouse';
   propertyThumbnail?: string;
-  monthlyRent: number;
+  /**
+   * contract-addendum-2.md §A.2/§A.4/§A.9.1 — `null` on a SALE mandate.
+   * Never `0` (C6). `Consignacion.monthlyRent` was NOT NULL before T-0038.
+   */
+  monthlyRent: number | null;
   adminFee?: number;
 
+  /**
+   * contract-addendum-2.md §A.1 — derived server-side from `Property.listingType`
+   * at creation, NEVER accepted on either DTO. Absent on the wire (older back
+   * build) degrades to `'rent'`. Unknown value → throw (C19), see
+   * `normalizeConsignacion`.
+   */
+  listingType: 'rent' | 'sale';
+  /**
+   * contract-addendum-2.md §A.2/§A.3 — a DISTINCT field from `commissionPercent`.
+   * `null` on a RENT mandate (normal) and on a pre-addendum SALE row. Render
+   * `—`, never `0 %`.
+   */
+  saleCommissionPercent: number | null;
+  /**
+   * contract-addendum-2.md §A.9.1 — NEW, closes W3-c. `null` when the mandate
+   * has no linked `propertyId` (a migrated cartera row). Never fabricate.
+   */
+  propertyCode: number | null;
+
   // Consignment terms
-  commissionPercent: number; // Agency commission (typically 8-12%)
+  /**
+   * Agency commission (typically 8-12% on a RENT mandate). `0` on a SALE
+   * mandate — see §A.3 for why that `0` is not a C6 violation (the row
+   * carries `listingType: 'sale'` as an explicit discriminator). The front
+   * MUST branch on `listingType` and render `saleCommissionPercent` instead
+   * on a sale row.
+   */
+  commissionPercent: number;
   contractDate: string;
   contractEndDate?: string;
   minimumTerm?: number; // Minimum lease term in months
@@ -179,9 +209,20 @@ export interface ConsignacionFormData {
   propertyCity: string;
   propertyZone: string;
   propertyType: Consignacion['propertyType'];
-  monthlyRent: number;
+  /**
+   * contract-addendum-2.md §A.7 DTO deltas — OPTIONAL. Omitted (never `null`,
+   * never `0`) on a sale mandate. Required in practice for a rent mandate
+   * (enforced server-side by rule R1, and in the UI by not letting the
+   * wizard/form advance without it).
+   */
+  monthlyRent?: number;
   adminFee?: number;
   commissionPercent: number;
+  /**
+   * contract-addendum-2.md §A.3/§A.7 — NEW, distinct from `commissionPercent`.
+   * Required on a sale mandate (rule R3), forbidden on a rent one (rule R6).
+   */
+  saleCommissionPercent?: number;
   agenteId: string;
   minimumTerm?: number;
 }

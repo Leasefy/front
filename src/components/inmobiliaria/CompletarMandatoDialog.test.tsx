@@ -159,6 +159,54 @@ describe('buildMandatoPayload — the no-second-round-trip mapping (contract §3
   });
 });
 
+describe('buildMandatoPayload — the reduced sale mandate (contract-addendum-2.md §A)', () => {
+  const saleValues = { propietarioId: 'owner-1', commissionPercent: 12, contractDate: '2026-08-29', saleCommissionPercent: 3 };
+
+  it('omits monthlyRent entirely on a sale mandate — never null-with-a-value, never 0', () => {
+    const payload = buildMandatoPayload(makeInmueble({ monthlyRent: null }), saleValues);
+    expect(payload.monthlyRent).toBeUndefined();
+    expect('monthlyRent' in payload).toBe(false);
+  });
+
+  it('sends saleCommissionPercent on a sale mandate', () => {
+    const payload = buildMandatoPayload(makeInmueble({ monthlyRent: null }), saleValues);
+    expect(payload.saleCommissionPercent).toBe(3);
+  });
+
+  it('sends commissionPercent: 0 on a sale mandate — not a C6 violation (explicit listingType discriminator)', () => {
+    const payload = buildMandatoPayload(makeInmueble({ monthlyRent: null }), saleValues);
+    expect(payload.commissionPercent).toBe(0);
+  });
+
+  it('omits adminFee on a sale mandate even when the property row carries one', () => {
+    const payload = buildMandatoPayload(makeInmueble({ monthlyRent: null, adminFee: 150_000 }), saleValues);
+    expect(payload.adminFee).toBeUndefined();
+    expect('adminFee' in payload).toBe(false);
+  });
+
+  it('still carries propietarioId, propertyId and contractDate on a sale mandate', () => {
+    const payload = buildMandatoPayload(makeInmueble({ monthlyRent: null, propertyId: 'prop-sale-1' }), saleValues);
+    expect(payload.propietarioId).toBe('owner-1');
+    expect(payload.propertyId).toBe('prop-sale-1');
+    expect(payload.contractDate).toBe('2026-08-29');
+  });
+
+  it('defaults saleCommissionPercent to 0 when the caller omits it (defensive, UI always supplies one)', () => {
+    const payload = buildMandatoPayload(makeInmueble({ monthlyRent: null }), {
+      propietarioId: 'owner-1',
+      commissionPercent: 12,
+      contractDate: '2026-08-29',
+    });
+    expect(payload.saleCommissionPercent).toBe(0);
+  });
+
+  it('a RENT mandate is unaffected — still sends monthlyRent, never saleCommissionPercent', () => {
+    const payload = buildMandatoPayload(makeInmueble(), saleValues);
+    expect(payload.monthlyRent).toBe(2_500_000);
+    expect(payload.saleCommissionPercent).toBeUndefined();
+  });
+});
+
 const VALUES = { propietarioId: 'owner-1', commissionPercent: 12, contractDate: '2026-08-26' };
 
 describe('completeMandatoAndPublish — mandate first, publish second (contract §3.4, A-1.1)', () => {
@@ -210,6 +258,23 @@ describe('completeMandatoAndPublish — mandate first, publish second (contract 
     expect(outcome.published).toBe(false);
     expect(outcome.publishErrorMessage).toBe('Plan cap reached');
     // Nothing here tries to undo the mandate — no delete/rollback call exists.
+  });
+
+  it('a sale mandate (no canon) completes and publishes like a rent one', async () => {
+    createMock.mockResolvedValue({});
+
+    const outcome = await completeMandatoAndPublish(
+      makeInmueble({ propertyId: 'prop-sale-1', monthlyRent: null }),
+      { ...VALUES, saleCommissionPercent: 3 },
+    );
+
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({ saleCommissionPercent: 3, propertyId: 'prop-sale-1' }),
+    );
+    expect(createMock.mock.calls[0][0]).not.toHaveProperty('monthlyRent');
+    expect(updatePropertyMock).toHaveBeenCalledWith('prop-sale-1', { status: 'AVAILABLE' });
+    expect(outcome.status).toBe('created');
+    expect(outcome.published).toBe(true);
   });
 });
 
@@ -286,5 +351,25 @@ describe('<CompletarMandatoDialog> — smoke render', () => {
       (cancelBtn as HTMLElement).click();
     });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('a sale listing (no canon) is no longer forbidden — renders a sale-commission field, not a blocking error', () => {
+    act(() => {
+      root.render(
+        <CompletarMandatoDialog
+          inmueble={makeInmueble({ monthlyRent: null })}
+          onClose={vi.fn()}
+          propietarios={[]}
+          agentes={[]}
+          onCompleted={vi.fn()}
+        />,
+      );
+    });
+    expect(document.body.textContent).toContain(
+      'inmobiliaria.consignaciones.mandateDialog.saleCommissionLabel',
+    );
+    // The old ruling rendered a role="alert" that blocked the flow. The new
+    // one is informational (role="status"), never role="alert".
+    expect(document.body.querySelector('[role="alert"]')).toBeNull();
   });
 });

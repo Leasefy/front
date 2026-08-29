@@ -583,7 +583,11 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
 
 export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
   const { t } = useI18n();
+  // contract-addendum-2.md §A.8 step 3 — "Renders sale commission only. No
+  // canon, no minimumTerm, no adminFee."
+  const isSaleListing = formData.listingType === 'sale';
   const commissionPercent = formData.commissionPercent ?? 10;
+  const saleCommissionPercent = formData.saleCommissionPercent ?? 3;
   const monthlyRent = formData.monthlyRent || 0;
   const agencyCommission = Math.round(monthlyRent * (commissionPercent / 100));
   const ownerNet = monthlyRent - agencyCommission;
@@ -599,11 +603,10 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
         </p>
       </div>
 
-      <div className="space-y-6">
-        {/* Commission Input */}
+      {isSaleListing ? (
         <div className="space-y-3">
           <label className="text-sm font-medium text-muted-foreground">
-            {t('inmobiliaria.consignaciones.wizard.step3.commissionLabel')}
+            {t('inmobiliaria.consignaciones.wizard.step3.saleCommissionLabel')}
           </label>
           <div className="relative">
             <Input
@@ -611,76 +614,108 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
               min="0"
               max="100"
               step="0.5"
-              value={commissionPercent}
+              value={saleCommissionPercent}
               onChange={(e) => {
                 const value = parseFloat(e.target.value);
                 if (!isNaN(value) && value >= 0 && value <= 100) {
-                  updateFormData({ commissionPercent: value });
+                  updateFormData({ saleCommissionPercent: value });
                 }
               }}
               className="w-full pr-12 text-lg font-semibold tabular-nums"
-              placeholder="10"
+              placeholder="3"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground">
               %
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            {t('inmobiliaria.consignaciones.wizard.step3.commissionHelper')}
+            {t('inmobiliaria.consignaciones.wizard.step3.saleCommissionHelper')}
           </p>
         </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Commission Input */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-muted-foreground">
+              {t('inmobiliaria.consignaciones.wizard.step3.commissionLabel')}
+            </label>
+            <div className="relative">
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.5"
+                value={commissionPercent}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  if (!isNaN(value) && value >= 0 && value <= 100) {
+                    updateFormData({ commissionPercent: value });
+                  }
+                }}
+                className="w-full pr-12 text-lg font-semibold tabular-nums"
+                placeholder="10"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground">
+                %
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t('inmobiliaria.consignaciones.wizard.step3.commissionHelper')}
+            </p>
+          </div>
 
-        {/* Commission Summary */}
-        {monthlyRent > 0 && (
-          <div className="p-4 rounded-xl bg-surface-muted dark:bg-[#14130F] border border-border-faint dark:border-border-strong">
-            <h4 className="text-sm font-medium text-fg dark:text-fg-subtle mb-3">
-              {t('inmobiliaria.consignaciones.wizard.step3.monthlySummary')}
-            </h4>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.wizard.step3.monthlyRent')}</span>
-                <span className="font-medium text-fg dark:text-white">
-                  {formatCurrency(monthlyRent)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-fg-muted dark:text-fg-subtle">
-                  {t('inmobiliaria.consignaciones.wizard.step3.agencyCommission', { percent: commissionPercent })}
-                </span>
-                <span className="font-medium text-primary">
-                  -{formatCurrency(agencyCommission)}
-                </span>
-              </div>
-              <div className="pt-2 border-t border-border dark:border-border-strong flex justify-between text-sm">
-                <span className="font-medium text-fg dark:text-white">{t('inmobiliaria.consignaciones.wizard.step3.ownerNet')}</span>
-                <span className="font-bold text-success">
-                  {formatCurrency(ownerNet)}
-                </span>
+          {/* Commission Summary */}
+          {monthlyRent > 0 && (
+            <div className="p-4 rounded-xl bg-surface-muted dark:bg-[#14130F] border border-border-faint dark:border-border-strong">
+              <h4 className="text-sm font-medium text-fg dark:text-fg-subtle mb-3">
+                {t('inmobiliaria.consignaciones.wizard.step3.monthlySummary')}
+              </h4>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.wizard.step3.monthlyRent')}</span>
+                  <span className="font-medium text-fg dark:text-white">
+                    {formatCurrency(monthlyRent)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-fg-muted dark:text-fg-subtle">
+                    {t('inmobiliaria.consignaciones.wizard.step3.agencyCommission', { percent: commissionPercent })}
+                  </span>
+                  <span className="font-medium text-primary">
+                    -{formatCurrency(agencyCommission)}
+                  </span>
+                </div>
+                <div className="pt-2 border-t border-border dark:border-border-strong flex justify-between text-sm">
+                  <span className="font-medium text-fg dark:text-white">{t('inmobiliaria.consignaciones.wizard.step3.ownerNet')}</span>
+                  <span className="font-bold text-success">
+                    {formatCurrency(ownerNet)}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Minimum Term */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
-            {t('inmobiliaria.consignaciones.wizard.step3.minimumTermLabel')}
-          </label>
-          <RadioCardGroup
-            className="grid grid-cols-2 sm:grid-cols-4 gap-2"
-            value={formData.minimumTerm != null ? String(formData.minimumTerm) : undefined}
-            onValueChange={(v) => updateFormData({ minimumTerm: Number(v) })}
-          >
-            {MINIMUM_TERMS.map((term) => (
-              <RadioCard
-                key={term.value}
-                value={String(term.value)}
-                label={<span className="text-sm font-medium">{t(term.labelKey)}</span>}
-              />
-            ))}
-          </RadioCardGroup>
+          {/* Minimum Term */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+              {t('inmobiliaria.consignaciones.wizard.step3.minimumTermLabel')}
+            </label>
+            <RadioCardGroup
+              className="grid grid-cols-2 sm:grid-cols-4 gap-2"
+              value={formData.minimumTerm != null ? String(formData.minimumTerm) : undefined}
+              onValueChange={(v) => updateFormData({ minimumTerm: Number(v) })}
+            >
+              {MINIMUM_TERMS.map((term) => (
+                <RadioCard
+                  key={term.value}
+                  value={String(term.value)}
+                  label={<span className="text-sm font-medium">{t(term.labelKey)}</span>}
+                />
+              ))}
+            </RadioCardGroup>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -1044,16 +1079,16 @@ export function StepConfirmation({
           </div>
         </div>
 
-        {/* Terms Section — T-0038: a SALE listing has no rental mandate
-            (see ConsignacionWizard.tsx), so no commission/term is created
-            for it even though step 3 stays in the flow. Showing $0 terms
-            here would misleadingly imply they'll be saved. */}
+        {/* Terms Section — contract-addendum-2.md §A: a SALE listing now
+            carries a REDUCED mandate (propietario + consignedAt + sale
+            commission). No canon, no minimumTerm, no adminFee. */}
         {isSaleListing ? (
           <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
             <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.termsSection')} step={3} />
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">
-              {t('inmobiliaria.consignaciones.wizard.step6.noTermsForSale')}
-            </p>
+            <div>
+              <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.wizard.step6.saleCommission')}</p>
+              <p className="font-medium text-fg dark:text-white">{formData.saleCommissionPercent ?? 0}%</p>
+            </div>
           </div>
         ) : (
         <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
@@ -1105,7 +1140,9 @@ export function StepConfirmation({
           )}
         </div>
 
-        {/* Inventory Section */}
+        {/* Inventory Section — step 5 (acta de entrega) is skipped entirely
+            on the sale path (§A.8), so there is nothing to confirm here. */}
+        {!isSaleListing && (
         <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.inventorySection')} step={5} />
           {inventoryItems.length > 0 ? (
@@ -1140,6 +1177,7 @@ export function StepConfirmation({
             </p>
           )}
         </div>
+        )}
       </div>
     </div>
   );

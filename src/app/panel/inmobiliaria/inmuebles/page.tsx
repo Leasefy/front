@@ -246,7 +246,16 @@ function PortafolioContent() {
     const rented = mandatos.filter((c) => c.availability === 'rented').length;
     const inProcess = mandatos.filter((c) => c.availability === 'in_process').length;
     const maintenance = mandatos.filter((c) => c.availability === 'maintenance').length;
-    const totalMonthlyRent = mandatos.reduce((sum, c) => sum + c.monthlyRent, 0);
+    // contract-addendum-2.md §A.10 — a SALE mandate has `monthlyRent: null`
+    // (never `0`, C6). Summing it in with a `?? 0` would silently undercount
+    // nothing (null contributes 0 either way to a sum), but a RENT mandate's
+    // `monthlyRent` is guaranteed NOT NULL by the DB CHECK — the `?? 0` here
+    // is a type-narrowing formality, not a real coalesce risk. Filtering by
+    // `listingType` (rather than relying on the null check alone) keeps the
+    // intent explicit: this tile is a RENTAL revenue figure.
+    const totalMonthlyRent = mandatos
+      .filter((c) => c.listingType !== 'sale')
+      .reduce((sum, c) => sum + (c.monthlyRent ?? 0), 0);
 
     return { total, available, rented, inProcess, maintenance, totalMonthlyRent };
   }, [filteredConsignaciones]);

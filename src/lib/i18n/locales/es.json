@@ -1565,6 +1565,7 @@
         "updatedAt": "Actualizado",
         "statusInProcess": "En proceso",
         "tenant": "Inquilino",
+        "saleCommission": "Comisión de venta",
         "propertiesCount": "propiedad(es)"
       }
     },
@@ -2540,6 +2541,7 @@
         "viewDetail": "Ver detalle",
         "perMonth": "/mes",
         "admin": "admin",
+        "saleCommission": "comisión de venta",
         "viewDetailTitle": "Ver detalle",
         "editTitle": "Editar"
       },
@@ -2855,6 +2857,7 @@
       },
       "header": {
         "commission": "comisión",
+        "saleCommission": "comisión de venta",
         "consignacion": "Consignación",
         "perMonth": "/mes",
         "admin": "admin",
@@ -2908,6 +2911,7 @@
         "monthlyRent": "Canon mensual",
         "administration": "Administración",
         "administrationCommission": "Comisión de administración",
+        "saleCommission": "Comisión de venta",
         "estimatedPerMonth": "≈ {{amount}}/mes",
         "contractTerms": "Términos del contrato",
         "assignedAgent": "Agente asignado",
@@ -2929,6 +2933,7 @@
           "zoneRequired": "La zona es requerida",
           "rentPositive": "El canon mensual debe ser mayor a 0",
           "commissionPositive": "La comisión debe ser mayor a 0",
+          "saleCommissionPositive": "La comisión de venta debe ser mayor a 0",
           "agentRequired": "Debe seleccionar un agente",
           "startDateRequired": "La fecha de inicio es requerida"
         }
@@ -2955,9 +2960,10 @@
         "subtitle": "Termina de consignar «{{title}}»: ya tenemos los datos del inmueble, sólo faltan los del mandato.",
         "propietarioLabel": "Propietario",
         "commissionLabel": "Comisión de la agencia",
+        "saleCommissionLabel": "Comisión de venta",
         "contractDateLabel": "Fecha del contrato",
         "agenteLabel": "Agente asignado (opcional)",
-        "saleListingNotice": "Esta propiedad está en venta y no tiene canon de arriendo — no aplica un mandato de arrendamiento.",
+        "saleListingNotice": "Esta propiedad está en venta: el mandato no lleva canon de arriendo, sólo la comisión de venta.",
         "cancel": "Cancelar",
         "confirm": "Completar mandato",
         "toasts": {
@@ -2989,6 +2995,7 @@
         "agentTitle": "Agente Asignado",
         "noAgentAssigned": "No hay agente asignado",
         "commissionDistribution": "Distribución de comisión",
+        "commissionSplitNotAvailableForSale": "Un mandato de venta no reparte comisión entre agente e inmobiliaria en este momento.",
         "agentShare": "Agente",
         "agencyShare": "Inmobiliaria",
         "reassignAgent": "Reasignar agente",
@@ -3098,6 +3105,8 @@
           "subtitle": "Define las condiciones del contrato de consignacion",
           "commissionLabel": "Porcentaje de comisión",
           "commissionHelper": "Ingresa el porcentaje de comisión que cobrará la agencia",
+          "saleCommissionLabel": "Comisión de venta",
+          "saleCommissionHelper": "Ingresá el porcentaje de comisión sobre el precio de venta",
           "monthlySummary": "Resumen mensual",
           "monthlyRent": "Canon mensual",
           "agencyCommission": "Comision agencia ({{percent}}%)",
@@ -3146,6 +3155,7 @@
           "noTitle": "Sin titulo",
           "noSalePrice": "Sin precio de venta",
           "noTermsForSale": "Esta propiedad esta en venta: no aplica comision de arriendo ni termino minimo.",
+          "saleCommission": "Comisión de venta",
           "perMonth": "/mes",
           "admin": "admin",
           "commission": "Comision",

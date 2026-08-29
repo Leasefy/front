@@ -307,13 +307,19 @@ export const agentesApi = {
  */
 type RawConsignacion = Omit<
   Consignacion,
-  'status' | 'availability' | 'propertyType' | 'agenteId'
+  'status' | 'availability' | 'propertyType' | 'agenteId' | 'listingType'
 > & {
   status?: string | null;
   availability?: string | null;
   propertyType?: string | null;
   agenteUserId?: string | null;
   agenteId?: string | null;
+  /**
+   * contract-addendum-2.md §A.1/§A.9.1 — UPPER_SNAKE on the wire, absent on
+   * an older back build (degrades to RENT). Same wire field name and shape
+   * as `Property.listingType` — reuses `resolveListingType` below.
+   */
+  listingType?: string;
 };
 
 export function normalizeConsignacion(raw: RawConsignacion): Consignacion {
@@ -324,6 +330,15 @@ export function normalizeConsignacion(raw: RawConsignacion): Consignacion {
     availability: (lower(raw.availability) || 'available') as Consignacion['availability'],
     propertyType: (lower(raw.propertyType) || 'apartment') as Consignacion['propertyType'],
     agenteId: raw.agenteId ?? raw.agenteUserId ?? '',
+    // contract-addendum-2.md §A.1 — throw-on-unknown (C19), never a silent
+    // default to a wrong listing type.
+    listingType: resolveListingType(raw.listingType),
+    // §A.2/§A.9.1 — `null` on a rent mandate (normal) and on a pre-addendum
+    // sale row. Never fabricate, never coalesce to `0`.
+    saleCommissionPercent: raw.saleCommissionPercent ?? null,
+    // §A.9.1 — NEW, closes W3-c. `null` when the mandate has no linked
+    // property (a migrated cartera row).
+    propertyCode: raw.propertyCode ?? null,
   };
 }
 
@@ -359,6 +374,9 @@ export type ConsignacionUpdateInput = Partial<ConsignacionFormData> & {
 
 function toConsignacionPayload(data: ConsignacionUpdateInput): Record<string, unknown> {
   // Strip front-only keys the backend whitelist would reject (see note above).
+  // `listingType` is deliberately absent from `ConsignacionUpdateInput` /
+  // `ConsignacionFormData` (contract-addendum-2.md §A.1 — derived
+  // server-side, forbidNonWhitelisted 400s it). Do not add it to either type.
   const { agenteId: _agenteId, propertyType, status, availability, ...rest } = data;
   void _agenteId;
   const payload: Record<string, unknown> = { ...rest };

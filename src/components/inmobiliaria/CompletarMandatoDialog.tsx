@@ -47,7 +47,13 @@ export interface MandatoWirePayload {
   propertyCity: string;
   propertyZone?: string;
   propertyType?: Consignacion['propertyType'];
-  monthlyRent: number;
+  /**
+   * contract-addendum-2.md §A.7/§A.8 — OMITTED entirely on a sale mandate.
+   * Never `null`-with-a-value, never `0` (C6, R2).
+   */
+  monthlyRent?: number;
+  /** contract-addendum-2.md §A.3/§A.7 rule R3 — REQUIRED on a sale mandate. */
+  saleCommissionPercent?: number;
   adminFee?: number;
   propertyThumbnail?: string;
   commissionPercent: number;
@@ -60,6 +66,8 @@ export interface MandatoFormValues {
   commissionPercent: number;
   contractDate: string;
   agenteUserId?: string;
+  /** contract-addendum-2.md §A.7 rule R3 — required when the row is a sale listing. */
+  saleCommissionPercent?: number;
 }
 
 /**
@@ -72,14 +80,14 @@ export function buildMandatoPayload(
   inmueble: InmuebleSinConsignacion,
   values: MandatoFormValues,
 ): MandatoWirePayload {
-  // T-0038: a SALE listing has no `monthlyRent` (contract.md §3.2.4) and no
-  // rental `Consignacion` is ever built for one (§3.5.1-B skips it on the
-  // back's own sync). `CompletarMandatoDialog`'s `isValid` blocks submission
-  // before this ever runs for a SALE row — see the component below — so this
-  // fallback is a type-safety net, never a real $0 mandate (C6).
-  if (inmueble.monthlyRent == null) {
-    throw new Error('No se puede completar un mandato de arriendo para una propiedad en venta.');
-  }
+  // contract-addendum-2.md §A.1/§A.2 — the owner's ruling on W3-a (ledger §7)
+  // reversed the old prohibition: a sale listing DOES carry a mandate, in
+  // reduced form (propietario + consignedAt + sale commission, no canon).
+  // `inmueble.monthlyRent == null` is the same SALE signal this whole file
+  // already used before the ruling — an existing DRAFT property that
+  // satisfied the `properties` CHECK constraint has `monthlyRent` set for
+  // RENT and `null` for SALE, so this is not a proxy, it is the fact itself.
+  const isSaleListing = inmueble.monthlyRent == null;
 
   const payload: MandatoWirePayload = {
     propietarioId: values.propietarioId,
@@ -87,10 +95,21 @@ export function buildMandatoPayload(
     propertyTitle: inmueble.propertyTitle,
     propertyAddress: inmueble.propertyAddress,
     propertyCity: inmueble.propertyCity,
-    monthlyRent: inmueble.monthlyRent,
-    commissionPercent: values.commissionPercent,
+    // §A.3 — `commissionPercent` stays required by the DTO; `0` on a sale
+    // mandate is not a C6 violation because the row carries an explicit
+    // `listingType` discriminator (derived server-side from this call).
+    commissionPercent: isSaleListing ? 0 : values.commissionPercent,
     contractDate: values.contractDate,
   };
+
+  if (isSaleListing) {
+    // §A.7 rule R3 — a sale mandate MUST carry a sale commission.
+    payload.saleCommissionPercent = values.saleCommissionPercent ?? 0;
+    // monthlyRent stays OMITTED — never null-with-a-value, never 0 (R2, C6).
+  } else {
+    payload.monthlyRent = inmueble.monthlyRent as number;
+  }
+
   if (inmueble.propertyZone) payload.propertyZone = inmueble.propertyZone;
   // ROOM trap (contract §3.2): no entry in ConsignacionPropertyType — omit
   // it, the column defaults to APARTMENT server-side. Sending "ROOM" 400s
@@ -98,7 +117,9 @@ export function buildMandatoPayload(
   if (inmueble.propertyType !== 'room') {
     payload.propertyType = inmueble.propertyType;
   }
-  if (inmueble.adminFee > 0) payload.adminFee = inmueble.adminFee;
+  // adminFee has no meaning on a sale mandate (§A.2 — "0 always"); omit it
+  // rather than send a value the server will only zero out.
+  if (!isSaleListing && inmueble.adminFee > 0) payload.adminFee = inmueble.adminFee;
   if (inmueble.propertyThumbnail) payload.propertyThumbnail = inmueble.propertyThumbnail;
   if (values.agenteUserId) payload.agenteUserId = values.agenteUserId;
   return payload;
@@ -250,6 +271,7 @@ export function CompletarMandatoDialog({
   const [propietarioId, setPropietarioId] = useState<string | null>(null);
   const [newPropietarioData, setNewPropietarioData] = useState<PropietarioFormData | undefined>();
   const [commissionPercent, setCommissionPercent] = useState(10);
+  const [saleCommissionPercent, setSaleCommissionPercent] = useState(3);
   const [contractDate, setContractDate] = useState(todayISO());
   const [agenteId, setAgenteId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -262,6 +284,7 @@ export function CompletarMandatoDialog({
     setPropietarioId(null);
     setNewPropietarioData(undefined);
     setCommissionPercent(10);
+    setSaleCommissionPercent(3);
     setContractDate(todayISO());
     setAgenteId(null);
     setFormError(null);
@@ -269,10 +292,14 @@ export function CompletarMandatoDialog({
 
   if (!inmueble) return null;
 
-  // T-0038: a SALE listing (`monthlyRent === null`, contract.md §3.2.4) has
-  // no rental mandate to complete — see `buildMandatoPayload` above.
+  // contract-addendum-2.md §A.1/§A.2 — a SALE listing (`monthlyRent === null`)
+  // now carries a REDUCED mandate: propietario + consignedAt + sale
+  // commission. No canon, no minimum term, no acta.
   const isSaleListing = inmueble.monthlyRent == null;
-  const isValid = !isSaleListing && Boolean(propietarioId) && commissionPercent >= 0 && Boolean(contractDate);
+  const isValid =
+    Boolean(propietarioId) &&
+    Boolean(contractDate) &&
+    (isSaleListing ? saleCommissionPercent > 0 : commissionPercent >= 0);
 
   const handleSubmit = async () => {
     if (!isValid || isSubmitting) return;
@@ -288,6 +315,7 @@ export function CompletarMandatoDialog({
         commissionPercent,
         contractDate,
         agenteUserId: selectedAgente?.userId ?? (agenteId ? undefined : user?.id),
+        ...(isSaleListing ? { saleCommissionPercent } : {}),
       });
 
       if (outcome.status === 'failed') {
@@ -362,7 +390,7 @@ export function CompletarMandatoDialog({
           </div>
 
           {isSaleListing && (
-            <p role="alert" className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
+            <p role="status" className="rounded-lg border border-info/30 bg-info-soft px-3 py-2 text-sm text-info">
               {t('inmobiliaria.consignaciones.mandateDialog.saleListingNotice')}
             </p>
           )}
@@ -384,23 +412,43 @@ export function CompletarMandatoDialog({
 
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">
-              {t('inmobiliaria.consignaciones.mandateDialog.commissionLabel')}
+              {isSaleListing
+                ? t('inmobiliaria.consignaciones.mandateDialog.saleCommissionLabel')
+                : t('inmobiliaria.consignaciones.mandateDialog.commissionLabel')}
             </label>
-            <div className="relative">
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                step="0.5"
-                value={commissionPercent}
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value);
-                  if (!isNaN(value) && value >= 0 && value <= 100) setCommissionPercent(value);
-                }}
-                className="pr-10"
-              />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-fg-muted">%</span>
-            </div>
+            {isSaleListing ? (
+              <div className="relative">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.5"
+                  value={saleCommissionPercent}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value) && value >= 0 && value <= 100) setSaleCommissionPercent(value);
+                  }}
+                  className="pr-10"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-fg-muted">%</span>
+              </div>
+            ) : (
+              <div className="relative">
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.5"
+                  value={commissionPercent}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value) && value >= 0 && value <= 100) setCommissionPercent(value);
+                  }}
+                  className="pr-10"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-fg-muted">%</span>
+              </div>
+            )}
           </div>
 
           <div>

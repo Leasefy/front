@@ -143,7 +143,11 @@ export function AsignacionModal({
                   <span className="truncate">{consignacion.propertyAddress}</span>
                 </div>
                 <p className="text-sm font-medium text-primary mt-2">
-                  {formatCurrency(consignacion.monthlyRent)}{t('inmobiliaria.agente.perMonth')}
+                  {consignacion.listingType === 'sale'
+                    ? (consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—')
+                    : consignacion.monthlyRent != null
+                      ? `${formatCurrency(consignacion.monthlyRent)}${t('inmobiliaria.agente.perMonth')}`
+                      : '—'}
                 </p>
               </div>
             </div>

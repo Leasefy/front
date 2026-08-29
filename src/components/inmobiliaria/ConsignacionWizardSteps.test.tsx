@@ -221,7 +221,7 @@ describe('<StepConfirmation> — T-0038 SALE listing summary', () => {
     expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step6.noSalePrice')
   })
 
-  it('replaces the commission/minimum-term terms section with a "no terms for sale" notice', async () => {
+  it('replaces the commission/minimum-term terms section with the sale commission (contract-addendum-2.md §A.8)', async () => {
     await act(async () => {
       root.render(
         React.createElement(StepConfirmation, {
@@ -230,6 +230,7 @@ describe('<StepConfirmation> — T-0038 SALE listing summary', () => {
             propertyTitle: 'Depto Centro',
             listingType: 'sale',
             salePrice: 400_000_000,
+            saleCommissionPercent: 3,
           },
           updateFormData: vi.fn(),
           propietarios: PROPIETARIOS,
@@ -239,7 +240,8 @@ describe('<StepConfirmation> — T-0038 SALE listing summary', () => {
       )
     })
 
-    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step6.noTermsForSale')
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step6.saleCommission')
+    expect(container.textContent).toContain('3%')
     expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step6.monthlyCommission')
   })
 

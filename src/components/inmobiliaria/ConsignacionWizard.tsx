@@ -73,6 +73,9 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
   const [formData, setFormData] = useState<Partial<WizardFormData>>({
     propertyType: 'apartment',
     commissionPercent: 10,
+    // contract-addendum-2.md §A.3 — a distinct field, only used on the sale
+    // branch (step 3 renders one or the other, never both, §A.8).
+    saleCommissionPercent: 3,
     minimumTerm: 12,
     inventoryItems: [],
     inventoryNotes: '',
@@ -149,18 +152,25 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     }
   }, [currentStep, formData]);
 
-  // Navigation helpers — agents skip step 4
+  // Navigation helpers — agents skip step 4; a sale listing skips step 5
+  // (contract-addendum-2.md §A.8 — "5 · Inventario / acta de entrega —
+  // Skipped, the owner ruled it out"). Both skips compose: an agent
+  // creating a sale mandate goes 3 → 6 directly.
+  const isSaleListing = formData.listingType === 'sale';
+
   const getNextStep = useCallback((step: number) => {
-    const next = step + 1;
-    if (isAgentRole && next === 4) return 5;
+    let next = step + 1;
+    if (isAgentRole && next === 4) next = 5;
+    if (isSaleListing && next === 5) next = 6;
     return next;
-  }, [isAgentRole]);
+  }, [isAgentRole, isSaleListing]);
 
   const getPrevStep = useCallback((step: number) => {
-    const prev = step - 1;
-    if (isAgentRole && prev === 4) return 3;
+    let prev = step - 1;
+    if (isSaleListing && prev === 5) prev = 4;
+    if (isAgentRole && prev === 4) prev = 3;
     return prev;
-  }, [isAgentRole]);
+  }, [isAgentRole, isSaleListing]);
 
   // ── Step 1 → 2: persist the propietario on "Siguiente" ────────────────────
   const [isPersistingOwner, setIsPersistingOwner] = useState(false);
@@ -345,53 +355,18 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
       }
 
       /**
-       * T-0038: a SALE listing gets NO `Consignacion` mandate.
+       * contract-addendum-2.md §A — the owner's ruling on W3-a reversed
+       * WU-3's shipped behaviour: a sale listing DOES carry a mandate, in
+       * reduced form (propietario + consignedAt + sale commission). No
+       * canon, no minimumTerm, no adminFee, no acta de entrega (step 5 is
+       * skipped entirely on this path, see `getNextStep` above).
        *
-       * `Consignacion` is a RENTAL agreement — `monthlyRent` (NOT NULL on
-       * that entity, unlike `Property.monthlyRent`), `minimumTerm`,
-       * `currentTenantName`, `leaseEndDate`. None of that applies to a sale.
-       * Sending `monthlyRent: 0` here to satisfy the NOT NULL column would
-       * be exactly the C6 sentinel bug this whole task removes elsewhere
-       * (contract.md §3.5.1-B makes the same call for the back's own
-       * `ensureConsignacion` auto-sync, for the same reason).
-       *
-       * This is a judgment call the frozen contract does not spell out for
-       * this specific wizard call site — flagged in the worker report.
-       * Reusing the ALREADY-frozen "mandate-less property" surface (C10,
-       * `GET /inmobiliaria/inmuebles/sin-consignacion`) is the smallest
-       * correct extension: a sale listing behaves like any other
-       * mandate-less property. The publish-ordering invariant (contract.md
-       * §3.4/T-0018 — "never AVAILABLE before its Consignacion exists") is
-       * scoped to rentals in its own reasoning (protects commission
-       * liquidation); a sale listing has nothing to liquidate, so it
-       * publishes directly.
+       * `saleCommissionPercent` is a DISTINCT field from `commissionPercent`
+       * (§A.3) — never reused. `commissionPercent` is still required by the
+       * DTO and is sent as `0` on a sale mandate, which is not a C6
+       * violation because the row carries an explicit `listingType`
+       * discriminator (derived server-side, never sent by this call).
        */
-      if (isSaleListing) {
-        try {
-          await propertiesApi.update(property.id, { status: 'AVAILABLE' });
-        } catch (error) {
-          console.error('Error publishing sale property:', error);
-          const reason =
-            error instanceof ApiError && error.messages
-              ? error.messages.join(' · ')
-              : error instanceof Error && error.message
-                ? error.message
-                : t('inmobiliaria.consignaciones.wizard.toasts.publishErrorFallbackReason');
-          toast.error(t('inmobiliaria.consignaciones.wizard.toasts.publishErrorTitle'), {
-            description: t('inmobiliaria.consignaciones.wizard.toasts.publishErrorDesc', { reason }),
-          });
-          router.push('/panel/inmobiliaria/inmuebles');
-          return;
-        }
-
-        toast.success(t('inmobiliaria.consignaciones.wizard.toasts.successTitle'), {
-          description: t('inmobiliaria.consignaciones.wizard.toasts.successDesc', {
-            title: formData.propertyTitle || '',
-          }),
-        });
-        router.push('/panel/inmobiliaria/inmuebles');
-        return;
-      }
 
       // El mandato. `agenteUserId` es un User.id: el `Agente.id` del front es
       // un AgencyMember.id y mandarlo acá no falla, asigna a nadie.
@@ -412,11 +387,25 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
           propertyCity: formData.propertyCity ?? '',
           propertyZone: formData.propertyZone ?? '',
           propertyType: formData.propertyType ?? 'apartment',
-          monthlyRent: formData.monthlyRent ?? 0,
-          ...(formData.adminFee != null ? { adminFee: formData.adminFee } : {}),
-          commissionPercent: formData.commissionPercent ?? 0,
-          contractDate: formData.contractStartDate ?? new Date().toISOString().split('T')[0],
-          ...(formData.minimumTerm != null ? { minimumTerm: formData.minimumTerm } : {}),
+          // §A.7/§A.8 — monthlyRent/adminFee/minimumTerm are OMITTED on a
+          // sale mandate (never null-with-a-value, never 0, R2/C6). A rent
+          // mandate is unaffected — `isStepValid` already blocks step 2 from
+          // advancing without a positive `monthlyRent`, so no `?? 0`
+          // sentinel is needed here any more (the twin of the one WU-3
+          // already removed from the property-create path).
+          ...(isSaleListing
+            ? { saleCommissionPercent: formData.saleCommissionPercent ?? 0 }
+            : {
+                monthlyRent: formData.monthlyRent as number,
+                ...(formData.adminFee != null ? { adminFee: formData.adminFee } : {}),
+                ...(formData.minimumTerm != null ? { minimumTerm: formData.minimumTerm } : {}),
+              }),
+          commissionPercent: isSaleListing ? 0 : (formData.commissionPercent ?? 0),
+          // §A.2 — the sale mandate's contractDate is the SAME value sent as
+          // Property.consignedAt above; the rent mandate keeps its own date.
+          contractDate: isSaleListing
+            ? (formData.consignedAt ?? new Date().toISOString().split('T')[0])
+            : (formData.contractStartDate ?? new Date().toISOString().split('T')[0]),
           agenteId: formData.agenteId ?? '',
         });
       } catch (error) {
@@ -535,8 +524,13 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     return 'upcoming';
   };
 
-  // Visible steps depend on role
-  const visibleSteps = isAgentRole ? STEPS.filter((s) => s.id !== 4) : STEPS;
+  // Visible steps depend on role (agents skip "Agent") and listing type (a
+  // sale mandate skips "Inventory/acta de entrega" — §A.8).
+  const visibleSteps = STEPS.filter((s) => {
+    if (isAgentRole && s.id === 4) return false;
+    if (isSaleListing && s.id === 5) return false;
+    return true;
+  });
   const totalVisible = visibleSteps.length;
   // Position of current step among visible steps (1-based)
   const currentVisibleIndex = visibleSteps.findIndex((s) => s.id === currentStep);

@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { agencyApi, inmobiliariaConfigApi, permissionsApi, cobrosApi, mantenimientoApi, documentosApi, propietariosApi, inmueblesApi, normalizeInmuebleSinConsignacion } from '../inmobiliaria.service';
+import { agencyApi, inmobiliariaConfigApi, permissionsApi, cobrosApi, mantenimientoApi, documentosApi, propietariosApi, inmueblesApi, normalizeInmuebleSinConsignacion, normalizeConsignacion } from '../inmobiliaria.service';
 import { ApiError, setAccessToken } from '../client';
 import type { PropietarioFormData, BackendInmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
 
@@ -566,5 +566,61 @@ describe('normalizeInmuebleSinConsignacion — T-0038 property-sale fields', () 
 
     const absent = normalizeInmuebleSinConsignacion(backendRow());
     expect('consignedAt' in absent).toBe(false);
+  });
+});
+
+// ── T-0038 contract-addendum-2.md §A.1/§A.2/§A.9.1 — the sale mandate ──────
+
+function rawConsignacion(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'cons-1',
+    propertyId: 'prop-1',
+    propietarioId: 'owner-1',
+    agenteUserId: 'user-1',
+    propertyTitle: 'Depto Chicó',
+    propertyAddress: 'Cra 11 #94-45',
+    propertyCity: 'Bogotá',
+    propertyZone: 'Chicó',
+    propertyType: 'APARTMENT',
+    monthlyRent: 2_500_000,
+    adminFee: 0,
+    commissionPercent: 10,
+    contractDate: '2026-01-01T00:00:00.000Z',
+    status: 'ACTIVE',
+    availability: 'AVAILABLE',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  } as Parameters<typeof normalizeConsignacion>[0];
+}
+
+describe('normalizeConsignacion — the reduced sale mandate', () => {
+  it('defaults listingType to "rent" when absent (older back build)', () => {
+    expect(normalizeConsignacion(rawConsignacion()).listingType).toBe('rent');
+  });
+
+  it('maps a SALE row: listingType lower-cased, monthlyRent null preserved, never 0 (C6)', () => {
+    const result = normalizeConsignacion(
+      rawConsignacion({ listingType: 'SALE', monthlyRent: null, saleCommissionPercent: 3 }),
+    );
+    expect(result.listingType).toBe('sale');
+    expect(result.monthlyRent).toBeNull();
+    expect(result.saleCommissionPercent).toBe(3);
+  });
+
+  it('throws on an unrecognised listingType instead of defaulting (C19)', () => {
+    expect(() => normalizeConsignacion(rawConsignacion({ listingType: 'LEASE' }))).toThrow();
+  });
+
+  it('defaults saleCommissionPercent to null when absent — never 0%', () => {
+    expect(normalizeConsignacion(rawConsignacion()).saleCommissionPercent).toBeNull();
+  });
+
+  it('defaults propertyCode to null when absent (a migrated cartera row with no linked property)', () => {
+    expect(normalizeConsignacion(rawConsignacion()).propertyCode).toBeNull();
+  });
+
+  it('passes propertyCode through when present', () => {
+    expect(normalizeConsignacion(rawConsignacion({ propertyCode: 42 })).propertyCode).toBe(42);
   });
 });

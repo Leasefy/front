@@ -424,16 +424,15 @@ describe('<ConsignacionWizard> — publishes the property after the mandate (T-0
 })
 
 /**
- * <ConsignacionWizard> — T-0038: a SALE listing gets no Consignacion mandate.
+ * <ConsignacionWizard> — contract-addendum-2.md §A: a SALE listing carries a
+ * REDUCED Consignacion mandate (propietario + consignedAt + sale commission).
  *
- * A `Consignacion` is a rental agreement — `monthlyRent` (NOT NULL, unlike
- * `Property.monthlyRent`), `minimumTerm`, `currentTenantName`. None of that
- * applies to a sale, and sending `monthlyRent: 0` to satisfy the NOT NULL
- * column would reproduce the exact C6 sentinel bug this task removes
- * elsewhere. This is a judgment call not spelled out by the frozen contract
- * for this call site — see the worker report — so it is locked here.
+ * This REVERSES the WU-3 behaviour (SALE skipped the mandate and published
+ * directly) per the owner's ruling on W3-a. No canon, no minimumTerm, no
+ * adminFee, no acta de entrega — step 5 is skipped entirely on this path
+ * (see `getNextStep` in ConsignacionWizard.tsx).
  */
-describe('<ConsignacionWizard> — SALE listing skips the mandate entirely', () => {
+describe('<ConsignacionWizard> — SALE listing carries a reduced mandate (contract-addendum-2.md §A)', () => {
   async function driveToStep6ThenSubmitAsSale() {
     stepTwoOverridesHolder.overrides = {
       listingType: 'sale',
@@ -444,8 +443,7 @@ describe('<ConsignacionWizard> — SALE listing skips the mandate entirely', () 
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 6 (step 5 skipped, sale)
     const submitBtn = findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment')
     await clickButton(submitBtn)
   }
@@ -460,18 +458,43 @@ describe('<ConsignacionWizard> — SALE listing skips the mandate entirely', () 
     expect(payload.monthlyRent).toBeNull()
   })
 
-  it('never calls consignacionesApi.create for a SALE listing', async () => {
+  it('creates a reduced sale mandate: saleCommissionPercent sent, monthlyRent/minimumTerm/adminFee omitted', async () => {
     await driveToStep6ThenSubmitAsSale()
-    expect(consignacionesApiMock.create).not.toHaveBeenCalled()
+
+    expect(consignacionesApiMock.create).toHaveBeenCalledTimes(1)
+    const payload = consignacionesApiMock.create.mock.calls[0][0]
+    expect(payload.saleCommissionPercent).toBe(3) // wizard default
+    expect(payload.commissionPercent).toBe(0)
+    expect('monthlyRent' in payload).toBe(false)
+    expect('minimumTerm' in payload).toBe(false)
+    expect('adminFee' in payload).toBe(false)
   })
 
-  it('publishes the property directly (no mandate to wait on) and shows success', async () => {
+  it('sends the mandate contractDate as the SAME value sent as Property.consignedAt (§A.2)', async () => {
     await driveToStep6ThenSubmitAsSale()
 
+    const propertyPayload = propertiesApiMock.create.mock.calls[0][0]
+    const mandatePayload = consignacionesApiMock.create.mock.calls[0][0]
+    expect(mandatePayload.contractDate).toBe(propertyPayload.consignedAt)
+  })
+
+  it('publishes only after the mandate succeeds (mandate first, publish second)', async () => {
+    await driveToStep6ThenSubmitAsSale()
+
+    expect(consignacionesApiMock.create).toHaveBeenCalledTimes(1)
     expect(propertiesApiMock.update).toHaveBeenCalledWith('property-1', { status: 'AVAILABLE' })
     expect(toast.success).toHaveBeenCalled()
     expect(toast.error).not.toHaveBeenCalled()
     expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
+  })
+
+  it('never publishes when the mandate call fails', async () => {
+    consignacionesApiMock.create.mockRejectedValueOnce(new ApiError(400, 'Propietario invalido'))
+
+    await driveToStep6ThenSubmitAsSale()
+
+    expect(propertiesApiMock.update).not.toHaveBeenCalled()
+    expect(toast.error).toHaveBeenCalled()
   })
 
   it('surfaces a publish failure honestly instead of claiming success', async () => {

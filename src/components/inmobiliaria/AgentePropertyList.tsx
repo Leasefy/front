@@ -177,7 +177,9 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
                             {availabilityLabels[consignacion.availability]}
                           </span>
                           <span className="text-sm font-semibold text-fg dark:text-white">
-                            {formatCurrency(consignacion.monthlyRent)}
+                            {consignacion.listingType === 'sale'
+                              ? (consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—')
+                              : (consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—')}
                           </span>
                         </div>
                       </Link>

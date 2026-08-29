@@ -9,6 +9,12 @@
  * at all — `faltantesParaElBack` only requires `salePrice` for one) reaches
  * it. `resolveImportListingType` is the same free-text heuristic
  * `faltantesParaElBack`/`gapFiller` already use.
+ *
+ * ⚠ Retired from the live flow (WU-6): `StepConfirmImport.tsx` no longer
+ * fans out client-side to `POST /properties` — it stages the batch via
+ * `toImportarInmuebleDto.ts` + the durable `inmuebles-importacion.service.ts`
+ * instead. Left in place (not deleted) in case a future single-property
+ * quick-add path wants the same mapping; has no other importer today.
  */
 
 import type { ImportProperty } from './importTypes';

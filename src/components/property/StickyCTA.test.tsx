@@ -12,13 +12,21 @@ let authState: {
   hasActiveAgencyMembership: boolean
 }
 
+const { pushMock, createPropertyInquiryMock } = vi.hoisted(() => ({
+  pushMock: vi.fn(),
+  createPropertyInquiryMock: vi.fn(),
+}))
+
 vi.mock('@/lib/auth/use-auth', () => ({ useAuth: () => authState }))
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push: pushMock, replace: vi.fn() }),
   usePathname: () => '/propiedades/p1',
 }))
 vi.mock('@/lib/api/visits.service', () => ({
   visitsApi: { getSlots: vi.fn().mockResolvedValue({ slots: [] }), create: vi.fn() },
+}))
+vi.mock('@/lib/api/messages.service', () => ({
+  messagesApi: { createPropertyInquiry: (...args: unknown[]) => createPropertyInquiryMock(...args) },
 }))
 
 import { StickyCTA } from './StickyCTA'
@@ -34,6 +42,8 @@ beforeEach(() => {
   authState = { user: null, isAuthenticated: false, hasActiveAgencyMembership: false }
   Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
   writeText.mockClear()
+  pushMock.mockClear()
+  createPropertyInquiryMock.mockReset()
 })
 
 afterEach(() => {
@@ -187,6 +197,56 @@ describe('<StickyCTA> — SALE listing (no postulación)', () => {
     // No message input / send button before the visitor signs in.
     expect(container.querySelector('textarea')).toBeFalsy();
     expect(q('[data-testid="chat-message-input"]')).toBeFalsy();
+  })
+
+  // ── contract-addendum-2.md §B.2/§B.9 — the "Contactar" action, wired ──────
+
+  it('an authenticated visitor clicking "Contactar" creates/resolves the inquiry thread and navigates to it', async () => {
+    authState = { user: { role: 'tenant' }, isAuthenticated: true, hasActiveAgencyMembership: false }
+    createPropertyInquiryMock.mockResolvedValueOnce({ conversationId: 'conv-new' })
+    render({ listingType: 'sale', salePrice: 500_000_000 })
+
+    const contactTab = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Contactar'),
+    )
+    await act(async () => {
+      contactTab!.click()
+    })
+
+    const startChatBtn = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent?.trim() === 'Contactar' && b !== contactTab,
+    )
+    expect(startChatBtn).toBeTruthy()
+    await act(async () => {
+      startChatBtn!.click()
+      await Promise.resolve()
+    })
+
+    expect(createPropertyInquiryMock).toHaveBeenCalledWith('p1')
+    expect(pushMock).toHaveBeenCalledWith('/inquilino/mensajes?conversationId=conv-new')
+  })
+
+  it('surfaces an inline error instead of a silent failure when the inquiry call fails', async () => {
+    authState = { user: { role: 'tenant' }, isAuthenticated: true, hasActiveAgencyMembership: false }
+    createPropertyInquiryMock.mockRejectedValueOnce(new Error('boom'))
+    render({ listingType: 'sale', salePrice: 500_000_000 })
+
+    const contactTab = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Contactar'),
+    )
+    await act(async () => {
+      contactTab!.click()
+    })
+    const startChatBtn = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent?.trim() === 'Contactar' && b !== contactTab,
+    )
+    await act(async () => {
+      startChatBtn!.click()
+      await Promise.resolve()
+    })
+
+    expect(pushMock).not.toHaveBeenCalled()
+    expect(q('[role="alert"]')).toBeTruthy()
   })
 })
 

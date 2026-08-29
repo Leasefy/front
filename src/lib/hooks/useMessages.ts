@@ -49,10 +49,31 @@ export function useConversations() {
 }
 
 // ============================================================================
-// useChat - messages for a specific conversation (by applicationId)
+// useChat / useApplicationChat - messages for a single thread
 // ============================================================================
+//
+// contract-addendum-2.md §B.3 item 2 — "calling the new routes for both
+// kinds is simpler and is the recommended shape". `useChat` is the
+// universal hook, keyed on `conversation.id` (works for BOTH APPLICATION
+// and PROPERTY_INQUIRY threads — `ApplicationConversation.id` is the same
+// identity either way). `MessagesWidget` uses this exclusively, since it
+// already has the real `id` for every row from `getConversations()`.
+//
+// `useApplicationChat` keeps the LEGACY compat routes (§B.8 — "stays live")
+// for the two standalone <ChatThread> call sites that only ever know an
+// `applicationId` and never resolve a `conversation.id` (the tenant's own
+// application page, the agency `CandidateDrawer`). An APPLICATION thread's
+// `applicationId` is a stable identity, so there is no correctness gap in
+// keeping these two screens on the compat path instead of teaching them to
+// resolve a conversation id they have no other use for.
 
-export function useChat(applicationId: string | null) {
+interface ThreadMessagesApi {
+  getMessages: (id: string) => Promise<{ messages: BackendChatMessage[] }>;
+  sendMessage: (id: string, content: string) => Promise<unknown>;
+  markAsRead: (id: string) => Promise<unknown>;
+}
+
+function useThreadMessages(id: string | null, api: ThreadMessagesApi) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,42 +84,45 @@ export function useChat(applicationId: string | null) {
   const userId = user?.id ?? '';
 
   const fetchMessages = useCallback(async () => {
-    if (!applicationId || !userId) return;
+    if (!id || !userId) return;
     try {
-      const res = await messagesApi.getMessages(applicationId);
-      const mapped = (res.messages as BackendChatMessage[]).map((m) =>
-        mapToMessage(m, userId),
-      );
+      const res = await api.getMessages(id);
+      const mapped = res.messages.map((m) => mapToMessage(m, userId));
       setMessages(mapped);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error cargando mensajes';
       setError(message);
     }
-  }, [applicationId, userId]);
+    // `api` is a fresh object literal from the caller every render by
+    // design (see useChat/useApplicationChat below) — its methods are
+    // stable `messagesApi.*` references, so it is intentionally excluded
+    // from the dependency array to avoid re-fetching on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, userId]);
 
   // Initial fetch
   useEffect(() => {
-    if (!applicationId) {
+    if (!id) {
       setMessages([]);
       return;
     }
     setIsLoading(true);
     setError(null);
     fetchMessages().finally(() => setIsLoading(false));
-  }, [applicationId, fetchMessages]);
+  }, [id, fetchMessages]);
 
   // Polling every 5s while conversation is open
   useEffect(() => {
-    if (!applicationId) return;
+    if (!id) return;
     pollingRef.current = setInterval(fetchMessages, 5000);
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [applicationId, fetchMessages]);
+  }, [id, fetchMessages]);
 
   const sendMessage = useCallback(
     async (content: string) => {
-      if (!applicationId || !userId) return;
+      if (!id || !userId) return;
       setIsSending(true);
       try {
         // Optimistic append
@@ -112,7 +136,7 @@ export function useChat(applicationId: string | null) {
         };
         setMessages((prev) => [...prev, optimistic]);
 
-        await messagesApi.sendMessage(applicationId, content);
+        await api.sendMessage(id, content);
         // Refetch to get real message with server ID
         await fetchMessages();
       } catch (err) {
@@ -122,20 +146,43 @@ export function useChat(applicationId: string | null) {
       } finally {
         setIsSending(false);
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [applicationId, userId, user?.name, fetchMessages],
+    [id, userId, user?.name, fetchMessages],
   );
 
   const markAsRead = useCallback(async () => {
-    if (!applicationId) return;
+    if (!id) return;
     try {
-      await messagesApi.markAsRead(applicationId);
+      await api.markAsRead(id);
     } catch {
       // Silently fail - non-critical
     }
-  }, [applicationId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   return { messages, isLoading, isSending, error, sendMessage, markAsRead, refetch: fetchMessages };
+}
+
+/** Universal hook, keyed on `conversation.id`. Use this for anything that
+ * comes from `useConversations()` / `MessagesWidget` — works for both
+ * APPLICATION and PROPERTY_INQUIRY threads. */
+export function useChat(conversationId: string | null) {
+  return useThreadMessages(conversationId, {
+    getMessages: messagesApi.getConversationMessages,
+    sendMessage: messagesApi.sendConversationMessage,
+    markAsRead: messagesApi.markConversationAsRead,
+  });
+}
+
+/** Legacy compat hook, keyed on `applicationId` (§B.8 — "stays live"). Only
+ * for the two standalone <ChatThread> call sites named above. */
+export function useApplicationChat(applicationId: string | null) {
+  return useThreadMessages(applicationId, {
+    getMessages: messagesApi.getApplicationMessages,
+    sendMessage: messagesApi.sendApplicationMessage,
+    markAsRead: messagesApi.markApplicationAsRead,
+  });
 }
 
 // ============================================================================

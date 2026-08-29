@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { useAuth } from '@/lib/auth/use-auth';
 import { visitsApi } from '@/lib/api/visits.service';
+import { messagesApi } from '@/lib/api/messages.service';
 import { ApiError } from '@/lib/api/client';
 import type { VisitSlot } from '@/lib/api/visits.types';
 import { PostularButton } from '@/components/tenant/PostularButton';
@@ -142,6 +143,31 @@ export function StickyCTA({
   const [visitConfirmed, setVisitConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
+
+  // contract-addendum-2.md §B.2/§B.9 — the sale CTA's "Contactar" action.
+  // WU-3 shipped the CTA swap; this wires it to the real endpoint.
+  const [isStartingChat, setIsStartingChat] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
+
+  const handleStartChat = async () => {
+    if (isStartingChat) return;
+    setIsStartingChat(true);
+    setContactError(null);
+    try {
+      // §B.2 — idempotent: an existing thread with this prospect returns
+      // 200 with the same conversationId, a new one returns 201.
+      const { conversationId } = await messagesApi.createPropertyInquiry(propertyId);
+      router.push(`/inquilino/mensajes?conversationId=${conversationId}`);
+    } catch (error) {
+      setContactError(
+        error instanceof ApiError && error.messages
+          ? error.messages.join(' · ')
+          : 'No pudimos iniciar la conversación. Intentá de nuevo.',
+      );
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
 
   // Slots from backend
   const [slotsByDate, setSlotsByDate] = useState<SlotsByDate>({});
@@ -411,11 +437,26 @@ export function StickyCTA({
               {isAuthenticated ? (
                 <>
                   <h3 className="text-[15px] font-heading font-semibold text-foreground mb-2">
-                    Muy pronto vas a poder chatear acá
+                    Chateá con la inmobiliaria
                   </h3>
-                  <p className="text-[13px] text-muted-foreground">
-                    Estamos activando la mensajería directa con la inmobiliaria. Mientras tanto, agendá una visita.
+                  <p className="text-[13px] text-muted-foreground mb-4">
+                    Iniciá una conversación sobre esta propiedad. Si ya escribiste antes, te llevamos al mismo hilo.
                   </p>
+                  <Button
+                    type="button"
+                    hideArrow
+                    className="w-full"
+                    isLoading={isStartingChat}
+                    disabled={isStartingChat}
+                    onClick={handleStartChat}
+                  >
+                    Contactar
+                  </Button>
+                  {contactError && (
+                    <p role="alert" className="mt-3 text-[13px] text-danger">
+                      {contactError}
+                    </p>
+                  )}
                 </>
               ) : (
                 <>
@@ -704,6 +745,24 @@ export function MobileStickyCTA({
   const isSaleListing = listingType === 'sale';
 
   const [copied, setCopied] = useState(false);
+  const [isStartingChat, setIsStartingChat] = useState(false);
+
+  // contract-addendum-2.md §B.2/§B.9 — same action as the desktop
+  // StickyCTA's "Contactar" button, wired here too (WU-3 shipped the CTA,
+  // this wires the action).
+  const handleStartChat = async () => {
+    if (isStartingChat) return;
+    setIsStartingChat(true);
+    try {
+      const { conversationId } = await messagesApi.createPropertyInquiry(propertyId);
+      router.push(`/inquilino/mensajes?conversationId=${conversationId}`);
+    } catch {
+      // Mobile CTA has no room for an inline error banner; the desktop
+      // StickyCTA on the same page already surfaces one.
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
 
   const handleCopyShare = async () => {
     if (typeof window === 'undefined') return;
@@ -754,9 +813,11 @@ export function MobileStickyCTA({
                 <Button
                   type="button"
                   hideArrow
+                  isLoading={isStartingChat}
+                  disabled={isStartingChat}
                   onClick={() =>
                     isAuthenticated
-                      ? undefined
+                      ? handleStartChat()
                       : router.push(`/auth?returnUrl=${encodeURIComponent(pathname)}`)
                   }
                 >

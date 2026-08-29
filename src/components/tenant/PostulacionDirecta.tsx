@@ -188,6 +188,15 @@ export function PostulacionDirecta({
         setError(
           'Tu postulación debe presentarse con la identidad de tu estudio de arrendamiento vigente. Recargá la página para traer tus datos actualizados e intentá de nuevo.',
         )
+      } else if (e instanceof ApiError && e.code === 'PROPIEDAD_EN_VENTA') {
+        // T-0038 §3.3 (WU-2) — a stale client (an old tab, or the listing
+        // switched RENT->SALE after this page rendered) can still reach
+        // POST /applications. The 409's message is the exact contract
+        // string, never retried. The "Volver al inmueble" link already on
+        // this page takes the visitor back to the property detail, where
+        // StickyCTA renders the real chat/visit CTA for a SALE listing —
+        // no separate CTA-swap is built here.
+        setError(e.message);
       } else {
         setError(
           e instanceof Error ? e.message : 'No pudimos enviar tu postulación. Intentá de nuevo.',

@@ -185,7 +185,13 @@ export const applicationsApi = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new ApiError(res.status, err.message || 'Error al enviar la aplicación');
+      // contract.md T-0038 §3.3 (WU-2) — the SALE-listing postulación gate
+      // sits outside `enforceEligibilityGate`, so this @Public() guest path
+      // 409s with `code: 'PROPIEDAD_EN_VENTA'` too. Forward `code` (this
+      // manual fetch didn't before) so a caller can branch on it instead of
+      // pattern-matching `.message`.
+      const code = typeof err.code === 'string' ? err.code : undefined;
+      throw new ApiError(res.status, err.message || 'Error al enviar la aplicación', code);
     }
     return res.json();
   },

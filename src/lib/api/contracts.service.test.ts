@@ -269,3 +269,60 @@ describe('mapBackendContract (exportado)', () => {
     expect(mapeado.tenantId).toBe('usuario-1')
   })
 })
+
+/**
+ * T-0040 — el consecutivo del contrato, del lado del front del borde.
+ *
+ * Este borde no tiene codegen (C4/C18): el back y estos cuatro archivos
+ * re-declaran el mismo wire a mano. El gate del back
+ * (`contract-code-wire.spec.ts`) prueba que `GET /contracts` EMITE `code`,
+ * pero sus payloads son literales escritos dentro del propio spec del back —
+ * no ve un renombre de este lado. Ese es exactamente el hueco que dejó pasar
+ * F-1/F-2 en T-0038 durante seis unidades de trabajo (VERIFY-2, N-4). Estas
+ * pruebas son la mitad que falta.
+ */
+describe('mapBackendContract — code (T-0040)', () => {
+  it('pasa el consecutivo al dominio', async () => {
+    const { mapBackendContract } = await import('./contracts.service')
+
+    const mapeado = mapBackendContract({ ...contratoSinInmueble(), code: 14 } as never)
+
+    expect(mapeado.code).toBe(14)
+  })
+
+  it('deja pasar `undefined` sin coalescer — un back anterior a T-0040', async () => {
+    /*
+     * NADA de `?? 0`: los códigos arrancan en 1, así que un 0 coalescido se
+     * renderizaría como «#0», un código que no existe. La degradación
+     * congelada es no renderizar nada, y eso sólo funciona si `undefined`
+     * sobrevive el mapper.
+     */
+    const { mapBackendContract } = await import('./contracts.service')
+    const crudo = contratoSinInmueble() as Record<string, unknown>
+    delete crudo.code
+
+    const mapeado = mapBackendContract(crudo as never)
+
+    expect(mapeado.code).toBeUndefined()
+    expect(mapeado.code).not.toBe(0)
+    expect(mapeado.code).not.toBeNull()
+  })
+
+  it('la clave se llama `code` — ni codigo, ni contractCode, ni numero', async () => {
+    /*
+     * La aserción que un gate del lado del back NO puede hacer. Renombrar la
+     * clave acá deja los dos repos en verde y la columna vacía.
+     */
+    const { mapBackendContract } = await import('./contracts.service')
+    const mapeado = mapBackendContract({ ...contratoSinInmueble(), code: 7 } as never) as unknown as Record<
+      string,
+      unknown
+    >
+
+    expect('code' in mapeado).toBe(true)
+    expect('codigo' in mapeado).toBe(false)
+    expect('contractCode' in mapeado).toBe(false)
+    expect('numero' in mapeado).toBe(false)
+    expect('consecutivo' in mapeado).toBe(false)
+  })
+})

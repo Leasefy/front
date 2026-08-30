@@ -237,7 +237,18 @@ function ContratoDetalleContent() {
               {statusLabel}
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">ID: {contract.id}</p>
+          {/*
+            T-0040 — el consecutivo reemplaza al UUID crudo en el lugar más
+            visible del detalle. El UUID no se borra del producto: sale del
+            slot primario, y vuelve tal cual cuando no hay código —lo único que
+            produce esa ausencia es un `back` anterior a T-0040—. Sin `#0` ni
+            `#undefined` de por medio: o el número, o la línea de antes.
+          */}
+          {contract.code != null ? (
+            <p className="text-sm text-muted-foreground mt-1">Contrato #{contract.code}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground mt-1">ID: {contract.id}</p>
+          )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
           <DownloadContractPdfButton

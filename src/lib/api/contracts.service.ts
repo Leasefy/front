@@ -91,6 +91,11 @@ export function mapBackendContract(bc: BackendContract): Contract {
     propertyId: bc.propertyId,
     tenantId: bc.tenantId,
     landlordId: bc.landlordId,
+    // T-0040 — passthrough puro. NADA de `?? 0`, `?? null` ni `Number(...)`:
+    // `undefined` tiene que sobrevivir el mapper para que la opcionalidad del
+    // tipo signifique algo, y un `0` coalescido sería un código válido a la
+    // vista (los códigos arrancan en 1).
+    code: bc.code,
     // Deprecated: backend no modela template/type. Solo para compat del tipo.
     templateId: bc.templateId ?? '',
     type: (bc.type ? (CONTRACT_TYPE_MAP[bc.type] ?? bc.type) : 'custom') as ContractType,

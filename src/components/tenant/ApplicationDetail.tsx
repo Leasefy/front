@@ -179,8 +179,15 @@ export function ApplicationDetail({
                   <span>{address}, {neighborhood}, {city}</span>
                 </p>
                 <p className="text-base font-medium text-fg">
-                  {formatCurrency(monthlyRent)}
-                  <span className="text-fg-muted text-sm font-normal">/mes</span>
+                  {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
+                  {monthlyRent != null ? (
+                    <>
+                      {formatCurrency(monthlyRent)}
+                      <span className="text-fg-muted text-sm font-normal">/mes</span>
+                    </>
+                  ) : (
+                    '—'
+                  )}
                   {adminFee > 0 && (
                     <span className="text-fg-muted text-sm font-normal">
                       {' '}+ {formatCurrency(adminFee)} admin

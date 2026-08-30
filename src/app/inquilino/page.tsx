@@ -439,8 +439,15 @@ export default function InquilinoPage() {
                           {property.title}
                         </h3>
                         <p className="text-lg font-bold text-fg dark:text-white whitespace-nowrap flex-shrink-0">
-                          {i18nFormatCurrency(property.monthlyRent)}
-                          <span className="text-xs font-normal text-fg-muted dark:text-fg-subtle">/{locale === 'es' ? 'mes' : 'mo'}</span>
+                          {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
+                          {property.monthlyRent != null ? (
+                            <>
+                              {i18nFormatCurrency(property.monthlyRent)}
+                              <span className="text-xs font-normal text-fg-muted dark:text-fg-subtle">/{locale === 'es' ? 'mes' : 'mo'}</span>
+                            </>
+                          ) : (
+                            '—'
+                          )}
                         </p>
                       </div>
 

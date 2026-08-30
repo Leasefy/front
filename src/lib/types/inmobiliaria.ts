@@ -347,7 +347,11 @@ export interface PipelineItem {
   propertyTitle: string;
   propertyAddress: string;
   propertyThumbnail?: string;
-  monthlyRent: number;
+  /**
+   * `null` when the linked mandate has no canon — a SALE mandate, or none
+   * linked at all. Render `—`, never `$ 0` (C6).
+   */
+  monthlyRent: number | null;
 
   // Candidate info (denormalized)
   candidateName: string;

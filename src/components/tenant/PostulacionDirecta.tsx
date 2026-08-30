@@ -246,7 +246,8 @@ export function PostulacionDirecta({
                   </span>
                 </p>
                 <p className="mt-1 font-medium text-foreground">
-                  {formatCurrency(property.monthlyRent)} /mes
+                  {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
+                  {property.monthlyRent != null ? `${formatCurrency(property.monthlyRent)} /mes` : '—'}
                 </p>
               </div>
             </div>

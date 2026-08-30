@@ -230,10 +230,13 @@ export default function PropiedadesPage() {
                       {/* Footer */}
                       <div className="flex items-center justify-between pt-4 border-t border-border-faint">
                         <div>
+                          {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
                           <p className="text-lg font-bold text-fg tabular-nums">
-                            {i18nFormatCurrency(property.monthlyRent)}
+                            {property.monthlyRent != null ? i18nFormatCurrency(property.monthlyRent) : '—'}
                           </p>
-                          <p className="text-xs text-fg-subtle">/{t('landlord.properties.perMonth')}</p>
+                          {property.monthlyRent != null && (
+                            <p className="text-xs text-fg-subtle">/{t('landlord.properties.perMonth')}</p>
+                          )}
                         </div>
                         {candidateCount > 0 && (
                           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-soft rounded-full text-sm font-medium text-primary">
@@ -301,10 +304,13 @@ export default function PropiedadesPage() {
 
                     {/* Price */}
                     <div className="text-right">
+                      {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
                       <p className="text-lg font-bold text-fg tabular-nums">
-                        {i18nFormatCurrency(property.monthlyRent)}
+                        {property.monthlyRent != null ? i18nFormatCurrency(property.monthlyRent) : '—'}
                       </p>
-                      <p className="text-xs text-fg-subtle">/{t('landlord.properties.perMonth')}</p>
+                      {property.monthlyRent != null && (
+                        <p className="text-xs text-fg-subtle">/{t('landlord.properties.perMonth')}</p>
+                      )}
                     </div>
 
                     {/* Candidates */}

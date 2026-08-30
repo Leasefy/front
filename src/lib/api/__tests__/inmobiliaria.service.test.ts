@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { agencyApi, inmobiliariaConfigApi, permissionsApi, cobrosApi, mantenimientoApi, documentosApi, propietariosApi, inmueblesApi, normalizeInmuebleSinConsignacion, normalizeConsignacion } from '../inmobiliaria.service';
+import { agencyApi, inmobiliariaConfigApi, permissionsApi, cobrosApi, mantenimientoApi, documentosApi, propietariosApi, inmueblesApi, normalizeInmuebleSinConsignacion, normalizeConsignacion, normalizePipelineItem } from '../inmobiliaria.service';
 import { ApiError, setAccessToken } from '../client';
 import type { PropietarioFormData, BackendInmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
 
@@ -622,5 +622,42 @@ describe('normalizeConsignacion — the reduced sale mandate', () => {
 
   it('passes propertyCode through when present', () => {
     expect(normalizeConsignacion(rawConsignacion({ propertyCode: 42 })).propertyCode).toBe(42);
+  });
+});
+
+describe('normalizePipelineItem — a pipeline item on a sale mandate has no canon', () => {
+  function rawItem(over: Record<string, unknown> = {}) {
+    return {
+      id: 'item-1',
+      consignacionId: 'cons-1',
+      candidateName: 'Ana Restrepo',
+      stage: 'CONTACTED',
+      enteredStageAt: '2026-08-29T00:00:00.000Z',
+      daysInStage: 2,
+      createdAt: '2026-08-29T00:00:00.000Z',
+      updatedAt: '2026-08-29T00:00:00.000Z',
+      ...over,
+    };
+  }
+
+  // The `?? 0` that used to sit here rendered `$ 0/mes` on the pipeline card
+  // and detail. A `monthlyRent: 0` sentinel has already produced real $0
+  // billing on this platform (C6) — the rule does not bend for display.
+  it('keeps a null canon null — never 0 (C6)', () => {
+    const item = normalizePipelineItem(
+      rawItem({ consignacion: { propertyId: 'p1', monthlyRent: null } }) as never,
+    );
+    expect(item.monthlyRent).toBeNull();
+  });
+
+  it('keeps it null when there is no linked consignacion at all', () => {
+    expect(normalizePipelineItem(rawItem() as never).monthlyRent).toBeNull();
+  });
+
+  it('passes a real canon through untouched', () => {
+    const item = normalizePipelineItem(
+      rawItem({ consignacion: { propertyId: 'p1', monthlyRent: 2_400_000 } }) as never,
+    );
+    expect(item.monthlyRent).toBe(2_400_000);
   });
 });

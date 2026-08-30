@@ -578,7 +578,19 @@ export interface PipelineStats {
 }
 
 /** Boundary mapper: backend item (UPPER stage + nested consignacion) → flat front shape. */
-function normalizePipelineItem(raw: BackendPipelineItem): PipelineItem {
+/**
+ * Boundary mapper: backend item (UPPER stage + nested consignacion) -> flat
+ * front shape.
+ *
+ * ⚠ `monthlyRent` carries `null` through deliberately. A SALE mandate has no
+ * canon (T-0038), and a pipeline item can be attached to one: neither the
+ * manual create path nor the Imana intake checks `listingType`. The `?? 0`
+ * that used to be here rendered `$ 0/mes` on the card and the detail — a
+ * prohibited sentinel (C6), because a `monthlyRent: 0` sentinel has already
+ * produced real $0 billing on this platform. Display only here, but the rule
+ * does not bend for display.
+ */
+export function normalizePipelineItem(raw: BackendPipelineItem): PipelineItem {
   return {
     id: raw.id,
     consignacionId: raw.consignacionId,
@@ -587,7 +599,7 @@ function normalizePipelineItem(raw: BackendPipelineItem): PipelineItem {
     agenteId: raw.agenteUserId ?? '',
     propertyTitle: raw.consignacion?.propertyTitle ?? '',
     propertyAddress: raw.consignacion?.propertyAddress ?? '',
-    monthlyRent: raw.consignacion?.monthlyRent ?? 0,
+    monthlyRent: raw.consignacion?.monthlyRent ?? null,
     candidateName: raw.candidateName,
     candidateEmail: raw.candidateEmail ?? '',
     candidatePhone: raw.candidatePhone ?? '',

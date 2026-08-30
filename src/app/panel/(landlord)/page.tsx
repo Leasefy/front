@@ -467,10 +467,13 @@ export default function PanelPage() {
                                     </p>
                                   </div>
                                   <div className="text-right">
+                                    {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
                                     <p className="text-lg font-bold text-fg">
-                                      {i18nFormatCurrency(property.monthlyRent)}
+                                      {property.monthlyRent != null ? i18nFormatCurrency(property.monthlyRent) : '—'}
                                     </p>
-                                    <p className="text-xs text-fg-muted">/{t('landlord.dashboard.perMonth')}</p>
+                                    {property.monthlyRent != null && (
+                                      <p className="text-xs text-fg-muted">/{t('landlord.dashboard.perMonth')}</p>
+                                    )}
                                   </div>
                                 </div>
 

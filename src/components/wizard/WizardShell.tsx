@@ -146,10 +146,11 @@ export function WizardShell({
             </div>
           </div>
           <div className="text-right flex-shrink-0">
+            {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
             <p className="text-sm font-mono tabular-nums font-medium text-fg">
-              {formatCurrency(property.monthlyRent)}
+              {property.monthlyRent != null ? formatCurrency(property.monthlyRent) : '—'}
             </p>
-            <p className="text-xs text-fg-muted">/mes</p>
+            {property.monthlyRent != null && <p className="text-xs text-fg-muted">/mes</p>}
           </div>
         </div>
 
@@ -203,10 +204,11 @@ export function WizardShell({
                   <span>{property.neighborhood}, {property.city}</span>
                 </div>
                 <div className="mt-2">
+                  {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
                   <span className="text-sm font-mono tabular-nums font-medium text-fg">
-                    {formatCurrency(property.monthlyRent)}
+                    {property.monthlyRent != null ? formatCurrency(property.monthlyRent) : '—'}
                   </span>
-                  <span className="text-xs text-fg-muted">/mes</span>
+                  {property.monthlyRent != null && <span className="text-xs text-fg-muted">/mes</span>}
                 </div>
               </div>
             </div>

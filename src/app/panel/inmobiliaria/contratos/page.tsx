@@ -116,6 +116,12 @@ function ContratosContent() {
   } = useTablePagination(contracts);
 
   const COLUMNS = [
+    // T-0040 — el consecutivo, columna angosta y a la izquierda de todo, igual
+    // que el código de inmueble en `ConsignacionTable`. Es puramente aditiva:
+    // esta tabla no mostraba NINGÚN identificador, ni siquiera un UUID cortado,
+    // así que no hay nada que migrar ni nada que los usuarios hayan aprendido a
+    // citar.
+    tx('Código', 'Code'),
     tx('Inquilino', 'Tenant'),
     tx('Propiedad', 'Property'),
     tx('Canon', 'Rent'),
@@ -255,6 +261,18 @@ function ContratosContent() {
                   onClick={() => openContract(c)}
                   className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
                 >
+                  {/*
+                    T-0040 — `#{code}`, `font-mono tabular-nums`, sin ceros a la
+                    izquierda. Ausente ⇒ celda VACÍA: nunca `—`, nunca `#0`. La
+                    única forma de que falte es un `back` anterior a T-0040, y
+                    la degradación congelada para ese caso es no renderizar
+                    nada.
+                  */}
+                  <TableCell className="px-5 py-4">
+                    <span className="font-mono tabular-nums text-fg-muted text-sm">
+                      {c.code != null ? `#${c.code}` : ''}
+                    </span>
+                  </TableCell>
                   <TableCell className="px-5 py-4">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="grid place-items-center w-8 h-8 rounded-full bg-muted flex-shrink-0">

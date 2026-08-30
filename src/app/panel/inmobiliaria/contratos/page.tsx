@@ -73,12 +73,20 @@ function StatCard({ label, value, dot }: { label: string; value: number | string
 
 // ── Skeleton row ─────────────────────────────────────────────────────────────
 
-function TableSkeleton() {
+/*
+ * `cells` viene de `COLUMNS.length`, nunca de un número escrito acá. Este
+ * componente tenía un `5` literal y `COLUMNS` creció a 7 al sumarse la columna
+ * de código (T-0040): las filas de carga quedaron dos celdas más cortas que el
+ * encabezado. Repetir el conteo en vez de derivarlo es exactamente cómo se
+ * produjo esa deriva — el `<thead>` y el `colSpan` del vacío ya se ajustaban
+ * solos porque los dos leen `COLUMNS.length`.
+ */
+function TableSkeleton({ cells }: { cells: number }) {
   return (
     <>
       {Array.from({ length: 5 }).map((_, i) => (
         <tr key={i} className="border-b border-border last:border-0 animate-pulse">
-          {Array.from({ length: 5 }).map((__, j) => (
+          {Array.from({ length: cells }).map((__, j) => (
             <td key={j} className="px-5 py-4">
               <div className="h-4 rounded bg-muted w-20" />
             </td>
@@ -226,7 +234,7 @@ function ContratosContent() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && contracts.length === 0 && <TableSkeleton />}
+            {isLoading && contracts.length === 0 && <TableSkeleton cells={COLUMNS.length} />}
 
             {!isLoading && !error && contracts.length === 0 && (
               <TableRow>

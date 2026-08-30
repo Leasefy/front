@@ -9,6 +9,7 @@ import {
   Percent,
   UserCircle,
   ClipboardText,
+  Camera,
   CheckCircle,
   CaretLeft,
   CaretRight,
@@ -152,25 +153,25 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     }
   }, [currentStep, formData]);
 
-  // Navigation helpers — agents skip step 4; a sale listing skips step 5
-  // (contract-addendum-2.md §A.8 — "5 · Inventario / acta de entrega —
-  // Skipped, the owner ruled it out"). Both skips compose: an agent
-  // creating a sale mandate goes 3 → 6 directly.
+  // Navigation helpers — agents skip step 4. Step 5 used to be skipped
+  // entirely for a sale listing (contract-addendum-2.md §A.8 — "5 ·
+  // Inventario / acta de entrega — Skipped, the owner ruled it out");
+  // T-0042 amends that (ledger.md §2/§3): a sale listing now reaches step
+  // 5, which renders photos-only (see StepActaEntrega). Only the
+  // agent-role skip remains here.
   const isSaleListing = formData.listingType === 'sale';
 
   const getNextStep = useCallback((step: number) => {
     let next = step + 1;
     if (isAgentRole && next === 4) next = 5;
-    if (isSaleListing && next === 5) next = 6;
     return next;
-  }, [isAgentRole, isSaleListing]);
+  }, [isAgentRole]);
 
   const getPrevStep = useCallback((step: number) => {
     let prev = step - 1;
-    if (isSaleListing && prev === 5) prev = 4;
     if (isAgentRole && prev === 4) prev = 3;
     return prev;
-  }, [isAgentRole, isSaleListing]);
+  }, [isAgentRole]);
 
   // ── Step 1 → 2: persist the propietario on "Siguiente" ────────────────────
   const [isPersistingOwner, setIsPersistingOwner] = useState(false);
@@ -358,8 +359,9 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
        * contract-addendum-2.md §A — the owner's ruling on W3-a reversed
        * WU-3's shipped behaviour: a sale listing DOES carry a mandate, in
        * reduced form (propietario + consignedAt + sale commission). No
-       * canon, no minimumTerm, no adminFee, no acta de entrega (step 5 is
-       * skipped entirely on this path, see `getNextStep` above).
+       * canon, no minimumTerm, no adminFee, no acta de entrega — step 5
+       * renders photos-only on this path (T-0042, ledger.md §3), so there
+       * is no inventory/acta content to carry into the mandate.
        *
        * `saleCommissionPercent` is a DISTINCT field from `commissionPercent`
        * (§A.3) — never reused. `commissionPercent` is still required by the
@@ -524,13 +526,18 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     return 'upcoming';
   };
 
-  // Visible steps depend on role (agents skip "Agent") and listing type (a
-  // sale mandate skips "Inventory/acta de entrega" — §A.8).
+  // Visible steps depend on role only (agents skip "Agent"). Step 5 stays
+  // visible for both listing types — T-0042 relabels it "Photos" and swaps
+  // its icon for a sale listing, since it renders photos-only there
+  // (StepActaEntrega).
   const visibleSteps = STEPS.filter((s) => {
     if (isAgentRole && s.id === 4) return false;
-    if (isSaleListing && s.id === 5) return false;
     return true;
-  });
+  }).map((s) =>
+    s.id === 5 && isSaleListing
+      ? { ...s, labelKey: 'inmobiliaria.consignaciones.wizard.steps.photos', icon: Camera }
+      : s
+  );
   const totalVisible = visibleSteps.length;
   // Position of current step among visible steps (1-based)
   const currentVisibleIndex = visibleSteps.findIndex((s) => s.id === currentStep);

@@ -3021,6 +3021,7 @@
           "commission": "Commission",
           "agent": "Agent",
           "inventory": "Inventory",
+          "photos": "Photos",
           "confirm": "Confirm"
         },
         "mobileProgress": "Step {{current}} of {{total}}: {{label}}",
@@ -3125,6 +3126,8 @@
         "step5": {
           "title": "Handover Report",
           "subtitle": "Register the property inventory and condition",
+          "titleSale": "Property Photos",
+          "subtitleSale": "Add the photos that will be published with this property.",
           "inventoryTitle": "Property inventory",
           "addItem": "Add item",
           "itemNamePlaceholder": "Item name (e.g.: 4-burner stove)",

@@ -23,6 +23,12 @@ import {
   SelectValue,
 } from '@/components/ui';
 import { etiquetaDeFaltante, esPosibleDuplicado } from './lib/faltantesInmuebles';
+import {
+  formularioDesde,
+  cambiosDesdeFormulario,
+  type FormularioFila,
+} from './lib/datosDeFila';
+import type { ListingType, PropertyType } from '@/lib/types/property';
 import type {
   FilaDeImportacion,
   ResolverInmuebleDto,
@@ -46,44 +52,16 @@ interface FilaImportacionRowProps {
 
 export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: FilaImportacionRowProps) {
   const [editando, setEditando] = useState(false);
-  const [form, setForm] = useState<ResolverInmuebleDto>({
-    title: fila.datos.title,
-    address: fila.datos.address,
-    city: fila.datos.city,
-    neighborhood: fila.datos.neighborhood,
-    department: fila.datos.department,
-    propertyType: fila.datos.propertyType,
-    listingType: fila.datos.listingType,
-    monthlyRent: fila.datos.monthlyRent,
-    salePrice: fila.datos.salePrice,
-    area: fila.datos.area,
-  });
+  const [form, setForm] = useState<FormularioFila>(() => formularioDesde(fila.datos));
 
   const esDuplicado = esPosibleDuplicado(fila.faltantes);
   const isSale = form.listingType === 'sale';
 
   const handleGuardar = async () => {
-    // Only forward fields that have a real value — an empty string would
-    // otherwise clear a field the user never touched.
-    const cambios: ResolverInmuebleDto = {};
-    if (form.title) cambios.title = form.title;
-    if (form.address) cambios.address = form.address;
-    if (form.city) cambios.city = form.city;
-    if (form.neighborhood) cambios.neighborhood = form.neighborhood;
-    if (form.department) cambios.department = form.department;
-    if (form.propertyType) cambios.propertyType = form.propertyType;
-    if (form.listingType) cambios.listingType = form.listingType;
-    if (form.area != null) cambios.area = form.area;
-    if (isSale) {
-      if (form.salePrice != null) cambios.salePrice = form.salePrice;
-      // Clears a canon a duplicate-price row carried by mistake — the exit
-      // for `precio_inconsistente` when the row is really a sale.
-      cambios.monthlyRent = null;
-    } else {
-      if (form.monthlyRent != null) cambios.monthlyRent = form.monthlyRent;
-      cambios.salePrice = null;
-    }
-    await onResolver(fila.id, cambios);
+    // The domain -> wire translation lives in `./lib/datosDeFila`, tested
+    // there. It is the mapping that produced F-2; keeping it out of the
+    // component is what makes it testable at all.
+    await onResolver(fila.id, cambiosDesdeFormulario(form));
     setEditando(false);
   };
 
@@ -185,7 +163,10 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
             value={form.department ?? ''}
             onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
           />
-          <Select value={form.propertyType ?? undefined} onValueChange={(v) => setForm((f) => ({ ...f, propertyType: v }))}>
+          <Select
+            value={form.propertyType ?? undefined}
+            onValueChange={(v) => setForm((f) => ({ ...f, propertyType: v as PropertyType }))}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Tipo de inmueble" />
             </SelectTrigger>
@@ -197,7 +178,7 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
           </Select>
           <Select
             value={form.listingType ?? undefined}
-            onValueChange={(v) => setForm((f) => ({ ...f, listingType: v as 'rent' | 'sale' }))}
+            onValueChange={(v) => setForm((f) => ({ ...f, listingType: v as ListingType }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Arriendo o venta" />

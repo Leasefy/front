@@ -10,17 +10,23 @@
  * tab mid-import lost the whole batch. This service replaces that with the
  * durable staged flow.
  *
- * ⚠ Field-name risk (flagged per the brief, not silently assumed correct):
- * WU-4's report documents the ROUTE contract in full (§6) but not
- * `ImportarInmuebleDto`'s field names verbatim — there is no codegen on
- * this boundary (C4/C18). `ImportarInmuebleDto`/`ResolverInmuebleDto` below
- * mirror `toCreatePayload.ts`'s existing field names (the same ones
- * `POST /properties` already accepts), on the working assumption that the
- * staging DTO reuses the property-creation vocabulary made all-optional
- * (C13). This is the single largest cross-boundary risk in this surface —
- * VERIFY must confirm the real field names against a live `back` response
- * before this is trusted, per contract-addendum-2.md §5's "the DTO
- * declares it is not evidence" standard (T-0033 precedent).
+ * ⚠ There is NO codegen on this boundary (C4/C18) — every type below is a
+ * hand-written mirror of a `back` DTO, and its ONLY specification is
+ * `contract-addendum-3.md` §3 (T-0038, FROZEN). The previous version of this
+ * file guessed the names from `toCreatePayload.ts` and got three of them
+ * wrong, so every `preparar()` call returned 400 for six work units while
+ * both repos stayed green — each side was mocking the other.
+ *
+ * Two rules that follow from that, and are not optional:
+ *
+ * 1. **The wire is UPPER_SNAKE** for `type` and `listingType` (§3.4, R-3),
+ *    translated here at the api-service boundary exactly as
+ *    `properties.service.ts:120-129` already does for `POST /properties`.
+ *    The front's domain layer keeps its lowercase vocabulary.
+ * 2. **A mocked-client test is not evidence** that this mirror is right
+ *    (§7.2). The standing gate is `back`'s `importacion-contrato-wire.spec.ts`,
+ *    which runs the real `ValidationPipe` against the literal payload this
+ *    file's callers build. Change a name here, run that.
  */
 
 import { apiClient } from './client';
@@ -61,29 +67,52 @@ export interface InmuebleDuplicado {
   city: string;
 }
 
-/** Ingestion DTO — every field optional (C13: origin governs validation;
- * completeness is enforced at activation, not here). See the file-level
- * note above on field-name risk. */
+/**
+ * Ingestion DTO — `POST .../preparar`. Mirror of `back`'s
+ * `ImportarInmuebleDto` (contract-addendum-3.md §3.1.1).
+ *
+ * Every field is optional (C13: origin governs validation; completeness is
+ * enforced at activation, not here). The back declares 23 fields; the seven
+ * it accepts that no import source can produce (`description`, `deposit`,
+ * `floor`, `parkingSpaces`, `stratum`, `yearBuilt`, `amenities`) are
+ * deliberately absent — `ImportProperty` has no column for any of them, and
+ * an unused field on a hand-mirrored boundary is surface without a consumer.
+ *
+ * A key NOT on the back's DTO is a 400 on the whole request
+ * (`forbidNonWhitelisted: true`). There is no forgiving mode.
+ */
 export interface ImportarInmuebleDto {
   title?: string;
   address?: string;
   city?: string;
   neighborhood?: string;
   department?: string;
-  propertyType?: string;
+  /**
+   * §3.1.1 #3 — the wire name is `type`, NOT `propertyType`, and the value is
+   * UPPER_SNAKE (`APARTMENT`). Free text on the back on purpose: an
+   * unrecognised value becomes `faltantes: ['tipo']` with the original string
+   * intact, never a coerced `APARTMENT` (C19). So an unmappable value must
+   * reach the back RAW — see `toImportarInmuebleDto`'s `?? p.propertyType`.
+   */
+  type?: string;
   area?: number;
   bedrooms?: number;
   bathrooms?: number;
-  listingType?: 'rent' | 'sale';
+  /** §3.4 — `'RENT' | 'SALE'` on the wire. Absent degrades to RENT server-side. */
+  listingType?: string;
+  /** §3.1.2 — never `0`: a `0` is read as an empty cell, not as a price (C6). */
   monthlyRent?: number;
   salePrice?: number;
   adminFee?: number;
   consignedAt?: string;
   /**
-   * Front-computed (LocationIQ, `geocodeImportRow.ts`) — the durable
-   * backend (WU-4) does not geocode. Included here so precise coordinates
-   * survive the move off client-side `POST /properties`; omitted when
-   * geocoding fell back to city-center (never a fabricated pin).
+   * Front-computed (LocationIQ, `geocodeImportRow.ts`) — the durable backend
+   * does not geocode, so without these every imported property lands on the
+   * city centre. Sent whenever geocoding returned a pin at all, INCLUDING the
+   * city-centre fallback: nothing resolves a missing coordinate at render
+   * time, so narrowing this would leave those rows with no pin whatsoever
+   * (§3.6). Out of range is not a 400 and not a `faltante` — the back
+   * degrades it to NULL.
    */
   latitude?: number;
   longitude?: number;
@@ -123,7 +152,12 @@ export interface PaginaDeFilasInmuebles {
 }
 
 export interface ResumenLoteInmuebles {
-  lote: string;
+  /**
+   * §3.9 — `null` when the caller passed no `lote` filter. Our own client
+   * always sends one, so it is unreachable in practice, but a mirror narrower
+   * than the wire is exactly the drift class that produced F-1.
+   */
+  lote: string | null;
   total: number;
   pendientes: number;
   listos: number;
@@ -153,24 +187,40 @@ export interface ResumenActivacionInmuebles {
   restantes: number;
 }
 
-/** `null` on `monthlyRent`/`salePrice` CLEARS the value (that is how a row
- * carrying both prices is fixed); an omitted key leaves it alone. */
+/**
+ * Row-correction DTO — `PATCH .../filas/:id` and, with `ids`, `PATCH .../filas`.
+ * Mirror of `back`'s `ResolverInmuebleDto` (contract-addendum-3.md §3.2).
+ *
+ * ⚠ **This is NOT `ImportarInmuebleDto` with looser rules.** Its vocabulary is
+ * narrower and its validation is deliberately STRICTER: one person is fixing
+ * one row on screen, so a 400 reaches the person who caused it, about the row
+ * they are looking at. `bedrooms`, `bathrooms`, `adminFee`, `amenities`,
+ * `latitude`, `longitude` and the other ingestion-only fields are NOT on this
+ * DTO — sending any of them is a 400. This mirror used to declare three of
+ * them; the UI never sent them, so they were latent landmines rather than a
+ * live bug. They stay out.
+ *
+ * `null` on `monthlyRent`/`salePrice` CLEARS the value, and clearing is the
+ * only exit from `precio_inconsistente` on a row whose file carried both
+ * prices. An omitted key leaves the stored value alone. **`0` does not clear
+ * — it is a 400 here (`@Min(1)`, C6).**
+ */
 export interface ResolverInmuebleDto {
   title?: string;
   address?: string;
   city?: string;
   neighborhood?: string;
   department?: string;
-  propertyType?: string;
+  /** §3.2 #3 — `type`, UPPER_SNAKE, same as the ingestion DTO. */
+  type?: string;
   area?: number;
-  bedrooms?: number;
-  bathrooms?: number;
-  listingType?: 'rent' | 'sale';
+  /** §3.4 — `'RENT' | 'SALE'` on the wire. */
+  listingType?: string;
   monthlyRent?: number | null;
   salePrice?: number | null;
-  adminFee?: number;
+  /** §3.2 #12 — `YYYY-MM-DD`. A malformed date is a 400 here, unlike ingestion. */
   consignedAt?: string;
-  /** The only exit for `posible_duplicado` (wu-4-report.md §6). */
+  /** The only exit for `posible_duplicado` — an action, not a form field. */
   permitirDuplicado?: boolean;
 }
 

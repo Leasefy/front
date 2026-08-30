@@ -15,6 +15,8 @@
 
 import type { ImportProperty } from './importTypes';
 import { resolveImportListingType } from './requisitosDelBack';
+import { TYPE_TO_BACKEND } from '@/lib/api/properties.mapper';
+import type { PropertyType } from '@/lib/types/property';
 import type { ImportarInmuebleDto } from '@/lib/api/inmuebles-importacion.service';
 
 export function toImportarInmuebleDto(p: ImportProperty): ImportarInmuebleDto {
@@ -25,7 +27,19 @@ export function toImportarInmuebleDto(p: ImportProperty): ImportarInmuebleDto {
   if (p.propertyCity) dto.city = p.propertyCity;
   if (p.propertyZone) dto.neighborhood = p.propertyZone;
   if (p.propertyDepartment) dto.department = p.propertyDepartment;
-  if (p.propertyType) dto.propertyType = p.propertyType;
+  // The wire key is `type` and the casing is UPPER_SNAKE
+  // (contract-addendum-3.md §3.4) — the same translation
+  // `properties.service.ts` already applies to `POST /properties`, so the
+  // task has one casing rule instead of one per endpoint.
+  //
+  // `?? p.propertyType` is MANDATORY, not stylistic: `normalizePropertyType`
+  // returns the raw cell unchanged when nothing matches, so this can be
+  // "Apartaestudio". That string must reach the back INTACT, or `revisar()`
+  // cannot show the original value next to the address for the reviewer to
+  // fix. Upper-casing it, dropping it or defaulting it all violate C13/C19.
+  if (p.propertyType) {
+    dto.type = TYPE_TO_BACKEND[p.propertyType as PropertyType] ?? p.propertyType;
+  }
   if (p.propertyArea != null) dto.area = p.propertyArea;
   if (p.bedrooms != null) dto.bedrooms = p.bedrooms;
   if (p.bathrooms != null) dto.bathrooms = p.bathrooms;
@@ -36,7 +50,10 @@ export function toImportarInmuebleDto(p: ImportProperty): ImportarInmuebleDto {
   // same heuristic the review step already uses (requisitosDelBack.ts).
   if (p.listingType) {
     const isSale = resolveImportListingType(p.listingType) === 'sale';
-    dto.listingType = isSale ? 'sale' : 'rent';
+    // UPPER_SNAKE on the wire (§3.4). The back matches case-insensitively
+    // today, but one casing rule for the whole task is what stops the next
+    // "which endpoint am I on?" ambiguity — that is what produced F-1.
+    dto.listingType = isSale ? 'SALE' : 'RENT';
     if (isSale) {
       if (p.salePrice != null) dto.salePrice = p.salePrice;
     } else if (p.monthlyRent != null) {

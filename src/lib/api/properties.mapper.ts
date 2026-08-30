@@ -6,8 +6,16 @@ import type { Property, PropertyType, PropertyStatus, PropertyAmenity, AgencyPro
 import { PROPERTY_AMENITIES } from '@/lib/types/property';
 import type { BackendProperty, BackendListingType } from './properties.types';
 
-// Backend UPPERCASE -> Frontend lowercase
-const TYPE_MAP: Record<string, PropertyType> = {
+/**
+ * Backend UPPERCASE -> Frontend lowercase.
+ *
+ * Exported because the bulk-import review UI reads `fila.datos.type` straight
+ * off the wire and has to map it back for its picker (contract-addendum-3.md
+ * §3.4, consequence 2). Use this rather than a second inverse table: two
+ * mapping dictionaries drifting apart on a boundary with no codegen is the
+ * failure this task exists to fix.
+ */
+export const TYPE_MAP: Record<string, PropertyType> = {
   APARTMENT: 'apartment',
   HOUSE: 'house',
   STUDIO: 'studio',

@@ -190,7 +190,20 @@ describe('<StepConfirmImport> — preparar() replaces the client-side POST /prop
     expect(inmueblesImportacionApiMock.preparar).toHaveBeenCalledTimes(1);
     const [dtos] = inmueblesImportacionApiMock.preparar.mock.calls[0];
     expect(dtos).toHaveLength(1);
-    expect(dtos[0]).toMatchObject({ title: 'Depto Chicó', latitude: 4.6, longitude: -74.1 });
+    // The wire names and casing are frozen (contract-addendum-3.md §3.1.1,
+    // §3.4). This assertion is deliberately about the KEYS, not just the
+    // values: the previous version checked only `title` and the coordinates,
+    // so it stayed green while the payload carried `propertyType` and every
+    // `preparar()` returned 400. It still is not proof on its own — the
+    // client is mocked here — the proof is `back`'s
+    // `importacion-contrato-wire.spec.ts`.
+    expect(dtos[0]).toMatchObject({
+      title: 'Depto Chicó',
+      type: 'APARTMENT',
+      latitude: 4.6,
+      longitude: -74.1,
+    });
+    expect('propertyType' in dtos[0]).toBe(false);
   });
 
   it('shows the "still processing" screen while ENCOLADO/PROCESANDO, never claims completion', async () => {

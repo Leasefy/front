@@ -114,6 +114,52 @@ describe('writing the correction — domain -> wire at the boundary', () => {
     expect(cambios.monthlyRent).toBe(2_400_000);
   });
 
+  // VERIFY-2 finding N-2: an unresolved `listingType` must never be treated as
+  // "not a sale". The old code gated the `else` branch on "not sale", so an
+  // unmappable value like 'Permuta' fell into it and unconditionally cleared
+  // `salePrice`, destroying a value the user typed. This is the regression
+  // test — it asserts the absence of the key, not a value, because a rewrite
+  // that keeps clobbering `salePrice` with the same number would also pass a
+  // value-only assertion.
+  describe('the three-state ruling on `salePrice` (T-0038 VERIFY-2 N-2)', () => {
+    it('sale — keeps `salePrice` unchanged', () => {
+      const cambios = cambiosDesdeFormulario({ ...base, listingType: 'sale', salePrice: 850_000_000 });
+
+      expect(cambios.salePrice).toBe(850_000_000);
+    });
+
+    it('rent — clears `salePrice` with an explicit null (deliberate, preserved)', () => {
+      const cambios = cambiosDesdeFormulario({ ...base, listingType: 'rent', monthlyRent: 2_400_000 });
+
+      expect(cambios.salePrice).toBeNull();
+    });
+
+    it('unrecognised listingType — omits `salePrice` entirely, does not clear it (VERIFY-2 reproduction, by value)', () => {
+      // `listingTypeDeDatos` degrades an unmappable wire value to `undefined`
+      // (see the "reading listingType tolerantly" suite above), so this is
+      // the exact shape `formularioDesde` would produce for a row whose file
+      // said `listingType: 'Permuta'` with `salePrice: 850000000`.
+      const cambios = cambiosDesdeFormulario({ ...base, listingType: undefined, salePrice: 850_000_000 });
+
+      expect('salePrice' in cambios).toBe(false);
+    });
+
+    it('undefined listingType — omits `salePrice` entirely', () => {
+      const cambios = cambiosDesdeFormulario({ ...base, listingType: undefined, salePrice: 850_000_000 });
+
+      expect('salePrice' in cambios).toBe(false);
+    });
+
+    it('empty-string-derived (falsy, non-rent, non-sale) listingType — omits `salePrice` entirely', () => {
+      // FormularioFila.listingType is typed ListingType | undefined, but the
+      // guard must not rely on strict typing alone — assert the runtime
+      // behaviour for any falsy, non-'rent' value reaching this function.
+      const cambios = cambiosDesdeFormulario({ ...base, listingType: undefined, salePrice: undefined });
+
+      expect('salePrice' in cambios).toBe(false);
+    });
+  });
+
   it('never sends a price of 0 — a 0 is a 400 here, not a cleared price (C6)', () => {
     const cambios = cambiosDesdeFormulario({ ...base, listingType: 'rent', monthlyRent: undefined });
 

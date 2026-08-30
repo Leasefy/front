@@ -87,6 +87,13 @@ export function formularioDesde(datos: ImportarInmuebleDto): FormularioFila {
  * explicit `null` does, and clearing is the only exit from
  * `precio_inconsistente` on a row whose file carried both. **`0` does not
  * clear — it is a 400 (`@Min(1)`, C6).**
+ *
+ * The opposing price is a **three-state** decision on `form.listingType`, not
+ * two (T-0038 VERIFY-2 N-2): `'sale'` clears `monthlyRent`; `'rent'` clears
+ * `salePrice`; anything else (unmappable, undefined, empty) clears NEITHER —
+ * the value stays untouched and the key is omitted from `cambios`. An
+ * unresolved listing type is a `tipo_de_negocio` faltante for the reviewer to
+ * settle, never a licence to discard a price the user typed.
  */
 export function cambiosDesdeFormulario(form: FormularioFila): ResolverInmuebleDto {
   const cambios: ResolverInmuebleDto = {};
@@ -107,9 +114,18 @@ export function cambiosDesdeFormulario(form: FormularioFila): ResolverInmuebleDt
   if (form.listingType === 'sale') {
     if (form.salePrice != null) cambios.salePrice = form.salePrice;
     cambios.monthlyRent = null;
-  } else {
+  } else if (form.listingType === 'rent') {
     if (form.monthlyRent != null) cambios.monthlyRent = form.monthlyRent;
     cambios.salePrice = null;
+  } else {
+    // Unresolved listing type (unmappable, undefined, or empty): do NOT clear
+    // `salePrice`. The old code gated this branch on "not sale", so an
+    // unrecognised value fell in here too and unconditionally destroyed a
+    // price the user typed — silently, on the exact screen that exists to
+    // repair broken rows (T-0038 VERIFY-2 N-2). An unresolved listing type is
+    // a `tipo_de_negocio` faltante for the reviewer to settle, never a
+    // licence to discard data because it could not be classified.
+    if (form.monthlyRent != null) cambios.monthlyRent = form.monthlyRent;
   }
 
   return cambios;

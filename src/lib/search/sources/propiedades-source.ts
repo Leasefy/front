@@ -91,7 +91,12 @@ export const propiedadesSource: SearchSource = {
             label: STATUS_LABELS_ES[item.status] ?? item.status,
             color: STATUS_COLORS[item.status] ?? 'neutral',
           },
-          { label: formatCOP(item.monthlyRent), color: 'neutral' as const },
+          // T-0038 §3.2.4 — a SALE listing's `monthlyRent` is `null`; show
+          // `salePrice` instead rather than crash `formatCOP` or coalesce to
+          // a fabricated "$0" badge (C6).
+          item.listingType === 'sale'
+            ? { label: item.salePrice != null ? formatCOP(item.salePrice) : 'Sin dato', color: 'neutral' as const }
+            : { label: item.monthlyRent != null ? formatCOP(item.monthlyRent) : 'Sin dato', color: 'neutral' as const },
         ],
         href: `/panel/inmobiliaria/inmuebles/${item.id}`,
         preview: {

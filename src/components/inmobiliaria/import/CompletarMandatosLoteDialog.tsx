@@ -155,7 +155,11 @@ export function CompletarMandatosLoteDialog({
                 <div key={row.propertyId} className="flex items-center justify-between gap-3 text-sm">
                   <span className="text-fg truncate">{row.propertyTitle}</span>
                   <span className="text-fg-muted font-mono tabular-nums whitespace-nowrap">
-                    {formatCurrency(row.monthlyRent)}
+                    {/* T-0038: this batch dialog is rent-mandate-only — the
+                        caller (StepConfirmImport) excludes SALE rows before
+                        opening it (contract.md §3.2.4). `—` here is a
+                        type-safety fallback, not an expected display. */}
+                    {row.monthlyRent != null ? formatCurrency(row.monthlyRent) : '—'}
                   </span>
                 </div>
               ))}

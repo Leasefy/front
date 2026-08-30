@@ -161,11 +161,17 @@ export function ConsignacionHeader({
             </span>
           </div>
 
-          {/* Commission pill */}
+          {/* Commission pill — a SALE mandate's commissionPercent is always
+              0 (contract-addendum-2.md §A.3); show saleCommissionPercent. */}
           <div className="absolute top-3 right-3">
             <span className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-medium flex items-center gap-1.5">
               <Percent className="w-4 h-4" />
-              {consignacion.commissionPercent}% {t('inmobiliaria.consignaciones.header.commission')}
+              {consignacion.listingType === 'sale'
+                ? (consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—')
+                : `${consignacion.commissionPercent}%`}{' '}
+              {consignacion.listingType === 'sale'
+                ? t('inmobiliaria.consignaciones.header.saleCommission')
+                : t('inmobiliaria.consignaciones.header.commission')}
             </span>
           </div>
         </div>
@@ -196,18 +202,28 @@ export function ConsignacionHeader({
             </span>
           </div>
 
-          {/* Rent and Admin Fee */}
-          <div className="flex flex-wrap items-baseline gap-3 mb-5">
-            <span className="text-3xl lg:text-4xl font-bold text-fg dark:text-white">
-              {formatCurrency(consignacion.monthlyRent)}
-            </span>
-            <span className="text-lg text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.header.perMonth')}</span>
-            {consignacion.adminFee && consignacion.adminFee > 0 && (
-              <span className="text-sm text-fg-subtle dark:text-fg-muted">
-                + {formatCurrency(consignacion.adminFee)} {t('inmobiliaria.consignaciones.header.admin')}
+          {/* Rent and Admin Fee — a SALE mandate has no canon (§A.2): show
+              the sale commission instead, never "$0" or "$0/mes". */}
+          {consignacion.listingType === 'sale' ? (
+            <div className="flex flex-wrap items-baseline gap-3 mb-5">
+              <span className="text-3xl lg:text-4xl font-bold text-fg dark:text-white">
+                {consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—'}
               </span>
-            )}
-          </div>
+              <span className="text-lg text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.header.saleCommission')}</span>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-baseline gap-3 mb-5">
+              <span className="text-3xl lg:text-4xl font-bold text-fg dark:text-white">
+                {consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
+              </span>
+              <span className="text-lg text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.header.perMonth')}</span>
+              {consignacion.adminFee && consignacion.adminFee > 0 && (
+                <span className="text-sm text-fg-subtle dark:text-fg-muted">
+                  + {formatCurrency(consignacion.adminFee)} {t('inmobiliaria.consignaciones.header.admin')}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Contract Dates */}
           <div className="flex flex-wrap items-center gap-4 text-sm text-fg-muted dark:text-fg-subtle mb-6">

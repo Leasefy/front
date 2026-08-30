@@ -83,6 +83,13 @@ export interface CoordinateResolution {
  * fallback (`getCityCoordinates`) is the safety net for properties published
  * before geocoding existed, or when the user typed a free-text address
  * without picking a suggestion \u2014 do NOT remove it when wiring geocoding in.
+ *
+ * \u26a0 This runs at WRITE time only. Its two non-test callers are
+ * `PublishContext.tsx` and `geocodeImportRow.ts`, both on the way to
+ * persisting a property \u2014 nothing calls it while rendering. So a property
+ * stored without coordinates has no pin, and no read path invents one; a
+ * caller that stops sending coordinates is not covered by a render-time
+ * fallback, because there isn't one (T-0038 contract-addendum-3.md \u00a73.6, E-3).
  */
 export function resolvePropertyCoordinates(draft: {
   latitude?: number;

@@ -179,6 +179,96 @@ describe('<StepConfirmation> — agent section', () => {
   })
 })
 
+describe('<StepConfirmation> — T-0038 SALE listing summary', () => {
+  it('shows the sale price instead of a monthly canon for a SALE listing', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(StepConfirmation, {
+          formData: {
+            propietarioId: 'prop-1',
+            propertyTitle: 'Depto Centro',
+            listingType: 'sale',
+            salePrice: 400_000_000,
+            monthlyRent: undefined,
+          },
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [AGENTE],
+          onGoToStep: vi.fn(),
+        }),
+      )
+    })
+
+    expect(container.textContent).toContain('400.000.000')
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step6.perMonth')
+  })
+
+  it('never shows "$0"/"$ 0" for a SALE listing with no salePrice yet', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(StepConfirmation, {
+          formData: { propietarioId: 'prop-1', propertyTitle: 'Depto Centro', listingType: 'sale' },
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [AGENTE],
+          onGoToStep: vi.fn(),
+        }),
+      )
+    })
+
+    expect(container.textContent).not.toContain('$0')
+    expect(container.textContent).not.toContain('$ 0')
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step6.noSalePrice')
+  })
+
+  it('replaces the commission/minimum-term terms section with the sale commission (contract-addendum-2.md §A.8)', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(StepConfirmation, {
+          formData: {
+            propietarioId: 'prop-1',
+            propertyTitle: 'Depto Centro',
+            listingType: 'sale',
+            salePrice: 400_000_000,
+            saleCommissionPercent: 3,
+          },
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [AGENTE],
+          onGoToStep: vi.fn(),
+        }),
+      )
+    })
+
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step6.saleCommission')
+    expect(container.textContent).toContain('3%')
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step6.monthlyCommission')
+  })
+
+  it('a RENT listing keeps the commission/terms section unchanged (regression)', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(StepConfirmation, {
+          formData: {
+            propietarioId: 'prop-1',
+            propertyTitle: 'Depto Centro',
+            listingType: 'rent',
+            monthlyRent: 2_000_000,
+            commissionPercent: 10,
+          },
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [AGENTE],
+          onGoToStep: vi.fn(),
+        }),
+      )
+    })
+
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step6.monthlyCommission')
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step6.noTermsForSale')
+  })
+})
+
 describe('<StepActaEntrega> — property photos (T-0017)', () => {
   it('renders the photo picker wired to formData.photos and forwards its onChange to updateFormData', async () => {
     const updateFormData = vi.fn()

@@ -214,20 +214,29 @@ export function PropertyDetailSheet({
                 {property.title}
               </h2>
 
-              {/* Price */}
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-fg">
-                  {formatCurrency(property.monthlyRent)}
-                </span>
-                <span className="text-sm text-fg-muted">
-                  /mes
-                </span>
-                {property.adminFee > 0 && (
-                  <span className="text-sm text-fg-muted">
-                    (+{formatCurrency(property.adminFee)} admin)
+              {/* Price — T-0038 §3.2.3/§3.2.4: SALE shows `salePrice`, no
+                  "/mes", no admin line. Never `formatCurrency(null)` (C6). */}
+              {property.listingType === 'sale' ? (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-fg">
+                    {property.salePrice != null ? formatCurrency(property.salePrice) : 'Sin dato'}
                   </span>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-fg">
+                    {property.monthlyRent != null ? formatCurrency(property.monthlyRent) : 'Sin dato'}
+                  </span>
+                  <span className="text-sm text-fg-muted">
+                    /mes
+                  </span>
+                  {property.adminFee > 0 && (
+                    <span className="text-sm text-fg-muted">
+                      (+{formatCurrency(property.adminFee)} admin)
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Stats Grid */}
               <div className="grid grid-cols-4 gap-2">
@@ -350,12 +359,20 @@ export function PropertyDetailSheet({
             <div className="flex items-center gap-3">
               {/* Price */}
               <div className="flex-1 min-w-0">
-                <span className="text-lg font-bold text-fg">
-                  {formatCurrency(property.monthlyRent)}
-                </span>
-                <span className="text-sm text-fg-muted">
-                  /mes
-                </span>
+                {property.listingType === 'sale' ? (
+                  <span className="text-lg font-bold text-fg">
+                    {property.salePrice != null ? formatCurrency(property.salePrice) : 'Sin dato'}
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-lg font-bold text-fg">
+                      {property.monthlyRent != null ? formatCurrency(property.monthlyRent) : 'Sin dato'}
+                    </span>
+                    <span className="text-sm text-fg-muted">
+                      /mes
+                    </span>
+                  </>
+                )}
               </div>
 
               {/* Wishlist Button */}
@@ -381,15 +398,29 @@ export function PropertyDetailSheet({
                 }
               />
 
-              {/* Postulación — el gate enseña el camino si todavía no puede
-                  (ver PostularButton). "Aplicar" murió: docs/VOCABULARIO.md. */}
-              <PostularButton
-                propertyId={property.id}
-                canonCop={property.monthlyRent}
-                className="w-full h-12"
-              >
-                Postularme a esta propiedad
-              </PostularButton>
+              {/*
+                T-0038 §3.3, ledger §2.7 O-1/O-2 — no postulación on a SALE
+                listing. Rather than duplicate the auth-gated
+                contact/visit tabs here, this compact sheet routes to the
+                full detail page, where `StickyCTA` already implements them.
+              */}
+              {property.listingType === 'sale' ? (
+                <Link href={`/propiedades/${property.id}`} className="w-full">
+                  <Button hideArrow className="w-full h-12">
+                    Contactar / agendar visita
+                  </Button>
+                </Link>
+              ) : (
+                /* Postulación — el gate enseña el camino si todavía no puede
+                   (ver PostularButton). "Aplicar" murió: docs/VOCABULARIO.md. */
+                <PostularButton
+                  propertyId={property.id}
+                  canonCop={property.monthlyRent ?? undefined}
+                  className="w-full h-12"
+                >
+                  Postularme a esta propiedad
+                </PostularButton>
+              )}
             </div>
           </div>
         </SheetContent>

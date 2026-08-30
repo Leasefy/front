@@ -243,10 +243,17 @@ export function PropietarioSection({ propietario }: PropietarioSectionProps) {
 interface AgenteSectionProps {
   agente: Agente | undefined;
   commissionPercent: number;
+  /**
+   * contract-addendum-2.md §8.6 — no sale-commission money movement is
+   * computed anywhere in T-0038. `commissionPercent` is always `0` on a
+   * sale mandate (§A.3), so an agent/agency split derived from it would
+   * misleadingly render "0%" as if there were no commission at all.
+   */
+  isSaleListing?: boolean;
   onReassign?: () => void;
 }
 
-export function AgenteSection({ agente, commissionPercent, onReassign }: AgenteSectionProps) {
+export function AgenteSection({ agente, commissionPercent, isSaleListing, onReassign }: AgenteSectionProps) {
   const { t } = useI18n();
 
   if (!agente) {
@@ -294,33 +301,42 @@ export function AgenteSection({ agente, commissionPercent, onReassign }: AgenteS
           </Badge>
         </div>
 
-        {/* Commission Split */}
-        <div className="p-3 rounded-xl bg-surface-muted dark:bg-[#14130F]">
-          <div className="flex items-center gap-2 mb-2">
-            <CurrencyDollar className="w-4 h-4 text-fg-subtle" />
-            <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.commissionDistribution')}</span>
+        {/* Commission Split — not computed for a sale mandate (§8.6: no
+            sale-commission money movement anywhere in T-0038). */}
+        {isSaleListing ? (
+          <div className="p-3 rounded-xl bg-surface-muted dark:bg-[#14130F]">
+            <p className="text-xs text-fg-muted dark:text-fg-subtle">
+              {t('inmobiliaria.consignaciones.detail.commissionSplitNotAvailableForSale')}
+            </p>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <div>
-              <span className="font-medium text-fg dark:text-white">{agentCommissionPercent.toFixed(1)}%</span>
-              <span className="text-fg-muted dark:text-fg-subtle ml-1">{t('inmobiliaria.consignaciones.detail.agentShare')}</span>
+        ) : (
+          <div className="p-3 rounded-xl bg-surface-muted dark:bg-[#14130F]">
+            <div className="flex items-center gap-2 mb-2">
+              <CurrencyDollar className="w-4 h-4 text-fg-subtle" />
+              <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.detail.commissionDistribution')}</span>
             </div>
-            <div>
-              <span className="font-medium text-fg dark:text-white">{agencyCommissionPercent.toFixed(1)}%</span>
-              <span className="text-fg-muted dark:text-fg-subtle ml-1">{t('inmobiliaria.consignaciones.detail.agencyShare')}</span>
+            <div className="flex items-center justify-between text-sm">
+              <div>
+                <span className="font-medium text-fg dark:text-white">{agentCommissionPercent.toFixed(1)}%</span>
+                <span className="text-fg-muted dark:text-fg-subtle ml-1">{t('inmobiliaria.consignaciones.detail.agentShare')}</span>
+              </div>
+              <div>
+                <span className="font-medium text-fg dark:text-white">{agencyCommissionPercent.toFixed(1)}%</span>
+                <span className="text-fg-muted dark:text-fg-subtle ml-1">{t('inmobiliaria.consignaciones.detail.agencyShare')}</span>
+              </div>
+            </div>
+            <div className="mt-2 h-2 rounded-full bg-surface-muted dark:bg-ink overflow-hidden flex">
+              <div
+                className="bg-primary dark:bg-primary"
+                style={{ width: `${agente.commissionSplit}%` }}
+              />
+              <div
+                className="bg-muted dark:bg-muted"
+                style={{ width: `${100 - agente.commissionSplit}%` }}
+              />
             </div>
           </div>
-          <div className="mt-2 h-2 rounded-full bg-surface-muted dark:bg-ink overflow-hidden flex">
-            <div
-              className="bg-primary dark:bg-primary"
-              style={{ width: `${agente.commissionSplit}%` }}
-            />
-            <div
-              className="bg-muted dark:bg-muted"
-              style={{ width: `${100 - agente.commissionSplit}%` }}
-            />
-          </div>
-        </div>
+        )}
 
         {/* Contact and Actions */}
         <div className="flex items-center gap-2">
@@ -391,7 +407,10 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
             <div className="p-3 rounded-xl bg-surface-muted dark:bg-[#14130F]">
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.monthlyRentLabel')}</p>
               <p className="text-sm font-medium text-fg dark:text-white">
-                {formatCurrency(consignacion.monthlyRent)}
+                {/* A SALE mandate can never have `availability: 'RENTED'`
+                    (contract-addendum-2.md §A.7 rule R4), so `monthlyRent`
+                    is unreachable-null here — narrow the type, never coalesce. */}
+                {consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
               </p>
             </div>
           </div>

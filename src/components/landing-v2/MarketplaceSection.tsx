@@ -52,6 +52,20 @@ function precio(cop: number): string {
   }).format(cop)
 }
 
+/**
+ * T-0038: `GET /properties` mixes RENT and SALE listings (contract.md
+ * §3.7 — no server-side default). A SALE listing's `monthlyRent` is `null`
+ * — never format it as currency (`precio(null)` would need a coalesce, and
+ * a coalesced `0` reads as a free property, C6). Render "Sin dato" instead
+ * of guessing.
+ */
+function precioTarjeta(p: Property): string {
+  if (p.listingType === 'sale') {
+    return p.salePrice != null ? precio(p.salePrice) : 'Sin dato'
+  }
+  return p.monthlyRent != null ? precio(p.monthlyRent) : 'Sin dato'
+}
+
 /** «2 hab · 2 baños · 72 m²», saltando lo que no venga. */
 function ficha(p: Property): string {
   const partes: string[] = []
@@ -134,7 +148,7 @@ export function MarketplaceSection() {
                     )}
                   </span>
                   <span className="mkt-body">
-                    <b className="mkt-precio">{precio(p.monthlyRent)}</b>
+                    <b className="mkt-precio">{precioTarjeta(p)}</b>
                     <span className="mkt-donde">{donde(p)}</span>
                     <span className="mkt-ficha">{ficha(p)}</span>
                   </span>

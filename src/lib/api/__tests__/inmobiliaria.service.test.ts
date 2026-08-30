@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { agencyApi, inmobiliariaConfigApi, permissionsApi, cobrosApi, mantenimientoApi, documentosApi, propietariosApi, inmueblesApi, normalizeInmuebleSinConsignacion } from '../inmobiliaria.service';
+import { agencyApi, inmobiliariaConfigApi, permissionsApi, cobrosApi, mantenimientoApi, documentosApi, propietariosApi, inmueblesApi, normalizeInmuebleSinConsignacion, normalizeConsignacion, normalizePipelineItem } from '../inmobiliaria.service';
 import { ApiError, setAccessToken } from '../client';
 import type { PropietarioFormData, BackendInmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
 
@@ -488,6 +488,11 @@ describe('inmueblesApi.getSinConsignacion — GET /inmobiliaria/inmuebles/sin-co
         adminFee: 0,
         status: 'draft',
         createdAt: '2026-08-20T00:00:00.000Z',
+        // T-0038 §3.2 — defaults when the backend fixture omits the new fields.
+        department: null,
+        listingType: 'rent',
+        salePrice: null,
+        code: undefined,
       },
     ]);
   });
@@ -521,5 +526,138 @@ describe('normalizeInmuebleSinConsignacion — the ROOM trap and the empty-zone 
 
   it('lower-cases status', () => {
     expect(normalizeInmuebleSinConsignacion(backendRow({ status: 'AVAILABLE' })).status).toBe('available');
+  });
+});
+
+// ── T-0038 §3.2 — department / listingType / salePrice / code / consignedAt ──
+
+describe('normalizeInmuebleSinConsignacion — T-0038 property-sale fields', () => {
+  it('maps a SALE row: listingType, salePrice, and null monthlyRent — never 0 (C6)', () => {
+    const result = normalizeInmuebleSinConsignacion(
+      backendRow({ propertyListingType: 'SALE', propertySalePrice: 300_000_000, monthlyRent: null }),
+    );
+    expect(result.listingType).toBe('sale');
+    expect(result.salePrice).toBe(300_000_000);
+    expect(result.monthlyRent).toBeNull();
+  });
+
+  it('defaults listingType to "rent" and salePrice/department to null when absent', () => {
+    const result = normalizeInmuebleSinConsignacion(backendRow());
+    expect(result.listingType).toBe('rent');
+    expect(result.salePrice).toBeNull();
+    expect(result.department).toBeNull();
+  });
+
+  it('throws on an unrecognised listingType instead of defaulting (C19)', () => {
+    expect(() => normalizeInmuebleSinConsignacion(backendRow({ propertyListingType: 'LEASE' }))).toThrow();
+  });
+
+  it('passes propertyCode through as code — this route is already agency-guarded, always present', () => {
+    expect(normalizeInmuebleSinConsignacion(backendRow({ propertyCode: 12 })).code).toBe(12);
+  });
+
+  it('passes propertyConsignedAt through verbatim, preserving null vs. absent', () => {
+    const withDate = normalizeInmuebleSinConsignacion(backendRow({ propertyConsignedAt: '2026-08-29' }));
+    expect(withDate.consignedAt).toBe('2026-08-29');
+
+    const withNull = normalizeInmuebleSinConsignacion(backendRow({ propertyConsignedAt: null }));
+    expect('consignedAt' in withNull).toBe(true);
+    expect(withNull.consignedAt).toBeNull();
+
+    const absent = normalizeInmuebleSinConsignacion(backendRow());
+    expect('consignedAt' in absent).toBe(false);
+  });
+});
+
+// ── T-0038 contract-addendum-2.md §A.1/§A.2/§A.9.1 — the sale mandate ──────
+
+function rawConsignacion(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'cons-1',
+    propertyId: 'prop-1',
+    propietarioId: 'owner-1',
+    agenteUserId: 'user-1',
+    propertyTitle: 'Depto Chicó',
+    propertyAddress: 'Cra 11 #94-45',
+    propertyCity: 'Bogotá',
+    propertyZone: 'Chicó',
+    propertyType: 'APARTMENT',
+    monthlyRent: 2_500_000,
+    adminFee: 0,
+    commissionPercent: 10,
+    contractDate: '2026-01-01T00:00:00.000Z',
+    status: 'ACTIVE',
+    availability: 'AVAILABLE',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  } as Parameters<typeof normalizeConsignacion>[0];
+}
+
+describe('normalizeConsignacion — the reduced sale mandate', () => {
+  it('defaults listingType to "rent" when absent (older back build)', () => {
+    expect(normalizeConsignacion(rawConsignacion()).listingType).toBe('rent');
+  });
+
+  it('maps a SALE row: listingType lower-cased, monthlyRent null preserved, never 0 (C6)', () => {
+    const result = normalizeConsignacion(
+      rawConsignacion({ listingType: 'SALE', monthlyRent: null, saleCommissionPercent: 3 }),
+    );
+    expect(result.listingType).toBe('sale');
+    expect(result.monthlyRent).toBeNull();
+    expect(result.saleCommissionPercent).toBe(3);
+  });
+
+  it('throws on an unrecognised listingType instead of defaulting (C19)', () => {
+    expect(() => normalizeConsignacion(rawConsignacion({ listingType: 'LEASE' }))).toThrow();
+  });
+
+  it('defaults saleCommissionPercent to null when absent — never 0%', () => {
+    expect(normalizeConsignacion(rawConsignacion()).saleCommissionPercent).toBeNull();
+  });
+
+  it('defaults propertyCode to null when absent (a migrated cartera row with no linked property)', () => {
+    expect(normalizeConsignacion(rawConsignacion()).propertyCode).toBeNull();
+  });
+
+  it('passes propertyCode through when present', () => {
+    expect(normalizeConsignacion(rawConsignacion({ propertyCode: 42 })).propertyCode).toBe(42);
+  });
+});
+
+describe('normalizePipelineItem — a pipeline item on a sale mandate has no canon', () => {
+  function rawItem(over: Record<string, unknown> = {}) {
+    return {
+      id: 'item-1',
+      consignacionId: 'cons-1',
+      candidateName: 'Ana Restrepo',
+      stage: 'CONTACTED',
+      enteredStageAt: '2026-08-29T00:00:00.000Z',
+      daysInStage: 2,
+      createdAt: '2026-08-29T00:00:00.000Z',
+      updatedAt: '2026-08-29T00:00:00.000Z',
+      ...over,
+    };
+  }
+
+  // The `?? 0` that used to sit here rendered `$ 0/mes` on the pipeline card
+  // and detail. A `monthlyRent: 0` sentinel has already produced real $0
+  // billing on this platform (C6) — the rule does not bend for display.
+  it('keeps a null canon null — never 0 (C6)', () => {
+    const item = normalizePipelineItem(
+      rawItem({ consignacion: { propertyId: 'p1', monthlyRent: null } }) as never,
+    );
+    expect(item.monthlyRent).toBeNull();
+  });
+
+  it('keeps it null when there is no linked consignacion at all', () => {
+    expect(normalizePipelineItem(rawItem() as never).monthlyRent).toBeNull();
+  });
+
+  it('passes a real canon through untouched', () => {
+    const item = normalizePipelineItem(
+      rawItem({ consignacion: { propertyId: 'p1', monthlyRent: 2_400_000 } }) as never,
+    );
+    expect(item.monthlyRent).toBe(2_400_000);
   });
 });

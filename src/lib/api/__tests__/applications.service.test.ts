@@ -10,7 +10,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { landlordApplicationsApi } from '../applications.service';
+import { landlordApplicationsApi, applicationsApi } from '../applications.service';
+import { ApiError } from '../client';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -48,6 +49,61 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+// ── createGuest — T-0038 §3.3 (WU-2) PROPIEDAD_EN_VENTA code forwarding ──────
+
+describe('applicationsApi.createGuest — forwards the backend error code', () => {
+  it('forwards code: PROPIEDAD_EN_VENTA on a 409 (sale-listing postulación gate)', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({
+        statusCode: 409,
+        message: 'Esta propiedad está en venta. No se puede postular: contactá a la inmobiliaria por chat o agendá una visita.',
+        code: 'PROPIEDAD_EN_VENTA',
+      }),
+    } as unknown as Response);
+
+    await expect(
+      applicationsApi.createGuest({ propertyId: 'p1' } as Parameters<typeof applicationsApi.createGuest>[0]),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'PROPIEDAD_EN_VENTA',
+      message: 'Esta propiedad está en venta. No se puede postular: contactá a la inmobiliaria por chat o agendá una visita.',
+    });
+  });
+
+  it('rejects with an ApiError instance carrying the code, not just a plain error', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({ message: 'x', code: 'PROPIEDAD_EN_VENTA' }),
+    } as unknown as Response);
+
+    try {
+      await applicationsApi.createGuest({ propertyId: 'p1' } as Parameters<typeof applicationsApi.createGuest>[0]);
+      expect.unreachable('should have thrown');
+    } catch (e) {
+      expect(e).toBeInstanceOf(ApiError);
+      expect((e as ApiError).code).toBe('PROPIEDAD_EN_VENTA');
+    }
+  });
+
+  it('leaves code undefined when the backend does not send one (regression)', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({ message: 'Datos inválidos' }),
+    } as unknown as Response);
+
+    try {
+      await applicationsApi.createGuest({ propertyId: 'p1' } as Parameters<typeof applicationsApi.createGuest>[0]);
+      expect.unreachable('should have thrown');
+    } catch (e) {
+      expect((e as ApiError).code).toBeUndefined();
+    }
+  });
 });
 
 // ── (1) credit_check at root level ───────────────────────────────────────────

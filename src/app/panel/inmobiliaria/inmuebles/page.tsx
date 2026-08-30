@@ -47,8 +47,9 @@ import {
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
 import type { Consignacion, PortafolioRow, InmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { formatCurrency, portafolioRowKey } from '@/lib/types/inmobiliaria';
 import { ConsignacionCard } from '@/components/inmobiliaria/ConsignacionCard';
+import { InmuebleSinMandatoCard } from '@/components/inmobiliaria/InmuebleSinMandatoCard';
 import { ConsignacionTable } from '@/components/inmobiliaria/ConsignacionTable';
 import { ConsignacionFilters, ConsignacionFiltersState } from '@/components/inmobiliaria/ConsignacionFilters';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
@@ -246,7 +247,16 @@ function PortafolioContent() {
     const rented = mandatos.filter((c) => c.availability === 'rented').length;
     const inProcess = mandatos.filter((c) => c.availability === 'in_process').length;
     const maintenance = mandatos.filter((c) => c.availability === 'maintenance').length;
-    const totalMonthlyRent = mandatos.reduce((sum, c) => sum + c.monthlyRent, 0);
+    // contract-addendum-2.md §A.10 — a SALE mandate has `monthlyRent: null`
+    // (never `0`, C6). Summing it in with a `?? 0` would silently undercount
+    // nothing (null contributes 0 either way to a sum), but a RENT mandate's
+    // `monthlyRent` is guaranteed NOT NULL by the DB CHECK — the `?? 0` here
+    // is a type-narrowing formality, not a real coalesce risk. Filtering by
+    // `listingType` (rather than relying on the null check alone) keeps the
+    // intent explicit: this tile is a RENTAL revenue figure.
+    const totalMonthlyRent = mandatos
+      .filter((c) => c.listingType !== 'sale')
+      .reduce((sum, c) => sum + (c.monthlyRent ?? 0), 0);
 
     return { total, available, rented, inProcess, maintenance, totalMonthlyRent };
   }, [filteredConsignaciones]);
@@ -534,34 +544,39 @@ function PortafolioContent() {
                 {paginatedConsignaciones.length > 0 ? (
                   <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {/*
-                      T-0030: `ConsignacionCard` sigue tipado a `Consignacion`
-                      puro (comisión, `currentTenantName`, availability, todos
-                      campos que una fila sin mandato no tiene). Extenderlo
-                      para las dos formas es una superficie sin especificar en
-                      el contrato — R3 congela la fusión para la TABLA, no
-                      para esta vista. Acá se filtran las filas sin mandato en
-                      vez de arriesgar el mismo crash que ya se armó en
-                      ConsignacionTable; siguen entrando por la tabla, que es
-                      la vista por default (`useState<ViewMode>('table')`).
+                      C10, closed for the grid (T-0038 WU-6): this used to
+                      filter `kind === 'sinMandato'` out entirely — imported
+                      properties (WU-4) are born DRAFT with no mandate, so an
+                      agency that imports 300 saw an empty grid. A
+                      mandate-less row now renders via
+                      `InmuebleSinMandatoCard`, the grid counterpart of the
+                      table's already-shipped "Falta mandato" cell — not an
+                      extension of `ConsignacionCard` (still pure
+                      `Consignacion`-typed; the two shapes share no
+                      commission/availability/tenant fields to unify).
                     */}
-                    {paginatedConsignaciones
-                      .filter(
-                        (row): row is Extract<PortafolioRow, { kind: 'consignacion' }> =>
-                          row.kind === 'consignacion',
-                      )
-                      .map((consignacion) => (
+                    {paginatedConsignaciones.map((row) =>
+                      row.kind === 'consignacion' ? (
                         <ConsignacionCard
-                          key={consignacion.id}
-                          consignacion={consignacion}
-                          propietarioName={propietariosMap[consignacion.propietarioId]}
-                          agenteName={agentesMap[consignacion.agenteId]?.name}
-                          agenteAvatar={agentesMap[consignacion.agenteId]?.avatar}
-                          onClick={() => handleView(consignacion)}
-                          onView={() => handleView(consignacion)}
-                          onEdit={() => handleEdit(consignacion)}
-                          onAgendarCita={() => handleAgendarCita(consignacion)}
+                          key={row.id}
+                          consignacion={row}
+                          propietarioName={propietariosMap[row.propietarioId]}
+                          agenteName={agentesMap[row.agenteId]?.name}
+                          agenteAvatar={agentesMap[row.agenteId]?.avatar}
+                          onClick={() => handleView(row)}
+                          onView={() => handleView(row)}
+                          onEdit={() => handleEdit(row)}
+                          onAgendarCita={() => handleAgendarCita(row)}
                         />
-                      ))}
+                      ) : (
+                        <InmuebleSinMandatoCard
+                          key={portafolioRowKey(row)}
+                          inmueble={row}
+                          onClick={() => setMandatoFor(row)}
+                          onCompletarMandato={setMandatoFor}
+                        />
+                      ),
+                    )}
                   </div>
                 ) : (
                   <SinDatos

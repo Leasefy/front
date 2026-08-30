@@ -272,7 +272,15 @@ export function PipelineDetail({ isOpen, onClose, item, onStageChange }: Pipelin
                 <h3 className="font-medium text-foreground truncate">{item.propertyTitle}</h3>
                 <p className="text-sm text-muted-foreground mt-0.5 truncate">{item.propertyAddress}</p>
                 <p className="text-lg font-semibold text-primary mt-2 tabular-nums">
-                  {formatCurrency(item.monthlyRent)}<span className="text-sm font-normal text-muted-foreground">/{t('inmobiliaria.pipeline.month')}</span>
+                  {/* A sale mandate has no canon. `—`, never `$ 0` (C6). */}
+                  {item.monthlyRent != null ? (
+                    <>
+                      {formatCurrency(item.monthlyRent)}
+                      <span className="text-sm font-normal text-muted-foreground">/{t('inmobiliaria.pipeline.month')}</span>
+                    </>
+                  ) : (
+                    '—'
+                  )}
                 </p>
               </div>
             </div>

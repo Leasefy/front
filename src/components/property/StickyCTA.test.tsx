@@ -12,13 +12,21 @@ let authState: {
   hasActiveAgencyMembership: boolean
 }
 
+const { pushMock, createPropertyInquiryMock } = vi.hoisted(() => ({
+  pushMock: vi.fn(),
+  createPropertyInquiryMock: vi.fn(),
+}))
+
 vi.mock('@/lib/auth/use-auth', () => ({ useAuth: () => authState }))
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push: pushMock, replace: vi.fn() }),
   usePathname: () => '/propiedades/p1',
 }))
 vi.mock('@/lib/api/visits.service', () => ({
   visitsApi: { getSlots: vi.fn().mockResolvedValue({ slots: [] }), create: vi.fn() },
+}))
+vi.mock('@/lib/api/messages.service', () => ({
+  messagesApi: { createPropertyInquiry: (...args: unknown[]) => createPropertyInquiryMock(...args) },
 }))
 
 import { StickyCTA } from './StickyCTA'
@@ -34,6 +42,8 @@ beforeEach(() => {
   authState = { user: null, isAuthenticated: false, hasActiveAgencyMembership: false }
   Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
   writeText.mockClear()
+  pushMock.mockClear()
+  createPropertyInquiryMock.mockReset()
 })
 
 afterEach(() => {
@@ -44,9 +54,9 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function render() {
+function render(props: Partial<React.ComponentProps<typeof StickyCTA>> = {}) {
   act(() => {
-    root.render(<StickyCTA propertyId="p1" price={1500000} />)
+    root.render(<StickyCTA propertyId="p1" price={1500000} {...props} />)
   })
 }
 
@@ -120,5 +130,130 @@ describe('<StickyCTA> — inmobiliaria / agent viewer', () => {
 
     expect(writeText).toHaveBeenCalledTimes(1)
     expect(writeText.mock.calls[0][0]).toContain('/propiedades/p1')
+  })
+
+  it('an agency viewer sees the share panel on a SALE listing too (unconditional, before the listingType branch)', () => {
+    authState = { user: { role: 'agency' }, isAuthenticated: true, hasActiveAgencyMembership: false }
+    render({ listingType: 'sale', salePrice: 500_000_000 })
+
+    expect(q('[data-testid="agency-share-panel"]')).toBeTruthy()
+    expect(container.textContent).not.toContain('Contactar')
+  })
+})
+
+// ============================================================================
+// T-0038 — SALE listing CTA swap (contract.md §3, ledger §2.7 O-1/O-2)
+// ============================================================================
+
+describe('<StickyCTA> — SALE listing (no postulación)', () => {
+  it('shows Contactar + Agendar visita instead of Postularme — no postulación on a sale listing', () => {
+    render({ listingType: 'sale', salePrice: 500_000_000 })
+
+    expect(container.textContent).not.toContain('Postularme')
+    expect(container.textContent).toContain('Contactar')
+    expect(container.textContent).toContain('Agendar visita')
+  })
+
+  it('"Agendar visita" renders unconditionally on a SALE listing — no per-agency agenda switch (O-2)', () => {
+    render({ listingType: 'sale', salePrice: 500_000_000 })
+    expect(container.textContent).toContain('Agendar visita')
+  })
+
+  it('shows the sale price, not the (absent) monthlyRent, and never "$0"/"$ 0" (C6)', () => {
+    render({ listingType: 'sale', salePrice: 500_000_000, price: 0 })
+
+    expect(container.textContent).toContain('500.000.000')
+    expect(container.textContent).not.toContain('$ 0')
+    expect(container.textContent).not.toContain('$0')
+  })
+
+  it('renders an explicit "no data" state when salePrice is null — never "$0" (C6)', () => {
+    render({ listingType: 'sale', salePrice: null })
+
+    expect(container.textContent).not.toContain('$ 0')
+    expect(container.textContent).not.toContain('$0')
+    expect(container.textContent.toLowerCase()).toContain('sin dato')
+  })
+
+  it('an unauthenticated visitor clicking "Contactar" is routed to sign-up (registration required, O-1)', async () => {
+    render({ listingType: 'sale', salePrice: 500_000_000 })
+
+    const contactTab = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Contactar'),
+    )
+    expect(contactTab).toBeTruthy()
+    await act(async () => {
+      contactTab!.click()
+    })
+
+    const contactCta = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent?.match(/iniciar sesión|registrarte|crear cuenta/i),
+    )
+    expect(contactCta).toBeTruthy()
+  })
+
+  it('does not build a @Public() contact surface — no chat UI appears without authentication', () => {
+    render({ listingType: 'sale', salePrice: 500_000_000 })
+    // No message input / send button before the visitor signs in.
+    expect(container.querySelector('textarea')).toBeFalsy();
+    expect(q('[data-testid="chat-message-input"]')).toBeFalsy();
+  })
+
+  // ── contract-addendum-2.md §B.2/§B.9 — the "Contactar" action, wired ──────
+
+  it('an authenticated visitor clicking "Contactar" creates/resolves the inquiry thread and navigates to it', async () => {
+    authState = { user: { role: 'tenant' }, isAuthenticated: true, hasActiveAgencyMembership: false }
+    createPropertyInquiryMock.mockResolvedValueOnce({ conversationId: 'conv-new' })
+    render({ listingType: 'sale', salePrice: 500_000_000 })
+
+    const contactTab = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Contactar'),
+    )
+    await act(async () => {
+      contactTab!.click()
+    })
+
+    const startChatBtn = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent?.trim() === 'Contactar' && b !== contactTab,
+    )
+    expect(startChatBtn).toBeTruthy()
+    await act(async () => {
+      startChatBtn!.click()
+      await Promise.resolve()
+    })
+
+    expect(createPropertyInquiryMock).toHaveBeenCalledWith('p1')
+    expect(pushMock).toHaveBeenCalledWith('/inquilino/mensajes?conversationId=conv-new')
+  })
+
+  it('surfaces an inline error instead of a silent failure when the inquiry call fails', async () => {
+    authState = { user: { role: 'tenant' }, isAuthenticated: true, hasActiveAgencyMembership: false }
+    createPropertyInquiryMock.mockRejectedValueOnce(new Error('boom'))
+    render({ listingType: 'sale', salePrice: 500_000_000 })
+
+    const contactTab = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Contactar'),
+    )
+    await act(async () => {
+      contactTab!.click()
+    })
+    const startChatBtn = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent?.trim() === 'Contactar' && b !== contactTab,
+    )
+    await act(async () => {
+      startChatBtn!.click()
+      await Promise.resolve()
+    })
+
+    expect(pushMock).not.toHaveBeenCalled()
+    expect(q('[role="alert"]')).toBeTruthy()
+  })
+})
+
+describe('<StickyCTA> — RENT listing (regression)', () => {
+  it('defaults to RENT behaviour when listingType is not passed — Postularme still renders', () => {
+    render()
+    expect(container.textContent).toContain('Postularme')
+    expect(container.textContent).not.toContain('Contactar')
   })
 })

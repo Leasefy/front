@@ -1,124 +1,81 @@
 'use client';
 
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   CheckCircle,
   FileArrowUp,
   UserCircle,
   WarningCircle,
-  ImageSquare,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Pagination } from '@/components/ui/pagination';
 import { MonoLabel } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
-import { propertiesApi } from '@/lib/api/properties.service';
-import { uploadPropertyPhotos } from '@/lib/api/property-photos';
-import { traerFotoComoArchivo } from '@/lib/inmuebles/enlaces.service';
-import { usePropietarios, useAgentes } from '@/lib/hooks/useInmobiliaria';
-import type { Property } from '@/lib/types/property';
+import { ApiError } from '@/lib/api/client';
 import { faltantesParaElBack } from '../lib/requisitosDelBack';
+import { toImportarInmuebleDto } from '../lib/toImportarInmuebleDto';
 import { geocodeImportRow, GEOCODE_ROW_DELAY_MS } from '../lib/geocodeImportRow';
-import { inmuebleParaMandato } from '../lib/inmuebleParaMandato';
-import { CompletarMandatosLoteDialog } from '../CompletarMandatosLoteDialog';
+import { generarIdempotencyKey } from '../lib/idempotencia';
+import { activarLoteCompleto } from '../lib/activarLoteCompleto';
 import { RanuraDelPie, type ImportStepProps } from '../ImportWizard';
-import type { ImportProperty } from '../lib/importTypes';
+import { FilaImportacionRow } from '../FilaImportacionRow';
+import { ProgresoDeLoteInmuebles } from '../ProgresoDeLoteInmuebles';
+import { useEstadoDeLoteInmuebles } from '@/lib/hooks/use-estado-de-lote-inmuebles';
+import {
+  inmueblesImportacionApi,
+  type FilaDeImportacion,
+  type ResolverInmuebleDto,
+  type ResumenLoteInmuebles,
+  type FilaOmitida,
+  type ImportarInmuebleDto,
+} from '@/lib/api/inmuebles-importacion.service';
 
 /**
- * Lo que hace falta para cerrar la importación DESPUÉS de que el modal de
- * mandato (R1) se resuelva — se hizo o se saltó, da igual. Separado del
- * cierre porque el modal es opcional y asíncrono: el resumen final no puede
- * calcularse hasta que el usuario decide.
- */
-interface ResumenPendiente {
-  created: number;
-  failed: number;
-  geocodedCount: number;
-  fotosSubidas: number;
-  fotosFallidas: number;
-}
-
-/**
- * Los requisitos del back viven en `lib/requisitosDelBack.ts` y ahora se
- * evalúan en la REVISIÓN, que es donde cada inmueble se puede completar.
+ * StepConfirmImport — WU-6: wires the durable backend (WU-4,
+ * wu-4-report.md §6) instead of fanning out client-side to
+ * `POST /properties`, one call per row. Closing the tab now loses nothing:
+ * the batch is staged server-side from the moment `preparar()` returns, and
+ * `PROPERTY_IMPORT_COMPLETED` — not this component — is the completion
+ * mechanism. Polling (`useEstadoDeLoteInmuebles`) is only a bounded
+ * convenience while the tab stays open.
  *
- * Acá quedan sólo como red de seguridad: si algo llegó hasta este paso sin
- * cumplirlos, se aparta ANTES de geocodificar. Antes este era el único lugar
- * donde se comprobaban, y por eso el aviso salía en una pantalla sin un solo
- * campo editable: se veía «no se puede importar» y no había nada que hacer.
+ * Scope cuts made explicitly, not silently (see wu-6-report.md §8 for the
+ * full reasoning):
+ *  - The end-of-import mandate dialog (R1, `CompletarMandatosLoteDialog`)
+ *    is NOT offered here any more. Properties do not exist until
+ *    `activar()` succeeds — asynchronously, at a time the agency chooses —
+ *    so there is no `Property[]` to hand the dialog at the point this
+ *    component used to call it. Imported properties stay mandate-less by
+ *    design (C5/C13) and are surfaced by the grid-view fix (W4-b).
+ *  - Photo upload from the "enlaces" import method is deferred: the old
+ *    flow uploaded to a property id it had just created; the new flow does
+ *    not have one until activation. Not wired in this pass — flagged as a
+ *    real, known gap, not silently dropped.
  */
 
-/**
- * La descripción sí se puede armar, porque NO se inventa nada: es el propio
- * inmueble contado con sus datos reales. El back sólo pide 20 caracteres.
- */
-function descripcionParaElBack(p: ImportProperty): string {
-  const propia = (p.notes ?? '').trim();
-  if (propia.length >= 20) return propia;
-
-  const partes = [
-    p.propertyType ? TIPO_EN_ESPANOL[p.propertyType] ?? 'Inmueble' : 'Inmueble',
-    p.propertyZone ? `en ${p.propertyZone}` : null,
-    p.propertyCity ? `, ${p.propertyCity}` : null,
-    p.propertyAddress ? `. ${p.propertyAddress}` : null,
-    propia ? `. ${propia}` : null,
-  ].filter(Boolean);
-
-  const armada = partes.join(' ').replace(/\s+,/g, ',').replace(/\s+\./g, '.');
-  // Piso duro: si el archivo venía casi vacío, igual tiene que pasar el mínimo.
-  return armada.length >= 20 ? armada : `${armada} — inmueble importado`.trim();
-}
-
-const TIPO_EN_ESPANOL: Record<string, string> = {
-  apartment: 'Apartamento',
-  house: 'Casa',
-  studio: 'Apartaestudio',
-  commercial: 'Local comercial',
-  office: 'Oficina',
-  warehouse: 'Bodega',
-};
+const POR_PAGINA = 25;
 
 export function StepConfirmImport({ state, updateState }: ImportStepProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useI18n();
-
-  const [isImporting, setIsImporting] = useState(false);
-  // Tres fases con tiempos muy distintos: geocodificar es medio segundo por
-  // fila, crear es rápido, y bajar y subir fotos es lo más lento de todo.
-  // Cada una cuenta aparte — una barra sola que se queda quieta en el 100 %
-  // mientras suben 80 fotos parece colgada.
-  const [fase, setFase] = useState<'geocodificando' | 'creando' | 'fotos' | null>(null);
-  // Un toast se va solo. Si fallaron las 200, el motivo tiene que quedarse en
-  // la pantalla para poder leerlo y copiarlo.
-  const [errorDeImportacion, setErrorDeImportacion] = useState<string | null>(null);
   const ranuraDelPie = useContext(RanuraDelPie);
-  const [progress, setProgress] = useState(0);
-  const [currentItem, setCurrentItem] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
-
-  // R1 — el modal de mandato al terminar de importar. `mandateProperties`
-  // no-nulo dispara el modal; `resumenPendiente` guarda lo que falta para
-  // cerrar (toast + pantalla de éxito) hasta que el usuario decide algo.
-  const [mandateProperties, setMandateProperties] = useState<Property[] | null>(null);
-  const [resumenPendiente, setResumenPendiente] = useState<ResumenPendiente | null>(null);
-  const { propietarios: propietariosDelLote } = usePropietarios();
-  const { agentes: agentesDelLote } = useAgentes();
 
   const properties = state.properties;
   const selectedProperties = properties.filter((p) => p.selected && !p.hasErrors);
   const excludedCount = properties.filter((p) => !p.selected).length;
   const acceptedSuggestionsCount = properties.reduce(
     (sum, p) => sum + p.suggestions.filter((s) => s.accepted === true).length,
-    0
+    0,
   );
   const remainingErrorsCount = properties.filter((p) => p.selected && p.hasErrors).length;
 
-  // Las que el back va a rechazar, separadas ANTES de empezar. Antes se
-  // mandaban igual y volvían 400 una por una, después de geocodificarlas.
+  // Las que el back va a rechazar, separadas ANTES de empezar.
   const bloqueadas = selectedProperties
     .map((p) => ({ p, faltan: faltantesParaElBack(p) }))
     .filter((x) => x.faltan.length > 0);
@@ -126,252 +83,195 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
   const motivosBloqueo = [
     ...new Set(bloqueadas.flatMap((x) => x.faltan.map((f) => f.etiqueta.toLowerCase()))),
   ];
-
   const importCount = importables.length;
 
-  // Fotos que vienen del enlace de origen. Sólo existen en el método «Desde
-  // enlaces»; en la importación por archivo las dos son cero y nada de esto
-  // se dibuja.
-  const fotosPendientes = importables.filter((p) => p.imagenes?.length).length;
-  const totalDeFotos = importables.reduce((n, p) => n + (p.imagenes?.length ?? 0), 0);
+  // ── Phase 1: geocode (client-side, unchanged from before) + preparar() ──
+  const [geocodificando, setGeocodificando] = useState(false);
+  const [geoProgress, setGeoProgress] = useState(0);
+  const [geoCurrent, setGeoCurrent] = useState(0);
+  const [preparando, setPreparando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lote, setLote] = useState<string | null>(
+    () => searchParams?.get('lote') ?? null,
+  );
+  const [idempotencyKey] = useState(() => generarIdempotencyKey());
 
-  // Map a parsed/AI-reviewed ImportProperty to the propertiesApi.create payload.
-  // Accepted AI suggestions are already applied onto the property fields in StepAIReview.
-  const toCreatePayload = (p: ImportProperty) => ({
-    title: p.propertyTitle || p.propertyAddress || p.propertyCity || 'Propiedad importada',
-    description: descripcionParaElBack(p),
-    type: p.propertyType ?? 'apartment',
-    city: p.propertyCity ?? '',
-    neighborhood: p.propertyZone ?? '',
-    address: p.propertyAddress ?? '',
-    monthlyRent: p.monthlyRent ?? 0,
-    bedrooms: p.bedrooms ?? 0,
-    bathrooms: p.bathrooms ?? 0,
-    area: p.propertyArea ?? 0,
-    ...(p.adminFee != null ? { adminFee: p.adminFee } : {}),
-  });
+  const { estado: estadoLote, agotado } = useEstadoDeLoteInmuebles(lote);
 
-  const handleImport = async () => {
+  // ── Phase 2: review ──────────────────────────────────────────────────
+  const [resumenLote, setResumenLote] = useState<ResumenLoteInmuebles | null>(null);
+  const [pendientes, setPendientes] = useState<FilaDeImportacion[]>([]);
+  const [totalPendientes, setTotalPendientes] = useState(0);
+  const [pagina, setPagina] = useState(1);
+  const [filaBusy, setFilaBusy] = useState<string | null>(null);
+  const [descartandoLote, setDescartandoLote] = useState(false);
+
+  // ── Phase 3: activation ──────────────────────────────────────────────
+  const [activando, setActivando] = useState(false);
+  const [resultadoActivacion, setResultadoActivacion] = useState<{
+    activados: number;
+    omitidas: FilaOmitida[];
+  } | null>(null);
+  const [isComplete, setIsComplete] = useState(false);
+
+  const refrescarRevision = useCallback(async (elLote: string, pag = 1) => {
+    try {
+      const [r, p] = await Promise.all([
+        inmueblesImportacionApi.resumen(elLote),
+        inmueblesImportacionApi.filas(elLote, {
+          pagina: pag,
+          porPagina: POR_PAGINA,
+          estado: 'PENDIENTE',
+        }),
+      ]);
+      setResumenLote(r);
+      setPendientes(p.filas);
+      setTotalPendientes(p.total);
+      setPagina(p.pagina);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No pudimos abrir ese lote.');
+    }
+  }, []);
+
+  // El lote pasó a LISTO (por el sondeo, o porque llegamos por el ?lote= de
+  // la notificación con el batch ya terminado): recién ahí tiene sentido
+  // cargar la lista de trabajo real.
+  useEffect(() => {
+    if (!lote) return;
+    if (estadoLote?.estado === 'LISTO') {
+      refrescarRevision(lote);
+    }
+  }, [lote, estadoLote?.estado, refrescarRevision]);
+
+  const handlePreparar = async () => {
     if (importCount === 0) return;
-    setIsImporting(true);
-    setFase('geocodificando');
-    setProgress(0);
-    setCurrentItem(0);
+    setError(null);
+    setGeocodificando(true);
+    setGeoProgress(0);
+    setGeoCurrent(0);
 
-    const total = importCount;
-
-    // Geocodificación secuencial — respeta el límite de LocationIQ, y una
-    // dirección mala nunca frena la importación: cae al centro de la ciudad.
-    //
-    // Va a paso de tortuga por diseño (550 ms por fila), así que con 200
-    // inmuebles son casi DOS MINUTOS. Antes eso era un texto fijo —
-    // «Geocodificando direcciones…»— sin barra ni conteo: la pantalla parecía
-    // colgada. Ahora cuenta.
-    let geocodedCount = 0;
-    let fallbackCount = 0;
-    // El payload viaja junto a la propiedad de la que salió: sin eso, después
-    // de crear no hay forma de saber a qué inmueble le tocaban qué fotos.
-    const aCrear: Array<{
-      payload: ReturnType<typeof toCreatePayload> & { latitude?: number; longitude?: number };
-      origen: ImportProperty;
-    }> = [];
-
+    // Geocodificación secuencial — respeta el límite de LocationIQ. Va antes
+    // de `preparar()` porque el back de importación (WU-4) no geocodifica;
+    // sin esto, todo inmueble importado caería al centro de la ciudad.
+    const dtos: ImportarInmuebleDto[] = [];
     for (let i = 0; i < importables.length; i++) {
       const p = importables[i];
-      // El contador dice EN CUÁL VA, y se pone antes de esperar. Cuando decía
-      // cuántos habían terminado, la pantalla mostraba «0 de N» al 0% durante
-      // todo el primer inmueble — medido acá: 4,7 s mirando una barra vacía.
-      // Parecía que no estaba pasando nada.
-      setCurrentItem(i + 1);
+      setGeoCurrent(i + 1);
       const coords = await geocodeImportRow(p);
-      if (coords.source === 'geocoded') geocodedCount += 1;
-      else fallbackCount += 1;
-      aCrear.push({
-        origen: p,
-        payload: {
-          ...toCreatePayload(p),
-          ...(coords.lat != null && coords.lng != null ? { latitude: coords.lat, longitude: coords.lng } : {}),
-        },
+      dtos.push({
+        ...toImportarInmuebleDto(p),
+        ...(coords.lat != null && coords.lng != null
+          ? { latitude: coords.lat, longitude: coords.lng }
+          : {}),
       });
-      // El porcentaje sí es trabajo TERMINADO: por eso va después.
-      setProgress(Math.round(((i + 1) / total) * 100));
+      setGeoProgress(Math.round(((i + 1) / importables.length) * 100));
       if (i < importables.length - 1) {
         await new Promise((resolve) => setTimeout(resolve, GEOCODE_ROW_DELAY_MS));
       }
     }
 
-    setFase('creando');
-    // Arranca en 1, no en 0: «voy por el primero», no «llevo ninguno».
-    setCurrentItem(Math.min(1, total));
-    setProgress(0);
-
-    // No hay endpoint de importación masiva: se crea inmueble por inmueble.
-    //
-    // Antes salían TODAS de una (`payloads.map(...)` dentro de un solo
-    // allSettled). Con 200 filas son 200 POST simultáneos contra el back —
-    // pedir eso es pedir que fallen. Ahora van de a EN_PARALELO.
-    const EN_PARALELO = 6;
-    let done = 0;
-    const results: PromiseSettledResult<Property>[] = [];
-    // Los que quedaron creados Y traen fotos del enlace de origen.
-    const conFotos: { id: string; imagenes: string[] }[] = [];
-
-    for (let i = 0; i < aCrear.length; i += EN_PARALELO) {
-      const tanda = aCrear.slice(i, i + EN_PARALELO);
-      const parcial = await Promise.allSettled(
-        tanda.map(({ payload, origen }) =>
-          propertiesApi
-            .create(payload)
-            .then((creado) => {
-              if (origen.imagenes?.length) {
-                conFotos.push({ id: creado.id, imagenes: origen.imagenes });
-              }
-              return creado;
-            })
-            .finally(() => {
-              done += 1;
-              // Mientras quede alguno, el contador señala el siguiente en curso.
-              setCurrentItem(Math.min(done + 1, total));
-              setProgress(Math.round((done / total) * 100));
-            })
-        )
+    setGeocodificando(false);
+    setPreparando(true);
+    try {
+      const r = await inmueblesImportacionApi.preparar(dtos, idempotencyKey);
+      // El lote es SIEMPRE del servidor — nunca uno generado acá.
+      setLote(r.lote);
+    } catch (e) {
+      setError(
+        e instanceof ApiError && e.messages
+          ? e.messages.join(' · ')
+          : e instanceof Error
+            ? e.message
+            : 'No pudimos preparar la importación.',
       );
-      results.push(...parcial);
+    } finally {
+      setPreparando(false);
     }
+  };
 
-    const created = results.filter((r) => r.status === 'fulfilled').length;
-    const failed = total - created;
-
-    // El motivo del primer rechazo. `allSettled` los guarda y antes se tiraban
-    // todos: el aviso decía «no se pudo importar ninguna» sin decir por qué,
-    // que es justo lo que no sirve cuando fallan las 200.
-    const primerFallo = results.find(
-      (r): r is PromiseRejectedResult => r.status === 'rejected',
-    );
-    const motivo =
-      primerFallo?.reason instanceof Error
-        ? primerFallo.reason.message
-        : primerFallo
-          ? String(primerFallo.reason)
-          : undefined;
-
-    // ── Fase 3: las fotos ──────────────────────────────────────────────
-    // Sólo existe cuando los inmuebles vinieron de un enlace. Van DESPUÉS de
-    // crear porque el back las cuelga de un inmueble que ya tiene id, y van de
-    // a uno por inmueble porque el orden de subida es el orden en que quedan
-    // (la primera es la portada).
-    //
-    // Una foto que falla no toca el inmueble: ya está creado y guardado. Por
-    // eso esto no puede tirar — se cuenta y se informa.
-    let fotosSubidas = 0;
-    let fotosFallidas = 0;
-
-    if (conFotos.length > 0) {
-      setFase('fotos');
-      setProgress(0);
-      const totalConFotos = conFotos.length;
-      setCurrentItem(Math.min(1, totalConFotos));
-
-      for (let i = 0; i < conFotos.length; i++) {
-        setCurrentItem(i + 1);
-        const { id, imagenes } = conFotos[i];
-
-        // Bajarlas por el proxy (el navegador no puede leer otro dominio) y
-        // convertirlas en archivos, que es lo que sube el back.
-        const archivos = (
-          await Promise.all(
-            imagenes.map((url, n) => traerFotoComoArchivo(url, `foto-${n + 1}`)),
-          )
-        ).filter((f): f is File => f !== null);
-
-        fotosFallidas += imagenes.length - archivos.length;
-
-        if (archivos.length > 0) {
-          const resultado = await uploadPropertyPhotos(id, archivos);
-          fotosSubidas += resultado.uploaded;
-          fotosFallidas += resultado.failed.length;
-        }
-
-        setProgress(Math.round(((i + 1) / totalConFotos) * 100));
-      }
+  const handleResolver = async (id: string, cambios: ResolverInmuebleDto) => {
+    if (!lote) return;
+    setFilaBusy(id);
+    try {
+      await inmueblesImportacionApi.resolver(id, cambios);
+      await refrescarRevision(lote, pagina);
+    } catch (e) {
+      const msg =
+        e instanceof ApiError && e.code === 'FILA_YA_ACTIVADA'
+          ? 'Esta fila ya se activó — no se puede editar.'
+          : e instanceof Error
+            ? e.message
+            : 'No pudimos guardar los cambios.';
+      toast.error(msg);
+    } finally {
+      setFilaBusy(null);
     }
+  };
 
-    setIsImporting(false);
-    setFase(null);
-
-    // eslint-disable-next-line no-console -- geocoding coverage isn't surfaced anywhere else
-    console.info(`[import] geocoding: ${geocodedCount} resolved, ${fallbackCount} fell back to city center`);
-
-    if (created === 0) {
-      // No se guardó nada — decir qué pasó y NO ir a la pantalla de éxito.
-      setErrorDeImportacion(motivo ?? null);
-      toast.error('No se importó ninguna propiedad', {
-        description: motivo
-          ? `Las ${failed} fallaron. El servidor respondió: ${motivo}`
-          : `Las ${failed} fallaron y el servidor no dio un motivo.`,
-        duration: 10000,
-      });
-      return;
+  const handleDescartarFila = async (id: string) => {
+    if (!lote) return;
+    setFilaBusy(id);
+    try {
+      await inmueblesImportacionApi.descartarFila(id);
+      await refrescarRevision(lote, pagina);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'No pudimos descartar la fila.');
+    } finally {
+      setFilaBusy(null);
     }
-
-    const resumen: ResumenPendiente = { created, failed, geocodedCount, fotosSubidas, fotosFallidas };
-
-    // R1 — antes de la pantalla de éxito, ofrecer el modal de mandato para
-    // TODO lo que se creó. `results[i]` corresponde a `aCrear[i]` (mismo
-    // orden — el batching en tandas de EN_PARALELO no lo revuelve).
-    //
-    // Nunca publica nada: contract.md T-0030 §3.4/§8 deja el auto-publish
-    // fuera de alcance de esta tarea a propósito. El inmueble queda DRAFT,
-    // con o sin mandato — CompletarMandatosLoteDialog sólo llama
-    // POST /inmobiliaria/consignaciones (submitMandatosLote), nunca
-    // PATCH /properties/:id.
-    const creadas = results
-      .map((r) => (r.status === 'fulfilled' ? r.value : null))
-      .filter((p): p is Property => p !== null);
-
-    if (creadas.length > 0) {
-      setResumenPendiente(resumen);
-      setMandateProperties(creadas);
-      return;
-    }
-
-    finalizarImportacion(resumen);
   };
 
   /**
-   * Cierra la importación: la pantalla de éxito y el toast de resumen. Se
-   * llama directo cuando no hubo nada que crear, o después de que el modal
-   * de mandato (R1) se resuelve — completado o salteado, da igual (R2: si
-   * se saltea, no se crea nada más, y la fila ya sale en el portafolio con
-   * la alerta de WU-2).
+   * Nunca reintenta ni se traga un error — un 409 (`LOTE_EN_PROCESO`, el
+   * job todavía está corriendo) o un 404 (lote desconocido) se muestran tal
+   * cual. El 409 NO es un fallo del usuario: es la señal de "esperá a que
+   * termine", nunca se reintenta silenciosamente (wu-4-report.md §6).
    */
-  const finalizarImportacion = (resumen: ResumenPendiente) => {
-    const { created, failed, geocodedCount, fotosSubidas, fotosFallidas } = resumen;
-    setMandateProperties(null);
-    setResumenPendiente(null);
-    setErrorDeImportacion(null);
+  const handleDescartarLote = async () => {
+    if (!lote) return;
+    setDescartandoLote(true);
+    setError(null);
+    try {
+      await inmueblesImportacionApi.descartarLote(lote);
+      router.push('/panel/inmobiliaria/inmuebles');
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'LOTE_EN_PROCESO') {
+        setError('El lote todavía se está procesando — esperá a que termine antes de descartarlo.');
+      } else {
+        setError(e instanceof Error ? e.message : 'No pudimos descartar el lote.');
+      }
+    } finally {
+      setDescartandoLote(false);
+    }
+  };
 
-    updateState({ importedCount: created, importProgress: 100 });
-    setIsComplete(true);
-
-    const geocodeNote = geocodedCount > 0 ? ` (${geocodedCount} con dirección exacta geocodificada)` : '';
-    const notaFotos =
-      fotosSubidas > 0
-        ? ` Se subieron ${fotosSubidas} ${fotosSubidas === 1 ? 'foto' : 'fotos'}${
-            fotosFallidas > 0 ? ` y ${fotosFallidas} no se pudieron traer.` : '.'
-          }`
-        : fotosFallidas > 0
-          ? ` Ninguna de las ${fotosFallidas} fotos se pudo traer.`
-          : '';
-
-    if (failed > 0) {
-      toast.error('Importación parcial', {
-        description: `${created} propiedades importadas, ${failed} con error.${geocodeNote}${notaFotos}`,
-      });
-    } else {
-      toast.success('Importación exitosa', {
-        description: `${created} propiedades importadas correctamente${geocodeNote}${notaFotos}`,
-      });
+  /**
+   * `POST .../activar` es resumible — 500 filas por llamada. El loop vive
+   * en `activarLoteCompleto` (testeable aparte); acá sólo se orquesta el
+   * estado de pantalla mientras corre.
+   */
+  const handleActivar = async () => {
+    if (!lote) return;
+    setActivando(true);
+    setError(null);
+    try {
+      const resultado = await activarLoteCompleto(lote, inmueblesImportacionApi.activar);
+      setResultadoActivacion(resultado);
+      updateState({ importedCount: resultado.activados, importProgress: 100 });
+      setIsComplete(true);
+      if (resultado.omitidas.length > 0) {
+        toast.warning('Importación parcial', {
+          description: `${resultado.activados} activadas, ${resultado.omitidas.length} todavía con datos pendientes.`,
+        });
+      } else {
+        toast.success('Importación exitosa', {
+          description: `${resultado.activados} propiedades importadas correctamente`,
+        });
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No pudimos activar el lote.');
+    } finally {
+      setActivando(false);
     }
   };
 
@@ -379,23 +279,22 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     <Button
       type="button"
       hideArrow
-      onClick={handleImport}
-      disabled={importCount === 0 || isImporting}
+      onClick={handlePreparar}
+      disabled={importCount === 0 || geocodificando || preparando}
       className="gap-2"
     >
       <FileArrowUp className="w-4 h-4" />
-      {isImporting
-        ? 'Importando...'
+      {geocodificando || preparando
+        ? 'Preparando...'
         : t('inmobiliaria.import.confirm.importButton', { count: importCount })}
     </Button>
   );
 
-  // Success state
+  // ── Success state ────────────────────────────────────────────────────
   if (isComplete) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center space-y-6">
         <div className="animate-scale-in">
-          {/* allowlist: success hero icon-circle (wraps Phosphor glyph), no text-label pill */}
           <div className="w-20 h-20 rounded-full bg-success-soft flex items-center justify-center">
             <CheckCircle className="w-12 h-12 text-success" weight="fill" />
           </div>
@@ -412,6 +311,12 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
             </span>{' '}
             a tu portafolio
           </p>
+          {resultadoActivacion && resultadoActivacion.omitidas.length > 0 && (
+            <p className="text-sm text-warning">
+              {resultadoActivacion.omitidas.length} filas quedaron pendientes de datos — volvé a
+              «Revisión» para completarlas.
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-3 animate-fade-in-up">
@@ -429,7 +334,6 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
             size="lg"
             hideArrow
             onClick={() => {
-              // Reset wizard state
               updateState({
                 method: null,
                 file: null,
@@ -444,7 +348,6 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
                 importProgress: 0,
                 importedCount: 0,
               });
-              // Redirect to step 1 — the wizard handles navigation
               router.push('/panel/inmobiliaria/inmuebles/importar');
             }}
           >
@@ -455,9 +358,119 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     );
   }
 
+  // ── Batch staged, still ENCOLADO/PROCESANDO ─────────────────────────
+  if (lote && estadoLote?.estado !== 'LISTO' && estadoLote?.estado !== 'FALLIDO') {
+    return (
+      <div className="space-y-6">
+        <ProgresoDeLoteInmuebles estado={estadoLote} agotado={agotado} />
+        {error && (
+          <div className="rounded-md bg-danger-soft border border-border p-3" role="alert">
+            <p className="text-sm text-danger">{error}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Batch FALLIDO ─────────────────────────────────────────────────────
+  if (lote && estadoLote?.estado === 'FALLIDO') {
+    return <ProgresoDeLoteInmuebles estado={estadoLote} agotado={agotado} />;
+  }
+
+  // ── Batch LISTO — review + activate ─────────────────────────────────
+  if (lote) {
+    const puedeActivar = (resumenLote?.listos ?? 0) > 0;
+    const totalPaginas = Math.max(1, Math.ceil(totalPendientes / POR_PAGINA));
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+            Revisá lo que falta antes de activar
+          </h2>
+          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            Las filas listas se activan cuando quieras — cerrar esta pestaña no pierde nada.
+          </p>
+        </div>
+
+        {resumenLote && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="rounded-md bg-surface-muted dark:bg-ink p-4">
+              <MonoLabel className="block text-xs text-fg-muted mb-1">Total</MonoLabel>
+              <p className="text-2xl font-bold text-fg">{resumenLote.total}</p>
+            </div>
+            <div className="rounded-md bg-warning-soft p-4">
+              <MonoLabel className="block text-xs text-warning mb-1">Pendientes</MonoLabel>
+              <p className="text-2xl font-bold text-warning">{resumenLote.pendientes}</p>
+            </div>
+            <div className="rounded-md bg-success-soft p-4">
+              <MonoLabel className="block text-xs text-success mb-1">Listas</MonoLabel>
+              <p className="text-2xl font-bold text-success">{resumenLote.listos}</p>
+            </div>
+            <div className="rounded-md bg-primary-soft p-4">
+              <MonoLabel className="block text-xs text-primary mb-1">Activadas</MonoLabel>
+              <p className="text-2xl font-bold text-primary">{resumenLote.activados}</p>
+            </div>
+          </div>
+        )}
+
+        {pendientes.length > 0 && (
+          <div className="space-y-3">
+            {pendientes.map((fila) => (
+              <FilaImportacionRow
+                key={fila.id}
+                fila={fila}
+                onResolver={handleResolver}
+                onDescartar={handleDescartarFila}
+                isBusy={filaBusy === fila.id}
+              />
+            ))}
+            {totalPaginas > 1 && (
+              <Pagination
+                currentPage={pagina}
+                totalPages={totalPaginas}
+                onPageChange={(p) => refrescarRevision(lote, p)}
+              />
+            )}
+          </div>
+        )}
+
+        {error && (
+          <div className="rounded-md bg-danger-soft border border-border p-3" role="alert">
+            <p className="text-sm text-danger">{error}</p>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            hideArrow
+            disabled={descartandoLote}
+            isLoading={descartandoLote}
+            onClick={handleDescartarLote}
+          >
+            Descartar lote completo
+          </Button>
+          <Button
+            type="button"
+            hideArrow
+            disabled={!puedeActivar || activando}
+            isLoading={activando}
+            onClick={handleActivar}
+          >
+            {activando
+              ? 'Activando...'
+              : `Activar ${resumenLote?.listos ?? 0} ${resumenLote?.listos === 1 ? 'inmueble' : 'inmuebles'}`}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Pre-import summary (no lote yet) ─────────────────────────────────
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
           Resumen de importación
@@ -467,7 +480,6 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
         </p>
       </div>
 
-      {/* Summary card */}
       <div className="rounded-xl border border-border dark:border-border-strong p-6 space-y-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
@@ -477,144 +489,71 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
             <h3 className="font-semibold text-fg dark:text-white">
               {t('inmobiliaria.import.confirm.title')}
             </h3>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">
-              {state.fileName}
-            </p>
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">{state.fileName}</p>
           </div>
         </div>
 
-        {/* Stats grid */}
         <div className="grid grid-cols-2 gap-4 pt-2">
-          {/* Properties to import */}
           <div className="rounded-md bg-primary-soft p-4">
             <MonoLabel className="block text-xs text-primary mb-1">
               {t('inmobiliaria.import.confirm.propertiesToImport')}
             </MonoLabel>
-            <p className="text-3xl font-bold text-primary">
-              {importCount}
-            </p>
+            <p className="text-3xl font-bold text-primary">{importCount}</p>
           </div>
 
-          {/* Excluded */}
           <div className="rounded-md bg-surface-muted dark:bg-ink p-4">
             <MonoLabel className="block text-xs text-fg-muted dark:text-fg-subtle mb-1">
               {t('inmobiliaria.import.confirm.propertiesExcluded')}
             </MonoLabel>
-            <p className="text-3xl font-bold text-fg-muted dark:text-fg-subtle">
-              {excludedCount}
-            </p>
+            <p className="text-3xl font-bold text-fg-muted dark:text-fg-subtle">{excludedCount}</p>
           </div>
 
-          {/* AI suggestions accepted */}
           <div className="rounded-md bg-success-soft p-4">
             <MonoLabel className="block text-xs text-success mb-1">
               {t('inmobiliaria.import.confirm.suggestionsAccepted')}
             </MonoLabel>
-            <p className="text-3xl font-bold text-success">
-              {acceptedSuggestionsCount}
-            </p>
+            <p className="text-3xl font-bold text-success">{acceptedSuggestionsCount}</p>
           </div>
 
-          {/* Remaining errors */}
           <div
-            className={cn(
-              'rounded-md p-4',
-              remainingErrorsCount > 0
-                ? 'bg-danger-soft'
-                : 'bg-success-soft'
-            )}
+            className={cn('rounded-md p-4', remainingErrorsCount > 0 ? 'bg-danger-soft' : 'bg-success-soft')}
           >
             <MonoLabel
-              className={cn(
-                'block text-xs mb-1',
-                remainingErrorsCount > 0
-                  ? 'text-danger'
-                  : 'text-success'
-              )}
+              className={cn('block text-xs mb-1', remainingErrorsCount > 0 ? 'text-danger' : 'text-success')}
             >
               {t('inmobiliaria.import.confirm.remainingErrors')}
             </MonoLabel>
-            <p
-              className={cn(
-                'text-3xl font-bold',
-                remainingErrorsCount > 0
-                  ? 'text-danger'
-                  : 'text-success'
-              )}
-            >
+            <p className={cn('text-3xl font-bold', remainingErrorsCount > 0 ? 'text-danger' : 'text-success')}>
               {remainingErrorsCount}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Lo que va a pasar con las fotos, dicho antes de empezar: son lo más
-          lento de la importación y conviene que no sorprenda. */}
-      {totalDeFotos > 0 && (
-        <div
-          className="rounded-xl border border-border dark:border-border-strong bg-surface-muted dark:bg-white/[0.02] p-5"
-          data-testid="import-fotos"
-        >
-          <div className="flex items-start gap-3">
-            <ImageSquare className="w-5 h-5 text-fg-subtle dark:text-fg-muted mt-0.5 flex-shrink-0" />
-            <div>
-              <h3 className="font-semibold text-fg dark:text-white text-sm">
-                {totalDeFotos} {totalDeFotos === 1 ? 'foto' : 'fotos'} de {fotosPendientes}{' '}
-                {fotosPendientes === 1 ? 'inmueble' : 'inmuebles'}
-              </h3>
-              <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1">
-                Se traen desde el enlace después de crear cada inmueble, hasta 10 por inmueble.
-                Es la parte más lenta. Si alguna no se puede bajar, el inmueble se guarda igual.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Agent assignment note */}
       <div className="rounded-xl border border-border dark:border-border-strong bg-surface-muted dark:bg-white/[0.02] p-5">
         <div className="flex items-start gap-3">
           <UserCircle className="w-5 h-5 text-fg-subtle dark:text-fg-muted mt-0.5 flex-shrink-0" />
           <div>
-            <h3 className="font-semibold text-fg dark:text-white text-sm">
-              Asignación de agentes
-            </h3>
+            <h3 className="font-semibold text-fg dark:text-white text-sm">Asignación de agentes</h3>
             <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1">
-              Las propiedades se importarán sin agente asignado. Podrás asignar agentes individualmente o en lote desde el portafolio después de importar.
+              Las propiedades se importarán sin agente asignado. Podrás asignar agentes
+              individualmente o en lote desde el portafolio después de importar.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Progreso. Las dos fases cuentan: geocodificar 200 direcciones son casi
-          dos minutos, y sin barra la pantalla parece colgada. */}
-      {isImporting && (
+      {geocodificando && (
         <div className="space-y-2">
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
-            {fase === 'geocodificando'
-              ? `Buscando las direcciones en el mapa — ${currentItem} de ${importCount}`
-              : fase === 'fotos'
-                ? `Trayendo las fotos — inmueble ${currentItem} de ${fotosPendientes}`
-                : t('inmobiliaria.import.confirm.importing', {
-                    current: currentItem,
-                    total: importCount,
-                  })}
+            Buscando las direcciones en el mapa — {geoCurrent} de {importCount}
           </p>
-          <Progress
-            value={progress}
-            size="xs"
-            variant={fase === 'fotos' && progress >= 100 ? 'success' : 'default'}
-          />
-          <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">
-            {progress}%
-          </p>
+          <Progress value={geoProgress} size="xs" />
+          <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">{geoProgress}%</p>
         </div>
       )}
 
-      {/* Lo que el back va a rechazar, dicho ANTES de empezar. Antes se
-          descubría al final: dos minutos geocodificando y después 200 errores
-          400 iguales, con un aviso que no decía cuál era el problema. */}
-      {bloqueadas.length > 0 && !isImporting && (
+      {bloqueadas.length > 0 && !geocodificando && (
         <div
           className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2"
           data-testid="import-bloqueadas"
@@ -628,15 +567,14 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
             </p>
             <p className="text-body-sm text-fg-muted mt-0.5">
               Les falta {motivosBloqueo.join(', ')}. Volvé a{' '}
-              <span className="font-medium text-fg">Revisión</span> con «Anterior» y
-              completalos ahí en cada inmueble; el resto se importa igual.
+              <span className="font-medium text-fg">Revisión</span> con «Anterior» y completalos ahí
+              en cada inmueble; el resto se importa igual.
             </p>
           </div>
         </div>
       )}
 
-      {/* El motivo del fallo, en la pantalla: el toast se va solo. */}
-      {errorDeImportacion && !isImporting && (
+      {error && !geocodificando && (
         <div
           className="rounded-md bg-danger-soft border border-border p-3 flex items-start gap-2"
           role="alert"
@@ -644,33 +582,13 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
         >
           <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" aria-hidden="true" />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-danger">No se importó ninguna propiedad</p>
-            <p className="text-body-sm text-fg-muted mt-0.5 break-words">
-              El servidor respondió: {errorDeImportacion}
-            </p>
+            <p className="text-sm font-medium text-danger">No se pudo preparar la importación</p>
+            <p className="text-body-sm text-fg-muted mt-0.5 break-words">El servidor respondió: {error}</p>
           </div>
         </div>
       )}
 
-      {/* La acción principal va al PIE, junto a «Anterior» — es donde estuvo
-          el primario en los cuatro pasos anteriores. Si la ranura todavía no
-          está montada se dibuja acá, para no quedarse sin botón. */}
-      {ranuraDelPie ? createPortal(botonImportar, ranuraDelPie) : (
-        <div className="flex justify-end">{botonImportar}</div>
-      )}
-
-      {/* R1 — el modal de mandato, al terminar de importar. Saltable: si se
-          cierra sin completar, no se crea nada más (R2) y la fila ya sale en
-          el portafolio con la alerta "Falta mandato" (WU-2). */}
-      {mandateProperties && mandateProperties.length > 0 && resumenPendiente && (
-        <CompletarMandatosLoteDialog
-          inmuebles={mandateProperties.map(inmuebleParaMandato)}
-          propietarios={propietariosDelLote}
-          agentes={agentesDelLote}
-          onClose={() => finalizarImportacion(resumenPendiente)}
-          onDone={() => finalizarImportacion(resumenPendiente)}
-        />
-      )}
+      {ranuraDelPie ? createPortal(botonImportar, ranuraDelPie) : <div className="flex justify-end">{botonImportar}</div>}
     </div>
   );
 }

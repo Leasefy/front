@@ -6,10 +6,20 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
-import { useChat } from '@/lib/hooks/useMessages';
+import { useApplicationChat } from '@/lib/hooks/useMessages';
 
 interface ChatThreadProps {
-  /** Application the conversation belongs to (one conversation per application). */
+  /**
+   * contract-addendum-2.md §B.1/§B.3 — this component only ever handles an
+   * APPLICATION-kind thread via the legacy compat routes ("stays live",
+   * §B.8): both its call sites (the tenant's own application page, the
+   * agency CandidateDrawer) know an `applicationId` and never resolve a
+   * `conversation.id`. That identity is stable for an APPLICATION thread,
+   * so there is no correctness gap in staying on this path. A
+   * PROPERTY_INQUIRY thread has no `applicationId` and cannot be rendered
+   * by this component — use `MessagesWidget` (keyed on `conversation.id`)
+   * for that.
+   */
   applicationId: string;
   /** Height of the scrollable message area. */
   className?: string;
@@ -27,7 +37,7 @@ function formatMessageTime(iso: string): string {
  * send) but sized to live inside drawers/panels without navigating away.
  */
 export function ChatThread({ applicationId, className }: ChatThreadProps) {
-  const { messages, isLoading, isSending, error, sendMessage, markAsRead } = useChat(applicationId);
+  const { messages, isLoading, isSending, error, sendMessage, markAsRead } = useApplicationChat(applicationId);
   const [text, setText] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 

@@ -111,12 +111,16 @@ export default function ParaTiPage() {
     }
 
     // Sort
+    // T-0038: a SALE listing's `monthlyRent` is `null` (contract.md §3.2.4).
+    // These recommendations are rent-budget matches (see `superaReferencia`
+    // above), so a `null` here is not expected in practice — the `?? 0`
+    // only orders the comparator and is never rendered as a price.
     switch (sortBy) {
       case 'price_asc':
-        results.sort((a, b) => a.property.monthlyRent - b.property.monthlyRent);
+        results.sort((a, b) => (a.property.monthlyRent ?? 0) - (b.property.monthlyRent ?? 0));
         break;
       case 'price_desc':
-        results.sort((a, b) => b.property.monthlyRent - a.property.monthlyRent);
+        results.sort((a, b) => (b.property.monthlyRent ?? 0) - (a.property.monthlyRent ?? 0));
         break;
       case 'probability':
         const probOrder = { alta: 0, media: 1, baja: 2 };

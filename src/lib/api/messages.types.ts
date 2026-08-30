@@ -23,9 +23,22 @@ export interface BackendLastMessage {
   };
 }
 
+/**
+ * contract-addendum-2.md §B.3/§B.4 — the item shape breaks for the live
+ * inbox: `applicationId` goes `string` → `string | null` (a
+ * PROPERTY_INQUIRY thread has none), and `kind`/`propertyId` are new. The
+ * envelope itself is unchanged (E-3 — `{ conversations: [...] }`).
+ */
 export interface BackendConversation {
   id: string;
-  applicationId: string;
+  /** NEW. Absent on an older back build → treat as `'APPLICATION'` (every
+   * thread it can return is one). Present but not in the enum → throw (C19). */
+  kind?: string;
+  /** BREAKING: was `string`. `null` on a PROPERTY_INQUIRY thread. */
+  applicationId: string | null;
+  /** NEW top-level field. Absent on an older build → fall back to
+   * `property.id`, which has always been there. */
+  propertyId?: string;
   property: { id: string; title: string };
   otherParticipant: BackendParticipant;
   lastMessage: BackendLastMessage | null;
@@ -52,9 +65,16 @@ export interface BackendChatMessage {
   };
 }
 
+/**
+ * `GET /conversations/:id` (new) and `GET /applications/:id/chat` (the
+ * compat path, still live) both return this shape. §B.1: adding `propertyId`
+ * / `initiatorId` / `kind` to the raw entity is additive and safe.
+ */
 export interface BackendConversationWithMessages {
   id: string;
-  applicationId: string;
+  kind?: string;
+  applicationId: string | null;
+  propertyId?: string;
   messages: BackendChatMessage[];
 }
 
@@ -62,9 +82,15 @@ export interface BackendConversationWithMessages {
 // Frontend mapped types
 // ============================================================================
 
+export type ConversationKind = 'APPLICATION' | 'PROPERTY_INQUIRY';
+
 export interface ChatConversation {
+  /** contract-addendum-2.md §B.3 — the identity. Selection MUST key on this,
+   * never on `applicationId` (which is `null` on many rows). */
   id: string;
-  applicationId: string;
+  kind: ConversationKind;
+  /** Display / deep-link hint only. Always null-guard — never a selection key. */
+  applicationId: string | null;
   name: string;
   role: string;
   email: string;
@@ -88,6 +114,18 @@ export interface ChatMessage {
 // ============================================================================
 // Mappers
 // ============================================================================
+
+/**
+ * contract-addendum-2.md §B.4 — throw-on-unknown (C19), never a silent
+ * default to the wrong kind. Absent (older back build) degrades to
+ * `'APPLICATION'` — every thread an older build can return is one.
+ */
+export function resolveConversationKind(raw: string | undefined): ConversationKind {
+  if (raw === undefined) return 'APPLICATION';
+  if (raw === 'APPLICATION') return 'APPLICATION';
+  if (raw === 'PROPERTY_INQUIRY') return 'PROPERTY_INQUIRY';
+  throw new Error(`Tipo de conversación desconocido: "${raw}".`);
+}
 
 function formatName(firstName: string | null, lastName: string | null): string {
   const parts = [firstName, lastName].filter(Boolean);
@@ -123,12 +161,16 @@ export function mapToConversation(backend: BackendConversation): ChatConversatio
   const { otherParticipant, lastMessage, property } = backend;
   return {
     id: backend.id,
+    kind: resolveConversationKind(backend.kind),
+    // `applicationId` passes straight through — `null` is a real, valid
+    // value (a PROPERTY_INQUIRY thread), never coerced to `''`/`'null'`.
     applicationId: backend.applicationId,
     name: formatName(otherParticipant.firstName, otherParticipant.lastName),
     role: formatRole(otherParticipant.role),
     email: otherParticipant.email,
     property: property.title,
-    propertyId: property.id,
+    // NEW top-level field; older back build → fall back to `property.id`.
+    propertyId: backend.propertyId ?? property.id,
     lastMessage: lastMessage?.content ?? '',
     lastMessageTime: lastMessage ? formatTime(lastMessage.createdAt) : '',
     unreadCount: backend.unreadCount,

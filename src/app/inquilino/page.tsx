@@ -156,11 +156,17 @@ export default function InquilinoPage() {
   const { properties: featuredRaw, isLoading: featuredLoading } = useFeaturedProperties(12);
   const referenciaHome = referenciaCanon(aprobacion);
   const featuredProperties = useMemo(() => {
-    const disponibles = featuredRaw.filter((p) => p.status !== 'rented');
+    // T-0038: this widget compares against a RENT approval cap
+    // (`referenciaHome.valorCop`) — a SALE listing has no `monthlyRent`
+    // (contract.md §3.2.4) and doesn't belong in a rent-budget comparison.
+    // Excluded explicitly rather than left to fall out of a `null <= x`
+    // comparison (contract.md §3.7 — deliberate, not a silent side effect).
+    const disponibles = featuredRaw.filter((p) => p.status !== 'rented' && p.listingType !== 'sale');
     const dentro = referenciaHome
-      ? disponibles.filter((p) => p.monthlyRent <= referenciaHome.valorCop)
+      ? disponibles.filter((p) => (p.monthlyRent ?? 0) <= referenciaHome.valorCop)
       : disponibles;
-    return [...dentro].sort((a, b) => a.monthlyRent - b.monthlyRent).slice(0, 4);
+    // Safe: every row here already passed the `listingType !== 'sale'` filter above.
+    return [...dentro].sort((a, b) => (a.monthlyRent ?? 0) - (b.monthlyRent ?? 0)).slice(0, 4);
   }, [featuredRaw, referenciaHome]);
 
   // Loading state — wait for auth + real data so the "new user" banner doesn't flash
@@ -433,8 +439,15 @@ export default function InquilinoPage() {
                           {property.title}
                         </h3>
                         <p className="text-lg font-bold text-fg dark:text-white whitespace-nowrap flex-shrink-0">
-                          {i18nFormatCurrency(property.monthlyRent)}
-                          <span className="text-xs font-normal text-fg-muted dark:text-fg-subtle">/{locale === 'es' ? 'mes' : 'mo'}</span>
+                          {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
+                          {property.monthlyRent != null ? (
+                            <>
+                              {i18nFormatCurrency(property.monthlyRent)}
+                              <span className="text-xs font-normal text-fg-muted dark:text-fg-subtle">/{locale === 'es' ? 'mes' : 'mo'}</span>
+                            </>
+                          ) : (
+                            '—'
+                          )}
                         </p>
                       </div>
 

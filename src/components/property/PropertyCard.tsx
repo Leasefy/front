@@ -52,7 +52,15 @@ export function PropertyCard({
     status,
     type,
     agencyName,
+    listingType,
+    salePrice,
   } = property;
+
+  // T-0038 §3.2.2/§3.2.3/§3.2.4 — a SALE listing shows `salePrice`, never
+  // the (absent) `monthlyRent`. `displayPrice == null` renders "Sin dato",
+  // never `formatCurrency(null)` (silently "$ 0", C6).
+  const isSaleListing = listingType === 'sale';
+  const displayPrice = isSaleListing ? salePrice : monthlyRent;
 
   const [activeImage, setActiveImage] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -225,7 +233,7 @@ export function PropertyCard({
         {/* Glass badges — top left */}
         <div className="absolute top-3 left-3 flex gap-1.5 z-10">
           <span className="inline-flex items-center text-[11px] font-mono font-normal uppercase text-white bg-white/15 backdrop-blur-xl border border-white/20 rounded-full px-2.5 py-1">
-            En arriendo
+            {isSaleListing ? 'En venta' : 'En arriendo'}
           </span>
           <span className="inline-flex items-center text-[11px] font-mono font-normal uppercase text-white bg-white/15 backdrop-blur-xl border border-white/20 rounded-full px-2.5 py-1">
             {typeLabels[type] || type}
@@ -277,7 +285,8 @@ export function PropertyCard({
         {allImages.length <= 1 && (
           <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-1 group-hover:translate-y-0">
             <span className="text-[13px] font-semibold text-white bg-black/40 backdrop-blur-xl rounded-full px-3 py-1.5 font-mono tabular-nums">
-              {formatCurrency(monthlyRent)}<span className="text-white/50 font-normal font-sans">/mes</span>
+              {displayPrice != null ? formatCurrency(displayPrice) : 'Sin dato'}
+              {!isSaleListing && <span className="text-white/50 font-normal font-sans">/mes</span>}
             </span>
           </div>
         )}
@@ -307,8 +316,10 @@ export function PropertyCard({
 
         {/* Price — prominent */}
         <p className="text-[22px] font-mono tabular-nums font-bold text-foreground tracking-[-0.03em] leading-none mt-3">
-          {formatCurrency(monthlyRent)}
-          <span className="text-[13px] font-normal text-muted-foreground ml-1 font-sans">/mes</span>
+          {displayPrice != null ? formatCurrency(displayPrice) : 'Sin dato'}
+          {!isSaleListing && (
+            <span className="text-[13px] font-normal text-muted-foreground ml-1 font-sans">/mes</span>
+          )}
         </p>
 
         {/* Features — clean chips */}

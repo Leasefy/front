@@ -85,6 +85,36 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+// ============================================================================
+// T-0038 §3 — the listing-type badge must reflect the real listing, and the
+// price must never fall back to a fabricated "$0" for a SALE listing.
+// ============================================================================
+
+describe('PropertyCard — T-0038 listing type badge + price', () => {
+  it('shows "En arriendo" for a RENT listing (default, regression)', () => {
+    montar({ listingType: 'rent' })
+    expect(container.textContent).toContain('En arriendo')
+    expect(container.textContent).not.toContain('En venta')
+  })
+
+  it('shows "En venta" for a SALE listing, never "En arriendo"', () => {
+    montar({ listingType: 'sale', salePrice: 400_000_000, monthlyRent: null })
+    expect(container.textContent).toContain('En venta')
+    expect(container.textContent).not.toContain('En arriendo')
+  })
+
+  it('shows the sale price for a SALE listing, not the (absent) monthlyRent', () => {
+    montar({ listingType: 'sale', salePrice: 400_000_000, monthlyRent: null })
+    expect(container.textContent).toContain('400.000.000')
+  })
+
+  it('never renders "$0"/"$ 0" for a SALE listing with no recorded sale price (C6)', () => {
+    montar({ listingType: 'sale', salePrice: null, monthlyRent: null })
+    expect(container.textContent).not.toContain('$0')
+    expect(container.textContent).not.toContain('$ 0')
+  })
+})
+
 describe('PropertyCard — nunca un src vacío', () => {
   it('sin imágenes ni thumbnail cae al placeholder, no a ""', () => {
     montar({ images: [], thumbnailUrl: '' })

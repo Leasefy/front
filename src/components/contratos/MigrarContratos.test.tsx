@@ -732,6 +732,204 @@ describe('<MigrarContratos> — descartar un lote entero (T-0036 §3.2.C)', () =
 })
 
 /**
+ * T-0039 — el owner lo pidió así: «quiero que también salga un botón para
+ * cancelar las importaciones de contratos por si queda una en espera y no
+ * la quiero continuar». El botón de T-0036 vive adentro de `ListaDeTrabajo`,
+ * que sólo se monta DESPUÉS de apretar "Retomar" — para descartar un lote
+ * que no se quiere continuar había que abrirlo primero. Estos tests cubren
+ * la tarjeta "Tenés una migración sin terminar" ofreciendo "Descartar" junto
+ * a "Retomar", sin entrar al lote.
+ */
+describe('<MigrarContratos> — descartar un lote sin abrirlo primero (T-0039)', () => {
+  it('la tarjeta ofrece un botón "Descartar" por lote, además de "Retomar"', async () => {
+    vi.mocked(contractsApi.migracion.lotesAbiertos).mockResolvedValue([
+      { lote: 'lote-a', pendientes: 10, listos: 0, activables: 10, estado: 'LISTO' },
+      { lote: 'lote-b', pendientes: 5, listos: 2, activables: 7, estado: 'LISTO' },
+    ])
+
+    render()
+    await esperar()
+
+    expect(
+      container.querySelector('[data-testid="descartar-lote-lista-lote-a"]'),
+    ).toBeTruthy()
+    expect(
+      container.querySelector('[data-testid="descartar-lote-lista-lote-b"]'),
+    ).toBeTruthy()
+    // Retomar sigue siendo la acción primaria — sigue existiendo tal cual.
+    expect(boton('Retomar')).toBeTruthy()
+  })
+
+  it('clickear "Descartar" pide el resumen del lote y abre la confirmación nombrándolo', async () => {
+    vi.mocked(contractsApi.migracion.lotesAbiertos).mockResolvedValue([
+      { lote: 'lote-a', pendientes: 10, listos: 0, activables: 10, estado: 'LISTO' },
+      { lote: 'lote-b', pendientes: 5, listos: 2, activables: 7, estado: 'LISTO' },
+    ])
+    vi.mocked(contractsApi.migracion.resumen).mockResolvedValue({
+      lote: 'lote-b',
+      total: 7,
+      pendientes: 5,
+      listos: 2,
+      activados: 3,
+      descartados: 0,
+      activables: 7,
+    })
+
+    render()
+    await esperar()
+
+    const btn = container.querySelector(
+      '[data-testid="descartar-lote-lista-lote-b"]',
+    ) as HTMLButtonElement
+
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull()
+
+    await act(async () => {
+      btn.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(contractsApi.migracion.resumen).toHaveBeenCalledWith('lote-b')
+    const dialogo = document.querySelector('[role="alertdialog"]')
+    expect(dialogo).toBeTruthy()
+    // Nombra el lote específico — la tarjeta puede listar varios.
+    expect(dialogo?.textContent).toContain('lote-b')
+    // pendientes + listos = 7, y el activados = 3 — la misma copia que ya
+    // existe adentro del lote abierto, no una versión reducida.
+    expect(dialogo?.textContent).toContain('7')
+    expect(dialogo?.textContent).toContain('3')
+  })
+
+  it('confirmar llama a descartarLote(lote) sin haber entrado a la lista de trabajo, y la tarjeta se refresca', async () => {
+    vi.mocked(contractsApi.migracion.lotesAbiertos)
+      .mockResolvedValueOnce([
+        { lote: 'lote-a', pendientes: 10, listos: 0, activables: 10, estado: 'LISTO' },
+      ])
+      .mockResolvedValueOnce([])
+    vi.mocked(contractsApi.migracion.resumen).mockResolvedValue({
+      lote: 'lote-a',
+      total: 10,
+      pendientes: 10,
+      listos: 0,
+      activados: 0,
+      descartados: 0,
+      activables: 10,
+    })
+    vi.mocked(contractsApi.migracion.descartarLote).mockResolvedValue({
+      lote: 'lote-a',
+      descartadas: 10,
+      activadas: 0,
+      yaDescartadas: 0,
+    })
+
+    render()
+    await esperar()
+
+    const btn = container.querySelector(
+      '[data-testid="descartar-lote-lista-lote-a"]',
+    ) as HTMLButtonElement
+    await act(async () => {
+      btn.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const confirmar = Array.from(
+      document.querySelectorAll('[role="alertdialog"] button'),
+    ).find((b) => b.textContent?.includes('Descartar este lote')) as HTMLButtonElement
+
+    await act(async () => {
+      confirmar.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(contractsApi.migracion.descartarLote).toHaveBeenCalledWith('lote-a')
+    // Nunca entró a la lista de trabajo.
+    expect(container.querySelector('[data-testid="lista-de-trabajo"]')).toBeNull()
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull()
+    // La tarjeta se refrescó y el lote descartado ya no aparece.
+    expect(
+      container.querySelector('[data-testid="descartar-lote-lista-lote-a"]'),
+    ).toBeNull()
+  })
+
+  it('un lote ENCOLADO/PROCESANDO tiene "Descartar" deshabilitado y no pide el resumen al click', async () => {
+    vi.mocked(contractsApi.migracion.lotesAbiertos).mockResolvedValue([
+      {
+        lote: 'lote-c',
+        pendientes: 0,
+        listos: 0,
+        activables: 0,
+        estado: 'PROCESANDO',
+        total: 1365,
+      },
+    ])
+
+    render()
+    await esperar()
+
+    const btn = container.querySelector(
+      '[data-testid="descartar-lote-lista-lote-c"]',
+    ) as HTMLButtonElement
+    expect(btn.disabled).toBe(true)
+
+    const llamadasPrevias = vi.mocked(contractsApi.migracion.resumen).mock.calls.length
+    await act(async () => {
+      btn.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(vi.mocked(contractsApi.migracion.resumen).mock.calls.length).toBe(
+      llamadasPrevias,
+    )
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull()
+  })
+
+  it('cancelar la confirmación no llama a descartarLote y el lote sigue en la tarjeta', async () => {
+    vi.mocked(contractsApi.migracion.lotesAbiertos).mockResolvedValue([
+      { lote: 'lote-a', pendientes: 10, listos: 0, activables: 10, estado: 'LISTO' },
+    ])
+    vi.mocked(contractsApi.migracion.resumen).mockResolvedValue({
+      lote: 'lote-a',
+      total: 10,
+      pendientes: 10,
+      listos: 0,
+      activados: 0,
+      descartados: 0,
+      activables: 10,
+    })
+    const llamadasPrevias = vi.mocked(contractsApi.migracion.descartarLote).mock.calls
+      .length
+
+    render()
+    await esperar()
+
+    const btn = container.querySelector(
+      '[data-testid="descartar-lote-lista-lote-a"]',
+    ) as HTMLButtonElement
+    await act(async () => {
+      btn.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const cancelar = Array.from(
+      document.querySelectorAll('[role="alertdialog"] button'),
+    ).find((b) => b.textContent?.includes('Cancelar')) as HTMLButtonElement
+
+    await act(async () => {
+      cancelar.click()
+    })
+
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull()
+    expect(vi.mocked(contractsApi.migracion.descartarLote).mock.calls.length).toBe(
+      llamadasPrevias,
+    )
+    expect(
+      container.querySelector('[data-testid="descartar-lote-lista-lote-a"]'),
+    ).toBeTruthy()
+  })
+})
+
+/**
  * T-0036 contract.md §3.2.A6 — el checkbox de invitar tiene que dejar de
  * mentir: destildado, hoy no dice nada sobre lo que realmente pasa (Surface
  * A dejó de crear una cuenta silenciosa). Y el resumen de activación tiene

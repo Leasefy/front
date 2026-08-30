@@ -267,6 +267,17 @@ export interface Contract {
    */
   tenantId: string | null;
   landlordId: string;
+  /**
+   * Número consecutivo del contrato (T-0040). Asignado por el servidor,
+   * arranca en 1 por inmobiliaria — o por propietario cuando el contrato no
+   * tiene inmobiliaria. Independiente del código de inmueble.
+   *
+   * Misma forma que `BackendProperty.code` y que el dominio `Property.code`:
+   * un solo shape para un solo concepto en todo el front. Ausente sólo cuando
+   * el `back` es anterior a T-0040; en ese caso **no se renderiza nada**
+   * (nunca `—`, nunca `#0`). Guardá con `!= null`.
+   */
+  code?: number;
   status: ContractStatus;
 
   // Snapshot fields (Opción A — capturados al crear el contrato, inmutables).

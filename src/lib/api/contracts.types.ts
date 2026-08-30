@@ -43,6 +43,28 @@ export interface BackendContract {
    */
   tenantId: string | null;
   landlordId: string;
+  /**
+   * Número consecutivo del contrato, legible por humanos (T-0040).
+   *
+   * Lo asigna **el servidor** y arranca en 1 dentro de su alcance: por
+   * inmobiliaria, o por propietario cuando el contrato no tiene inmobiliaria
+   * (`Contract.agencyId` es nullable a propósito — existe el contrato
+   * marketplace / directo con el propietario). La secuencia es INDEPENDIENTE
+   * de la de inmuebles: el primer contrato de una agencia es el 1 aunque ya
+   * administre 40 propiedades.
+   *
+   * **Nunca se manda de vuelta en una escritura.** No está en ningún DTO de
+   * request del back y `forbidNonWhitelisted` devuelve 400 del request entero
+   * si viaja.
+   *
+   * Opcional acá y NO opcional en el wire: la columna es `Int NOT NULL`, así
+   * que el back nunca manda `null`. El único caso de ausencia real es un
+   * `front` desplegado por delante del `back` — build anterior a T-0040. La
+   * degradación congelada para ese caso es **no renderizar nada**: ni `—`, ni
+   * `#0`, ni `#undefined`, ni el UUID en su lugar. Guardá siempre con
+   * `!= null`.
+   */
+  code?: number;
   status: string;
 
   // ─── Snapshot fields (Opción A implementada 2026-04-20) ───────────────────

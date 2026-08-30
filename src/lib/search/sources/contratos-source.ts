@@ -31,7 +31,12 @@ function matchesQuery(item: BackendContract, q: string): boolean {
     norm(item.tenantName ?? '').includes(n) ||
     norm(item.propertyAddress ?? '').includes(n) ||
     norm(item.tenantDocument ?? '').includes(n) ||
-    norm(item.tenantEmail ?? '').includes(n)
+    norm(item.tenantEmail ?? '').includes(n) ||
+    // T-0040 — buscar por el consecutivo es el punto de darle un número al
+    // contrato: escribir «14» encuentra el contrato #14. Es filtrado en
+    // cliente sobre la respuesta que `GET /contracts` ya devuelve — sin
+    // parámetro de query nuevo y sin costo en el back.
+    norm(String(item.code ?? '')).includes(n)
   );
 }
 
@@ -98,7 +103,18 @@ export const contratosSource: SearchSource = {
         id: `contratos:${item.id}`,
         sourceId: 'contratos',
         type: 'contrato',
-        title: item.tenantName ?? `Contrato ${item.id.slice(0, 8)}`,
+        /*
+         * T-0040 — el consecutivo entra como segundo escalón, delante del
+         * UUID. Este fallback existe justo para los contratos sin otra
+         * etiqueta, que es lo que es una fila MIGRADA. El corte de UUID se
+         * queda como tercer escalón: es lo que se renderiza si el `back` es
+         * anterior a T-0040.
+         */
+        title:
+          item.tenantName ??
+          (item.code != null
+            ? `Contrato #${item.code}`
+            : `Contrato ${item.id.slice(0, 8)}`),
         subtitle: item.propertyAddress ?? item.propertyCity ?? '',
         badges: [
           {

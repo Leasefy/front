@@ -182,7 +182,8 @@ function CarouselCard({ property, matchScore }: CarouselCardProps) {
           {neighborhood}, {city}
         </p>
         <p className="text-sm font-normal text-foreground mt-1.5 font-mono tabular-nums">
-          {formatCurrency(monthlyRent)}/mes
+          {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
+          {monthlyRent != null ? `${formatCurrency(monthlyRent)}/mes` : '—'}
         </p>
       </div>
     </Link>

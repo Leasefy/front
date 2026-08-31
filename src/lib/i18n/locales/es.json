@@ -1565,6 +1565,7 @@
         "updatedAt": "Actualizado",
         "statusInProcess": "En proceso",
         "tenant": "Inquilino",
+        "saleCommission": "Comisión de venta",
         "propertiesCount": "propiedad(es)"
       }
     },
@@ -2540,6 +2541,7 @@
         "viewDetail": "Ver detalle",
         "perMonth": "/mes",
         "admin": "admin",
+        "saleCommission": "comisión de venta",
         "viewDetailTitle": "Ver detalle",
         "editTitle": "Editar"
       },
@@ -2558,6 +2560,11 @@
       "views": {
         "table": "Tabla",
         "cards": "Cards"
+      },
+      "degradedNotice": {
+        "title": "No pudimos cargar los inmuebles importados sin mandato",
+        "description": "Tu portafolio se sigue mostrando con lo que sí cargó. Puede faltar alguna propiedad reciente.",
+        "retry": "Reintentar"
       },
       "detail": {
         "title": "Detalle de Propiedad",
@@ -2728,6 +2735,28 @@
         "toast": {
           "successTitle": "Importación exitosa",
           "successDesc": "{{count}} propiedades importadas correctamente"
+        },
+        "mandateBatch": {
+          "title": "Asignar mandato",
+          "subtitle": "{{count}} propiedades quedaron sin mandato. Completalo ahora para todas a la vez, o hacelo después desde el portafolio.",
+          "propertiesListLabel": "Propiedades",
+          "propietarioLabel": "Propietario",
+          "commissionLabel": "Comisión de la agencia",
+          "contractDateLabel": "Fecha del contrato",
+          "agenteLabel": "Agente asignado (opcional)",
+          "skip": "Hacerlo después",
+          "confirm": "Asignar mandato a todas",
+          "toasts": {
+            "allSucceededTitle": "Mandatos completados",
+            "allSucceededDesc": "{{count}} propiedades ya tienen mandato y comisión.",
+            "partialTitle": "Mandato parcial",
+            "partialDesc": "{{succeeded}} propiedades quedaron con mandato, {{failed}} no. Completalas desde el portafolio.",
+            "allFailedTitle": "No se pudo asignar el mandato",
+            "allFailedDesc": "Ninguna propiedad quedó con mandato. Completalas desde el portafolio cuando quieras.",
+            "publishPartialTitle": "Mandato guardado; falta publicar algunas",
+            "publishPartialDesc": "{{count}} propiedades quedaron con mandato pero no se pudieron publicar. Abrilas desde el portafolio y publicalas cuando quieras — no las cargues de nuevo.",
+            "errorDesc": "No pudimos guardar el propietario. Probá de nuevo en un momento."
+          }
         }
       },
       "software": {
@@ -2828,6 +2857,7 @@
       },
       "header": {
         "commission": "comisión",
+        "saleCommission": "comisión de venta",
         "consignacion": "Consignación",
         "perMonth": "/mes",
         "admin": "admin",
@@ -2881,6 +2911,7 @@
         "monthlyRent": "Canon mensual",
         "administration": "Administración",
         "administrationCommission": "Comisión de administración",
+        "saleCommission": "Comisión de venta",
         "estimatedPerMonth": "≈ {{amount}}/mes",
         "contractTerms": "Términos del contrato",
         "assignedAgent": "Agente asignado",
@@ -2902,14 +2933,17 @@
           "zoneRequired": "La zona es requerida",
           "rentPositive": "El canon mensual debe ser mayor a 0",
           "commissionPositive": "La comisión debe ser mayor a 0",
+          "saleCommissionPositive": "La comisión de venta debe ser mayor a 0",
           "agentRequired": "Debe seleccionar un agente",
           "startDateRequired": "La fecha de inicio es requerida"
         }
       },
       "table": {
+        "code": "Código",
         "property": "Propiedad",
         "zone": "Zona",
         "rent": "Canon",
+        "saleTag": "(venta)",
         "commission": "Comisión",
         "owner": "Propietario",
         "agent": "Agente",
@@ -2918,7 +2952,29 @@
         "edit": "Editar",
         "emptyTitle": "No se encontraron propiedades",
         "emptyDescription": "Ajusta los filtros o agrega una nueva consignación",
-        "adminFee": "+ {{amount}} admin"
+        "adminFee": "+ {{amount}} admin",
+        "missingMandate": "Falta mandato"
+      },
+      "mandateDialog": {
+        "title": "Completar mandato",
+        "subtitle": "Termina de consignar «{{title}}»: ya tenemos los datos del inmueble, sólo faltan los del mandato.",
+        "propietarioLabel": "Propietario",
+        "commissionLabel": "Comisión de la agencia",
+        "saleCommissionLabel": "Comisión de venta",
+        "contractDateLabel": "Fecha del contrato",
+        "agenteLabel": "Agente asignado (opcional)",
+        "saleListingNotice": "Esta propiedad está en venta: el mandato no lleva canon de arriendo, sólo la comisión de venta.",
+        "cancel": "Cancelar",
+        "confirm": "Completar mandato",
+        "toasts": {
+          "successTitle": "Mandato completado",
+          "successDesc": "«{{title}}» ya tiene mandato y comisión, y quedó publicado.",
+          "alreadyExistsTitle": "Ese mandato ya existía — actualizamos tu portafolio.",
+          "publishErrorTitle": "El mandato quedó guardado; falta publicar el inmueble",
+          "publishErrorDesc": "{{reason}} Abrilo desde el portafolio y publicalo cuando quieras — no lo cargues de nuevo.",
+          "publishErrorFallbackReason": "No pudimos publicarlo.",
+          "errorDesc": "No pudimos completar el mandato. Probá de nuevo en un momento."
+        }
       },
       "detail": {
         "propertyInfo": "Información de Propiedad",
@@ -2939,6 +2995,7 @@
         "agentTitle": "Agente Asignado",
         "noAgentAssigned": "No hay agente asignado",
         "commissionDistribution": "Distribución de comisión",
+        "commissionSplitNotAvailableForSale": "Un mandato de venta no reparte comisión entre agente e inmobiliaria en este momento.",
         "agentShare": "Agente",
         "agencyShare": "Inmobiliaria",
         "reassignAgent": "Reasignar agente",
@@ -2965,6 +3022,7 @@
           "commission": "Comision",
           "agent": "Agente",
           "inventory": "Inventario",
+          "photos": "Fotos",
           "confirm": "Confirmar"
         },
         "mobileProgress": "Paso {{current}} de {{total}}: {{label}}",
@@ -3010,8 +3068,15 @@
           "cityPlaceholder": "Bogota",
           "zoneLabel": "Zona/Barrio",
           "zonePlaceholder": "Chapinero Alto",
+          "departmentLabel": "Departamento",
+          "departmentPlaceholder": "Selecciona un departamento",
+          "listingTypeLabel": "Tipo de operacion",
+          "listingTypeRent": "Arriendo",
+          "listingTypeSale": "Venta",
           "monthlyRentLabel": "Canon mensual",
           "monthlyRentPlaceholder": "2.500.000",
+          "salePriceLabel": "Precio de venta",
+          "salePricePlaceholder": "350.000.000",
           "adminFeeLabel": "Administracion (opcional)",
           "adminFeePlaceholder": "450.000",
           "bedroomsLabel": "Habitaciones",
@@ -3020,12 +3085,16 @@
           "descriptionLabel": "Descripcion",
           "descriptionPlaceholder": "Describe el inmueble: distribucion, acabados, estado, cercanias...",
           "descriptionCounter": "{{count}}/{{max}} caracteres (minimo {{min}})",
+          "consignedAtLabel": "Fecha de consignacion (opcional)",
+          "consignedAtHint": "Solo la ve tu inmobiliaria — no aparece en el aviso publico.",
           "validation": {
             "titleRequired": "El titulo es requerido",
             "addressRequired": "La direccion es requerida",
             "cityRequired": "La ciudad es requerida",
             "zoneRequired": "La zona es requerida",
+            "departmentRequired": "El departamento es requerido",
             "rentRequired": "El canon es requerido",
+            "salePriceRequired": "El precio de venta es requerido",
             "bedroomsRequired": "Las habitaciones deben estar entre 0 y 20",
             "bathroomsRequired": "Los banos deben estar entre 1 y 10",
             "areaRequired": "El area debe estar entre 10 y 10.000 m2",
@@ -3037,6 +3106,8 @@
           "subtitle": "Define las condiciones del contrato de consignacion",
           "commissionLabel": "Porcentaje de comisión",
           "commissionHelper": "Ingresa el porcentaje de comisión que cobrará la agencia",
+          "saleCommissionLabel": "Comisión de venta",
+          "saleCommissionHelper": "Ingresá el porcentaje de comisión sobre el precio de venta",
           "monthlySummary": "Resumen mensual",
           "monthlyRent": "Canon mensual",
           "agencyCommission": "Comision agencia ({{percent}}%)",
@@ -3056,6 +3127,8 @@
         "step5": {
           "title": "Acta de Entrega",
           "subtitle": "Registra el inventario y estado del inmueble",
+          "titleSale": "Fotografías del Inmueble",
+          "subtitleSale": "Agrega las fotos que se publicarán con este inmueble.",
           "inventoryTitle": "Inventario de bienes",
           "addItem": "Agregar item",
           "itemNamePlaceholder": "Nombre del item (ej: Estufa 4 puestos)",
@@ -3083,6 +3156,9 @@
           "new": "Nuevo",
           "notSelected": "No seleccionado",
           "noTitle": "Sin titulo",
+          "noSalePrice": "Sin precio de venta",
+          "noTermsForSale": "Esta propiedad esta en venta: no aplica comision de arriendo ni termino minimo.",
+          "saleCommission": "Comisión de venta",
           "perMonth": "/mes",
           "admin": "admin",
           "commission": "Comision",

@@ -18,6 +18,13 @@ export type PropertyType =
   | 'office'
   | 'warehouse';
 
+/**
+ * contract.md T-0038 §3.2.2. Front-lowercase pair; wire is UPPER_SNAKE — see
+ * `resolveListingType()` / `LISTING_TYPE_TO_BACKEND` in
+ * `src/lib/api/properties.mapper.ts`.
+ */
+export type ListingType = 'rent' | 'sale';
+
 export interface PropertyAmenity {
   id: string;
   name: string;
@@ -67,11 +74,33 @@ export interface Property {
   address: string;
   latitude: number;
   longitude: number;
+  /** contract.md T-0038 §3.2.1 — `null` when no department could be resolved. */
+  department: string | null;
+
+  // Sale vs rent (contract.md T-0038 §3.2.2)
+  listingType: ListingType;
+  /** COP. `null` on a `listingType === 'rent'` listing, or unset. Never `0` (C6). */
+  salePrice: number | null;
 
   // Pricing (COP as integers)
-  monthlyRent: number;
+  /** `null` on a `listingType === 'sale'` listing. Never `0` (C6). */
+  monthlyRent: number | null;
   adminFee: number;
   deposit: number;
+  /**
+   * contract.md T-0038 §3.2.5 — PORTFOLIO-only. `undefined` means "not
+   * entitled to see it" (anonymous/tenant reader of a `@Public()` route), NOT
+   * "no code yet". Render `—`, never fabricate.
+   */
+  code?: number;
+  /**
+   * contract.md T-0038 §3.2.6 — PORTFOLIO-only, agency/landlord/assigned
+   * agent reads. Three states: `undefined` = not entitled (render nothing);
+   * `null` = entitled, no date recorded ("Sin fecha"); string = the date.
+   * Never construct a `Date` from it for display (day-off-by-one in
+   * America/Bogotá) — render the `"YYYY-MM-DD"` string directly.
+   */
+  consignedAt?: string | null;
 
   // Features
   bedrooms: number;

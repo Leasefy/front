@@ -199,19 +199,33 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
           </div>
 
           <div className="flex items-center gap-4 mt-3">
-            <div>
-              <p className="text-base font-semibold tabular-nums text-foreground">
-                {formatCurrency(consignacion.monthlyRent)}
-              </p>
-              <p className="text-xs text-muted-foreground">{t('inmobiliaria.common.perMonth')}</p>
-            </div>
-            <div className="h-8 w-px bg-border" />
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                {consignacion.commissionPercent}%
-              </p>
-              <p className="text-xs text-muted-foreground">{t('inmobiliaria.agentes.commission')}</p>
-            </div>
+            {/* contract-addendum-2.md §A.2/§A.10 — a SALE mandate has no
+                canon (`monthlyRent: null`) and `commissionPercent: 0`; the
+                agreed figure lives in `saleCommissionPercent` instead. */}
+            {consignacion.listingType === 'sale' ? (
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—'}
+                </p>
+                <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.detail.saleCommission')}</p>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <p className="text-base font-semibold tabular-nums text-foreground">
+                    {consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.common.perMonth')}</p>
+                </div>
+                <div className="h-8 w-px bg-border" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    {consignacion.commissionPercent}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.agentes.commission')}</p>
+                </div>
+              </>
+            )}
             {consignacion.currentTenantName && (
               <>
                 <div className="h-8 w-px bg-border" />

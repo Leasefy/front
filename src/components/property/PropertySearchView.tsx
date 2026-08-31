@@ -18,6 +18,7 @@ import { useProperties } from '@/lib/hooks/useProperties';
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { cn } from '@/lib/utils';
 import type { PropertyFiltersParams } from '@/lib/api/properties.types';
+import type { Property } from '@/lib/types/property';
 
 // Lazy-load the map (maplibre) so its chunk is only fetched when the map panel
 // is actually mounted. ssr:false because PropertyMap touches `window`.
@@ -162,12 +163,17 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
       result = result.filter(p => p.bedrooms >= 4);
     }
 
+    // T-0038 §3.2.2/§3.2.4 — the catalog mixes RENT and SALE listings (§3.7:
+    // no server-side default). "Price" means whichever price applies to
+    // that listing; `?? 0` only orders the comparator and is never rendered.
+    const effectivePrice = (p: Property) => (p.listingType === 'sale' ? p.salePrice : p.monthlyRent) ?? 0;
+
     result.sort((a, b) => {
       switch (sortBy) {
         case 'price_asc':
-          return a.monthlyRent - b.monthlyRent;
+          return effectivePrice(a) - effectivePrice(b);
         case 'price_desc':
-          return b.monthlyRent - a.monthlyRent;
+          return effectivePrice(b) - effectivePrice(a);
         case 'newest':
           return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
         default:

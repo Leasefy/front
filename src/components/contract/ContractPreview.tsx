@@ -106,7 +106,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
           <div className="rounded-sm border border-border bg-surface-muted p-3">
             <p className="text-xs text-fg-muted">Canon mensual</p>
             <p className="mt-1 text-lg font-semibold text-fg">
-              {formatCurrency(contract.monthlyRent)}
+              {contract.monthlyRent != null ? formatCurrency(contract.monthlyRent) : '—'}
             </p>
           </div>
           <div className="rounded-sm border border-border bg-surface-muted p-3">
@@ -127,7 +127,7 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
           <div className="rounded-sm border border-border bg-surface-muted p-3">
             <p className="text-xs text-fg-muted">Dia de pago</p>
             <p className="mt-1 text-lg font-semibold text-fg">
-              Dia {contract.paymentDueDay}
+              {contract.paymentDueDay ? `Dia ${contract.paymentDueDay}` : '—'}
             </p>
           </div>
         </div>
@@ -173,17 +173,19 @@ export function ContractPreview({ contract, template, selectedInsurance, classNa
         <div className="space-y-3 text-sm">
           <div>
             <p className="text-fg-muted">Direccion</p>
-            <p className="font-medium text-fg">{contract.propertyAddress}</p>
-            <p className="text-fg-muted">{contract.propertyCity}</p>
+            <p className="font-medium text-fg">
+              {contract.propertyId === null ? 'Sin inmueble' : contract.propertyAddress}
+            </p>
+            {contract.propertyCity && <p className="text-fg-muted">{contract.propertyCity}</p>}
           </div>
           <div className="flex gap-6">
             <div>
               <p className="text-fg-muted">Inicio</p>
-              <p className="font-medium text-fg">{formatDate(contract.startDate)}</p>
+              <p className="font-medium text-fg">{contract.startDate ? formatDate(contract.startDate) : '—'}</p>
             </div>
             <div>
               <p className="text-fg-muted">Fin</p>
-              <p className="font-medium text-fg">{formatDate(contract.endDate)}</p>
+              <p className="font-medium text-fg">{contract.endDate ? formatDate(contract.endDate) : '—'}</p>
             </div>
           </div>
         </div>

@@ -120,34 +120,51 @@ export function PropertyAccordion({
         </AccordionTrigger>
         <AccordionContent className="pb-5">
           <div className="bg-surface-muted rounded-xl p-4 space-y-3">
-            <div className="flex justify-between text-[14px]">
-              <span className="text-muted-foreground">Arriendo</span>
-              <span className="text-foreground font-semibold font-mono tabular-nums">
-                {formatCurrency(property.monthlyRent)}
-              </span>
-            </div>
-            {property.adminFee > 0 && (
+            {/*
+              T-0038 §3.2.4 — a SALE listing has no `monthlyRent`/monthly
+              costs (contract.md §3.2.4). Never render "Administración: $0" /
+              "Depósito: $0" for one (explicit contract rule) — show the
+              sale price instead of a fabricated monthly breakdown.
+            */}
+            {property.listingType === 'sale' ? (
               <div className="flex justify-between text-[14px]">
-                <span className="text-muted-foreground">Administración</span>
-                <span className="text-foreground font-semibold font-mono tabular-nums">
-                  {formatCurrency(property.adminFee)}
-                </span>
-              </div>
-            )}
-            <div className="flex justify-between text-[14px]">
-              <span className="text-muted-foreground">Depósito (único)</span>
-              <span className="text-foreground font-semibold font-mono tabular-nums">
-                {formatCurrency(property.deposit)}
-              </span>
-            </div>
-            <div className="pt-3 border-t border-border">
-              <div className="flex justify-between text-[14px]">
-                <span className="text-foreground font-semibold">Total mensual</span>
+                <span className="text-muted-foreground">Precio de venta</span>
                 <span className="text-primary font-bold font-mono tabular-nums">
-                  {formatCurrency(property.monthlyRent + property.adminFee)}
+                  {property.salePrice != null ? formatCurrency(property.salePrice) : 'Sin dato'}
                 </span>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="flex justify-between text-[14px]">
+                  <span className="text-muted-foreground">Arriendo</span>
+                  <span className="text-foreground font-semibold font-mono tabular-nums">
+                    {property.monthlyRent != null ? formatCurrency(property.monthlyRent) : 'Sin dato'}
+                  </span>
+                </div>
+                {property.adminFee > 0 && (
+                  <div className="flex justify-between text-[14px]">
+                    <span className="text-muted-foreground">Administración</span>
+                    <span className="text-foreground font-semibold font-mono tabular-nums">
+                      {formatCurrency(property.adminFee)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between text-[14px]">
+                  <span className="text-muted-foreground">Depósito (único)</span>
+                  <span className="text-foreground font-semibold font-mono tabular-nums">
+                    {formatCurrency(property.deposit)}
+                  </span>
+                </div>
+                <div className="pt-3 border-t border-border">
+                  <div className="flex justify-between text-[14px]">
+                    <span className="text-foreground font-semibold">Total mensual</span>
+                    <span className="text-primary font-bold font-mono tabular-nums">
+                      {property.monthlyRent != null ? formatCurrency(property.monthlyRent + property.adminFee) : 'Sin dato'}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </AccordionContent>
       </AccordionItem>

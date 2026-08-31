@@ -55,7 +55,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
     cargando: decidiendoCamino,
     prefillDirecto,
     consentText,
-  } = usePostulacionDirecta(property?.monthlyRent);
+  } = usePostulacionDirecta(property?.monthlyRent ?? undefined);
   const [postuladaId, setPostuladaId] = useState<string | null>(null);
 
   // Get pre-filled name and email from URL params (lead capture)
@@ -165,6 +165,33 @@ export default function AplicarPage({ params }: AplicarPageProps) {
             <Button className="mt-6">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Ver propiedades disponibles
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // contract.md T-0038 §3.3 (WU-2) — a SALE listing 409s at submit with
+  // PROPIEDAD_EN_VENTA. Gating here, before the six-step wizard even
+  // starts, matches the existing "existing-application detection" reasoning
+  // right above: show a card instead of letting the tenant fill the whole
+  // wizard only to dead-end at submit. Reachable via a stale link, or a
+  // listing that switched RENT->SALE after the link was shared.
+  if (property.listingType === 'sale') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="text-center px-4 max-w-md">
+          <h1 className="text-2xl font-bold text-foreground">
+            Esta propiedad está en venta
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            No se puede postular a una propiedad en venta. Contactá a la inmobiliaria por chat o agendá una visita desde la ficha del inmueble.
+          </p>
+          <Link href={`/propiedades/${resolvedParams.propertyId}`}>
+            <Button className="mt-6">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Volver al inmueble
             </Button>
           </Link>
         </div>

@@ -135,11 +135,41 @@ export interface Consignacion {
   propertyZone: string;
   propertyType: 'apartment' | 'house' | 'studio' | 'commercial' | 'office' | 'warehouse';
   propertyThumbnail?: string;
-  monthlyRent: number;
+  /**
+   * contract-addendum-2.md §A.2/§A.4/§A.9.1 — `null` on a SALE mandate.
+   * Never `0` (C6). `Consignacion.monthlyRent` was NOT NULL before T-0038.
+   */
+  monthlyRent: number | null;
   adminFee?: number;
 
+  /**
+   * contract-addendum-2.md §A.1 — derived server-side from `Property.listingType`
+   * at creation, NEVER accepted on either DTO. Absent on the wire (older back
+   * build) degrades to `'rent'`. Unknown value → throw (C19), see
+   * `normalizeConsignacion`.
+   */
+  listingType: 'rent' | 'sale';
+  /**
+   * contract-addendum-2.md §A.2/§A.3 — a DISTINCT field from `commissionPercent`.
+   * `null` on a RENT mandate (normal) and on a pre-addendum SALE row. Render
+   * `—`, never `0 %`.
+   */
+  saleCommissionPercent: number | null;
+  /**
+   * contract-addendum-2.md §A.9.1 — NEW, closes W3-c. `null` when the mandate
+   * has no linked `propertyId` (a migrated cartera row). Never fabricate.
+   */
+  propertyCode: number | null;
+
   // Consignment terms
-  commissionPercent: number; // Agency commission (typically 8-12%)
+  /**
+   * Agency commission (typically 8-12% on a RENT mandate). `0` on a SALE
+   * mandate — see §A.3 for why that `0` is not a C6 violation (the row
+   * carries `listingType: 'sale'` as an explicit discriminator). The front
+   * MUST branch on `listingType` and render `saleCommissionPercent` instead
+   * on a sale row.
+   */
+  commissionPercent: number;
   contractDate: string;
   contractEndDate?: string;
   minimumTerm?: number; // Minimum lease term in months
@@ -179,11 +209,115 @@ export interface ConsignacionFormData {
   propertyCity: string;
   propertyZone: string;
   propertyType: Consignacion['propertyType'];
-  monthlyRent: number;
+  /**
+   * contract-addendum-2.md §A.7 DTO deltas — OPTIONAL. Omitted (never `null`,
+   * never `0`) on a sale mandate. Required in practice for a rent mandate
+   * (enforced server-side by rule R1, and in the UI by not letting the
+   * wizard/form advance without it).
+   */
+  monthlyRent?: number;
   adminFee?: number;
   commissionPercent: number;
+  /**
+   * contract-addendum-2.md §A.3/§A.7 — NEW, distinct from `commissionPercent`.
+   * Required on a sale mandate (rule R3), forbidden on a rent one (rule R6).
+   */
+  saleCommissionPercent?: number;
   agenteId: string;
   minimumTerm?: number;
+}
+
+// ============================================================================
+// Inmueble sin consignación (T-0030) — a Property with no mandate yet
+// ============================================================================
+//
+// `GET /inmobiliaria/inmuebles/sin-consignacion` (contract.md T-0030 §3.1/§3.2).
+// A read-only surface for properties (imported via link, or left mandate-less
+// by an aborted manual wizard) that have no `Consignacion` in this agency, so
+// they never appear in `GET /inmobiliaria/consignaciones`. Deliberately has
+// no `id` — see `portafolioRowKey` below.
+
+/** `PropertyType` (back) has 7 members; `ConsignacionPropertyType` has 6 — no `ROOM`. */
+export type PropertyTypeAmplio = Consignacion['propertyType'] | 'room';
+
+/** `Property.status` (Prisma `PropertyStatus`), lower-cased for the front. */
+export type PropertyStatusSinConsignacion = 'draft' | 'available' | 'rented' | 'pending' | 'reserved';
+
+/**
+ * Raw shape of `GET /inmobiliaria/inmuebles/sin-consignacion`
+ * (`InmuebleSinConsignacionResponseDto`, back, UPPER_SNAKE enums).
+ * Hand-mirrored per `engineering/FRONTEND.md` §4 (mirror-and-map) — MUST NOT
+ * be typed from `generated/back.ts` (contract.md T-0030 §4.1).
+ */
+export interface BackendInmuebleSinConsignacion {
+  propertyId: string;
+  propertyTitle: string;
+  propertyAddress: string;
+  propertyCity: string;
+  /** May be `''` — DB allows an empty, non-null neighborhood. */
+  propertyZone: string;
+  propertyType: string;
+  propertyThumbnail: string | null;
+  /** contract.md T-0038 §3.2 — `null` on a SALE row. Never `0` (C6). */
+  monthlyRent: number | null;
+  adminFee: number;
+  status: string;
+  createdAt: string;
+  /** contract.md T-0038 §3.2.1 — same degradation as `Property.department`. */
+  propertyDepartment?: string | null;
+  /** contract.md T-0038 §3.2.2 — absent (older back build) degrades to RENT. */
+  propertyListingType?: string;
+  /** contract.md T-0038 §3.2.3 — `null` → no sale price. Never `0` (C6). */
+  propertySalePrice?: number | null;
+  /**
+   * contract.md T-0038 §3.2.5 — this route is already agency-guarded, so
+   * unlike `Property.code` this key is always present (not absence-as-auth).
+   */
+  propertyCode?: number;
+  /** contract.md T-0038 §3.2.6 — same route note as `propertyCode`. */
+  propertyConsignedAt?: string | null;
+}
+
+/** Front-normalized row for a property with no mandate yet (lower-cased enums). */
+export interface InmuebleSinConsignacion {
+  propertyId: string;
+  propertyTitle: string;
+  propertyAddress: string;
+  propertyCity: string;
+  propertyZone: string;
+  propertyType: PropertyTypeAmplio;
+  propertyThumbnail: string | null;
+  /** contract.md T-0038 §3.2 — `null` on a SALE row. Never `0` (C6). */
+  monthlyRent: number | null;
+  adminFee: number;
+  status: PropertyStatusSinConsignacion;
+  createdAt: string;
+  department?: string | null;
+  listingType?: 'rent' | 'sale';
+  salePrice?: number | null;
+  /** PORTFOLIO surface — this route is agency-guarded, so this is a real value, not an entitlement signal. */
+  code?: number;
+  /** `null` = entitled but unrecorded ("Sin fecha"); string = the date. */
+  consignedAt?: string | null;
+}
+
+/**
+ * The unified row the portfolio page renders — either a real mandate
+ * (`Consignacion`) or a mandate-less property (`InmuebleSinConsignacion`).
+ * `kind` is a front-only discriminator, stamped at merge time: the wire never
+ * sends one on either source (contract §3.2 — "the front already knows which
+ * array a row came from").
+ */
+export type PortafolioRow =
+  | ({ kind: 'consignacion' } & Consignacion)
+  | ({ kind: 'sinMandato' } & InmuebleSinConsignacion);
+
+/**
+ * Stable React key. Never bare `propertyId` for a mandate-less row — it would
+ * read as a consignación id to the next maintainer (contract §3.2).
+ */
+export function portafolioRowKey(row: PortafolioRow): string {
+  return row.kind === 'consignacion' ? row.id : `property:${row.propertyId}`;
 }
 
 // ============================================================================
@@ -213,7 +347,11 @@ export interface PipelineItem {
   propertyTitle: string;
   propertyAddress: string;
   propertyThumbnail?: string;
-  monthlyRent: number;
+  /**
+   * `null` when the linked mandate has no canon — a SALE mandate, or none
+   * linked at all. Render `—`, never `$ 0` (C6).
+   */
+  monthlyRent: number | null;
 
   // Candidate info (denormalized)
   candidateName: string;

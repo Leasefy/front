@@ -712,6 +712,15 @@ export function ApplicationProvider({
         setSubmissionError(
           'Tu postulación debe presentarse con la identidad de tu estudio de arrendamiento vigente. Recargá la página para traer tus datos actualizados e intentá de nuevo.',
         );
+      } else if (err instanceof ApiError && err.code === 'PROPIEDAD_EN_VENTA') {
+        // contract.md T-0038 §3.3 (WU-2) — hits both POST /applications
+        // (authenticated) and POST /applications/guest (this same catch
+        // covers both branches above). A stale client reaching this after
+        // the listing switched RENT->SALE, or an old tab. Exact contract
+        // message, no retry offered here — the property detail page (where
+        // this wizard is launched from) already renders the SALE
+        // chat/visit CTA once reloaded.
+        setSubmissionError(err.message);
       } else {
         const message = err instanceof Error ? err.message : 'Error al enviar la aplicación';
         setSubmissionError(message);

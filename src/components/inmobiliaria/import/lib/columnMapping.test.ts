@@ -40,7 +40,6 @@ describe('encabezados sin campo nuestro: mejor nada que cualquier cosa', () => {
     ['Estrato', 'es un número del 1 al 6, iba a status'],
     ['Matrícula inmobiliaria', 'no hay campo'],
     ['Código inmueble', 'identificador del sistema de origen'],
-    ['Tipo de negocio', 'Arriendo/Venta no es el tipo de inmueble'],
     ['Correo propietario', 'no hay campo de correo; iba a ownerName'],
   ])('%s queda sin mapear (%s)', (encabezado) => {
     expect(campoDe(encabezado)).toBeNull()
@@ -99,6 +98,46 @@ describe('vocabulario inmobiliario colombiano', () => {
     ['Observación', 'notes'],
   ])('%s → %s', (encabezado, campo) => {
     expect(campoDe(encabezado)).toBe(campo)
+  })
+})
+
+describe('T-0038 §3.8 — nuevas columnas de venta/departamento/consignación', () => {
+  it.each([
+    ['Tipo de negocio', 'listingType'],
+    ['Tipo negocio', 'listingType'],
+  ])('%s → %s (ya no bloqueado — contract.md §3.8)', (encabezado, campo) => {
+    expect(campoDe(encabezado)).toBe(campo)
+  })
+
+  it.each([
+    ['Precio de venta', 'salePrice'],
+    ['Precio venta', 'salePrice'],
+    ['Valor de venta', 'salePrice'],
+    ['Valor venta', 'salePrice'],
+  ])('%s → %s', (encabezado, campo) => {
+    expect(campoDe(encabezado)).toBe(campo)
+  })
+
+  it('un "Precio" ambiguo, sin más contexto, sigue cayendo en monthlyRent (degradación por defecto)', () => {
+    expect(campoDe('Precio')).toBe('monthlyRent')
+  })
+
+  it.each([
+    ['Departamento', 'propertyDepartment'],
+    ['Departamento del inmueble', 'propertyDepartment'],
+  ])('%s → %s', (encabezado, campo) => {
+    expect(campoDe(encabezado)).toBe(campo)
+  })
+
+  it.each([
+    ['Fecha de consignación', 'consignedAt'],
+    ['Fecha consignación', 'consignedAt'],
+  ])('%s → %s', (encabezado, campo) => {
+    expect(campoDe(encabezado)).toBe(campo)
+  })
+
+  it('"Código" sigue bloqueado — el código es asignado por el servidor (contract.md §3.2.5), no se importa', () => {
+    expect(campoDe('Código')).toBeNull()
   })
 })
 

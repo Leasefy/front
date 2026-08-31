@@ -21,6 +21,7 @@ import type { ImportProperty } from './importTypes';
 export type CampoRequerido =
   | 'propertyAddress'
   | 'monthlyRent'
+  | 'salePrice'
   | 'bathrooms'
   | 'propertyArea';
 
@@ -38,6 +39,23 @@ export interface RequisitoFaltante {
 export const MINIMO_CANON = 100_000;
 export const MINIMO_AREA = 10;
 export const MINIMO_BANOS = 1;
+/** contract.md T-0038 §3.2.3 — mirrors CreatePropertyDto's `@Min(1_000_000)` on `salePrice`. */
+export const MINIMO_VENTA = 1_000_000;
+
+/**
+ * T-0038 §3.2.2/C13 — `ImportProperty.listingType` is raw free text as read
+ * from the file ("Arriendo", "Venta", "For sale"...), not yet the wire's
+ * RENT/SALE. This is the import-review step's OWN heuristic, deliberately
+ * lenient (CSV text varies a lot) — it only decides which price field this
+ * row's completeness check applies to. The actual wire validation, and the
+ * throw-on-unrecognised rule (C19), happen at `POST /properties`
+ * (`resolveListingType` in `properties.mapper.ts`), not here.
+ */
+export function resolveImportListingType(raw: string | undefined): 'rent' | 'sale' {
+  const normalized = (raw ?? '').trim().toLowerCase();
+  if (normalized.includes('venta') || normalized.includes('sale')) return 'sale';
+  return 'rent';
+}
 
 /**
  * Qué le falta a este inmueble para que el back lo acepte.
@@ -58,7 +76,21 @@ export function faltantesParaElBack(p: ImportProperty): RequisitoFaltante[] {
     });
   }
 
-  if (!p.monthlyRent || p.monthlyRent < MINIMO_CANON) {
+  // T-0038 §3.2.4 — a SALE row needs salePrice, never monthlyRent (the CHECK
+  // constraint requires exactly one of the two per listingType). Mirrors
+  // ImportWizard.isStepValid / StepColumnMapping's monthlyRent<->salePrice
+  // alternative at the column-mapping gate, applied per-row here.
+  if (resolveImportListingType(p.listingType) === 'sale') {
+    if (!p.salePrice || p.salePrice < MINIMO_VENTA) {
+      faltan.push({
+        campo: 'salePrice',
+        etiqueta: 'Precio de venta',
+        ayuda: `Mínimo ${formatearPesos(MINIMO_VENTA)}.`,
+        sufijo: 'COP',
+        tipo: 'numero',
+      });
+    }
+  } else if (!p.monthlyRent || p.monthlyRent < MINIMO_CANON) {
     faltan.push({
       campo: 'monthlyRent',
       etiqueta: 'Canon mensual',
@@ -124,6 +156,7 @@ export function escribirCampo(
 ): ImportProperty {
   const numericos: (keyof ImportProperty)[] = [
     'monthlyRent',
+    'salePrice',
     'adminFee',
     'commissionPercent',
     'propertyArea',
@@ -139,5 +172,11 @@ export function escribirCampo(
     valor = valorCrudo;
   }
 
-  return recalcularEstado({ ...p, [campo]: valor });
+  const actualizado: ImportProperty = { ...p, [campo]: valor };
+  // Si la persona corrige la dirección a mano, ya no es una aproximación:
+  // dejarla marcada después de que alguien la arregló sería mentir sobre el
+  // dato que hay ahora.
+  if (campo === 'propertyAddress') actualizado.direccionAproximada = false;
+
+  return recalcularEstado(actualizado);
 }

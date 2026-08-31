@@ -108,6 +108,10 @@ export function ConsignacionEditForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { t, formatCurrency: fmtCurrency } = useI18n();
 
+  // contract-addendum-2.md §A.1 — the discriminator is derived server-side
+  // and lives on the mandate itself; a sale mandate never has a canon.
+  const isSaleListing = consignacion.listingType === 'sale';
+
   // Form state
   const [formData, setFormData] = useState({
     propertyTitle: consignacion.propertyTitle,
@@ -115,9 +119,13 @@ export function ConsignacionEditForm({
     propertyCity: consignacion.propertyCity,
     propertyZone: consignacion.propertyZone,
     propertyType: consignacion.propertyType,
-    monthlyRent: consignacion.monthlyRent,
+    // `null` on a sale mandate (§A.2) — the number input renders it as ''.
+    monthlyRent: consignacion.monthlyRent ?? '',
     adminFee: consignacion.adminFee || 0,
     commissionPercent: consignacion.commissionPercent,
+    // `null` on a rent mandate and on a pre-addendum sale row (§A.2) —
+    // never render/send `0 %`.
+    saleCommissionPercent: consignacion.saleCommissionPercent ?? '',
     agenteId: consignacion.agenteId,
     minimumTerm: consignacion.minimumTerm || 12,
     contractDate: consignacion.contractDate.split('T')[0],
@@ -157,11 +165,21 @@ export function ConsignacionEditForm({
     if (!formData.propertyZone) {
       newErrors.propertyZone = t('inmobiliaria.consignaciones.editForm.validation.zoneRequired');
     }
-    if (!formData.monthlyRent || formData.monthlyRent <= 0) {
-      newErrors.monthlyRent = t('inmobiliaria.consignaciones.editForm.validation.rentPositive');
-    }
-    if (!formData.commissionPercent || formData.commissionPercent <= 0) {
-      newErrors.commissionPercent = t('inmobiliaria.consignaciones.editForm.validation.commissionPositive');
+    // contract-addendum-2.md §A.2 — `!null` is `true` in JS, so a naive
+    // `!formData.monthlyRent` check made a sale mandate (monthlyRent: null)
+    // permanently unsaveable. Branch on `isSaleListing` instead of on the
+    // value's truthiness.
+    if (isSaleListing) {
+      if (!formData.saleCommissionPercent || Number(formData.saleCommissionPercent) <= 0) {
+        newErrors.saleCommissionPercent = t('inmobiliaria.consignaciones.editForm.validation.saleCommissionPositive');
+      }
+    } else {
+      if (!formData.monthlyRent || Number(formData.monthlyRent) <= 0) {
+        newErrors.monthlyRent = t('inmobiliaria.consignaciones.editForm.validation.rentPositive');
+      }
+      if (!formData.commissionPercent || formData.commissionPercent <= 0) {
+        newErrors.commissionPercent = t('inmobiliaria.consignaciones.editForm.validation.commissionPositive');
+      }
     }
     // NOTE: agenteId is intentionally NOT validated/required — agent
     // reassignment is disabled below (agente ids are AgencyMember ids while
@@ -189,24 +207,37 @@ export function ConsignacionEditForm({
         propertyCity: formData.propertyCity,
         propertyZone: formData.propertyZone,
         propertyType: formData.propertyType,
-        monthlyRent: Number(formData.monthlyRent),
-        adminFee: Number(formData.adminFee) || undefined,
-        commissionPercent: Number(formData.commissionPercent),
+        // contract-addendum-2.md §A.2/§A.7 — `Number(null) === 0`, which used
+        // to send a C6-violating `monthlyRent: 0` (and an R2 400) on a sale
+        // mandate. Sale sends `saleCommissionPercent` and `commissionPercent:
+        // 0` instead; monthlyRent/adminFee/minimumTerm are OMITTED, never 0.
+        ...(isSaleListing
+          ? {
+              commissionPercent: 0,
+              saleCommissionPercent: Number(formData.saleCommissionPercent),
+            }
+          : {
+              monthlyRent: Number(formData.monthlyRent),
+              adminFee: Number(formData.adminFee) || undefined,
+              commissionPercent: Number(formData.commissionPercent),
+              minimumTerm: Number(formData.minimumTerm) || undefined,
+            }),
         agenteId: formData.agenteId,
-        minimumTerm: Number(formData.minimumTerm) || undefined,
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Calculate estimated commission
+  // Calculate estimated commission — rent mandates only (§A.3: a sale
+  // mandate's commission is a percentage of the sale price, which this form
+  // does not edit — Property.salePrice lives on a different entity).
   const estimatedCommission = useMemo(() => {
-    if (formData.monthlyRent && formData.commissionPercent) {
+    if (!isSaleListing && formData.monthlyRent && formData.commissionPercent) {
       return Math.round(Number(formData.monthlyRent) * (Number(formData.commissionPercent) / 100));
     }
     return 0;
-  }, [formData.monthlyRent, formData.commissionPercent]);
+  }, [isSaleListing, formData.monthlyRent, formData.commissionPercent]);
 
   // Use i18n formatCurrency instead of local function
 
@@ -317,65 +348,92 @@ export function ConsignacionEditForm({
           <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.financialInfo')}</h3>
         </div>
 
-        {/* Monthly Rent & Admin Fee */}
-        <div className="grid grid-cols-2 gap-4">
-          <InputWrapper label={t('inmobiliaria.consignaciones.editForm.monthlyRent')} required error={errors.monthlyRent}>
+        {isSaleListing ? (
+          // contract-addendum-2.md §A.2 — a sale mandate has no canon and no
+          // administration fee. Only the sale commission is editable here.
+          <InputWrapper
+            label={t('inmobiliaria.consignaciones.editForm.saleCommission')}
+            required
+            error={errors.saleCommissionPercent}
+          >
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle">$</span>
               <Input
                 type="number"
-                name="monthlyRent"
-                value={formData.monthlyRent}
+                name="saleCommissionPercent"
+                value={formData.saleCommissionPercent}
                 onChange={handleChange}
-                placeholder="3200000"
+                placeholder="3"
                 min="0"
-                step="50000"
-                className={cn('w-full pl-8', errors.monthlyRent && 'border-danger/30')}
-              />
-            </div>
-          </InputWrapper>
-
-          <InputWrapper label={t('inmobiliaria.consignaciones.editForm.administration')} helper={t('common.optional')}>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle">$</span>
-              <Input
-                type="number"
-                name="adminFee"
-                value={formData.adminFee}
-                onChange={handleChange}
-                placeholder="250000"
-                min="0"
-                step="10000"
-                className="w-full pl-8"
-              />
-            </div>
-          </InputWrapper>
-        </div>
-
-        {/* Commission */}
-        <InputWrapper label={t('inmobiliaria.consignaciones.editForm.administrationCommission')} required error={errors.commissionPercent}>
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <Input
-                type="number"
-                name="commissionPercent"
-                value={formData.commissionPercent}
-                onChange={handleChange}
-                placeholder="10"
-                min="1"
-                max="20"
+                max="100"
                 step="0.5"
-                className={cn('w-full pr-10', errors.commissionPercent && 'border-danger/30')}
+                className={cn('w-full pr-10', errors.saleCommissionPercent && 'border-danger/30')}
               />
               <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
             </div>
-            {estimatedCommission > 0 && (
-              <div className="px-3 py-2 rounded-md bg-success-soft text-success text-sm">
-                {t('inmobiliaria.consignaciones.editForm.estimatedPerMonth', { amount: fmtCurrency(estimatedCommission) })}
+          </InputWrapper>
+        ) : (
+          <>
+            {/* Monthly Rent & Admin Fee */}
+            <div className="grid grid-cols-2 gap-4">
+              <InputWrapper label={t('inmobiliaria.consignaciones.editForm.monthlyRent')} required error={errors.monthlyRent}>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle">$</span>
+                  <Input
+                    type="number"
+                    name="monthlyRent"
+                    value={formData.monthlyRent}
+                    onChange={handleChange}
+                    placeholder="3200000"
+                    min="0"
+                    step="50000"
+                    className={cn('w-full pl-8', errors.monthlyRent && 'border-danger/30')}
+                  />
+                </div>
+              </InputWrapper>
+
+              <InputWrapper label={t('inmobiliaria.consignaciones.editForm.administration')} helper={t('common.optional')}>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle">$</span>
+                  <Input
+                    type="number"
+                    name="adminFee"
+                    value={formData.adminFee}
+                    onChange={handleChange}
+                    placeholder="250000"
+                    min="0"
+                    step="10000"
+                    className="w-full pl-8"
+                  />
+                </div>
+              </InputWrapper>
+            </div>
+
+            {/* Commission */}
+            <InputWrapper label={t('inmobiliaria.consignaciones.editForm.administrationCommission')} required error={errors.commissionPercent}>
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1">
+                  <Input
+                    type="number"
+                    name="commissionPercent"
+                    value={formData.commissionPercent}
+                    onChange={handleChange}
+                    placeholder="10"
+                    min="1"
+                    max="20"
+                    step="0.5"
+                    className={cn('w-full pr-10', errors.commissionPercent && 'border-danger/30')}
+                  />
+                  <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" />
+                </div>
+                {estimatedCommission > 0 && (
+                  <div className="px-3 py-2 rounded-md bg-success-soft text-success text-sm">
+                    {t('inmobiliaria.consignaciones.editForm.estimatedPerMonth', { amount: fmtCurrency(estimatedCommission) })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </InputWrapper>
+            </InputWrapper>
+          </>
+        )}
       </div>
 
       {/* Contract Info Section */}
@@ -437,22 +495,25 @@ export function ConsignacionEditForm({
           </InputWrapper>
         </div>
 
-        {/* Minimum Term */}
-        <InputWrapper label={t('inmobiliaria.consignaciones.editForm.minimumLeaseTerm')} helper={t('inmobiliaria.consignaciones.editForm.inMonths')}>
-          <div className="relative">
-            <Timer className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
-            <Input
-              type="number"
-              name="minimumTerm"
-              value={formData.minimumTerm}
-              onChange={handleChange}
-              placeholder="12"
-              min="1"
-              max="36"
-              className="w-full pl-10"
-            />
-          </div>
-        </InputWrapper>
+        {/* Minimum Term — contract-addendum-2.md §A.2: null, always, on a
+            sale mandate. There is no lease term to bound. */}
+        {!isSaleListing && (
+          <InputWrapper label={t('inmobiliaria.consignaciones.editForm.minimumLeaseTerm')} helper={t('inmobiliaria.consignaciones.editForm.inMonths')}>
+            <div className="relative">
+              <Timer className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
+              <Input
+                type="number"
+                name="minimumTerm"
+                value={formData.minimumTerm}
+                onChange={handleChange}
+                placeholder="12"
+                min="1"
+                max="36"
+                className="w-full pl-10"
+              />
+            </div>
+          </InputWrapper>
+        )}
       </div>
 
       {/* Info Alert */}

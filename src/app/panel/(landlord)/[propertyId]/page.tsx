@@ -48,9 +48,7 @@ import { canPlanAccessFeature } from '@/lib/constants/subscription-plans';
 import type { PlanId } from '@/lib/types/subscription';
 import { LockedFeatureOverlay, LockedBadge } from '@/components/ui/LockedFeatureOverlay';
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
-}
+import { formatCanon, formatFecha, mesesHastaFin } from './format';
 
 // ============================================================================
 // TextTs
@@ -103,6 +101,18 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
   const { getForProperty: getContractsForProperty } = useContracts();
   const propertyContracts = getContractsForProperty(propertyId);
   const activeContract = propertyContracts.find(c => c.status === 'active');
+  // F3 (contract.md VERIFY-batch-2, Finding 1) — un contrato MIGRADO sparse
+  // (T-0031, M2) puede tener `startDate`/`endDate`/`paymentDueDay` en `null`.
+  // Se precalculan acá, fuera del JSX, porque el `null` se debe leer como
+  // "no se sabe" — nunca como el epoch UNIX o un template string con "null"
+  // literal (ver `./format.ts`).
+  const inicioContratoTexto = activeContract
+    ? formatFecha(activeContract.startDate, { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
+  const finContratoTexto = activeContract
+    ? formatFecha(activeContract.endDate, { day: 'numeric', month: 'short', year: 'numeric' })
+    : null;
+  const mesesRestantes = activeContract ? mesesHastaFin(activeContract.endDate) : null;
 
   const isLoading = propertyLoading || candidatesLoading;
 
@@ -852,7 +862,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 </p>
                 <div className="mt-4 inline-flex items-baseline gap-1.5 bg-white/10 backdrop-blur-sm px-5 py-2.5 rounded-xl border border-white/10">
                   <span className="text-3xl font-bold text-white">
-                    {formatCurrency(property.monthlyRent)}
+                    {formatCanon(property.monthlyRent)}
                   </span>
                   <span className="text-lg font-normal text-white/70">/mes</span>
                 </div>
@@ -888,7 +898,7 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
               <div>
                 <p className="text-sm font-semibold text-success dark:text-[#3EAE70]">Propiedad arrendada</p>
                 <p className="text-xs text-success/70 dark:text-success/70 mt-0.5">
-                  Contrato activo desde {new Date(activeContract.startDate + 'T12:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  Contrato activo{inicioContratoTexto ? ` desde ${inicioContratoTexto}` : ''}
                 </p>
               </div>
             </div>
@@ -900,20 +910,20 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
                 <PlanStatsGrid columns={3}>
                   <PlanStatsCard
                     label="Canon mensual"
-                    value={formatCurrency(activeContract.monthlyRent)}
-                    sublabel={`Día de pago: ${activeContract.paymentDueDay}`}
+                    value={formatCanon(activeContract.monthlyRent)}
+                    sublabel={activeContract.paymentDueDay ? `Día de pago: ${activeContract.paymentDueDay}` : undefined}
                     icon={Buildings}
                   />
                   <PlanStatsCard
                     label="Administración"
-                    value={activeContract.adminFee > 0 ? formatCurrency(activeContract.adminFee) : 'Incluida'}
+                    value={activeContract.adminFee > 0 ? formatCanon(activeContract.adminFee) : 'Incluida'}
                     sublabel="Cuota mensual"
                     icon={Buildings}
                   />
                   <PlanStatsCard
                     label="Vigencia"
-                    value={`${Math.round((new Date(activeContract.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24 * 30))} meses`}
-                    sublabel={`Hasta ${new Date(activeContract.endDate + 'T12:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                    value={mesesRestantes != null ? `${mesesRestantes} meses` : 'Sin definir'}
+                    sublabel={finContratoTexto ? `Hasta ${finContratoTexto}` : undefined}
                     icon={CalendarBlank}
                   />
                 </PlanStatsGrid>
@@ -979,30 +989,40 @@ export default function PropertyCandidatesPage({ params }: PropertyCandidatesPag
               <div className="space-y-4">
                 <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
                   <h3 className="text-sm font-semibold text-fg">Acciones rápidas</h3>
-                  <Link
-                    href={`/panel/${propertyId}/contract/${activeContract.tenantId}`}
-                    className="flex items-center gap-3 w-full rounded-xl border border-border p-3 text-left hover:bg-surface-muted transition-colors"
-                  >
-                    <div className="w-9 h-9 rounded-md bg-primary-soft dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-primary dark:text-[#5570FF]" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-fg">Ver contrato</p>
-                      <p className="text-xs text-fg-muted">Detalles y cláusulas</p>
-                    </div>
-                  </Link>
-                  <Link
-                    href={`/panel/mensajes?to=${activeContract.tenantId}`}
-                    className="flex items-center gap-3 w-full rounded-xl border border-border p-3 text-left hover:bg-surface-muted transition-colors"
-                  >
-                    <div className="w-9 h-9 rounded-md bg-primary-soft dark:bg-[#1A40FF]/15 flex items-center justify-center">
-                      <Chat className="w-4 h-4 text-primary dark:text-[#5570FF]" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-fg">Enviar mensaje</p>
-                      <p className="text-xs text-fg-muted">Contactar al arrendatario</p>
-                    </div>
-                  </Link>
+                  {/*
+                    F3 — un contrato MIGRADO sin correo de inquilino (T-0031)
+                    no tiene `tenantId`. Sin este guard, ambos links armaban
+                    una URL rota (`.../contract/null`, `?to=null`) en vez de
+                    simplemente no ofrecer una acción que no aplica.
+                  */}
+                  {activeContract.tenantId && (
+                    <>
+                      <Link
+                        href={`/panel/${propertyId}/contract/${activeContract.tenantId}`}
+                        className="flex items-center gap-3 w-full rounded-xl border border-border p-3 text-left hover:bg-surface-muted transition-colors"
+                      >
+                        <div className="w-9 h-9 rounded-md bg-primary-soft dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                          <FileText className="w-4 h-4 text-primary dark:text-[#5570FF]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-fg">Ver contrato</p>
+                          <p className="text-xs text-fg-muted">Detalles y cláusulas</p>
+                        </div>
+                      </Link>
+                      <Link
+                        href={`/panel/mensajes?to=${activeContract.tenantId}`}
+                        className="flex items-center gap-3 w-full rounded-xl border border-border p-3 text-left hover:bg-surface-muted transition-colors"
+                      >
+                        <div className="w-9 h-9 rounded-md bg-primary-soft dark:bg-[#1A40FF]/15 flex items-center justify-center">
+                          <Chat className="w-4 h-4 text-primary dark:text-[#5570FF]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-fg">Enviar mensaje</p>
+                          <p className="text-xs text-fg-muted">Contactar al arrendatario</p>
+                        </div>
+                      </Link>
+                    </>
+                  )}
                 </div>
 
                 {/* Tenant summary card */}

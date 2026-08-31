@@ -115,7 +115,15 @@ export function PipelineCard({
               {item.propertyAddress}
             </p>
             <p className="text-sm font-semibold text-foreground mt-0.5">
-              {formatCurrency(item.monthlyRent)}<span className="text-xs font-normal text-muted-foreground">/{t('inmobiliaria.pipeline.month')}</span>
+              {/* A sale mandate has no canon. `—`, never `$ 0` (C6). */}
+              {item.monthlyRent != null ? (
+                <>
+                  {formatCurrency(item.monthlyRent)}
+                  <span className="text-xs font-normal text-muted-foreground">/{t('inmobiliaria.pipeline.month')}</span>
+                </>
+              ) : (
+                '—'
+              )}
             </p>
           </div>
         </div>

@@ -27,9 +27,44 @@ export interface BackendAuditEvent {
 export interface BackendContract {
   id: string;
   applicationId?: string;
-  propertyId: string;
-  tenantId: string;
+  /**
+   * `null` en un contrato MIGRADO al que la inmobiliaria decidió no
+   * importarle el inmueble (T-0033) — el `Contract` existe igual, aparece
+   * en la lista y el detalle como cualquier otro, sólo que dice "Sin
+   * inmueble". Es la fuente de verdad de "¿tiene inmueble?": nunca inferir
+   * eso de un `propertyAddress` vacío, que también lo produce una fila
+   * legacy anterior a las columnas de snapshot.
+   */
+  propertyId: string | null;
+  /**
+   * `null` en un contrato MIGRADO sin correo de inquilino (T-0031, D2/D4) —
+   * el `Contract` existe igual, sin usuario inquilino asociado. No es un
+   * dato ausente por error.
+   */
+  tenantId: string | null;
   landlordId: string;
+  /**
+   * Número consecutivo del contrato, legible por humanos (T-0040).
+   *
+   * Lo asigna **el servidor** y arranca en 1 dentro de su alcance: por
+   * inmobiliaria, o por propietario cuando el contrato no tiene inmobiliaria
+   * (`Contract.agencyId` es nullable a propósito — existe el contrato
+   * marketplace / directo con el propietario). La secuencia es INDEPENDIENTE
+   * de la de inmuebles: el primer contrato de una agencia es el 1 aunque ya
+   * administre 40 propiedades.
+   *
+   * **Nunca se manda de vuelta en una escritura.** No está en ningún DTO de
+   * request del back y `forbidNonWhitelisted` devuelve 400 del request entero
+   * si viaja.
+   *
+   * Opcional acá y NO opcional en el wire: la columna es `Int NOT NULL`, así
+   * que el back nunca manda `null`. El único caso de ausencia real es un
+   * `front` desplegado por delante del `back` — build anterior a T-0040. La
+   * degradación congelada para ese caso es **no renderizar nada**: ni `—`, ni
+   * `#0`, ni `#undefined`, ni el UUID en su lugar. Guardá siempre con
+   * `!= null`.
+   */
+  code?: number;
   status: string;
 
   // ─── Snapshot fields (Opción A implementada 2026-04-20) ───────────────────
@@ -48,10 +83,16 @@ export interface BackendContract {
   propertyAdminFee: number | null;
 
   // ─── Terms (editables vía PATCH antes de firmas) ─────────────────────────
-  monthlyRent: number;
-  startDate: string;
-  endDate: string;
-  paymentDay: number;                // backend usa `paymentDay` (el front lo mapea a paymentDueDay)
+  /**
+   * `null` en un contrato MIGRADO sin ese dato (T-0031, M2, D6 — nunca `0`
+   * como sentinela de "desconocido"). `monthlyRent`/`startDate`/`endDate`/
+   * `paymentDay` son las 5 columnas que la CHECK `contracts_native_complete`
+   * exige completas sólo para `contractOrigin !== 'MIGRATED'`.
+   */
+  monthlyRent: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  paymentDay: number | null;         // backend usa `paymentDay` (el front lo mapea a paymentDueDay)
 
   // ─── Administración (NO viajan en el documento firmado) ──────────────────
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL' | null;

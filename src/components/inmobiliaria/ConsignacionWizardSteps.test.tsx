@@ -179,6 +179,96 @@ describe('<StepConfirmation> — agent section', () => {
   })
 })
 
+describe('<StepConfirmation> — T-0038 SALE listing summary', () => {
+  it('shows the sale price instead of a monthly canon for a SALE listing', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(StepConfirmation, {
+          formData: {
+            propietarioId: 'prop-1',
+            propertyTitle: 'Depto Centro',
+            listingType: 'sale',
+            salePrice: 400_000_000,
+            monthlyRent: undefined,
+          },
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [AGENTE],
+          onGoToStep: vi.fn(),
+        }),
+      )
+    })
+
+    expect(container.textContent).toContain('400.000.000')
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step6.perMonth')
+  })
+
+  it('never shows "$0"/"$ 0" for a SALE listing with no salePrice yet', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(StepConfirmation, {
+          formData: { propietarioId: 'prop-1', propertyTitle: 'Depto Centro', listingType: 'sale' },
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [AGENTE],
+          onGoToStep: vi.fn(),
+        }),
+      )
+    })
+
+    expect(container.textContent).not.toContain('$0')
+    expect(container.textContent).not.toContain('$ 0')
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step6.noSalePrice')
+  })
+
+  it('replaces the commission/minimum-term terms section with the sale commission (contract-addendum-2.md §A.8)', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(StepConfirmation, {
+          formData: {
+            propietarioId: 'prop-1',
+            propertyTitle: 'Depto Centro',
+            listingType: 'sale',
+            salePrice: 400_000_000,
+            saleCommissionPercent: 3,
+          },
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [AGENTE],
+          onGoToStep: vi.fn(),
+        }),
+      )
+    })
+
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step6.saleCommission')
+    expect(container.textContent).toContain('3%')
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step6.monthlyCommission')
+  })
+
+  it('a RENT listing keeps the commission/terms section unchanged (regression)', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(StepConfirmation, {
+          formData: {
+            propietarioId: 'prop-1',
+            propertyTitle: 'Depto Centro',
+            listingType: 'rent',
+            monthlyRent: 2_000_000,
+            commissionPercent: 10,
+          },
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [AGENTE],
+          onGoToStep: vi.fn(),
+        }),
+      )
+    })
+
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step6.monthlyCommission')
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step6.noTermsForSale')
+  })
+})
+
 describe('<StepActaEntrega> — property photos (T-0017)', () => {
   it('renders the photo picker wired to formData.photos and forwards its onChange to updateFormData', async () => {
     const updateFormData = vi.fn()
@@ -221,5 +311,82 @@ describe('<StepActaEntrega> — property photos (T-0017)', () => {
     expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.photosTitle')
     const disabledButtons = Array.from(container.querySelectorAll('button[disabled]'))
     expect(disabledButtons).toHaveLength(0)
+  })
+})
+
+/**
+ * <StepActaEntrega> — photos-only on a sale listing (T-0042, ledger.md §2/§3).
+ *
+ * Root cause: photos are staged by the UI in this step, but a sale listing
+ * used to skip the step entirely (contract-addendum-2.md §A.8), so
+ * `formData.photos` never got populated. The fix makes the step reachable
+ * for sale AND renders it photos-only: no inventory items, no
+ * "Observaciones generales", and a step heading that says neither
+ * "Inventario" nor "Acta de Entrega". The rent path renders unchanged.
+ */
+describe('<StepActaEntrega> — photos-only rendering for a sale listing (T-0042)', () => {
+  it('sale: shows the photo section, hides inventory items and general notes, and uses photo-only heading wording', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(StepActaEntrega, {
+          formData: { listingType: 'sale', inventoryItems: [], photos: [] },
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [],
+        }),
+      )
+    })
+
+    // Photo section reachable and kept.
+    expect(container.querySelector('[data-testid="property-photo-picker"]')).toBeTruthy()
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.photosTitle')
+
+    // Step heading is photo-only wording — exact match on the h2/subtitle
+    // nodes (not a substring check: "step5.title" is itself a substring of
+    // "step5.titleSale", so a `.not.toContain('...step5.title')` on the
+    // whole textContent would give a false pass here).
+    expect(container.querySelector('h2')?.textContent).toBe(
+      'inmobiliaria.consignaciones.wizard.step5.titleSale',
+    )
+    expect(container.querySelector('h2 + p')?.textContent).toBe(
+      'inmobiliaria.consignaciones.wizard.step5.subtitleSale',
+    )
+    expect(container.querySelector('h2')?.textContent).not.toBe(
+      'inmobiliaria.consignaciones.wizard.step5.title',
+    )
+
+    // No inventory items UI.
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step5.inventoryTitle')
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step5.addItem')
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step5.emptyInventory')
+
+    // No "Observaciones generales".
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.wizard.step5.generalNotes')
+  })
+
+  it('rent: still shows inventory items, general notes and photos (unchanged)', async () => {
+    await act(async () => {
+      root.render(
+        React.createElement(StepActaEntrega, {
+          formData: { listingType: 'rent', inventoryItems: [], photos: [] },
+          updateFormData: vi.fn(),
+          propietarios: PROPIETARIOS,
+          agentes: [],
+        }),
+      )
+    })
+
+    expect(container.querySelector('h2')?.textContent).toBe(
+      'inmobiliaria.consignaciones.wizard.step5.title',
+    )
+    expect(container.querySelector('h2 + p')?.textContent).toBe(
+      'inmobiliaria.consignaciones.wizard.step5.subtitle',
+    )
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.inventoryTitle')
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.addItem')
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.emptyInventory')
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.generalNotes')
+    expect(container.querySelector('[data-testid="property-photo-picker"]')).toBeTruthy()
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.wizard.step5.photosTitle')
   })
 })

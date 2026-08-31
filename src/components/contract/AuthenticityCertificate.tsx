@@ -125,7 +125,10 @@ function CertificateContent({ contract, variant, className }: CertificateContent
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-fg-muted" />
             <span className="text-sm font-medium text-fg">
-              Contrato de Arrendamiento - {contract.propertyAddress}
+              Contrato de Arrendamiento
+              {contract.propertyId !== null && contract.propertyAddress
+                ? ` - ${contract.propertyAddress}`
+                : ''}
             </span>
           </div>
           <div className="flex items-start gap-2">

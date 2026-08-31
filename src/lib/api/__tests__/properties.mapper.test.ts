@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { TYPE_TO_BACKEND, mapBackendProperty } from '../properties.mapper';
+import { TYPE_TO_BACKEND, mapBackendProperty, resolveListingType } from '../properties.mapper';
 import type { BackendProperty } from '../properties.types';
 import type { PropertyType } from '@/lib/types/property';
 
@@ -56,6 +56,7 @@ function backendPropertyOfType(type: string): BackendProperty {
     address: 'Calle 1',
     latitude: null,
     longitude: null,
+    department: null,
     monthlyRent: 100,
     adminFee: 0,
     deposit: 0,
@@ -73,6 +74,94 @@ function backendPropertyOfType(type: string): BackendProperty {
     updatedAt: '2026-01-01T00:00:00.000Z',
   } as unknown as BackendProperty;
 }
+
+// ============================================================================
+// T-0038 §3.2 — listingType / salePrice / monthlyRent nullable / department /
+// code / consignedAt
+// ============================================================================
+
+describe('resolveListingType — contract.md T-0038 §3.2.2, C19 no silent coercion', () => {
+  it('defaults absent (older producer) to "rent"', () => {
+    expect(resolveListingType(undefined)).toBe('rent');
+  });
+
+  it('maps the wire RENT/SALE to lowercase front values', () => {
+    expect(resolveListingType('RENT')).toBe('rent');
+    expect(resolveListingType('SALE')).toBe('sale');
+  });
+
+  it('throws on an unknown value instead of defaulting (C19)', () => {
+    expect(() => resolveListingType('LEASE')).toThrow();
+    expect(() => resolveListingType('')).toThrow();
+  });
+});
+
+describe('mapBackendProperty — T-0038 field mapping', () => {
+  it('passes through department as-is (string or null)', () => {
+    expect(mapBackendProperty({ ...backendPropertyOfType('APARTMENT'), department: 'Antioquia' }).department).toBe('Antioquia');
+    expect(mapBackendProperty({ ...backendPropertyOfType('APARTMENT'), department: null }).department).toBeNull();
+  });
+
+  it('defaults listingType to "rent" when the key is absent', () => {
+    const bp = backendPropertyOfType('APARTMENT');
+    expect('listingType' in bp).toBe(false);
+    expect(mapBackendProperty(bp).listingType).toBe('rent');
+  });
+
+  it('maps a SALE listing: listingType, salePrice, and null monthlyRent', () => {
+    const bp = {
+      ...backendPropertyOfType('APARTMENT'),
+      listingType: 'SALE',
+      salePrice: 500_000_000,
+      monthlyRent: null,
+    };
+    const result = mapBackendProperty(bp);
+    expect(result.listingType).toBe('sale');
+    expect(result.salePrice).toBe(500_000_000);
+    expect(result.monthlyRent).toBeNull();
+  });
+
+  it('never coerces a null salePrice/monthlyRent to 0 (C6)', () => {
+    const bp = { ...backendPropertyOfType('APARTMENT'), listingType: 'SALE', salePrice: null, monthlyRent: null };
+    const result = mapBackendProperty(bp);
+    expect(result.salePrice).toBeNull();
+    expect(result.monthlyRent).toBeNull();
+  });
+
+  it('throws when listingType is present but not a recognised member (C19)', () => {
+    const bp = { ...backendPropertyOfType('APARTMENT'), listingType: 'LEASE' };
+    expect(() => mapBackendProperty(bp)).toThrow();
+  });
+
+  it('code stays undefined when the key is absent — never fabricated (PUBLIC route)', () => {
+    const bp = backendPropertyOfType('APARTMENT');
+    expect('code' in bp).toBe(false);
+    expect(mapBackendProperty(bp).code).toBeUndefined();
+  });
+
+  it('code passes through when present (PORTFOLIO route)', () => {
+    expect(mapBackendProperty({ ...backendPropertyOfType('APARTMENT'), code: 7 }).code).toBe(7);
+  });
+
+  it('consignedAt: absent key stays absent — "not entitled", distinct from null', () => {
+    const bp = backendPropertyOfType('APARTMENT');
+    expect('consignedAt' in bp).toBe(false);
+    const result = mapBackendProperty(bp);
+    expect('consignedAt' in result).toBe(false);
+    expect(result.consignedAt).toBeUndefined();
+  });
+
+  it('consignedAt: explicit null means "entitled, unrecorded" — distinct from absent', () => {
+    const result = mapBackendProperty({ ...backendPropertyOfType('APARTMENT'), consignedAt: null });
+    expect('consignedAt' in result).toBe(true);
+    expect(result.consignedAt).toBeNull();
+  });
+
+  it('consignedAt: passes through the date-only string verbatim (no Date parsing)', () => {
+    const result = mapBackendProperty({ ...backendPropertyOfType('APARTMENT'), consignedAt: '2026-08-29' });
+    expect(result.consignedAt).toBe('2026-08-29');
+  });
+});
 
 describe('mapBackendProperty — reverse type mapping', () => {
   it.each([

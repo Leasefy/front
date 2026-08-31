@@ -15,6 +15,7 @@ import {
   Wrench,
   FileArrowUp,
   Sparkle,
+  WarningCircle,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -26,7 +27,12 @@ import {
   DEFAULT_PAGE_SIZE,
 } from '@/lib/hooks/use-table-pagination';
 import { SegmentedControl } from '@leasefy/cadence';
-import { useConsignaciones, usePropietarios, useAgentes } from '@/lib/hooks/useInmobiliaria';
+import {
+  useConsignaciones,
+  useInmueblesSinConsignacion,
+  usePropietarios,
+  useAgentes,
+} from '@/lib/hooks/useInmobiliaria';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import {
   AlertDialog,
@@ -40,12 +46,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
-import type { Consignacion } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+import type { Consignacion, PortafolioRow, InmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
+import { formatCurrency, portafolioRowKey } from '@/lib/types/inmobiliaria';
 import { ConsignacionCard } from '@/components/inmobiliaria/ConsignacionCard';
+import { InmuebleSinMandatoCard } from '@/components/inmobiliaria/InmuebleSinMandatoCard';
 import { ConsignacionTable } from '@/components/inmobiliaria/ConsignacionTable';
 import { ConsignacionFilters, ConsignacionFiltersState } from '@/components/inmobiliaria/ConsignacionFilters';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
+import { CompletarMandatoDialog } from '@/components/inmobiliaria/CompletarMandatoDialog';
 
 type ViewMode = 'grid' | 'table';
 
@@ -71,10 +79,32 @@ function PortafolioContent() {
     errorCrudo: errorConsignaciones,
     refetch: recargarConsignaciones,
   } = useConsignaciones();
+  // Segunda fuente (T-0030): propiedades importadas/creadas sin mandato
+  // todavía. Su propio `errorCrudo` NUNCA debe tumbar el portafolio que ya
+  // andaba (contract.md T-0030 §3.3, "Degrade, do not blank") — por eso no
+  // entra en `EstadoDeDatos` de acá abajo, que sigue gateado sólo por la
+  // fuente principal. Ver el aviso no bloqueante más abajo.
+  const {
+    inmuebles: inmueblesSinConsignacion,
+    errorCrudo: errorInmueblesSinConsignacion,
+    refetch: recargarInmueblesSinConsignacion,
+  } = useInmueblesSinConsignacion();
   const { propietarios: allPropietarios } = usePropietarios();
   const { agentes: allAgentes } = useAgentes();
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [citaFor, setCitaFor] = useState<Consignacion | null>(null);
+  const [mandatoFor, setMandatoFor] = useState<InmuebleSinConsignacion | null>(null);
+
+  // La fila que ve la tabla: mandatos reales + propiedades sin mandato,
+  // fusionadas en UN array (contract.md T-0030 §3, R3 — "same table, second
+  // source"). `kind` es el discriminador de acá, nunca llega por el wire.
+  const portafolioRows: PortafolioRow[] = useMemo(
+    () => [
+      ...allConsignaciones.map((c): PortafolioRow => ({ kind: 'consignacion', ...c })),
+      ...inmueblesSinConsignacion.map((p): PortafolioRow => ({ kind: 'sinMandato', ...p })),
+    ],
+    [allConsignaciones, inmueblesSinConsignacion],
+  );
   // ⚠️ 'all', no 'available'.
   //
   // Esta lista abría filtrada por «disponibles» y la de al lado —«Inmuebles ·
@@ -119,12 +149,17 @@ function PortafolioContent() {
     return map;
   }, [allAgentes]);
 
-  // Filter consignaciones
+  // Filter — corre sobre el array fusionado (contract.md T-0030 §3.2,
+  // "Filter and stats compatibility"). Una fila sin mandato no tiene
+  // `availability`/`agenteId`/`propietarioId`: cuando ese filtro está activo
+  // la fila se EXCLUYE (nunca se trata como si calzara "available" u otro
+  // valor por default) — nunca se rompe el filtro por indexar un campo que
+  // no tiene.
   const filteredConsignaciones = useMemo(() => {
     // Normalize backend values to lowercase to match frontend enum definitions
     const normalize = (val: string) => val?.toLowerCase() ?? '';
 
-    let result = [...allConsignaciones];
+    let result: PortafolioRow[] = [...portafolioRows];
 
     // Search filter
     if (filters.search) {
@@ -136,33 +171,34 @@ function PortafolioContent() {
       );
     }
 
-    // Availability filter
+    // Availability filter — sólo mandatos tienen availability.
     if (filters.availability !== 'all') {
-      result = result.filter((c) => normalize(c.availability) === filters.availability);
+      result = result.filter((c) => c.kind === 'consignacion' && normalize(c.availability) === filters.availability);
     }
 
-    // Agente filter
+    // Agente filter — sólo mandatos tienen agente asignado.
     if (filters.agenteId !== 'all') {
-      result = result.filter((c) => c.agenteId === filters.agenteId);
+      result = result.filter((c) => c.kind === 'consignacion' && c.agenteId === filters.agenteId);
     }
 
-    // Propietario filter
+    // Propietario filter — sólo mandatos tienen propietario.
     if (filters.propietarioId !== 'all') {
-      result = result.filter((c) => c.propietarioId === filters.propietarioId);
+      result = result.filter((c) => c.kind === 'consignacion' && c.propietarioId === filters.propietarioId);
     }
 
-    // City filter
+    // City filter — campo común a las dos fuentes.
     if (filters.city !== 'all') {
       result = result.filter((c) => normalize(c.propertyCity) === normalize(filters.city));
     }
 
-    // Property type filter
+    // Property type filter — campo común; 'room' no calza ninguna opción del
+    // dropdown (el tipo no existe ahí a propósito, contract.md T-0030 §3.2).
     if (filters.propertyType !== 'all') {
       result = result.filter((c) => normalize(c.propertyType) === normalize(filters.propertyType));
     }
 
     return result;
-  }, [filters, allConsignaciones]);
+  }, [filters, portafolioRows]);
 
   /**
    * ¿Hay algún filtro puesto? Es lo ÚNICO que distingue «todavía no tenés
@@ -181,7 +217,7 @@ function PortafolioContent() {
     filters.city !== 'all' ||
     filters.propertyType !== 'all';
 
-  const elVacioEsPorLosFiltros = hayFiltrosPuestos && allConsignaciones.length > 0;
+  const elVacioEsPorLosFiltros = hayFiltrosPuestos && portafolioRows.length > 0;
 
   const limpiarFiltros = useCallback(() => {
     setFilters({
@@ -195,14 +231,32 @@ function PortafolioContent() {
     // La vuelta a la página 1 la hace el `resetKey` del paginador.
   }, []);
 
-  // Calculate stats from filtered data
+  // Calculate stats from filtered data.
+  //
+  // `total` SÍ cuenta las filas sin mandato — ese es el arreglo: una
+  // propiedad importada ahora aparece en el conteo del portafolio. Pero ni
+  // los contadores de disponibilidad ni la suma de canon la incluyen
+  // (contract.md T-0030 §3.2, "stats tiles"): no tiene `availability`, y
+  // sumar su canon inflaría el número sin que haya comisión real detrás.
   const stats = useMemo(() => {
     const total = filteredConsignaciones.length;
-    const available = filteredConsignaciones.filter((c) => c.availability === 'available').length;
-    const rented = filteredConsignaciones.filter((c) => c.availability === 'rented').length;
-    const inProcess = filteredConsignaciones.filter((c) => c.availability === 'in_process').length;
-    const maintenance = filteredConsignaciones.filter((c) => c.availability === 'maintenance').length;
-    const totalMonthlyRent = filteredConsignaciones.reduce((sum, c) => sum + c.monthlyRent, 0);
+    const mandatos = filteredConsignaciones.filter(
+      (c): c is Extract<PortafolioRow, { kind: 'consignacion' }> => c.kind === 'consignacion',
+    );
+    const available = mandatos.filter((c) => c.availability === 'available').length;
+    const rented = mandatos.filter((c) => c.availability === 'rented').length;
+    const inProcess = mandatos.filter((c) => c.availability === 'in_process').length;
+    const maintenance = mandatos.filter((c) => c.availability === 'maintenance').length;
+    // contract-addendum-2.md §A.10 — a SALE mandate has `monthlyRent: null`
+    // (never `0`, C6). Summing it in with a `?? 0` would silently undercount
+    // nothing (null contributes 0 either way to a sum), but a RENT mandate's
+    // `monthlyRent` is guaranteed NOT NULL by the DB CHECK — the `?? 0` here
+    // is a type-narrowing formality, not a real coalesce risk. Filtering by
+    // `listingType` (rather than relying on the null check alone) keeps the
+    // intent explicit: this tile is a RENTAL revenue figure.
+    const totalMonthlyRent = mandatos
+      .filter((c) => c.listingType !== 'sale')
+      .reduce((sum, c) => sum + (c.monthlyRent ?? 0), 0);
 
     return { total, available, rented, inProcess, maintenance, totalMonthlyRent };
   }, [filteredConsignaciones]);
@@ -351,6 +405,34 @@ function PortafolioContent() {
         </div>
       </div>
 
+      {/*
+        Aviso no bloqueante (contract.md T-0030 §3.3 — "Degrade, do not
+        blank"): la segunda fuente falló pero la principal andaba bien. El
+        portafolio se sigue mostrando con lo que SÍ llegó — este banner no
+        reemplaza la tabla, se agrega arriba de ella. Sólo se muestra cuando
+        la fuente principal está bien: si las dos fallan, `EstadoDeDatos` ya
+        cubre ese caso con su propio estado de error.
+      */}
+      {Boolean(errorInmueblesSinConsignacion) && !errorConsignaciones && (
+        <div
+          role="status"
+          className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-3"
+        >
+          <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-warning">
+              {t('inmobiliaria.portafolio.degradedNotice.title')}
+            </p>
+            <p className="text-body-sm text-fg-muted mt-0.5">
+              {t('inmobiliaria.portafolio.degradedNotice.description')}
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" hideArrow onClick={() => void recargarInmueblesSinConsignacion()}>
+            {t('inmobiliaria.portafolio.degradedNotice.retry')}
+          </Button>
+        </div>
+      )}
+
       {/* Stats Row — KPIs parejos con tints semánticos por token.
           Escalón intermedio a propósito: saltar de 2 a 5 columnas en `sm` deja
           cada card en ~134px en un portátil de 1024 (icono de 40px + padding no
@@ -461,19 +543,40 @@ function PortafolioContent() {
               >
                 {paginatedConsignaciones.length > 0 ? (
                   <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {paginatedConsignaciones.map((consignacion) => (
-                      <ConsignacionCard
-                        key={consignacion.id}
-                        consignacion={consignacion}
-                        propietarioName={propietariosMap[consignacion.propietarioId]}
-                        agenteName={agentesMap[consignacion.agenteId]?.name}
-                        agenteAvatar={agentesMap[consignacion.agenteId]?.avatar}
-                        onClick={() => handleView(consignacion)}
-                        onView={() => handleView(consignacion)}
-                        onEdit={() => handleEdit(consignacion)}
-                        onAgendarCita={() => handleAgendarCita(consignacion)}
-                      />
-                    ))}
+                    {/*
+                      C10, closed for the grid (T-0038 WU-6): this used to
+                      filter `kind === 'sinMandato'` out entirely — imported
+                      properties (WU-4) are born DRAFT with no mandate, so an
+                      agency that imports 300 saw an empty grid. A
+                      mandate-less row now renders via
+                      `InmuebleSinMandatoCard`, the grid counterpart of the
+                      table's already-shipped "Falta mandato" cell — not an
+                      extension of `ConsignacionCard` (still pure
+                      `Consignacion`-typed; the two shapes share no
+                      commission/availability/tenant fields to unify).
+                    */}
+                    {paginatedConsignaciones.map((row) =>
+                      row.kind === 'consignacion' ? (
+                        <ConsignacionCard
+                          key={row.id}
+                          consignacion={row}
+                          propietarioName={propietariosMap[row.propietarioId]}
+                          agenteName={agentesMap[row.agenteId]?.name}
+                          agenteAvatar={agentesMap[row.agenteId]?.avatar}
+                          onClick={() => handleView(row)}
+                          onView={() => handleView(row)}
+                          onEdit={() => handleEdit(row)}
+                          onAgendarCita={() => handleAgendarCita(row)}
+                        />
+                      ) : (
+                        <InmuebleSinMandatoCard
+                          key={portafolioRowKey(row)}
+                          inmueble={row}
+                          onClick={() => setMandatoFor(row)}
+                          onCompletarMandato={setMandatoFor}
+                        />
+                      ),
+                    )}
                   </div>
                 ) : (
                   <SinDatos
@@ -505,6 +608,7 @@ function PortafolioContent() {
                     onCandidatos={handleCandidatos}
                     onVerAviso={handleVerAviso}
                     onEliminar={abrirEliminar}
+                    onCompletarMandato={setMandatoFor}
                   />
                 ) : (
                   <SinDatos
@@ -584,6 +688,22 @@ function PortafolioContent() {
         onCreated={() => {}}
         presetPropertyId={citaFor?.propertyId}
         presetPropertyTitle={citaFor?.propertyTitle}
+      />
+
+      {/* R4 (T-0030): activar el alert de una fila sin mandato abre este
+          formulario, prefiltrado con la fila — nunca una edición genérica.
+          `onCompleted` refresca las DOS fuentes: si sólo se refresca una, la
+          fila queda duplicada hasta el próximo reload completo (contract.md
+          T-0030 §3.4). */}
+      <CompletarMandatoDialog
+        inmueble={mandatoFor}
+        onClose={() => setMandatoFor(null)}
+        propietarios={allPropietarios}
+        agentes={allAgentes}
+        onCompleted={() => {
+          void recargarConsignaciones();
+          void recargarInmueblesSinConsignacion();
+        }}
       />
     </div>
   );

@@ -11,6 +11,7 @@ import {
   Users,
   Buildings,
   FileText,
+  FileArrowUp,
   CurrencyDollar,
   CaretRight,
   Warning,
@@ -71,6 +72,9 @@ const getNotificationIcon = (type: string) => {
     CONTRACT_LANDLORD_SIGNED: PenNib,
     CONTRACT_TENANT_SIGNED: PenNib,
     CONTRACT_COMPLETED: Check,
+    // T-0031 — ícono frozen por contrato (§3.2.C2). Nunca va a la del
+    // inquilino: esta notificación no se le envía (contrato §3.2.C).
+    CONTRACT_MIGRATION_COMPLETED: FileArrowUp,
     // Leases
     LEASE_EXPIRING_SOON: Clock,
     LEASE_EXPIRED: Warning,

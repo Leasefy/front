@@ -175,6 +175,7 @@ export function aImportProperty(leido: InmuebleDesdeEnlace, indice: number): Imp
     errorMessages: [],
     enlaceOrigen: leido.url,
     imagenes: leido.imagenes.slice(0, MAX_FOTOS_POR_INMUEBLE),
+    direccionAproximada: leido.direccionAproximada,
     procedencia,
   };
 }

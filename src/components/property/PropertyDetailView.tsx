@@ -339,26 +339,45 @@ export function PropertyDetailView({
                 </h1>
 
                 {/* Price - More prominent */}
-                <div className="mt-5 flex items-baseline gap-2">
-                  <span className="text-[32px] md:text-[38px] font-mono tabular-nums font-bold text-foreground tracking-[-0.03em]">
-                    {formatCurrency(property.monthlyRent)}
-                  </span>
-                  <span className="text-[15px] text-muted-foreground">/mes</span>
-                </div>
-                {property.adminFee > 0 && (
-                  <p className="text-[13px] text-muted-foreground mt-1">
-                    + <span className="font-mono tabular-nums">{formatCurrency(property.adminFee)}</span> de administración
-                  </p>
+                {/*
+                  T-0038 §3.2.3/§3.2.4 — a SALE listing shows `salePrice`, no
+                  "/mes" suffix, and no admin-fee line (contract explicitly
+                  forbids an "Administración: $0" row on a sale listing).
+                  Never `formatCurrency(null)` — it silently renders "$ 0" (C6).
+                */}
+                {property.listingType === 'sale' ? (
+                  <div className="mt-5 flex items-baseline gap-2">
+                    <span className="text-[32px] md:text-[38px] font-mono tabular-nums font-bold text-foreground tracking-[-0.03em]">
+                      {property.salePrice != null ? formatCurrency(property.salePrice) : 'Sin dato'}
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mt-5 flex items-baseline gap-2">
+                      <span className="text-[32px] md:text-[38px] font-mono tabular-nums font-bold text-foreground tracking-[-0.03em]">
+                        {property.monthlyRent != null ? formatCurrency(property.monthlyRent) : 'Sin dato'}
+                      </span>
+                      <span className="text-[15px] text-muted-foreground">/mes</span>
+                    </div>
+                    {property.adminFee > 0 && (
+                      <p className="text-[13px] text-muted-foreground mt-1">
+                        + <span className="font-mono tabular-nums">{formatCurrency(property.adminFee)}</span> de administración
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 
               {/* Aviso "supera tu tope" + salida por codeudor (mismo criterio
                   que el overlay del catálogo). Solo aparece con aprobación
-                  vigente cuyo tope real se pasa este canon. */}
+                  vigente cuyo tope real se pasa este canon. `superaReferencia`
+                  ya devuelve `null` (nunca `true`) para un canon `null`
+                  (SALE, contract.md §3.2.4), así que esta rama nunca se
+                  ejecuta ahí — el `?? 0` es sólo una red de tipos. */}
               {aprobacionVigente &&
                 superaReferencia(property.monthlyRent, aprobacion) === true && (
                   <SobreTopeAlert
-                    monthlyRent={property.monthlyRent}
+                    monthlyRent={property.monthlyRent ?? 0}
                     referencia={referenciaCanon(aprobacion)}
                     className="mb-8"
                   />
@@ -516,10 +535,12 @@ export function PropertyDetailView({
             <div className="lg:col-span-5 hidden lg:block">
               <StickyCTA
                 propertyId={property.id}
-                price={property.monthlyRent}
+                price={property.monthlyRent ?? 0}
                 adminFee={property.adminFee}
                 isWishlisted={isWishlisted(property.id)}
                 onWishlistToggle={() => toggleWishlist(property.id)}
+                listingType={property.listingType}
+                salePrice={property.salePrice}
               />
             </div>
           </div>
@@ -529,7 +550,9 @@ export function PropertyDetailView({
       {/* Mobile Sticky CTA */}
       <MobileStickyCTA
         propertyId={property.id}
-        price={property.monthlyRent}
+        price={property.monthlyRent ?? 0}
+        listingType={property.listingType}
+        salePrice={property.salePrice}
       />
 
       {/* Photo Gallery Modal */}

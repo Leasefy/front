@@ -121,9 +121,16 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
   } = useConversations();
 
   const searchParams = useSearchParams();
+  // contract-addendum-2.md §B.3 item 6 — the widget accepts BOTH the new
+  // `?conversationId=` param and the legacy `?applicationId=` deep-link
+  // (signed-contract flows still use the latter and must keep resolving).
+  const urlConversationId = searchParams.get('conversationId');
   const urlApplicationId = searchParams.get('applicationId');
 
-  const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(urlApplicationId);
+  // contract-addendum-2.md §B.3 — selection MUST key on `conversation.id`,
+  // never on `applicationId` (which is `null` on a PROPERTY_INQUIRY thread —
+  // keying on it made every null-application thread match the first one).
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [messageText, setMessageText] = useState('');
   const [showMobileChat, setShowMobileChat] = useState(false);
@@ -133,7 +140,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const optionsListRef = useRef<HTMLDivElement>(null);
 
-  const { messages, isLoading: isLoadingMessages, isSending, sendMessage, markAsRead } = useChat(selectedApplicationId);
+  const { messages, isLoading: isLoadingMessages, isSending, sendMessage, markAsRead } = useChat(selectedConversationId);
 
   // Copy por actor (tenant ve "propietarios", landlord/agency ve "inquilinos").
   const isTenant = actor === 'tenant';
@@ -143,21 +150,30 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
   const headerTitle = isTenant ? t('messages.title') : t('landlord.messages.title');
   const headerSubtitle = isTenant ? t('messages.subtitle') : t('landlord.messages.subtitle');
 
-  // Auto-select: URL > current selection > first available.
+  // Auto-select: URL (?conversationId= new, ?applicationId= legacy,
+  // resolved to the matching thread) > current selection > first available.
   // Abre el panel mobile cuando el usuario llega vía deep-link desde otra pantalla.
   useEffect(() => {
-    if (urlApplicationId && urlApplicationId !== selectedApplicationId) {
-      setSelectedApplicationId(urlApplicationId);
+    if (urlConversationId && urlConversationId !== selectedConversationId) {
+      setSelectedConversationId(urlConversationId);
       setShowMobileChat(true);
       return;
     }
-    if (!selectedApplicationId && conversations.length > 0) {
-      setSelectedApplicationId(conversations[0].applicationId);
+    if (urlApplicationId) {
+      const match = conversations.find((c) => c.applicationId === urlApplicationId);
+      if (match && match.id !== selectedConversationId) {
+        setSelectedConversationId(match.id);
+        setShowMobileChat(true);
+        return;
+      }
     }
-  }, [conversations, selectedApplicationId, urlApplicationId]);
+    if (!selectedConversationId && conversations.length > 0) {
+      setSelectedConversationId(conversations[0].id);
+    }
+  }, [conversations, selectedConversationId, urlConversationId, urlApplicationId]);
 
   const selectedConversation: ChatConversation | undefined = conversations.find(
-    (c) => c.applicationId === selectedApplicationId,
+    (c) => c.id === selectedConversationId,
   );
 
   const filteredConversations = conversations.filter(
@@ -182,7 +198,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
 
   const handleSelectConversation = useCallback(
     (conv: ChatConversation) => {
-      setSelectedApplicationId(conv.applicationId);
+      setSelectedConversationId(conv.id);
       setShowMobileChat(true);
       setShowInfoPanel(false);
       setShowOptionsList(false);
@@ -326,7 +342,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                         onClick={() => handleSelectConversation(conversation)}
                         className={cn(
                           'w-full flex items-start gap-3 px-4 py-4 text-left transition-all',
-                          selectedApplicationId === conversation.applicationId
+                          selectedConversationId === conversation.id
                             ? 'bg-card border-l-2 border-l-primary'
                             : 'hover:bg-card/80',
                         )}

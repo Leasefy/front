@@ -60,6 +60,7 @@ import { BotonNuevo } from '@/components/inmobiliaria/BotonNuevo';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
+import { useMigracionesPendientes } from '@/lib/hooks/use-migraciones-pendientes';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { useAuth } from '@/lib/auth/use-auth';
 import { hexToHslTriplet } from '@/lib/utils/hex-to-hsl';
@@ -136,6 +137,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // permission gate, an optional `roles` role gate, and `adminOnly`.
   // Paso 7: cuánta gente está esperando gestión, con dato real.
   const { pendientes: postulacionesPendientes } = usePostulacionesPendientes();
+  // T-0031 WU-4: el "Retomar" del importador era page-local (N10) — sólo se
+  // veía si ya se había entrado a /contratos/migrar. Este badge lo hace
+  // visible siempre, en la nav.
+  const { pendientes: migracionesPendientes } = useMigracionesPendientes();
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ═══════════════════════════════════════════════════════════════════════
@@ -251,7 +256,17 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     { kind: 'section', label: t('inmobiliaria.nav.secAdministracion'), href: '#sec-administracion', scope: 'administracion', icon: FilePlus, module: null },
     // 'contratos' is its own AGENCY_MODULES key (all roles have contratos:['view']);
     // gating it on 'portafolio' wrongly hid it from CONTADOR (portafolio: []).
-    { label: t('inmobiliaria.nav.contratos'),    href: '/panel/inmobiliaria/contratos', scope: 'administracion',    icon: FilePlus,      module: 'contratos' },
+    {
+      label: t('inmobiliaria.nav.contratos'),
+      href: '/panel/inmobiliaria/contratos',
+      scope: 'administracion',
+      icon: FilePlus,
+      module: 'contratos',
+      // T-0031 WU-4: contratos migrados con filas por completar. Sale de
+      // `GET /contracts/migrar/lotes` (mismo dato que la tarjeta "Retomar"
+      // del importador) — `undefined` si falla, nunca un cero inventado.
+      badge: migracionesPendientes,
+    } as NavItemWithModule,
     { label: t('inmobiliaria.nav.renovaciones'), href: '/panel/inmobiliaria/renovaciones', scope: 'administracion', icon: ArrowsClockwise, module: 'operaciones' },
     { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', scope: 'administracion', icon: UserCircle,    module: 'propietarios' },
     { label: t('inmobiliaria.nav.operaciones'),  href: '/panel/inmobiliaria/operaciones', scope: 'administracion',  icon: Wrench,        module: 'operaciones', ai: true },
@@ -385,7 +400,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // Configuración → gated on 'configuracion': only ADMIN has it in the matrix
     // (AGENTE/CONTADOR/VIEWER all have configuracion:[]) ⇒ effectively admin-only.
     { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', scope: 'general', icon: Gear,         module: 'configuracion', dataTourTarget: 'sidebar-configuraciones' },
-  ], [t, postulacionesPendientes]);
+  ], [t, postulacionesPendientes, migracionesPendientes]);
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {
     // Filter by permission/role via the shared, unit-tested helper. While

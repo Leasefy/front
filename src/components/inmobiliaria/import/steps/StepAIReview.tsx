@@ -110,7 +110,7 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
         const accepted = updatedSuggestions.find((s) => s.field === field);
         const fieldUpdate: Partial<ImportProperty> = {};
         if (accepted) {
-          const numericFields = ['monthlyRent', 'adminFee', 'commissionPercent'];
+          const numericFields = ['monthlyRent', 'salePrice', 'adminFee', 'commissionPercent'];
           if (numericFields.includes(accepted.field)) {
             const num = Number(accepted.suggestedValue);
             (fieldUpdate as unknown as Record<string, unknown>)[accepted.field] = isNaN(num) ? 0 : num;
@@ -145,7 +145,7 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
         const fieldUpdate: Partial<ImportProperty> = {};
         const updatedSuggestions = p.suggestions.map((s) => {
           if (s.accepted !== null) return s;
-          const numericFields = ['monthlyRent', 'adminFee', 'commissionPercent'];
+          const numericFields = ['monthlyRent', 'salePrice', 'adminFee', 'commissionPercent'];
           if (numericFields.includes(s.field)) {
             const num = Number(s.suggestedValue);
             (fieldUpdate as unknown as Record<string, unknown>)[s.field] = isNaN(num) ? 0 : num;
@@ -165,7 +165,7 @@ export function StepAIReview({ state, updateState }: ImportStepProps) {
         const fieldUpdate: Partial<ImportProperty> = {};
         const updatedSuggestions = p.suggestions.map((s) => {
           if (s.accepted !== null) return s;
-          const numericFields = ['monthlyRent', 'adminFee', 'commissionPercent'];
+          const numericFields = ['monthlyRent', 'salePrice', 'adminFee', 'commissionPercent'];
           if (numericFields.includes(s.field)) {
             const num = Number(s.suggestedValue);
             (fieldUpdate as unknown as Record<string, unknown>)[s.field] = isNaN(num) ? 0 : num;

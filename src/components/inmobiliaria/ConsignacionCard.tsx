@@ -111,9 +111,17 @@ export function ConsignacionCard({
     },
   }), [t]);
 
-  const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType];
-  const availability = AVAILABILITY_COLORS[consignacion.availability];
-  const status = STATUS_COLORS[consignacion.status];
+  // Guarded — same "never index this map by hand" rule as
+  // `ConsignacionTable.tsx`'s `getPropertyIcon`/`AVAILABILITY_COLORS`
+  // fallback (confirmed crash-on-missing-key: an unmapped `propertyType`
+  // renders `undefined` as a component and unmounts the whole card tree,
+  // not just this one). Both maps are exhaustive for `Consignacion`'s own
+  // narrow types today, but a hand-indexed lookup with no fallback is a
+  // latent trap the moment either type widens — the same trap this task
+  // already found and fixed in the table.
+  const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType] ?? Buildings;
+  const availability = AVAILABILITY_COLORS[consignacion.availability] ?? AVAILABILITY_COLORS.available;
+  const status = STATUS_COLORS[consignacion.status] ?? STATUS_COLORS.active;
 
   // Compact variant - single row for list views
   if (variant === 'compact') {
@@ -150,7 +158,12 @@ export function ConsignacionCard({
             {consignacion.propertyTitle}
           </p>
           <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">
-            {consignacion.propertyZone} · {formatCurrency(consignacion.monthlyRent)}{t('inmobiliaria.portafolio.card.perMonth')}
+            {consignacion.propertyZone} ·{' '}
+            {consignacion.listingType === 'sale'
+              ? (consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—')
+              : consignacion.monthlyRent != null
+                ? `${formatCurrency(consignacion.monthlyRent)}${t('inmobiliaria.portafolio.card.perMonth')}`
+                : '—'}
           </p>
         </div>
 
@@ -216,7 +229,11 @@ export function ConsignacionCard({
         <div className="absolute top-3 right-3">
           <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium flex items-center gap-1">
             <Percent className="w-3 h-3" />
-            {consignacion.commissionPercent}%
+            {/* contract-addendum-2.md §A.3 — a SALE mandate's commissionPercent
+                is always 0; the agreed figure is saleCommissionPercent. */}
+            {consignacion.listingType === 'sale'
+              ? (consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—')
+              : `${consignacion.commissionPercent}%`}
           </span>
         </div>
 
@@ -242,18 +259,28 @@ export function ConsignacionCard({
           </div>
         </div>
 
-        {/* Rent Info */}
-        <div className="flex items-baseline gap-2 mb-4">
-          <span className="text-xl font-bold text-fg dark:text-white">
-            {formatCurrency(consignacion.monthlyRent)}
-          </span>
-          <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.perMonth')}</span>
-          {consignacion.adminFee && consignacion.adminFee > 0 && (
-            <span className="text-xs text-fg-subtle dark:text-fg-muted">
-              + {formatCurrency(consignacion.adminFee)} {t('inmobiliaria.portafolio.card.admin')}
+        {/* Rent Info — a SALE mandate has no canon (§A.2): show the sale
+            commission instead, never "$0" or "$0/mes". */}
+        {consignacion.listingType === 'sale' ? (
+          <div className="flex items-baseline gap-2 mb-4">
+            <span className="text-xl font-bold text-fg dark:text-white">
+              {consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—'}
             </span>
-          )}
-        </div>
+            <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.saleCommission')}</span>
+          </div>
+        ) : (
+          <div className="flex items-baseline gap-2 mb-4">
+            <span className="text-xl font-bold text-fg dark:text-white">
+              {consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
+            </span>
+            <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.perMonth')}</span>
+            {consignacion.adminFee && consignacion.adminFee > 0 && (
+              <span className="text-xs text-fg-subtle dark:text-fg-muted">
+                + {formatCurrency(consignacion.adminFee)} {t('inmobiliaria.portafolio.card.admin')}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Propietario and Agente */}
         <div className="flex items-center justify-between gap-3 mb-4 pb-4 border-b border-border-faint dark:border-border-strong">

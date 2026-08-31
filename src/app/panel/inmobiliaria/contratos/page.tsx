@@ -15,6 +15,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { fmtCop } from './format';
 import {
   FileText,
   Warning,
@@ -42,14 +43,6 @@ import {
 } from '@/lib/types/contract';
 
 // ── Format helpers ───────────────────────────────────────────────────────────
-
-function fmtCop(val: number): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0,
-  }).format(val || 0);
-}
 
 function fmtDate(iso: string | null | undefined, locale: string): string {
   if (!iso) return '—';
@@ -80,12 +73,20 @@ function StatCard({ label, value, dot }: { label: string; value: number | string
 
 // ── Skeleton row ─────────────────────────────────────────────────────────────
 
-function TableSkeleton() {
+/*
+ * `cells` viene de `COLUMNS.length`, nunca de un número escrito acá. Este
+ * componente tenía un `5` literal y `COLUMNS` creció a 7 al sumarse la columna
+ * de código (T-0040): las filas de carga quedaron dos celdas más cortas que el
+ * encabezado. Repetir el conteo en vez de derivarlo es exactamente cómo se
+ * produjo esa deriva — el `<thead>` y el `colSpan` del vacío ya se ajustaban
+ * solos porque los dos leen `COLUMNS.length`.
+ */
+function TableSkeleton({ cells }: { cells: number }) {
   return (
     <>
       {Array.from({ length: 5 }).map((_, i) => (
         <tr key={i} className="border-b border-border last:border-0 animate-pulse">
-          {Array.from({ length: 5 }).map((__, j) => (
+          {Array.from({ length: cells }).map((__, j) => (
             <td key={j} className="px-5 py-4">
               <div className="h-4 rounded bg-muted w-20" />
             </td>
@@ -123,6 +124,12 @@ function ContratosContent() {
   } = useTablePagination(contracts);
 
   const COLUMNS = [
+    // T-0040 — el consecutivo, columna angosta y a la izquierda de todo, igual
+    // que el código de inmueble en `ConsignacionTable`. Es puramente aditiva:
+    // esta tabla no mostraba NINGÚN identificador, ni siquiera un UUID cortado,
+    // así que no hay nada que migrar ni nada que los usuarios hayan aprendido a
+    // citar.
+    tx('Código', 'Code'),
     tx('Inquilino', 'Tenant'),
     tx('Propiedad', 'Property'),
     tx('Canon', 'Rent'),
@@ -227,7 +234,7 @@ function ContratosContent() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && contracts.length === 0 && <TableSkeleton />}
+            {isLoading && contracts.length === 0 && <TableSkeleton cells={COLUMNS.length} />}
 
             {!isLoading && !error && contracts.length === 0 && (
               <TableRow>
@@ -262,6 +269,18 @@ function ContratosContent() {
                   onClick={() => openContract(c)}
                   className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
                 >
+                  {/*
+                    T-0040 — `#{code}`, `font-mono tabular-nums`, sin ceros a la
+                    izquierda. Ausente ⇒ celda VACÍA: nunca `—`, nunca `#0`. La
+                    única forma de que falte es un `back` anterior a T-0040, y
+                    la degradación congelada para ese caso es no renderizar
+                    nada.
+                  */}
+                  <TableCell className="px-5 py-4">
+                    <span className="font-mono tabular-nums text-fg-muted text-sm">
+                      {c.code != null ? `#${c.code}` : ''}
+                    </span>
+                  </TableCell>
                   <TableCell className="px-5 py-4">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="grid place-items-center w-8 h-8 rounded-full bg-muted flex-shrink-0">
@@ -276,10 +295,16 @@ function ContratosContent() {
                   <TableCell className="px-5 py-4 max-w-[220px]">
                     <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
                       <House className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span className="truncate" title={`${c.propertyAddress}, ${c.propertyCity}`}>
-                        {c.propertyAddress}
-                        {c.propertyCity ? `, ${c.propertyCity}` : ''}
-                      </span>
+                      {c.propertyId === null ? (
+                        <span className="truncate" title="Sin inmueble">
+                          Sin inmueble
+                        </span>
+                      ) : (
+                        <span className="truncate" title={`${c.propertyAddress}, ${c.propertyCity}`}>
+                          {c.propertyAddress}
+                          {c.propertyCity ? `, ${c.propertyCity}` : ''}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="px-5 py-4 tabular-nums font-mono whitespace-nowrap text-foreground">

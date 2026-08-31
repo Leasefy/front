@@ -6810,7 +6810,10 @@
           "pagos": "Pagos a proveedores",
           "estudio": "Evaluación de candidatos",
           "matching": "Matching",
-          "avaluos": "Avalúos"
+          "avaluos": "Avalúos",
+          "gerente": "Gerente",
+          "retencion": "Retención",
+          "calidad": "Calidad de publicación"
         },
         "rol": {
           "cobrador": "Cobrador",

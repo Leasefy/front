@@ -6809,7 +6809,10 @@
           "pagos": "Vendor payments",
           "estudio": "Candidate evaluation",
           "matching": "Matching",
-          "avaluos": "Appraisals"
+          "avaluos": "Appraisals",
+          "gerente": "Manager",
+          "retencion": "Retention",
+          "calidad": "Listing quality"
         },
         "rol": {
           "cobrador": "Collector",

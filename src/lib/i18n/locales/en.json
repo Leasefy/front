@@ -916,7 +916,63 @@
       "hintRevision": "review",
       "hintEgresos": "to owners",
       "recorrido": "Journey",
-      "soportes": "Candidate documents"
+      "soportes": "Candidate documents",
+      "piloto": "Autopilot"
+    },
+    "piloto": {
+      "titulo": "Autopilot",
+      "descripcion": "What your agents did and what they need from you, in one place.",
+      "kpis": {
+        "pendientes": "Pending",
+        "alta": "High priority",
+        "media": "Medium priority",
+        "actividadHoy": "Today's activity"
+      },
+      "bandeja": {
+        "titulo": "Inbox",
+        "verCaso": "View case",
+        "vacia": "Nothing is waiting for you",
+        "vaciaHint": "When an agent needs your decision, it shows up here.",
+        "error": "Could not load the inbox: {{error}}",
+        "toastOk": "{{label}} · done",
+        "toastFail": "Failed: {{error}}",
+        "prioridad": {
+          "alta": "High",
+          "media": "Medium",
+          "baja": "Low"
+        }
+      },
+      "feed": {
+        "titulo": "Live activity",
+        "vacio": "No activity yet",
+        "vacioHint": "Here you see what your agents are doing.",
+        "error": "Could not load the activity: {{error}}",
+        "ver": "View"
+      },
+      "briefing": {
+        "titulo": "Daily briefing",
+        "resumen": "Summary",
+        "necesitanDeTi": "They need you",
+        "vacio": "The Manager writes the briefing every morning",
+        "vacioHint": "Come back later to see the day's summary.",
+        "error": "Could not load the briefing: {{error}}"
+      },
+      "autonomia": {
+        "titulo": "Autonomy",
+        "hint": "Define how much each agent can do without you.",
+        "soloAdmin": "Only an administrator can change the mode.",
+        "vacia": "No agent reports its autonomy yet",
+        "vaciaHint": "When an agent publishes its mode, you control it from here.",
+        "error": "Could not load autonomy: {{error}}",
+        "grupoAria": "Autonomy mode for {{agente}}",
+        "toastOk": "{{agente}} is now in {{modo}} mode",
+        "toastFail": "Could not change the mode: {{error}}",
+        "modo": {
+          "sombra": "Shadow",
+          "copiloto": "Copilot",
+          "autonomo": "Autonomous"
+        }
+      }
     },
     "mobileNav": {
       "moreButton": "More",

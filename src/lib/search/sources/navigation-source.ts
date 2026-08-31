@@ -36,6 +36,7 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'page', title: 'Inicio', context: 'Inicio', href: '/panel/inmobiliaria', keywords: 'home asistente chat' },
 
   // ── Agentes IA ────────────────────────────────────────────────────────────
+  { kind: 'page', title: 'Piloto', context: 'Agentes IA', href: '/panel/inmobiliaria/piloto', keywords: 'piloto automatico torre control bandeja briefing autonomia agentes' },
   { kind: 'page', title: 'Cobranza', context: 'Agentes IA', href: '/panel/inmobiliaria/ai/cobranza', keywords: 'deudores cartera mora', permission: { module: 'cobranza', action: 'view' } },
   { kind: 'page', title: 'Asegurabilidad', context: 'Agentes IA', href: '/panel/inmobiliaria/ai/asegurabilidad', keywords: 'cotizador seguros polizas garantias', permission: { module: 'cotizador', action: 'view' } },
   { kind: 'page', title: 'Avalúos', context: 'Agentes IA', href: '/panel/inmobiliaria/ai/avaluos', keywords: 'valoracion precio canon', permission: { module: 'avaluos', action: 'view' } },

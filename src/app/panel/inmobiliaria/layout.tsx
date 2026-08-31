@@ -41,6 +41,7 @@ import {
   CurrencyCircleDollar,
   Umbrella,
   Warning,
+  AirTrafficControl,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AgencySubscriptionGuard } from '@/components/auth/AgencySubscriptionGuard';
@@ -60,6 +61,7 @@ import { BotonNuevo } from '@/components/inmobiliaria/BotonNuevo';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
+import { usePilotoBadge } from '@/lib/hooks/piloto/use-piloto-badge';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { useAuth } from '@/lib/auth/use-auth';
 import { hexToHslTriplet } from '@/lib/utils/hex-to-hsl';
@@ -136,6 +138,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // permission gate, an optional `roles` role gate, and `adminOnly`.
   // Paso 7: cuánta gente está esperando gestión, con dato real.
   const { pendientes: postulacionesPendientes } = usePostulacionesPendientes();
+  // Piloto automático: total de la bandeja (poll 60s; fail-soft a undefined ⇒
+  // sin badge — un cero afirmaría que no hay nada, que es lo que no sabemos).
+  const { total: pilotoPendientes } = usePilotoBadge();
 
   const ALL_NAV_ITEMS = useMemo((): NavItemWithModule[] => [
     // ═══════════════════════════════════════════════════════════════════════
@@ -167,6 +172,21 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // AI CHAT HOME F3: "Inicio" opens the embedded chat at the panel root —
     // exact match so it doesn't stay highlighted on every subroute.
     { label: t('inmobiliaria.nav.inicio'),       href: '/panel/inmobiliaria',              icon: House,         exact: true, module: null },
+    {
+      // ── PILOTO AUTOMÁTICO ── la torre de control transversal de los agentes
+      // (piloto-contratos-v1 §5). El contrato pide el ítem PRIMERO dentro de
+      // «Agentes IA»; ese corte ya no existe en este sidebar (se reagrupó por
+      // módulo de negocio, ver cabecera de este array), así que vive en
+      // INICIO, arriba de todo — que es el espíritu de «primero». Gate: como
+      // el hub /ai — sin módulo (`module: null`), visible a todo miembro;
+      // cada widget de la página se defiende solo (fail-soft por endpoint).
+      label: t('inmobiliaria.nav.piloto'),
+      href: '/panel/inmobiliaria/piloto',
+      icon: AirTrafficControl,
+      module: null,
+      ai: true,
+      badge: pilotoPendientes,
+    } as NavItemWithModule,
 
     // ── COMERCIAL ──  Conseguir inmuebles, estudiar clientes y cerrar renta.
     { kind: 'section', label: t('inmobiliaria.nav.secComercial'), href: '#sec-comercial', scope: 'comercial', icon: Kanban, module: null },
@@ -385,7 +405,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // Configuración → gated on 'configuracion': only ADMIN has it in the matrix
     // (AGENTE/CONTADOR/VIEWER all have configuracion:[]) ⇒ effectively admin-only.
     { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', scope: 'general', icon: Gear,         module: 'configuracion', dataTourTarget: 'sidebar-configuraciones' },
-  ], [t, postulacionesPendientes]);
+  ], [t, postulacionesPendientes, pilotoPendientes]);
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {
     // Filter by permission/role via the shared, unit-tested helper. While

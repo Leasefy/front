@@ -917,7 +917,63 @@
       "hintRevision": "revisión",
       "hintEgresos": "a propietarios",
       "recorrido": "Recorrido",
-      "soportes": "Soportes de candidatos"
+      "soportes": "Soportes de candidatos",
+      "piloto": "Piloto"
+    },
+    "piloto": {
+      "titulo": "Piloto automático",
+      "descripcion": "Lo que tus agentes hicieron y lo que necesitan de ti, en un solo lugar.",
+      "kpis": {
+        "pendientes": "Pendientes",
+        "alta": "Prioridad alta",
+        "media": "Prioridad media",
+        "actividadHoy": "Actividad de hoy"
+      },
+      "bandeja": {
+        "titulo": "Bandeja",
+        "verCaso": "Ver caso",
+        "vacia": "No hay nada esperando por ti",
+        "vaciaHint": "Cuando un agente necesite tu decisión, aparece aquí.",
+        "error": "No se pudo cargar la bandeja: {{error}}",
+        "toastOk": "{{label}} · listo",
+        "toastFail": "No se pudo: {{error}}",
+        "prioridad": {
+          "alta": "Alta",
+          "media": "Media",
+          "baja": "Baja"
+        }
+      },
+      "feed": {
+        "titulo": "Actividad en vivo",
+        "vacio": "Sin actividad todavía",
+        "vacioHint": "Aquí ves lo que tus agentes van haciendo.",
+        "error": "No se pudo cargar la actividad: {{error}}",
+        "ver": "Ver"
+      },
+      "briefing": {
+        "titulo": "Briefing del día",
+        "resumen": "Resumen",
+        "necesitanDeTi": "Necesitan de ti",
+        "vacio": "El Gerente escribe el briefing cada mañana",
+        "vacioHint": "Vuelve más tarde para ver el resumen del día.",
+        "error": "No se pudo cargar el briefing: {{error}}"
+      },
+      "autonomia": {
+        "titulo": "Autonomía",
+        "hint": "Define cuánto puede hacer cada agente sin ti.",
+        "soloAdmin": "Solo un administrador puede cambiar el modo.",
+        "vacia": "Ningún agente reporta su autonomía todavía",
+        "vaciaHint": "Cuando un agente publique su modo, lo controlas desde aquí.",
+        "error": "No se pudo cargar la autonomía: {{error}}",
+        "grupoAria": "Modo de autonomía de {{agente}}",
+        "toastOk": "{{agente}} ahora en modo {{modo}}",
+        "toastFail": "No se pudo cambiar el modo: {{error}}",
+        "modo": {
+          "sombra": "Sombra",
+          "copiloto": "Copiloto",
+          "autonomo": "Autónomo"
+        }
+      }
     },
     "mobileNav": {
       "moreButton": "Más",

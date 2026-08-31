@@ -36,6 +36,8 @@ import {
   type Icon,
 } from '@phosphor-icons/react'
 
+import { MonoLabel } from '@leasefy/cadence'
+
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
@@ -73,7 +75,14 @@ interface Dia {
   hechos: Hecho[]
 }
 
-const DIAS_INICIALES = 2
+/**
+ * Cuántos HECHOS se muestran antes de «ver más». Antes el corte era por DÍAS
+ * (2), y un día movido trae 17 entradas: el feed medía ~2.000 px y estiraba
+ * la fila entera, dejando la bandeja —que es donde se decide— flotando al
+ * lado de una columna vacía. Ahora el corte es por hechos, igual que la
+ * paginación de 10 de la bandeja, así las dos columnas arrancan parejas.
+ */
+const HECHOS_INICIALES = 8
 
 function etiquetaDeDia(iso: string, hoy: Date): string {
   const d = new Date(iso)
@@ -110,6 +119,22 @@ function agrupar(items: ActivityItem[]): Dia[] {
   return dias
 }
 
+/**
+ * Los primeros `limite` hechos, conservando el corte por día. Un día que
+ * queda a medias mantiene su encabezado: cortar en seco sin decir de qué día
+ * es cada hecho sería peor que mostrar de más.
+ */
+function recortar(dias: Dia[], limite: number): Dia[] {
+  const out: Dia[] = []
+  let restan = limite
+  for (const dia of dias) {
+    if (restan <= 0) break
+    out.push({ ...dia, hechos: dia.hechos.slice(0, restan) })
+    restan -= Math.min(dia.hechos.length, restan)
+  }
+  return out
+}
+
 export interface PilotoFeedProps {
   items: ActivityItem[]
   isLoading: boolean
@@ -133,14 +158,19 @@ export function PilotoFeed({
   const [expandido, setExpandido] = useState(false)
 
   const dias = useMemo(() => agrupar(items), [items])
-  const visibles = expandido ? dias : dias.slice(0, DIAS_INICIALES)
-  const ocultos = dias.length - visibles.length
+  const total = useMemo(() => dias.reduce((n, d) => n + d.hechos.length, 0), [dias])
+  const visibles = useMemo(
+    () => (expandido ? dias : recortar(dias, HECHOS_INICIALES)),
+    [dias, expandido],
+  )
+  const ocultos = expandido
+    ? 0
+    : total - visibles.reduce((n, d) => n + d.hechos.length, 0)
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <h2 className="text-sm font-semibold text-fg">{t('inmobiliaria.piloto.feed.titulo')}</h2>
-
+      <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+        <h2 className="text-subtitle font-semibold text-fg">{t('inmobiliaria.piloto.feed.titulo')}</h2>
       </div>
 
       <EstadoDeDatos
@@ -175,15 +205,15 @@ export function PilotoFeed({
         <div className="divide-y divide-border">
           {visibles.map((dia) => (
             <section key={dia.clave}>
-              <h3 className="sticky top-0 z-10 bg-surface-muted/80 px-4 py-1.5 font-mono text-[11px] uppercase tracking-widest text-fg-subtle backdrop-blur">
-                {dia.etiqueta}
+              <h3 className="sticky top-0 z-10 bg-surface-muted/80 px-5 py-2 backdrop-blur">
+                <MonoLabel>{dia.etiqueta}</MonoLabel>
               </h3>
-              <ol role="list" className="px-4 py-1">
+              <ol role="list" className="px-5 py-1.5">
                 {dia.hechos.map((hecho) => {
                   const { item, veces } = hecho
                   const EventoIcon = iconoDe(item.tipo)
                   return (
-                    <li key={hecho.key} className="relative flex items-start gap-3 py-2">
+                    <li key={hecho.key} className="relative flex items-start gap-3 py-2.5">
                       <span
                         className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-fg-subtle"
                         aria-hidden="true"
@@ -197,21 +227,21 @@ export function PilotoFeed({
                           <button
                             type="button"
                             onClick={() => onAbrir?.(item.id)}
-                            className="min-w-0 truncate rounded text-left text-sm text-fg after:absolute after:inset-0 after:content-[''] hover:underline"
+                            className="min-w-0 truncate rounded text-left text-body-sm text-fg after:absolute after:inset-0 after:content-[''] hover:underline"
                             data-testid={`piloto-feed-fila-${item.id}`}
                           >
                             {item.titulo}
                             {veces > 1 && (
-                              <span className="ml-1.5 rounded-full bg-surface-muted px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-fg-muted">
+                              <span className="ml-1.5 rounded-full bg-surface-muted px-1.5 py-0.5 font-mono text-label tabular-nums text-fg-muted">
                                 ×{veces}
                               </span>
                             )}
                           </button>
-                          <span className="ml-auto shrink-0 font-mono text-[11px] tabular-nums text-fg-subtle">
+                          <span className="ml-auto shrink-0 font-mono text-caption tabular-nums text-fg-subtle">
                             {relativeTime(item.at, t)}
                           </span>
                         </div>
-                        <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-fg-muted">
+                        <p className="mt-1 flex items-center gap-1.5 truncate text-caption text-fg-muted">
                           {item.detalle && <span className="truncate">{item.detalle}</span>}
                           <span className="shrink-0 text-fg-subtle">
                             {workspaceVocab(t, 'agente', item.agente)}
@@ -236,7 +266,7 @@ export function PilotoFeed({
         </div>
 
         {ocultos > 0 && (
-          <div className="border-t border-border px-4 py-2">
+          <div className="border-t border-border px-5 py-2.5">
             <Button
               variant="link"
               size="sm"
@@ -244,7 +274,7 @@ export function PilotoFeed({
               className="w-full justify-center"
               onClick={() => setExpandido(true)}
             >
-              {t('inmobiliaria.piloto.feed.verMas', { dias: String(ocultos) })}
+              {t('inmobiliaria.piloto.feed.verMas', { n: String(ocultos) })}
             </Button>
           </div>
         )}

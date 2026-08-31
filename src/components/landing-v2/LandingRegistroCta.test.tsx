@@ -93,7 +93,7 @@ describe('<LandingRegistroCta>', () => {
     render({ variant: 'banner' })
     const anchor = container.querySelector('a')!
     expect(anchor.textContent).toBe('Ir al panel')
-    expect(anchor.getAttribute('href')).toBe('/panel/inmobiliaria')
+    expect(anchor.getAttribute('href')).toBe('/panel/inmobiliaria/piloto')
     expect(anchor.className).toBe('btn primary sm')
   })
 

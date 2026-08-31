@@ -96,6 +96,13 @@ function tonoDeEspera(desde: string): string {
 
 export interface PilotoBandejaProps {
   items: InboxItem[]
+  /**
+   * Cuántas de estas decisiones llevan más de una semana paradas. Vive acá
+   * y no en un KPI aparte: es la única parte de aquel tile que no repetía un
+   * número ya visible, y se lee mejor pegada a la lista sobre la que se
+   * actúa que en una tarjeta a 200 px de distancia.
+   */
+  atrasadas?: number
   isLoading: boolean
   error: string | null
   /** El micro no publicó el endpoint (404) o no se pudo consultar. */
@@ -107,6 +114,7 @@ export interface PilotoBandejaProps {
 
 export function PilotoBandeja({
   items,
+  atrasadas,
   isLoading,
   error,
   notAvailable = false,
@@ -168,13 +176,20 @@ export function PilotoBandeja({
 
   return (
     <Card className="overflow-hidden">
-      {/* Encabezado: qué es esto y cuánto hay */}
-      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <h2 className="text-sm font-semibold text-fg">
-          {t('inmobiliaria.piloto.bandeja.titulo')}
-        </h2>
+      {/* Encabezado: qué es esto, cuánto hay y qué lleva demasiado esperando */}
+      <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+        <div className="min-w-0">
+          <h2 className="text-subtitle font-semibold text-fg">
+            {t('inmobiliaria.piloto.bandeja.titulo')}
+          </h2>
+          {!isLoading && !error && typeof atrasadas === 'number' && atrasadas > 0 && (
+            <p className="mt-1 text-caption text-danger">
+              {t('inmobiliaria.piloto.kpis.atrasadas', { n: String(atrasadas) })}
+            </p>
+          )}
+        </div>
         {!isLoading && !error && items.length > 0 && (
-          <span className="shrink-0 font-mono text-xs tabular-nums text-fg-muted">
+          <span className="shrink-0 font-mono text-caption tabular-nums text-fg-muted">
             {hayFiltro
               ? t('inmobiliaria.piloto.bandeja.contadorFiltrado', {
                   visibles: String(visibles.length),
@@ -187,7 +202,7 @@ export function PilotoBandeja({
 
       {/* Filtros por tipo de decisión — con el conteo adentro del chip */}
       {!isLoading && !error && grupos.length > 1 && (
-        <fieldset className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
+        <fieldset className="flex flex-wrap items-center gap-2 border-b border-border px-5 py-4">
           <legend className="sr-only">{t('inmobiliaria.piloto.bandeja.filtrarPorTipo')}</legend>
           {grupos.map(([fuente, n]) => {
             const meta = metaDe(fuente)
@@ -280,7 +295,7 @@ export function PilotoBandeja({
             return (
               <li
                 key={item.id}
-                className="group relative flex items-start gap-3 px-4 py-3 transition-colors hover:bg-surface-hover"
+                className="group relative flex items-start gap-3 px-5 py-4 transition-colors hover:bg-surface-hover"
               >
                 <span
                   className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-muted text-fg-muted"
@@ -297,20 +312,20 @@ export function PilotoBandeja({
                     <button
                       type="button"
                       onClick={() => onAbrir?.(item.id)}
-                      className="truncate text-left text-sm font-medium text-fg after:absolute after:inset-0 after:content-[''] hover:underline"
+                      className="truncate text-left text-body-sm font-medium text-fg after:absolute after:inset-0 after:content-[''] hover:underline"
                       data-testid={`piloto-bandeja-fila-${item.id}`}
                     >
                       {item.titulo}
                     </button>
                     <span
-                      className={`ml-auto flex shrink-0 items-center gap-1 font-mono text-[11px] tabular-nums ${tonoDeEspera(item.desde)}`}
+                      className={`ml-auto flex shrink-0 items-center gap-1 font-mono text-caption tabular-nums ${tonoDeEspera(item.desde)}`}
                       title={new Date(item.desde).toLocaleString('es-CO')}
                     >
                       <Clock weight="duotone" className="h-3 w-3" aria-hidden="true" />
                       {relativeTime(item.desde, t)}
                     </span>
                   </div>
-                  <p className="mt-0.5 line-clamp-1 text-xs text-fg-muted">
+                  <p className="mt-1 line-clamp-1 text-caption text-fg-muted">
                     {item.resumen}
                     {typeof item.montoCop === 'number' && (
                       <span className="ml-1 font-mono tabular-nums text-fg">
@@ -337,7 +352,7 @@ export function PilotoBandeja({
                     </Button>
                   ) : (
                     <span
-                      className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs text-fg-muted"
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-caption text-fg-muted"
                       aria-hidden="true"
                     >
                       {t('inmobiliaria.piloto.bandeja.decidir')}

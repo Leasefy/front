@@ -139,7 +139,7 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
           <SlidersHorizontal weight="duotone" className="mr-1.5 h-4 w-4" aria-hidden="true" />
           {t('inmobiliaria.piloto.autonomia.titulo')}
           {!isLoading && rows.length > 0 && (
-            <span className="ml-1.5 font-mono text-xs tabular-nums text-fg-muted">
+            <span className="ml-1.5 font-mono text-caption tabular-nums text-fg-muted">
               {autonomos}/{totalRoster}
             </span>
           )}
@@ -155,7 +155,7 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
         {/* Qué significa cada modo — sin esto, los tres botones son adivinanza */}
         <dl className="mt-4 space-y-2 rounded-lg border border-border bg-surface-muted p-3">
           {MODOS.map((modo) => (
-            <div key={modo} className="text-xs">
+            <div key={modo} className="text-caption">
               <dt className="font-medium text-fg">
                 {t(`inmobiliaria.piloto.autonomia.modo.${modo}`)}
               </dt>
@@ -166,13 +166,13 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
 
         {/* Honestidad: si algún agente no reportó, se dice — su modo no se sabe. */}
         {mudos > 0 && !isLoading && (
-          <p className="mt-3 text-xs text-fg-subtle">
+          <p className="mt-3 text-caption text-fg-subtle">
             {t('inmobiliaria.piloto.autonomia.mudos', { n: String(mudos) })}
           </p>
         )}
 
         {!isAdmin && (
-          <p className="mt-3 text-xs text-fg-subtle">
+          <p className="mt-3 text-caption text-fg-subtle">
             {t('inmobiliaria.piloto.autonomia.soloAdmin')}
           </p>
         )}
@@ -189,7 +189,7 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
             ))}
 
           {!isLoading && rows.length === 0 && (
-            <p className="text-sm text-fg-muted">
+            <p className="text-body-sm text-fg-muted">
               {t('inmobiliaria.piloto.autonomia.vacia')}
             </p>
           )}
@@ -204,10 +204,10 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
             return (
               <div key={row.agente} className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-fg">{etiqueta}</p>
+                  <p className="text-body-sm font-medium text-fg">{etiqueta}</p>
                   {gob && (
                     <span className="flex items-center gap-1.5">
-                      <span className="text-[11px] text-fg-subtle">
+                      <span className="text-caption text-fg-subtle">
                         {!gob.disponibleGlobal
                           ? t('inmobiliaria.piloto.gobierno.apagadoServidor')
                           : gob.corre
@@ -238,7 +238,7 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
                     })}
                   />
                 ) : (
-                  <p className="text-xs text-fg-muted">
+                  <p className="text-caption text-fg-muted">
                     {t(`inmobiliaria.piloto.autonomia.modo.${row.modo}`)}
                   </p>
                 )}
@@ -247,7 +247,7 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
                     frase la publica el micro y describe lo que el código hace,
                     no lo que promete el marketing. */}
                 {row.efectoReal && (
-                  <p className="text-[11px] leading-snug text-fg-muted">{row.efectoReal}</p>
+                  <p className="text-caption leading-snug text-fg-muted">{row.efectoReal}</p>
                 )}
 
                 {/* Las vallas que publica el micro: reglas que ningún modo
@@ -257,7 +257,7 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
                 {row.valla.length > 0 && (
                   <ul className="space-y-0.5 pt-0.5">
                     {row.valla.map((v) => (
-                      <li key={v.id} className="flex items-start gap-1.5 text-[11px] text-fg-subtle">
+                      <li key={v.id} className="flex items-start gap-1.5 text-caption text-fg-subtle">
                         <ShieldCheck
                           weight="duotone"
                           className="mt-0.5 h-3 w-3 shrink-0"

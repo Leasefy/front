@@ -917,7 +917,8 @@
       "hintEgresos": "to owners",
       "recorrido": "Journey",
       "soportes": "Candidate documents",
-      "piloto": "Autopilot"
+      "piloto": "Home",
+      "chat": "Chat"
     },
     "piloto": {
       "titulo": "Autopilot",
@@ -954,7 +955,7 @@
         "error": "Could not load the activity: {{error}}",
         "ver": "View",
         "actividad": "activity",
-        "verMas": "Show {{dias}} more days",
+        "verMas": "Show {{n}} more",
         "sinFuente": "We couldn't load the activity",
         "sinFuenteHint": "The source didn't respond; that doesn't mean nothing happened."
       },
@@ -1007,7 +1008,8 @@
         "verDetalle": "View details",
         "casos": "The cases behind this number",
         "sinCasos": "This alert counts cases that couldn't be listed here. The number in the title was measured; open the full screen to see them.",
-        "abrirPantalla": "Open the full screen"
+        "abrirPantalla": "Open the full screen",
+        "volver": "Back"
       },
       "preparacion": {
         "boton": "Readiness",

@@ -918,7 +918,8 @@
       "hintEgresos": "a propietarios",
       "recorrido": "Recorrido",
       "soportes": "Soportes de candidatos",
-      "piloto": "Piloto"
+      "piloto": "Inicio",
+      "chat": "Chat"
     },
     "piloto": {
       "titulo": "Piloto automático",
@@ -955,7 +956,7 @@
         "error": "No se pudo cargar la actividad: {{error}}",
         "ver": "Ver",
         "actividad": "actividad",
-        "verMas": "Ver {{dias}} días más",
+        "verMas": "Ver {{n}} más",
         "sinFuente": "No pudimos consultar la actividad",
         "sinFuenteHint": "La fuente no respondió; esto no significa que no haya pasado nada."
       },
@@ -1008,7 +1009,8 @@
         "verDetalle": "Ver el detalle",
         "casos": "Los casos detrás de este número",
         "sinCasos": "Esta alerta cuenta casos que no se pudieron listar acá. El número del título sí se midió; ábrelo en su pantalla para verlos.",
-        "abrirPantalla": "Abrir la pantalla completa"
+        "abrirPantalla": "Abrir la pantalla completa",
+        "volver": "Volver"
       },
       "preparacion": {
         "boton": "Preparación",

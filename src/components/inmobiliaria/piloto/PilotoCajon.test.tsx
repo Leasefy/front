@@ -107,7 +107,14 @@ function render(
 
 /** El Sheet de Radix se monta en un portal: hay que mirar todo el body. */
 const texto = () => document.body.textContent ?? ''
-const botones = () => [...document.body.querySelectorAll('button')]
+/**
+ * Lo clicable del cajón. Se consulta por ROL y no por etiqueta: el `ListRow`
+ * del DS es un `div role="button"` (con tabIndex y teclado), así que buscar
+ * `<button>` dejaría fuera filas que el usuario sí puede accionar.
+ */
+const botones = () => [
+  ...document.body.querySelectorAll<HTMLElement>('button, [role="button"]'),
+]
 
 beforeEach(() => {
   estado.detalle = null

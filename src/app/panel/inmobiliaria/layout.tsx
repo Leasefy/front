@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   SquaresFour,
   Buildings,
-  House,
   Users,
   Chat,
   Gear,
@@ -23,6 +22,7 @@ import {
   UserCircle,
   PaperPlaneTilt,
   ChatCircleText,
+  ChatsCircle,
   ShieldCheck,
   Receipt,
   Bank,
@@ -168,25 +168,35 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // ═══════════════════════════════════════════════════════════════════════
 
     // ── INICIO ──
-    { kind: 'section', label: t('inmobiliaria.nav.secInicio'), href: '#sec-inicio', icon: SquaresFour, module: null },
-    // AI CHAT HOME F3: "Inicio" opens the embedded chat at the panel root —
-    // exact match so it doesn't stay highlighted on every subroute.
-    { label: t('inmobiliaria.nav.inicio'),       href: '/panel/inmobiliaria',              icon: House,         exact: true, module: null },
+    // Sin encabezado de sección: la fila YA se llama «Inicio», y un rótulo
+    // «INICIO» encima de una fila «Inicio» es un tartamudeo. Las dos filas de
+    // arriba (Inicio · Chat) abren el grupo sin necesitar título.
     {
       // ── PILOTO AUTOMÁTICO ── la torre de control transversal de los agentes
-      // (piloto-contratos-v1 §5). El contrato pide el ítem PRIMERO dentro de
-      // «Agentes IA»; ese corte ya no existe en este sidebar (se reagrupó por
-      // módulo de negocio, ver cabecera de este array), así que vive en
-      // INICIO, arriba de todo — que es el espíritu de «primero». Gate: como
-      // el hub /ai — sin módulo (`module: null`), visible a todo miembro;
-      // cada widget de la página se defiende solo (fail-soft por endpoint).
+      // (piloto-contratos-v1 §5). Va PRIMERO y es el destino de entrada al
+      // panel (`getAgencyHomeRoute`): decisión de Nico el 2026-08-31 — «que
+      // piloto automático siempre sea el inicio». Gate: como el hub /ai — sin
+      // módulo (`module: null`), visible a todo miembro; cada widget de la
+      // página se defiende solo (fail-soft por endpoint), que es lo que hace
+      // seguro mandar ahí también a AGENTE/CONTADOR/VIEWER.
+      // La fila se llama «Inicio» y no «Piloto» (Nico, 2026-08-31): es el
+      // destino de entrada al panel, y quien abre el menú busca «dónde
+      // empiezo», no el nombre del producto. El nombre propio —«Piloto
+      // automático»— vive en el H1 de la sección, que es donde identifica.
       label: t('inmobiliaria.nav.piloto'),
       href: '/panel/inmobiliaria/piloto',
       icon: AirTrafficControl,
       module: null,
-      ai: true,
+      // Sin píldora `ai`: el rótulo ya no nombra un agente, y «Inicio · IA»
+      // se lee como si el inicio fuera un agente. El badge sí queda: dice
+      // cuántas decisiones te esperan, que es información.
       badge: pilotoPendientes,
     } as NavItemWithModule,
+    // AI CHAT HOME F3: la raíz del panel es el chat embebido. Se llamaba
+    // «Inicio» y eso lo escondía: nadie busca un chat bajo ese nombre, y el
+    // inicio ahora es el Piloto. Se llama por lo que es (Nico, 2026-08-31).
+    // `exact` para que no quede resaltado en cada subruta.
+    { label: t('inmobiliaria.nav.chat'),         href: '/panel/inmobiliaria',              icon: ChatsCircle,   exact: true, module: null },
 
     // ── COMERCIAL ──  Conseguir inmuebles, estudiar clientes y cerrar renta.
     { kind: 'section', label: t('inmobiliaria.nav.secComercial'), href: '#sec-comercial', scope: 'comercial', icon: Kanban, module: null },

@@ -25,6 +25,7 @@ import {
   MinusCircle,
   WarningCircle,
 } from "@phosphor-icons/react";
+import { Badge } from "@leasefy/cadence";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -91,7 +92,7 @@ export function PilotoPreparacion() {
           />
           {t("inmobiliaria.piloto.preparacion.boton")}
           {bloqueantesQueFaltan > 0 && (
-            <span className="ml-1.5 font-mono text-xs tabular-nums">
+            <span className="ml-1.5 font-mono text-caption tabular-nums">
               {bloqueantesQueFaltan}
             </span>
           )}
@@ -145,10 +146,10 @@ export function PilotoPreparacion() {
 
           {!isLoading && (error || notAvailable) && (
             <div className="rounded-lg border border-border bg-surface-muted px-3 py-3">
-              <p className="text-xs font-medium text-fg">
+              <p className="text-body-sm font-medium text-fg">
                 {t("inmobiliaria.piloto.preparacion.sinFuente")}
               </p>
-              <p className="mt-1 text-xs text-fg-muted">
+              <p className="mt-1 text-caption text-fg-muted">
                 {/* No se afirma «no está listo»: no se pudo medir. */}
                 {t("inmobiliaria.piloto.preparacion.sinFuenteHint")}
               </p>
@@ -186,20 +187,23 @@ export function PilotoPreparacion() {
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline gap-2">
-                      <h3 className="text-xs font-medium text-fg">
+                      <h3 className="text-body-sm font-medium text-fg">
                         {r.titulo}
                       </h3>
+                      {/* El Badge del DS en vez de una píldora a mano: mismos
+                          tokens de warning, pero la altura, el tracking y el
+                          radio los fija el sistema. */}
                       {r.bloqueante && r.estado === "falta" && (
-                        <span className="ml-auto shrink-0 rounded-full bg-warning-soft px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-warning">
+                        <Badge variant="warning" className="ml-auto shrink-0">
                           {t("inmobiliaria.piloto.preparacion.bloquea")}
-                        </span>
+                        </Badge>
                       )}
                     </div>
-                    <p className="mt-0.5 text-xs leading-relaxed text-fg-muted">
+                    <p className="mt-1 text-caption leading-relaxed text-fg-muted">
                       {r.detalle}
                     </p>
                     {r.comoSeArregla && (
-                      <p className="mt-1 rounded-md bg-surface-muted px-2 py-1 text-[11px] text-fg">
+                      <p className="mt-1 rounded-md bg-surface-muted px-2 py-1.5 text-caption text-fg">
                         {r.comoSeArregla}
                       </p>
                     )}

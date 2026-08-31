@@ -243,10 +243,17 @@ export function ChatContainer({ className }: ChatContainerProps) {
                   .slice(0, index)
                   .reverse()
                   .find((m) => m.role === 'assistant' && m.snapshot)?.snapshot;
+                // 🔴 Se compara lo que SE VE, no el objeto entero. El snapshot
+                // trae `generatedAt` —la hora en que se tomó—, que cambia en
+                // cada turno: comparar el JSON completo daba SIEMPRE distinto y
+                // el deduplicador nunca disparaba, así que las cinco tarjetas
+                // volvían a salir debajo de cada respuesta con los mismos
+                // números (Nico, 2026-08-31, segunda vez que lo reporta).
                 const snapshotEsNuevo =
                   message.snapshot &&
                   (!snapshotPrevio ||
-                    JSON.stringify(snapshotPrevio) !== JSON.stringify(message.snapshot));
+                    JSON.stringify(snapshotTiles(snapshotPrevio)) !==
+                      JSON.stringify(snapshotTiles(message.snapshot)));
                 const snapshotCard = snapshotEsNuevo && message.snapshot ? (
                   <ChatDataCard tiles={snapshotTiles(message.snapshot)} />
                 ) : null;

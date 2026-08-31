@@ -44,6 +44,21 @@ export interface PilotoActivityResponse {
 export type PilotoPrioridad = 'alta' | 'media' | 'baja'
 
 /** La única acción declarada por el micro sobre un item de la bandeja. */
+/**
+ * Un dato que la acción le pide al humano antes de ejecutarse. Espejo de
+ * `AccionCampo` en el micro (`src/piloto/bandeja.ts`).
+ */
+export interface AccionCampo {
+  /** Llave con la que el valor entra al cuerpo. */
+  id: string
+  label: string
+  tipo: 'opcion' | 'multiple' | 'texto'
+  opciones?: Array<{ valor: string; label: string }>
+  requerido?: boolean
+  placeholder?: string
+  maxLargo?: number
+}
+
 export interface InboxAccion {
   label: string
   method: 'POST' | 'PATCH'
@@ -51,6 +66,15 @@ export interface InboxAccion {
   path: string
   /** Cuando viene, se envía VERBATIM como cuerpo. Nunca se inventa uno acá. */
   body?: Record<string, unknown>
+  /**
+   * Lo que hay que preguntar antes de ejecutar. Ausente ⇒ acción de un clic,
+   * igual que siempre. El front NO inventa campos: pinta los que el micro
+   * declaró, con los valores que el micro declaró.
+   */
+  campos?: AccionCampo[]
+  /** Advertencia que se muestra antes de ejecutar (efecto fuera del sistema). */
+  confirmacion?: string
+  tono?: 'normal' | 'peligro'
 }
 
 export interface InboxItem {
@@ -403,16 +427,27 @@ export async function putPilotoGobierno(
  */
 export async function runInboxAccion(
   accion: InboxAccion,
+  /**
+   * Lo que el humano llenó en el formulario del cajón. Se MEZCLA sobre
+   * `accion.body` (que trae los valores fijos, como `confirmation:'yes'`);
+   * si no hay campos, esto va vacío y el comportamiento es el de siempre.
+   */
+  valores?: Record<string, unknown>,
 ): Promise<{ ok: boolean; error?: string }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) return { ok: false, error: 'not_configured' }
+  const hayValores = valores !== undefined && Object.keys(valores).length > 0
+  const cuerpo =
+    accion.body !== undefined || hayValores
+      ? { ...(accion.body ?? {}), ...(valores ?? {}) }
+      : undefined
   try {
     const res = await agentFetch(`${agentUrl}${accion.path}`, {
       method: accion.method,
-      ...(accion.body !== undefined
+      ...(cuerpo !== undefined
         ? {
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify(accion.body),
+            body: JSON.stringify(cuerpo),
           }
         : {}),
     })

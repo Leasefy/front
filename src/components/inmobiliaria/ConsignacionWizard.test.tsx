@@ -429,8 +429,10 @@ describe('<ConsignacionWizard> — publishes the property after the mandate (T-0
  *
  * This REVERSES the WU-3 behaviour (SALE skipped the mandate and published
  * directly) per the owner's ruling on W3-a. No canon, no minimumTerm, no
- * adminFee, no acta de entrega — step 5 is skipped entirely on this path
- * (see `getNextStep` in ConsignacionWizard.tsx).
+ * adminFee, no acta de entrega. Step 5 used to be skipped entirely for a
+ * sale listing; T-0042 (ledger.md §2/§3) amends that — it now renders
+ * photos-only (see `StepActaEntrega` in ConsignacionWizardSteps.tsx) and is
+ * reached like any other step (see `getNextStep` in ConsignacionWizard.tsx).
  */
 describe('<ConsignacionWizard> — SALE listing carries a reduced mandate (contract-addendum-2.md §A)', () => {
   async function driveToStep6ThenSubmitAsSale() {
@@ -443,7 +445,8 @@ describe('<ConsignacionWizard> — SALE listing carries a reduced mandate (contr
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
     await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
-    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 6 (step 5 skipped, sale)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5 (photos-only, T-0042)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
     const submitBtn = findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment')
     await clickButton(submitBtn)
   }
@@ -581,5 +584,133 @@ describe('<ConsignacionWizard> — property photos (T-0017)', () => {
     // never read as a failed consignment.
     expect(consignacionesApiMock.create).toHaveBeenCalledTimes(1)
     expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
+  })
+})
+
+/**
+ * <ConsignacionWizard> — step 5 reachable on the sale path (T-0042).
+ *
+ * Root cause (ledger.md §2): photos are staged into `formData.photos` by
+ * the UI that lives inside step 5 ("Inventario / acta de entrega"), but a
+ * sale listing used to skip step 5 entirely (contract-addendum-2.md §A.8),
+ * so `formData.photos` stayed `[]` and nothing ever reached
+ * `uploadPropertyPhotos`. This section locks: step 5 is reached (correctly
+ * labeled and counted) across all four role x listing-type combinations,
+ * and a sale listing's staged photos actually reach the upload call — not
+ * just that the section renders.
+ */
+describe('<ConsignacionWizard> — step 5 reachable on the sale path (T-0042)', () => {
+  function visibleStepLabels(): string[] {
+    return Array.from(container.querySelectorAll('span.text-xs.font-medium')).map(
+      (el) => el.textContent ?? '',
+    )
+  }
+
+  it('rent + agent role: 5 visible steps labeled "inventory", step 4 skipped, step 5 reachable', async () => {
+    permissionsState.isAdmin = false
+    authState.user = { id: 'agent-user-1', email: 'agente1@test.com', name: 'Agente Uno' }
+    await renderWizard(AGENTE_LIST)
+
+    expect(visibleStepLabels()).toEqual([
+      'inmobiliaria.consignaciones.wizard.steps.owner',
+      'inmobiliaria.consignaciones.wizard.steps.property',
+      'inmobiliaria.consignaciones.wizard.steps.commission',
+      'inmobiliaria.consignaciones.wizard.steps.inventory',
+      'inmobiliaria.consignaciones.wizard.steps.confirm',
+    ])
+
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 5 (step 4 skipped)
+
+    expect(container.querySelector('[data-testid="step-4"]')).toBeFalsy()
+    expect(container.querySelector('[data-testid="step-5"]')).toBeTruthy()
+  })
+
+  it('rent + no agent role (admin): 6 visible steps labeled "inventory", sequential 1..6', async () => {
+    await renderWizard(AGENTE_LIST) // beforeEach sets permissionsState.isAdmin = true
+
+    expect(visibleStepLabels()).toEqual([
+      'inmobiliaria.consignaciones.wizard.steps.owner',
+      'inmobiliaria.consignaciones.wizard.steps.property',
+      'inmobiliaria.consignaciones.wizard.steps.commission',
+      'inmobiliaria.consignaciones.wizard.steps.agent',
+      'inmobiliaria.consignaciones.wizard.steps.inventory',
+      'inmobiliaria.consignaciones.wizard.steps.confirm',
+    ])
+
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
+    expect(container.querySelector('[data-testid="step-4"]')).toBeTruthy()
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
+    expect(container.querySelector('[data-testid="step-5"]')).toBeTruthy()
+  })
+
+  it('sale + agent role: 5 visible steps labeled "photos", step 4 skipped, step 5 reachable', async () => {
+    stepTwoOverridesHolder.overrides = { listingType: 'sale', salePrice: 400_000_000, monthlyRent: null }
+    permissionsState.isAdmin = false
+    authState.user = { id: 'agent-user-1', email: 'agente1@test.com', name: 'Agente Uno' }
+    await renderWizard(AGENTE_LIST)
+
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2 (step 2 mounts, sets listingType: sale)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+
+    expect(visibleStepLabels()).toEqual([
+      'inmobiliaria.consignaciones.wizard.steps.owner',
+      'inmobiliaria.consignaciones.wizard.steps.property',
+      'inmobiliaria.consignaciones.wizard.steps.commission',
+      'inmobiliaria.consignaciones.wizard.steps.photos',
+      'inmobiliaria.consignaciones.wizard.steps.confirm',
+    ])
+
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 5 (step 4 skipped)
+    expect(container.querySelector('[data-testid="step-4"]')).toBeFalsy()
+    expect(container.querySelector('[data-testid="step-5"]')).toBeTruthy()
+
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    expect(container.querySelector('[data-testid="step-6"]')).toBeTruthy()
+  })
+
+  it('sale + no agent role (admin): 6 visible steps labeled "photos", sequential 1..6, step 5 reachable', async () => {
+    stepTwoOverridesHolder.overrides = { listingType: 'sale', salePrice: 400_000_000, monthlyRent: null }
+    await renderWizard(AGENTE_LIST)
+
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2 (step 2 mounts, sets listingType: sale)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+
+    expect(visibleStepLabels()).toEqual([
+      'inmobiliaria.consignaciones.wizard.steps.owner',
+      'inmobiliaria.consignaciones.wizard.steps.property',
+      'inmobiliaria.consignaciones.wizard.steps.commission',
+      'inmobiliaria.consignaciones.wizard.steps.agent',
+      'inmobiliaria.consignaciones.wizard.steps.photos',
+      'inmobiliaria.consignaciones.wizard.steps.confirm',
+    ])
+
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
+    expect(container.querySelector('[data-testid="step-4"]')).toBeTruthy()
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
+    expect(container.querySelector('[data-testid="step-5"]')).toBeTruthy()
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    expect(container.querySelector('[data-testid="step-6"]')).toBeTruthy()
+  })
+
+  it('uploads a sale listing\'s staged photos: uploadPropertyPhotos called with the new property id and the staged files', async () => {
+    stepTwoOverridesHolder.overrides = { listingType: 'sale', salePrice: 400_000_000, monthlyRent: null }
+    const photos = [new File(['a'], 'a.jpg', { type: 'image/jpeg' })]
+    stepFivePhotosHolder.photos = photos
+    uploadPropertyPhotosMock.mockResolvedValue({ uploaded: 1, failed: [] })
+
+    await renderWizard(AGENTE_LIST)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5 (photos-only step, now reachable)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment'))
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(uploadPropertyPhotosMock).toHaveBeenCalledWith('property-1', photos)
   })
 })

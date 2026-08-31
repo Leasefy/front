@@ -3022,6 +3022,7 @@
           "commission": "Comision",
           "agent": "Agente",
           "inventory": "Inventario",
+          "photos": "Fotos",
           "confirm": "Confirmar"
         },
         "mobileProgress": "Paso {{current}} de {{total}}: {{label}}",
@@ -3126,6 +3127,8 @@
         "step5": {
           "title": "Acta de Entrega",
           "subtitle": "Registra el inventario y estado del inmueble",
+          "titleSale": "Fotografías del Inmueble",
+          "subtitleSale": "Agrega las fotos que se publicarán con este inmueble.",
           "inventoryTitle": "Inventario de bienes",
           "addItem": "Agregar item",
           "itemNamePlaceholder": "Nombre del item (ej: Estufa 4 puestos)",

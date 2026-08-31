@@ -764,6 +764,10 @@ export function StepAssignAgent({ formData, updateFormData, agentes }: StepProps
 export function StepActaEntrega({ formData, updateFormData }: StepProps) {
   const { t } = useI18n();
   const inventoryItems = formData.inventoryItems || [];
+  // T-0042 (ledger.md §2/§3) — a sale listing has no acta de entrega: this
+  // step renders photos-only for it. The rent path is unchanged (inventory
+  // + photos + observaciones generales, all three).
+  const isSaleListing = formData.listingType === 'sale';
 
   const addItem = () => {
     const newItem: InventoryItem = {
@@ -795,14 +799,15 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-fg dark:text-white mb-1">
-          {t('inmobiliaria.consignaciones.wizard.step5.title')}
+          {t(isSaleListing ? 'inmobiliaria.consignaciones.wizard.step5.titleSale' : 'inmobiliaria.consignaciones.wizard.step5.title')}
         </h2>
         <p className="text-fg-muted dark:text-fg-subtle">
-          {t('inmobiliaria.consignaciones.wizard.step5.subtitle')}
+          {t(isSaleListing ? 'inmobiliaria.consignaciones.wizard.step5.subtitleSale' : 'inmobiliaria.consignaciones.wizard.step5.subtitle')}
         </p>
       </div>
 
-      {/* Inventory Items */}
+      {/* Inventory Items — no acta de entrega on the sale path (T-0042) */}
+      {!isSaleListing && (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-fg dark:text-fg-subtle">
@@ -916,8 +921,10 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
           </div>
         )}
       </div>
+      )}
 
-      {/* Property Photos */}
+      {/* Property Photos — kept for both listing types; the ONLY content on
+          the sale path (T-0042). */}
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-fg dark:text-fg-subtle">
           {t('inmobiliaria.consignaciones.wizard.step5.photosTitle')}
@@ -928,7 +935,8 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
         />
       </div>
 
-      {/* General Notes */}
+      {/* General Notes — no acta de entrega on the sale path (T-0042) */}
+      {!isSaleListing && (
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
           {t('inmobiliaria.consignaciones.wizard.step5.generalNotes')}
@@ -941,6 +949,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
           className="w-full resize-none"
         />
       </div>
+      )}
     </div>
   );
 }
@@ -1140,8 +1149,8 @@ export function StepConfirmation({
           )}
         </div>
 
-        {/* Inventory Section — step 5 (acta de entrega) is skipped entirely
-            on the sale path (§A.8), so there is nothing to confirm here. */}
+        {/* Inventory Section — step 5 renders photos-only on the sale path
+            (T-0042, ledger.md §3), so there is no inventory to confirm here. */}
         {!isSaleListing && (
         <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.inventorySection')} step={5} />

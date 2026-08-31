@@ -983,6 +983,22 @@
           "copiloto": "Copiloto",
           "autonomo": "Autónomo"
         }
+      },
+      "pulso": {
+        "titulo": "Pulso del piloto",
+        "ahora": "En curso",
+        "ahoraVacio": "No hay nada en curso en este momento.",
+        "alertas": "Alertas",
+        "alertasVacio": "Nada que requiera tu atención.",
+        "hoyLlamadas": "Llamadas",
+        "hoyChats": "Chats",
+        "hoyResueltas": "Resueltas",
+        "hoyPlaneados": "Agendados",
+        "estado": {
+          "ok": "Todo bajo control",
+          "atencion": "Requiere tu atención",
+          "critico": "Necesita acción ya"
+        }
       }
     },
     "mobileNav": {

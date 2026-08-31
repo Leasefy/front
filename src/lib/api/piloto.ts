@@ -147,6 +147,54 @@ export function fetchPilotoInbox(
   return getJson<PilotoInboxResponse>(`/api/agency/${agencyId}/ai-hub/inbox`, signal)
 }
 
+// ── Pulso: el tablero vivo (contrato §4, ampliación 2026-08-30) ─────────────
+
+/** Estado general del piloto. Lo calcula el micro, no el front. */
+export type PulsoEstado = 'ok' | 'atencion' | 'critico'
+
+export type PulsoSeveridad = 'critica' | 'alta' | 'media' | 'info'
+
+/** Algo que está pasando AHORA (una llamada viva, un chat abierto, una espera). */
+export interface PulsoEnCurso {
+  id: string
+  tipo: string
+  titulo: string
+  detalle?: string
+  /** ISO-8601 — desde cuándo está en curso. */
+  desde?: string
+  href?: string
+}
+
+/** Un riesgo detectado por una regla explícita sobre datos reales. */
+export interface PulsoAlerta {
+  id: string
+  severidad: PulsoSeveridad
+  titulo: string
+  detalle: string
+  href?: string
+}
+
+export interface PulsoResponse {
+  estado: PulsoEstado
+  /** Una frase que resume el momento. Determinista; el Gerente la mejora. */
+  titular: string
+  enCurso: PulsoEnCurso[]
+  alertas: PulsoAlerta[]
+  hoy: {
+    llamadas: number
+    conversacionesActivas: number
+    decisionesResueltas: number
+    contactosPlaneados?: number
+  }
+}
+
+export function fetchPilotoPulso(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<PulsoResponse>> {
+  return getJson<PulsoResponse>(`/api/agency/${agencyId}/ai-hub/pulso`, signal)
+}
+
 export function fetchPilotoBriefing(
   agencyId: string,
   signal?: AbortSignal,

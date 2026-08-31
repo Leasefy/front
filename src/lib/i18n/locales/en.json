@@ -982,6 +982,22 @@
           "copiloto": "Copilot",
           "autonomo": "Autonomous"
         }
+      },
+      "pulso": {
+        "titulo": "Pilot pulse",
+        "ahora": "In progress",
+        "ahoraVacio": "Nothing in progress right now.",
+        "alertas": "Alerts",
+        "alertasVacio": "Nothing needs your attention.",
+        "hoyLlamadas": "Calls",
+        "hoyChats": "Chats",
+        "hoyResueltas": "Resolved",
+        "hoyPlaneados": "Scheduled",
+        "estado": {
+          "ok": "All under control",
+          "atencion": "Needs your attention",
+          "critico": "Needs action now"
+        }
       }
     },
     "mobileNav": {

@@ -30,9 +30,10 @@ import { usePilotoInbox } from '@/lib/hooks/piloto/use-piloto-inbox'
 import { usePilotoActivity } from '@/lib/hooks/piloto/use-piloto-activity'
 import { usePilotoBriefing } from '@/lib/hooks/piloto/use-piloto-briefing'
 import { usePilotoAutonomia } from '@/lib/hooks/piloto/use-piloto-autonomia'
+import { usePilotoPulso } from '@/lib/hooks/piloto/use-piloto-pulso'
+import { PilotoPulso } from '@/components/inmobiliaria/piloto/PilotoPulso'
 import { PilotoKpis } from '@/components/inmobiliaria/piloto/PilotoKpis'
 import { PilotoBandeja } from '@/components/inmobiliaria/piloto/PilotoBandeja'
-import { PilotoBriefing } from '@/components/inmobiliaria/piloto/PilotoBriefing'
 import { PilotoAutonomia } from '@/components/inmobiliaria/piloto/PilotoAutonomia'
 import { PilotoFeed } from '@/components/inmobiliaria/piloto/PilotoFeed'
 
@@ -45,8 +46,24 @@ export default function PilotoPage() {
   const actividad = usePilotoActivity(50)
   const briefing = usePilotoBriefing()
   const autonomia = usePilotoAutonomia()
+  const pulso = usePilotoPulso()
 
   const inboxSinDato = Boolean(inbox.error) || inbox.notAvailable
+
+  /**
+   * La lectura del Gerente que va DENTRO del pulso. El briefing dejó de ser
+   * una banda propia: dos resúmenes del mismo momento, uno encima del otro,
+   * se leen como repetición.
+   */
+  const lecturaDelGerente = useMemo(() => {
+    const b = briefing.data
+    if (!b || briefing.error) return undefined
+    const frases = [
+      ...(Array.isArray(b.resumen) ? b.resumen : []),
+      ...(Array.isArray(b.narrativa) ? b.narrativa : []),
+    ].filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+    return frases.length > 0 ? frases : undefined
+  }, [briefing.data, briefing.error])
 
   /** Cuántas decisiones llevan más de una semana paradas — la urgencia real. */
   const atrasadas = useMemo(() => {
@@ -89,11 +106,13 @@ export default function PilotoPage() {
         <PilotoAutonomia />
       </header>
 
-      {/* La línea de apertura del Gerente (se pinta solo si tiene algo que decir) */}
-      <PilotoBriefing
-        data={briefing.data}
-        isLoading={briefing.isLoading}
-        error={briefing.error}
+      {/* El tablero vivo: qué pasa ahora y qué puede explotar */}
+      <PilotoPulso
+        data={pulso.data}
+        isLoading={pulso.isLoading}
+        error={pulso.error}
+        notAvailable={pulso.notAvailable}
+        lectura={lecturaDelGerente}
       />
 
       <PilotoKpis

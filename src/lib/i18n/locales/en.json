@@ -6860,7 +6860,10 @@
           "avaluos": "Appraisals",
           "gerente": "Manager",
           "retencion": "Retention",
-          "calidad": "Listing quality"
+          "calidad": "Listing quality",
+          "prospectos": "Prospects",
+          "aprobaciones": "Owner approvals",
+          "mantenimiento": "Maintenance"
         },
         "rol": {
           "cobrador": "Collector",

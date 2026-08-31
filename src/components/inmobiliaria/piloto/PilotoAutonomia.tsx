@@ -173,6 +173,13 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
                   </p>
                 )}
 
+                {/* Qué significa HOY el modo elegido PARA ESTE AGENTE — la
+                    frase la publica el micro y describe lo que el código hace,
+                    no lo que promete el marketing. */}
+                {row.efectoReal && (
+                  <p className="text-[11px] leading-snug text-fg-muted">{row.efectoReal}</p>
+                )}
+
                 {/* Las vallas que publica el micro: reglas que ningún modo
                     puede saltarse. Se pintan como REGLAS, no como chequeos en
                     vivo — el micro dice «regla», no «activo», justamente para

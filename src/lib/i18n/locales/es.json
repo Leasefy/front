@@ -6861,7 +6861,10 @@
           "avaluos": "Avalúos",
           "gerente": "Gerente",
           "retencion": "Retención",
-          "calidad": "Calidad de publicación"
+          "calidad": "Calidad de publicación",
+          "prospectos": "Prospectos",
+          "aprobaciones": "Aprobaciones del propietario",
+          "mantenimiento": "Mantenimiento"
         },
         "rol": {
           "cobrador": "Cobrador",

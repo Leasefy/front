@@ -312,7 +312,9 @@ export function fetchPilotoBriefing(
  */
 export async function putPilotoAutonomia(
   agencyId: string,
-  agente: AgenteId,
+  // `string`: el endpoint acepta el roster del panel Y los agentes gobernados
+  // por agencia (2026-08-31); el micro valida — acá no se duplica el roster.
+  agente: string,
   modo: AutonomiaModo,
 ): Promise<{ ok: boolean; data?: PilotoAutonomiaPutResponse; error?: string }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL

@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { fetchAgentAutonomia } from '@/lib/api/agent-workspace'
+import { fetchAgentAutonomia, type VallaItem } from '@/lib/api/agent-workspace'
 import { putPilotoAutonomia, type AutonomiaModo } from '@/lib/api/piloto'
 import type { AgenteId } from '@/lib/api/work-item'
 
@@ -37,6 +37,10 @@ export interface AutonomiaRow {
   agente: AgenteId
   modo: AutonomiaModo
   modosDisponibles: AutonomiaModo[]
+  /** Las vallas que el modo NUNCA puede saltarse (las publica el micro). */
+  valla: VallaItem[]
+  /** Si el agente cae bajo los umbrales de la T-323. */
+  t323: boolean
 }
 
 export interface UsePilotoAutonomiaResult {
@@ -101,6 +105,10 @@ export function usePilotoAutonomia(): UsePilotoAutonomiaResult {
         agente: PILOTO_AGENTES[i],
         modo: data.modo,
         modosDisponibles: data.modosDisponibles,
+        // Datos REALES que el API ya publicaba y este hook descartaba,
+        // mientras el panel explicaba las vallas con texto inventado.
+        valla: Array.isArray(data.valla) ? data.valla : [],
+        t323: Boolean(data.t323),
       })
     })
     setRows(next)

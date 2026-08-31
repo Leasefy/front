@@ -19,7 +19,7 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { SlidersHorizontal } from '@phosphor-icons/react'
+import { ShieldCheck, SlidersHorizontal } from '@phosphor-icons/react'
 import { SegmentedControl } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
@@ -158,6 +158,27 @@ export function PilotoAutonomia() {
                   <p className="text-xs text-fg-muted">
                     {t(`inmobiliaria.piloto.autonomia.modo.${row.modo}`)}
                   </p>
+                )}
+
+                {/* Las vallas que publica el micro: reglas que ningún modo
+                    puede saltarse. Se pintan como REGLAS, no como chequeos en
+                    vivo — el micro dice «regla», no «activo», justamente para
+                    no simular un health-check que nadie corrió. */}
+                {row.valla.length > 0 && (
+                  <ul className="space-y-0.5 pt-0.5">
+                    {row.valla.map((v) => (
+                      <li key={v.id} className="flex items-start gap-1.5 text-[11px] text-fg-subtle">
+                        <ShieldCheck
+                          weight="duotone"
+                          className="mt-0.5 h-3 w-3 shrink-0"
+                          aria-hidden="true"
+                        />
+                        <span className="min-w-0">
+                          <span className="text-fg-muted">{v.label}:</span> {v.value}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             )

@@ -938,11 +938,6 @@
         "error": "Could not load the inbox: {{error}}",
         "toastOk": "{{label}} · done",
         "toastFail": "Failed: {{error}}",
-        "prioridad": {
-          "alta": "High",
-          "media": "Medium",
-          "baja": "Low"
-        },
         "contador": "{{total}} total",
         "contadorFiltrado": "{{visibles}} of {{total}}",
         "filtrarPorTipo": "Filter by decision type",
@@ -962,14 +957,6 @@
         "verMas": "Show {{dias}} more days",
         "sinFuente": "We couldn't load the activity",
         "sinFuenteHint": "The source didn't respond; that doesn't mean nothing happened."
-      },
-      "briefing": {
-        "titulo": "Daily briefing",
-        "resumen": "Summary",
-        "necesitanDeTi": "They need you",
-        "vacio": "The Manager writes the briefing every morning",
-        "vacioHint": "Come back later to see the day's summary.",
-        "error": "Could not load the briefing: {{error}}"
       },
       "autonomia": {
         "titulo": "Autonomy",

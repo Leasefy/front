@@ -939,11 +939,6 @@
         "error": "No se pudo cargar la bandeja: {{error}}",
         "toastOk": "{{label}} · listo",
         "toastFail": "No se pudo: {{error}}",
-        "prioridad": {
-          "alta": "Alta",
-          "media": "Media",
-          "baja": "Baja"
-        },
         "contador": "{{total}} en total",
         "contadorFiltrado": "{{visibles}} de {{total}}",
         "filtrarPorTipo": "Filtrar por tipo de decisión",
@@ -963,14 +958,6 @@
         "verMas": "Ver {{dias}} días más",
         "sinFuente": "No pudimos consultar la actividad",
         "sinFuenteHint": "La fuente no respondió; esto no significa que no haya pasado nada."
-      },
-      "briefing": {
-        "titulo": "Briefing del día",
-        "resumen": "Resumen",
-        "necesitanDeTi": "Necesitan de ti",
-        "vacio": "El Gerente escribe el briefing cada mañana",
-        "vacioHint": "Vuelve más tarde para ver el resumen del día.",
-        "error": "No se pudo cargar el briefing: {{error}}"
       },
       "autonomia": {
         "titulo": "Autonomía",

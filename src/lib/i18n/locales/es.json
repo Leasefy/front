@@ -992,6 +992,36 @@
           "critico": "Necesita acción ya",
           "desconocido": "Estado no reconocido"
         }
+      },
+      "cajon": {
+        "cargandoTitulo": "Abriendo el caso…",
+        "subtituloVacio": "Todo lo que sabemos de este caso",
+        "esperando": "esperando {{tiempo}}",
+        "cerrar": "Cerrar",
+        "errorTitulo": "No se pudo abrir el caso",
+        "errorTexto": "{{error}}. Puedes reintentar sin perder lo que estabas haciendo.",
+        "reintentar": "Reintentar",
+        "sinFuenteTitulo": "Este caso ya no está",
+        "sinFuenteTexto": "Puede que alguien lo haya resuelto mientras lo tenías en pantalla. Cierra y vuelve a mirar la lista.",
+        "traza": "Línea de tiempo",
+        "enlaces": "Dónde seguir",
+        "verDetalle": "Ver el detalle",
+        "casos": "Los casos detrás de este número",
+        "sinCasos": "Esta alerta cuenta casos que no se pudieron listar acá. El número del título sí se midió; ábrelo en su pantalla para verlos.",
+        "abrirPantalla": "Abrir la pantalla completa"
+      },
+      "preparacion": {
+        "boton": "Preparación",
+        "titulo": "¿Ya opera sola?",
+        "descripcion": "Lo que hace falta para que los agentes trabajen sin ti.",
+        "listo": "Todo listo: los agentes pueden operar solos.",
+        "noListo": "Falta {{n}} cosa para que opere sola.",
+        "bloquea": "Bloquea",
+        "sinFuente": "No pudimos revisar la preparación",
+        "sinFuenteHint": "El servicio de agentes no respondió, así que no sabemos si está listo. No es lo mismo que «no está listo».",
+        "listoConPeros": "Puede operar sola. Queda {{n}} cosa por revisar que no la frena.",
+        "listoConPerosPlural": "Puede operar sola. Quedan {{n}} cosas por revisar que no la frenan.",
+        "noListoPlural": "Faltan {{n}} cosas para que opere sola."
       }
     },
     "mobileNav": {

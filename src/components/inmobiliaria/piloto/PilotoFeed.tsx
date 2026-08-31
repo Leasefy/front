@@ -23,7 +23,6 @@
  */
 
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
 import {
   ArrowUpRight,
   ChatCircleDots,
@@ -118,9 +117,18 @@ export interface PilotoFeedProps {
   /** El micro no publicó el endpoint (404) o no se pudo consultar. */
   notAvailable?: boolean
   onRefetch?: () => Promise<void>
+  /** Abre el cajón con el detalle del hecho. */
+  onAbrir?: (itemId: string) => void
 }
 
-export function PilotoFeed({ items, isLoading, error, notAvailable = false, onRefetch }: PilotoFeedProps) {
+export function PilotoFeed({
+  items,
+  isLoading,
+  error,
+  notAvailable = false,
+  onRefetch,
+  onAbrir,
+}: PilotoFeedProps) {
   const { t } = useI18n()
   const [expandido, setExpandido] = useState(false)
 
@@ -175,7 +183,7 @@ export function PilotoFeed({ items, isLoading, error, notAvailable = false, onRe
                   const { item, veces } = hecho
                   const EventoIcon = iconoDe(item.tipo)
                   return (
-                    <li key={hecho.key} className="flex items-start gap-3 py-2">
+                    <li key={hecho.key} className="relative flex items-start gap-3 py-2">
                       <span
                         className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-fg-subtle"
                         aria-hidden="true"
@@ -184,14 +192,21 @@ export function PilotoFeed({ items, isLoading, error, notAvailable = false, onRe
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2">
-                          <p className="min-w-0 truncate text-sm text-fg">
+                          {/* El hecho entero abre el cajón; el `after:`
+                              estira el área clicable a toda la fila. */}
+                          <button
+                            type="button"
+                            onClick={() => onAbrir?.(item.id)}
+                            className="min-w-0 truncate rounded text-left text-sm text-fg after:absolute after:inset-0 after:content-[''] hover:underline"
+                            data-testid={`piloto-feed-fila-${item.id}`}
+                          >
                             {item.titulo}
                             {veces > 1 && (
                               <span className="ml-1.5 rounded-full bg-surface-muted px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-fg-muted">
                                 ×{veces}
                               </span>
                             )}
-                          </p>
+                          </button>
                           <span className="ml-auto shrink-0 font-mono text-[11px] tabular-nums text-fg-subtle">
                             {relativeTime(item.at, t)}
                           </span>
@@ -202,17 +217,13 @@ export function PilotoFeed({ items, isLoading, error, notAvailable = false, onRe
                             {workspaceVocab(t, 'agente', item.agente)}
                           </span>
                           {item.href && (
-                            <Link
-                              href={item.href}
-                              className="inline-flex shrink-0 items-center gap-0.5 text-fg-muted hover:text-fg hover:underline"
+                            <span
+                              className="inline-flex shrink-0 items-center gap-0.5 text-fg-subtle"
+                              aria-hidden="true"
                             >
                               {t('inmobiliaria.piloto.feed.ver')}
-                              <ArrowUpRight
-                                weight="bold"
-                                className="h-3 w-3"
-                                aria-hidden="true"
-                              />
-                            </Link>
+                              <ArrowUpRight weight="bold" className="h-3 w-3" />
+                            </span>
                           )}
                         </p>
                       </div>

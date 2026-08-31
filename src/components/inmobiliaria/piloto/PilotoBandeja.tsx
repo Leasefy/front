@@ -25,7 +25,6 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import Link from 'next/link'
 import { toast } from 'sonner'
 import {
   ArrowRight,
@@ -99,9 +98,18 @@ export interface PilotoBandejaProps {
   /** El micro no publicó el endpoint (404) o no se pudo consultar. */
   notAvailable?: boolean
   onRefetch: () => Promise<void>
+  /** Abre el cajón con el detalle del caso. */
+  onAbrir?: (itemId: string) => void
 }
 
-export function PilotoBandeja({ items, isLoading, error, notAvailable = false, onRefetch }: PilotoBandejaProps) {
+export function PilotoBandeja({
+  items,
+  isLoading,
+  error,
+  notAvailable = false,
+  onRefetch,
+  onAbrir,
+}: PilotoBandejaProps) {
   const { t } = useI18n()
   // Las acciones de la bandeja (tomar el caso, aprobar) exigen
   // OWNER/ADMIN/OPERATOR en el micro: a un VIEWER le devolverían 403. No se
@@ -269,7 +277,7 @@ export function PilotoBandeja({ items, isLoading, error, notAvailable = false, o
             return (
               <li
                 key={item.id}
-                className="group flex items-start gap-3 px-4 py-3 transition-colors hover:bg-surface-hover"
+                className="group relative flex items-start gap-3 px-4 py-3 transition-colors hover:bg-surface-hover"
               >
                 <span
                   className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-muted text-fg-muted"
@@ -280,12 +288,17 @@ export function PilotoBandeja({ items, isLoading, error, notAvailable = false, o
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
-                    <Link
-                      href={item.href}
-                      className="truncate text-sm font-medium text-fg hover:underline"
+                    {/* La fila entera abre el cajón. El `after:` estira el
+                        área clicable a toda la fila sin envolver el botón de
+                        acción en un <button> dentro de otro <button>. */}
+                    <button
+                      type="button"
+                      onClick={() => onAbrir?.(item.id)}
+                      className="truncate text-left text-sm font-medium text-fg after:absolute after:inset-0 after:content-[''] hover:underline"
+                      data-testid={`piloto-bandeja-fila-${item.id}`}
                     >
                       {item.titulo}
-                    </Link>
+                    </button>
                     <span
                       className={`ml-auto flex shrink-0 items-center gap-1 font-mono text-[11px] tabular-nums ${tonoDeEspera(item.desde)}`}
                       title={new Date(item.desde).toLocaleString('es-CO')}
@@ -304,24 +317,29 @@ export function PilotoBandeja({ items, isLoading, error, notAvailable = false, o
                   </p>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-1.5 self-center">
+                {/* `relative z-10`: por encima del área clicable de la fila,
+                    para que la acción rápida no abra además el cajón. */}
+                <div className="relative z-10 flex shrink-0 items-center gap-1.5 self-center">
                   {item.accion && puedeActuar ? (
                     <Button
                       size="sm"
                       hideArrow
                       isLoading={ocupado}
-                      onClick={() => void ejecutar(item)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        void ejecutar(item)
+                      }}
                     >
                       {item.accion.label}
                     </Button>
                   ) : (
-                    <Link
-                      href={item.href}
-                      className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs text-fg-muted"
+                      aria-hidden="true"
                     >
                       {t('inmobiliaria.piloto.bandeja.decidir')}
-                      <ArrowRight weight="bold" className="h-3 w-3" aria-hidden="true" />
-                    </Link>
+                      <ArrowRight weight="bold" className="h-3 w-3" />
+                    </span>
                   )}
                 </div>
               </li>

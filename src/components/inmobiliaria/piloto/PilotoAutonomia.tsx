@@ -34,7 +34,7 @@ import {
 import { useI18n } from '@/lib/i18n'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { workspaceVocab } from '@/components/inmobiliaria/ai/ColaHumana'
-import { usePilotoAutonomia } from '@/lib/hooks/piloto/use-piloto-autonomia'
+import type { UsePilotoAutonomiaResult } from '@/lib/hooks/piloto/use-piloto-autonomia'
 import type { AutonomiaModo } from '@/lib/api/piloto'
 
 const MODOS: AutonomiaModo[] = ['sombra', 'copiloto', 'autonomo']
@@ -46,9 +46,22 @@ const MODO_EXPLICACION: Record<AutonomiaModo, string> = {
   autonomo: 'Ejecuta también lo irreversible, dentro de los topes que la ley y tus reglas fijan.',
 }
 
-export function PilotoAutonomia() {
+export interface PilotoAutonomiaProps {
+  /**
+   * La lectura de autonomía, IZADA a la página.
+   *
+   * Antes este panel llamaba al hook por su cuenta y la página llamaba al
+   * mismo hook otra vez: catorce peticiones donde había siete, y —peor— dos
+   * verdades. Medido en pantalla el 2026-08-31: el botón decía «6/7» y el
+   * indicador «Agentes autónomos» decía «—» al mismo tiempo, porque cada
+   * instancia estaba en un punto distinto de su carga. Una sola fuente.
+   */
+  autonomia: UsePilotoAutonomiaResult
+}
+
+export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
   const { t } = useI18n()
-  const { rows, totalRoster, isLoading, busyAgente, setModo } = usePilotoAutonomia()
+  const { rows, totalRoster, isLoading, busyAgente, setModo } = autonomia
   const { isAdmin } = usePermissionsContext()
   const [abierto, setAbierto] = useState(false)
   const mudos = totalRoster - rows.length

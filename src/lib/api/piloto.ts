@@ -165,6 +165,13 @@ export interface PulsoEnCurso {
   href?: string
 }
 
+/** Un caso concreto detrás del número de una alerta. Su `id` abre el cajón. */
+export interface PulsoCasoRef {
+  id: string
+  titulo: string
+  desde?: string
+}
+
 /** Un riesgo detectado por una regla explícita sobre datos reales. */
 export interface PulsoAlerta {
   id: string
@@ -172,6 +179,11 @@ export interface PulsoAlerta {
   titulo: string
   detalle: string
   href?: string
+  /**
+   * Los casos que sostienen el número, recortados a un tope por el micro.
+   * Que no venga NO significa cero: el conteo del título se mide aparte.
+   */
+  items?: PulsoCasoRef[]
 }
 
 export interface PulsoResponse {
@@ -193,6 +205,97 @@ export function fetchPilotoPulso(
   signal?: AbortSignal,
 ): Promise<PilotoFetchResult<PulsoResponse>> {
   return getJson<PulsoResponse>(`/api/agency/${agencyId}/ai-hub/pulso`, signal)
+}
+
+// ── Preparación: ¿esta inmobiliaria puede operar sola? ─────────────────────
+
+export type EstadoRequisito = 'ok' | 'falta' | 'no_aplica'
+
+export interface PreparacionRequisito {
+  id: string
+  titulo: string
+  estado: EstadoRequisito
+  /** Qué se midió y qué salió. Concreto, con números. */
+  detalle: string
+  bloqueante: boolean
+  /** Sólo cuando falta y la solución NO es código. */
+  comoSeArregla?: string
+}
+
+export interface PreparacionResponse {
+  /** True sólo si ningún requisito bloqueante está en falta. */
+  listo: boolean
+  requisitos: PreparacionRequisito[]
+}
+
+export function fetchPilotoPreparacion(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<PreparacionResponse>> {
+  return getJson<PreparacionResponse>(`/api/agency/${agencyId}/ai-hub/preparacion`, signal)
+}
+
+// ── Detalle de un ítem: lo que alimenta los cajones ────────────────────────
+
+/** Una fila «label: valor» de un bloque de contexto. */
+export interface DetalleFila {
+  label: string
+  valor: string
+  /** El valor que manda en el bloque — el front lo resalta. */
+  enfasis?: boolean
+}
+
+export interface DetalleGrupo {
+  titulo: string
+  filas: DetalleFila[]
+}
+
+/** Un hito de la línea de tiempo. Derivado por el micro, no una tabla. */
+export interface DetalleHito {
+  at: string
+  titulo: string
+  detalle?: string
+}
+
+/** Un enlace a la pantalla propia del caso, con el porqué cuando lo hay. */
+export interface DetalleEnlace {
+  label: string
+  href: string
+  /** Por qué esto NO se resuelve desde el cajón. */
+  razon?: string
+}
+
+export interface PilotoDetalle {
+  id: string
+  fuente: string
+  agente: string
+  titulo: string
+  subtitulo?: string
+  prioridad?: PilotoPrioridad
+  desde?: string
+  montoCop?: number
+  contexto: DetalleGrupo[]
+  traza: DetalleHito[]
+  /** Solo las que se ejecutan con un cuerpo fijo. Se envían VERBATIM. */
+  acciones: InboxAccion[]
+  enlaces: DetalleEnlace[]
+  nota?: string
+}
+
+/**
+ * El detalle de CUALQUIER ítem del piloto. Acepta los ids con prefijo que ya
+ * emiten la bandeja (`esc:` `sin:` …), el feed (`call:` `prom:` …) y el pulso
+ * (`venc:`), así que el llamador manda el id que ya tiene en la mano.
+ */
+export function fetchPilotoDetalle(
+  agencyId: string,
+  itemId: string,
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<PilotoDetalle>> {
+  return getJson<PilotoDetalle>(
+    `/api/agency/${agencyId}/ai-hub/detalle/${encodeURIComponent(itemId)}`,
+    signal,
+  )
 }
 
 export function fetchPilotoBriefing(

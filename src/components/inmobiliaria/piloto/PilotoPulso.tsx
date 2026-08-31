@@ -88,9 +88,21 @@ export interface PilotoPulsoProps {
    * como repetición. Una sola voz arriba.
    */
   lectura?: string[]
+  /** Abre el cajón con el detalle de un caso en curso. */
+  onAbrirItem?: (itemId: string) => void
+  /** Abre el cajón de una alerta (regla, no fila: no se pide al micro). */
+  onAbrirAlerta?: (alerta: PulsoAlerta) => void
 }
 
-export function PilotoPulso({ data, isLoading, error, notAvailable, lectura }: PilotoPulsoProps) {
+export function PilotoPulso({
+  data,
+  isLoading,
+  error,
+  notAvailable,
+  lectura,
+  onAbrirItem,
+  onAbrirAlerta,
+}: PilotoPulsoProps) {
   const { t } = useI18n()
 
   if (isLoading) {
@@ -171,7 +183,7 @@ export function PilotoPulso({ data, isLoading, error, notAvailable, lectura }: P
             ) : (
               <ul role="list" className="space-y-2">
                 {data.enCurso.slice(0, 4).map((item) => (
-                  <FilaEnCurso key={item.id} item={item} />
+                  <FilaEnCurso key={item.id} item={item} onAbrir={onAbrirItem} />
                 ))}
               </ul>
             )}
@@ -189,7 +201,7 @@ export function PilotoPulso({ data, isLoading, error, notAvailable, lectura }: P
             ) : (
               <ul role="list" className="space-y-2">
                 {alertas.slice(0, 4).map((a) => (
-                  <FilaAlerta key={a.id} alerta={a} />
+                  <FilaAlerta key={a.id} alerta={a} onAbrir={onAbrirAlerta} />
                 ))}
               </ul>
             )}
@@ -215,7 +227,13 @@ function Numero({ label, valor }: { label: string; valor: number }) {
   )
 }
 
-function FilaEnCurso({ item }: { item: PulsoEnCurso }) {
+function FilaEnCurso({
+  item,
+  onAbrir,
+}: {
+  item: PulsoEnCurso
+  onAbrir?: (itemId: string) => void
+}) {
   const { t } = useI18n()
   const ItemIcon = iconoEnCurso(item.tipo)
   const contenido = (
@@ -240,7 +258,16 @@ function FilaEnCurso({ item }: { item: PulsoEnCurso }) {
   )
   return (
     <li>
-      {item.href ? (
+      {onAbrir ? (
+        <button
+          type="button"
+          onClick={() => onAbrir(item.id)}
+          className="flex w-full items-start gap-2 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-surface-muted"
+          data-testid={`piloto-pulso-encurso-${item.id}`}
+        >
+          {contenido}
+        </button>
+      ) : item.href ? (
         <Link
           href={item.href}
           className="flex items-start gap-2 rounded-md px-1 py-0.5 transition-colors hover:bg-surface-muted"
@@ -254,7 +281,13 @@ function FilaEnCurso({ item }: { item: PulsoEnCurso }) {
   )
 }
 
-function FilaAlerta({ alerta }: { alerta: PulsoAlerta }) {
+function FilaAlerta({
+  alerta,
+  onAbrir,
+}: {
+  alerta: PulsoAlerta
+  onAbrir?: (alerta: PulsoAlerta) => void
+}) {
   // Una severidad desconocida se trata como ALTA, no como info: ante la duda,
   // que la vea un humano en vez de esconderse al final de la lista.
   const meta = SEVERIDAD_META[alerta.severidad] ?? SEVERIDAD_META.alta
@@ -282,7 +315,16 @@ function FilaAlerta({ alerta }: { alerta: PulsoAlerta }) {
   )
   return (
     <li>
-      {alerta.href ? (
+      {onAbrir ? (
+        <button
+          type="button"
+          onClick={() => onAbrir(alerta)}
+          className="flex w-full items-start gap-2 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-surface-muted"
+          data-testid={`piloto-pulso-alerta-${alerta.id}`}
+        >
+          {contenido}
+        </button>
+      ) : alerta.href ? (
         <Link
           href={alerta.href}
           className="flex items-start gap-2 rounded-md px-1 py-0.5 transition-colors hover:bg-surface-muted"

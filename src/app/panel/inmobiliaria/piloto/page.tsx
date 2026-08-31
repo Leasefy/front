@@ -23,7 +23,7 @@
  * un endpoint caído no tumba la pantalla.
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { useI18n } from '@/lib/i18n'
 import { usePilotoInbox } from '@/lib/hooks/piloto/use-piloto-inbox'
@@ -35,7 +35,13 @@ import { PilotoPulso } from '@/components/inmobiliaria/piloto/PilotoPulso'
 import { PilotoKpis } from '@/components/inmobiliaria/piloto/PilotoKpis'
 import { PilotoBandeja } from '@/components/inmobiliaria/piloto/PilotoBandeja'
 import { PilotoAutonomia } from '@/components/inmobiliaria/piloto/PilotoAutonomia'
+import { PilotoPreparacion } from '@/components/inmobiliaria/piloto/PilotoPreparacion'
 import { PilotoFeed } from '@/components/inmobiliaria/piloto/PilotoFeed'
+import {
+  PilotoCajon,
+  type PilotoApertura,
+} from '@/components/inmobiliaria/piloto/PilotoCajon'
+import type { PulsoAlerta } from '@/lib/api/piloto'
 
 /** Una decisión «atrasada» lleva más de una semana esperando. */
 const SEMANA_MS = 7 * 86_400_000
@@ -47,6 +53,20 @@ export default function PilotoPage() {
   const briefing = usePilotoBriefing()
   const autonomia = usePilotoAutonomia()
   const pulso = usePilotoPulso()
+
+  /**
+   * El cajón: una sola pieza para las tres listas. Vive acá arriba —y no
+   * dentro de cada lista— porque un ítem de una alerta del tablero abre el
+   * detalle de un caso de la bandeja: tres cajones separados no podrían
+   * pasarse la posta.
+   */
+  const [apertura, setApertura] = useState<PilotoApertura | null>(null)
+  const abrirItem = useCallback((id: string) => setApertura({ tipo: 'item', id }), [])
+  const abrirAlerta = useCallback(
+    (alerta: PulsoAlerta) => setApertura({ tipo: 'alerta', alerta }),
+    [],
+  )
+  const cerrarCajon = useCallback(() => setApertura(null), [])
 
   const inboxSinDato = Boolean(inbox.error) || inbox.notAvailable
 
@@ -88,8 +108,9 @@ export default function PilotoPage() {
   // Tras una acción de la bandeja se refresca TAMBIÉN el feed: la acción
   // ejecutada es, precisamente, actividad nueva.
   const refetchTrasAccion = useCallback(async () => {
-    await Promise.allSettled([inbox.refetch(), actividad.refetch()])
-  }, [inbox.refetch, actividad.refetch]) // eslint-disable-line react-hooks/exhaustive-deps
+    // El pulso también: una acción resuelta puede apagar una alerta.
+    await Promise.allSettled([inbox.refetch(), actividad.refetch(), pulso.refetch()])
+  }, [inbox.refetch, actividad.refetch, pulso.refetch]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="mx-auto max-w-7xl space-y-5 p-4 lg:p-8" data-testid="piloto-page">
@@ -103,7 +124,11 @@ export default function PilotoPage() {
             {t('inmobiliaria.piloto.descripcion')}
           </p>
         </div>
-        <PilotoAutonomia />
+        {/* Configuración, no operación: las dos viven en el encabezado. */}
+        <div className="flex shrink-0 items-center gap-2">
+          <PilotoPreparacion />
+          <PilotoAutonomia autonomia={autonomia} />
+        </div>
       </header>
 
       {/* El tablero vivo: qué pasa ahora y qué puede explotar */}
@@ -113,6 +138,8 @@ export default function PilotoPage() {
         error={pulso.error}
         notAvailable={pulso.notAvailable}
         lectura={lecturaDelGerente}
+        onAbrirItem={abrirItem}
+        onAbrirAlerta={abrirAlerta}
       />
 
       <PilotoKpis
@@ -148,6 +175,7 @@ export default function PilotoPage() {
             error={inbox.error}
             notAvailable={inbox.notAvailable}
             onRefetch={refetchTrasAccion}
+            onAbrir={abrirItem}
           />
         </div>
         <div className="min-w-0 lg:col-span-2">
@@ -157,9 +185,18 @@ export default function PilotoPage() {
             error={actividad.error}
             notAvailable={actividad.notAvailable}
             onRefetch={actividad.refetch}
+            onAbrir={abrirItem}
           />
         </div>
       </div>
+
+      {/* El cajón: todo el detalle sin salir de la sección */}
+      <PilotoCajon
+        apertura={apertura}
+        onClose={cerrarCajon}
+        onAbrirItem={abrirItem}
+        onAccionEjecutada={refetchTrasAccion}
+      />
     </div>
   )
 }

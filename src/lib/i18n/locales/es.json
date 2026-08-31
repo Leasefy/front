@@ -924,11 +924,12 @@
       "titulo": "Piloto automático",
       "descripcion": "Lo que tus agentes hicieron y lo que necesitan de ti, en un solo lugar.",
       "kpis": {
-        "pendientes": "Pendientes",
-        "alta": "Prioridad alta",
-        "media": "Prioridad media",
+        "pendientes": "Esperan tu decisión",
         "actividadHoy": "Actividad de hoy",
-        "recuperadoMes": "Recuperado este mes"
+        "recuperadoMes": "Recuperado este mes",
+        "atrasadas": "{{n}} hace más de una semana",
+        "autonomos": "Agentes autónomos",
+        "autonomosHint": "trabajan sin preguntarte"
       },
       "bandeja": {
         "titulo": "Bandeja",
@@ -942,14 +943,22 @@
           "alta": "Alta",
           "media": "Media",
           "baja": "Baja"
-        }
+        },
+        "contador": "{{total}} en total",
+        "contadorFiltrado": "{{visibles}} de {{total}}",
+        "filtrarPorTipo": "Filtrar por tipo de decisión",
+        "limpiar": "Ver todo",
+        "decisiones": "decisiones",
+        "decidir": "Decidir"
       },
       "feed": {
         "titulo": "Actividad en vivo",
         "vacio": "Sin actividad todavía",
         "vacioHint": "Aquí ves lo que tus agentes van haciendo.",
         "error": "No se pudo cargar la actividad: {{error}}",
-        "ver": "Ver"
+        "ver": "Ver",
+        "actividad": "actividad",
+        "verMas": "Ver {{dias}} días más"
       },
       "briefing": {
         "titulo": "Briefing del día",

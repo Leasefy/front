@@ -1,176 +1,161 @@
 'use client'
 
 /**
- * PilotoAutonomia — la autonomía por agente, ESCRIBIBLE.
+ * PilotoAutonomia — cuánto puede hacer cada agente sin vos.
  *
- * Mismo vocabulario visual que AutonomiaPanel (🌑 sombra / 🤝 copiloto /
- * 🚀 autónomo), pero como segmented control: al elegir un modo hace PUT
- * (optimista + rollback ante error, en use-piloto-autonomia) y toastea.
+ * ── Por qué se rediseñó (2026-08-30) ───────────────────────────────────────
+ * Era una card fija en la columna derecha con 7 filas × 3 botones = 21
+ * controles compitiendo con la bandeja por la atención, sin explicar qué
+ * significa ninguno de los tres modos. Configuración no es operación: se
+ * mira una vez al mes, no cada mañana.
  *
- * El PUT es de admin (contrato §4) — para quien no es admin los modos se
- * pintan como chips de solo lectura, nunca como botones que fallarían con
- * 403 (regla: ningún control dibujado sin comportamiento). Solo se dibujan
- * los modos que el backend declara en `modosDisponibles`.
+ * Ahora vive en un panel lateral que se abre desde el encabezado, y ahí sí
+ * hay espacio para decir qué hace cada modo — que es la información que
+ * convierte tres botones en una decisión informada.
  *
- * Fail-soft: un agente sin autonomía publicada (404) no aparece; si ninguno
- * reporta, estado vacío.
+ * Usa el `SegmentedControl` del design system en vez del control artesanal
+ * que tenía antes.
  */
 
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { SlidersHorizontal } from '@phosphor-icons/react'
+import { SegmentedControl } from '@leasefy/cadence'
 
-import type { AutonomiaModo } from '@/lib/api/piloto'
-import { usePilotoAutonomia } from '@/lib/hooks/piloto/use-piloto-autonomia'
-import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { Button } from '@/components/ui/button'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 import { useI18n } from '@/lib/i18n'
+import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { workspaceVocab } from '@/components/inmobiliaria/ai/ColaHumana'
-
-const NS = 'inmobiliaria.piloto.autonomia'
-
-const MODO_EMOJI: Record<AutonomiaModo, string> = {
-  sombra: '🌑',
-  copiloto: '🤝',
-  autonomo: '🚀',
-}
+import { usePilotoAutonomia } from '@/lib/hooks/piloto/use-piloto-autonomia'
+import type { AutonomiaModo } from '@/lib/api/piloto'
 
 const MODOS: AutonomiaModo[] = ['sombra', 'copiloto', 'autonomo']
 
+/** Qué significa cada modo, en una línea. Es lo que faltaba para decidir. */
+const MODO_EXPLICACION: Record<AutonomiaModo, string> = {
+  sombra: 'Propone y registra, pero no ejecuta nada. Sirve para auditarlo antes de soltarlo.',
+  copiloto: 'Ejecuta lo reversible solo y te pide permiso para lo que cuesta plata.',
+  autonomo: 'Ejecuta también lo irreversible, dentro de los topes que la ley y tus reglas fijan.',
+}
+
 export function PilotoAutonomia() {
   const { t } = useI18n()
+  const { rows, isLoading, busyAgente, setModo } = usePilotoAutonomia()
   const { isAdmin } = usePermissionsContext()
-  const { rows, isLoading, error, busyAgente, setModo } = usePilotoAutonomia()
+  const [abierto, setAbierto] = useState(false)
 
-  async function cambiar(agente: (typeof rows)[number]['agente'], modo: AutonomiaModo) {
+  const autonomos = useMemo(() => rows.filter((r) => r.modo === 'autonomo').length, [rows])
+
+  const cambiar = async (agente: (typeof rows)[number]['agente'], modo: AutonomiaModo) => {
     const res = await setModo(agente, modo)
     if (res.ok) {
       toast.success(
-        t(`${NS}.toastOk`, {
+        t('inmobiliaria.piloto.autonomia.toastOk', {
           agente: workspaceVocab(t, 'agente', agente),
-          modo: t(`${NS}.modo.${modo}`),
+          modo: t(`inmobiliaria.piloto.autonomia.modo.${modo}`).toLowerCase(),
         }),
       )
     } else {
-      toast.error(t(`${NS}.toastFail`, { error: res.error ?? 'error' }))
+      toast.error(
+        t('inmobiliaria.piloto.autonomia.toastFail', { error: res.error ?? 'error' }),
+      )
     }
   }
 
   return (
-    <section
-      className="rounded-xl border border-border bg-card p-4 lg:p-5 space-y-3"
-      data-testid="piloto-autonomia"
-    >
-      <div className="space-y-0.5">
-        <h2 className="text-sm font-semibold text-foreground">{t(`${NS}.titulo`)}</h2>
-        <p className="text-xs text-muted-foreground">
-          {isAdmin ? t(`${NS}.hint`) : t(`${NS}.soloAdmin`)}
-        </p>
-      </div>
+    <Sheet open={abierto} onOpenChange={setAbierto}>
+      <SheetTrigger asChild>
+        <Button variant="outline" size="sm" hideArrow>
+          <SlidersHorizontal weight="duotone" className="mr-1.5 h-4 w-4" aria-hidden="true" />
+          {t('inmobiliaria.piloto.autonomia.titulo')}
+          {!isLoading && rows.length > 0 && (
+            <span className="ml-1.5 font-mono text-xs tabular-nums text-fg-muted">
+              {autonomos}/{rows.length}
+            </span>
+          )}
+        </Button>
+      </SheetTrigger>
 
-      {isLoading ? (
-        <div className="space-y-2" data-testid="piloto-autonomia-loading">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-10 rounded-lg bg-muted/40 animate-pulse" />
+      <SheetContent side="right" className="w-full sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>{t('inmobiliaria.piloto.autonomia.titulo')}</SheetTitle>
+          <SheetDescription>{t('inmobiliaria.piloto.autonomia.hint')}</SheetDescription>
+        </SheetHeader>
+
+        {/* Qué significa cada modo — sin esto, los tres botones son adivinanza */}
+        <dl className="mt-4 space-y-2 rounded-lg border border-border bg-surface-muted p-3">
+          {MODOS.map((modo) => (
+            <div key={modo} className="text-xs">
+              <dt className="font-medium text-fg">
+                {t(`inmobiliaria.piloto.autonomia.modo.${modo}`)}
+              </dt>
+              <dd className="text-fg-muted">{MODO_EXPLICACION[modo]}</dd>
+            </div>
           ))}
-        </div>
-      ) : error ? (
-        <div
-          className="rounded-lg border border-danger/30 bg-danger-soft p-3 text-sm text-danger"
-          data-testid="piloto-autonomia-error"
-        >
-          {t(`${NS}.error`, { error })}
-        </div>
-      ) : rows.length === 0 ? (
-        <div
-          role="status"
-          className="flex flex-col items-center gap-3 px-4 py-10 text-center"
-          data-testid="piloto-autonomia-empty"
-        >
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-surface-muted">
-            <SlidersHorizontal
-              weight="duotone"
-              className="h-5 w-5 text-fg-subtle"
-              aria-hidden="true"
-            />
-          </div>
-          <div className="space-y-1">
-            <p className="text-[15px] font-semibold text-fg">{t(`${NS}.vacia`)}</p>
-            <p className="text-sm text-fg-subtle">{t(`${NS}.vaciaHint`)}</p>
-          </div>
-        </div>
-      ) : (
-        <ul className="divide-y divide-border" data-testid="piloto-autonomia-lista">
-          {rows.map((row) => {
-            const busy = busyAgente === row.agente
-            const modosVisibles = MODOS.filter((m) => row.modosDisponibles.includes(m))
-            return (
-              <li
-                key={row.agente}
-                className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3 flex-wrap"
-                data-testid={`piloto-autonomia-${row.agente}`}
-              >
-                <span className="text-sm text-foreground min-w-0 truncate">
-                  {workspaceVocab(t, 'agente', row.agente)}
-                </span>
+        </dl>
 
+        {!isAdmin && (
+          <p className="mt-3 text-xs text-fg-subtle">
+            {t('inmobiliaria.piloto.autonomia.soloAdmin')}
+          </p>
+        )}
+
+        <div className="mt-4 space-y-4">
+          {isLoading &&
+            [0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-14 animate-pulse rounded-lg bg-surface-muted"
+                role="status"
+                aria-label="Cargando"
+              />
+            ))}
+
+          {!isLoading && rows.length === 0 && (
+            <p className="text-sm text-fg-muted">
+              {t('inmobiliaria.piloto.autonomia.vacia')}
+            </p>
+          )}
+
+          {rows.map((row) => {
+            const etiqueta = workspaceVocab(t, 'agente', row.agente)
+            const opciones = MODOS.filter((m) => row.modosDisponibles.includes(m)).map((m) => ({
+              value: m,
+              label: t(`inmobiliaria.piloto.autonomia.modo.${m}`),
+            }))
+            return (
+              <div key={row.agente} className="space-y-1.5">
+                <p className="text-sm font-medium text-fg">{etiqueta}</p>
                 {isAdmin ? (
-                  <div
-                    role="group"
-                    aria-label={t(`${NS}.grupoAria`, {
-                      agente: workspaceVocab(t, 'agente', row.agente),
+                  <SegmentedControl<AutonomiaModo>
+                    options={opciones}
+                    value={row.modo}
+                    onChange={(modo) => void cambiar(row.agente, modo)}
+                    disabled={busyAgente === row.agente}
+                    size="sm"
+                    fullWidth
+                    aria-label={t('inmobiliaria.piloto.autonomia.grupoAria', {
+                      agente: etiqueta,
                     })}
-                    className="inline-flex items-center rounded-full bg-muted p-0.5 ring-1 ring-border shrink-0"
-                  >
-                    {modosVisibles.map((modo) => {
-                      const activo = row.modo === modo
-                      return (
-                        <button
-                          key={modo}
-                          type="button"
-                          aria-pressed={activo}
-                          disabled={busy}
-                          title={t(`${NS}.modo.${modo}`)}
-                          onClick={() => {
-                            if (!activo) void cambiar(row.agente, modo)
-                          }}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition active:scale-[0.98] disabled:opacity-60 ${
-                            activo
-                              ? 'bg-surface shadow-sm text-foreground font-medium ring-1 ring-border'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                        >
-                          <span aria-hidden="true">{MODO_EMOJI[modo]}</span>
-                          {t(`${NS}.modo.${modo}`)}
-                        </button>
-                      )
-                    })}
-                  </div>
+                  />
                 ) : (
-                  // Solo lectura para no-admins: chips, nunca botones muertos.
-                  <div className="inline-flex items-center gap-1.5 shrink-0">
-                    {modosVisibles.map((modo) => {
-                      const activo = row.modo === modo
-                      return (
-                        <span
-                          key={modo}
-                          aria-current={activo ? 'true' : undefined}
-                          className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full ring-1 ${
-                            activo
-                              ? 'bg-primary-soft text-primary ring-primary/30 font-medium'
-                              : 'bg-muted text-muted-foreground ring-border'
-                          }`}
-                        >
-                          <span aria-hidden="true">{MODO_EMOJI[modo]}</span>
-                          {t(`${NS}.modo.${modo}`)}
-                        </span>
-                      )
-                    })}
-                  </div>
+                  <p className="text-xs text-fg-muted">
+                    {t(`inmobiliaria.piloto.autonomia.modo.${row.modo}`)}
+                  </p>
                 )}
-              </li>
+              </div>
             )
           })}
-        </ul>
-      )}
-    </section>
+        </div>
+      </SheetContent>
+    </Sheet>
   )
 }

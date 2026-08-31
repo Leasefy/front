@@ -923,11 +923,12 @@
       "titulo": "Autopilot",
       "descripcion": "What your agents did and what they need from you, in one place.",
       "kpis": {
-        "pendientes": "Pending",
-        "alta": "High priority",
-        "media": "Medium priority",
+        "pendientes": "Waiting on you",
         "actividadHoy": "Today's activity",
-        "recuperadoMes": "Recovered this month"
+        "recuperadoMes": "Recovered this month",
+        "atrasadas": "{{n}} waiting over a week",
+        "autonomos": "Autonomous agents",
+        "autonomosHint": "work without asking you"
       },
       "bandeja": {
         "titulo": "Inbox",
@@ -941,14 +942,22 @@
           "alta": "High",
           "media": "Medium",
           "baja": "Low"
-        }
+        },
+        "contador": "{{total}} total",
+        "contadorFiltrado": "{{visibles}} of {{total}}",
+        "filtrarPorTipo": "Filter by decision type",
+        "limpiar": "Show all",
+        "decisiones": "decisions",
+        "decidir": "Decide"
       },
       "feed": {
         "titulo": "Live activity",
         "vacio": "No activity yet",
         "vacioHint": "Here you see what your agents are doing.",
         "error": "Could not load the activity: {{error}}",
-        "ver": "View"
+        "ver": "View",
+        "actividad": "activity",
+        "verMas": "Show {{dias}} more days"
       },
       "briefing": {
         "titulo": "Daily briefing",

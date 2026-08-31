@@ -1,18 +1,26 @@
 'use client'
 
 /**
- * /panel/inmobiliaria/piloto — el Piloto automático.
+ * /panel/inmobiliaria/piloto — la torre de control de los agentes.
  *
- * La torre de control transversal de los agentes: qué hicieron (feed), qué
- * necesitan de ti (bandeja priorizada), el briefing del Gerente y la
- * autonomía por agente. Contrato: agent-integracion/claudedocs/
- * piloto-contratos-v1.md §4–§5.
+ * ── El rediseño del 2026-08-30 ─────────────────────────────────────────────
+ * La primera versión medía 8.079 px: diez pantallas de scroll para veinte
+ * decisiones. El feed pesaba más que la bandeja, veintiún chips rojos
+ * decían «ALTA» y los KPIs, el briefing y la bandeja repetían el mismo
+ * número tres veces. Lo que se rediseñó, y por qué, está documentado arriba
+ * de cada componente.
  *
- * Fail-soft POR WIDGET: cada pieza maneja su propio loading/error/vacío —
- * un endpoint caído no tumba la página.
+ * La página responde tres preguntas, en este orden:
  *
- * Layout: KPIs arriba → grid 2 columnas (Bandeja ~60% / Briefing + Autonomía)
- * → Feed abajo a lo ancho. Una columna en móvil.
+ *   1. ¿Qué necesita de mí?   → la bandeja, a la izquierda y ancha.
+ *   2. ¿Cómo viene el día?    → la banda del briefing + los cuatro números.
+ *   3. ¿Qué hicieron sin mí?  → el feed, a la derecha y acotado.
+ *
+ * La autonomía —configuración, no operación— se fue a un panel lateral que
+ * se abre desde el encabezado.
+ *
+ * Fail-soft POR WIDGET: cada pieza maneja su propio cargando/error/vacío;
+ * un endpoint caído no tumba la pantalla.
  */
 
 import { useCallback, useMemo } from 'react'
@@ -21,19 +29,33 @@ import { useI18n } from '@/lib/i18n'
 import { usePilotoInbox } from '@/lib/hooks/piloto/use-piloto-inbox'
 import { usePilotoActivity } from '@/lib/hooks/piloto/use-piloto-activity'
 import { usePilotoBriefing } from '@/lib/hooks/piloto/use-piloto-briefing'
+import { usePilotoAutonomia } from '@/lib/hooks/piloto/use-piloto-autonomia'
 import { PilotoKpis } from '@/components/inmobiliaria/piloto/PilotoKpis'
 import { PilotoBandeja } from '@/components/inmobiliaria/piloto/PilotoBandeja'
 import { PilotoBriefing } from '@/components/inmobiliaria/piloto/PilotoBriefing'
 import { PilotoAutonomia } from '@/components/inmobiliaria/piloto/PilotoAutonomia'
 import { PilotoFeed } from '@/components/inmobiliaria/piloto/PilotoFeed'
 
+/** Una decisión «atrasada» lleva más de una semana esperando. */
+const SEMANA_MS = 7 * 86_400_000
+
 export default function PilotoPage() {
   const { t } = useI18n()
   const inbox = usePilotoInbox()
   const actividad = usePilotoActivity(50)
   const briefing = usePilotoBriefing()
+  const autonomia = usePilotoAutonomia()
 
-  // KPI «Actividad de hoy»: count del feed con `at` de hoy (hora local).
+  const inboxSinDato = Boolean(inbox.error) || inbox.notAvailable
+
+  /** Cuántas decisiones llevan más de una semana paradas — la urgencia real. */
+  const atrasadas = useMemo(() => {
+    if (inboxSinDato) return undefined
+    const corte = Date.now() - SEMANA_MS
+    return inbox.items.filter((i) => new Date(i.desde).getTime() < corte).length
+  }, [inbox.items, inboxSinDato])
+
+  // KPI «Actividad de hoy»: eventos del feed con `at` de hoy (hora local).
   // `undefined` cuando la fuente no contestó — un «—» honesto, nunca un 0.
   const actividadHoy = useMemo(() => {
     if (actividad.error || actividad.notAvailable) return undefined
@@ -46,8 +68,6 @@ export default function PilotoPage() {
     }).length
   }, [actividad.error, actividad.notAvailable, actividad.isLoading, actividad.items])
 
-  const inboxSinDato = Boolean(inbox.error) || inbox.notAvailable
-
   // Tras una acción de la bandeja se refresca TAMBIÉN el feed: la acción
   // ejecutada es, precisamente, actividad nueva.
   const refetchTrasAccion = useCallback(async () => {
@@ -55,36 +75,50 @@ export default function PilotoPage() {
   }, [inbox.refetch, actividad.refetch]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="p-6 lg:p-8 space-y-6" data-testid="piloto-page">
-      {/* Header */}
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">
-          {t('inmobiliaria.piloto.titulo')}
-        </h1>
-        <p className="text-sm text-muted-foreground max-w-2xl">
-          {t('inmobiliaria.piloto.descripcion')}
-        </p>
+    <div className="mx-auto max-w-7xl space-y-5 p-4 lg:p-8" data-testid="piloto-page">
+      {/* Encabezado — el único lugar con acciones de pantalla */}
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+            {t('inmobiliaria.piloto.titulo')}
+          </h1>
+          <p className="max-w-2xl text-sm text-fg-muted">
+            {t('inmobiliaria.piloto.descripcion')}
+          </p>
+        </div>
+        <PilotoAutonomia />
       </header>
 
-      {/* KPIs — solo números que TENEMOS de los hooks */}
+      {/* La línea de apertura del Gerente (se pinta solo si tiene algo que decir) */}
+      <PilotoBriefing
+        data={briefing.data}
+        isLoading={briefing.isLoading}
+        error={briefing.error}
+      />
+
       <PilotoKpis
         pendientes={inboxSinDato ? undefined : inbox.total}
-        alta={inboxSinDato ? undefined : inbox.porPrioridad.alta}
-        media={inboxSinDato ? undefined : inbox.porPrioridad.media}
+        atrasadas={atrasadas}
         actividadHoy={actividadHoy}
-        // Del briefing y solo si viene con la forma esperada — sin dato el
-        // tile de plata no se pinta.
         recuperadoMesCop={
           typeof briefing.data?.numeros?.recuperadoMesCop === 'number'
             ? briefing.data.numeros.recuperadoMesCop
             : undefined
         }
+        autonomos={
+          autonomia.isLoading || autonomia.rows.length === 0
+            ? undefined
+            : autonomia.rows.filter((r) => r.modo === 'autonomo').length
+        }
+        totalAgentes={autonomia.rows.length || undefined}
         isLoading={inbox.isLoading && actividad.isLoading}
       />
 
-      {/* Bandeja (60%) + columna derecha (Briefing + Autonomía) */}
-      <div className="grid gap-6 lg:grid-cols-5 items-start">
-        <div className="lg:col-span-3">
+      {/* Decidir (ancho) · lo que pasó (angosto) */}
+      <div className="grid items-start gap-5 lg:grid-cols-5">
+        {/* `min-w-0`: sin esto el contenido largo empuja el track del grid
+            y la página scrollea de lado en móvil (medido: 517 > 500 px). */}
+        <div className="min-w-0 lg:col-span-3">
           <PilotoBandeja
             items={inbox.items}
             isLoading={inbox.isLoading}
@@ -92,22 +126,15 @@ export default function PilotoPage() {
             onRefetch={refetchTrasAccion}
           />
         </div>
-        <div className="lg:col-span-2 space-y-6">
-          <PilotoBriefing
-            data={briefing.data}
-            isLoading={briefing.isLoading}
-            error={briefing.error}
+        <div className="min-w-0 lg:col-span-2">
+          <PilotoFeed
+            items={actividad.items}
+            isLoading={actividad.isLoading}
+            error={actividad.error}
+            onRefetch={actividad.refetch}
           />
-          <PilotoAutonomia />
         </div>
       </div>
-
-      {/* Feed a lo ancho */}
-      <PilotoFeed
-        items={actividad.items}
-        isLoading={actividad.isLoading}
-        error={actividad.error}
-      />
     </div>
   )
 }

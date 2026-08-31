@@ -1,156 +1,234 @@
 'use client'
 
 /**
- * PilotoFeed — la actividad en vivo del Piloto automático.
+ * PilotoFeed — lo que los agentes vienen haciendo, sin que sea un muro.
  *
- * Timeline vertical: icono de dominio por `tipo` (Phosphor — la librería del
- * repo, DESIGN.md §5), título + detalle, chip del agente, hora relativa y
- * enlace opcional. El contenido (titulo/detalle) viene del backend en
- * español; el chrome vive bajo `inmobiliaria.piloto.feed.*`.
+ * ── Por qué se rediseñó (medido el 2026-08-30) ─────────────────────────────
+ * El feed ocupaba 4.522 px — MÁS que la bandeja de decisiones — con 50
+ * entradas planas donde «Laura llamó a Nicolás G. · conversación completa»
+ * se repetía treinta veces seguidas. Leerlo era imposible y empujaba el
+ * resto de la torre fuera de la pantalla.
  *
- * Fail-soft: error propio dentro del widget — nunca tumba la página.
+ * Dos ideas lo arreglan:
+ *
+ *   1. **Se agrupa por día** («Hoy», «Ayer», la fecha) — así el feed cuenta
+ *      una historia con ritmo en vez de una lista sin cortes.
+ *   2. **Las repeticiones se pliegan**: entradas consecutivas del mismo tipo
+ *      y el mismo título se muestran una vez con su contador («×12»). Doce
+ *      llamadas iguales son UN hecho, no doce.
+ *
+ * Arranca mostrando los primeros dos días y ofrece «ver más» — nadie audita
+ * un mes de actividad de un vistazo, y quien quiera hacerlo tiene el detalle
+ * completo en la pantalla de cada agente.
  */
 
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import type { Icon } from '@phosphor-icons/react'
 import {
   ArrowUpRight,
-  Bell,
-  ChatCircleText,
-  CurrencyDollar,
+  ChatCircleDots,
+  CurrencyCircleDollar,
   Envelope,
-  FileText,
+  Gavel,
   Handshake,
   Lightning,
   PhoneCall,
   Robot,
-  Siren,
-  Warning,
+  type Icon,
 } from '@phosphor-icons/react'
 
-import type { ActivityItem } from '@/lib/api/piloto'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { SinDatos } from '@/components/estado/SinDatos'
+import { EsqueletoTarjetas } from '@/components/estado/EsqueletoTabla'
 import { useI18n } from '@/lib/i18n'
 import { relativeTime, workspaceVocab } from '@/components/inmobiliaria/ai/ColaHumana'
+import type { ActivityItem } from '@/lib/api/piloto'
 
-const NS = 'inmobiliaria.piloto.feed'
-
-/**
- * Icono por `tipo` — mapa por palabra clave, con Lightning de respaldo:
- * el contrato no cierra el vocabulario de tipos, así que un tipo nuevo
- * jamás puede romper el feed (mapa finito ⇒ fallback SIEMPRE).
- */
+/** Icono por tipo de evento; el orden importa (primero el match más preciso). */
 const TIPO_ICONS: Array<{ match: RegExp; icon: Icon }> = [
-  { match: /llamada|voz|call/, icon: PhoneCall },
-  { match: /whatsapp|mensaje|chat/, icon: ChatCircleText },
-  { match: /pago|cobro|billing/, icon: CurrencyDollar },
-  { match: /promesa|acuerdo|plan/, icon: Handshake },
-  { match: /escala/, icon: Warning },
-  { match: /carta|correo|email/, icon: Envelope },
-  { match: /siniestro/, icon: Siren },
-  { match: /gerente|briefing/, icon: Robot },
-  { match: /notific/, icon: Bell },
-  { match: /documento|contrato/, icon: FileText },
+  { match: /llamada|contacto/i, icon: PhoneCall },
+  { match: /whatsapp/i, icon: ChatCircleDots },
+  { match: /email|correo/i, icon: Envelope },
+  { match: /promesa|acuerdo/i, icon: Handshake },
+  { match: /pago/i, icon: CurrencyCircleDollar },
+  { match: /escalacion|escalación/i, icon: Gavel },
+  { match: /piloto|decision|decisión/i, icon: Robot },
 ]
 
-function tipoIcon(tipo: string): Icon {
-  const t = tipo.toLowerCase()
-  return TIPO_ICONS.find((e) => e.match.test(t))?.icon ?? Lightning
+function iconoDe(tipo: string): Icon {
+  return TIPO_ICONS.find((e) => e.match.test(tipo))?.icon ?? Lightning
+}
+
+/** Un hecho del feed: uno o varios eventos idénticos y consecutivos. */
+interface Hecho {
+  key: string
+  item: ActivityItem
+  veces: number
+}
+
+interface Dia {
+  clave: string
+  etiqueta: string
+  hechos: Hecho[]
+}
+
+const DIAS_INICIALES = 2
+
+function etiquetaDeDia(iso: string, hoy: Date): string {
+  const d = new Date(iso)
+  const dias = Math.round(
+    (new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime() -
+      new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) /
+      86_400_000,
+  )
+  if (dias === 0) return 'Hoy'
+  if (dias === 1) return 'Ayer'
+  return d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+/** Agrupa por día y pliega repeticiones consecutivas del mismo hecho. */
+function agrupar(items: ActivityItem[]): Dia[] {
+  const hoy = new Date()
+  const dias: Dia[] = []
+  for (const item of items) {
+    const fecha = new Date(item.at)
+    if (Number.isNaN(fecha.getTime())) continue
+    const clave = fecha.toISOString().slice(0, 10)
+    let dia = dias.at(-1)
+    if (!dia || dia.clave !== clave) {
+      dia = { clave, etiqueta: etiquetaDeDia(item.at, hoy), hechos: [] }
+      dias.push(dia)
+    }
+    const ultimo = dia.hechos.at(-1)
+    if (ultimo && ultimo.item.titulo === item.titulo && ultimo.item.tipo === item.tipo) {
+      ultimo.veces += 1
+      continue
+    }
+    dia.hechos.push({ key: item.id, item, veces: 1 })
+  }
+  return dias
 }
 
 export interface PilotoFeedProps {
   items: ActivityItem[]
-  isLoading?: boolean
-  error?: string | null
+  isLoading: boolean
+  error: string | null
+  onRefetch?: () => Promise<void>
 }
 
-export function PilotoFeed({ items, isLoading, error }: PilotoFeedProps) {
+export function PilotoFeed({ items, isLoading, error, onRefetch }: PilotoFeedProps) {
   const { t } = useI18n()
+  const [expandido, setExpandido] = useState(false)
+
+  const dias = useMemo(() => agrupar(items), [items])
+  const visibles = expandido ? dias : dias.slice(0, DIAS_INICIALES)
+  const ocultos = dias.length - visibles.length
 
   return (
-    <section
-      className="rounded-xl border border-border bg-card p-4 lg:p-5 space-y-3"
-      data-testid="piloto-feed"
-    >
-      <h2 className="text-sm font-semibold text-foreground">{t(`${NS}.titulo`)}</h2>
+    <Card className="overflow-hidden">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <h2 className="text-sm font-semibold text-fg">{t('inmobiliaria.piloto.feed.titulo')}</h2>
 
-      {isLoading ? (
-        <div className="space-y-2" data-testid="piloto-feed-loading">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-12 rounded-lg bg-muted/40 animate-pulse" />
+      </div>
+
+      <EstadoDeDatos
+        cargando={isLoading}
+        error={error ?? undefined}
+        vacio={items.length === 0}
+        queEs={t('inmobiliaria.piloto.feed.titulo').toLowerCase()}
+        {...(onRefetch ? { onReintentar: () => void onRefetch() } : {})}
+        esqueleto={
+          <div className="p-4">
+            <EsqueletoTarjetas cantidad={3} />
+          </div>
+        }
+        cuandoVacio={
+          <div className="px-4 py-10">
+            <SinDatos
+              queSon={t('inmobiliaria.piloto.feed.actividad')}
+              icono={Lightning}
+              titulo={t('inmobiliaria.piloto.feed.vacio')}
+              descripcion={t('inmobiliaria.piloto.feed.vacioHint')}
+            />
+          </div>
+        }
+      >
+        <div className="divide-y divide-border">
+          {visibles.map((dia) => (
+            <section key={dia.clave}>
+              <h3 className="sticky top-0 z-10 bg-surface-muted/80 px-4 py-1.5 font-mono text-[11px] uppercase tracking-widest text-fg-subtle backdrop-blur">
+                {dia.etiqueta}
+              </h3>
+              <ol role="list" className="px-4 py-1">
+                {dia.hechos.map((hecho) => {
+                  const { item, veces } = hecho
+                  const EventoIcon = iconoDe(item.tipo)
+                  return (
+                    <li key={hecho.key} className="flex items-start gap-3 py-2">
+                      <span
+                        className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-fg-subtle"
+                        aria-hidden="true"
+                      >
+                        <EventoIcon weight="duotone" className="h-3.5 w-3.5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <p className="min-w-0 truncate text-sm text-fg">
+                            {item.titulo}
+                            {veces > 1 && (
+                              <span className="ml-1.5 rounded-full bg-surface-muted px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-fg-muted">
+                                ×{veces}
+                              </span>
+                            )}
+                          </p>
+                          <span className="ml-auto shrink-0 font-mono text-[11px] tabular-nums text-fg-subtle">
+                            {relativeTime(item.at, t)}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-fg-muted">
+                          {item.detalle && <span className="truncate">{item.detalle}</span>}
+                          <span className="shrink-0 text-fg-subtle">
+                            {workspaceVocab(t, 'agente', item.agente)}
+                          </span>
+                          {item.href && (
+                            <Link
+                              href={item.href}
+                              className="inline-flex shrink-0 items-center gap-0.5 text-fg-muted hover:text-fg hover:underline"
+                            >
+                              {t('inmobiliaria.piloto.feed.ver')}
+                              <ArrowUpRight
+                                weight="bold"
+                                className="h-3 w-3"
+                                aria-hidden="true"
+                              />
+                            </Link>
+                          )}
+                        </p>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ol>
+            </section>
           ))}
         </div>
-      ) : error ? (
-        <div
-          className="rounded-lg border border-danger/30 bg-danger-soft p-3 text-sm text-danger"
-          data-testid="piloto-feed-error"
-        >
-          {t(`${NS}.error`, { error })}
-        </div>
-      ) : items.length === 0 ? (
-        <div
-          role="status"
-          className="flex flex-col items-center gap-3 px-6 py-12 text-center"
-          data-testid="piloto-feed-empty"
-        >
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-surface-muted">
-            <Lightning weight="duotone" className="h-5 w-5 text-fg-subtle" aria-hidden="true" />
+
+        {ocultos > 0 && (
+          <div className="border-t border-border px-4 py-2">
+            <Button
+              variant="link"
+              size="sm"
+              hideArrow
+              className="w-full justify-center"
+              onClick={() => setExpandido(true)}
+            >
+              {t('inmobiliaria.piloto.feed.verMas', { dias: String(ocultos) })}
+            </Button>
           </div>
-          <div className="space-y-1">
-            <p className="text-[15px] font-semibold text-fg">{t(`${NS}.vacio`)}</p>
-            <p className="text-sm text-fg-subtle">{t(`${NS}.vacioHint`)}</p>
-          </div>
-        </div>
-      ) : (
-        <ol className="relative space-y-0" data-testid="piloto-feed-lista">
-          {items.map((item, i) => {
-            const TipoIcon = tipoIcon(item.tipo)
-            const agenteLabel = workspaceVocab(t, 'agente', item.agente)
-            return (
-              <li key={item.id} className="relative flex gap-3 pb-4 last:pb-0">
-                {/* Riel vertical del timeline */}
-                {i < items.length - 1 && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute left-[15px] top-8 bottom-0 w-px bg-border"
-                  />
-                )}
-                <span className="relative flex items-center justify-center w-8 h-8 shrink-0 rounded-full bg-surface-muted ring-1 ring-border mt-0.5">
-                  <TipoIcon className="w-4 h-4 text-fg-muted" aria-hidden="true" />
-                </span>
-                <div className="flex-1 min-w-0 pt-0.5">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-base text-foreground leading-snug">
-                      {item.titulo}
-                    </p>
-                    <span className="text-[11px] text-muted-foreground tabular-nums shrink-0 mt-0.5">
-                      {relativeTime(item.at, t)}
-                    </span>
-                  </div>
-                  {item.detalle && (
-                    <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">
-                      {item.detalle}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="inline-flex items-center text-[11px] text-muted-foreground px-2 py-0.5 rounded-full ring-1 ring-border bg-muted">
-                      {agenteLabel}
-                    </span>
-                    {item.href && (
-                      <Link
-                        href={item.href}
-                        className="inline-flex items-center gap-0.5 text-xs font-medium text-primary hover:underline"
-                      >
-                        {t(`${NS}.ver`)}
-                        <ArrowUpRight className="w-3 h-3" aria-hidden="true" />
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </li>
-            )
-          })}
-        </ol>
-      )}
-    </section>
+        )}
+      </EstadoDeDatos>
+    </Card>
   )
 }

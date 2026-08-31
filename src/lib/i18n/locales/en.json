@@ -926,7 +926,8 @@
         "pendientes": "Pending",
         "alta": "High priority",
         "media": "Medium priority",
-        "actividadHoy": "Today's activity"
+        "actividadHoy": "Today's activity",
+        "recuperadoMes": "Recovered this month"
       },
       "bandeja": {
         "titulo": "Inbox",

@@ -927,7 +927,8 @@
         "pendientes": "Pendientes",
         "alta": "Prioridad alta",
         "media": "Prioridad media",
-        "actividadHoy": "Actividad de hoy"
+        "actividadHoy": "Actividad de hoy",
+        "recuperadoMes": "Recuperado este mes"
       },
       "bandeja": {
         "titulo": "Bandeja",

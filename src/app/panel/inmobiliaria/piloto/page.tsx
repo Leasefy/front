@@ -72,6 +72,13 @@ export default function PilotoPage() {
         alta={inboxSinDato ? undefined : inbox.porPrioridad.alta}
         media={inboxSinDato ? undefined : inbox.porPrioridad.media}
         actividadHoy={actividadHoy}
+        // Del briefing y solo si viene con la forma esperada — sin dato el
+        // tile de plata no se pinta.
+        recuperadoMesCop={
+          typeof briefing.data?.numeros?.recuperadoMesCop === 'number'
+            ? briefing.data.numeros.recuperadoMesCop
+            : undefined
+        }
         isLoading={inbox.isLoading && actividad.isLoading}
       />
 

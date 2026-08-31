@@ -92,6 +92,8 @@ export interface BriefingNumeros {
   altas?: number
   llamadasHoy?: number
   promesasHoy?: number
+  /** Plata recuperada por los agentes en el mes corriente (entero COP). */
+  recuperadoMesCop?: number
 }
 
 /**

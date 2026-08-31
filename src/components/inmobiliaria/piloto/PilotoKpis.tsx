@@ -14,6 +14,7 @@
  */
 
 import { useI18n } from '@/lib/i18n'
+import { formatCurrency } from '@/lib/format'
 
 const NS = 'inmobiliaria.piloto.kpis'
 
@@ -22,6 +23,11 @@ export interface PilotoKpisProps {
   alta: number | undefined
   media: number | undefined
   actividadHoy: number | undefined
+  /**
+   * Recuperado del mes (COP, del briefing). Sin dato el tile NO se pinta:
+   * un «—» en un renglón de plata se lee como plata en cero o rota.
+   */
+  recuperadoMesCop?: number
   isLoading?: boolean
 }
 
@@ -38,7 +44,14 @@ function KpiCard({ label, value }: { label: string; value: number | undefined })
   )
 }
 
-export function PilotoKpis({ pendientes, alta, media, actividadHoy, isLoading }: PilotoKpisProps) {
+export function PilotoKpis({
+  pendientes,
+  alta,
+  media,
+  actividadHoy,
+  recuperadoMesCop,
+  isLoading,
+}: PilotoKpisProps) {
   const { t } = useI18n()
 
   if (isLoading) {
@@ -51,12 +64,25 @@ export function PilotoKpis({ pendientes, alta, media, actividadHoy, isLoading }:
     )
   }
 
+  const conRecuperado = typeof recuperadoMesCop === 'number'
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="piloto-kpis">
+    <div
+      className={`grid grid-cols-2 gap-4 ${conRecuperado ? 'md:grid-cols-3 xl:grid-cols-5' : 'md:grid-cols-4'}`}
+      data-testid="piloto-kpis"
+    >
       <KpiCard label={t(`${NS}.pendientes`)} value={pendientes} />
       <KpiCard label={t(`${NS}.alta`)} value={alta} />
       <KpiCard label={t(`${NS}.media`)} value={media} />
       <KpiCard label={t(`${NS}.actividadHoy`)} value={actividadHoy} />
+      {conRecuperado && (
+        <div className="rounded-xl border border-border bg-card p-4" data-testid="piloto-kpi-recuperado">
+          <p className="text-xs text-muted-foreground leading-tight">{t(`${NS}.recuperadoMes`)}</p>
+          <p className="text-xl font-semibold text-foreground mt-1 font-mono tabular-nums whitespace-nowrap">
+            {formatCurrency(recuperadoMesCop)}
+          </p>
+        </div>
+      )}
     </div>
   )
 }

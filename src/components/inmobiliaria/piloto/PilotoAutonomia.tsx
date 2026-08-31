@@ -17,10 +17,10 @@
  * que tenía antes.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { ShieldCheck, SlidersHorizontal } from '@phosphor-icons/react'
-import { SegmentedControl } from '@leasefy/cadence'
+import { SegmentedControl, Switch } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -36,6 +36,12 @@ import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { workspaceVocab } from '@/components/inmobiliaria/ai/ColaHumana'
 import type { UsePilotoAutonomiaResult } from '@/lib/hooks/piloto/use-piloto-autonomia'
 import type { AutonomiaModo } from '@/lib/api/piloto'
+import {
+  fetchPilotoGobierno,
+  putPilotoGobierno,
+  type GobiernoItem,
+} from '@/lib/api/piloto'
+import { useAuth } from '@/lib/auth'
 
 const MODOS: AutonomiaModo[] = ['sombra', 'copiloto', 'autonomo']
 
@@ -63,8 +69,50 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
   const { t } = useI18n()
   const { rows, totalRoster, isLoading, busyAgente, setModo } = autonomia
   const { isAdmin } = usePermissionsContext()
+  const { agency } = useAuth()
   const [abierto, setAbierto] = useState(false)
   const mudos = totalRoster - rows.length
+
+  // ── El gobierno por inmobiliaria (agentes_habilitados) ──────────────────
+  // Se carga al ABRIR el panel: es configuración, no operación. El switch
+  // dice si el agente corre para ESTA agencia; la perilla de abajo, con
+  // cuánta correa. Optimista con rollback, como el modo.
+  const [gobierno, setGobierno] = useState<Map<string, GobiernoItem>>(new Map())
+  const [gobiernoBusy, setGobiernoBusy] = useState<string | null>(null)
+  useEffect(() => {
+    if (!abierto || !agency?.id) return
+    const controller = new AbortController()
+    void fetchPilotoGobierno(agency.id, controller.signal).then((r) => {
+      if (controller.signal.aborted || !r.ok || !r.data) return
+      setGobierno(new Map(r.data.agentes.map((a) => [a.agente, a])))
+    })
+    return () => controller.abort()
+  }, [abierto, agency?.id])
+
+  const cambiarCorre = async (agente: string, habilitado: boolean) => {
+    if (!agency?.id) return
+    const previa = gobierno
+    setGobiernoBusy(agente)
+    setGobierno((cur) => {
+      const next = new Map(cur)
+      const item = next.get(agente)
+      if (item) next.set(agente, { ...item, corre: habilitado && item.disponibleGlobal })
+      return next
+    })
+    const res = await putPilotoGobierno(agency.id, agente, habilitado)
+    setGobiernoBusy(null)
+    if (res.ok && res.data) {
+      setGobierno(new Map(res.data.agentes.map((a) => [a.agente, a])))
+      toast.success(
+        habilitado
+          ? t('inmobiliaria.piloto.gobierno.toastOn', { agente: workspaceVocab(t, 'agente', agente) })
+          : t('inmobiliaria.piloto.gobierno.toastOff', { agente: workspaceVocab(t, 'agente', agente) }),
+      )
+    } else {
+      setGobierno(previa)
+      toast.error(t('inmobiliaria.piloto.autonomia.toastFail', { error: res.error ?? 'error' }))
+    }
+  }
 
   const autonomos = useMemo(() => rows.filter((r) => r.modo === 'autonomo').length, [rows])
 
@@ -152,9 +200,31 @@ export function PilotoAutonomia({ autonomia }: PilotoAutonomiaProps) {
               value: m,
               label: t(`inmobiliaria.piloto.autonomia.modo.${m}`),
             }))
+            const gob = gobierno.get(row.agente)
             return (
               <div key={row.agente} className="space-y-1.5">
-                <p className="text-sm font-medium text-fg">{etiqueta}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-fg">{etiqueta}</p>
+                  {gob && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-[11px] text-fg-subtle">
+                        {!gob.disponibleGlobal
+                          ? t('inmobiliaria.piloto.gobierno.apagadoServidor')
+                          : gob.corre
+                            ? t('inmobiliaria.piloto.gobierno.activo')
+                            : t('inmobiliaria.piloto.gobierno.inactivo')}
+                      </span>
+                      {isAdmin && (
+                        <Switch
+                          checked={gob.corre}
+                          disabled={!gob.disponibleGlobal || gobiernoBusy === row.agente}
+                          onCheckedChange={(v: boolean) => void cambiarCorre(row.agente, v)}
+                          aria-label={t('inmobiliaria.piloto.gobierno.switchAria', { agente: etiqueta })}
+                        />
+                      )}
+                    </span>
+                  )}
+                </div>
                 {isAdmin ? (
                   <SegmentedControl<AutonomiaModo>
                     options={opciones}

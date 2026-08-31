@@ -1021,6 +1021,14 @@
         "listoConPeros": "It can run on its own. {{n}} thing is worth reviewing, but it doesn't block it.",
         "listoConPerosPlural": "It can run on its own. {{n}} things are worth reviewing, but they don't block it.",
         "noListoPlural": "{{n}} things are missing before it can run on its own."
+      },
+      "gobierno": {
+        "activo": "Active",
+        "inactivo": "Off for your agency",
+        "apagadoServidor": "Off at the server",
+        "switchAria": "Turn {agente} on or off for your agency",
+        "toastOn": "{agente} turned on for your agency",
+        "toastOff": "{agente} turned off for your agency"
       }
     },
     "mobileNav": {

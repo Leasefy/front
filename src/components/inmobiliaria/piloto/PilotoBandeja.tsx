@@ -38,6 +38,7 @@ import {
   Sparkle,
   Tray,
   UserSound,
+  HandPalm,
   type Icon,
 } from '@phosphor-icons/react'
 import { Chip } from '@leasefy/cadence'
@@ -66,6 +67,8 @@ const FUENTE_META: Record<string, { icon: Icon; label: string }> = {
   retencion: { icon: HandCoins, label: 'Retención' },
   calidad: { icon: Sparkle, label: 'Calidad' },
   factura_ap: { icon: Receipt, label: 'Cuentas por pagar' },
+  // Lo que la autonomía retuvo (copiloto): el botón lo LIBERA de verdad.
+  retenido: { icon: HandPalm, label: 'Retenidos' },
 }
 
 function metaDe(fuente: string): { icon: Icon; label: string } {

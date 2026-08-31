@@ -1022,6 +1022,14 @@
         "listoConPeros": "Puede operar sola. Queda {{n}} cosa por revisar que no la frena.",
         "listoConPerosPlural": "Puede operar sola. Quedan {{n}} cosas por revisar que no la frenan.",
         "noListoPlural": "Faltan {{n}} cosas para que opere sola."
+      },
+      "gobierno": {
+        "activo": "Activa",
+        "inactivo": "Apagada para tu inmobiliaria",
+        "apagadoServidor": "Apagada en el servidor",
+        "switchAria": "Encender o apagar {agente} para tu inmobiliaria",
+        "toastOn": "{agente} encendida para tu inmobiliaria",
+        "toastOff": "{agente} apagada para tu inmobiliaria"
       }
     },
     "mobileNav": {

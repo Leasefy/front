@@ -338,6 +338,63 @@ export async function putPilotoAutonomia(
   }
 }
 
+// ── Gobierno por inmobiliaria (2026-08-31) ─────────────────────────────────
+
+export interface GobiernoItem {
+  agente: string
+  corre: boolean
+  origen: 'heredado' | 'elegido'
+  disponibleGlobal: boolean
+}
+
+export interface PilotoGobiernoResponse {
+  agentes: GobiernoItem[]
+  llavesFinas: string[]
+}
+
+/** Qué agentes corren para esta inmobiliaria (la lista `agentes_habilitados`). */
+export async function fetchPilotoGobierno(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<{ ok: boolean; data?: PilotoGobiernoResponse; error?: string }> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/ai-hub/gobierno`, { signal })
+    if (!res.ok) return { ok: false, error: `${res.status}` }
+    return { ok: true, data: (await res.json()) as PilotoGobiernoResponse }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'fetch_failed' }
+  }
+}
+
+/** Enciende o apaga un agente para esta inmobiliaria. Solo OWNER/ADMIN. */
+export async function putPilotoGobierno(
+  agencyId: string,
+  agente: string,
+  habilitado: boolean,
+): Promise<{ ok: boolean; data?: PilotoGobiernoResponse; error?: string }> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(
+      `${agentUrl}/api/agency/${agencyId}/ai-hub/gobierno/${agente}`,
+      {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ habilitado }),
+      },
+    )
+    if (!res.ok) {
+      const errBody = (await res.json().catch(() => ({}))) as { error?: string }
+      return { ok: false, error: errBody.error ?? `${res.status}` }
+    }
+    return { ok: true, data: (await res.json()) as PilotoGobiernoResponse }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'put_failed' }
+  }
+}
+
 /**
  * Ejecuta la `accion` declarada por el micro en un item de la bandeja —
  * método + path + body (si viene) son del backend, VERBATIM; acá nunca se

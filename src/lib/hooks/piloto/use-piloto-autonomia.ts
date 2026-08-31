@@ -41,6 +41,8 @@ export interface AutonomiaRow {
 
 export interface UsePilotoAutonomiaResult {
   rows: AutonomiaRow[]
+  /** Cuántos agentes tiene el roster (no cuántos contestaron). */
+  totalRoster: number
   isLoading: boolean
   /** Solo cuando NINGÚN agente contestó bien y al menos uno falló de verdad. */
   error: string | null
@@ -146,5 +148,13 @@ export function usePilotoAutonomia(): UsePilotoAutonomiaResult {
     [agencyId, rows],
   )
 
-  return { rows, isLoading, error, busyAgente, setModo, refetch: fetchData }
+  return {
+    rows,
+    totalRoster: PILOTO_AGENTES.length,
+    isLoading,
+    error,
+    busyAgente,
+    setModo,
+    refetch: fetchData,
+  }
 }

@@ -948,7 +948,9 @@
         "filtrarPorTipo": "Filter by decision type",
         "limpiar": "Show all",
         "decisiones": "decisions",
-        "decidir": "Decide"
+        "decidir": "Decide",
+        "sinFuente": "We couldn't load the inbox",
+        "sinFuenteHint": "The source didn't respond, so we don't know if anything is waiting."
       },
       "feed": {
         "titulo": "Live activity",
@@ -957,7 +959,9 @@
         "error": "Could not load the activity: {{error}}",
         "ver": "View",
         "actividad": "activity",
-        "verMas": "Show {{dias}} more days"
+        "verMas": "Show {{dias}} more days",
+        "sinFuente": "We couldn't load the activity",
+        "sinFuenteHint": "The source didn't respond; that doesn't mean nothing happened."
       },
       "briefing": {
         "titulo": "Daily briefing",
@@ -981,7 +985,8 @@
           "sombra": "Shadow",
           "copiloto": "Copilot",
           "autonomo": "Autonomous"
-        }
+        },
+        "mudos": "{{n}} agents didn't report their mode: we don't know how much they can do on their own."
       },
       "pulso": {
         "titulo": "Pilot pulse",
@@ -996,7 +1001,8 @@
         "estado": {
           "ok": "All under control",
           "atencion": "Needs your attention",
-          "critico": "Needs action now"
+          "critico": "Needs action now",
+          "desconocido": "Unrecognized state"
         }
       }
     },

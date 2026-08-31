@@ -48,9 +48,10 @@ const MODO_EXPLICACION: Record<AutonomiaModo, string> = {
 
 export function PilotoAutonomia() {
   const { t } = useI18n()
-  const { rows, isLoading, busyAgente, setModo } = usePilotoAutonomia()
+  const { rows, totalRoster, isLoading, busyAgente, setModo } = usePilotoAutonomia()
   const { isAdmin } = usePermissionsContext()
   const [abierto, setAbierto] = useState(false)
+  const mudos = totalRoster - rows.length
 
   const autonomos = useMemo(() => rows.filter((r) => r.modo === 'autonomo').length, [rows])
 
@@ -78,7 +79,7 @@ export function PilotoAutonomia() {
           {t('inmobiliaria.piloto.autonomia.titulo')}
           {!isLoading && rows.length > 0 && (
             <span className="ml-1.5 font-mono text-xs tabular-nums text-fg-muted">
-              {autonomos}/{rows.length}
+              {autonomos}/{totalRoster}
             </span>
           )}
         </Button>
@@ -101,6 +102,13 @@ export function PilotoAutonomia() {
             </div>
           ))}
         </dl>
+
+        {/* Honestidad: si algún agente no reportó, se dice — su modo no se sabe. */}
+        {mudos > 0 && !isLoading && (
+          <p className="mt-3 text-xs text-fg-subtle">
+            {t('inmobiliaria.piloto.autonomia.mudos', { n: String(mudos) })}
+          </p>
+        )}
 
         {!isAdmin && (
           <p className="mt-3 text-xs text-fg-subtle">

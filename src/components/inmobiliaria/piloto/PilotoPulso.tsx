@@ -50,6 +50,13 @@ const ESTADO_META: Record<PulsoEstado, { punto: string; borde: string; icono: Ic
   critico: { punto: 'bg-danger', borde: 'border-danger/40', icono: WarningOctagon },
 }
 
+/** Para un estado fuera del contrato: neutro, nunca verde. */
+const ESTADO_META_DESCONOCIDO = {
+  punto: 'bg-fg-subtle',
+  borde: 'border-border',
+  icono: Info as Icon,
+}
+
 const SEVERIDAD_META: Record<
   PulsoAlerta['severidad'],
   { icono: Icon; texto: string; fondo: string }
@@ -99,7 +106,12 @@ export function PilotoPulso({ data, isLoading, error, notAvailable, lectura }: P
   // Sin endpoint o con la fuente caída, la torre sigue: este panel no se pinta.
   if (notAvailable || error || !data) return null
 
-  const meta = ESTADO_META[data.estado] ?? ESTADO_META.ok
+  // Un estado que no conocemos NO se pinta como éxito: se muestra neutro.
+  // Degradar lo desconocido a verde es la forma más silenciosa de mentir.
+  const meta = ESTADO_META[data.estado] ?? ESTADO_META_DESCONOCIDO
+  const estadoLabel = ESTADO_META[data.estado]
+    ? t(`inmobiliaria.piloto.pulso.estado.${data.estado}`)
+    : t('inmobiliaria.piloto.pulso.estado.desconocido')
   const hayTrabajo = data.enCurso.length > 0
   const alertas = [...data.alertas].sort((a, b) => orden(a.severidad) - orden(b.severidad))
 
@@ -124,7 +136,7 @@ export function PilotoPulso({ data, isLoading, error, notAvailable, lectura }: P
             <p className="mt-0.5 text-sm text-fg-muted">{lectura.join(' ')}</p>
           )}
           <p className="mt-1 font-mono text-[11px] uppercase tracking-widest text-fg-subtle">
-            {t(`inmobiliaria.piloto.pulso.estado.${data.estado}`)}
+            {estadoLabel}
           </p>
         </div>
         {/* Los números de hoy, en una línea */}
@@ -189,7 +201,9 @@ export function PilotoPulso({ data, isLoading, error, notAvailable, lectura }: P
 }
 
 function orden(s: PulsoAlerta['severidad']): number {
-  return { critica: 0, alta: 1, media: 2, info: 3 }[s] ?? 9
+  // Lo desconocido se ordena junto a «alta» (coherente con cómo se pinta),
+  // no al final donde el `slice(0, 4)` podría ocultarlo.
+  return { critica: 0, alta: 1, media: 2, info: 3 }[s] ?? 1
 }
 
 function Numero({ label, valor }: { label: string; valor: number }) {
@@ -241,7 +255,9 @@ function FilaEnCurso({ item }: { item: PulsoEnCurso }) {
 }
 
 function FilaAlerta({ alerta }: { alerta: PulsoAlerta }) {
-  const meta = SEVERIDAD_META[alerta.severidad] ?? SEVERIDAD_META.info
+  // Una severidad desconocida se trata como ALTA, no como info: ante la duda,
+  // que la vea un humano en vez de esconderse al final de la lista.
+  const meta = SEVERIDAD_META[alerta.severidad] ?? SEVERIDAD_META.alta
   const AlertaIcon = meta.icono
   const contenido = (
     <>

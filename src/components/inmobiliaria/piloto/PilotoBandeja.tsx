@@ -50,6 +50,7 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { EsqueletoTarjetas } from '@/components/estado/EsqueletoTabla'
 import { useI18n } from '@/lib/i18n'
+import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
 import { formatCurrency } from '@/lib/format'
 import { runInboxAccion, type InboxItem } from '@/lib/api/piloto'
@@ -95,11 +96,19 @@ export interface PilotoBandejaProps {
   items: InboxItem[]
   isLoading: boolean
   error: string | null
+  /** El micro no publicó el endpoint (404) o no se pudo consultar. */
+  notAvailable?: boolean
   onRefetch: () => Promise<void>
 }
 
-export function PilotoBandeja({ items, isLoading, error, onRefetch }: PilotoBandejaProps) {
+export function PilotoBandeja({ items, isLoading, error, notAvailable = false, onRefetch }: PilotoBandejaProps) {
   const { t } = useI18n()
+  // Las acciones de la bandeja (tomar el caso, aprobar) exigen
+  // OWNER/ADMIN/OPERATOR en el micro: a un VIEWER le devolverían 403. No se
+  // dibuja un botón que va a fallar — solo se niega cuando el rol se conoce
+  // de verdad (mientras resuelve, `agencyRole` es null y no se asume nada).
+  const { agencyRole } = usePermissionsContext()
+  const puedeActuar = agencyRole === null || agencyRole !== 'VIEWER'
   const [fuenteFiltro, setFuenteFiltro] = useState<string | null>(null)
   const [pagina, setPagina] = useState(1)
   const [enVuelo, setEnVuelo] = useState<string | null>(null)
@@ -217,7 +226,18 @@ export function PilotoBandeja({ items, isLoading, error, onRefetch }: PilotoBand
           </div>
         }
         cuandoVacio={
-          hayFiltro ? (
+          // «No se pudo medir» NO es «no hay nada»: decir que no hay trabajo
+          // pendiente sin haber consultado es afirmar algo que no sabemos.
+          notAvailable ? (
+            <div className="px-4 py-10">
+              <SinDatos
+                queSon={t('inmobiliaria.piloto.bandeja.decisiones')}
+                icono={Tray}
+                titulo={t('inmobiliaria.piloto.bandeja.sinFuente')}
+                descripcion={t('inmobiliaria.piloto.bandeja.sinFuenteHint')}
+              />
+            </div>
+          ) : hayFiltro ? (
             <div className="px-4 py-10">
               <SinDatos
                 hayFiltros
@@ -285,7 +305,7 @@ export function PilotoBandeja({ items, isLoading, error, onRefetch }: PilotoBand
                 </div>
 
                 <div className="flex shrink-0 items-center gap-1.5 self-center">
-                  {item.accion ? (
+                  {item.accion && puedeActuar ? (
                     <Button
                       size="sm"
                       hideArrow

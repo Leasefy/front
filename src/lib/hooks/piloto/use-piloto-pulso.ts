@@ -40,7 +40,10 @@ export function usePilotoPulso(): UsePilotoPulsoResult {
   const loadedOnceRef = useRef(false)
 
   const fetchData = useCallback(async () => {
+    // Sin URL del micro o sin agencia NO se midió nada: «no disponible»,
+    // no «no hay nada».
     if (!process.env.NEXT_PUBLIC_AGENT_URL || !agencyId) {
+      setNotAvailable(true)
       setIsLoading(false)
       return
     }
@@ -65,6 +68,7 @@ export function usePilotoPulso(): UsePilotoPulsoResult {
 
   useEffect(() => {
     if (!agencyId) {
+      setNotAvailable(true)
       setIsLoading(false)
       return
     }

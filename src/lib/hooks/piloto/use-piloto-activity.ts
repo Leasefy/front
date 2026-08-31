@@ -42,12 +42,18 @@ export function usePilotoActivity(limit = 50): UsePilotoActivityResult {
   const loadedOnceRef = useRef(false)
 
   const fetchData = useCallback(async () => {
+    // Sin URL del micro o sin agencia NO se midió nada: se marca como
+    // «no disponible» para que la pantalla diga eso y no «no hay nada
+    // esperando por ti», que sería una afirmación sobre el mundo que este
+    // hook no puede sostener.
     if (!process.env.NEXT_PUBLIC_AGENT_URL) {
       console.warn('[usePilotoActivity] NEXT_PUBLIC_AGENT_URL is not configured')
+      setNotAvailable(true)
       setIsLoading(false)
       return
     }
     if (!agencyId) {
+      setNotAvailable(true)
       setIsLoading(false)
       return
     }
@@ -72,6 +78,7 @@ export function usePilotoActivity(limit = 50): UsePilotoActivityResult {
 
   useEffect(() => {
     if (!agencyId) {
+      setNotAvailable(true)
       setIsLoading(false)
       return
     }

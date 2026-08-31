@@ -115,10 +115,12 @@ export interface PilotoFeedProps {
   items: ActivityItem[]
   isLoading: boolean
   error: string | null
+  /** El micro no publicó el endpoint (404) o no se pudo consultar. */
+  notAvailable?: boolean
   onRefetch?: () => Promise<void>
 }
 
-export function PilotoFeed({ items, isLoading, error, onRefetch }: PilotoFeedProps) {
+export function PilotoFeed({ items, isLoading, error, notAvailable = false, onRefetch }: PilotoFeedProps) {
   const { t } = useI18n()
   const [expandido, setExpandido] = useState(false)
 
@@ -146,11 +148,18 @@ export function PilotoFeed({ items, isLoading, error, onRefetch }: PilotoFeedPro
         }
         cuandoVacio={
           <div className="px-4 py-10">
+            {/* Sin fuente no se afirma «no pasó nada»: se dice que no se pudo mirar. */}
             <SinDatos
               queSon={t('inmobiliaria.piloto.feed.actividad')}
               icono={Lightning}
-              titulo={t('inmobiliaria.piloto.feed.vacio')}
-              descripcion={t('inmobiliaria.piloto.feed.vacioHint')}
+              titulo={t(
+                notAvailable ? 'inmobiliaria.piloto.feed.sinFuente' : 'inmobiliaria.piloto.feed.vacio',
+              )}
+              descripcion={t(
+                notAvailable
+                  ? 'inmobiliaria.piloto.feed.sinFuenteHint'
+                  : 'inmobiliaria.piloto.feed.vacioHint',
+              )}
             />
           </div>
         }

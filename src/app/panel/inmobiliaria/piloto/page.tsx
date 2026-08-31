@@ -129,8 +129,12 @@ export default function PilotoPage() {
             ? undefined
             : autonomia.rows.filter((r) => r.modo === 'autonomo').length
         }
-        totalAgentes={autonomia.rows.length || undefined}
-        isLoading={inbox.isLoading && actividad.isLoading}
+        // El denominador es el ROSTER, no «los que contestaron»: con 4 de 7
+        // agentes mudos, «3/3» se leería como «delegaste todo».
+        totalAgentes={autonomia.totalRoster}
+        // OR, no AND: con el feed resuelto y la bandeja en vuelo, el KPI
+        // pintaba un 0 que todavía nadie había medido.
+        isLoading={inbox.isLoading || actividad.isLoading}
       />
 
       {/* Decidir (ancho) · lo que pasó (angosto) */}
@@ -142,6 +146,7 @@ export default function PilotoPage() {
             items={inbox.items}
             isLoading={inbox.isLoading}
             error={inbox.error}
+            notAvailable={inbox.notAvailable}
             onRefetch={refetchTrasAccion}
           />
         </div>
@@ -150,6 +155,7 @@ export default function PilotoPage() {
             items={actividad.items}
             isLoading={actividad.isLoading}
             error={actividad.error}
+            notAvailable={actividad.notAvailable}
             onRefetch={actividad.refetch}
           />
         </div>

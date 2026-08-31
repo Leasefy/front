@@ -949,7 +949,9 @@
         "filtrarPorTipo": "Filtrar por tipo de decisión",
         "limpiar": "Ver todo",
         "decisiones": "decisiones",
-        "decidir": "Decidir"
+        "decidir": "Decidir",
+        "sinFuente": "No pudimos consultar la bandeja",
+        "sinFuenteHint": "La fuente no respondió, así que no sabemos si hay decisiones esperando."
       },
       "feed": {
         "titulo": "Actividad en vivo",
@@ -958,7 +960,9 @@
         "error": "No se pudo cargar la actividad: {{error}}",
         "ver": "Ver",
         "actividad": "actividad",
-        "verMas": "Ver {{dias}} días más"
+        "verMas": "Ver {{dias}} días más",
+        "sinFuente": "No pudimos consultar la actividad",
+        "sinFuenteHint": "La fuente no respondió; esto no significa que no haya pasado nada."
       },
       "briefing": {
         "titulo": "Briefing del día",
@@ -982,7 +986,8 @@
           "sombra": "Sombra",
           "copiloto": "Copiloto",
           "autonomo": "Autónomo"
-        }
+        },
+        "mudos": "{{n}} agentes no reportaron su modo: no sabemos cuánto pueden hacer solos."
       },
       "pulso": {
         "titulo": "Pulso del piloto",
@@ -997,7 +1002,8 @@
         "estado": {
           "ok": "Todo bajo control",
           "atencion": "Requiere tu atención",
-          "critico": "Necesita acción ya"
+          "critico": "Necesita acción ya",
+          "desconocido": "Estado no reconocido"
         }
       }
     },

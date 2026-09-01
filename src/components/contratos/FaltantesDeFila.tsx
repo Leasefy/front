@@ -74,6 +74,43 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
   },
 };
 
+/**
+ * Qué decía la celda del archivo para este faltante.
+ *
+ * «No encontramos el inmueble» no dice cuál dirección se buscó, y en 1.200
+ * filas eso obliga a abrir el Excel y contar líneas. El valor ya viaja en
+ * `datos` —es lo que el archivo mandó— así que mostrarlo no cuesta nada.
+ *
+ * Sólo los faltantes cuyo valor SOBREVIVE el parseo: un canon o una fecha
+ * ilegibles se descartan al armar la fila y nunca llegan hasta acá (para
+ * mostrarlos habría que hacerlos viajar en el DTO — ver el reporte).
+ */
+export function celdaDelFaltante(
+  fila: FilaDeMigracion,
+  faltante: string,
+): string | null {
+  const datos = fila.datos as {
+    direccion?: unknown;
+    inquilino?: { nombre?: unknown; correo?: unknown };
+  } | null;
+  const texto = (v: unknown) => {
+    const t = String(v ?? '').trim();
+    if (!t) return null;
+    return t.length > 60 ? `${t.slice(0, 60)}…` : t;
+  };
+  switch (faltante) {
+    case 'inmueble':
+    case 'inmueble_ambiguo':
+      return texto(datos?.direccion);
+    case 'inquilino_correo':
+      return texto(datos?.inquilino?.correo);
+    case 'inquilino_nombre':
+      return texto(datos?.inquilino?.nombre);
+    default:
+      return null;
+  }
+}
+
 interface Props {
   fila: FilaDeMigracion;
   onResuelta: (f: FilaDeMigracion) => void;
@@ -106,6 +143,17 @@ export function FaltantesDeFila({ fila, onResuelta }: Props) {
           {EXPLICACION[f]?.porque ? (
             <p className="mt-0.5 text-xs text-muted-foreground">
               {EXPLICACION[f].porque}
+            </p>
+          ) : null}
+          {celdaDelFaltante(fila, f) ? (
+            <p
+              className="mt-1 text-xs text-muted-foreground"
+              data-testid={`celda-de-${f}`}
+            >
+              El archivo dice:{" "}
+              <span className="font-medium text-foreground">
+                «{celdaDelFaltante(fila, f)}»
+              </span>
             </p>
           ) : null}
 

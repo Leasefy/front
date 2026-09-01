@@ -43,7 +43,7 @@ vi.mock('@/lib/api/contracts.service', async () => {
 })
 
 import { contractsApi, type FilaDeMigracion } from '@/lib/api/contracts.service'
-import { EXPLICACION, FaltantesDeFila } from './FaltantesDeFila'
+import { celdaDelFaltante, EXPLICACION, FaltantesDeFila } from './FaltantesDeFila'
 
 let container: HTMLDivElement
 let root: Root
@@ -237,3 +237,61 @@ describe('<FaltantesDeFila> — la búsqueda de propietarios que falla se dice',
     expect(container.querySelector('[data-testid="busqueda-fallida"]')).toBeNull()
   })
 })
+
+describe('el faltante dice QUÉ decía el archivo', () => {
+  /*
+   * «No encontramos el inmueble» sin la dirección obliga a abrir el Excel y
+   * contar líneas. El valor ya viaja en `datos`: mostrarlo no cuesta nada.
+   */
+  it('la dirección que no resolvió se muestra', () => {
+    const f = {
+      ...filaBase(),
+      faltantes: ['inmueble'],
+      datos: { direccion: 'Cra 43A # 5-15', inquilino: { nombre: 'Ana' } },
+    } as unknown as FilaDeMigracion;
+
+    expect(celdaDelFaltante(f, 'inmueble')).toBe('Cra 43A # 5-15');
+  });
+
+  it('un correo ilegible se muestra tal cual vino', () => {
+    const f = {
+      ...filaBase(),
+      faltantes: ['inquilino_correo'],
+      datos: { direccion: 'x', inquilino: { correo: 'ana@' } },
+    } as unknown as FilaDeMigracion;
+
+    expect(celdaDelFaltante(f, 'inquilino_correo')).toBe('ana@');
+  });
+
+  it('una celda vacía no inventa comillas vacías', () => {
+    const f = {
+      ...filaBase(),
+      faltantes: ['inmueble'],
+      datos: { direccion: '   ', inquilino: {} },
+    } as unknown as FilaDeMigracion;
+
+    expect(celdaDelFaltante(f, 'inmueble')).toBeNull();
+  });
+
+  it('un faltante cuyo valor NO sobrevive el parseo no muestra nada inventado', () => {
+    // El canon ilegible se descarta al armar la fila: no hay valor que
+    // mostrar, y fabricar uno sería peor que no decir nada.
+    const f = {
+      ...filaBase(),
+      faltantes: ['canon'],
+      datos: { direccion: 'x', inquilino: {} },
+    } as unknown as FilaDeMigracion;
+
+    expect(celdaDelFaltante(f, 'canon')).toBeNull();
+  });
+
+  it('una dirección enorme se recorta', () => {
+    const f = {
+      ...filaBase(),
+      faltantes: ['inmueble'],
+      datos: { direccion: 'C'.repeat(200), inquilino: {} },
+    } as unknown as FilaDeMigracion;
+
+    expect(celdaDelFaltante(f, 'inmueble')!).toHaveLength(61); // 60 + «…»
+  });
+});

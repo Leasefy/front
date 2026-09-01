@@ -61,6 +61,7 @@ const CLAVES_DEL_DTO_DE_FILA = [
   'agenteRetenedorIva',
   'agenteRetenedorIca',
   'notas',
+  'externalId',
 ];
 
 /** `PrepararTercerosDto`. */

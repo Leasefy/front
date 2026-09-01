@@ -91,7 +91,7 @@ export interface ErrorDeFila {
 }
 
 /**
- * Las 16 claves que `FilaTerceroDto` declara — **exactamente**, ni una más.
+ * Las 17 claves que `FilaTerceroDto` declara — **exactamente**, ni una más.
  *
  * `direccion`…`notas` sólo aplican a propietarios; en una fila de inquilino el
  * back las ignora, así que mandarlas vacías no rompe nada, pero mandar una
@@ -114,6 +114,9 @@ export const CLAVES_DE_FILA = [
   'agenteRetenedorIva',
   'agenteRetenedorIca',
   'notas',
+  // El id que el tercero traía del sistema anterior. Informativo: no es
+  // llave, no deduplica y no lo mira ningún camino de negocio.
+  'externalId',
 ] as const;
 
 export type CampoDeFila = (typeof CLAVES_DE_FILA)[number];
@@ -146,6 +149,7 @@ export const LARGO_MAXIMO_DE_CELDA: Record<CampoDeFila, number> = {
   agenteRetenedorIva: 20,
   agenteRetenedorIca: 20,
   notas: 1000,
+  externalId: 64,
 };
 
 /** `MAX_FILAS_POR_LOTE` en `MigracionTercerosService`. */
@@ -203,7 +207,16 @@ export interface FilaDeStaging {
   aplicadoAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /**
+   * Cuántas veces se escribió esta fila. Se devuelve al corregir para que el
+   * back detecte que otra pestaña ya la cambió. Un back viejo no lo manda:
+   * ausente ⇒ no se manda de vuelta y no hay control, como antes.
+   */
+  version?: number;
 }
+
+/** El 409 de `corregir` cuando otra pestaña guardó primero. */
+export const CODIGO_FILA_DESACTUALIZADA = 'FILA_DESACTUALIZADA';
 
 export interface ResumenDeLote {
   lote: string;
@@ -414,13 +427,27 @@ export const migracionTercerosApi = {
    */
   async corregir(
     id: string,
-    cambios: { campos?: FilaTercero; vincularAExistente?: boolean } = {},
+    cambios: {
+      campos?: FilaTercero;
+      vincularAExistente?: boolean;
+      /**
+       * La versión que la pantalla tenía al empezar a editar. Si otra pestaña
+       * guardó primero, el back responde 409 `FILA_DESACTUALIZADA` en vez de
+       * pisar su trabajo.
+       */
+      version?: number;
+    } = {},
   ): Promise<FilaDeStaging> {
-    const cuerpo: { campos?: FilaTercero; vincularAExistente?: boolean } = {};
+    const cuerpo: {
+      campos?: FilaTercero;
+      vincularAExistente?: boolean;
+      version?: number;
+    } = {};
     if (cambios.campos) cuerpo.campos = soloClavesDeFila(cambios.campos);
     if (cambios.vincularAExistente !== undefined) {
       cuerpo.vincularAExistente = cambios.vincularAExistente;
     }
+    if (cambios.version !== undefined) cuerpo.version = cambios.version;
     return apiClient.patch<FilaDeStaging>(`${BASE}/filas/${encodeURIComponent(id)}`, cuerpo);
   },
 

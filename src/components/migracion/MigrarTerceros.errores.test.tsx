@@ -106,6 +106,7 @@ const filaPendiente = (n: number): FilaDeStaging => ({
   aplicadoAt: null,
   createdAt: '2026-09-01T10:00:00.000Z',
   updatedAt: '2026-09-01T10:00:00.000Z',
+  version: 3,
 });
 
 /** Sube un archivo por el dropzone con el parser mockeado. */
@@ -392,5 +393,66 @@ describe('resumenDeFallidas', () => {
     });
     expect(texto).toContain('La que no se pudo quedó seleccionada');
     expect(texto).toContain('fila 9');
+  });
+});
+
+describe('dos pestañas sobre la misma fila', () => {
+  async function abrirLista() {
+    api.lotesAbiertos.mockResolvedValue([LOTE]);
+    await pintar();
+    await clic('Retomar');
+  }
+
+  it('la corrección viaja con la versión que la fila tenía en pantalla', async () => {
+    await abrirLista();
+
+    const campo = container.querySelector<HTMLInputElement>('[data-testid="campo-correo"]')!;
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )!.set!;
+    await act(async () => {
+      setter.call(campo, 'nuevo@correo.co');
+      campo.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await clic('Guardar');
+
+    expect(api.corregir).toHaveBeenCalledWith('f-1', {
+      campos: { correo: 'nuevo@correo.co' },
+      version: 3,
+    });
+  });
+
+  it('🔴 si otra pestaña guardó primero: se dice, se relee, y lo tecleado NO se pierde', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    await abrirLista();
+    api.corregir.mockRejectedValue(
+      new ApiError(
+        409,
+        'Alguien más cambió esta fila mientras la editabas.',
+        'FILA_DESACTUALIZADA',
+      ),
+    );
+    const filasAntes = api.filas.mock.calls.length;
+
+    const campo = container.querySelector<HTMLInputElement>('[data-testid="campo-correo"]')!;
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )!.set!;
+    await act(async () => {
+      setter.call(campo, 'nuevo@correo.co');
+      campo.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await clic('Guardar');
+
+    // Lo dice, con el mensaje del back.
+    expect(container.textContent).toContain('Alguien más cambió esta fila');
+    // Releyó: lo que hay en pantalla vuelve a ser lo que hay en la base.
+    expect(api.filas.mock.calls.length).toBeGreaterThan(filasAntes);
+    // Y lo tecleado sigue ahí: no hay que volver a escribirlo.
+    expect(
+      container.querySelector<HTMLInputElement>('[data-testid="campo-correo"]')!.value,
+    ).toBe('nuevo@correo.co');
   });
 });

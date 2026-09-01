@@ -28,6 +28,17 @@ import {
   activarLoteCompleto,
   ActivacionInterrumpida,
 } from "../lib/activarLoteCompleto";
+import { CompletarMandatosLoteDialog } from "../CompletarMandatosLoteDialog";
+import {
+  agentesApi,
+  inmueblesApi,
+  propietariosApi,
+} from "@/lib/api/inmobiliaria.service";
+import type {
+  Agente,
+  InmuebleSinConsignacion,
+  Propietario,
+} from "@/lib/types/inmobiliaria";
 import { RanuraDelPie, type ImportStepProps } from "../ImportWizard";
 import { FilaImportacionRow } from "../FilaImportacionRow";
 import { ProgresoDeLoteInmuebles } from "../ProgresoDeLoteInmuebles";
@@ -179,6 +190,41 @@ export function StepConfirmImport({
     omitidas: FilaOmitida[];
   } | null>(null);
   const [isComplete, setIsComplete] = useState(false);
+
+  /*
+   * El mandato, al terminar.
+   *
+   * Un inmueble importado nace DRAFT y SIN consignación (publicar exige
+   * mandato), y la grilla del portafolio no muestra los que no lo tienen: una
+   * importación de 300 filas terminaba en un portafolio aparentemente vacío.
+   * El diálogo de mandatos ya existía pero se había desconectado en WU-6,
+   * porque en ese momento del flujo los `Property` todavía no existían.
+   * Ahora sí: `activar()` ya corrió, así que se pregunta por los que quedaron
+   * sin mandato y se ofrece completarlo. NUNCA se inventa un canon — cada
+   * fila la escribe la persona en el diálogo.
+   */
+  const [sinMandato, setSinMandato] = useState<InmuebleSinConsignacion[]>([]);
+  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
+  const [agentes, setAgentes] = useState<Agente[]>([]);
+  const [ofrecerMandatos, setOfrecerMandatos] = useState(false);
+
+  const buscarSinMandato = useCallback(async () => {
+    try {
+      const [inm, props, ags] = await Promise.all([
+        inmueblesApi.getSinConsignacion(),
+        propietariosApi.getAll(),
+        agentesApi.getAll(),
+      ]);
+      setSinMandato(inm);
+      setPropietarios(props);
+      setAgentes(ags);
+      setOfrecerMandatos(inm.length > 0);
+    } catch {
+      // Que no se pueda ofrecer el mandato no puede ensuciar una importación
+      // que salió bien: los inmuebles están creados y el mandato se completa
+      // después desde el portafolio.
+    }
+  }, []);
 
   /*
    * Aviso al muro mientras hay una operación larga en vuelo — la
@@ -404,6 +450,7 @@ export function StepConfirmImport({
       setResultadoActivacion(resultado);
       updateState({ importedCount: resultado.activados, importProgress: 100 });
       setIsComplete(true);
+      if (resultado.activados > 0) void buscarSinMandato();
       if (resultado.omitidas.length > 0) {
         toast.warning("Importación parcial", {
           description: `${resultado.activados} activadas, ${resultado.omitidas.length} todavía con datos pendientes.`,
@@ -478,7 +525,40 @@ export function StepConfirmImport({
               datos — volvé a «Revisión» para completarlas.
             </p>
           )}
+          {/*
+           * Sin mandato, un inmueble importado no se puede publicar Y NO SALE
+           * en la grilla del portafolio: la importación parecía no haber
+           * hecho nada. Se dice acá, con la salida al lado.
+           */}
+          {sinMandato.length > 0 && !ofrecerMandatos && (
+            <p className="text-sm text-warning" data-testid="aviso-sin-mandato">
+              {sinMandato.length === 1
+                ? '1 inmueble quedó sin mandato: hasta que lo tenga no se puede publicar ni aparece en el portafolio.'
+                : `${sinMandato.length} inmuebles quedaron sin mandato: hasta que lo tengan no se pueden publicar ni aparecen en el portafolio.`}{' '}
+              <button
+                type="button"
+                className="underline underline-offset-2"
+                onClick={() => setOfrecerMandatos(true)}
+              >
+                Completar los mandatos
+              </button>
+            </p>
+          )}
         </div>
+
+        {ofrecerMandatos && sinMandato.length > 0 && (
+          <CompletarMandatosLoteDialog
+            inmuebles={sinMandato}
+            propietarios={propietarios}
+            agentes={agentes}
+            onClose={() => setOfrecerMandatos(false)}
+            onDone={() => {
+              setOfrecerMandatos(false);
+              // Relee: los que quedaron sin mandato siguen avisando.
+              void buscarSinMandato();
+            }}
+          />
+        )}
 
         <div className="flex items-center gap-3 animate-fade-in-up">
           {/* Adentro del muro de migración no hay portafolio que ver todavía

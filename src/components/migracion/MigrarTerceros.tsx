@@ -59,6 +59,7 @@ import { ApiError } from '@/lib/api/client';
 import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
 import {
   migracionTercerosApi,
+  CODIGO_FILA_DESACTUALIZADA,
   celdasDemasiadoLargas,
   MAX_FILAS_POR_LOTE,
   type FilaDeStaging,
@@ -413,6 +414,21 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         await accion();
       } catch (e) {
         const m = mensaje(e, respaldo);
+        /*
+         * 🔴 «Otra pestaña guardó primero» es el único fallo donde SÍ se
+         * relee: lo que la persona tiene en pantalla ya no es lo que hay, y
+         * pedirle que corrija a ciegas sobre un dato viejo es cómo se pisa
+         * dos veces el mismo trabajo. El borrador tecleado NO se toca —
+         * `FilaDeTercero` lo conserva cuando la acción devuelve `ok: false`—
+         * así que puede releer, comparar y volver a guardar sin retipear.
+         */
+        if (e instanceof ApiError && e.code === CODIGO_FILA_DESACTUALIZADA) {
+          try {
+            await refrescar(loteAbierto, pagina);
+          } catch {
+            // El mensaje de arriba ya cuenta lo importante.
+          }
+        }
         setError(m);
         setCargando(false);
         return { ok: false, mensaje: m };
@@ -515,15 +531,15 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         onSeleccionCambia={setSeleccion}
         onPaginaCambia={(p) => void cambiarPagina(p)}
         onActualizar={() => void cambiarPagina(pagina)}
-        onCorregir={(id, campos) =>
+        onCorregir={(id, campos, version) =>
           conRefresco(
-            () => migracionTercerosApi.corregir(id, { campos }),
+            () => migracionTercerosApi.corregir(id, { campos, version }),
             'No pudimos guardar la corrección.',
           )
         }
-        onVincular={(id) =>
+        onVincular={(id, version) =>
           conRefresco(
-            () => migracionTercerosApi.corregir(id, { vincularAExistente: true }),
+            () => migracionTercerosApi.corregir(id, { vincularAExistente: true, version }),
             'No pudimos vincular la fila.',
           )
         }
@@ -1002,8 +1018,16 @@ function ListaDeTrabajo({
   onPaginaCambia: (p: number) => void;
   /** Reintenta la lectura de la página actual — la salida de un refresco caído. */
   onActualizar: () => void;
-  onCorregir: (id: string, campos: FilaTercero) => Promise<ResultadoDeAccion>;
-  onVincular: (id: string) => Promise<ResultadoDeAccion>;
+  /**
+   * `version` es la que traía la fila cuando se pintó: el back la usa para
+   * rechazar la corrección si otra pestaña guardó primero.
+   */
+  onCorregir: (
+    id: string,
+    campos: FilaTercero,
+    version: number | undefined,
+  ) => Promise<ResultadoDeAccion>;
+  onVincular: (id: string, version: number | undefined) => Promise<ResultadoDeAccion>;
   onDescartar: (id: string) => Promise<ResultadoDeAccion>;
   onMasivo: (cambios: {
     campos?: FilaTercero;
@@ -1235,8 +1259,8 @@ function ListaDeTrabajo({
               fila={fila}
               columnas={columnas}
               guardando={cargando}
-              onCorregir={(campos) => onCorregir(fila.id, campos)}
-              onVincular={() => onVincular(fila.id)}
+              onCorregir={(campos) => onCorregir(fila.id, campos, fila.version)}
+              onVincular={() => onVincular(fila.id, fila.version)}
               onDescartar={() => onDescartar(fila.id)}
             />
           </div>

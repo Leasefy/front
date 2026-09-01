@@ -756,6 +756,26 @@ export interface CarteraReport {
   };
   /** Optional monthly breakdown (backend may not return this yet) */
   byMonth?: CarteraMonthItem[];
+  /**
+   * Los casos en siniestro: `diasParaSiniestro` días de mora con saldo. Van
+   * aparte de `items` — ya no son cobranza, son reclamación a la aseguradora.
+   * Opcional porque un back anterior no lo manda.
+   */
+  siniestros?: CarteraSiniestros;
+}
+
+/** Un caso en siniestro, con cuándo pasó y cuántos días lleva ahí. */
+export interface CarteraSiniestro extends CarteraItem {
+  siniestroAt: string | null;
+  diasEnSiniestro: number;
+}
+
+export interface CarteraSiniestros {
+  cantidad: number;
+  totalCop: number;
+  /** A los cuántos días de mora pasa un cobro a siniestro en esta agencia. */
+  diasParaSiniestro: number;
+  items: CarteraSiniestro[];
 }
 
 // ============================================================================
@@ -1386,6 +1406,14 @@ export interface AgencyProfile {
   /** Stored as Json in the backend — arrays of day offsets */
   reminderDaysBefore?: number[];
   reminderDaysAfter?: number[];
+  /** Cobros y mora: motor con reglas de mora (off = % fijo) y días de plazo. */
+  motorDeCobrosV2?: boolean;
+  diasDePlazo?: number;
+  /** Días de mora con saldo a partir de los cuales un cobro pasa a siniestro (sólo con el motor prendido). */
+  diasParaSiniestro?: number;
+  /** Dispersión: código en todos los lotes, y umbral COP para segundo aprobador (null = nunca). */
+  dispersionExigePin?: boolean;
+  dispersionMontoDobleAprobacion?: number | null;
   legalRepresentative?: string | null;
   legalDocumentNumber?: string | null;
   /** Caller's membership in this agency */
@@ -1437,6 +1465,14 @@ export interface UpdateAgencyPayload {
   /** Arrays of day offsets, 0..30 each; empty array allowed (= disabled) */
   reminderDaysBefore?: number[];
   reminderDaysAfter?: number[];
+  motorDeCobrosV2?: boolean;
+  /** 0..60 */
+  diasDePlazo?: number;
+  /** 1..365 */
+  diasParaSiniestro?: number;
+  dispersionExigePin?: boolean;
+  /** COP entero ≥ 0; `null` = nunca por monto */
+  dispersionMontoDobleAprobacion?: number | null;
   legalRepresentative?: string;
   legalDocumentNumber?: string;
 }

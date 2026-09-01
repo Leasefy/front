@@ -50,6 +50,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { EnSiniestro } from '@/components/cartera/EnSiniestro'
 import { Spinner } from '@/components/ui'
 import { useCarteraReport } from '@/lib/hooks/useInmobiliaria'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
@@ -197,6 +198,10 @@ export function CarteraCompleta() {
           </Button>
         </div>
       </Card>
+
+      {/* Los siniestros van aparte de la mora: ya no son cobranza. Sólo si
+          el back los manda — uno anterior no tiene la sección. */}
+      {report?.siniestros ? <EnSiniestro siniestros={report.siniestros} /> : null}
 
       {edad ? (
         <p className="text-sm text-muted-foreground">

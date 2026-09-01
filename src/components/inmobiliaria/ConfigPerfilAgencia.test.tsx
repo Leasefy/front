@@ -46,6 +46,11 @@ const AGENCY: AgencyProfile = {
   disbursementDay: 15,
   reminderDaysBefore: [3, 1],
   reminderDaysAfter: [1, 3, 7, 15],
+  motorDeCobrosV2: false,
+  diasDePlazo: 3,
+  diasParaSiniestro: 30,
+  dispersionExigePin: false,
+  dispersionMontoDobleAprobacion: 50_000_000,
   memberRole: 'ADMIN',
 }
 
@@ -247,6 +252,149 @@ describe('<ConfigPerfilAgencia>', () => {
 
     expect(props.onSave).toHaveBeenCalledTimes(1)
     expect(props.onSave).toHaveBeenCalledWith({ name: 'Inmobiliaria XYZ' })
+  })
+
+  // ── Cobros y mora / Dispersiones — las perillas reales de Agency ──────────
+
+  it('muestra en modo lectura el motor, los días de plazo y los controles de la dispersión', () => {
+    render()
+    const text = container.textContent ?? ''
+    expect(text).toContain('% mensual fijo (2%)')
+    expect(text).toContain('Días de plazo antes de la mora')
+    expect(text).toContain('30 días de mora')
+    expect(text).toContain('50.000.000')
+    expect(text).toContain('Código en todos los lotes')
+  })
+
+  it('con el motor prendido lo dice, y sin umbral dice «Nunca por monto»', () => {
+    render({
+      agency: { ...AGENCY, motorDeCobrosV2: true, dispersionMontoDobleAprobacion: null },
+    })
+    const text = container.textContent ?? ''
+    expect(text).toContain('Reglas de mora')
+    expect(text).toContain('Nunca por monto')
+  })
+
+  it('prender el motor manda { motorDeCobrosV2: true } y nada más', async () => {
+    const props = render()
+    enterEditMode()
+
+    const sw = container.querySelector('[data-testid="motor-de-cobros"]') as HTMLElement
+    expect(sw).toBeTruthy()
+    await act(async () => {
+      sw.click()
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledWith({ motorDeCobrosV2: true })
+  })
+
+  it('cambiar los días de plazo manda un number, no un string', async () => {
+    const props = render()
+    enterEditMode()
+
+    const input = container.querySelector('[data-testid="dias-de-plazo"]') as HTMLInputElement
+    expect(input.value).toBe('3')
+    act(() => {
+      setInputValue(input, '5')
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledWith({ diasDePlazo: 5 })
+  })
+
+  it('cambiar los días para siniestro manda { diasParaSiniestro: 45 }', async () => {
+    const props = render()
+    enterEditMode()
+
+    const input = container.querySelector('[data-testid="dias-para-siniestro"]') as HTMLInputElement
+    expect(input.value).toBe('30')
+    act(() => {
+      setInputValue(input, '45')
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledWith({ diasParaSiniestro: 45 })
+  })
+
+  it('un siniestro a los 0 días no existe: no llama al back', async () => {
+    const props = render()
+    enterEditMode()
+
+    const input = container.querySelector('[data-testid="dias-para-siniestro"]') as HTMLInputElement
+    act(() => {
+      setInputValue(input, '0')
+    })
+
+    await clickSave()
+
+    expect(props.onSave).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Entre 1 y 365 días')
+  })
+
+  it('rechaza más de 60 días de plazo sin llamar al back', async () => {
+    const props = render()
+    enterEditMode()
+
+    const input = container.querySelector('[data-testid="dias-de-plazo"]') as HTMLInputElement
+    act(() => {
+      setInputValue(input, '61')
+    })
+
+    await clickSave()
+
+    expect(props.onSave).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Entre 0 y 60 días')
+  })
+
+  it('el código en todos los lotes viaja como dispersionExigePin', async () => {
+    const props = render()
+    enterEditMode()
+
+    const sw = container.querySelector('[data-testid="dispersion-exige-pin"]') as HTMLElement
+    await act(async () => {
+      sw.click()
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledWith({ dispersionExigePin: true })
+  })
+
+  it('el umbral del segundo aprobador se lee como pesos enteros, no como 80.000 → 80', async () => {
+    const props = render()
+    enterEditMode()
+
+    const input = container.querySelector(
+      '[data-testid="dispersion-monto-doble-aprobacion"]',
+    ) as HTMLInputElement
+    expect(input).toBeTruthy()
+    act(() => {
+      setInputValue(input, '$ 80.000.000')
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledWith({ dispersionMontoDobleAprobacion: 80_000_000 })
+  })
+
+  it('vaciar el umbral manda null («nunca por monto»), no 0 ni ausencia', async () => {
+    const props = render()
+    enterEditMode()
+
+    const input = container.querySelector(
+      '[data-testid="dispersion-monto-doble-aprobacion"]',
+    ) as HTMLInputElement
+    act(() => {
+      setInputValue(input, '')
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledWith({ dispersionMontoDobleAprobacion: null })
   })
 
   it('does not call onSave when nothing changed', async () => {

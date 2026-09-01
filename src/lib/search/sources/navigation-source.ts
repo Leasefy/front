@@ -71,6 +71,9 @@ const NAV_CATALOG: NavEntry[] = [
   // ── Finanzas ──────────────────────────────────────────────────────────────
   { kind: 'page', title: 'Cobros', context: 'Finanzas', href: '/panel/inmobiliaria/cobros', keywords: 'recaudo pagos recibir recibo de caja abono', permission: { module: 'cobros', action: 'view' } },
   { kind: 'page', title: 'Dispersiones', context: 'Finanzas', href: '/panel/inmobiliaria/dispersiones', keywords: 'giros transferencias propietarios', permission: { module: 'dispersiones', action: 'view' } },
+  { kind: 'page', title: 'Lotes al banco', context: 'Finanzas', href: '/panel/inmobiliaria/dispersiones/lotes', keywords: 'lote archivo plano bancolombia pab codigo aprobacion pagos masivos', permission: { module: 'dispersiones', action: 'view' } },
+  { kind: 'page', title: 'Reglas de mora', context: 'Finanzas', href: '/panel/inmobiliaria/cobros/reglas-de-mora', keywords: 'mora interes gasto administrativo plazo reglas cobro', permission: { module: 'cobros', action: 'view' } },
+  { kind: 'page', title: 'Contabilidad', context: 'Finanzas', href: '/panel/inmobiliaria/contabilidad', keywords: 'puc cuentas asientos partida doble balance de prueba libro auxiliar estado de cuenta cierre' },
   { kind: 'page', title: 'Tesorería', context: 'Finanzas', href: '/panel/inmobiliaria/tesoreria', keywords: 'caja bancos saldos' },
   { kind: 'page', title: 'Facturación', context: 'Finanzas', href: '/panel/inmobiliaria/facturacion', keywords: 'facturas cobrar dian' },
 

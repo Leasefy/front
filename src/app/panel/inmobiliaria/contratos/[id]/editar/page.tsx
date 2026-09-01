@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Select,
@@ -35,6 +36,12 @@ import {
 import type { InsuranceTier, UpdateContractDto } from '@/lib/api/contracts.types';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { isoToInputDate } from './iso-to-input-date';
+import {
+  MAX_DIAS_DE_PLAZO,
+  diasDePlazoComoTexto,
+  terminosDeCobro,
+  validarDiasDePlazo,
+} from '@/lib/contratos/terminos-de-cobro';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -45,6 +52,9 @@ interface FormState {
   monthlyRent: string;
   deposit: string;
   paymentDay: string;
+  prorratearPrimerMes: boolean;
+  /** Texto del input; vacío = hereda los días de plazo de la inmobiliaria. */
+  diasDePlazo: string;
   insuranceTier: InsuranceTier;
 }
 
@@ -65,6 +75,8 @@ function EditarContratoContent() {
     monthlyRent: '',
     deposit: '',
     paymentDay: '1',
+    prorratearPrimerMes: false,
+    diasDePlazo: '',
     insuranceTier: 'NONE',
   });
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -87,6 +99,8 @@ function EditarContratoContent() {
       monthlyRent: String(contract.monthlyRent ?? ''),
       deposit: '',
       paymentDay: String(contract.paymentDueDay ?? '1'),
+      prorratearPrimerMes: contract.prorratearPrimerMes ?? false,
+      diasDePlazo: diasDePlazoComoTexto(contract.diasDePlazo),
       insuranceTier: (contract.insuranceTier ?? 'NONE') as InsuranceTier,
     });
   }, [contract]);
@@ -130,6 +144,8 @@ function EditarContratoContent() {
     }
     const day = Number(form.paymentDay);
     if (!day || day < 1 || day > 28) errors.paymentDay = 'Entre 1 y 28';
+    const errorDePlazo = validarDiasDePlazo(form.diasDePlazo);
+    if (errorDePlazo) errors.diasDePlazo = errorDePlazo;
     if (replacePdf && !form.pdfFile) {
       errors.pdfFile = 'Subí el PDF nuevo o desactivá el reemplazo.';
     }
@@ -159,6 +175,8 @@ function EditarContratoContent() {
         endDate: form.endDate,
         monthlyRent: Number(form.monthlyRent),
         paymentDay: Number(form.paymentDay),
+        // `diasDePlazo: null` es un valor: vuelve a heredar los de la inmobiliaria.
+        ...terminosDeCobro(form),
         insuranceTier: form.insuranceTier,
       };
       if (form.deposit) dto.deposit = Number(form.deposit);
@@ -414,6 +432,24 @@ function EditarContratoContent() {
                 className="tabular-nums"
               />
             </Field>
+            <Field
+              label="Días de plazo antes de la mora"
+              error={validation.diasDePlazo}
+              hint="Vacío = los de la inmobiliaria. Días después de la fecha de pago en los que todavía no corre mora."
+            >
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={MAX_DIAS_DE_PLAZO}
+                step={1}
+                placeholder="Los de la inmobiliaria"
+                value={form.diasDePlazo}
+                onChange={(e) => updateForm('diasDePlazo', e.target.value)}
+                className="tabular-nums"
+                data-testid="dias-de-plazo"
+              />
+            </Field>
             <Field label="Seguro" hint="Opcional">
               <Select
                 value={form.insuranceTier}
@@ -429,6 +465,25 @@ function EditarContratoContent() {
                 </SelectContent>
               </Select>
             </Field>
+          </div>
+
+          {/* Prorrateo del primer mes: fuera de la grilla porque es un switch con explicación, no un campo más. */}
+          <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface-muted p-4">
+            <div className="space-y-1">
+              <label htmlFor="prorratear-primer-mes" className="block text-sm font-medium text-foreground">
+                Prorratear el primer mes
+              </label>
+              <p className="text-xs text-muted-foreground">
+                El primer cobro se calcula por los días realmente ocupados del mes de inicio.
+                Un contrato que arranca el 19 paga sólo lo que queda del mes; el siguiente ya sale completo.
+              </p>
+            </div>
+            <Switch
+              id="prorratear-primer-mes"
+              data-testid="prorratear-primer-mes"
+              checked={form.prorratearPrimerMes}
+              onCheckedChange={(v) => updateForm('prorratearPrimerMes', v)}
+            />
           </div>
         </section>
 

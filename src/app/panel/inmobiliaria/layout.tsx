@@ -342,10 +342,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     { label: t('inmobiliaria.nav.dispersiones'), href: '/panel/inmobiliaria/dispersiones', scope: 'finanzas', icon: PaperPlaneTilt, module: 'dispersiones', hint: t('inmobiliaria.nav.hintEgresos') },
     { label: t('inmobiliaria.nav.tesoreria'),    href: '/panel/inmobiliaria/tesoreria', scope: 'finanzas',    icon: Wallet,         module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
     { label: t('inmobiliaria.nav.facturacion'),  href: '/panel/inmobiliaria/facturacion', scope: 'finanzas',  icon: Receipt,        module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
-    // Contabilidad general: pedida en la definición del módulo financiero, sin
-    // pantalla todavía. Se lista deshabilitada para que el módulo se lea
-    // completo y nadie la dé por perdida — `disabled` la vuelve no navegable.
-    { label: t('inmobiliaria.nav.contabilidad'), href: '#', scope: 'finanzas', icon: Calculator, module: null, disabled: true, tag: t('inmobiliaria.nav.proximamente'), roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
+    // Contabilidad general: PUC, asientos con partida doble, cierre y reportes
+    // (balance de prueba, libro auxiliar, estado de cuenta). Leer lo puede
+    // cualquier miembro; escribir lo decide el back (ADMIN|CONTADOR).
+    { label: t('inmobiliaria.nav.contabilidad'), href: '/panel/inmobiliaria/contabilidad', scope: 'finanzas', icon: Calculator, module: null, roles: [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR] },
 
     // ── GENERAL ──  Transversal a los tres módulos.
     { kind: 'section', label: t('inmobiliaria.nav.secGeneral'), href: '#sec-general', scope: 'general', icon: ChartLine, module: null },

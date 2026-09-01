@@ -93,6 +93,13 @@ export interface BackendContract {
   startDate: string | null;
   endDate: string | null;
   paymentDay: number | null;         // backend usa `paymentDay` (el front lo mapea a paymentDueDay)
+  /**
+   * Términos de cobro (columnas `prorratear_primer_mes` / `dias_de_plazo`).
+   * Opcionales acá porque un back anterior a esta rama no los manda;
+   * `diasDePlazo: null` = hereda los de la inmobiliaria.
+   */
+  prorratearPrimerMes?: boolean;
+  diasDePlazo?: number | null;
 
   // ─── Administración (NO viajan en el documento firmado) ──────────────────
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL' | null;
@@ -174,6 +181,10 @@ export interface CreateContractDto {
   monthlyRent: number;      // COP, min 100000
   deposit: number;          // COP, min 0
   paymentDay: number;       // 1-28
+  /** Prorratear el primer cobro por los días realmente ocupados. Default: false. */
+  prorratearPrimerMes?: boolean;
+  /** Días de plazo antes de la mora (0-60). `null`/ausente = hereda los de la inmobiliaria. */
+  diasDePlazo?: number | null;
   insuranceTier?: InsuranceTier;          // default NONE
   customClauses?: CustomClause[];
   /** Default: 'GENERATED'. Use 'UPLOADED_PDF' when a landlord-provided PDF is attached. */
@@ -258,6 +269,9 @@ export interface UpdateContractDto {
   monthlyRent?: number;
   deposit?: number;
   paymentDay?: number;
+  prorratearPrimerMes?: boolean;
+  /** `null` vuelve a heredar los días de plazo de la inmobiliaria. */
+  diasDePlazo?: number | null;
   insuranceTier?: InsuranceTier;
   customClauses?: CustomClause[];
   /** Only valid for UPLOADED_PDF contracts. 400 otherwise. */

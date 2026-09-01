@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
+  Bank,
   PaperPlaneTilt,
   Table,
   SquaresFour,
@@ -432,12 +433,21 @@ function DispersionesContent() {
             {t('inmobiliaria.dispersiones.subtitle')}
           </p>
         </div>
-        <Button asChild hideArrow className="shrink-0">
-          <Link href="/panel/inmobiliaria/dispersiones/generar">
-            <Lightning className="w-4 h-4" weight="fill" />
-            {t('inmobiliaria.dispersiones.wizard.title')}
-          </Link>
-        </Button>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {/* Los lotes al banco: el archivo plano con doble aprobación. */}
+          <Button asChild variant="secondary" hideArrow>
+            <Link href="/panel/inmobiliaria/dispersiones/lotes">
+              <Bank className="w-4 h-4" />
+              Lotes al banco
+            </Link>
+          </Button>
+          <Button asChild hideArrow>
+            <Link href="/panel/inmobiliaria/dispersiones/generar">
+              <Lightning className="w-4 h-4" weight="fill" />
+              {t('inmobiliaria.dispersiones.wizard.title')}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Summary Section */}

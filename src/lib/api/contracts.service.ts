@@ -115,6 +115,9 @@ export function mapBackendContract(bc: BackendContract): Contract {
     startDate: bc.startDate,
     endDate: bc.endDate,
     paymentDueDay: bc.paymentDay,                    // backend: paymentDay → front: paymentDueDay
+    // Un back anterior a esta rama no los manda: el default es el del esquema.
+    prorratearPrimerMes: bc.prorratearPrimerMes ?? false,
+    diasDePlazo: bc.diasDePlazo ?? null,
     usoInmueble: bc.usoInmueble ?? null,
     periodicidad: bc.periodicidad ?? null,
     // Decimal de Prisma: viaja como string ("10.00"). Sin esto, `12 > 10`

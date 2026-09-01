@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Select,
@@ -41,6 +42,11 @@ import {
   type Respaldo,
 } from '@/lib/inmobiliaria/respaldo';
 import type { EvaluationResult } from '@/lib/api/applications.types';
+import {
+  MAX_DIAS_DE_PLAZO,
+  terminosDeCobro,
+  validarDiasDePlazo,
+} from '@/lib/contratos/terminos-de-cobro';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -54,6 +60,10 @@ interface FormState {
   monthlyRent: string;    // string for input binding
   deposit: string;
   paymentDay: string;
+  /** Prorratear el primer cobro por los días realmente ocupados. */
+  prorratearPrimerMes: boolean;
+  /** Texto del input; vacío = hereda los días de plazo de la inmobiliaria. */
+  diasDePlazo: string;
   insuranceTier: InsuranceTier;
 }
 
@@ -91,6 +101,8 @@ function NuevoContratoContent() {
       monthlyRent: '',
       deposit: '',
       paymentDay: '1',
+      prorratearPrimerMes: false,
+      diasDePlazo: '',
       insuranceTier: 'NONE',
     };
   });
@@ -215,6 +227,8 @@ function NuevoContratoContent() {
     if (isNaN(dep) || dep < 0) errors.deposit = 'Ingresá un valor válido';
     const day = Number(form.paymentDay);
     if (!day || day < 1 || day > 28) errors.paymentDay = 'Entre 1 y 28';
+    const errorDePlazo = validarDiasDePlazo(form.diasDePlazo);
+    if (errorDePlazo) errors.diasDePlazo = errorDePlazo;
     return errors;
   }, [form]);
 
@@ -259,6 +273,7 @@ function NuevoContratoContent() {
         monthlyRent: Number(form.monthlyRent),
         deposit: Number(form.deposit),
         paymentDay: Number(form.paymentDay),
+        ...terminosDeCobro(form),
         insuranceTier: form.insuranceTier,
         // El respaldo va como cláusula del contrato: es un campo real y
         // persistido, y una póliza de respaldo pertenece al texto que firman
@@ -499,6 +514,24 @@ function NuevoContratoContent() {
                 className="tabular-nums"
               />
             </Field>
+            <Field
+              label="Días de plazo antes de la mora"
+              error={validation.diasDePlazo}
+              hint="Vacío = los de la inmobiliaria. Días después de la fecha de pago en los que todavía no corre mora."
+            >
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={MAX_DIAS_DE_PLAZO}
+                step={1}
+                placeholder="Los de la inmobiliaria"
+                value={form.diasDePlazo}
+                onChange={(e) => updateForm('diasDePlazo', e.target.value)}
+                className="tabular-nums"
+                data-testid="dias-de-plazo"
+              />
+            </Field>
             <Field label="Seguro" hint="Opcional">
               <Select
                 value={form.insuranceTier}
@@ -514,6 +547,25 @@ function NuevoContratoContent() {
                 </SelectContent>
               </Select>
             </Field>
+          </div>
+
+          {/* Prorrateo del primer mes: fuera de la grilla porque es un switch con explicación, no un campo más. */}
+          <div className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface-muted p-4">
+            <div className="space-y-1">
+              <label htmlFor="prorratear-primer-mes" className="block text-sm font-medium text-foreground">
+                Prorratear el primer mes
+              </label>
+              <p className="text-xs text-muted-foreground">
+                El primer cobro se calcula por los días realmente ocupados del mes de inicio.
+                Un contrato que arranca el 19 paga sólo lo que queda del mes; el siguiente ya sale completo.
+              </p>
+            </div>
+            <Switch
+              id="prorratear-primer-mes"
+              data-testid="prorratear-primer-mes"
+              checked={form.prorratearPrimerMes}
+              onCheckedChange={(v) => updateForm('prorratearPrimerMes', v)}
+            />
           </div>
 
           {/* Paso 11 del recorrido */}

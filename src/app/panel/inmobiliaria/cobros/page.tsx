@@ -3,10 +3,12 @@ import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   CurrencyCircleDollar,
   Gear,
+  Scales,
   Table,
   SquaresFour,
   Plus,
@@ -372,6 +374,12 @@ function CobrosContent() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <Button asChild variant="secondary" hideArrow>
+            <Link href="/panel/inmobiliaria/cobros/reglas-de-mora">
+              <Scales className="w-4 h-4" />
+              <span className="hidden sm:inline">Reglas de mora</span>
+            </Link>
+          </Button>
           <Button variant="secondary" hideArrow onClick={() => setIsConfigOpen(true)}>
             <Gear className="w-4 h-4" />
             <span className="hidden sm:inline">{t('inmobiliaria.config.title')}</span>

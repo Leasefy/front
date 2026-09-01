@@ -230,6 +230,126 @@ export interface ResultadoDeReversa {
   reversa: AsientoContable;
 }
 
+// ── Cierre de período ──────────────────────────────────────────────────────
+
+/** `GET /asientos/cierre`. `null` = nunca se cerró nada. */
+export interface Cierre {
+  /** `AAAA-MM-DD`, el último día cerrado. */
+  cerradaHasta: string | null;
+}
+
+/** `CerrarPeriodoDto`: un solo campo. */
+export const CLAVES_DE_CERRAR = ['hasta'] as const;
+
+/** Respuesta de `POST /asientos/cerrar`. */
+export interface ResultadoDeCierre {
+  hasta: string;
+  /** Asientos que quedaron bloqueados con este cierre. */
+  cerrados: number;
+  fronteraAnterior: string | null;
+}
+
+// ── Reportes ───────────────────────────────────────────────────────────────
+
+/** `RangoDto`: los dos opcionales e inclusivos, en `AAAA-MM-DD`. */
+export interface RangoDeFechas {
+  desde?: string;
+  hasta?: string;
+}
+
+/** `BalanceDePruebaDto`. `soloConMovimiento` viaja como texto; por defecto
+ * el back deja afuera las cuentas sin movimiento ni saldo anterior. */
+export interface FiltrosDeBalance extends RangoDeFechas {
+  soloConMovimiento?: boolean;
+}
+
+/** `FilaDeBalance` en `reportes-contables.service.ts`. Los saldos van en la
+ * naturaleza de la cuenta: en una de débito, `debitos - creditos`; en una de
+ * crédito, al revés. */
+export interface FilaDeBalance {
+  cuentaId: string;
+  codigo: string;
+  nombre: string;
+  naturaleza: NaturalezaContable;
+  saldoAnteriorCop: number;
+  debitosCop: number;
+  creditosCop: number;
+  saldoFinalCop: number;
+}
+
+/** `GET /reportes/balance-de-prueba`. `cuadra` en `false` es un bug del
+ * libro, no un dato más: la pantalla lo grita. */
+export interface BalanceDePrueba {
+  desde: string | null;
+  hasta: string | null;
+  filas: FilaDeBalance[];
+  totalDebitosCop: number;
+  totalCreditosCop: number;
+  cuadra: boolean;
+  diferenciaCop: number;
+}
+
+/** `RenglonDeAuxiliar`. `fecha` llega serializada (`2026-02-05T00:00:00.000Z`). */
+export interface RenglonDeAuxiliar {
+  asientoId: string;
+  numero: number;
+  fecha: string;
+  descripcionAsiento: string;
+  descripcion: string | null;
+  terceroTipo: string | null;
+  terceroId: string | null;
+  debitoCop: number;
+  creditoCop: number;
+  /** Saldo corrido, en la naturaleza de la cuenta. */
+  saldoCop: number;
+}
+
+/** `GET /reportes/libro-auxiliar/:cuentaId`. */
+export interface LibroAuxiliar {
+  cuenta: Pick<CuentaPuc, 'id' | 'codigo' | 'nombre' | 'naturaleza'>;
+  desde: string | null;
+  hasta: string | null;
+  saldoInicialCop: number;
+  renglones: RenglonDeAuxiliar[];
+  debitosCop: number;
+  creditosCop: number;
+  saldoFinalCop: number;
+}
+
+/** `EstadoDeCuentaDto`. `terceroTipo` y `terceroId` tal como se asentaron
+ * (`PROPIETARIO`, `ARRENDATARIO`, `PROVEEDOR`…); los dos obligatorios. */
+export interface FiltrosDeEstadoDeCuenta extends RangoDeFechas {
+  terceroTipo: string;
+  terceroId: string;
+}
+
+export interface RenglonDeEstadoDeCuenta {
+  asientoId: string;
+  numero: number;
+  fecha: string;
+  descripcionAsiento: string;
+  codigo: string;
+  cuenta: string;
+  descripcion: string | null;
+  debitoCop: number;
+  creditoCop: number;
+  /** Saldo corrido, convención fija: `débitos − créditos`. Positivo = el
+   * tercero le debe a la inmobiliaria; negativo = la inmobiliaria le debe. */
+  saldoCop: number;
+}
+
+/** `GET /reportes/estado-de-cuenta`. */
+export interface EstadoDeCuenta {
+  tercero: { terceroTipo: string; terceroId: string };
+  desde: string | null;
+  hasta: string | null;
+  saldoInicialCop: number;
+  renglones: RenglonDeEstadoDeCuenta[];
+  debitosCop: number;
+  creditosCop: number;
+  saldoFinalCop: number;
+}
+
 // ── Migración de asientos ──────────────────────────────────────────────────
 
 /** `MigrarMovimientoDto`. Vocabulario DISTINTO al del asiento manual: código
@@ -457,6 +577,61 @@ export const contabilidadApi = {
       return apiClient.post<ResultadoDeReversa>(
         `${BASE}/asientos/${encodeURIComponent(id)}/reversar`,
         soloClaves(opciones, CLAVES_DE_REVERSAR),
+      );
+    },
+
+    /** Un asiento con sus líneas y el código/nombre de cada cuenta. */
+    async detalle(id: string): Promise<AsientoContable> {
+      return apiClient.get<AsientoContable>(`${BASE}/asientos/${encodeURIComponent(id)}`);
+    },
+
+    /** Hasta qué día está cerrada la contabilidad. */
+    async cierre(): Promise<Cierre> {
+      return apiClient.get<Cierre>(`${BASE}/asientos/cierre`);
+    },
+
+    /**
+     * Cierra todo lo que tenga fecha ≤ `hasta`. Después no entra ningún
+     * asiento con fecha adentro; una fecha anterior a la frontera vigente
+     * es 409 (`PERIODO_YA_CERRADO`).
+     */
+    async cerrar(hasta: string): Promise<ResultadoDeCierre> {
+      return apiClient.post<ResultadoDeCierre>(
+        `${BASE}/asientos/cerrar`,
+        soloClaves({ hasta }, CLAVES_DE_CERRAR),
+      );
+    },
+  },
+
+  reportes: {
+    async balanceDePrueba(filtros: FiltrosDeBalance = {}): Promise<BalanceDePrueba> {
+      return apiClient.get<BalanceDePrueba>(
+        conQuery(`${BASE}/reportes/balance-de-prueba`, {
+          desde: filtros.desde,
+          hasta: filtros.hasta,
+          soloConMovimiento:
+            filtros.soloConMovimiento === undefined ? undefined : String(filtros.soloConMovimiento),
+        }),
+      );
+    },
+
+    async libroAuxiliar(cuentaId: string, rango: RangoDeFechas = {}): Promise<LibroAuxiliar> {
+      return apiClient.get<LibroAuxiliar>(
+        conQuery(`${BASE}/reportes/libro-auxiliar/${encodeURIComponent(cuentaId)}`, {
+          desde: rango.desde,
+          hasta: rango.hasta,
+        }),
+      );
+    },
+
+    async estadoDeCuenta(filtros: FiltrosDeEstadoDeCuenta): Promise<EstadoDeCuenta> {
+      return apiClient.get<EstadoDeCuenta>(
+        conQuery(`${BASE}/reportes/estado-de-cuenta`, {
+          terceroTipo: filtros.terceroTipo,
+          terceroId: filtros.terceroId,
+          desde: filtros.desde,
+          hasta: filtros.hasta,
+        }),
       );
     },
   },

@@ -133,8 +133,15 @@ type Formulario =
  * `onContinuar`: adentro del muro de migración no se navega a otra ruta — el
  * paso 5 se abre en el mismo muro. Sin el callback (la página suelta, ya con
  * el muro abajo) sigue siendo un enlace a la ruta del paso 5.
+ *
+ * `sinPaso5`: fuera de la migración (`/contabilidad/puc`) no hay secuencia
+ * que seguir, así que el pie no se pinta. Por defecto `false`: las pantallas
+ * del muro no cambian.
  */
-export function PlanDeCuentas({ onContinuar }: { onContinuar?: () => void } = {}) {
+export function PlanDeCuentas({
+  onContinuar,
+  sinPaso5 = false,
+}: { onContinuar?: () => void; sinPaso5?: boolean } = {}) {
   const [arbol, setArbol] = useState<CuentaEnArbol[] | null>(null);
   const [pendientes, setPendientes] = useState<CuentaSemilla[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -322,7 +329,7 @@ export function PlanDeCuentas({ onContinuar }: { onContinuar?: () => void } = {}
         </section>
       ) : null}
 
-      {hayCuentas ? (
+      {hayCuentas && !sinPaso5 ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4">
           <p className="text-sm text-fg-muted">
             Cuando el plan esté como tu contador lo quiere, seguí con los registros contables.

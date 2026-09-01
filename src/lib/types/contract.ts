@@ -305,6 +305,13 @@ export interface Contract {
   startDate: string | null;      // ISO date
   endDate: string | null;        // ISO date
   paymentDueDay: number | null;  // 1-28
+  /**
+   * Términos de cobro. `diasDePlazo: null` = hereda los de la inmobiliaria.
+   * Opcionales en el tipo para no obligar a cada fixture viejo a declararlos;
+   * el mapper (`mapBackendContract`) los llena SIEMPRE.
+   */
+  prorratearPrimerMes?: boolean;
+  diasDePlazo?: number | null;
 
   // ─── Administración ───────────────────────────────────────────────────────
   // No viajan en el documento firmado: corregirlos no invalida ninguna firma.

@@ -339,6 +339,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       <ListaDeTrabajo
         lote={loteAbierto}
         tipo={tipo}
+        enElMuro={Boolean(tipoFijo)}
         resumen={resumen}
         columnas={columnas}
         pendientes={pendientes}
@@ -717,6 +718,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
 function ListaDeTrabajo({
   lote,
   tipo,
+  enElMuro,
   resumen,
   columnas,
   pendientes,
@@ -737,6 +739,8 @@ function ListaDeTrabajo({
 }: {
   lote: string;
   tipo: TipoDeTercero;
+  /** Adentro del asistente hay un pie con el botón de seguir; suelto, no. */
+  enElMuro: boolean;
   resumen: ResumenDeLote;
   columnas: readonly import('@/lib/api/migracion-terceros.service').ColumnaDePlantilla[];
   pendientes: FilaDeStaging[];
@@ -837,6 +841,20 @@ function ListaDeTrabajo({
               invitación se manda después. No hace falta volver a subir nada.
             </p>
           ) : null}
+          {/* El puente que faltaba: sin esta línea, «25 creadas» arriba y 85
+              tarjetas abajo parecen contradecirse (Nico no entendió qué eran). */}
+          {totalPendientes > 0 ? (
+            <p className="text-sm text-fg-muted" data-testid="puente-por-revisar">
+              {totalPendientes === 1 ? (
+                <>Queda 1 fila del archivo sin crear: está acá abajo esperando tu decisión.</>
+              ) : (
+                <>
+                  Quedan <span className="font-mono tabular-nums">{totalPendientes}</span> filas
+                  del archivo sin crear: están acá abajo esperando tu decisión.
+                </>
+              )}
+            </p>
+          ) : null}
           {aplicacion.fallidas > 0 ? (
             <ul className="space-y-1 text-sm text-fg-muted">
               {aplicacion.resultados
@@ -849,6 +867,29 @@ function ListaDeTrabajo({
             </ul>
           ) : null}
         </section>
+      ) : null}
+
+      {/*
+       * El título que le dice a la persona QUÉ es esta lista. Sin él, después
+       * de crear las primeras fichas quedaban 85 tarjetas sueltas debajo del
+       * «25 creadas» y nadie sabía si eran un error, un pendiente o un
+       * repetido (Nico lo vio). El conteo baja en vivo a medida que resuelve.
+       */}
+      {totalPendientes > 0 ? (
+        <div className="space-y-1 pt-2" data-testid="titulo-por-revisar">
+          <h2 className="text-sm font-medium text-fg">
+            {totalPendientes === 1
+              ? 'Queda 1 fila del archivo por decidir'
+              : `Quedan ${totalPendientes} filas del archivo por decidir`}
+          </h2>
+          <p className="text-sm text-fg-muted">
+            {tipo === 'INQUILINO'
+              ? 'No se crearon todavía: son personas que ya existen en la plataforma —quizá las subiste en Propietarios o ya tenían cuenta— o filas a las que les falta un dato. '
+              : 'No se crearon todavía: son personas que ya existen en la plataforma, filas repetidas en el archivo, o a las que les falta un dato. '}
+            Resolvé cada una acá, o marcá varias y resolvelas juntas: al decidir salen de esta
+            lista y quedan listas para crear con el botón de arriba.
+          </p>
+        </div>
       ) : null}
 
       {pendientes.length > 0 ? (
@@ -877,10 +918,7 @@ function ListaDeTrabajo({
               Seleccionar las {pendientes.length} de esta página
             </span>
           </div>
-          {/* El total viene del back: contar lo recibido diría «quedan 25». */}
-          <p className="text-xs text-fg-subtle">
-            <span className="font-mono tabular-nums">{totalPendientes}</span> por revisar en total
-          </p>
+          {/* El total ya lo dice el título de arriba; repetirlo acá era ruido. */}
         </div>
       ) : null}
 
@@ -930,6 +968,13 @@ function ListaDeTrabajo({
       {pendientes.length === 0 && resumen.requierenAtencion === 0 ? (
         <p className="rounded-lg border border-border bg-surface p-6 text-sm text-fg-muted shadow-sm">
           No queda nada por revisar en esta carga.
+          {/* El empujón al paso siguiente sólo adentro del asistente: la
+              pantalla suelta no tiene ese pie. */}
+          {resumen.listos > 0
+            ? ' Ya podés crear las que quedaron listas con el botón de arriba.'
+            : enElMuro
+              ? ' Podés seguir con el paso siguiente desde el botón de abajo.'
+              : ''}
         </p>
       ) : null}
 

@@ -57,7 +57,8 @@ function ContenidoDeTerceros() {
         <p className="max-w-2xl text-sm text-fg-muted">{t('migracion.terceros.subtitulo')}</p>
       </header>
 
-      <MigrarTerceros tipoInicial={tipoInicial} />
+      {/* `key`: si cambia el `?tipo=` de la URL, la pantalla arranca limpia (misma razón que en el muro). */}
+      <MigrarTerceros key={tipoInicial} tipoInicial={tipoInicial} />
     </div>
   );
 }

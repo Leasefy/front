@@ -772,10 +772,19 @@ function ContenidoDelPaso({
 
   switch (id) {
     case "propietarios":
-      // Un paso por tipo: adentro del muro no hay switch que entender.
-      return <MigrarTerceros tipoFijo="PROPIETARIO" onOcupado={onOcupado} />;
+      /*
+       * Un paso por tipo: adentro del muro no hay switch que entender.
+       * 🔴 El `key` NO es decorativo: sin él, React reutiliza la MISMA
+       * instancia al saltar entre propietarios e inquilinos (mismo componente,
+       * misma posición) y todo el estado interno —el archivo subido, la
+       * plantilla, el nombre de la carga, el tipo— se queda del paso anterior.
+       * Nico subió propietarios, pasó a inquilinos y el paso le mostró la
+       * carga de propietarios y «Revisar 110 propietarios» con el archivo de
+       * inquilinos (2026-09-01).
+       */
+      return <MigrarTerceros key="propietarios" tipoFijo="PROPIETARIO" onOcupado={onOcupado} />;
     case "inquilinos":
-      return <MigrarTerceros tipoFijo="INQUILINO" onOcupado={onOcupado} />;
+      return <MigrarTerceros key="inquilinos" tipoFijo="INQUILINO" onOcupado={onOcupado} />;
     case "propiedades":
       return (
         <ImportWizard

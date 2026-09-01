@@ -15,6 +15,7 @@ import {
 } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
+import { ASPA_DE_CIERRE } from "./aspa-de-cierre"
 
 /**
  * ADAPTER sobre el Dialog de @leasefy/cadence.
@@ -120,19 +121,16 @@ function useFrenarLenisMientrasAbierto() {
  *
  * La del DS va `absolute` y sin fondo, y queda apagada SIEMPRE (ver
  * `DialogContent`), así que ésta es la única que un modal puede mostrar.
- * Vive en un solo lugar para que no vuelva a haber dos dibujos distintos.
+ *
+ * El DIBUJO vive en `aspa-de-cierre.ts`, no acá: las pantallas que cierran sin
+ * ser un modal —la de acceso, por ejemplo— lo necesitan sin arrastrar Radix, y
+ * mientras estuvo escrito adentro de esta primitiva cada una se inventó el suyo.
  */
 export const AspaDeCierre = ({ className }: { className?: string }) => (
   <DialogClose
     aria-label="Cerrar"
     data-testid="dialog-close"
-    className={cn(
-      "inline-flex size-8 shrink-0 items-center justify-center rounded-full",
-      "bg-surface-muted text-fg-muted transition-colors",
-      "hover:bg-border hover:text-fg",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-      className
-    )}
+    className={cn(ASPA_DE_CIERRE, className)}
   >
     <X size={16} weight="bold" aria-hidden="true" />
   </DialogClose>

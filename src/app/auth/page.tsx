@@ -3,12 +3,13 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { XCircle } from '@phosphor-icons/react';
+import { X } from '@phosphor-icons/react';
 
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
+import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
 
 /**
  * La obra de marca que ocupa el panel izquierdo.
@@ -84,24 +85,27 @@ export default function AuthPage() {
               </BrandHomeLink>
 
               {/*
-               * Una X de cerrar, no un «← Inicio».
+               * Una ✕ de cerrar, no un «← Inicio».
                *
                * Entrar a la pantalla de acceso es abrir algo encima del sitio,
-               * y lo que se abre se cierra: la X dice eso sin leerse. Va a la
+               * y lo que se abre se cierra: la ✕ dice eso sin leerse. Va a la
                * DERECHA —donde vive el cerrar en la web— y `ml-auto` la
                * mantiene ahí también en escritorio, donde la marca de al lado
                * está oculta y sin eso se iría al borde izquierdo.
+               *
+               * Es EL chip del producto (`ASPA_DE_CIERRE`), el mismo que cierra
+               * los 40 modales, y no un dibujo propio de esta pantalla: acá
+               * hubo un aro de trazo fino flotando en el aire que no se leía
+               * como botón.
                */}
               <Link
                 href="/"
                 aria-label="Cerrar y volver al inicio"
                 title="Cerrar"
-                className="ml-auto inline-flex items-center justify-center rounded-full text-fg-subtle transition-colors hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className={`${ASPA_DE_CIERRE} ml-auto`}
                 data-testid="auth-cerrar"
               >
-                {/* El glifo YA trae el círculo, así que el botón no pone otro
-                    de fondo al pasar el mouse: serían dos anillos. */}
-                <XCircle className="h-7 w-7" weight="light" />
+                <X size={16} weight="bold" aria-hidden="true" />
               </Link>
             </div>
 

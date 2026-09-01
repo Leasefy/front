@@ -28,6 +28,12 @@ import {
   cobrosApi,
 } from '@/lib/hooks/useInmobiliaria';
 import type { Cobro, CobroStatus, CobroSummary } from '@/lib/types/inmobiliaria';
+import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
+import type {
+  CobroConDesglose,
+  ConciliacionDePagoAnterior,
+  NuevoReciboDeCaja,
+} from '@/lib/api/recibos-de-caja.types';
 import {
   CobroResumen,
   CobroFilters,
@@ -218,56 +224,57 @@ function CobrosContent() {
     setIsPaymentModalOpen(true);
   }, []);
 
-  // Handle payment submission
-  const handlePaymentSubmit = useCallback(
-    async (data: {
-      amount: number;
-      method: string;
-      date: string;
-      reference?: string;
-      notes?: string;
-    }, cobroId: string) => {
-      try {
-        // Call API to register payment
-        await cobrosApi.registerPayment(cobroId, {
-          paidAmount: data.amount,
-          paymentMethod: data.method,
-          paymentDate: data.date,
-          paymentReference: data.reference,
-        });
-
-        // Optimistically update local state
-        setCobrosData((prev) => {
-          if (!prev) return prev;
-          return prev.map((c) => {
-            if (c.id !== cobroId) return c;
-            const newPaidAmount = c.paidAmount + data.amount;
-            const newPendingAmount = c.totalWithFees - newPaidAmount;
-            const isFullyPaid = newPendingAmount <= 0;
-            return {
-              ...c,
-              paidAmount: newPaidAmount,
-              pendingAmount: Math.max(0, newPendingAmount),
-              status: isFullyPaid ? ('paid' as const) : ('partial' as const),
-              paidDate: isFullyPaid ? data.date : c.paidDate,
-              paymentMethod: data.method,
-              paymentReference: data.reference,
-              updatedAt: new Date().toISOString(),
-            };
-          });
-        });
-
-        // Refetch summary to update totals
-        refetchSummary();
-
-        setIsPaymentModalOpen(false);
-        setPaymentCobro(null);
-      } catch (error) {
-        console.error('Error registering payment:', error);
-        // In a production app, show error toast here
-      }
+  /**
+   * Pone en la tabla el cobro que devolvió el back.
+   *
+   * 🔴 Antes esto se calculaba a mano (`paidAmount + monto`, y si daba <= 0
+   * entonces «pagado»). Esa cuenta se equivocaba con cualquier cosa que el back
+   * recomponga y nosotros no sepamos: mora que dejó de correr, un descuento,
+   * un recibo anulado. El endpoint de recibo de caja devuelve el cobro YA
+   * recompuesto justamente para no tener que adivinarlo.
+   */
+  const aplicarCobro = useCallback(
+    (actualizado: Cobro) => {
+      setCobrosData((prev) => {
+        if (!prev) return prev;
+        return prev.map((c) => (c.id === actualizado.id ? { ...c, ...actualizado } : c));
+      });
+      refetchSummary();
     },
-    [setCobrosData, refetchSummary]
+    [setCobrosData, refetchSummary],
+  );
+
+  /**
+   * Emitir el recibo de caja.
+   *
+   * 🔴 RELANZA el error a propósito: el 400 del sobrepago trae el máximo
+   * abonable y el 409 dice que hay plata vieja sin conciliar. Los dos se
+   * resuelven DENTRO del formulario; tragarlos acá con un `console.error`
+   * —como estaba— dejaba al usuario apretando un botón que no hacía nada.
+   */
+  const emitirRecibo = useCallback(
+    async (datos: NuevoReciboDeCaja) => {
+      const res = await recibosDeCajaApi.crear(datos);
+      aplicarCobro(res.cobro);
+      return res;
+    },
+    [aplicarCobro],
+  );
+
+  /** Cuadrar la plata que el cobro ya registraba sin recibo (cartera vieja y PSE). */
+  const conciliarPagoAnterior = useCallback(
+    async (cobroId: string, datos: ConciliacionDePagoAnterior) => {
+      const res = await recibosDeCajaApi.conciliar(cobroId, datos);
+      aplicarCobro(res.cobro);
+      return res;
+    },
+    [aplicarCobro],
+  );
+
+  /** Anular un recibo devuelve plata al saldo: la fila tiene que enterarse. */
+  const handleCobroActualizado = useCallback(
+    (actualizado: CobroConDesglose) => aplicarCobro(actualizado),
+    [aplicarCobro],
   );
 
   // Handle send reminder
@@ -377,7 +384,7 @@ function CobrosContent() {
             }}
           >
             <Plus className="w-4 h-4" />
-            {t('inmobiliaria.cobros.registerPayment')}
+            {t('recibos.hacer')}
           </Button>
         </div>
       </div>
@@ -553,15 +560,17 @@ function CobrosContent() {
         cobro={selectedCobro}
         onRegisterPayment={handleRegisterPaymentClick}
         onSendReminder={handleSendReminder}
+        onCobroActualizado={handleCobroActualizado}
       />
 
-      {/* Register Payment Modal */}
+      {/* Recibo de caja */}
       <RegistrarPagoModal
         isOpen={isPaymentModalOpen}
         onClose={handlePaymentModalClose}
         cobro={paymentCobro}
         cobrosList={filteredCobros}
-        onSubmit={handlePaymentSubmit}
+        onSubmit={emitirRecibo}
+        onConciliar={conciliarPagoAnterior}
       />
 
       {/* Reminder Configuration Sheet */}

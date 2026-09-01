@@ -866,7 +866,7 @@
       "propiedades": "Properties",
       "pipeline": "Prospecting",
       "agentes": "Agents",
-      "cobros": "Manual Collections",
+      "cobros": "Collections",
       "cartera": "Portfolio due",
       "contratos": "Contracts",
       "dispersiones": "Disbursements",
@@ -9914,6 +9914,215 @@
       "vacio": "There are no properties within your cap right now",
       "vacioTexto": "New ones come up often. Meanwhile you can browse the full catalog.",
       "verTodo": "See all properties"
+    }
+  },
+  "recibos": {
+    "nombre": "Cash receipt",
+    "plural": "Cash receipts",
+    "hacer": "Create cash receipt",
+    "hacerCorto": "Create receipt",
+    "queEs": "A cash receipt records that the money came in. The invoice is a different document.",
+    "desglose": {
+      "titulo": "What is owed",
+      "ayuda": "Check what the debt is made of before taking the money: accepting a partial payment as if it settled the account leaves the balance running.",
+      "concepto": "Line item",
+      "resta": "subtracts",
+      "subtotal": "Line items total",
+      "descuentos": "Less discounts and withholdings",
+      "total": "Total owed",
+      "yaAbonado": "Already paid",
+      "saldo": "Outstanding balance",
+      "cargando": "Loading the breakdown…",
+      "fallo": "We could not load the breakdown. Below is what we already had on the collection.",
+      "reintentar": "Try again",
+      "sinDetalle": "The detailed breakdown is not available for this agency. Below is the only split we can make on this collection.",
+      "descuadre": "Heads up: the line items add up to {{conceptos}} and the collection says {{cobro}}. Check with whoever generated it before taking money against it.",
+      "tipos": {
+        "CANON": "Rent",
+        "ADMINISTRACION": "Building fees",
+        "CONCEPTO_DEL_CONTRATO": "Contract line item",
+        "PRORRATEO": "Proration",
+        "INTERES_DE_MORA": "Late interest",
+        "GASTO_ADMINISTRATIVO": "Administrative fee",
+        "IVA": "VAT",
+        "RETEFUENTE": "Income tax withholding",
+        "RETEICA": "ICA withholding",
+        "RETEIVA": "VAT withholding",
+        "AJUSTE_MANUAL": "Manual adjustment"
+      }
+    },
+    "form": {
+      "titulo": "Create cash receipt",
+      "descripcion": "You are recording that money came in against this collection. It issues a numbered receipt and lowers the balance.",
+      "elegirCobro": "Which collection?",
+      "elegirCobroAyuda": "Pick the collection the money came in for.",
+      "sinCobros": "No collections with an outstanding balance this month.",
+      "montoLabel": "How much came in?",
+      "maximo": "Maximum you can apply: {{monto}}",
+      "abonarTodo": "Apply the whole balance",
+      "montoRequerido": "Enter how much came in",
+      "montoPositivo": "It has to be greater than zero",
+      "montoExcede": "That is over the balance. The maximum you can apply is {{monto}}.",
+      "quedaPendiente": "After this receipt, {{monto}} is still outstanding.",
+      "quedaEnCero": "This receipt brings the collection to zero.",
+      "fechaLabel": "What day did it come in?",
+      "fechaRequerida": "Pick the day",
+      "medioLabel": "How did it come in?",
+      "medioRequerido": "Pick how it came in",
+      "referenciaLabel": "Reference",
+      "referenciaPlaceholder": "Transaction or deposit number",
+      "notasLabel": "Notes",
+      "notasPlaceholder": "Anything the next person needs to know about this payment",
+      "opcional": "optional",
+      "cancelar": "Cancel",
+      "emitir": "Issue the receipt",
+      "emitiendo": "Issuing the receipt…",
+      "emitido": "Receipt {{numero}} issued",
+      "emitidoQuedaSaldo": "{{monto}} came in. {{saldo}} is still outstanding.",
+      "emitidoSinSaldo": "{{monto}} came in. The collection is now at zero.",
+      "fallo": "The receipt was not issued",
+      "medios": {
+        "transferencia": "Bank transfer",
+        "efectivo": "Cash",
+        "tarjeta": "Card",
+        "cheque": "Check",
+        "pse": "PSE",
+        "otro": "Other"
+      }
+    },
+    "historial": {
+      "titulo": "Cash receipts",
+      "vacio": "No cash receipts yet",
+      "vacioDesc": "The first payment you record shows up here with its number.",
+      "cargando": "Loading the receipts…",
+      "fallo": "We could not load the receipts for this collection.",
+      "reintentar": "Try again",
+      "numero": "Receipt {{numero}}",
+      "sinNumero": "No number",
+      "anulado": "Voided",
+      "anuladoEl": "Voided on {{fecha}}: that money went back to the balance.",
+      "recibidoConRecibo": "Received with a receipt",
+      "conteo": "{{count}} receipts",
+      "conteoUno": "1 receipt",
+      "anular": "Void"
+    },
+    "anular": {
+      "titulo": "Void receipt {{numero}}",
+      "queVaAPasar": "The receipt is marked as voided and {{monto}} goes back to the collection balance. It is not deleted: it stays visible in the history.",
+      "motivoLabel": "Why are you voiding it?",
+      "motivoPlaceholder": "The check bounced, it was applied to the wrong collection…",
+      "motivoRequerido": "The reason is required",
+      "cancelar": "Do not void",
+      "confirmar": "Void the receipt",
+      "anulando": "Voiding…",
+      "anulado": "Receipt {{numero}} voided",
+      "anuladoDesc": "{{monto}} went back to the collection balance.",
+      "fallo": "The receipt could not be voided"
+    },
+    "conciliar": {
+      "titulo": "An earlier payment has to be squared first",
+      "porQue": "This collection already has money on record that never went through a cash receipt: it was paid before receipts existed, or it came in through PSE. Until that is squared, no new payments can be applied.",
+      "queVaAPasar": "Reconciling issues a cash receipt for that difference, in your name and dated today. Then you can go on with the payment.",
+      "origenLabel": "Where did that money come from?",
+      "origenPlaceholder": "PSE payment from August 3rd, deposit at Bancolombia…",
+      "origenRequerido": "Say where the money came from: 5 characters minimum",
+      "cancelar": "Not now",
+      "confirmar": "Reconcile the earlier payment",
+      "conciliando": "Reconciling…",
+      "conciliado": "Earlier payment reconciled",
+      "conciliadoDesc": "Receipt {{numero}} was issued. You can make the payment now.",
+      "fallo": "It could not be reconciled"
+    }
+  },
+  "inquilinos": {
+    "eyebrow": "Third parties",
+    "titulo": "Tenants",
+    "subtitulo": "The people living in the properties you manage, with all their leases grouped together. A tenant comes from a lease or a migration — nobody is created by hand here.",
+    "queEs": "the tenants",
+    "queSon": "tenants",
+    "buscarPlaceholder": "Search by name, email or phone",
+    "filtroEstado": "Filter by lease status",
+    "filtros": {
+      "activos": "Active",
+      "terminados": "Ended",
+      "todos": "All"
+    },
+    "kpi": {
+      "personas": "Tenants",
+      "arriendosVigentes": "Current leases",
+      "canonVigente": "Current monthly rent"
+    },
+    "vacioDescripcion": "There are no leases in your agency yet. Bring over the ones you already have in another system and the tenants will show up on their own.",
+    "vacioMigrar": "Migrate my third parties",
+    "vacioContrato": "Migrate leases",
+    "sinContacto": "No email or phone",
+    "sinInmueble": "No property assigned",
+    "conteoArriendoUno": "1 lease · {{vigentes}} current",
+    "conteoArriendos": "{{n}} leases · {{vigentes}} current",
+    "verFicha": "View profile",
+    "estados": {
+      "activo": "Active",
+      "porVencer": "Ending soon",
+      "terminado": "Ended",
+      "cancelado": "Terminated"
+    },
+    "ficha": {
+      "correo": "Email",
+      "telefono": "Phone",
+      "canonVigente": "Current rent",
+      "arriendos": "Leases ({{n}})",
+      "verContrato": "View the lease",
+      "verCobros": "View their charges",
+      "sinDato": "Not on file"
+    }
+  },
+  "migracion": {
+    "nav": "Migration",
+    "eyebrow": "Getting started",
+    "titulo": "Migrate your operation",
+    "subtitulo": "Bring over what you already have in another system, in the order each step needs the previous one. You can stop halfway and pick it up later — nothing gets lost.",
+    "retomar": "Resume",
+    "empezar": "Start",
+    "noDisponible": "Not available yet",
+    "retomarAviso": "You have an unfinished upload. Pick it up where you left off — uploading the file again duplicates the rows.",
+    "orden": {
+      "titulo": "The order matters",
+      "detalle": "Each step needs the one before it: a property needs an owner, and a lease attaches to the property address. You can skip a step if that data is already loaded, but nothing will wait for you afterwards."
+    },
+    "estados": {
+      "enConstruccion": "Under construction",
+      "enCurso": "Unfinished",
+      "conDatos": "Data migrated"
+    },
+    "avance": {
+      "hechas": "{{n}} already migrated",
+      "porRevisar": "{{n}} to review in “{{lote}}”"
+    },
+    "pasos": {
+      "terceros": {
+        "titulo": "Third parties: owners and tenants",
+        "descripcion": "People first. An owner needs bank details so you can pay them; a tenant needs an email so you can invite them to the portal."
+      },
+      "propiedades": {
+        "titulo": "Properties",
+        "descripcion": "The properties you manage, with their address and their owner. Without this, leases arrive with nothing to attach to."
+      },
+      "contratos": {
+        "titulo": "Leases",
+        "descripcion": "Your live portfolio. They come in active and signed — no need to sign them again. A lease attaches to the property address."
+      },
+      "puc": {
+        "titulo": "Chart of accounts",
+        "descripcion": "Your chart of accounts, so entries land where your accountant expects them. Cannot be uploaded from here yet."
+      },
+      "contable": {
+        "titulo": "Accounting entries",
+        "descripcion": "Historical balances and movements. It goes last because it needs the chart of accounts in place. Cannot be uploaded from here yet."
+      }
+    },
+    "terceros": {
+      "titulo": "Third parties: owners and tenants",
+      "subtitulo": "Upload the file you already have — it does not need to match our format. Nothing is created until you review it: whatever a row is missing gets filled in right here, without uploading anything again."
     }
   }
 }

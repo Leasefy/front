@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { agencyApi, inmobiliariaConfigApi, permissionsApi, cobrosApi, mantenimientoApi, documentosApi, propietariosApi, inmueblesApi, normalizeInmuebleSinConsignacion, normalizeConsignacion, normalizePipelineItem } from '../inmobiliaria.service';
+import { agencyApi, cobrosApi, documentosApi, inmobiliariaConfigApi, inmueblesApi, mantenimientoApi, normalizeCobro, normalizeConsignacion, normalizeInmuebleSinConsignacion, normalizePipelineItem, permissionsApi, propietariosApi } from '../inmobiliaria.service';
 import { ApiError, setAccessToken } from '../client';
 import type { PropietarioFormData, BackendInmuebleSinConsignacion } from '@/lib/types/inmobiliaria';
 
@@ -213,12 +213,24 @@ describe('team-action HTTP verbs match the backend routes', () => {
 
 // ── (7) audit fixes: verb/path corrections against the real back routes ─────
 
+/**
+ * Las ÚNICAS claves que acepta `RegisterPaymentDto`
+ * (back: src/inmobiliaria/cobros/dto/register-payment.dto.ts). El back corre con
+ * `forbidNonWhitelisted: true`, así que cualquier otra clave ⇒ 400.
+ */
+const CLAVES_DEL_DTO_DE_PAGO = [
+  'paidAmount',
+  'paymentMethod',
+  'paymentReference',
+  'paidDate',
+];
+
 describe('cobrosApi.registerPayment — matches backend @Post(:id/payment)', () => {
   it('POSTs to /inmobiliaria/cobros/:id/payment with the payment body', async () => {
     const fetchMock = mockFetchOnce({ id: 'cobro-1', status: 'PAID' });
     const payment = {
       paidAmount: 1_500_000,
-      paymentDate: '2026-08-10',
+      paidDate: '2026-08-10',
       paymentMethod: 'TRANSFER',
       paymentReference: 'ref-123',
     };
@@ -229,6 +241,33 @@ describe('cobrosApi.registerPayment — matches backend @Post(:id/payment)', () 
     expect(url.endsWith('/inmobiliaria/cobros/cobro-1/payment')).toBe(true);
     expect(opts.method).toBe('POST');
     expect(JSON.parse(opts.body as string)).toEqual(payment);
+  });
+
+  /*
+   * 🔴 El test de arriba, solo, no alcanza: compara el cuerpo contra el MISMO
+   * objeto que le pasamos, así que pasaba en verde mientras el front mandaba
+   * `paymentDate` y el back esperaba `paidDate` — 400 en producción, verde acá.
+   * Éste contrasta contra el contrato del back. Verificado que muerde: con una
+   * clave intrusa falla con «expected [ 'paymentDate' ] to deeply equal []».
+   */
+  it('no manda NINGUNA clave fuera del DTO del back (si no, 400)', async () => {
+    const fetchMock = mockFetchOnce({ id: 'cobro-1', status: 'PAID' });
+
+    await cobrosApi.registerPayment('cobro-1', {
+      paidAmount: 1_500_000,
+      paidDate: '2026-08-10',
+      paymentMethod: 'TRANSFER',
+      paymentReference: 'ref-123',
+    });
+
+    const [, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const cuerpo = JSON.parse(opts.body as string) as Record<string, unknown>;
+    const sobrantes = Object.keys(cuerpo).filter(
+      (k) => !CLAVES_DEL_DTO_DE_PAGO.includes(k),
+    );
+    expect(sobrantes).toEqual([]);
+    expect(cuerpo).toHaveProperty('paidDate');
+    expect(cuerpo).not.toHaveProperty('paymentDate');
   });
 });
 
@@ -660,4 +699,32 @@ describe('normalizePipelineItem — a pipeline item on a sale mandate has no can
     );
     expect(item.monthlyRent).toBe(2_400_000);
   });
+
+/*
+ * 🔴 `normalizeCobro` corre sobre la respuesta del detalle y sólo tiene que
+ * arreglar el `status`. Si algún día alguien lo reescribe listando campos en
+ * vez de hacer spread, el desglose y los recibos desaparecen **en silencio**:
+ * la pantalla se ve bien, sólo que sin las líneas — y nadie relaciona una cosa
+ * con la otra. Esto lo fija.
+ */
+describe('normalizeCobro no se come los campos nuevos del detalle', () => {
+  it('conserva conceptos y recibosDeCaja tal cual vinieron', () => {
+    const crudo = {
+      id: 'c1',
+      status: 'COBRO_PENDING',
+      conceptos: [{ id: 'k1', tipo: 'CANON', nombre: 'Canon', valorCop: 1_800_000, resta: false, orden: 0 }],
+      recibosDeCaja: [{ id: 'r1', numero: 7, valorCop: 500_000 }],
+    } as never;
+
+    const salida = normalizeCobro(crudo) as unknown as {
+      status: string;
+      conceptos: unknown[];
+      recibosDeCaja: unknown[];
+    };
+
+    expect(salida.status).toBe('pending');
+    expect(salida.conceptos).toHaveLength(1);
+    expect(salida.recibosDeCaja).toHaveLength(1);
+  });
+});
 });

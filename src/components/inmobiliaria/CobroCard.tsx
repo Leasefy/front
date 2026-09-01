@@ -279,7 +279,7 @@ export function CobroCard({
             }}
           >
             <CurrencyCircleDollar className="w-4 h-4" />
-            {t('inmobiliaria.cobros.card.registerPayment')}
+            {t('recibos.hacerCorto')}
           </Button>
         )}
         {cobro.status === 'paid' && (

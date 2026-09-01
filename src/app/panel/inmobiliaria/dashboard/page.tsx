@@ -465,8 +465,8 @@ export default function InmobiliariaDashboardPage() {
             icon={Buildings}
           />
           <QuickAction
-            title={t('inmobiliaria.dashboard.quickActions.registerPayment')}
-            description={t('inmobiliaria.dashboard.quickActions.registerPaymentDesc')}
+            title={t('recibos.hacer')}
+            description={t('recibos.queEs')}
             href="/panel/inmobiliaria/cobros?status=pending"
             icon={CurrencyDollar}
           />

@@ -53,6 +53,7 @@ import type {
   AgencyInviteResult,
   AgencyOnboardingStatus,
 } from '@/lib/types/inmobiliaria';
+import type { CobroConDesglose } from './recibos-de-caja.types';
 import { adaptarDispersion, type DispersionDelBack } from './dispersion-adapter';
 import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import type { BankCode, AccountType } from '@/lib/types/payment-accounts';
@@ -675,7 +676,7 @@ export const pipelineApi = {
  * and, depending on the endpoint, either a bare array or `{ data: [...] }`. The
  * front `Cobro` type uses lowercase status, so normalize both here.
  */
-function normalizeCobro(raw: Cobro): Cobro {
+export function normalizeCobro<T extends Cobro>(raw: T): T {
   const s = String((raw as { status?: string }).status ?? '').toLowerCase();
   return {
     ...raw,
@@ -697,13 +698,39 @@ export const cobrosApi = {
     return rows.map(normalizeCobro);
   },
 
-  async getById(id: string): Promise<Cobro> {
-    return apiClient.get<Cobro>(`${BASE}/cobros/${id}`);
+  /**
+   * El detalle de UN cobro.
+   *
+   * Trae dos cosas que la lista no trae: `conceptos` (el desglose línea por
+   * línea del total adeudado) y `recibosDeCaja` (los recibos vivos). Por eso
+   * devuelve `CobroConDesglose` y no `Cobro`: la pantalla de detalle necesita
+   * los dos y la lista nunca los tuvo.
+   *
+   * 🔴 Normaliza igual que la lista. Antes no lo hacía —el único consumidor era
+   * la lista— y el día que alguien pintara el detalle con esta respuesta iba a
+   * recibir `status: 'PAID'` en mayúscula contra un tipo que dice `'paid'`: el
+   * badge se cae al default y el estado se ve mal sin que nada falle.
+   */
+  async getById(id: string): Promise<CobroConDesglose> {
+    const res = await apiClient.get<CobroConDesglose>(`${BASE}/cobros/${id}`);
+    return normalizeCobro(res);
   },
 
+  /**
+   * Registrar un pago contra un cobro.
+   *
+   * 🔴 `paidDate`, NO `paymentDate`. El back valida con
+   * `forbidNonWhitelisted: true` (back: src/main.ts), así que una clave que el
+   * DTO no declara no se ignora — devuelve 400. Esto es lo que quedaba de
+   * «registrar pago no funciona»: una auditoría anterior arregló el verbo y la
+   * ruta y dejó el nombre del campo, y el test lo fijó comparando el cuerpo
+   * contra sí mismo en vez de contra el contrato del back.
+   *
+   * Contrato real: back/src/inmobiliaria/cobros/dto/register-payment.dto.ts
+   */
   async registerPayment(id: string, payment: {
     paidAmount: number;
-    paymentDate: string;
+    paidDate: string;
     paymentMethod: string;
     paymentReference?: string;
   }): Promise<Cobro> {

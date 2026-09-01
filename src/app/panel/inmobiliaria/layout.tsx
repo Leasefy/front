@@ -41,6 +41,8 @@ import {
   CurrencyCircleDollar,
   Umbrella,
   Warning,
+  UsersThree,
+  UploadSimple,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AgencySubscriptionGuard } from '@/components/auth/AgencySubscriptionGuard';
@@ -269,6 +271,14 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     } as NavItemWithModule,
     { label: t('inmobiliaria.nav.renovaciones'), href: '/panel/inmobiliaria/renovaciones', scope: 'administracion', icon: ArrowsClockwise, module: 'operaciones' },
     { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', scope: 'administracion', icon: UserCircle,    module: 'propietarios' },
+    /*
+     * Inquilinos va pegado a Propietarios porque son las dos caras del mismo
+     * contrato, y hasta hoy sólo estaba una: el inquilino se veía como un
+     * campo dentro de un candidato. Es de sólo lectura — un inquilino nace de
+     * un contrato o de la migración, nunca de un formulario suelto.
+     * El permiso es `contratos` porque de ahí sale el dato.
+     */
+    { label: t('inquilinos.titulo'),             href: '/panel/inmobiliaria/inquilinos', scope: 'administracion',  icon: UsersThree,    module: 'contratos' },
     { label: t('inmobiliaria.nav.operaciones'),  href: '/panel/inmobiliaria/operaciones', scope: 'administracion',  icon: Wrench,        module: 'operaciones', ai: true },
     { label: t('inmobiliaria.nav.solicitudes'),  href: '/panel/inmobiliaria/pqrs', scope: 'administracion',         icon: Lifebuoy,      module: null, hint: t('inmobiliaria.nav.pqrs'), ai: true },
     // Sin `badge`: el 5 estaba escrito a mano, no contaba nada.
@@ -342,6 +352,14 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // Gated por el módulo 'dashboard' que lo gobierna (todos los roles lo tienen
     // ⇒ visible tras cargar permisos; oculto durante la carga — fail-closed).
     { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria/dashboard', scope: 'general',    icon: SquaresFour,   exact: true, module: 'dashboard' },
+    /*
+     * Traer la inmobiliaria entera: terceros → inmuebles → contratos → PUC →
+     * contabilidad. Es la barrera real de adopción, no una utilidad: Portofino
+     * estuvo dos meses intentando migrarse al ERP anterior y lo abandonó.
+     * `configuracion` porque en los defaults sólo el ADMIN lo tiene, y esto
+     * crea propietarios e inquilinos de verdad.
+     */
+    { label: t('migracion.nav'),                 href: '/panel/inmobiliaria/migracion', scope: 'general',          icon: UploadSimple,  module: 'configuracion' },
     { label: t('inmobiliaria.nav.reportes'),     href: '/panel/inmobiliaria/reportes', scope: 'general',     icon: ChartLine,     module: 'reportes' },
     { label: t('inmobiliaria.nav.analitica'),    href: '/panel/inmobiliaria/analytics', scope: 'general',    icon: ChartLineUp,   module: 'analytics' },
     { label: t('inmobiliaria.nav.equipo'),       href: '/panel/inmobiliaria/agentes', scope: 'general',      icon: Users,         module: 'agentes' },

@@ -4,7 +4,7 @@
  *
  * Dos filas con el mismo glifo se leen como la misma cosa: el icono deja de
  * ayudar a encontrar y pasa a estorbar. Pasó con `House` (Inicio e
- * Inmuebles · catálogo) y con `CurrencyDollar` (Cobros manuales y Pagos), y no
+ * Inmuebles · catálogo) y con `CurrencyDollar` (Cobros y Pagos), y no
  * se nota leyendo el archivo — las filas están a cien líneas de distancia.
  *
  * Con los nombres pasó lo mismo y más caro: había **dos filas llamadas

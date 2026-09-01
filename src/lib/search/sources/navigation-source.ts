@@ -61,13 +61,15 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'action', title: 'Nueva consignación', context: 'Consignaciones', href: '/panel/inmobiliaria/inmuebles/nuevo', keywords: 'crear consignar propiedad inmueble publicar', permission: { module: 'portafolio', action: 'create' } },
   { kind: 'action', title: 'Importar propiedades', context: 'Consignaciones', href: '/panel/inmobiliaria/inmuebles/importar', keywords: 'importar excel csv masivo', permission: { module: 'portafolio', action: 'create' } },
   { kind: 'page', title: 'Propietarios', context: 'Portafolio', href: '/panel/inmobiliaria/propietarios', keywords: 'dueños landlords', permission: { module: 'propietarios', action: 'view' } },
+  { kind: 'page', title: 'Inquilinos', context: 'Portafolio', href: '/panel/inmobiliaria/inquilinos', keywords: 'arrendatarios tenants quien vive', permission: { module: 'contratos', action: 'view' } },
+  { kind: 'page', title: 'Migrar mi inmobiliaria', context: 'Configuración', href: '/panel/inmobiliaria/migracion', keywords: 'importar traer terceros propietarios inquilinos inmuebles contratos contabilidad excel', permission: { module: 'configuracion', action: 'view' } },
   { kind: 'page', title: 'Prospección (Pipeline)', context: 'Portafolio', href: '/panel/inmobiliaria/pipeline', keywords: 'leads captacion kanban', permission: { module: 'pipeline', action: 'view' } },
   { kind: 'page', title: 'Equipo', context: 'Portafolio', href: '/panel/inmobiliaria/agentes', keywords: 'agentes usuarios miembros', permission: { module: 'agentes', action: 'view' } },
   { kind: 'action', title: 'Nuevo agente', context: 'Equipo', href: '/panel/inmobiliaria/agentes', keywords: 'invitar crear agente miembro equipo', permission: { module: 'agentes', action: 'create' } },
   { kind: 'action', title: 'Solicitar avalúo', context: 'Avalúos', href: '/panel/inmobiliaria/ai/avaluos', keywords: 'crear avaluo valoracion solicitar nuevo', permission: { module: 'avaluos', action: 'create' } },
 
   // ── Finanzas ──────────────────────────────────────────────────────────────
-  { kind: 'page', title: 'Cobros manuales', context: 'Finanzas', href: '/panel/inmobiliaria/cobros', keywords: 'recaudo pagos recibir', permission: { module: 'cobros', action: 'view' } },
+  { kind: 'page', title: 'Cobros', context: 'Finanzas', href: '/panel/inmobiliaria/cobros', keywords: 'recaudo pagos recibir recibo de caja abono', permission: { module: 'cobros', action: 'view' } },
   { kind: 'page', title: 'Dispersiones', context: 'Finanzas', href: '/panel/inmobiliaria/dispersiones', keywords: 'giros transferencias propietarios', permission: { module: 'dispersiones', action: 'view' } },
   { kind: 'page', title: 'Tesorería', context: 'Finanzas', href: '/panel/inmobiliaria/tesoreria', keywords: 'caja bancos saldos' },
   { kind: 'page', title: 'Facturación', context: 'Finanzas', href: '/panel/inmobiliaria/facturacion', keywords: 'facturas cobrar dian' },

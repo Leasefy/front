@@ -15,7 +15,6 @@ import {
   Copy,
   Calendar,
   CurrencyCircleDollar,
-  CheckCircle,
   Clock,
   Warning,
   Bell,
@@ -38,9 +37,13 @@ import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@leasefy/cadence';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
-import { formatCurrency as formatCurrencyUtil } from '@/lib/types/inmobiliaria';
 import { usePropietarios, useConsignaciones } from '@/lib/hooks/useInmobiliaria';
 import { useLenis } from '@/components/providers/SmoothScroll';
+import { useDetalleDeCobro } from '@/lib/hooks/useDetalleDeCobro';
+import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
+import type { CobroConDesglose, ReciboDeCaja } from '@/lib/api/recibos-de-caja.types';
+import { DesgloseAdeudado } from './DesgloseAdeudado';
+import { RecibosDeCajaHistorial } from './RecibosDeCajaHistorial';
 
 interface CobroDetailProps {
   isOpen: boolean;
@@ -48,41 +51,12 @@ interface CobroDetailProps {
   cobro: Cobro | null;
   onRegisterPayment?: (cobro: Cobro) => void;
   onSendReminder?: (cobro: Cobro) => void;
-}
-
-// Mock payment history for partial payments
-function getMockPaymentHistory(cobro: Cobro) {
-  if (cobro.status === 'paid') {
-    return [
-      {
-        id: 'pay-1',
-        date: cobro.paidDate || '',
-        amount: cobro.paidAmount,
-        method: cobro.paymentMethod || 'transferencia',
-        reference: cobro.paymentReference || '',
-      },
-    ];
-  }
-  if (cobro.status === 'partial') {
-    // For partial, simulate 1-2 partial payments
-    return [
-      {
-        id: 'pay-1',
-        date: new Date(cobro.dueDate).toISOString().split('T')[0],
-        amount: Math.round(cobro.paidAmount * 0.6),
-        method: 'transferencia',
-        reference: 'TRF-001',
-      },
-      {
-        id: 'pay-2',
-        date: new Date().toISOString().split('T')[0],
-        amount: Math.round(cobro.paidAmount * 0.4),
-        method: 'efectivo',
-        reference: 'EFE-002',
-      },
-    ];
-  }
-  return [];
+  /**
+   * Anular un recibo devuelve el cobro recompuesto. Sin esto, la fila de la
+   * tabla se queda con el saldo de antes y el usuario ve dos cifras distintas
+   * para la misma plata en la misma pantalla.
+   */
+  onCobroActualizado?: (cobro: CobroConDesglose) => void;
 }
 
 // Mock reminder history
@@ -188,50 +162,6 @@ function StatusBadge({ status }: { status: CobroStatus }) {
 }
 
 /**
- * AmountRow - Row showing amount label and value
- */
-function AmountRow({
-  label,
-  amount,
-  isTotal,
-  isWarning,
-  isSuccess,
-  formatCurrencyFn,
-}: {
-  label: string;
-  amount: number;
-  isTotal?: boolean;
-  isWarning?: boolean;
-  isSuccess?: boolean;
-  formatCurrencyFn: (amount: number) => string;
-}) {
-  return (
-    <div className="flex items-center justify-between py-2">
-      <span
-        className={cn(
-          'text-sm',
-          isTotal ? 'font-semibold text-foreground' : 'text-muted-foreground'
-        )}
-      >
-        {label}
-      </span>
-      <span
-        className={cn(
-          isTotal ? 'text-lg font-bold' : 'text-sm font-medium',
-          isWarning
-            ? 'text-warning'
-            : isSuccess
-            ? 'text-success'
-            : 'text-foreground'
-        )}
-      >
-        {formatCurrencyFn(amount)}
-      </span>
-    </div>
-  );
-}
-
-/**
  * CobroDetail - Sheet drawer showing full cobro information
  * Includes property, tenant, propietario info, amounts, payment history, and actions
  */
@@ -241,10 +171,38 @@ export function CobroDetail({
   cobro,
   onRegisterPayment,
   onSendReminder,
+  onCobroActualizado,
 }: CobroDetailProps) {
-  const { t, formatDate, formatCurrency } = useI18n();
+  const { t, formatDate } = useI18n();
   const [isSendingReminder, setIsSendingReminder] = React.useState(false);
   const { stop: stopLenis, start: startLenis } = useLenis();
+
+  /*
+   * El desglose y los recibos NO vienen en la lista: la fila que abrió este
+   * panel sólo tiene los totales. Se piden al abrir.
+   */
+  const {
+    detalle,
+    conceptos,
+    recibos,
+    cargando: cargandoDetalle,
+    falloDesglose,
+    falloRecibos,
+    recargar,
+    aplicarRespuesta,
+  } = useDetalleDeCobro(cobro?.id ?? null, isOpen);
+
+  // El cobro fresco manda sobre la fila de la lista en cuanto llega.
+  const cobroVigente = detalle?.id === cobro?.id && detalle ? detalle : cobro;
+
+  const anularRecibo = React.useCallback(
+    async (recibo: ReciboDeCaja, motivo: string) => {
+      const res = await recibosDeCajaApi.anular(recibo.id, motivo);
+      aplicarRespuesta(res);
+      onCobroActualizado?.(res.cobro);
+    },
+    [aplicarRespuesta, onCobroActualizado],
+  );
 
   // Stop Lenis smooth scroll when sheet is open to allow native scroll
   React.useEffect(() => {
@@ -269,12 +227,6 @@ export function CobroDetail({
     if (!cobro) return null;
     return consignaciones.find((c) => c.id === cobro.consignacionId) ?? null;
   }, [cobro, consignaciones]);
-
-  // Get payment and reminder history
-  const paymentHistory = React.useMemo(() => {
-    if (!cobro) return [];
-    return getMockPaymentHistory(cobro);
-  }, [cobro]);
 
   const reminderHistory = React.useMemo(() => {
     if (!cobro) return [];
@@ -465,9 +417,11 @@ export function CobroDetail({
               <CurrencyCircleDollar className="w-4 h-4 text-primary" />
               {t('inmobiliaria.cobros.detail.breakdownSection')}
             </h3>
-            <div className="p-4 rounded-xl border border-border bg-muted/30">
-              {/* Month and Due Date */}
-              <div className="grid grid-cols-2 gap-4 pb-3 mb-3 border-b border-border">
+            {/* Mes y vencimiento. Va en su propia tarjeta: el desglose trae la
+                suya, y una tarjeta dentro de otra con el mismo fondo y el
+                mismo borde no se lee como jerarquía, se lee como un error. */}
+            <div className="rounded-xl border border-border bg-muted/30 p-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.detail.monthLabel')}</p>
                   <p className="font-medium text-foreground capitalize">
@@ -487,97 +441,55 @@ export function CobroDetail({
                   </p>
                 </div>
               </div>
-
-              {/* Amounts */}
-              <div className="divide-y divide-border">
-                <AmountRow label={t('inmobiliaria.cobros.detail.rentLabel')} amount={cobro.rentAmount} formatCurrencyFn={formatCurrency} />
-                {cobro.adminAmount > 0 && (
-                  <AmountRow label={t('inmobiliaria.cobros.detail.adminLabel')} amount={cobro.adminAmount} formatCurrencyFn={formatCurrency} />
-                )}
-                {cobro.lateFee > 0 && (
-                  <AmountRow label={t('inmobiliaria.cobros.detail.lateFeeLabel')} amount={cobro.lateFee} isWarning formatCurrencyFn={formatCurrency} />
-                )}
-                <AmountRow label={t('inmobiliaria.cobros.detail.totalLabel')} amount={cobro.totalWithFees} isTotal formatCurrencyFn={formatCurrency} />
-              </div>
-
-              {/* Paid/Pending */}
-              {(cobro.status === 'paid' || cobro.status === 'partial') && (
-                <div className="mt-3 pt-3 border-t border-border divide-y divide-border">
-                  <AmountRow label={t('inmobiliaria.cobros.detail.paidLabel')} amount={cobro.paidAmount} isSuccess formatCurrencyFn={formatCurrency} />
-                  {cobro.status === 'partial' && (
-                    <AmountRow label={t('inmobiliaria.cobros.detail.pendingLabel')} amount={cobro.pendingAmount} isWarning formatCurrencyFn={formatCurrency} />
-                  )}
-                  {cobro.paidDate && (
-                    <div className="flex items-center justify-between py-2">
-                      <span className="text-sm text-muted-foreground">{t('inmobiliaria.cobros.detail.paymentDateLabel')}</span>
-                      <span className="text-sm text-foreground">
-                        {formatDate(new Date(cobro.paidDate), {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Days Late Warning */}
-              {isLate && (
-                <div className="mt-3 p-3 rounded-md bg-danger-soft border border-danger/30 dark:border-danger/40">
-                  <div className="flex items-center gap-2">
-                    <Warning className="w-4 h-4 text-danger" weight="fill" />
-                    <span className="text-sm font-medium text-danger">
-                      {t('inmobiliaria.cobros.detail.daysLate', { count: cobro.daysLate })}
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
+
+            {/*
+              🔴 Antes acá vivían cuatro filas fijas (canon, admin, mora,
+              total). Eso es exactamente lo que la inmobiliaria dijo que no
+              alcanza: no muestra el honorario de cobranza ni las retenciones,
+              y con eso se acepta un abono parcial creyendo que el cliente
+              quedó al día. Ahora manda el desglose del back, y cuando la
+              agencia no lo tiene, la pantalla lo dice.
+            */}
+            <DesgloseAdeudado
+              cobro={cobroVigente ?? cobro}
+              conceptos={conceptos}
+              cargando={cargandoDetalle}
+              fallo={falloDesglose}
+              onReintentar={recargar}
+            />
+
+            {isLate && (
+              <div className="rounded-md border border-danger/30 bg-danger-soft p-3 dark:border-danger/40">
+                <div className="flex items-center gap-2">
+                  <Warning className="w-4 h-4 text-danger" weight="fill" />
+                  <span className="text-sm font-medium text-danger">
+                    {t('inmobiliaria.cobros.detail.daysLate', { count: cobro.daysLate })}
+                  </span>
+                </div>
+              </div>
+            )}
           </motion.section>
 
-          {/* Payment History Section */}
-          {paymentHistory.length > 0 && (
-            <motion.section
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="space-y-3"
-            >
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Receipt className="w-4 h-4 text-primary" />
-                {t('inmobiliaria.cobros.detail.paymentHistory')}
-              </h3>
-              <div className="space-y-2">
-                {paymentHistory.map((payment) => (
-                  <div
-                    key={payment.id}
-                    className="p-3 rounded-xl border border-border bg-muted/30 flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-success-soft flex items-center justify-center">
-                        <CheckCircle className="w-4 h-4 text-success" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {formatCurrency(payment.amount)}
-                        </p>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {payment.method} &bull; {payment.reference}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(new Date(payment.date), {
-                        day: 'numeric',
-                        month: 'short',
-                      })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </motion.section>
-          )}
+          {/* Recibos de caja — cada abono, su documento */}
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="space-y-3"
+          >
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Receipt className="w-4 h-4 text-primary" />
+              {t('recibos.historial.titulo')}
+            </h3>
+            <RecibosDeCajaHistorial
+              recibos={recibos}
+              cargando={cargandoDetalle}
+              fallo={falloRecibos}
+              onReintentar={recargar}
+              onAnular={anularRecibo}
+            />
+          </motion.section>
 
           {/* Reminder History Section */}
           <motion.section
@@ -654,8 +566,8 @@ export function CobroDetail({
                 className="flex-1 bg-success hover:bg-success text-white"
                 onClick={() => onRegisterPayment(cobro)}
               >
-                <CurrencyCircleDollar className="w-4 h-4 mr-2" />
-                {t('inmobiliaria.cobros.detail.registerPayment')}
+                <Receipt className="w-4 h-4 mr-2" />
+                {t('recibos.hacer')}
               </Button>
             )}
             {isPending && onSendReminder && (

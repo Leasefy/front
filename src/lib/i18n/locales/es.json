@@ -867,7 +867,7 @@
       "propiedades": "Inmuebles",
       "pipeline": "Prospección",
       "agentes": "Agentes",
-      "cobros": "Cobros manuales",
+      "cobros": "Cobros",
       "cartera": "Cartera",
       "contratos": "Contratos",
       "dispersiones": "Dispersiones",
@@ -9915,6 +9915,215 @@
       "vacio": "Ahora mismo no hay propiedades dentro de tu tope",
       "vacioTexto": "Aparecen nuevas seguido. Mientras tanto puedes ver el catálogo completo.",
       "verTodo": "Ver todas las propiedades"
+    }
+  },
+  "recibos": {
+    "nombre": "Recibo de caja",
+    "plural": "Recibos de caja",
+    "hacer": "Hacer recibo de caja",
+    "hacerCorto": "Hacer recibo",
+    "queEs": "Con el recibo de caja dejás constancia de que entró la plata. La factura es otro documento.",
+    "desglose": {
+      "titulo": "Qué está debiendo",
+      "ayuda": "Mirá de qué está compuesta la deuda antes de recibir la plata: si aceptás un abono parcial creyendo que quedó al día, el saldo sigue corriendo.",
+      "concepto": "Concepto",
+      "resta": "resta",
+      "subtotal": "Suma de conceptos",
+      "descuentos": "Menos descuentos y retenciones",
+      "total": "Total adeudado",
+      "yaAbonado": "Ya abonado",
+      "saldo": "Saldo pendiente",
+      "cargando": "Buscando el desglose…",
+      "fallo": "No pudimos traer el desglose. Abajo va lo que ya teníamos del cobro.",
+      "reintentar": "Reintentar",
+      "sinDetalle": "El desglose detallado no está disponible para esta inmobiliaria. Abajo va lo único que se puede separar de este cobro.",
+      "descuadre": "Ojo: los conceptos suman {{conceptos}} y el cobro dice {{cobro}}. Revisalo con quien generó el cobro antes de recibir plata contra él.",
+      "tipos": {
+        "CANON": "Canon de arrendamiento",
+        "ADMINISTRACION": "Administración",
+        "CONCEPTO_DEL_CONTRATO": "Concepto del contrato",
+        "PRORRATEO": "Prorrateo",
+        "INTERES_DE_MORA": "Intereses de mora",
+        "GASTO_ADMINISTRATIVO": "Gasto administrativo",
+        "IVA": "IVA",
+        "RETEFUENTE": "Retención en la fuente",
+        "RETEICA": "ReteICA",
+        "RETEIVA": "ReteIVA",
+        "AJUSTE_MANUAL": "Ajuste manual"
+      }
+    },
+    "form": {
+      "titulo": "Hacer recibo de caja",
+      "descripcion": "Vas a dejar constancia de que entró plata contra este cobro. Sale un recibo numerado y el saldo baja.",
+      "elegirCobro": "¿Contra cuál cobro?",
+      "elegirCobroAyuda": "Elegí el cobro al que le entró la plata.",
+      "sinCobros": "No hay cobros con saldo pendiente para este mes.",
+      "montoLabel": "¿Cuánto entró?",
+      "maximo": "Máximo abonable: {{monto}}",
+      "abonarTodo": "Abonar todo el saldo",
+      "montoRequerido": "Escribí cuánto entró",
+      "montoPositivo": "Tiene que ser mayor que cero",
+      "montoExcede": "Se pasa del saldo. El máximo abonable es {{monto}}.",
+      "quedaPendiente": "Después de este recibo quedan {{monto}} pendientes.",
+      "quedaEnCero": "Con este recibo el cobro queda en cero.",
+      "fechaLabel": "¿Qué día entró?",
+      "fechaRequerida": "Elegí el día",
+      "medioLabel": "¿Por dónde entró?",
+      "medioRequerido": "Elegí por dónde entró",
+      "referenciaLabel": "Referencia",
+      "referenciaPlaceholder": "Número de la transacción o de la consignación",
+      "notasLabel": "Notas",
+      "notasPlaceholder": "Lo que la próxima persona necesite saber de este pago",
+      "opcional": "opcional",
+      "cancelar": "Cancelar",
+      "emitir": "Emitir el recibo",
+      "emitiendo": "Emitiendo el recibo…",
+      "emitido": "Recibo {{numero}} emitido",
+      "emitidoQuedaSaldo": "Entraron {{monto}}. Quedan {{saldo}} pendientes.",
+      "emitidoSinSaldo": "Entraron {{monto}}. El cobro queda en cero.",
+      "fallo": "No se emitió el recibo",
+      "medios": {
+        "transferencia": "Transferencia",
+        "efectivo": "Efectivo",
+        "tarjeta": "Tarjeta",
+        "cheque": "Cheque",
+        "pse": "PSE",
+        "otro": "Otro"
+      }
+    },
+    "historial": {
+      "titulo": "Recibos de caja",
+      "vacio": "Todavía no hay recibos de caja",
+      "vacioDesc": "Cuando registres el primer abono, aparece acá con su número.",
+      "cargando": "Buscando los recibos…",
+      "fallo": "No pudimos traer los recibos de este cobro.",
+      "reintentar": "Reintentar",
+      "numero": "Recibo {{numero}}",
+      "sinNumero": "Sin número",
+      "anulado": "Anulado",
+      "anuladoEl": "Anulado el {{fecha}}: esa plata volvió al saldo.",
+      "recibidoConRecibo": "Recibido con recibo",
+      "conteo": "{{count}} recibos",
+      "conteoUno": "1 recibo",
+      "anular": "Anular"
+    },
+    "anular": {
+      "titulo": "Anular el recibo {{numero}}",
+      "queVaAPasar": "El recibo queda marcado como anulado y {{monto}} vuelven al saldo del cobro. No se borra: sigue visible en el historial.",
+      "motivoLabel": "¿Por qué lo anulás?",
+      "motivoPlaceholder": "Se devolvió el cheque, se cargó al cobro equivocado…",
+      "motivoRequerido": "El motivo es obligatorio",
+      "cancelar": "No anular",
+      "confirmar": "Anular el recibo",
+      "anulando": "Anulando…",
+      "anulado": "Recibo {{numero}} anulado",
+      "anuladoDesc": "{{monto}} volvieron al saldo del cobro.",
+      "fallo": "No se pudo anular el recibo"
+    },
+    "conciliar": {
+      "titulo": "Primero hay que cuadrar un pago anterior",
+      "porQue": "Este cobro ya tiene plata registrada que nunca pasó por un recibo de caja: se pagó antes de que el recibo existiera, o entró por PSE. Mientras no cuadre, no se pueden hacer abonos nuevos.",
+      "queVaAPasar": "Al conciliar se emite un recibo de caja por esa diferencia, a tu nombre y con la fecha de hoy. Después seguís con el abono.",
+      "origenLabel": "¿De dónde salió esa plata?",
+      "origenPlaceholder": "Pago por PSE del 3 de agosto, consignación en Bancolombia…",
+      "origenRequerido": "Contá de dónde salió la plata: mínimo 5 caracteres",
+      "cancelar": "Ahora no",
+      "confirmar": "Conciliar el pago anterior",
+      "conciliando": "Conciliando…",
+      "conciliado": "Pago anterior conciliado",
+      "conciliadoDesc": "Quedó el recibo {{numero}}. Ya podés hacer el abono.",
+      "fallo": "No se pudo conciliar"
+    }
+  },
+  "inquilinos": {
+    "eyebrow": "Terceros",
+    "titulo": "Inquilinos",
+    "subtitulo": "Las personas que viven en los inmuebles que administrás, con todos sus arriendos juntos. Un inquilino nace de un contrato o de una migración: acá no se crea a nadie a mano.",
+    "queEs": "los inquilinos",
+    "queSon": "inquilinos",
+    "buscarPlaceholder": "Buscá por nombre, correo o teléfono",
+    "filtroEstado": "Filtrar por estado del arriendo",
+    "filtros": {
+      "activos": "Activos",
+      "terminados": "Terminados",
+      "todos": "Todos"
+    },
+    "kpi": {
+      "personas": "Inquilinos",
+      "arriendosVigentes": "Arriendos vigentes",
+      "canonVigente": "Canon mensual vigente"
+    },
+    "vacioDescripcion": "Todavía no hay ningún arriendo en tu inmobiliaria. Traé los que ya tenés en otro sistema y los inquilinos aparecen solos.",
+    "vacioMigrar": "Migrar mis terceros",
+    "vacioContrato": "Migrar contratos",
+    "sinContacto": "Sin correo ni teléfono",
+    "sinInmueble": "Sin inmueble asignado",
+    "conteoArriendoUno": "1 arriendo · {{vigentes}} vigente",
+    "conteoArriendos": "{{n}} arriendos · {{vigentes}} vigentes",
+    "verFicha": "Ver ficha",
+    "estados": {
+      "activo": "Activo",
+      "porVencer": "Por vencer",
+      "terminado": "Terminado",
+      "cancelado": "Cancelado"
+    },
+    "ficha": {
+      "correo": "Correo",
+      "telefono": "Teléfono",
+      "canonVigente": "Canon vigente",
+      "arriendos": "Arriendos ({{n}})",
+      "verContrato": "Ver el contrato",
+      "verCobros": "Ver sus cobros",
+      "sinDato": "No registrado"
+    }
+  },
+  "migracion": {
+    "nav": "Migración",
+    "eyebrow": "Arranque",
+    "titulo": "Migrá tu operación",
+    "subtitulo": "Traé lo que ya tenés en otro sistema, en el orden en que cada paso necesita al anterior. Podés dejarlo a medias y retomarlo cuando quieras: nada se pierde.",
+    "retomar": "Retomar",
+    "empezar": "Empezar",
+    "noDisponible": "Todavía no está disponible",
+    "retomarAviso": "Tenés una carga sin terminar. Retomala desde donde quedó — volver a subir el archivo duplica las filas.",
+    "orden": {
+      "titulo": "El orden importa",
+      "detalle": "Cada paso necesita al anterior: el inmueble necesita dueño y el contrato se pega a la dirección del inmueble. Podés saltarte un paso si ya tenés esos datos cargados, pero nada te va a esperar después."
+    },
+    "estados": {
+      "enConstruccion": "En construcción",
+      "enCurso": "Sin terminar",
+      "conDatos": "Con datos migrados"
+    },
+    "avance": {
+      "hechas": "{{n}} ya migrados",
+      "porRevisar": "{{n}} por revisar en «{{lote}}»"
+    },
+    "pasos": {
+      "terceros": {
+        "titulo": "Terceros: propietarios e inquilinos",
+        "descripcion": "Las personas primero. Del propietario hace falta la cuenta bancaria para poder pagarle; del inquilino, el correo para poder invitarlo al portal."
+      },
+      "propiedades": {
+        "titulo": "Propiedades",
+        "descripcion": "Los inmuebles que administrás, con su dirección y su dueño. Sin esto, los contratos entran sin a qué apuntar."
+      },
+      "contratos": {
+        "titulo": "Contratos",
+        "descripcion": "Tu cartera viva. Entran vigentes y firmados: no hay que volver a firmarlos. El contrato se pega a la dirección del inmueble."
+      },
+      "puc": {
+        "titulo": "Cuentas del PUC",
+        "descripcion": "Tu plan de cuentas, para que los movimientos caigan donde tu contador los espera. Todavía no se puede cargar desde acá."
+      },
+      "contable": {
+        "titulo": "Registros contables",
+        "descripcion": "Los saldos y movimientos históricos. Va al final porque necesita el plan de cuentas armado. Todavía no se puede cargar desde acá."
+      }
+    },
+    "terceros": {
+      "titulo": "Terceros: propietarios e inquilinos",
+      "subtitulo": "Subí el archivo que ya tenés — no hace falta que tenga nuestro formato. Nada se crea hasta que revises: lo que le falte a una fila se completa acá mismo, sin volver a subir nada."
     }
   }
 }

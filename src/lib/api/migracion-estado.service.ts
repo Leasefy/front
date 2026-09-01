@@ -26,14 +26,25 @@ import { apiClient } from './client';
 
 const BASE = '/inmobiliaria/migracion';
 
-/** Los cinco pasos del arranque, en el orden en que se necesitan. */
-export type IdDePasoDeMigracion =
-  | 'propietarios'
-  | 'inquilinos'
-  | 'propiedades'
-  | 'contratos'
-  | 'puc'
-  | 'contables';
+/**
+ * Los seis pasos del arranque, en el orden en que se necesitan.
+ *
+ * Es un arreglo en tiempo de ejecución y no sólo un tipo: hay cosas que
+ * necesitan RECORRER los pasos —el gate de traducciones, por ejemplo— y una
+ * lista copiada a mano se desincroniza sin que nada avise. Pasó: al partir
+ * «terceros» en propietarios e inquilinos, el gate de i18n siguió pidiendo
+ * las claves del paso que ya no existe y dejó de mirar las dos nuevas.
+ */
+export const IDS_DE_PASOS_DE_MIGRACION = [
+  'propietarios',
+  'inquilinos',
+  'propiedades',
+  'contratos',
+  'puc',
+  'contables',
+] as const;
+
+export type IdDePasoDeMigracion = (typeof IDS_DE_PASOS_DE_MIGRACION)[number];
 
 /**
  * `no_disponible` NO es un error ni un pendiente: es un paso que el back no

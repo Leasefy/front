@@ -17,6 +17,8 @@
 
 import { describe, it, expect } from 'vitest';
 
+import { IDS_DE_PASOS_DE_MIGRACION } from '@/lib/api/migracion-estado.service';
+
 import es from './locales/es.json';
 import en from './locales/en.json';
 
@@ -93,9 +95,13 @@ const CLAVES_DE_MIGRACION = [
  * (`migracion.pasos.${paso.id}.titulo`), así que un typo en uno de ellos no lo
  * agarra ni `tsc` ni el linter: sale en pantalla como la clave cruda.
  */
-const CLAVES_DE_PASOS = ['terceros', 'propiedades', 'contratos', 'puc', 'contables'].flatMap(
-  (id) => [`migracion.pasos.${id}.titulo`, `migracion.pasos.${id}.descripcion`],
-);
+// Los ids salen del MISMO arreglo que usa el producto: una copia a mano acá
+// se desincroniza en silencio — pasó al partir «terceros» en propietarios e
+// inquilinos, y este gate siguió pidiendo las claves del paso que ya no existe.
+const CLAVES_DE_PASOS = IDS_DE_PASOS_DE_MIGRACION.flatMap((id) => [
+  `migracion.pasos.${id}.titulo`,
+  `migracion.pasos.${id}.descripcion`,
+]);
 
 const TODAS = [...CLAVES_DE_INQUILINOS, ...CLAVES_DE_MIGRACION, ...CLAVES_DE_PASOS];
 

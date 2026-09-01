@@ -10089,14 +10089,14 @@
     "muro": {
       "eyebrow": "Getting started",
       "titulo": "Bring your operation over first",
-      "subtitulo": "Your panel is waiting on the other side. Load what you already have in your current system: each step needs the previous one, so they go in order.",
+      "subtitulo": "Your panel is on the other side. Load what you already have in your current system, in order: each step needs the previous one.",
       "progreso": "Migration progress",
       "hecho": "Done",
       "enEspera": "Waiting",
-      "noDisponible": "This step isn't available right now. It won't hold you back: you can finish without it.",
+      "noDisponible": "Unavailable right now. Won't hold you back.",
       "primero": "Finish «{{paso}}» first",
       "faltaTerminar": "Once you finish the steps you'll be able to enter the panel.",
-      "yaTermine": "I'm done",
+      "yaTermine": "Enter the panel",
       "arrancarDeCero": "I'm not coming from another system, starting from scratch",
       "fallo": "We couldn't save that. Try again in a moment.",
       "confirmar": {
@@ -10104,6 +10104,19 @@
         "detalle": "You'll enter the panel with nothing loaded: every owner, tenant, property and contract will have to be created by hand. If you're coming from another system, migrating saves you that work. You can return to the migration any time from the menu.",
         "aceptar": "Yes, start from scratch",
         "cancelar": "Back to the steps"
+      },
+      "pasoDe": "Step {{n}} of {{total}}",
+      "ahora": "Now",
+      "progresoDe": "{{n}} of {{total}} done",
+      "volver": "Back to «{{paso}}»",
+      "todoListo": {
+        "eyebrow": "All set",
+        "titulo": "Your operation is in",
+        "detalle": "Every step is complete. If something is missing later, the migration stays in the menu."
+      },
+      "nadaDisponible": {
+        "titulo": "No step is available right now",
+        "detalle": "We couldn't verify your migration at the moment. Try again in a bit, or go straight in if you're starting from scratch."
       }
     },
     "eyebrow": "Getting started",
@@ -10130,23 +10143,28 @@
     "pasos": {
       "terceros": {
         "titulo": "Third parties: owners and tenants",
-        "descripcion": "People first. An owner needs bank details so you can pay them; a tenant needs an email so you can invite them to the portal."
+        "descripcion": "People first. An owner needs bank details so you can pay them; a tenant needs an email so you can invite them to the portal.",
+        "corto": "Third parties"
       },
       "propiedades": {
         "titulo": "Properties",
-        "descripcion": "The properties you manage, with their address and their owner. Without this, leases arrive with nothing to attach to."
+        "descripcion": "The properties you manage, with their address and their owner. Without this, leases arrive with nothing to attach to.",
+        "corto": "Properties"
       },
       "contratos": {
         "titulo": "Leases",
-        "descripcion": "Your live portfolio. They come in active and signed — no need to sign them again. A lease attaches to the property address."
+        "descripcion": "Your live portfolio. They come in active and signed — no need to sign them again. A lease attaches to the property address.",
+        "corto": "Leases"
       },
       "puc": {
         "titulo": "Chart of accounts",
-        "descripcion": "Your chart of accounts, so entries land where your accountant expects them. You can start from the Decree 2650 base plan and adjust it."
+        "descripcion": "Your chart of accounts, so entries land where your accountant expects them. You can start from the Decree 2650 base plan and adjust it.",
+        "corto": "Chart of accounts"
       },
       "contables": {
         "titulo": "Accounting entries",
-        "descripcion": "Historical balances and movements. It goes last because it needs the chart of accounts in place: an opening entry with the balances, or the history from a file."
+        "descripcion": "Historical balances and movements. It goes last because it needs the chart of accounts in place: an opening entry with the balances, or the history from a file.",
+        "corto": "Accounting entries"
       }
     },
     "terceros": {

@@ -117,8 +117,12 @@ activo y el 5 en espera.
   habilita hasta que débitos = créditos) o **migrar el histórico** (Excel → mapear →
   revisar → aplicar; las cuentas que no existan en el PUC se avisan, no se crean solas).
   **Este paso lo dejé sin hacer** para que lo hagas vos y veas bajar el muro.
-- Al terminar aparece «Ya terminé». «No vengo de otro sistema, arranco de cero» está
-  siempre, pide confirmación y es la salida para una inmobiliaria nueva.
+- El muro se rediseñó el 2026-09-01: la barra de pasos en columnas iguales (como el
+  onboarding de cuenta), **una sola tarjeta con el paso que toca ahora** y el pie con las
+  salidas. Con los cinco listos la tarjeta resume lo cargado y ofrece «Entrar al panel».
+  «No vengo de otro sistema, arranco de cero» está siempre que falte algo, pide
+  confirmación y es la salida para una inmobiliaria nueva. Los pasos ya hechos son
+  enlaces en la barra, para volver a cargar más sin esperar a que baje el muro.
 
 🔴 **Las 4 agencias que ya operaban quedaron marcadas como «migración completada»** por
 la migración `20260901020000`, para que no vieran el muro mañana. Si querés que también

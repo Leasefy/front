@@ -479,3 +479,87 @@ describe('🔴 «No vengo de otro sistema, arranco de cero»', () => {
     expect(q('muro-fallo')).not.toBeNull();
   });
 });
+
+// ══════════════════════════════════════════════════════════════════════════
+// El paso en foco: una sola tarjeta, la del paso que toca ahora
+// ══════════════════════════════════════════════════════════════════════════
+
+describe('el paso en foco', () => {
+  it('recién llegada: la tarjeta es la del paso 1 y es el ÚNICO botón de ir', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: RECIEN_LLEGADA,
+    });
+
+    await pintar();
+
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('terceros');
+    expect(container.querySelectorAll('[data-testid^="muro-ir-"]').length).toBe(1);
+    // La barra dibuja los cinco, en columnas iguales, cada uno con su estado.
+    expect(container.querySelectorAll('[data-testid^="muro-paso-"]').length).toBe(5);
+    expect(q('muro-paso-terceros')?.getAttribute('aria-current')).toBe('step');
+    expect(q('muro-paso-propiedades')?.getAttribute('aria-current')).toBeNull();
+  });
+
+  it('con el paso 1 listo la tarjeta pasa al 2, y el 1 queda como enlace para volver', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [paso('terceros', 'listo', 42, '12 propietarios · 30 inquilinos'), ...RECIEN_LLEGADA.slice(1)],
+    });
+
+    await pintar();
+
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('propiedades');
+    expect(q('muro-ir-terceros')).toBeNull();
+    // Quien cargó diez propietarios y quiere cargar más no espera a que baje el muro.
+    expect(q('muro-volver-terceros')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/migracion/terceros',
+    );
+    // Y lo que cargó se lee en la barra, no un cero inventado.
+    // Un conteo por renglón, así que se buscan por separado.
+    expect(q('muro-paso-terceros')?.textContent).toContain('12 propietarios');
+    expect(q('muro-paso-terceros')?.textContent).toContain('30 inquilinos');
+    expect(q('muro-progreso')?.textContent).toContain('"n":1');
+  });
+
+  it('con todo listo la tarjeta resume lo cargado y ofrece entrar', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: TODO_MIGRADO,
+    });
+
+    await pintar();
+
+    const foco = q('muro-en-foco');
+    expect(foco?.getAttribute('data-paso')).toBe('todo-listo');
+    // Un chip por conteo — una frase corrida se partía dejando «· 1 asiento» huérfano.
+    expect([...(foco?.querySelectorAll('li') ?? [])].map((li) => li.textContent)).toEqual([
+      '12 propietarios',
+      '30 inquilinos',
+      '75 cuentas',
+      '1 asiento',
+    ]);
+    expect(foco?.contains(q('muro-ya-termine'))).toBe(true);
+    expect(container.querySelectorAll('[data-testid^="muro-ir-"]').length).toBe(0);
+  });
+
+  it('si el back no pudo verificar ningún paso, no hay botón muerto y la salida sigue', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: RECIEN_LLEGADA.map((p) => ({ ...p, estado: 'no_disponible' as const })),
+    });
+
+    await pintar();
+
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('nada-disponible');
+    expect(container.querySelectorAll('[data-testid^="muro-ir-"]').length).toBe(0);
+    expect(q('muro-ya-termine')).toBeNull();
+    expect(q('muro-arrancar-de-cero')).not.toBeNull();
+    // Ninguno se marca como «ahora»: no hay nada que hacer ahora.
+    expect(container.querySelector('[aria-current="step"]')).toBeNull();
+  });
+});

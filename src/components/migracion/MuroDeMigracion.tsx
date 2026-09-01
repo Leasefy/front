@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * El muro de migración — la puesta en marcha, dentro del panel.
@@ -19,10 +19,26 @@
  * desenfoca. Se parece al onboarding de creación de cuenta —la misma barra
  * de pasos numerada— pero ya adentro, con lo que se compró a la vista.
  *
+ * ── Cómo está compuesto ───────────────────────────────────────────────────
+ *
+ * Tres bloques, y cada uno dice UNA cosa:
+ *
+ *   1. La barra: los cinco pasos en columnas iguales, con el círculo y el
+ *      conector del onboarding de cuenta. Es el mapa — dónde estás y qué
+ *      falta — y los pasos ya hechos son enlaces para volver a ellos.
+ *   2. El paso en foco: una sola tarjeta con el paso que toca AHORA, su
+ *      porqué y el único botón que hay que apretar. Nada compite con él.
+ *   3. El pie: las dos salidas.
+ *
+ * La versión anterior listaba los cinco pasos como filas debajo de la barra
+ * —cada una con su candado, su «en espera» y su «primero terminá…»—: cinco
+ * veces la misma información, y el panel no entraba en la pantalla. El pie,
+ * con las salidas, quedaba cortado.
+ *
  * ── Lo que el muro NO hace ────────────────────────────────────────────────
  *
- * **No encierra a nadie.** Tiene dos salidas y las dos son de verdad: «ya
- * terminé» cuando todo está listo, y «arranco de cero» siempre, con
+ * **No encierra a nadie.** Tiene dos salidas y las dos son de verdad: «entrar
+ * al panel» cuando todo está listo, y «arranco de cero» siempre, con
  * confirmación. 🔴 Sin la segunda, una inmobiliaria nueva —que no tiene nada
  * que migrar— no puede salir nunca.
  *
@@ -34,19 +50,19 @@
  * otra forma, el panel se ve normal. Está en `normalizarEstado()`.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { ArrowRight, Check, Lock, Warning } from '@phosphor-icons/react';
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ArrowRight, Check, Lock, Warning } from "@phosphor-icons/react";
 
-import { Button } from '@/components/ui/button';
-import { useI18n } from '@/lib/i18n';
-import { cn } from '@/lib/utils';
+import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import {
   migracionEstadoApi,
   type EstadoDeMigracion,
   type PasoDeMigracion,
-} from '@/lib/api/migracion-estado.service';
+} from "@/lib/api/migracion-estado.service";
 import {
   RUTA_DEL_PASO,
   esExigible,
@@ -56,7 +72,7 @@ import {
   pasoHabilitado,
   pasoQueFrena,
   todoListo,
-} from './muro-reglas';
+} from "./muro-reglas";
 
 // ══════════════════════════════════════════════════════════════════════════
 // La compuerta: envuelve el panel entero y decide.
@@ -92,7 +108,9 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
    * Es lo que vuelve inerte al sidebar y a toda la navegación: sin esto, la
    * persona se pasea por el panel con el muro dibujado encima.
    */
-  const inerte = puesto ? ({ inert: '' } as unknown as Record<string, string>) : {};
+  const inerte = puesto
+    ? ({ inert: "" } as unknown as Record<string, string>)
+    : {};
 
   return (
     <>
@@ -101,12 +119,15 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
         aria-hidden={puesto || undefined}
         data-testid="panel-detras-del-muro"
         className={cn(
-          puesto && 'min-h-screen select-none blur-[3px] saturate-[0.6] pointer-events-none',
+          puesto &&
+            "min-h-screen select-none blur-[3px] saturate-[0.6] pointer-events-none",
         )}
       >
         {children}
       </div>
-      {puesto ? <PanelDeMigracion estado={estado} onResuelta={consultar} /> : null}
+      {puesto ? (
+        <PanelDeMigracion estado={estado} onResuelta={consultar} />
+      ) : null}
     </>
   );
 }
@@ -131,6 +152,8 @@ export function PanelDeMigracion({
   const pasos = estado.pasos;
   const actual = pasoActual(pasos);
   const listo = todoListo(pasos);
+  const exigibles = pasos.filter(esExigible);
+  const hechos = exigibles.filter((p) => p.estado === "listo").length;
 
   /*
    * Trampa de foco. No es un modal con «cerrar»: es un muro, así que Escape
@@ -147,18 +170,20 @@ export function PanelDeMigracion({
         nodo.querySelectorAll<HTMLElement>(
           'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])',
         ),
-      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+      ).filter(
+        (el) => el.offsetParent !== null || el === document.activeElement,
+      );
 
     nodo.focus();
 
     const alTeclear = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         // Silencioso a propósito: no hay nada que cerrar.
         e.preventDefault();
         e.stopPropagation();
         return;
       }
-      if (e.key !== 'Tab') return;
+      if (e.key !== "Tab") return;
       const lista = enfocables();
       if (lista.length === 0) {
         e.preventDefault();
@@ -182,25 +207,25 @@ export function PanelDeMigracion({
       }
     };
 
-    document.addEventListener('keydown', alTeclear, true);
-    return () => document.removeEventListener('keydown', alTeclear, true);
+    document.addEventListener("keydown", alTeclear, true);
+    return () => document.removeEventListener("keydown", alTeclear, true);
   }, []);
 
   // El fondo no scrollea: si scrollea, el muro flota sobre un panel que se
   // mueve y deja de leerse como una barrera.
   useEffect(() => {
     const previo = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previo;
     };
   }, []);
 
-  async function resolver(via: 'terminar' | 'omitir') {
+  async function resolver(via: "terminar" | "omitir") {
     setEnviando(true);
     setFallo(false);
     try {
-      if (via === 'terminar') await migracionEstadoApi.terminar();
+      if (via === "terminar") await migracionEstadoApi.terminar();
       else await migracionEstadoApi.omitir();
       await onResuelta();
       // Si el back todavía dice que bloquea, el muro sigue puesto y los
@@ -210,9 +235,9 @@ export function PanelDeMigracion({
       // El muro se queda puesto y lo dice. Fingir que salió y volver a
       // levantarlo en la siguiente carga es peor que no salir.
       //
-      // Se vuelve a la lista de pasos a propósito: el aviso vive ahí, y
-      // dejar la confirmación abierta con un error invisible detrás es la
-      // forma de que la persona apriete «sí» tres veces sin entender nada.
+      // Se vuelve a los pasos a propósito: el aviso vive ahí, y dejar la
+      // confirmación abierta con un error invisible detrás es la forma de
+      // que la persona apriete «sí» tres veces sin entender nada.
       setConfirmando(false);
       setFallo(true);
       setEnviando(false);
@@ -221,7 +246,12 @@ export function PanelDeMigracion({
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-plan-page/70 p-4 backdrop-blur-[2px] sm:p-8"
+      /*
+       * El velo va con `color-mix` sobre la variable del shell: los tokens de
+       * cadence resuelven a un color literal, así que el modificador de
+       * opacidad de Tailwind (`bg-x/70`) no genera nada con ellos.
+       */
+      className="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-[color-mix(in_srgb,var(--plan-page-bg)_78%,transparent)] p-4 backdrop-blur-[2px] sm:p-8"
       data-testid="muro-migracion"
     >
       <div
@@ -230,84 +260,91 @@ export function PanelDeMigracion({
         role="dialog"
         aria-modal="true"
         aria-labelledby="muro-migracion-titulo"
-        className="my-auto w-full max-w-3xl rounded-xl border border-border bg-surface p-6 shadow-xl outline-none sm:p-8"
+        className="my-auto w-full max-w-3xl rounded-xl border border-border bg-surface p-6 shadow-lg outline-none motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-300 sm:p-10"
       >
-        <BarraDePasos pasos={pasos} actual={actual} />
-
-        <div className="mt-6 space-y-1.5">
-          <p className="font-mono text-xs uppercase tracking-wide text-fg-subtle">
-            {t('migracion.muro.eyebrow')}
-          </p>
-          <h1 id="muro-migracion-titulo" className="text-2xl font-semibold text-fg">
-            {t('migracion.muro.titulo')}
+        <header className="space-y-2">
+          {/* El renglón del eyebrow lleva el conteo a la derecha: la barra lo
+              dibuja, esto lo dice — en mono, como todo numeral. */}
+          <div className="flex items-baseline justify-between gap-x-6 font-mono text-[11px] text-fg-subtle">
+            <p className="uppercase tracking-wider">
+              {t("migracion.muro.eyebrow")}
+            </p>
+            <p className="shrink-0 tabular-nums" data-testid="muro-progreso">
+              {t("migracion.muro.progresoDe", {
+                n: hechos,
+                total: exigibles.length,
+              })}
+            </p>
+          </div>
+          <h1
+            id="muro-migracion-titulo"
+            className="max-w-xl text-balance text-[28px] font-semibold leading-[1.15] tracking-[-0.02em] text-fg"
+          >
+            {t("migracion.muro.titulo")}
           </h1>
-          <p className="max-w-2xl text-sm text-fg-muted">{t('migracion.muro.subtitulo')}</p>
-        </div>
+          <p className="max-w-xl text-sm leading-relaxed text-fg-muted">
+            {t("migracion.muro.subtitulo")}
+          </p>
+        </header>
 
         {confirmando ? (
           <ConfirmarArranqueDeCero
             enviando={enviando}
             onCancelar={() => setConfirmando(false)}
-            onAceptar={() => resolver('omitir')}
+            onAceptar={() => resolver("omitir")}
           />
         ) : (
-          <>
-            <ol className="mt-6 space-y-2" data-testid="muro-pasos">
-              {pasos.map((paso, i) => (
-                <li key={paso.id}>
-                  <FilaDePaso
-                    paso={paso}
-                    numero={i + 1}
-                    habilitado={pasoHabilitado(pasos, i)}
-                    esActual={i === actual}
-                    anterior={pasoQueFrena(pasos, i)}
-                  />
-                </li>
-              ))}
-            </ol>
+          <div data-testid="muro-pasos">
+            <BarraDePasos pasos={pasos} actual={actual} />
+
+            <PasoEnFoco
+              pasos={pasos}
+              actual={actual}
+              listo={listo}
+              enviando={enviando}
+              onTerminar={() => resolver("terminar")}
+            />
 
             {fallo ? (
               <p
-                className="mt-4 flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3 text-sm text-danger"
+                className="mt-4 flex items-start gap-2 rounded-md bg-danger-soft p-3 text-sm text-danger"
                 data-testid="muro-fallo"
               >
                 <Warning className="mt-0.5 h-4 w-4 shrink-0" />
-                {t('migracion.muro.fallo')}
+                {t("migracion.muro.fallo")}
               </p>
             ) : null}
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border-faint pt-5">
-              {/*
-               * 🔴 La salida de la inmobiliaria nueva. Está SIEMPRE, aunque no
-               * haya un solo paso listo: quien arranca de cero no tiene nada
-               * que migrar y sin esto no sale nunca. Discreta, no escondida.
-               */}
-              <button
-                type="button"
-                onClick={() => setConfirmando(true)}
-                disabled={enviando}
-                data-testid="muro-arrancar-de-cero"
-                className="text-sm text-fg-muted underline underline-offset-4 hover:text-fg disabled:opacity-50"
-              >
-                {t('migracion.muro.arrancarDeCero')}
-              </button>
-
-              {listo ? (
-                <Button
-                  onClick={() => resolver('terminar')}
+            {/*
+             * El pie desaparece cuando todo está listo: ahí la única salida
+             * que tiene sentido es «Entrar al panel», que ya está en la
+             * tarjeta. El back sólo rechaza «terminar» por pasos `pendiente`,
+             * así que con todo listo nunca hace falta la otra puerta.
+             */}
+            {listo ? null : (
+              <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-border-faint pt-5">
+                {/*
+                 * 🔴 La salida de la inmobiliaria nueva. Está SIEMPRE que falte
+                 * algo, aunque no haya un solo paso listo: quien arranca de cero
+                 * no tiene nada que migrar y sin esto no sale nunca. Discreta,
+                 * no escondida.
+                 */}
+                <button
+                  type="button"
+                  onClick={() => setConfirmando(true)}
                   disabled={enviando}
-                  data-testid="muro-ya-termine"
-                  hideArrow
+                  data-testid="muro-arrancar-de-cero"
+                  className="rounded-sm text-sm text-fg-muted underline decoration-border-strong underline-offset-4 transition-colors hover:text-fg hover:decoration-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 >
-                  {t('migracion.muro.yaTermine')}
-                </Button>
-              ) : (
+                  {t("migracion.muro.arrancarDeCero")}
+                </button>
+
                 <p className="text-sm text-fg-subtle" data-testid="muro-falta">
-                  {t('migracion.muro.faltaTerminar')}
+                  {t("migracion.muro.faltaTerminar")}
                 </p>
-              )}
-            </div>
-          </>
+              </footer>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -321,38 +358,68 @@ export function PanelDeMigracion({
 /**
  * La barra numerada del onboarding de creación de cuenta
  * (`OnboardingWizardStepper`), con el mismo lenguaje visual: círculo, número,
- * check al terminar, conector. Cambia una sola cosa — un paso puede estar
- * `no_disponible`, y ese se dibuja apagado y con candado en vez de número.
+ * check al terminar, conector.
+ *
+ * Cambian dos cosas. Los pasos van en columnas iguales, con la etiqueta
+ * DEBAJO del círculo y no al lado: con etiquetas al lado, «Terceros:
+ * propietarios e inquilinos» empujaba a los demás y la barra se partía en
+ * dos renglones. Y un paso puede estar `no_disponible`, que se dibuja
+ * apagado y con candado en vez de número.
+ *
+ * Los pasos ya hechos son enlaces: quien cargó diez propietarios y quiere
+ * cargar más no tiene que esperar a que el muro baje.
  */
-function BarraDePasos({ pasos, actual }: { pasos: PasoDeMigracion[]; actual: number }) {
+function BarraDePasos({
+  pasos,
+  actual,
+}: {
+  pasos: PasoDeMigracion[];
+  actual: number;
+}) {
   const { t } = useI18n();
 
   return (
     <ol
-      aria-label={t('migracion.muro.progreso')}
-      className="flex items-center gap-1.5 sm:gap-2"
+      aria-label={t("migracion.muro.progreso")}
+      className="mt-8 grid gap-x-2"
+      style={{ gridTemplateColumns: `repeat(${pasos.length}, minmax(0, 1fr))` }}
       data-testid="muro-barra"
     >
-      {pasos.map((paso, idx, arr) => {
-        const hecho = paso.estado === 'listo';
-        const esActual = idx === actual && !hecho;
+      {pasos.map((paso, idx) => {
+        const hecho = paso.estado === "listo";
         const apagado = !esExigible(paso);
+        // Un `no_disponible` al final de la lista es donde cae `pasoActual` cuando
+        // todo lo exigible está listo: no es «ahora», es «no se pudo verificar».
+        const esActual = idx === actual && !hecho && !apagado;
+        const habilitado = pasoHabilitado(pasos, idx);
+        const frena = pasoQueFrena(pasos, idx);
+        const ultimo = idx === pasos.length - 1;
+        const href = RUTA_DEL_PASO[paso.id];
+        const titulo = t(`migracion.pasos.${paso.id}.titulo`);
 
-        return (
-          <li key={paso.id} className="flex items-center gap-1.5 sm:gap-2">
-            <div className="flex items-center gap-2">
-              <div
+        // Lo que se lee debajo del nombre. Un hecho muestra lo que cargó
+        // («12 propietarios · 30 inquilinos»); nunca un cero inventado.
+        const subLinea = hecho
+          ? (paso.detalle ?? t("migracion.muro.hecho"))
+          : esActual
+            ? t("migracion.muro.ahora")
+            : apagado
+              ? t("migracion.muro.noDisponible")
+              : t("migracion.muro.enEspera");
+
+        const cuerpo = (
+          <>
+            <div className="flex items-center">
+              <span
                 data-testid={`muro-barra-${paso.id}`}
-                data-estado={paso.estado}
-                aria-current={esActual ? 'step' : undefined}
                 className={cn(
-                  'flex h-7 w-7 items-center justify-center rounded-full font-mono text-xs font-semibold tabular-nums transition-colors',
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-xs font-semibold tabular-nums transition-colors",
                   hecho
-                    ? 'border-2 border-primary bg-primary text-primary-fg'
+                    ? "border-2 border-primary bg-primary text-primary-fg"
                     : esActual
-                      ? 'border-2 border-primary bg-surface text-primary'
-                      : 'border border-border bg-surface text-fg-subtle',
-                  apagado && 'border-border-faint text-fg-subtle',
+                      ? "border-2 border-primary bg-surface text-primary"
+                      : "border border-border bg-surface text-fg-subtle",
+                  apagado && "border-dashed",
                 )}
               >
                 {hecho ? (
@@ -362,20 +429,87 @@ function BarraDePasos({ pasos, actual }: { pasos: PasoDeMigracion[]; actual: num
                 ) : (
                   idx + 1
                 )}
-              </div>
-              <span
-                className={cn(
-                  'hidden text-xs font-medium md:inline',
-                  esActual ? 'text-primary' : hecho ? 'text-fg' : 'text-fg-subtle',
-                )}
-              >
-                {t(`migracion.pasos.${paso.id}.titulo`)}
               </span>
+              {!ultimo ? (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "mx-2 h-0.5 min-w-0 flex-1 rounded-full transition-colors",
+                    hecho ? "bg-primary" : "bg-border",
+                  )}
+                />
+              ) : null}
             </div>
-            {idx < arr.length - 1 && (
-              <div
-                className={cn('h-0.5 w-3 transition-colors sm:w-6', hecho ? 'bg-primary' : 'bg-border')}
-              />
+
+            <div className="mt-2.5 hidden min-w-0 pr-3 sm:block">
+              <p
+                className={cn(
+                  "truncate text-xs font-medium",
+                  esActual
+                    ? "text-primary"
+                    : hecho
+                      ? "text-fg group-hover:underline group-hover:underline-offset-4"
+                      : "text-fg-subtle",
+                )}
+                title={titulo}
+              >
+                {t(`migracion.pasos.${paso.id}.corto`)}
+              </p>
+              {/* Un conteo por renglón: «1 propietario · 2 inquilinos» no
+                  entra en una columna de 130 px, y partirlo donde caiga
+                  dejaba «· 2» colgando arriba de «inquilinos». */}
+              <p
+                className={cn(
+                  "mt-0.5 font-mono text-[11px] leading-snug",
+                  hecho ? "text-fg-muted" : "text-fg-subtle",
+                )}
+                title={hecho && paso.detalle ? paso.detalle : undefined}
+              >
+                {hecho && paso.detalle
+                  ? paso.detalle
+                      .split(" · ")
+                      .slice(0, 2)
+                      .map((parte) => (
+                        <span key={parte} className="block truncate">
+                          {parte}
+                        </span>
+                      ))
+                  : subLinea}
+              </p>
+            </div>
+
+            {/* El porqué del candado, para quien lee con lector de pantalla:
+                «Primero terminá “Propiedades”». En pantalla lo dice el orden. */}
+            {!hecho && !apagado && !habilitado && frena ? (
+              <span className="sr-only" data-testid={`muro-porque-${paso.id}`}>
+                {t("migracion.muro.primero", {
+                  paso: t(`migracion.pasos.${frena.id}.titulo`),
+                })}
+              </span>
+            ) : null}
+          </>
+        );
+
+        return (
+          <li
+            key={paso.id}
+            data-testid={`muro-paso-${paso.id}`}
+            data-estado={paso.estado}
+            data-habilitado={habilitado}
+            aria-current={esActual ? "step" : undefined}
+            className="min-w-0"
+          >
+            {hecho && href ? (
+              <Link
+                href={href}
+                data-testid={`muro-volver-${paso.id}`}
+                title={t("migracion.muro.volver", { paso: titulo })}
+                className="group block rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {cuerpo}
+              </Link>
+            ) : (
+              <div>{cuerpo}</div>
             )}
           </li>
         );
@@ -384,99 +518,178 @@ function BarraDePasos({ pasos, actual }: { pasos: PasoDeMigracion[]; actual: num
   );
 }
 
-function FilaDePaso({
-  paso,
-  numero,
-  habilitado,
-  esActual,
-  anterior,
+/**
+ * La tarjeta del paso que toca ahora. Una sola: el resto está en la barra.
+ *
+ * Tres formas, según lo que dicen las reglas:
+ *   - falta algo → el paso actual, con su porqué y el botón de ir;
+ *   - todo listo → el resumen de lo cargado y «entrar al panel»;
+ *   - nada exigible (el back no pudo verificar ninguno) → se dice, sin botón
+ *     muerto; la salida de abajo sigue estando.
+ */
+function PasoEnFoco({
+  pasos,
+  actual,
+  listo,
+  enviando,
+  onTerminar,
 }: {
-  paso: PasoDeMigracion;
-  numero: number;
-  habilitado: boolean;
-  esActual: boolean;
-  /** El paso exigible sin terminar que lo está frenando, si hay uno. */
-  anterior: PasoDeMigracion | null;
+  pasos: PasoDeMigracion[];
+  actual: number;
+  listo: boolean;
+  enviando: boolean;
+  onTerminar: () => void;
 }) {
   const { t } = useI18n();
-  const hecho = paso.estado === 'listo';
-  const disponible = esExigible(paso);
+  const paso = pasos[actual];
+
+  if (listo) {
+    // Cada conteo en su chip: una frase corrida se parte donde cae y deja un
+    // «· 1 asiento» huérfano al principio del segundo renglón.
+    const conteos = pasos
+      .filter((p) => p.estado === "listo" && p.detalle)
+      .flatMap((p) => (p.detalle as string).split(" · "));
+    const resumen =
+      conteos.length > 0 ? (
+        <ul
+          className="flex flex-wrap gap-1.5"
+          aria-label={t("migracion.muro.todoListo.eyebrow")}
+        >
+          {conteos.map((c) => (
+            <li
+              key={c}
+              className="rounded-full border border-border bg-surface px-2.5 py-1 font-mono text-xs tabular-nums text-fg-muted"
+            >
+              {c}
+            </li>
+          ))}
+        </ul>
+      ) : null;
+    return (
+      <Tarjeta
+        id="todo-listo"
+        marca={
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-fg">
+            <Check className="h-5 w-5" weight="bold" />
+          </span>
+        }
+        eyebrow={t("migracion.muro.todoListo.eyebrow")}
+        titulo={t("migracion.muro.todoListo.titulo")}
+        descripcion={t("migracion.muro.todoListo.detalle")}
+        detalle={resumen}
+      >
+        <Button
+          onClick={onTerminar}
+          disabled={enviando}
+          data-testid="muro-ya-termine"
+          hideArrow
+        >
+          {t("migracion.muro.yaTermine")}
+          <ArrowRight className="ml-1.5 h-4 w-4" />
+        </Button>
+      </Tarjeta>
+    );
+  }
+
+  if (!paso || !esExigible(paso)) {
+    return (
+      <Tarjeta
+        id="nada-disponible"
+        marca={
+          <span className="flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-border text-fg-subtle">
+            <Lock className="h-4 w-4" />
+          </span>
+        }
+        eyebrow={t("migracion.muro.eyebrow")}
+        titulo={t("migracion.muro.nadaDisponible.titulo")}
+        descripcion={t("migracion.muro.nadaDisponible.detalle")}
+        detalle={null}
+      />
+    );
+  }
+
   const href = RUTA_DEL_PASO[paso.id];
 
   return (
-    <div
-      data-testid={`muro-paso-${paso.id}`}
-      data-habilitado={habilitado}
-      data-estado={paso.estado}
-      className={cn(
-        'flex flex-wrap items-start justify-between gap-3 rounded-lg border p-4 transition-colors',
-        esActual
-          ? 'border-primary bg-primary-soft/40'
-          : hecho
-            ? 'border-border bg-surface'
-            : 'border-border-faint bg-surface',
-      )}
-    >
-      <div className="flex min-w-0 items-start gap-3">
+    <Tarjeta
+      id={paso.id}
+      marca={
+        // El numeral grande ES la secuencia: «02» dice dónde estás sin leer.
         <span
-          className={cn(
-            'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md font-mono text-xs tabular-nums',
-            hecho
-              ? 'bg-primary text-primary-fg'
-              : habilitado
-                ? 'bg-primary-soft text-primary'
-                : 'bg-surface-muted text-fg-subtle',
-          )}
+          aria-hidden
+          className="font-mono text-[40px] font-medium leading-none tracking-tight text-primary tabular-nums"
         >
-          {hecho ? <Check className="h-3.5 w-3.5" weight="bold" /> : numero}
+          {String(actual + 1).padStart(2, "0")}
         </span>
-        <div className="min-w-0 space-y-1">
-          <p className={cn('font-medium', disponible ? 'text-fg' : 'text-fg-muted')}>
-            {t(`migracion.pasos.${paso.id}.titulo`)}
+      }
+      eyebrow={t("migracion.muro.pasoDe", {
+        n: actual + 1,
+        total: pasos.length,
+      })}
+      titulo={t(`migracion.pasos.${paso.id}.titulo`)}
+      descripcion={t(`migracion.pasos.${paso.id}.descripcion`)}
+      detalle={paso.detalle}
+    >
+      {href ? (
+        <Button asChild hideArrow>
+          <Link href={href} data-testid={`muro-ir-${paso.id}`}>
+            {paso.conteo > 0 ? t("migracion.retomar") : t("migracion.empezar")}
+            <ArrowRight className="ml-1.5 h-4 w-4" />
+          </Link>
+        </Button>
+      ) : null}
+    </Tarjeta>
+  );
+}
+
+function Tarjeta({
+  id,
+  marca,
+  eyebrow,
+  titulo,
+  descripcion,
+  detalle,
+  children,
+}: {
+  id: string;
+  marca: React.ReactNode;
+  eyebrow: string;
+  titulo: string;
+  descripcion: string;
+  detalle: React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  return (
+    <section
+      data-testid="muro-en-foco"
+      data-paso={id}
+      aria-labelledby="muro-en-foco-titulo"
+      className="mt-6 rounded-lg bg-surface-muted p-6 sm:p-7"
+    >
+      <div className="flex items-start gap-5 sm:gap-7">
+        <div className="flex w-14 shrink-0 pt-0.5">{marca}</div>
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-[11px] uppercase tracking-wider text-fg-subtle">
+            {eyebrow}
           </p>
-          {/* El detalle lo arma el back («12 propietarios · 30 inquilinos»).
-              Cuando no hay, no se inventa un cero. */}
-          {paso.detalle ? (
-            <p className={cn('text-sm', hecho ? 'text-success' : 'text-fg-muted')}>
-              {paso.detalle}
-            </p>
+          <h2
+            id="muro-en-foco-titulo"
+            className="mt-1 text-balance text-xl font-semibold tracking-tight text-fg"
+          >
+            {titulo}
+          </h2>
+          <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">
+            {descripcion}
+          </p>
+          {detalle ? (
+            <div className="mt-3 font-mono text-xs tabular-nums text-fg-muted">
+              {detalle}
+            </div>
           ) : null}
-          {!disponible ? (
-            <p className="text-sm text-fg-subtle">{t('migracion.muro.noDisponible')}</p>
-          ) : !habilitado && anterior ? (
-            /* El porqué, no sólo el candado: «Primero cargá los propietarios». */
-            <p className="text-sm text-fg-subtle" data-testid={`muro-porque-${paso.id}`}>
-              {t('migracion.muro.primero', {
-                paso: t(`migracion.pasos.${anterior.id}.titulo`),
-              })}
-            </p>
-          ) : null}
+          {children ? <div className="mt-5">{children}</div> : null}
         </div>
       </div>
-
-      <div className="shrink-0">
-        {hecho ? (
-          <span className="inline-flex items-center gap-1.5 text-xs text-success">
-            <Check className="h-3.5 w-3.5" weight="bold" />
-            {t('migracion.muro.hecho')}
-          </span>
-        ) : habilitado && href ? (
-          <Button asChild size="sm" variant={esActual ? 'default' : 'outline'} hideArrow>
-            <Link href={href} data-testid={`muro-ir-${paso.id}`}>
-              {paso.conteo > 0 ? t('migracion.retomar') : t('migracion.empezar')}
-              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-            </Link>
-          </Button>
-        ) : (
-          /* Sin botón muerto: un `<button disabled>` invita a clickearlo y no
-             explica nada. El candado más la frase de arriba sí. */
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-3 py-1.5 text-xs text-fg-muted">
-            <Lock className="h-3.5 w-3.5" />
-            {disponible ? t('migracion.muro.enEspera') : t('migracion.estados.noDisponible')}
-          </span>
-        )}
-      </div>
-    </div>
+    </section>
   );
 }
 
@@ -499,31 +712,44 @@ function ConfirmarArranqueDeCero({
   const { t } = useI18n();
 
   return (
-    <div
-      className="mt-6 rounded-lg border border-border bg-warning-soft p-5"
+    <section
+      className="mt-8 rounded-lg bg-warning-soft p-6 sm:p-7"
       data-testid="muro-confirmar-cero"
     >
-      <p className="font-medium text-fg">{t('migracion.muro.confirmar.titulo')}</p>
-      <p className="mt-1.5 text-sm text-fg-muted">{t('migracion.muro.confirmar.detalle')}</p>
-      <div className="mt-4 flex flex-wrap gap-3">
-        <Button
-          onClick={onAceptar}
-          disabled={enviando}
-          data-testid="muro-confirmar-si"
-          hideArrow
-        >
-          {t('migracion.muro.confirmar.aceptar')}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={onCancelar}
-          disabled={enviando}
-          data-testid="muro-confirmar-no"
-          hideArrow
-        >
-          {t('migracion.muro.confirmar.cancelar')}
-        </Button>
+      <div className="flex items-start gap-5 sm:gap-7">
+        <div className="flex w-14 shrink-0 pt-0.5">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface text-warning">
+            <Warning className="h-5 w-5" />
+          </span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl font-semibold tracking-tight text-fg">
+            {t("migracion.muro.confirmar.titulo")}
+          </h2>
+          <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">
+            {t("migracion.muro.confirmar.detalle")}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Button
+              onClick={onAceptar}
+              disabled={enviando}
+              data-testid="muro-confirmar-si"
+              hideArrow
+            >
+              {t("migracion.muro.confirmar.aceptar")}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onCancelar}
+              disabled={enviando}
+              data-testid="muro-confirmar-no"
+              hideArrow
+            >
+              {t("migracion.muro.confirmar.cancelar")}
+            </Button>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

@@ -10090,14 +10090,14 @@
     "muro": {
       "eyebrow": "Puesta en marcha",
       "titulo": "Traé tu operación antes de empezar",
-      "subtitulo": "Tu panel está del otro lado, esperándote. Cargá lo que ya tenés en tu sistema actual: cada paso necesita al anterior, así que van en orden.",
+      "subtitulo": "Tu panel está del otro lado. Cargá lo que ya tenés en tu sistema actual, en orden: cada paso necesita al anterior.",
       "progreso": "Progreso de la migración",
       "hecho": "Listo",
       "enEspera": "En espera",
-      "noDisponible": "Este paso no está disponible en este momento. No te frena: podés terminar sin esto.",
+      "noDisponible": "No disponible ahora. No te frena.",
       "primero": "Primero terminá «{{paso}}»",
       "faltaTerminar": "Cuando termines los pasos vas a poder entrar al panel.",
-      "yaTermine": "Ya terminé",
+      "yaTermine": "Entrar al panel",
       "arrancarDeCero": "No vengo de otro sistema, arranco de cero",
       "fallo": "No pudimos guardar eso. Intentá de nuevo en un momento.",
       "confirmar": {
@@ -10105,6 +10105,19 @@
         "detalle": "Vas a entrar al panel sin nada cargado: cada propietario, inquilino, inmueble y contrato lo vas a tener que crear a mano. Si venís de otro sistema, migrar te ahorra ese trabajo. Podés volver a la migración cuando quieras desde el menú.",
         "aceptar": "Sí, arranco de cero",
         "cancelar": "Volver a los pasos"
+      },
+      "pasoDe": "Paso {{n}} de {{total}}",
+      "ahora": "Ahora",
+      "progresoDe": "{{n}} de {{total}} listos",
+      "volver": "Volver a «{{paso}}»",
+      "todoListo": {
+        "eyebrow": "Todo listo",
+        "titulo": "Tu operación ya está adentro",
+        "detalle": "Los pasos están completos. Si después te falta algo, la migración queda en el menú."
+      },
+      "nadaDisponible": {
+        "titulo": "Ningún paso está disponible ahora",
+        "detalle": "No pudimos verificar tu migración en este momento. Volvé a intentar en un rato, o entrá directo si arrancás de cero."
       }
     },
     "eyebrow": "Arranque",
@@ -10131,23 +10144,28 @@
     "pasos": {
       "terceros": {
         "titulo": "Terceros: propietarios e inquilinos",
-        "descripcion": "Las personas primero. Del propietario hace falta la cuenta bancaria para poder pagarle; del inquilino, el correo para poder invitarlo al portal."
+        "descripcion": "Las personas primero. Del propietario hace falta la cuenta bancaria para poder pagarle; del inquilino, el correo para poder invitarlo al portal.",
+        "corto": "Terceros"
       },
       "propiedades": {
         "titulo": "Propiedades",
-        "descripcion": "Los inmuebles que administrás, con su dirección y su dueño. Sin esto, los contratos entran sin a qué apuntar."
+        "descripcion": "Los inmuebles que administrás, con su dirección y su dueño. Sin esto, los contratos entran sin a qué apuntar.",
+        "corto": "Propiedades"
       },
       "contratos": {
         "titulo": "Contratos",
-        "descripcion": "Tu cartera viva. Entran vigentes y firmados: no hay que volver a firmarlos. El contrato se pega a la dirección del inmueble."
+        "descripcion": "Tu cartera viva. Entran vigentes y firmados: no hay que volver a firmarlos. El contrato se pega a la dirección del inmueble.",
+        "corto": "Contratos"
       },
       "puc": {
         "titulo": "Cuentas del PUC",
-        "descripcion": "Tu plan de cuentas, para que los movimientos caigan donde tu contador los espera. Podés arrancar con el plan base del Decreto 2650 y ajustarlo."
+        "descripcion": "Tu plan de cuentas, para que los movimientos caigan donde tu contador los espera. Podés arrancar con el plan base del Decreto 2650 y ajustarlo.",
+        "corto": "Plan de cuentas"
       },
       "contables": {
         "titulo": "Registros contables",
-        "descripcion": "Los saldos y movimientos históricos. Va al final porque necesita el plan de cuentas armado: un asiento de apertura con los saldos, o el histórico desde un archivo."
+        "descripcion": "Los saldos y movimientos históricos. Va al final porque necesita el plan de cuentas armado: un asiento de apertura con los saldos, o el histórico desde un archivo.",
+        "corto": "Registros contables"
       }
     },
     "terceros": {

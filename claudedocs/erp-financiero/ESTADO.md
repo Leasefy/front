@@ -173,3 +173,20 @@ Todo lo que pueda mover plata o cambiar lo que se le cobra a un inquilino nace *
 por inmobiliaria. Una agencia que no lo prenda sigue viendo exactamente el comportamiento
 de hoy. Esa es la única forma de tocar el motor de cobros de un sistema con contratos
 vivos sin arriesgar un cobro mal hecho.
+
+## Cierre 2026-09-01 — qué falta y qué sigue
+
+**Hecho hoy**: muro rediseñado y rehecho (todo pasa adentro, sin rutas exentas, 5 pasos montados en el muro, refresco cada 5 s); caso de muestra `muestras/01–05` verificado E2E; el paso 3 consigna solo con el propietario del archivo y tiene buscador de propietarios; barra de progreso indeterminada; «Ver portafolio» y «Volver a la secuencia» ocultos dentro del muro. Agencia de QA de Nico reseteada a cero.
+
+**Falta — back (Víctor)**
+- Inquilinos: `aplicar` invita por correo en la misma llamada → `429 over_email_send_rate_limit` en dev. Crear el usuario sin invitar y encolar las invitaciones.
+- Contratos: `procesadas` del lote se escribe sólo al final → contar fila a fila.
+- Consecutivos: `external_id` en propietarios/inmuebles/inquilinos y columnas «ID» en los archivos (hoy la llave es documento + dirección).
+- Importación de inmuebles: no crea la consignación aunque el archivo trae Propietario/Tel/Comisión (`CompletarMandatosLoteDialog` existe sin conectar, mono-dueño). Los inmuebles sin contrato quedan sin consignar.
+
+**Falta — front**
+- Scroll dentro del muro sobre selects/tarjetas: no reproducible en el navegador automatizado; pendiente confirmar en Arc.
+- Lista de lo ya importado dentro del muro (sugerencia de Nico).
+- Pantallas de reglas de mora y contabilidad fuera de la migración; conciliación bancaria; medios de pago.
+
+**Sigue**: Nico recorre el muro desde cero con los 5 CSV → feedback → Víctor toma los puntos de back y abre el PR de `cambios-nico-1`.

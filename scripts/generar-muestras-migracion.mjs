@@ -639,6 +639,18 @@ Recaudado en los tres meses: ${cop(resumen.recaudado)} · comisiones: ${cop(resu
   No es un problema del archivo: el back tiene que crear el usuario sin mandar el correo y
   encolar las invitaciones aparte (o a un ritmo que el SMTP aguante). Los propietarios sí se
   crean —no se invitan—: 60 de 60.
+- 🔴 **Los inmuebles entran sin consignación.** El asistente de inmuebles crea las 120
+  propiedades (probado: 120 de 120, geocodificadas) pero ignora «Propietario», «Tel
+  Propietario» y «Comisión %» para el mandato: la agencia queda con 0 consignaciones, y en el
+  paso 3 los 90 contratos resuelven su inmueble (90 de 90 por dirección) pero cada uno pide
+  «Registrar y consignar» a mano (nombre del propietario, documento, comisión). Hay un diálogo
+  de mandatos en lote (\`CompletarMandatosLoteDialog\`) construido pero sin conectar, y asigna
+  UN dueño a todo el lote — no sirve para muchos dueños. Falta: que la importación case el
+  propietario por documento/nombre+teléfono y cree la consignación con la comisión de la fila.
+- ✅ Lo que sí pasó de punta a punta en QA (\`portofinoqaprb\`, 2026-09-01): 60 propietarios
+  creados; 120 inmuebles creados; 90 contratos revisados con inmueble resuelto; PUC base
+  sembrado (99 cuentas); **1.043 asientos / 2.839 movimientos aplicados, débitos = créditos =
+  $2.141.126.351**.
 - Los contratos de **vivienda van sin depósito** (Ley 820 de 2003, art. 16 lo prohíbe); los
   comerciales llevan uno o dos cánones.
 - Un 8 % de los contratos se atrasa un mes y paga al siguiente: en el libro diario aparece

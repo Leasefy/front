@@ -10143,10 +10143,15 @@
       "porRevisar": "{{n}} por revisar en «{{lote}}»"
     },
     "pasos": {
-      "terceros": {
-        "titulo": "Terceros: propietarios e inquilinos",
-        "descripcion": "Las personas primero. Del propietario hace falta la cuenta bancaria para poder pagarle; del inquilino, el correo para poder invitarlo al portal.",
-        "corto": "Terceros"
+      "propietarios": {
+        "titulo": "Propietarios",
+        "descripcion": "Las personas a las que les pagás. Del propietario hace falta el documento y la cuenta bancaria para poder girarle.",
+        "corto": "Propietarios"
+      },
+      "inquilinos": {
+        "titulo": "Inquilinos",
+        "descripcion": "Quiénes viven o trabajan en tus inmuebles. Con el correo se los invita al portal; el contrato de cada uno entra en el paso 4.",
+        "corto": "Inquilinos"
       },
       "propiedades": {
         "titulo": "Propiedades",

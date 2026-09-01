@@ -19,7 +19,8 @@ import type {
 } from '@/lib/api/migracion-estado.service';
 
 const IDS_VALIDOS: readonly IdDePasoDeMigracion[] = [
-  'terceros',
+  'propietarios',
+  'inquilinos',
   'propiedades',
   'contratos',
   'puc',
@@ -67,7 +68,7 @@ export function normalizarEstado(bruto: unknown): EstadoDeMigracion | null {
 /**
  * Un paso que el back declara `no_disponible` no cuenta para nada.
  *
- * Hoy los cinco pasos existen; el estado queda como fallo genérico —si un
+ * Hoy los seis pasos existen; el estado queda como fallo genérico —si un
  * módulo se cae o se apaga por bandera, el back lo marca así y el muro no
  * deja a nadie encerrado esperando una pantalla que no responde.
  */
@@ -149,7 +150,8 @@ export function todoListo(pasos: PasoDeMigracion[]): boolean {
  * Adentro del muro no hay `PageGuard` que redirija: se mira esto y se dice.
  */
 export const MODULO_DEL_PASO: Record<IdDePasoDeMigracion, string> = {
-  terceros: 'configuracion',
+  propietarios: 'configuracion',
+  inquilinos: 'configuracion',
   propiedades: 'portafolio',
   contratos: 'contratos',
   puc: 'configuracion',

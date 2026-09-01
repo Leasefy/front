@@ -1,13 +1,14 @@
 'use client';
 
 /**
- * Paso 1 de la migración: los terceros.
+ * Pasos 1 y 2 de la migración: propietarios e inquilinos (acá, con el switch).
  *
  * Se entra desde `/panel/inmobiliaria/migracion`, que es donde vive la
  * secuencia: una ruta que nada enlaza no es una pantalla.
  */
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ArrowLeft } from '@phosphor-icons/react';
 import { Eyebrow } from '@leasefy/cadence';
 
@@ -36,6 +37,8 @@ export default function MigrarTercerosPage() {
 
 function ContenidoDeTerceros() {
   const { t } = useI18n();
+  // La secuencia enlaza `?tipo=inquilinos`: la pantalla suelta arranca en ese tipo.
+  const tipoInicial = useSearchParams()?.get('tipo') === 'inquilinos' ? 'INQUILINO' : 'PROPIETARIO';
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -54,7 +57,7 @@ function ContenidoDeTerceros() {
         <p className="max-w-2xl text-sm text-fg-muted">{t('migracion.terceros.subtitulo')}</p>
       </header>
 
-      <MigrarTerceros />
+      <MigrarTerceros tipoInicial={tipoInicial} />
     </div>
   );
 }

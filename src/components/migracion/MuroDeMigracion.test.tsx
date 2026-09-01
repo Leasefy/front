@@ -51,7 +51,9 @@ vi.mock('next/link', () => ({
  * saltos entre pasos (PUC → contables, contables → PUC) se quedan adentro.
  */
 vi.mock('./MigrarTerceros', () => ({
-  MigrarTerceros: () => <div data-testid="contenido-terceros" />,
+  MigrarTerceros: ({ tipoFijo }: { tipoFijo?: 'PROPIETARIO' | 'INQUILINO' }) => (
+    <div data-testid={`contenido-${tipoFijo === 'INQUILINO' ? 'inquilinos' : 'propietarios'}`} />
+  ),
 }));
 vi.mock('./PlanDeCuentas', () => ({
   PlanDeCuentas: ({ onContinuar }: { onContinuar?: () => void }) => (
@@ -108,7 +110,8 @@ function paso(
 }
 
 const RECIEN_LLEGADA: PasoDeMigracion[] = [
-  paso('terceros', 'pendiente'),
+  paso('propietarios', 'pendiente'),
+  paso('inquilinos', 'pendiente'),
   paso('propiedades', 'pendiente'),
   paso('contratos', 'pendiente'),
   paso('puc', 'pendiente'),
@@ -116,7 +119,8 @@ const RECIEN_LLEGADA: PasoDeMigracion[] = [
 ];
 
 const TODO_MIGRADO: PasoDeMigracion[] = [
-  paso('terceros', 'listo', 42, '12 propietarios · 30 inquilinos'),
+  paso('propietarios', 'listo', 12, '12 propietarios'),
+  paso('inquilinos', 'listo', 30, '30 inquilinos'),
   paso('propiedades', 'listo', 30),
   paso('contratos', 'listo', 28),
   paso('puc', 'listo', 75, '75 cuentas'),
@@ -329,16 +333,17 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
 
     await pintar();
 
-    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('terceros');
-    expect(q('contenido-terceros')).not.toBeNull();
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('propietarios');
+    expect(q('contenido-propietarios')).not.toBeNull();
     expect(q('contenido-propiedades')).toBeNull();
 
     // El paso 1 es elegible en la barra; el 2 no, sin botón muerto.
-    expect(q('muro-ir-terceros')).not.toBeNull();
+    expect(q('muro-ir-propietarios')).not.toBeNull();
+    expect(q('muro-paso-inquilinos')?.getAttribute('data-habilitado')).toBe('false');
+    expect(q('muro-ir-inquilinos')).toBeNull();
     expect(q('muro-paso-propiedades')?.getAttribute('data-habilitado')).toBe('false');
-    expect(q('muro-ir-propiedades')).toBeNull();
     // El porqué, nombrando el paso que falta.
-    expect(q('muro-porque-propiedades')?.textContent).toContain('migracion.pasos.terceros.titulo');
+    expect(q('muro-porque-inquilinos')?.textContent).toContain('migracion.pasos.propietarios.titulo');
     // Y el pie no ofrece seguir: este paso no está terminado.
     expect(q('muro-siguiente')).toBeNull();
     expect(q('muro-falta')).not.toBeNull();
@@ -348,32 +353,32 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
     estadoMock.estado.mockResolvedValue({
       bloquea: true,
       resuelta: null,
-      pasos: [paso('terceros', 'listo', 42, '12 propietarios · 30 inquilinos'), ...RECIEN_LLEGADA.slice(1)],
+      pasos: [paso('propietarios', 'listo', 42, '12 propietarios · 30 inquilinos'), ...RECIEN_LLEGADA.slice(1)],
     });
 
     await pintar();
 
-    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('propiedades');
-    expect(q('contenido-propiedades')).not.toBeNull();
-    expect(q('muro-paso-contratos')?.getAttribute('data-habilitado')).toBe('false');
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('inquilinos');
+    expect(q('contenido-inquilinos')).not.toBeNull();
+    expect(q('muro-paso-propiedades')?.getAttribute('data-habilitado')).toBe('false');
 
     // Quien cargó diez propietarios y quiere cargar más no espera a que
     // baje el muro: vuelve al paso 1 desde la barra, sin salir.
-    await click('muro-ir-terceros');
-    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('terceros');
-    expect(q('contenido-terceros')).not.toBeNull();
+    await click('muro-ir-propietarios');
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('propietarios');
+    expect(q('contenido-propietarios')).not.toBeNull();
     expect(q('muro-paso-listo')?.textContent).toContain('12 propietarios');
     // Y desde un paso listo, el pie ofrece seguir con el que falta.
-    expect(q('muro-siguiente')?.textContent).toContain('migracion.pasos.propiedades.corto');
+    expect(q('muro-siguiente')?.textContent).toContain('migracion.pasos.inquilinos.corto');
     await click('muro-siguiente');
-    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('propiedades');
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('inquilinos');
   });
 
-  it('el paso 5 (registros contables) espera al 4 (plan de cuentas)', async () => {
+  it('el paso 6 (registros contables) espera al 5 (plan de cuentas)', async () => {
     estadoMock.estado.mockResolvedValue({
       bloquea: true,
       resuelta: null,
-      pasos: [...TODO_MIGRADO.slice(0, 3), paso('puc', 'pendiente'), paso('contables', 'pendiente')],
+      pasos: [...TODO_MIGRADO.slice(0, 4), paso('puc', 'pendiente'), paso('contables', 'pendiente')],
     });
 
     await pintar();
@@ -385,22 +390,22 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
     expect(q('muro-porque-contables')?.textContent).toContain('migracion.pasos.puc.titulo');
   });
 
-  it('los saltos entre el 4 y el 5 se quedan ADENTRO del muro', async () => {
+  it('los saltos entre el 5 y el 6 se quedan ADENTRO del muro', async () => {
     estadoMock.estado.mockResolvedValue({
       bloquea: true,
       resuelta: null,
-      pasos: [...TODO_MIGRADO.slice(0, 4), paso('contables', 'pendiente')],
+      pasos: [...TODO_MIGRADO.slice(0, 5), paso('contables', 'pendiente')],
     });
 
     await pintar();
 
-    // Arranca en el 5, que es el que falta.
+    // Arranca en el 6, que es el que falta.
     expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('contables');
-    // «Ir al paso 4» del componente de contables → el PUC, adentro.
+    // «Ir al paso 5» del componente de contables → el PUC, adentro.
     await click('contables-ir-al-puc');
     expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('puc');
     expect(q('contenido-puc')).not.toBeNull();
-    // «Continuar al paso 5» del PUC → contables, adentro.
+    // «Continuar al paso 6» del PUC → contables, adentro.
     await click('puc-continuar');
     expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('contables');
     expect(q('muro-migracion')).not.toBeNull();
@@ -410,7 +415,7 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
     estadoMock.estado.mockResolvedValue({
       bloquea: true,
       resuelta: null,
-      pasos: [...TODO_MIGRADO.slice(0, 4), paso('contables', 'no_disponible')],
+      pasos: [...TODO_MIGRADO.slice(0, 5), paso('contables', 'no_disponible')],
     });
 
     await pintar();
@@ -438,19 +443,19 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
     await pintar();
 
     expect(q('muro-sin-permiso')).not.toBeNull();
-    expect(q('contenido-terceros')).toBeNull();
+    expect(q('contenido-propietarios')).toBeNull();
     // Y la salida de «arranco de cero» sigue estando.
     expect(q('muro-arrancar-de-cero')).not.toBeNull();
   });
 
   it('un paso elegido que quedó frenado (el anterior volvió a pendiente) lo dice y ofrece ir', async () => {
-    // Estaba en «propiedades» con terceros listo; el refresco trae terceros
+    // Estaba en «inquilinos» con propietarios listo; el refresco trae propietarios
     // pendiente (borraron el único propietario). La selección no se mueve
     // sola: se explica y se ofrece ir.
     estadoMock.estado.mockResolvedValueOnce({
       bloquea: true,
       resuelta: null,
-      pasos: [paso('terceros', 'listo', 1), ...RECIEN_LLEGADA.slice(1)],
+      pasos: [paso('propietarios', 'listo', 1), ...RECIEN_LLEGADA.slice(1)],
     });
     estadoMock.estado.mockResolvedValue({
       bloquea: true,
@@ -461,17 +466,17 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
     vi.useFakeTimers();
     try {
       await pintar();
-      expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('propiedades');
+      expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('inquilinos');
 
       await act(async () => {
         await vi.advanceTimersByTimeAsync(5_000);
       });
 
-      expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('propiedades');
-      expect(q('muro-aviso-frenado')?.textContent).toContain('migracion.pasos.terceros.titulo');
-      expect(q('contenido-propiedades')).toBeNull();
+      expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('inquilinos');
+      expect(q('muro-aviso-frenado')?.textContent).toContain('migracion.pasos.propietarios.titulo');
+      expect(q('contenido-inquilinos')).toBeNull();
       await click('muro-ir-al-que-frena');
-      expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('terceros');
+      expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('propietarios');
     } finally {
       vi.useRealTimers();
     }
@@ -490,14 +495,14 @@ describe('el muro vuelve a mirar el estado mientras está puesto', () => {
       .mockResolvedValue({
         bloquea: true,
         resuelta: null,
-        pasos: [paso('terceros', 'listo', 3, '3 propietarios'), ...RECIEN_LLEGADA.slice(1)],
+        pasos: [paso('propietarios', 'listo', 3, '3 propietarios'), ...RECIEN_LLEGADA.slice(1)],
       });
 
     vi.useFakeTimers();
     try {
       await pintar();
       expect(estadoMock.estado).toHaveBeenCalledTimes(1);
-      expect(q('muro-paso-terceros')?.getAttribute('data-estado')).toBe('pendiente');
+      expect(q('muro-paso-propietarios')?.getAttribute('data-estado')).toBe('pendiente');
 
       // Primer refresco: falla. El muro se queda, con el paso montado.
       await act(async () => {
@@ -505,16 +510,16 @@ describe('el muro vuelve a mirar el estado mientras está puesto', () => {
       });
       expect(estadoMock.estado).toHaveBeenCalledTimes(2);
       expect(q('muro-migracion')).not.toBeNull();
-      expect(q('contenido-terceros')).not.toBeNull();
+      expect(q('contenido-propietarios')).not.toBeNull();
 
       // Segundo: terceros pasó a listo. La barra lo dice, el pie ofrece
       // seguir, y la pantalla NO cambió sola.
       await act(async () => {
         await vi.advanceTimersByTimeAsync(5_000);
       });
-      expect(q('muro-paso-terceros')?.getAttribute('data-estado')).toBe('listo');
-      expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('terceros');
-      expect(q('contenido-terceros')).not.toBeNull();
+      expect(q('muro-paso-propietarios')?.getAttribute('data-estado')).toBe('listo');
+      expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('propietarios');
+      expect(q('contenido-propietarios')).not.toBeNull();
       expect(q('muro-siguiente')).not.toBeNull();
     } finally {
       vi.useRealTimers();

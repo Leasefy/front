@@ -755,8 +755,11 @@ function ContenidoDelPaso({
   };
 
   switch (id) {
-    case "terceros":
-      return <MigrarTerceros />;
+    case "propietarios":
+      // Un paso por tipo: adentro del muro no hay switch que entender.
+      return <MigrarTerceros tipoFijo="PROPIETARIO" />;
+    case "inquilinos":
+      return <MigrarTerceros tipoFijo="INQUILINO" />;
     case "propiedades":
       return (
         <ImportWizard

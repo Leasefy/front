@@ -41,6 +41,7 @@ import {
   ClockCounterClockwise,
   FileText,
   Lock,
+  UserCircle,
   Users,
   Warning,
   Wallet,
@@ -67,12 +68,13 @@ interface AvanceDePaso {
 
 const SIN_MEDIR: AvanceDePaso = { hechas: null, porRevisar: 0, loteAbierto: null };
 
-type IdDePaso = 'terceros' | 'propiedades' | 'contratos' | 'puc' | 'contables';
+type IdDePaso = 'propietarios' | 'inquilinos' | 'propiedades' | 'contratos' | 'puc' | 'contables';
 
 export function SecuenciaDeMigracion() {
   const { t } = useI18n();
   const [avance, setAvance] = useState<Record<IdDePaso, AvanceDePaso>>({
-    terceros: SIN_MEDIR,
+    propietarios: SIN_MEDIR,
+    inquilinos: SIN_MEDIR,
     propiedades: SIN_MEDIR,
     contratos: SIN_MEDIR,
     puc: SIN_MEDIR,
@@ -92,27 +94,31 @@ export function SecuenciaDeMigracion() {
      */
     Promise.allSettled([
       migracionTercerosApi.lotesAbiertos(),
-      migracionTercerosApi.filas({ estado: 'APLICADO', porPagina: 1 }),
+      migracionTercerosApi.filas({ estado: 'APLICADO', tipo: 'PROPIETARIO', porPagina: 1 }),
+      migracionTercerosApi.filas({ estado: 'APLICADO', tipo: 'INQUILINO', porPagina: 1 }),
       inmueblesImportacionApi.lotesAbiertos(),
       contractsApi.migracion.lotesAbiertos(),
       contabilidadApi.puc.listar(),
       contabilidadApi.asientos.listar({ limite: 1 }),
-    ]).then(([lotesTerceros, aplicadosTerceros, lotesInmuebles, lotesContratos, cuentas, asientos]) => {
+    ]).then(([lotesTerceros, aplicadosPropietarios, aplicadosInquilinos, lotesInmuebles, lotesContratos, cuentas, asientos]) => {
       if (!vigente) return;
 
-      const terceros: AvanceDePaso = { ...SIN_MEDIR };
-      if (aplicadosTerceros.status === 'fulfilled') {
-        // El `total` del back, no el largo de `filas`: se pidió una sola.
-        terceros.hechas = aplicadosTerceros.value.total;
-      }
-      if (lotesTerceros.status === 'fulfilled') {
-        const abierto = lotesTerceros.value[0];
-        terceros.loteAbierto = abierto?.lote ?? null;
-        terceros.porRevisar = lotesTerceros.value.reduce(
-          (n, l) => n + l.requierenAtencion + l.listos + l.borradores,
-          0,
-        );
-      }
+      // Un paso por tipo: cada uno cuenta sus filas aplicadas y sus lotes abiertos.
+      const porTipo = (tipo: 'PROPIETARIO' | 'INQUILINO', aplicados: typeof aplicadosPropietarios) => {
+        const avanceDelTipo: AvanceDePaso = { ...SIN_MEDIR };
+        if (aplicados.status === 'fulfilled') avanceDelTipo.hechas = aplicados.value.total;
+        if (lotesTerceros.status === 'fulfilled') {
+          const propios = lotesTerceros.value.filter((l) => l.tipo === tipo);
+          avanceDelTipo.loteAbierto = propios[0]?.lote ?? null;
+          avanceDelTipo.porRevisar = propios.reduce(
+            (n, l) => n + l.requierenAtencion + l.listos + l.borradores,
+            0,
+          );
+        }
+        return avanceDelTipo;
+      };
+      const propietarios = porTipo('PROPIETARIO', aplicadosPropietarios);
+      const inquilinos = porTipo('INQUILINO', aplicadosInquilinos);
 
       const propiedades: AvanceDePaso = { ...SIN_MEDIR };
       if (lotesInmuebles.status === 'fulfilled') {
@@ -145,7 +151,7 @@ export function SecuenciaDeMigracion() {
         contables.hechas = asientos.value.total;
       }
 
-      setAvance({ terceros, propiedades, contratos, puc, contables });
+      setAvance({ propietarios, inquilinos, propiedades, contratos, puc, contables });
       setMidiendo(false);
     });
 
@@ -156,9 +162,15 @@ export function SecuenciaDeMigracion() {
 
   const pasos = [
     {
-      id: 'terceros' as const,
+      id: 'propietarios' as const,
+      icono: UserCircle,
+      href: '/panel/inmobiliaria/migracion/terceros?tipo=propietarios',
+      disponible: true,
+    },
+    {
+      id: 'inquilinos' as const,
       icono: Users,
-      href: '/panel/inmobiliaria/migracion/terceros',
+      href: '/panel/inmobiliaria/migracion/terceros?tipo=inquilinos',
       disponible: true,
     },
     {

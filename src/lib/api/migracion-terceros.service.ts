@@ -246,6 +246,8 @@ export interface ResumenDeAplicacion {
   aplicadas: number;
   fallidas: number;
   invitados: number;
+  /** Cuentas creadas sin invitación por el límite de correo del proveedor. Un back viejo no lo manda. */
+  sinInvitar?: number;
   resultados: ResultadoDeFila[];
 }
 

@@ -96,8 +96,19 @@ type Fila = Record<string, unknown>;
 const mensaje = (e: unknown, respaldo: string) =>
   e instanceof Error && e.message ? e.message : respaldo;
 
-export function MigrarTerceros() {
-  const [tipo, setTipo] = useState<TipoDeTercero>('PROPIETARIO');
+export interface MigrarTercerosProps {
+  /**
+   * Adentro del muro cada tipo es un paso: se fija el tipo y desaparece el
+   * switch «¿Qué estás cargando?» — Nico vio que nadie iba a entender que
+   * cambiando esa pestaña cambiaba lo que subía.
+   */
+  tipoFijo?: TipoDeTercero;
+  /** Con qué tipo arranca la pantalla suelta (`/migracion/terceros?tipo=…`). */
+  tipoInicial?: TipoDeTercero;
+}
+
+export function MigrarTerceros({ tipoFijo, tipoInicial }: MigrarTercerosProps = {}) {
+  const [tipo, setTipo] = useState<TipoDeTercero>(tipoFijo ?? tipoInicial ?? 'PROPIETARIO');
   const [plantilla, setPlantilla] = useState<PlantillaDeTerceros | null>(null);
 
   const [filas, setFilas] = useState<Fila[]>([]);
@@ -381,15 +392,18 @@ export function MigrarTerceros() {
     lote.trim().length > 0 &&
     !cargando;
 
+  // Con el tipo fijo, las cargas sin terminar del OTRO tipo son de otro paso.
+  const lotesVisibles = tipoFijo ? lotesAbiertos.filter((l) => l.tipo === tipoFijo) : lotesAbiertos;
+
   return (
     <div className="space-y-6">
-      {lotesAbiertos.length > 0 ? (
+      {lotesVisibles.length > 0 ? (
         <section
           className="space-y-3 rounded-lg border border-primary/30 bg-surface p-5 shadow-sm"
           data-testid="lotes-abiertos"
         >
           <p className="text-sm font-medium text-fg">Tenés una carga sin terminar</p>
-          {lotesAbiertos.map((l) => (
+          {lotesVisibles.map((l) => (
             <div key={l.lote} className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm text-fg-muted">
                 <span className="text-fg">{l.lote}</span>
@@ -418,14 +432,28 @@ export function MigrarTerceros() {
       ) : null}
 
       <section className="space-y-4 rounded-lg border border-border bg-surface p-6 shadow-sm">
-        <div className="space-y-1">
-          <h2 className="text-sm font-medium text-fg">¿Qué estás cargando?</h2>
-          <p className="text-sm text-fg-muted">
-            Van en archivos separados: a un propietario hay que poder pagarle (banco y cuenta) y
-            a un inquilino hay que poder invitarlo (correo). No son las mismas columnas.
-          </p>
-        </div>
+        {tipoFijo ? (
+          <div className="space-y-1" data-testid="tipo-fijo" data-tipo={tipoFijo}>
+            <h2 className="text-sm font-medium text-fg">
+              {tipoFijo === 'PROPIETARIO' ? 'El archivo de propietarios' : 'El archivo de inquilinos'}
+            </h2>
+            <p className="text-sm text-fg-muted">
+              {tipoFijo === 'PROPIETARIO'
+                ? 'Una fila por propietario: documento, nombre, y el banco, tipo y número de cuenta para poder girarle.'
+                : 'Una fila por inquilino: documento, nombre y correo para poder invitarlo al portal. El contrato de cada uno entra en el paso 4.'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <h2 className="text-sm font-medium text-fg">¿Qué estás cargando?</h2>
+            <p className="text-sm text-fg-muted">
+              Van en archivos separados: a un propietario hay que poder pagarle (banco y cuenta) y
+              a un inquilino hay que poder invitarlo (correo). No son las mismas columnas.
+            </p>
+          </div>
+        )}
 
+        {tipoFijo ? null : (
         <SegmentedControl<TipoDeTercero>
           value={tipo}
           onChange={setTipo}
@@ -453,6 +481,7 @@ export function MigrarTerceros() {
             },
           ]}
         />
+        )}
 
         {noSoportadas.length > 0 ? (
           <div className="flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3">
@@ -786,7 +815,20 @@ function ListaDeTrabajo({
                 portal
               </>
             ) : null}
+            {(aplicacion.sinInvitar ?? 0) > 0 ? (
+              <>
+                {' · '}
+                <span className="font-mono tabular-nums">{aplicacion.sinInvitar}</span> sin
+                invitación todavía
+              </>
+            ) : null}
           </p>
+          {(aplicacion.sinInvitar ?? 0) > 0 ? (
+            <p className="text-sm text-fg-muted" data-testid="sin-invitar">
+              El proveedor de correo limitó los envíos: esas cuentas quedaron creadas y la
+              invitación se manda después. No hace falta volver a subir nada.
+            </p>
+          ) : null}
           {aplicacion.fallidas > 0 ? (
             <ul className="space-y-1 text-sm text-fg-muted">
               {aplicacion.resultados

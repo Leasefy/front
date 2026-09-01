@@ -25,9 +25,10 @@ function paso(
   return { id, estado, detalle: null, conteo };
 }
 
-/** El estado típico de una inmobiliaria que recién entra: los cinco por hacer. */
+/** El estado típico de una inmobiliaria que recién entra: los seis por hacer. */
 const RECIEN_LLEGADA: PasoDeMigracion[] = [
-  paso('terceros', 'pendiente'),
+  paso('propietarios', 'pendiente'),
+  paso('inquilinos', 'pendiente'),
   paso('propiedades', 'pendiente'),
   paso('contratos', 'pendiente'),
   paso('puc', 'pendiente'),
@@ -40,7 +41,7 @@ describe('normalizarEstado — 🔴 ante la duda, NO se bloquea', () => {
   it('bloquea sólo con un estado bien formado que lo pide', () => {
     const r = normalizarEstado({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
     expect(r).not.toBeNull();
-    expect(r?.pasos).toHaveLength(5);
+    expect(r?.pasos).toHaveLength(6);
   });
 
   it.each([
@@ -51,9 +52,9 @@ describe('normalizarEstado — 🔴 ante la duda, NO se bloquea', () => {
     ['sin pasos', { bloquea: true, resuelta: null }],
     ['pasos vacío', { bloquea: true, resuelta: null, pasos: [] }],
     ['pasos no es lista', { bloquea: true, resuelta: null, pasos: { terceros: 'listo' } }],
-    ['un paso con id desconocido', { bloquea: true, pasos: [paso('terceros', 'listo'), { id: 'otra_cosa', estado: 'listo', detalle: null, conteo: 0 }] }],
-    ['un paso con estado desconocido', { bloquea: true, pasos: [{ id: 'terceros', estado: 'a_medias', detalle: null, conteo: 0 }] }],
-    ['un paso sin conteo', { bloquea: true, pasos: [{ id: 'terceros', estado: 'listo', detalle: null }] }],
+    ['un paso con id desconocido', { bloquea: true, pasos: [paso('propietarios', 'listo'), { id: 'otra_cosa', estado: 'listo', detalle: null, conteo: 0 }] }],
+    ['un paso con estado desconocido', { bloquea: true, pasos: [{ id: 'propietarios', estado: 'a_medias', detalle: null, conteo: 0 }] }],
+    ['un paso sin conteo', { bloquea: true, pasos: [{ id: 'propietarios', estado: 'listo', detalle: null }] }],
     ['una cadena', 'bloquea'],
     ['null', null],
     ['undefined', undefined],
@@ -78,7 +79,7 @@ describe('pasoHabilitado — el paso N+1 espera al N', () => {
   });
 
   it('con el primero listo se abre el segundo, y sólo el segundo', () => {
-    const pasos = [paso('terceros', 'listo', 42), ...RECIEN_LLEGADA.slice(1)];
+    const pasos = [paso('propietarios', 'listo', 42), ...RECIEN_LLEGADA.slice(1)];
     expect(pasoHabilitado(pasos, 1)).toBe(true);
     expect(pasoHabilitado(pasos, 2)).toBe(false);
   });
@@ -86,7 +87,7 @@ describe('pasoHabilitado — el paso N+1 espera al N', () => {
   it('el paso 5 (registros contables) NO se abre sin el 4 (plan de cuentas) listo', () => {
     // Un asiento se imputa a cuentas; sin PUC no hay a qué imputarlo.
     const pasos = [
-      paso('terceros', 'listo'),
+      paso('propietarios', 'listo'),
       paso('propiedades', 'listo'),
       paso('contratos', 'listo'),
       paso('puc', 'pendiente'),
@@ -102,7 +103,7 @@ describe('pasoHabilitado — el paso N+1 espera al N', () => {
 
   it('un paso que el back marca `no_disponible` nunca se habilita — no hay botón que apretar', () => {
     const pasos = [
-      paso('terceros', 'listo'),
+      paso('propietarios', 'listo'),
       paso('propiedades', 'listo'),
       paso('contratos', 'listo'),
       paso('puc', 'no_disponible'),
@@ -114,7 +115,7 @@ describe('pasoHabilitado — el paso N+1 espera al N', () => {
     // Si un módulo caído frenara lo que viene después, el muro sería una
     // cárcel: nadie podría terminar nunca.
     const pasos = [
-      paso('terceros', 'listo'),
+      paso('propietarios', 'listo'),
       paso('puc', 'no_disponible'),
       paso('propiedades', 'pendiente'),
     ];
@@ -125,7 +126,7 @@ describe('pasoHabilitado — el paso N+1 espera al N', () => {
 describe('pasoQueFrena — el porqué que se muestra bajo el candado', () => {
   it('nombra el paso inmediatamente anterior que falta, no el primero de la lista', () => {
     const pasos = [
-      paso('terceros', 'pendiente'),
+      paso('propietarios', 'pendiente'),
       paso('propiedades', 'pendiente'),
       paso('contratos', 'pendiente'),
     ];
@@ -139,12 +140,12 @@ describe('pasoQueFrena — el porqué que se muestra bajo el candado', () => {
 
 describe('pasoActual — dónde parás hoy', () => {
   it('es el primer exigible sin terminar', () => {
-    const pasos = [paso('terceros', 'listo'), ...RECIEN_LLEGADA.slice(1)];
+    const pasos = [paso('propietarios', 'listo'), ...RECIEN_LLEGADA.slice(1)];
     expect(pasoActual(pasos)).toBe(1);
   });
 
   it('con todo listo no se queda colgado fuera de rango', () => {
-    const pasos = [paso('terceros', 'listo'), paso('propiedades', 'listo')];
+    const pasos = [paso('propietarios', 'listo'), paso('propiedades', 'listo')];
     expect(pasoActual(pasos)).toBe(1);
   });
 });
@@ -158,7 +159,7 @@ describe('todoListo — la puerta de «Ya terminé»', () => {
 
   it('con los cinco listos, sí', () => {
     const pasos = [
-      paso('terceros', 'listo', 42),
+      paso('propietarios', 'listo', 42),
       paso('propiedades', 'listo', 30),
       paso('contratos', 'listo', 28),
       paso('puc', 'listo', 75),
@@ -169,7 +170,7 @@ describe('todoListo — la puerta de «Ya terminé»', () => {
 
   it('con los tres primeros listos y el PUC pendiente, todavía no', () => {
     const pasos = [
-      paso('terceros', 'listo', 42),
+      paso('propietarios', 'listo', 42),
       paso('propiedades', 'listo', 30),
       paso('contratos', 'listo', 28),
       paso('puc', 'pendiente'),
@@ -180,7 +181,7 @@ describe('todoListo — la puerta de «Ya terminé»', () => {
 
   it('los que el back marca `no_disponible` no cuentan — ni a favor ni en contra', () => {
     const pasos = [
-      paso('terceros', 'listo', 42),
+      paso('propietarios', 'listo', 42),
       paso('propiedades', 'listo', 30),
       paso('contratos', 'listo', 28),
       paso('puc', 'listo', 75),
@@ -203,7 +204,7 @@ describe('todoListo — la puerta de «Ya terminé»', () => {
 // ══════════════════════════════════════════════════════════════════════════
 
 /** Para `siguientePaso` sólo importa el estado; el id es cualquiera válido. */
-const p = (estado: PasoDeMigracion['estado']) => paso('terceros', estado);
+const p = (estado: PasoDeMigracion['estado']) => paso('propietarios', estado);
 
 describe('siguientePaso', () => {
   it('desde un paso listo va al primer pendiente que le sigue', () => {

@@ -10142,10 +10142,15 @@
       "porRevisar": "{{n}} to review in “{{lote}}”"
     },
     "pasos": {
-      "terceros": {
-        "titulo": "Third parties: owners and tenants",
-        "descripcion": "People first. An owner needs bank details so you can pay them; a tenant needs an email so you can invite them to the portal.",
-        "corto": "Third parties"
+      "propietarios": {
+        "titulo": "Owners",
+        "descripcion": "The people you pay. An owner needs an ID number and a bank account so you can wire them.",
+        "corto": "Owners"
+      },
+      "inquilinos": {
+        "titulo": "Tenants",
+        "descripcion": "Who lives or works in your properties. Their email is how they get invited to the portal; each one's contract comes in step 4.",
+        "corto": "Tenants"
       },
       "propiedades": {
         "titulo": "Properties",

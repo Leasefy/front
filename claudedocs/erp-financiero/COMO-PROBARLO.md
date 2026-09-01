@@ -76,7 +76,7 @@ sobre ningún cobro que ya existe.
 todos sus arriendos adentro.
 
 ### 5. Migrar tu operación
-`/panel/inmobiliaria/migracion` — los cinco pasos en orden. El **paso 1 (terceros)** es el
+`/panel/inmobiliaria/migracion` — los seis pasos en orden (propietarios, inquilinos, propiedades, contratos, PUC, registros contables). El **paso 1 (propietarios)** es el
 que se construyó: subir, mapear contra la plantilla del back, corregir sin volver a subir,
 aplicar. Los pasos 2 y 3 enlazan a lo que ya existía. **4 y 5 dicen «en construcción»**, sin
 botón muerto.
@@ -104,7 +104,7 @@ aparece dos veces**. Cosmético, no lo toqué.
 ## El muro de migración (2026-09-01)
 
 La migración ahora es **bloqueante**: si la inmobiliaria no la resolvió, el panel se ve
-desenfocado detrás y sólo se puede avanzar por los cinco pasos, en orden. La agencia de
+desenfocado detrás y sólo se puede avanzar por los seis pasos, en orden (propietarios e inquilinos son dos pasos: adentro del muro no hay switch). La agencia de
 QA quedó **a propósito sin resolver** para que lo recorras: entrá y vas a ver el muro con
 terceros, propiedades y contratos ya en «listo» (derivados de datos reales), el paso 4
 activo y el 5 en espera.

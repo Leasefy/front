@@ -28,7 +28,8 @@ const BASE = '/inmobiliaria/migracion';
 
 /** Los cinco pasos del arranque, en el orden en que se necesitan. */
 export type IdDePasoDeMigracion =
-  | 'terceros'
+  | 'propietarios'
+  | 'inquilinos'
   | 'propiedades'
   | 'contratos'
   | 'puc'

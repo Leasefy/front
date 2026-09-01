@@ -117,26 +117,27 @@ afterEach(async () => {
 });
 
 describe('SecuenciaDeMigracion', () => {
-  it('pinta los cinco pasos en el orden acordado', async () => {
+  it('pinta los seis pasos en el orden acordado', async () => {
     await pintar();
 
     const pasos = container.querySelectorAll('[data-testid^="paso-"]');
-    expect(pasos).toHaveLength(5);
-    // terceros → propiedades → contratos → PUC → contables. El orden no es
+    expect(pasos).toHaveLength(6);
+    // propietarios → inquilinos → propiedades → contratos → PUC → contables. El orden no es
     // estético: el inmueble necesita dueño y el contrato necesita inmueble.
     const titulos = [...pasos].map((p) => p.textContent ?? '');
-    expect(titulos[0]).toContain('migracion.pasos.terceros.titulo');
-    expect(titulos[1]).toContain('migracion.pasos.propiedades.titulo');
-    expect(titulos[2]).toContain('migracion.pasos.contratos.titulo');
-    expect(titulos[3]).toContain('migracion.pasos.puc.titulo');
-    expect(titulos[4]).toContain('migracion.pasos.contables.titulo');
+    expect(titulos[0]).toContain('migracion.pasos.propietarios.titulo');
+    expect(titulos[1]).toContain('migracion.pasos.inquilinos.titulo');
+    expect(titulos[2]).toContain('migracion.pasos.propiedades.titulo');
+    expect(titulos[3]).toContain('migracion.pasos.contratos.titulo');
+    expect(titulos[4]).toContain('migracion.pasos.puc.titulo');
+    expect(titulos[5]).toContain('migracion.pasos.contables.titulo');
   });
 
-  it('los pasos 4 y 5 tienen a dónde ir', async () => {
+  it('los pasos 5 y 6 tienen a dónde ir', async () => {
     await pintar();
 
-    const paso4 = container.querySelector('[data-testid="paso-4"]')!;
-    const paso5 = container.querySelector('[data-testid="paso-5"]')!;
+    const paso4 = container.querySelector('[data-testid="paso-5"]')!;
+    const paso5 = container.querySelector('[data-testid="paso-6"]')!;
     expect(paso4.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/migracion/puc');
     expect(paso5.querySelector('a')?.getAttribute('href')).toBe(
       '/panel/inmobiliaria/migracion/contables',
@@ -157,8 +158,8 @@ describe('SecuenciaDeMigracion', () => {
     await pintar();
 
     expect(contabilidadMock.asientos.listar).toHaveBeenCalledWith({ limite: 1 });
-    const paso4 = container.querySelector('[data-testid="paso-4"]')!;
-    const paso5 = container.querySelector('[data-testid="paso-5"]')!;
+    const paso4 = container.querySelector('[data-testid="paso-5"]')!;
+    const paso5 = container.querySelector('[data-testid="paso-6"]')!;
     expect(paso4.textContent).toContain('"n":3');
     expect(paso4.textContent).toContain('migracion.estados.conDatos');
     expect(paso5.textContent).toContain('"n":1204');
@@ -176,7 +177,8 @@ describe('SecuenciaDeMigracion', () => {
 
     await pintar();
 
-    expect(tercerosMock.filas).toHaveBeenCalledWith({ estado: 'APLICADO', porPagina: 1 });
+    expect(tercerosMock.filas).toHaveBeenCalledWith({ estado: 'APLICADO', tipo: 'PROPIETARIO', porPagina: 1 });
+    expect(tercerosMock.filas).toHaveBeenCalledWith({ estado: 'APLICADO', tipo: 'INQUILINO', porPagina: 1 });
     const paso1 = container.querySelector('[data-testid="paso-1"]')!;
     expect(paso1.textContent).toContain('"n":847');
     expect(paso1.textContent).toContain('migracion.estados.conDatos');
@@ -202,9 +204,12 @@ describe('SecuenciaDeMigracion', () => {
     expect(paso1.textContent).not.toContain('migracion.avance.hechas');
     expect(paso1.textContent).not.toContain('migracion.estados.conDatos');
 
-    // El paso 2 sí se midió: un permiso faltante en el 1 no lo arrastra.
+    // El paso 2 (inquilinos) también vive detrás de `configuracion`: tampoco afirma nada.
     const paso2 = container.querySelector('[data-testid="paso-2"]')!;
-    expect(paso2.textContent).toContain('"n":10');
+    expect(paso2.textContent).not.toContain('migracion.estados.conDatos');
+    // El paso 3 sí se midió: un permiso faltante en los de terceros no lo arrastra.
+    const paso3 = container.querySelector('[data-testid="paso-3"]')!;
+    expect(paso3.textContent).toContain('"n":10');
   });
 
   it('un lote sin terminar se dice, y el botón pasa a «retomar»', async () => {

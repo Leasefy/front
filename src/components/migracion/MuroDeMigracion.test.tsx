@@ -69,16 +69,16 @@ const RECIEN_LLEGADA: PasoDeMigracion[] = [
   paso('terceros', 'pendiente'),
   paso('propiedades', 'pendiente'),
   paso('contratos', 'pendiente'),
-  paso('puc', 'no_disponible'),
-  paso('contables', 'no_disponible'),
+  paso('puc', 'pendiente'),
+  paso('contables', 'pendiente'),
 ];
 
 const TODO_MIGRADO: PasoDeMigracion[] = [
   paso('terceros', 'listo', 42, '12 propietarios · 30 inquilinos'),
   paso('propiedades', 'listo', 30),
   paso('contratos', 'listo', 28),
-  paso('puc', 'no_disponible'),
-  paso('contables', 'no_disponible'),
+  paso('puc', 'listo', 75, '75 cuentas'),
+  paso('contables', 'listo', 1, '1 asiento'),
 ];
 
 let container: HTMLDivElement;
@@ -309,18 +309,52 @@ describe('los pasos van encadenados', () => {
     expect(q('muro-paso-contratos')?.getAttribute('data-habilitado')).toBe('false');
   });
 
-  it('los `no_disponible` se muestran como lo que son y NO tienen botón', async () => {
+  it('el paso 5 (registros contables) espera al 4 (plan de cuentas)', async () => {
     estadoMock.estado.mockResolvedValue({
       bloquea: true,
       resuelta: null,
-      pasos: RECIEN_LLEGADA,
+      pasos: [...TODO_MIGRADO.slice(0, 3), paso('puc', 'pendiente'), paso('contables', 'pendiente')],
     });
 
     await pintar();
 
-    expect(q('muro-paso-puc')?.getAttribute('data-estado')).toBe('no_disponible');
-    expect(q('muro-ir-puc')).toBeNull();
-    expect(q('muro-paso-puc')?.textContent).toContain('migracion.muro.noDisponible');
+    expect(q('muro-paso-puc')?.getAttribute('data-habilitado')).toBe('true');
+    expect(q('muro-ir-puc')?.getAttribute('href')).toBe('/panel/inmobiliaria/migracion/puc');
+    expect(q('muro-paso-contables')?.getAttribute('data-habilitado')).toBe('false');
+    expect(q('muro-ir-contables')).toBeNull();
+    // El porqué nombra al PUC, que es lo que hay que hacer ahora.
+    expect(q('muro-porque-contables')?.textContent).toContain('migracion.pasos.puc.titulo');
+  });
+
+  it('con el PUC listo se abre el 5 y manda a los registros contables', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [...TODO_MIGRADO.slice(0, 4), paso('contables', 'pendiente')],
+    });
+
+    await pintar();
+
+    expect(q('muro-paso-contables')?.getAttribute('data-habilitado')).toBe('true');
+    expect(q('muro-ir-contables')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/migracion/contables',
+    );
+  });
+
+  it('un paso que el back marca `no_disponible` se muestra como lo que es y NO tiene botón', async () => {
+    // Fallo genérico: si un módulo se cae, el muro lo dice en vez de ofrecer
+    // un botón que lleva a una pantalla que no responde.
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [...TODO_MIGRADO.slice(0, 4), paso('contables', 'no_disponible')],
+    });
+
+    await pintar();
+
+    expect(q('muro-paso-contables')?.getAttribute('data-estado')).toBe('no_disponible');
+    expect(q('muro-ir-contables')).toBeNull();
+    expect(q('muro-paso-contables')?.textContent).toContain('migracion.muro.noDisponible');
   });
 });
 
@@ -342,7 +376,7 @@ describe('«Ya terminé»', () => {
     expect(q('muro-falta')).not.toBeNull();
   });
 
-  it('aparece con los tres exigibles listos — los `no_disponible` no lo frenan', async () => {
+  it('aparece con los cinco pasos listos', async () => {
     estadoMock.estado.mockResolvedValue({
       bloquea: true,
       resuelta: null,

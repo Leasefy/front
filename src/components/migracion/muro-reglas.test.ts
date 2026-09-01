@@ -25,13 +25,13 @@ function paso(
   return { id, estado, detalle: null, conteo };
 }
 
-/** El estado típico de una inmobiliaria que recién entra. */
+/** El estado típico de una inmobiliaria que recién entra: los cinco por hacer. */
 const RECIEN_LLEGADA: PasoDeMigracion[] = [
   paso('terceros', 'pendiente'),
   paso('propiedades', 'pendiente'),
   paso('contratos', 'pendiente'),
-  paso('puc', 'no_disponible'),
-  paso('contables', 'no_disponible'),
+  paso('puc', 'pendiente'),
+  paso('contables', 'pendiente'),
 ];
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -42,6 +42,8 @@ describe('estaExentaDelMuro — las pantallas a las que el propio muro manda', (
     '/panel/inmobiliaria/migracion/terceros',
     '/panel/inmobiliaria/inmuebles/importar',
     '/panel/inmobiliaria/contratos/migrar',
+    '/panel/inmobiliaria/migracion/puc',
+    '/panel/inmobiliaria/migracion/contables',
   ])('%s NO se tapa', (ruta) => {
     expect(estaExentaDelMuro(ruta)).toBe(true);
   });
@@ -121,7 +123,24 @@ describe('pasoHabilitado — el paso N+1 espera al N', () => {
     expect(pasoHabilitado(pasos, 2)).toBe(false);
   });
 
-  it('un paso `no_disponible` nunca se habilita — no hay botón que apretar', () => {
+  it('el paso 5 (registros contables) NO se abre sin el 4 (plan de cuentas) listo', () => {
+    // Un asiento se imputa a cuentas; sin PUC no hay a qué imputarlo.
+    const pasos = [
+      paso('terceros', 'listo'),
+      paso('propiedades', 'listo'),
+      paso('contratos', 'listo'),
+      paso('puc', 'pendiente'),
+      paso('contables', 'pendiente'),
+    ];
+    expect(pasoHabilitado(pasos, 3)).toBe(true);
+    expect(pasoHabilitado(pasos, 4)).toBe(false);
+    expect(pasoQueFrena(pasos, 4)?.id).toBe('puc');
+
+    const conPuc = [...pasos.slice(0, 3), paso('puc', 'listo', 75), paso('contables', 'pendiente')];
+    expect(pasoHabilitado(conPuc, 4)).toBe(true);
+  });
+
+  it('un paso que el back marca `no_disponible` nunca se habilita — no hay botón que apretar', () => {
     const pasos = [
       paso('terceros', 'listo'),
       paso('propiedades', 'listo'),
@@ -132,8 +151,8 @@ describe('pasoHabilitado — el paso N+1 espera al N', () => {
   });
 
   it('un `no_disponible` intercalado NO congela a los de abajo', () => {
-    // Si PUC —que nadie puede hacer— frenara lo que viene después, el muro
-    // sería una cárcel: nadie podría terminar nunca.
+    // Si un módulo caído frenara lo que viene después, el muro sería una
+    // cárcel: nadie podría terminar nunca.
     const pasos = [
       paso('terceros', 'listo'),
       paso('puc', 'no_disponible'),
@@ -177,12 +196,34 @@ describe('todoListo — la puerta de «Ya terminé»', () => {
     expect(todoListo(RECIEN_LLEGADA)).toBe(false);
   });
 
-  it('con los tres exigibles listos, sí — los `no_disponible` no cuentan', () => {
+  it('con los cinco listos, sí', () => {
     const pasos = [
       paso('terceros', 'listo', 42),
       paso('propiedades', 'listo', 30),
       paso('contratos', 'listo', 28),
-      paso('puc', 'no_disponible'),
+      paso('puc', 'listo', 75),
+      paso('contables', 'listo', 1),
+    ];
+    expect(todoListo(pasos)).toBe(true);
+  });
+
+  it('con los tres primeros listos y el PUC pendiente, todavía no', () => {
+    const pasos = [
+      paso('terceros', 'listo', 42),
+      paso('propiedades', 'listo', 30),
+      paso('contratos', 'listo', 28),
+      paso('puc', 'pendiente'),
+      paso('contables', 'pendiente'),
+    ];
+    expect(todoListo(pasos)).toBe(false);
+  });
+
+  it('los que el back marca `no_disponible` no cuentan — ni a favor ni en contra', () => {
+    const pasos = [
+      paso('terceros', 'listo', 42),
+      paso('propiedades', 'listo', 30),
+      paso('contratos', 'listo', 28),
+      paso('puc', 'listo', 75),
       paso('contables', 'no_disponible'),
     ];
     expect(todoListo(pasos)).toBe(true);

@@ -10078,6 +10078,14 @@
   },
   "migracion": {
     "nav": "Migration",
+    "puc": {
+      "titulo": "Chart of accounts",
+      "subtitulo": "Your chart of accounts: where entries land. Start from the Decree 2650 base plan and adjust it with your accountant."
+    },
+    "contables": {
+      "titulo": "Accounting entries",
+      "subtitulo": "The balances you start with, or the full history. It needs the chart of accounts in place."
+    },
     "muro": {
       "eyebrow": "Getting started",
       "titulo": "Bring your operation over first",
@@ -10085,7 +10093,7 @@
       "progreso": "Migration progress",
       "hecho": "Done",
       "enEspera": "Waiting",
-      "noDisponible": "This can't be loaded here yet. It won't hold you back: you can finish without it.",
+      "noDisponible": "This step isn't available right now. It won't hold you back: you can finish without it.",
       "primero": "Finish «{{paso}}» first",
       "faltaTerminar": "Once you finish the steps you'll be able to enter the panel.",
       "yaTermine": "I'm done",
@@ -10111,6 +10119,7 @@
     },
     "estados": {
       "enConstruccion": "Under construction",
+      "noDisponible": "Unavailable",
       "enCurso": "Unfinished",
       "conDatos": "Data migrated"
     },
@@ -10133,11 +10142,11 @@
       },
       "puc": {
         "titulo": "Chart of accounts",
-        "descripcion": "Your chart of accounts, so entries land where your accountant expects them. Cannot be uploaded from here yet."
+        "descripcion": "Your chart of accounts, so entries land where your accountant expects them. You can start from the Decree 2650 base plan and adjust it."
       },
       "contables": {
         "titulo": "Accounting entries",
-        "descripcion": "Historical balances and movements. It goes last because it needs the chart of accounts in place. Cannot be uploaded from here yet."
+        "descripcion": "Historical balances and movements. It goes last because it needs the chart of accounts in place: an opening entry with the balances, or the history from a file."
       }
     },
     "terceros": {

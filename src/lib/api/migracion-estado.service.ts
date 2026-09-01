@@ -35,8 +35,8 @@ export type IdDePasoDeMigracion =
   | 'contables';
 
 /**
- * `no_disponible` NO es un error ni un pendiente: es un paso que el producto
- * todavía no sabe hacer (PUC y contables). No frena a nadie.
+ * `no_disponible` NO es un error ni un pendiente: es un paso que el back no
+ * puede ofrecer ahora (un módulo apagado o caído). No frena a nadie.
  */
 export type EstadoDePasoDeMigracion = 'listo' | 'pendiente' | 'no_disponible';
 

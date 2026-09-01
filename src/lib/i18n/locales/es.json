@@ -10079,6 +10079,14 @@
   },
   "migracion": {
     "nav": "Migración",
+    "puc": {
+      "titulo": "Cuentas del PUC",
+      "subtitulo": "Tu plan de cuentas: dónde caen los movimientos. Arrancá con el plan base del Decreto 2650 y ajustalo con tu contador."
+    },
+    "contables": {
+      "titulo": "Registros contables",
+      "subtitulo": "Los saldos con los que arrancás o el histórico completo. Necesita el plan de cuentas armado."
+    },
     "muro": {
       "eyebrow": "Puesta en marcha",
       "titulo": "Traé tu operación antes de empezar",
@@ -10086,7 +10094,7 @@
       "progreso": "Progreso de la migración",
       "hecho": "Listo",
       "enEspera": "En espera",
-      "noDisponible": "Todavía no se puede cargar desde acá. No te frena: podés terminar sin esto.",
+      "noDisponible": "Este paso no está disponible en este momento. No te frena: podés terminar sin esto.",
       "primero": "Primero terminá «{{paso}}»",
       "faltaTerminar": "Cuando termines los pasos vas a poder entrar al panel.",
       "yaTermine": "Ya terminé",
@@ -10112,6 +10120,7 @@
     },
     "estados": {
       "enConstruccion": "En construcción",
+      "noDisponible": "No disponible",
       "enCurso": "Sin terminar",
       "conDatos": "Con datos migrados"
     },
@@ -10134,11 +10143,11 @@
       },
       "puc": {
         "titulo": "Cuentas del PUC",
-        "descripcion": "Tu plan de cuentas, para que los movimientos caigan donde tu contador los espera. Todavía no se puede cargar desde acá."
+        "descripcion": "Tu plan de cuentas, para que los movimientos caigan donde tu contador los espera. Podés arrancar con el plan base del Decreto 2650 y ajustarlo."
       },
       "contables": {
         "titulo": "Registros contables",
-        "descripcion": "Los saldos y movimientos históricos. Va al final porque necesita el plan de cuentas armado. Todavía no se puede cargar desde acá."
+        "descripcion": "Los saldos y movimientos históricos. Va al final porque necesita el plan de cuentas armado: un asiento de apertura con los saldos, o el histórico desde un archivo."
       }
     },
     "terceros": {

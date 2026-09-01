@@ -8,8 +8,8 @@
  * cuando en realidad migró 1.200 y no tiene permiso de verlo — y lo manda a
  * hacerlo de nuevo.
  *
- * También se congela acá que los pasos 4 y 5 NO tienen botón: un `<button
- * disabled>` invita a clickearlo y no explica nada.
+ * También se congela acá que los cinco pasos tienen a dónde ir, y que el PUC y
+ * los registros contables se miden con lo que el back ya tiene escrito.
  */
 
 import * as React from 'react';
@@ -28,10 +28,14 @@ vi.mock('@/lib/i18n', () => ({
   }),
 }));
 
-const { tercerosMock, inmueblesMock, contratosMock } = vi.hoisted(() => ({
+const { tercerosMock, inmueblesMock, contratosMock, contabilidadMock } = vi.hoisted(() => ({
   tercerosMock: { lotesAbiertos: vi.fn(), filas: vi.fn() },
   inmueblesMock: { lotesAbiertos: vi.fn() },
   contratosMock: { lotesAbiertos: vi.fn() },
+  contabilidadMock: {
+    puc: { listar: vi.fn() },
+    asientos: { listar: vi.fn() },
+  },
 }));
 
 vi.mock('@/lib/api/migracion-terceros.service', async () => {
@@ -53,6 +57,13 @@ vi.mock('@/lib/api/contracts.service', async () => {
     '@/lib/api/contracts.service',
   );
   return { ...actual, contractsApi: { ...actual.contractsApi, migracion: contratosMock } };
+});
+
+vi.mock('@/lib/api/contabilidad.service', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/api/contabilidad.service')>(
+    '@/lib/api/contabilidad.service',
+  );
+  return { ...actual, contabilidadApi: contabilidadMock };
 });
 
 import { SecuenciaDeMigracion } from './SecuenciaDeMigracion';
@@ -87,6 +98,13 @@ const RESUMEN = (over: Record<string, unknown> = {}) => ({
 beforeEach(() => {
   tercerosMock.lotesAbiertos.mockResolvedValue([]);
   tercerosMock.filas.mockResolvedValue({ filas: [], total: 0, pagina: 1, porPagina: 1 });
+  contabilidadMock.puc.listar.mockResolvedValue([]);
+  contabilidadMock.asientos.listar.mockResolvedValue({
+    total: 0,
+    limite: 1,
+    desplazamiento: 0,
+    asientos: [],
+  });
   inmueblesMock.lotesAbiertos.mockResolvedValue([]);
   contratosMock.lotesAbiertos.mockResolvedValue([]);
 });
@@ -114,16 +132,36 @@ describe('SecuenciaDeMigracion', () => {
     expect(titulos[4]).toContain('migracion.pasos.contables.titulo');
   });
 
-  it('los pasos 4 y 5 no tienen ningún control clickeable', async () => {
+  it('los pasos 4 y 5 tienen a dónde ir', async () => {
     await pintar();
 
-    for (const n of [4, 5]) {
-      const paso = container.querySelector(`[data-testid="paso-${n}"]`)!;
-      // Ni botón ni enlace: un botón deshabilitado invita a apretarlo y no
-      // explica nada. La frase «todavía no está disponible» sí.
-      expect(paso.querySelectorAll('button, a')).toHaveLength(0);
-      expect(paso.textContent).toContain('migracion.noDisponible');
-    }
+    const paso4 = container.querySelector('[data-testid="paso-4"]')!;
+    const paso5 = container.querySelector('[data-testid="paso-5"]')!;
+    expect(paso4.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/migracion/puc');
+    expect(paso5.querySelector('a')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/migracion/contables',
+    );
+    expect(paso4.textContent).not.toContain('migracion.noDisponible');
+    expect(paso5.textContent).not.toContain('migracion.noDisponible');
+  });
+
+  it('el PUC se mide con las cuentas del plan y los registros con el `total` de asientos', async () => {
+    contabilidadMock.puc.listar.mockResolvedValue([{ id: 'c-1' }, { id: 'c-2' }, { id: 'c-3' }]);
+    contabilidadMock.asientos.listar.mockResolvedValue({
+      total: 1_204,
+      limite: 1,
+      desplazamiento: 0,
+      asientos: [{ id: 'a-1' }],
+    });
+
+    await pintar();
+
+    expect(contabilidadMock.asientos.listar).toHaveBeenCalledWith({ limite: 1 });
+    const paso4 = container.querySelector('[data-testid="paso-4"]')!;
+    const paso5 = container.querySelector('[data-testid="paso-5"]')!;
+    expect(paso4.textContent).toContain('"n":3');
+    expect(paso4.textContent).toContain('migracion.estados.conDatos');
+    expect(paso5.textContent).toContain('"n":1204');
   });
 
   it('cuenta los terceros aplicados con el `total` del back, no con las filas', async () => {

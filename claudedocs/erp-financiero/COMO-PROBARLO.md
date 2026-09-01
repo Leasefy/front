@@ -98,3 +98,29 @@ botón muerto.
 
 En el modal de elegir cobro, **el subtítulo «Elegí el cobro al que le entró la plata»
 aparece dos veces**. Cosmético, no lo toqué.
+
+---
+
+## El muro de migración (2026-09-01)
+
+La migración ahora es **bloqueante**: si la inmobiliaria no la resolvió, el panel se ve
+desenfocado detrás y sólo se puede avanzar por los cinco pasos, en orden. La agencia de
+QA quedó **a propósito sin resolver** para que lo recorras: entrá y vas a ver el muro con
+terceros, propiedades y contratos ya en «listo» (derivados de datos reales), el paso 4
+activo y el 5 en espera.
+
+- **Paso 4 — Cuentas del PUC** (`/panel/inmobiliaria/migracion/puc`): «Cargar el plan de
+  cuentas base» siembra 99 cuentas del Decreto 2650 (ya lo hice en QA). Arriba queda la
+  única sin código oficial —`511580`, el 4×1000— para confirmar con el contador.
+- **Paso 5 — Registros contables** (`/panel/inmobiliaria/migracion/contables`): dos
+  caminos. **Saldos iniciales** (un asiento de apertura cuenta por cuenta; el botón no se
+  habilita hasta que débitos = créditos) o **migrar el histórico** (Excel → mapear →
+  revisar → aplicar; las cuentas que no existan en el PUC se avisan, no se crean solas).
+  **Este paso lo dejé sin hacer** para que lo hagas vos y veas bajar el muro.
+- Al terminar aparece «Ya terminé». «No vengo de otro sistema, arranco de cero» está
+  siempre, pide confirmación y es la salida para una inmobiliaria nueva.
+
+🔴 **Las 4 agencias que ya operaban quedaron marcadas como «migración completada»** por
+la migración `20260901020000`, para que no vieran el muro mañana. Si querés que también
+pasen por el PUC, es borrar ese `UPDATE`. Ojo al criterio: marca a las que tienen un
+contrato **vigente**; una con todos sus arriendos vencidos y sin PUC quedaría afuera.

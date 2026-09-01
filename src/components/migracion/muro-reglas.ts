@@ -30,6 +30,11 @@ export const RUTAS_EXENTAS_DEL_MURO: readonly string[] = [
   '/panel/inmobiliaria/inmuebles/importar',
   // Paso 3 — el importador de contratos, que ya existía.
   '/panel/inmobiliaria/contratos/migrar',
+  // Pasos 4 y 5 — el plan de cuentas y los registros contables. Ya los cubre
+  // el prefijo de arriba; van explícitos para que nadie los pierda si un día
+  // se mueven de carpeta.
+  '/panel/inmobiliaria/migracion/puc',
+  '/panel/inmobiliaria/migracion/contables',
 ];
 
 /**
@@ -94,18 +99,25 @@ export function normalizarEstado(bruto: unknown): EstadoDeMigracion | null {
   return { bloquea: true, resuelta, pasos: e.pasos as PasoDeMigracion[] };
 }
 
-/** Un paso que el producto todavía no sabe hacer no cuenta para nada. */
+/**
+ * Un paso que el back declara `no_disponible` no cuenta para nada.
+ *
+ * Hoy los cinco pasos existen; el estado queda como fallo genérico —si un
+ * módulo se cae o se apaga por bandera, el back lo marca así y el muro no
+ * deja a nadie encerrado esperando una pantalla que no responde.
+ */
 export function esExigible(paso: PasoDeMigracion): boolean {
   return paso.estado !== 'no_disponible';
 }
 
 /**
  * Un paso se puede empezar sólo cuando todos los EXIGIBLES anteriores están
- * listos. El orden no es una preferencia: el inmueble necesita dueño y el
- * contrato se pega a la dirección del inmueble.
+ * listos. El orden no es una preferencia: el inmueble necesita dueño, el
+ * contrato se pega a la dirección del inmueble y un asiento no se puede
+ * imputar a una cuenta que todavía no existe.
  *
  * Los `no_disponible` intercalados no frenan a los que vienen después —
- * si no, PUC (que nadie puede hacer) congelaría todo lo de abajo.
+ * si no, un módulo caído congelaría todo lo de abajo.
  */
 export function pasoHabilitado(pasos: PasoDeMigracion[], indice: number): boolean {
   const paso = pasos[indice];
@@ -153,6 +165,6 @@ export const RUTA_DEL_PASO: Record<IdDePasoDeMigracion, string | null> = {
   terceros: '/panel/inmobiliaria/migracion/terceros',
   propiedades: '/panel/inmobiliaria/inmuebles/importar',
   contratos: '/panel/inmobiliaria/contratos/migrar',
-  puc: null,
-  contables: null,
+  puc: '/panel/inmobiliaria/migracion/puc',
+  contables: '/panel/inmobiliaria/migracion/contables',
 };

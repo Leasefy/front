@@ -73,12 +73,17 @@ const CLAVES_DE_MIGRACION = [
   'orden.titulo',
   'orden.detalle',
   'estados.enConstruccion',
+  'estados.noDisponible',
   'estados.enCurso',
   'estados.conDatos',
   'avance.hechas',
   'avance.porRevisar',
   'terceros.titulo',
   'terceros.subtitulo',
+  'puc.titulo',
+  'puc.subtitulo',
+  'contables.titulo',
+  'contables.subtitulo',
 ].map((c) => `migracion.${c}`);
 
 /**

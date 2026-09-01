@@ -28,9 +28,8 @@
  * El orden se explica, no se impone.
  *
  * **No dice «completado» sin evidencia.** Un paso se marca hecho sólo cuando
- * hay filas realmente aplicadas. Los pasos 4 y 5 se muestran, se dicen
- * pendientes de construir, y NO tienen botón — un botón muerto es peor que la
- * ausencia del botón.
+ * hay filas realmente aplicadas: para el PUC, cuentas en el plan; para los
+ * registros, asientos escritos. Lo que no se puede medir no dice nada.
  */
 
 import { useEffect, useState } from 'react';
@@ -54,6 +53,7 @@ import { useI18n } from '@/lib/i18n';
 import { migracionTercerosApi } from '@/lib/api/migracion-terceros.service';
 import { inmueblesImportacionApi } from '@/lib/api/inmuebles-importacion.service';
 import { contractsApi } from '@/lib/api/contracts.service';
+import { contabilidadApi } from '@/lib/api/contabilidad.service';
 
 /** Sólo lo que la tarjeta necesita saber de un paso, venga de donde venga. */
 interface AvanceDePaso {
@@ -95,7 +95,9 @@ export function SecuenciaDeMigracion() {
       migracionTercerosApi.filas({ estado: 'APLICADO', porPagina: 1 }),
       inmueblesImportacionApi.lotesAbiertos(),
       contractsApi.migracion.lotesAbiertos(),
-    ]).then(([lotesTerceros, aplicadosTerceros, lotesInmuebles, lotesContratos]) => {
+      contabilidadApi.puc.listar(),
+      contabilidadApi.asientos.listar({ limite: 1 }),
+    ]).then(([lotesTerceros, aplicadosTerceros, lotesInmuebles, lotesContratos, cuentas, asientos]) => {
       if (!vigente) return;
 
       const terceros: AvanceDePaso = { ...SIN_MEDIR };
@@ -134,7 +136,16 @@ export function SecuenciaDeMigracion() {
         contratos.loteAbierto = abiertos[0]?.lote ?? null;
       }
 
-      setAvance({ terceros, propiedades, contratos, puc: SIN_MEDIR, contables: SIN_MEDIR });
+      const puc: AvanceDePaso = { ...SIN_MEDIR };
+      if (cuentas.status === 'fulfilled') puc.hechas = cuentas.value.length;
+
+      const contables: AvanceDePaso = { ...SIN_MEDIR };
+      if (asientos.status === 'fulfilled') {
+        // El `total` del back, no el largo de `asientos`: se pidió uno solo.
+        contables.hechas = asientos.value.total;
+      }
+
+      setAvance({ terceros, propiedades, contratos, puc, contables });
       setMidiendo(false);
     });
 
@@ -162,8 +173,18 @@ export function SecuenciaDeMigracion() {
       href: '/panel/inmobiliaria/contratos/migrar',
       disponible: true,
     },
-    { id: 'puc' as const, icono: Wallet, href: null, disponible: false },
-    { id: 'contables' as const, icono: ListChecks, href: null, disponible: false },
+    {
+      id: 'puc' as const,
+      icono: Wallet,
+      href: '/panel/inmobiliaria/migracion/puc',
+      disponible: true,
+    },
+    {
+      id: 'contables' as const,
+      icono: ListChecks,
+      href: '/panel/inmobiliaria/migracion/contables',
+      disponible: true,
+    },
   ];
 
   const hayAlgoSinTerminar = pasos.some((p) => avance[p.id].porRevisar > 0);

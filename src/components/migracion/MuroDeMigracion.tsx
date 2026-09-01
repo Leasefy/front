@@ -472,7 +472,7 @@ function FilaDePaso({
              explica nada. El candado más la frase de arriba sí. */
           <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-3 py-1.5 text-xs text-fg-muted">
             <Lock className="h-3.5 w-3.5" />
-            {disponible ? t('migracion.muro.enEspera') : t('migracion.estados.enConstruccion')}
+            {disponible ? t('migracion.muro.enEspera') : t('migracion.estados.noDisponible')}
           </span>
         )}
       </div>

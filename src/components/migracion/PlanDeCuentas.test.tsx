@@ -208,6 +208,47 @@ describe('la semilla', () => {
   });
 });
 
+describe('cuando la lectura falla', () => {
+  it('🔴 no se disfraza de «no hay plan»: cartel con reintentar, sin invitación a sembrar', async () => {
+    // Una caída de red acá NO puede pintar «Todavía no hay plan de cuentas»:
+    // eso invita a sembrar (y a crear a mano) a alguien que quizás ya tiene
+    // trescientas cuentas con movimientos que simplemente no pudimos leer.
+    pucMock.arbol.mockRejectedValue(new Error('No pudimos conectarnos al servidor.'));
+
+    await pintar();
+
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('servidor');
+    expect(q('puc-reintentar')).not.toBeNull();
+    expect(q('puc-vacio')).toBeNull();
+    expect(q('puc-sembrar')).toBeNull();
+    expect(q('puc-continuar')).toBeNull();
+  });
+
+  it('reintentar relee y, con respuesta, pinta el árbol y limpia el cartel', async () => {
+    pucMock.arbol
+      .mockRejectedValueOnce(new Error('se cayó'))
+      .mockResolvedValue(ARBOL_SEMBRADO);
+
+    await pintar();
+    await click('puc-reintentar');
+
+    expect(q('puc-arbol')).not.toBeNull();
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(q('puc-reintentar')).toBeNull();
+  });
+
+  it('el reintento que vuelve a fallar no es un callejón: el botón sigue ahí', async () => {
+    pucMock.arbol.mockRejectedValue(new Error('sigue caído'));
+
+    await pintar();
+    await click('puc-reintentar');
+
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('sigue caído');
+    expect(q('puc-reintentar')).not.toBeNull();
+    expect(q('puc-vacio')).toBeNull();
+  });
+});
+
 describe('un pendiente que ya no está activo', () => {
   it('se muestra como desactivado, sin botones', async () => {
     const arbol = [

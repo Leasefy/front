@@ -77,9 +77,11 @@ let errores: unknown[][] = [];
 
 async function pintar(props: Partial<Parameters<typeof FilaDeTercero>[0]> = {}) {
   const cb = {
-    onCorregir: vi.fn(),
-    onVincular: vi.fn(),
-    onDescartar: vi.fn(),
+    // Los handlers ahora DEVUELVEN qué pasó: la tarjeta decide con eso si
+    // conserva el borrador y si muestra el error al lado del botón.
+    onCorregir: vi.fn().mockResolvedValue({ ok: true, mensaje: null }),
+    onVincular: vi.fn().mockResolvedValue({ ok: true, mensaje: null }),
+    onDescartar: vi.fn().mockResolvedValue({ ok: true, mensaje: null }),
   };
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -260,6 +262,95 @@ describe('FilaDeTercero', () => {
   it('mientras guarda, no se puede disparar la acción dos veces', async () => {
     await pintar({ guardando: true });
     expect(boton('No traer esta fila')?.disabled).toBe(true);
+  });
+
+  describe('cuando la acción falla', () => {
+    const escribirDocumento = async (valor: string) => {
+      const input = container.querySelector<HTMLInputElement>(
+        '[data-testid="campo-documento"]',
+      )!;
+      await act(async () => {
+        const setter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype,
+          'value',
+        )!.set!;
+        setter.call(input, valor);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    };
+
+    it('🔴 el borrador NO se pierde y el error se ve en la fila', async () => {
+      // Antes, Guardar vaciaba lo tecleado en el mismo clic: un fallo de red
+      // devolvía los campos a lo de antes y había que teclear todo de nuevo.
+      await pintar({
+        // Sin documento en `datos`: con la celda ya llena, «tipear» el mismo
+        // valor no dispara el onChange (ver el test de más arriba).
+        fila: fila({
+          datos: { _fila: 12, nombre: 'Jorge Restrepo' },
+          errores: [{ codigo: 'FALTA_DOCUMENTO', campo: 'documento', mensaje: 'falta el número de documento' }],
+        }),
+        onCorregir: vi.fn().mockResolvedValue({ ok: false, mensaje: 'No pudimos guardar la corrección.' }),
+      });
+      await escribirDocumento('1020304050');
+      await click(boton('Guardar')!);
+      // Una vuelta más: el handler resuelve su promesa en un microtask.
+      await act(async () => {});
+
+      const input = container.querySelector<HTMLInputElement>('[data-testid="campo-documento"]')!;
+      expect(input.value).toBe('1020304050');
+      const aviso = container.querySelector('[data-testid="error-de-fila"]');
+      expect(aviso).not.toBeNull();
+      expect(aviso?.textContent).toContain('No pudimos guardar la corrección.');
+      // Y Guardar sigue habilitado: el reintento es apretar de nuevo.
+      expect(boton('Guardar')?.disabled).toBe(false);
+    });
+
+    it('si la acción pasa, el borrador se limpia y el error viejo se va', async () => {
+      const cb = {
+        onCorregir: vi
+          .fn()
+          .mockResolvedValueOnce({ ok: false, mensaje: 'Se cayó.' })
+          .mockResolvedValueOnce({ ok: true, mensaje: null }),
+      };
+      await pintar({
+        fila: fila({
+          datos: { _fila: 12, nombre: 'Jorge Restrepo' },
+          errores: [{ codigo: 'FALTA_DOCUMENTO', campo: 'documento', mensaje: 'falta el número de documento' }],
+        }),
+        ...cb,
+      });
+      await escribirDocumento('1020304050');
+      await click(boton('Guardar')!);
+      await act(async () => {});
+      expect(container.querySelector('[data-testid="error-de-fila"]')).not.toBeNull();
+
+      await click(boton('Guardar')!);
+      await act(async () => {});
+      expect(container.querySelector('[data-testid="error-de-fila"]')).toBeNull();
+      // Sin cambios pendientes, Guardar vuelve a apagarse.
+      expect(boton('Guardar')?.disabled).toBe(true);
+    });
+
+    it('vincular y descartar fallidos también avisan en la fila', async () => {
+      await pintar({
+        fila: fila({
+          errores: [
+            {
+              codigo: 'YA_EXISTE_EN_LA_AGENCIA',
+              campo: 'documento',
+              mensaje: 'ya hay una ficha con este documento',
+              referencia: { id: 'p-1', nombre: 'Jorge' },
+            },
+          ],
+        }),
+        onVincular: vi.fn().mockResolvedValue({ ok: false, mensaje: 'No pudimos vincular la fila.' }),
+      });
+      await click(boton('Es la misma persona')!);
+      await act(async () => {});
+      expect(
+        container.querySelector('[data-testid="error-de-fila"]')?.textContent,
+      ).toContain('No pudimos vincular la fila.');
+    });
   });
 });
 

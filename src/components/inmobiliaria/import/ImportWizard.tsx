@@ -28,6 +28,11 @@ import { StepPortalImport } from './steps/StepPortalImport';
 import { StepPasteLinks } from './steps/StepPasteLinks';
 import { TARGET_FIELDS } from './lib/importTypes';
 import type { ImportWizardState } from './lib/importTypes';
+import { lotesParaRetomar } from './lib/lotesParaRetomar';
+import {
+  inmueblesImportacionApi,
+  type EstadoDeLoteInmuebles,
+} from '@/lib/api/inmuebles-importacion.service';
 
 const STEPS = [
   { id: 1, labelKey: 'inmobiliaria.import.steps.method', icon: FileArrowUp },
@@ -52,6 +57,7 @@ const INITIAL_STATE: ImportWizardState = {
   aiAnalyzed: false,
   importProgress: 0,
   importedCount: 0,
+  loteRetomado: null,
 };
 
 export interface ImportStepProps {
@@ -59,6 +65,12 @@ export interface ImportStepProps {
   updateState: (partial: Partial<ImportWizardState>) => void;
   /** Adentro del muro de migración: qué hacer en vez de navegar al portafolio. */
   onSalir?: () => void;
+  /**
+   * Aviso hacia el muro: `true` mientras corre una operación larga
+   * (geocodificar, preparar, activar). Sin esto, el pie del muro ofrecía
+   * «Seguir con Contratos» con el «Activando…» todavía girando.
+   */
+  onOcupado?: (ocupado: boolean) => void;
 }
 
 /**
@@ -74,7 +86,10 @@ export const RanuraDelPie = createContext<HTMLElement | null>(null);
  * el muro tapa todo hasta que la migración termine. El muro pasa un callback
  * que reinicia el asistente; sin él (la ruta suelta) se navega como siempre.
  */
-export function ImportWizard({ onSalir }: { onSalir?: () => void } = {}) {
+export function ImportWizard({
+  onSalir,
+  onOcupado,
+}: { onSalir?: () => void; onOcupado?: (ocupado: boolean) => void } = {}) {
   const router = useRouter();
   const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);
@@ -85,6 +100,43 @@ export function ImportWizard({ onSalir }: { onSalir?: () => void } = {}) {
   const updateState = useCallback((partial: Partial<ImportWizardState>) => {
     setWizardState((prev) => ({ ...prev, ...partial }));
   }, []);
+
+  /*
+   * La tarjeta de «tenés una importación sin terminar» — mismo patrón que
+   * MigrarTerceros. El lote vive en el servidor desde `preparar()`: una
+   * recarga o un «cancelar» a mitad no pierde nada, pero sin esta tarjeta la
+   * persona no tenía cómo VOLVER a él — re-subía el archivo y duplicaba el
+   * lote. No poder listarlos jamás frena empezar de cero: el catch es mudo.
+   */
+  const [lotesAbiertos, setLotesAbiertos] = useState<EstadoDeLoteInmuebles[]>([]);
+  useEffect(() => {
+    let vigente = true;
+    inmueblesImportacionApi
+      .lotesAbiertos()
+      .then((lotes) => vigente && setLotesAbiertos(lotesParaRetomar(lotes)))
+      .catch(() => {
+        // Sin lista no hay tarjeta, y empezar de nuevo sigue abierto.
+      });
+    return () => {
+      vigente = false;
+    };
+  }, []);
+
+  const retomarLote = useCallback(
+    (l: EstadoDeLoteInmuebles) => {
+      updateState({ loteRetomado: l.lote });
+      // Directo al último paso (posición 5: con method null se ven los 5
+      // pasos). StepConfirmImport lee `loteRetomado` al montar.
+      setCurrentStep(5);
+    },
+    [updateState],
+  );
+
+  const mostrarRetomar =
+    lotesAbiertos.length > 0 &&
+    currentStep === 1 &&
+    wizardState.method === null &&
+    wizardState.rawRows.length === 0;
 
   // Cambiar de método vuelve al paso 1 — salvo cuando el cambio ES el atajo.
   //
@@ -234,6 +286,7 @@ export function ImportWizard({ onSalir }: { onSalir?: () => void } = {}) {
       state: wizardState,
       updateState,
       onSalir,
+      onOcupado,
     };
 
     switch (pasoActual) {
@@ -257,6 +310,46 @@ export function ImportWizard({ onSalir }: { onSalir?: () => void } = {}) {
 
   return (
     <div className="max-w-4xl mx-auto">
+      {mostrarRetomar && (
+        <section
+          className="mb-6 space-y-3 rounded-lg border border-primary/30 bg-surface p-5 shadow-sm"
+          data-testid="lotes-inmuebles-abiertos"
+        >
+          <p className="text-sm font-medium text-fg">
+            Tenés una importación sin terminar
+          </p>
+          {lotesAbiertos.map((l) => (
+            <div
+              key={l.lote}
+              className="flex flex-wrap items-center justify-between gap-2"
+            >
+              <p className="text-sm text-fg-muted">
+                <span className="font-mono tabular-nums">{l.total}</span>{' '}
+                {l.total === 1 ? 'inmueble' : 'inmuebles'}
+                {l.estado === 'LISTO' ? (
+                  <>
+                    {' · '}
+                    <span className="font-mono tabular-nums">{l.pendientes}</span> por
+                    revisar
+                    {' · '}
+                    <span className="font-mono tabular-nums">{l.listos}</span> listos para
+                    activar
+                  </>
+                ) : (
+                  <> · todavía procesándose</>
+                )}
+              </p>
+              <Button size="sm" hideArrow onClick={() => retomarLote(l)}>
+                Retomar
+              </Button>
+            </div>
+          ))}
+          <p className="text-xs text-fg-subtle">
+            Si en cambio subís el mismo archivo de nuevo, los inmuebles se duplican.
+          </p>
+        </section>
+      )}
+
       {/* Step Indicator */}
       <div className="mb-8">
         {/* Desktop Steps */}

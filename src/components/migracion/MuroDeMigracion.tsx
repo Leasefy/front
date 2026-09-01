@@ -63,6 +63,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, Lock, Warning } from "@phosphor-icons/react";
 
+import { ApiError } from "@/lib/api/client";
+
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -208,6 +210,12 @@ export function PanelDeMigracion({
   const [ocupado, setOcupado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState(false);
+  /**
+   * El detalle del back cuando lo hay. El 409 de «terminar» dice EXACTAMENTE
+   * qué falta («Todavía falta cargar los inmuebles…») — tragárselo y mostrar
+   * el genérico obliga a adivinar. Sin detalle (red caída), cae al genérico.
+   */
+  const [falloDetalle, setFalloDetalle] = useState<string | null>(null);
 
   const pasos = estado.pasos;
   const listo = todoListo(pasos);
@@ -314,6 +322,7 @@ export function PanelDeMigracion({
   async function resolver(via: "terminar" | "omitir") {
     setEnviando(true);
     setFallo(false);
+    setFalloDetalle(null);
     try {
       if (via === "terminar") await migracionEstadoApi.terminar();
       else await migracionEstadoApi.omitir();
@@ -321,11 +330,15 @@ export function PanelDeMigracion({
       // Si el back todavía dice que bloquea, el muro sigue puesto y los
       // botones tienen que volver a funcionar.
       setEnviando(false);
-    } catch {
+    } catch (e) {
       // El muro se queda puesto y lo dice. Fingir que salió y volver a
       // levantarlo en la siguiente carga es peor que no salir.
       setConfirmando(false);
       setFallo(true);
+      // Un error CON mensaje del back (el 409 de «todavía falta…») se
+      // muestra tal cual; cualquier otra cosa (un bug, un throw raro) cae al
+      // texto genérico — nunca un stack en inglés en la cara del usuario.
+      setFalloDetalle(e instanceof ApiError && e.message ? e.message : null);
       setEnviando(false);
     }
   }
@@ -409,7 +422,7 @@ export function PanelDeMigracion({
                   data-testid="muro-fallo"
                 >
                   <Warning className="mt-0.5 h-4 w-4 shrink-0" />
-                  {t("migracion.muro.fallo")}
+                  {falloDetalle ?? t("migracion.muro.fallo")}
                 </p>
               ) : null}
             </div>
@@ -786,18 +799,22 @@ function ContenidoDelPaso({
     case "inquilinos":
       return <MigrarTerceros key="inquilinos" tipoFijo="INQUILINO" onOcupado={onOcupado} />;
     case "propiedades":
+      // `onOcupado` acá también: la activación del lote corre por tandas y el
+      // pie ofrecía «Seguir con Contratos» con el «Activando…» girando
+      // (Nico lo vio, 2026-09-01).
       return (
         <ImportWizard
           key={vueltaDeInmuebles}
           onSalir={() => setVueltaDeInmuebles((n) => n + 1)}
+          onOcupado={onOcupado}
         />
       );
     case "contratos":
       return <MigrarContratos onOcupado={onOcupado} />;
     case "puc":
-      return <PlanDeCuentas onContinuar={irAOtro("contables")} />;
+      return <PlanDeCuentas onContinuar={irAOtro("contables")} onOcupado={onOcupado} />;
     case "contables":
-      return <RegistrosContables onIrAlPuc={irAOtro("puc")} />;
+      return <RegistrosContables onIrAlPuc={irAOtro("puc")} onOcupado={onOcupado} />;
   }
 }
 

@@ -378,10 +378,17 @@ function RegistrarPropietario({
    */
   const [busqueda, setBusqueda] = useState("");
   const [opciones, setOpciones] = useState<Propietario[]>([]);
+  /*
+   * Un fallo de la búsqueda NO puede parecer «no existe ese propietario»:
+   * la persona escribiría el documento a mano y crearía un homónimo del que
+   * ya está. Se dice que falló y que el camino manual sigue abierto.
+   */
+  const [fallaLaBusqueda, setFallaLaBusqueda] = useState(false);
   useEffect(() => {
     const q = busqueda.trim();
     if (q.length < 2) {
       setOpciones([]);
+      setFallaLaBusqueda(false);
       return;
     }
     let vigente = true;
@@ -389,10 +396,16 @@ function RegistrarPropietario({
       propietariosApi
         .getAll({ search: q, limit: 8 })
         .then((r) => {
-          if (vigente) setOpciones(r);
+          if (vigente) {
+            setOpciones(r);
+            setFallaLaBusqueda(false);
+          }
         })
         .catch(() => {
-          if (vigente) setOpciones([]);
+          if (vigente) {
+            setOpciones([]);
+            setFallaLaBusqueda(true);
+          }
         });
     }, 250);
     return () => {
@@ -440,6 +453,13 @@ function RegistrarPropietario({
           </ul>
         ) : null}
       </div>
+      {fallaLaBusqueda ? (
+        <p className="text-xs text-warning" data-testid="busqueda-fallida">
+          No pudimos buscar entre los que ya existen. Probá de nuevo en un
+          momento — si escribís el documento a mano, igual se enlaza al que ya
+          está en vez de duplicarlo.
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-[160px] flex-1">
           <label className="text-xs text-muted-foreground">

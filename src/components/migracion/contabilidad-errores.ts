@@ -32,6 +32,8 @@ const MENSAJES: Record<string, string> = {
   CUENTA_DESCONOCIDA: 'Una de las cuentas no existe en tu plan.',
   FECHA_INVALIDA: 'La fecha tiene que ser un día real, en formato AAAA-MM-DD.',
   PERIODO_CERRADO: 'Esa fecha cae en un período que ya se cerró.',
+  ASIENTO_YA_REVERSADO: 'Ese asiento ya tiene su reversión: no se puede reversar dos veces.',
+  PERIODO_YA_CERRADO: 'Ese período ya estaba cerrado.',
   // migracion-contable.service.ts
   LOTE_DEMASIADO_GRANDE: 'El lote es demasiado grande: partí el archivo en tandas de 5.000 asientos.',
 };

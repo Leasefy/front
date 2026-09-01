@@ -1050,3 +1050,140 @@ describe('<MigrarContratos> — invitar:false ya no crea nada, y el resumen lo d
     )
   })
 })
+
+/**
+ * Los casos de error del flujo — cada fallo tiene que verse y tener salida
+ * EN EL LUGAR, sin recargar la página ni pedir soporte.
+ */
+describe('<MigrarContratos> — errores visibles y recuperables', () => {
+  it('un job FALLIDO ofrece volver al cargador, y el botón funciona', async () => {
+    render()
+    await esperar()
+    await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
+    vi.mocked(contractsApi.migracion.preparar).mockResolvedValue({
+      lote: 'lote-f',
+      estado: 'ENCOLADO',
+      total: 1,
+      procesadas: 0,
+      pendientes: 0,
+      listos: 0,
+      activados: 0,
+      descartados: 0,
+    })
+    vi.mocked(contractsApi.migracion.estadoDeLote).mockResolvedValue({
+      lote: 'lote-f',
+      estado: 'FALLIDO',
+      total: 1,
+      procesadas: 0,
+      pendientes: 0,
+      listos: 0,
+      activados: 0,
+      descartados: 0,
+      error: 'El archivo trae una fila imposible.',
+    })
+
+    await act(async () => {
+      botonRevisar()?.click()
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(container.querySelector('[data-testid="lote-fallido"]')).not.toBeNull()
+    expect(container.textContent).toContain('El archivo trae una fila imposible.')
+
+    const volver = container.querySelector(
+      '[data-testid="lote-fallido-volver"]',
+    ) as HTMLButtonElement
+    expect(volver).not.toBeNull()
+    await act(async () => {
+      volver.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    // De vuelta en el cargador: se puede subir el archivo corregido.
+    expect(container.querySelector('[data-testid="archivo-contratos"]')).not.toBeNull()
+  })
+
+  it('avisa ocupado al muro mientras el job procesa, y suelta al llegar la lista', async () => {
+    const onOcupado = vi.fn()
+    act(() => {
+      root.render(<MigrarContratos onOcupado={onOcupado} />)
+    })
+    await esperar()
+    // Sin nada en vuelo, el muro quedó libre.
+    expect(onOcupado).toHaveBeenLastCalledWith(false)
+
+    await subirArchivo(['Columna A'], [{ 'Columna A': 'x' }])
+    vi.mocked(contractsApi.migracion.preparar).mockResolvedValue({
+      lote: 'lote-1',
+      estado: 'ENCOLADO',
+      total: 1,
+      procesadas: 0,
+      pendientes: 0,
+      listos: 0,
+      activados: 0,
+      descartados: 0,
+    })
+    // El sondeo nunca contesta: la pantalla queda esperando el job.
+    vi.mocked(contractsApi.migracion.estadoDeLote).mockReturnValue(
+      new Promise(() => {}),
+    )
+
+    await act(async () => {
+      botonRevisar()?.click()
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(container.querySelector('[data-testid="lote-progreso"]')).not.toBeNull()
+    expect(onOcupado).toHaveBeenLastCalledWith(true)
+  })
+
+  it('con la lista de trabajo cargada, el muro queda libre', async () => {
+    const onOcupado = vi.fn()
+    act(() => {
+      root.render(<MigrarContratos onOcupado={onOcupado} />)
+    })
+    await esperar()
+    await avanzarAListaDeTrabajo()
+    expect(container.querySelector('[data-testid="lista-de-trabajo"]')).not.toBeNull()
+    expect(onOcupado).toHaveBeenLastCalledWith(false)
+  })
+
+  it('un cambio de página que falla se DICE — antes era un fallo mudo', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo()
+    vi.mocked(contractsApi.migracion.resumen).mockRejectedValue(
+      new Error('No pudimos conectarnos al servidor.'),
+    )
+
+    const pagina2 = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === '2',
+    )
+    expect(pagina2).toBeTruthy()
+    await act(async () => {
+      pagina2?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(container.textContent).toContain('No pudimos conectarnos al servidor.')
+  })
+})
+
+describe('<MigrarContratos> — la lista de migraciones a medias que falla se dice', () => {
+  it('el fallo no bloquea subir, pero avisa del riesgo de duplicar', async () => {
+    vi.mocked(contractsApi.migracion.lotesAbiertos).mockRejectedValue(
+      new Error('red caída'),
+    )
+    render()
+    await esperar()
+
+    expect(container.querySelector('[data-testid="lotes-abiertos-fallo"]')).not.toBeNull()
+    // El cargador sigue disponible: avisar no es frenar.
+    expect(container.querySelector('[data-testid="archivo-contratos"]')).not.toBeNull()
+  })
+
+  it('cuando la lista responde, el aviso no aparece', async () => {
+    render()
+    await esperar()
+    expect(container.querySelector('[data-testid="lotes-abiertos-fallo"]')).toBeNull()
+  })
+})

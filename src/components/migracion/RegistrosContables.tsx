@@ -53,20 +53,42 @@ interface ResumenDeCargado {
  */
 export function RegistrosContables({
   onIrAlPuc,
-}: { onIrAlPuc?: () => void } = {}) {
+  onOcupado,
+}: {
+  onIrAlPuc?: () => void;
+  /** Aviso al muro mientras se aplican los asientos: el pie espera. */
+  onOcupado?: (ocupado: boolean) => void;
+} = {}) {
   const [camino, setCamino] = useState<Camino>("apertura");
   const [cuentas, setCuentas] = useState<CuentaPuc[] | null>(null);
   const [resumen, setResumen] = useState<ResumenDeCargado | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * 🔴 «No pude leer el plan» NO es «no hay plan»: sin la distinción, una
+   * caída de red mandaba al paso 4 a «cargar el PUC» a quien ya lo tiene.
+   */
+  const [falloDeCuentas, setFalloDeCuentas] = useState(false);
+  /*
+   * Y «no pude leer lo cargado» NO puede ser silencio: la franja de «ya
+   * cargados» es el guard contra registrar la apertura DOS veces. Si la
+   * lectura falla, se dice y se ofrece reintentar antes de registrar nada.
+   */
+  const [falloDeAsientos, setFalloDeAsientos] = useState(false);
 
   const cargar = useCallback(async () => {
     const [c, a] = await Promise.allSettled([
       contabilidadApi.puc.listar({ soloActivas: true, soloImputables: true }),
       contabilidadApi.asientos.listar({ limite: MAX_LIMITE_DE_ASIENTOS }),
     ]);
-    if (c.status === "fulfilled") setCuentas(c.value);
-    else {
-      setCuentas([]);
+    if (c.status === "fulfilled") {
+      setCuentas(c.value);
+      setFalloDeCuentas(false);
+      setError(null);
+    } else {
+      // Se conservan las cuentas del último éxito: un refresco caído no puede
+      // vaciarle el selector de cuentas a un formulario a medio llenar.
+      setCuentas((previo) => previo ?? []);
+      setFalloDeCuentas(true);
       setError(
         mensajeDeContabilidad(c.reason, "No pudimos leer el plan de cuentas."),
       );
@@ -79,6 +101,9 @@ export function RegistrosContables({
         hasta: fechas[fechas.length - 1] ?? null,
         parcial: a.value.total > a.value.asientos.length,
       });
+      setFalloDeAsientos(false);
+    } else {
+      setFalloDeAsientos(true);
     }
   }, []);
 
@@ -98,15 +123,54 @@ export function RegistrosContables({
     <div className="space-y-6">
       {error ? (
         <div
-          className="flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+          className="flex flex-wrap items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
           role="alert"
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
-          <p className="text-sm text-fg">{error}</p>
+          <p className="min-w-0 flex-1 text-sm text-fg">{error}</p>
+          {falloDeCuentas ? (
+            <Button
+              size="sm"
+              variant="outline"
+              hideArrow
+              onClick={() => void cargar()}
+              data-testid="contables-reintentar"
+            >
+              Reintentar
+            </Button>
+          ) : null}
         </div>
       ) : null}
 
-      {resumen ? (
+      {falloDeAsientos ? (
+        <section
+          className="rounded-lg border border-warning bg-warning-soft p-4"
+          data-testid="contables-cargado-fallo"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-2">
+              <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+              <p className="text-sm text-fg">
+                No pudimos leer lo que ya está cargado. Reintentá antes de
+                registrar nada: sin esa lista podrías cargar dos veces la misma
+                apertura.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              hideArrow
+              onClick={() => void cargar()}
+            >
+              Reintentar
+            </Button>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Con la lectura caída, el resumen que quedó es de ANTES: mostrarlo
+          diría «0 asientos» a quien acaba de registrar la apertura. */}
+      {resumen && !falloDeAsientos ? (
         <section
           className="rounded-lg border border-border bg-surface p-4"
           data-testid="contables-resumen"
@@ -138,7 +202,7 @@ export function RegistrosContables({
         </section>
       ) : null}
 
-      {cuentas.length === 0 ? (
+      {cuentas.length === 0 && !falloDeCuentas ? (
         <section
           className="rounded-lg border border-warning bg-warning-soft p-5"
           data-testid="contables-sin-puc"
@@ -175,7 +239,10 @@ export function RegistrosContables({
             </Button>
           )}
         </section>
-      ) : (
+      ) : cuentas.length === 0 ? null : (
+        // La tercera pata del if: lectura caída y sin cuentas del último
+        // éxito. No sabemos si hay plan — ni «andá al paso 4» ni un selector
+        // de cuentas vacío; queda el cartel de arriba con su Reintentar.
         <>
           <div className="space-y-3">
             <SegmentedControl<Camino>
@@ -214,13 +281,16 @@ export function RegistrosContables({
             <AsientoDeApertura
               cuentas={cuentas}
               onCreado={() => void cargar()}
+              onRevisarCargado={() => void cargar()}
               enElMuro={Boolean(onIrAlPuc)}
+              onOcupado={onOcupado}
             />
           ) : (
             <MigrarAsientos
               onAplicado={() => void cargar()}
               onIrAlPuc={onIrAlPuc}
               enElMuro={Boolean(onIrAlPuc)}
+              onOcupado={onOcupado}
             />
           )}
         </>

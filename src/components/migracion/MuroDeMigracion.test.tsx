@@ -714,6 +714,35 @@ describe('🔴 «No vengo de otro sistema, arranco de cero»', () => {
     expect(q('muro-migracion')).not.toBeNull();
     expect(q('muro-fallo')).not.toBeNull();
   });
+
+  it('un fallo CON mensaje del back muestra ese mensaje, no el genérico', async () => {
+    // El 409 de «terminar» dice exactamente qué falta. Tragárselo y mostrar
+    // «no pudimos» obliga a adivinar qué corregir.
+    const { ApiError } = await import('@/lib/api/client');
+    estadoMock.omitir.mockRejectedValue(
+      new ApiError(409, 'Todavía falta cargar los inmuebles.', 'MIGRACION_INCOMPLETA'),
+    );
+
+    await pintar();
+    await click('muro-arrancar-de-cero');
+    await click('muro-confirmar-si');
+    await act(async () => {});
+
+    expect(q('muro-fallo')?.textContent).toContain('Todavía falta cargar los inmuebles.');
+    expect(q('muro-fallo')?.textContent).not.toContain('migracion.muro.fallo');
+  });
+
+  it('un fallo SIN mensaje del back (bug, red rara) cae al genérico — nunca un stack', async () => {
+    estadoMock.omitir.mockRejectedValue(new TypeError('x is not a function'));
+
+    await pintar();
+    await click('muro-arrancar-de-cero');
+    await click('muro-confirmar-si');
+    await act(async () => {});
+
+    expect(q('muro-fallo')?.textContent).toContain('migracion.muro.fallo');
+    expect(q('muro-fallo')?.textContent).not.toContain('is not a function');
+  });
 });
 
 // ══════════════════════════════════════════════════════════════════════════

@@ -16,6 +16,16 @@ import { act } from 'react'
 
 void React
 
+vi.mock('@/lib/api/inmobiliaria.service', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/api/inmobiliaria.service')>(
+    '@/lib/api/inmobiliaria.service',
+  )
+  return {
+    ...actual,
+    propietariosApi: { ...actual.propietariosApi, getAll: vi.fn() },
+  }
+})
+
 vi.mock('@/lib/api/contracts.service', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api/contracts.service')>(
     '@/lib/api/contracts.service',
@@ -173,5 +183,57 @@ describe('<FaltantesDeFila> — sin inmueble ya no lee como obligatorio (T-0033)
       (b) => b.textContent,
     )
     expect(botones).toContain('El inmueble no está cargado — crearlo')
+  })
+})
+
+/**
+ * La búsqueda de propietarios que falla NO puede parecer «no existe ese
+ * propietario»: con la lista vacía y sin aviso, la persona escribe el
+ * documento a mano convencida de que es nuevo — y el silencio le escondía
+ * que la búsqueda ni siquiera corrió.
+ */
+describe('<FaltantesDeFila> — la búsqueda de propietarios que falla se dice', () => {
+  it('un fallo de red muestra el aviso y el camino manual sigue abierto', async () => {
+    const { propietariosApi } = await import('@/lib/api/inmobiliaria.service')
+    vi.mocked(propietariosApi.getAll).mockRejectedValue(new Error('red caída'))
+
+    render(filaBase({ faltantes: ['propietario'] }))
+    const input = container.querySelector(
+      '[data-testid="buscar-propietario"]',
+    ) as HTMLInputElement
+    expect(input).not.toBeNull()
+    typeInto(input, 'Marcela')
+
+    // Debounce de 250 ms + el rechazo.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 350))
+    })
+
+    expect(container.querySelector('[data-testid="busqueda-fallida"]')).not.toBeNull()
+    // Los campos manuales siguen ahí: el fallo no cierra ninguna salida.
+    expect(container.textContent).toContain('Nombre del propietario')
+  })
+
+  it('si la búsqueda vuelve a responder, el aviso se va', async () => {
+    const { propietariosApi } = await import('@/lib/api/inmobiliaria.service')
+    vi.mocked(propietariosApi.getAll)
+      .mockRejectedValueOnce(new Error('red caída'))
+      .mockResolvedValue([])
+
+    render(filaBase({ faltantes: ['propietario'] }))
+    const input = container.querySelector(
+      '[data-testid="buscar-propietario"]',
+    ) as HTMLInputElement
+    typeInto(input, 'Marcela')
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 350))
+    })
+    expect(container.querySelector('[data-testid="busqueda-fallida"]')).not.toBeNull()
+
+    typeInto(input, 'Marcela C')
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 350))
+    })
+    expect(container.querySelector('[data-testid="busqueda-fallida"]')).toBeNull()
   })
 })

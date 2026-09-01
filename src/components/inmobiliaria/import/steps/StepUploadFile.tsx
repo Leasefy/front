@@ -101,7 +101,13 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
       });
     } catch (err) {
       console.error('Error parsing file:', err);
-      setParseError('No se pudo leer el archivo. Verifica que sea una planilla válida (.xlsx, .xls, .csv, .tsv, .txt, .ods).');
+      // El parser lanza mensajes escritos para la persona — con el nombre del
+      // archivo y qué hacer. Taparlos con uno genérico tiraba esa información.
+      setParseError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'No se pudo leer el archivo. Verifica que sea una planilla válida (.xlsx, .xls, .csv, .tsv, .txt, .ods).',
+      );
     } finally {
       setIsParsing(false);
     }

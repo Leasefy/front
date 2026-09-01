@@ -141,10 +141,23 @@ type Formulario =
 export function PlanDeCuentas({
   onContinuar,
   sinPaso5 = false,
-}: { onContinuar?: () => void; sinPaso5?: boolean } = {}) {
+  onOcupado,
+}: {
+  onContinuar?: () => void;
+  sinPaso5?: boolean;
+  /** Aviso al muro mientras se siembra el plan base: el pie espera. */
+  onOcupado?: (ocupado: boolean) => void;
+} = {}) {
   const [arbol, setArbol] = useState<CuentaEnArbol[] | null>(null);
   const [pendientes, setPendientes] = useState<CuentaSemilla[]>([]);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * 🔴 «No pude leer» NO es «no hay plan». Sin esta distinción, una caída de
+   * red pintaba la pantalla de «Todavía no hay plan de cuentas» e invitaba a
+   * sembrar — a alguien que quizás ya tiene 300 cuentas con movimientos. Con
+   * el fallo marcado, lo que se ofrece es reintentar la lectura.
+   */
+  const [falloDeCarga, setFalloDeCarga] = useState(false);
   const [sembrando, setSembrando] = useState(false);
   const [semilla, setSemilla] = useState<ResultadoSemilla | null>(null);
   const [busqueda, setBusqueda] = useState('');
@@ -159,8 +172,10 @@ export function PlanDeCuentas({
     if (a.status === 'fulfilled') {
       setArbol(a.value);
       setError(null);
+      setFalloDeCarga(false);
     } else {
       setArbol((previo) => previo ?? []);
+      setFalloDeCarga(true);
       setError(mensajeDeContabilidad(a.reason, 'No pudimos leer el plan de cuentas.'));
     }
     // La lista de pendientes es un catálogo estático: si falla, no frena nada.
@@ -178,15 +193,26 @@ export function PlanDeCuentas({
 
   const sembrar = async () => {
     setSembrando(true);
+    onOcupado?.(true);
     setError(null);
     try {
       const r = await contabilidadApi.puc.sembrar();
       setSemilla(r);
       await cargar();
     } catch (e) {
-      setError(mensajeDeContabilidad(e, 'No pudimos cargar el plan base. Intentá de nuevo.'));
+      const msg = mensajeDeContabilidad(e, 'No pudimos cargar el plan base. Intentá de nuevo.');
+      /*
+       * La siembra escribe por niveles: un corte a la mitad deja clases y
+       * grupos ya creados. Se relee ANTES de mostrar el error para que la
+       * pantalla refleje lo que sí alcanzó a entrar — reintentar es seguro,
+       * la semilla sólo crea lo que falta. (`cargar` limpia `error` si la
+       * lectura sale bien; por eso el mensaje se pone después.)
+       */
+      await cargar();
+      setError(msg);
     } finally {
       setSembrando(false);
+      onOcupado?.(false);
     }
   };
 
@@ -218,11 +244,24 @@ export function PlanDeCuentas({
     <div className="space-y-6">
       {error ? (
         <div
-          className="flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+          className="flex flex-wrap items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
           role="alert"
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
-          <p className="text-sm text-fg">{error}</p>
+          <p className="min-w-0 flex-1 text-sm text-fg">{error}</p>
+          {/* Reintentar sólo cuando lo que falló fue LEER: sembrar y guardar
+              tienen su propio botón al lado de donde fallaron. */}
+          {falloDeCarga ? (
+            <Button
+              size="sm"
+              variant="outline"
+              hideArrow
+              onClick={() => void cargar()}
+              data-testid="puc-reintentar"
+            >
+              Reintentar
+            </Button>
+          ) : null}
         </div>
       ) : null}
 
@@ -243,7 +282,9 @@ export function PlanDeCuentas({
         </div>
       ) : null}
 
-      {!hayCuentas ? (
+      {/* Con la lectura caída no sabemos si hay plan: ofrecer la semilla acá
+          sería invitar a sembrar sobre un plan que no vimos. */}
+      {!hayCuentas && !falloDeCarga ? (
         <SinPlan
           sembrando={sembrando}
           onSembrar={sembrar}

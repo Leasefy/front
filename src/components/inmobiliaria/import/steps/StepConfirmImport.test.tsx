@@ -33,9 +33,10 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => ({ get: (k: string) => (k === 'lote' ? searchParamsState.lote : null) }),
 }));
 
-vi.mock('@/components/ui/toast', () => ({
-  toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
+const { toastMock } = vi.hoisted(() => ({
+  toastMock: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }));
+vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
 
 const { geocodeImportRowMock } = vi.hoisted(() => ({ geocodeImportRowMock: vi.fn() }));
 vi.mock('../lib/geocodeImportRow', () => ({
@@ -53,6 +54,8 @@ const { inmueblesImportacionApiMock } = vi.hoisted(() => ({
     descartarFila: vi.fn(),
     descartarLote: vi.fn(),
     activar: vi.fn(),
+    estadoDeLote: vi.fn(),
+    lotesAbiertos: vi.fn(),
   },
 }));
 vi.mock('@/lib/api/inmuebles-importacion.service', async () => {
@@ -120,6 +123,7 @@ let updateState: (partial: Partial<ImportWizardState>) => void;
 beforeEach(() => {
   vi.useFakeTimers();
   pushMock.mockClear();
+  Object.values(toastMock).forEach((fn) => fn.mockClear());
   searchParamsState.lote = null;
   estadoLoteState.estado = null;
   estadoLoteState.agotado = false;
@@ -331,6 +335,85 @@ describe('<StepConfirmImport> — the review screen once LISTO', () => {
     expect(updateState).toHaveBeenCalledWith(expect.objectContaining({ importedCount: 1 }));
   });
 
+  it('una activación cortada a mitad dice cuántas pasaron y que reintentar NO duplica', async () => {
+    inmueblesImportacionApiMock.resumen.mockResolvedValue({
+      lote: 'lote-1', total: 700, pendientes: 0, listos: 700, activados: 0, descartados: 0,
+    });
+    inmueblesImportacionApiMock.activar
+      .mockResolvedValueOnce({ lote: 'lote-1', activados: 500, omitidas: [], restantes: 200 })
+      .mockRejectedValueOnce(new Error('se cayó la red'));
+
+    render(baseState());
+    await act(async () => { await Promise.resolve(); });
+
+    const activarBtn = findButtonByText('Activar')!;
+    await act(async () => {
+      activarBtn.click();
+      await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    });
+
+    // Ni «completada» ni un error mudo: el progreso y la salida, juntos.
+    expect(container.textContent).not.toContain('¡Importación completada!');
+    expect(container.textContent).toContain('500');
+    expect(container.textContent).toContain('sigue donde quedó');
+    // El resumen se refresca: las tandas que sí pasaron cuentan en las tarjetas.
+    expect(inmueblesImportacionApiMock.resumen.mock.calls.length).toBeGreaterThanOrEqual(2);
+    // Y el botón de Activar sigue ahí para reintentar.
+    expect(findButtonByText('Activar')).toBeTruthy();
+  });
+
+  it('el techo del loop de activación NUNCA se reporta como «completada»', async () => {
+    inmueblesImportacionApiMock.resumen.mockResolvedValue({
+      lote: 'lote-1', total: 200, pendientes: 0, listos: 200, activados: 0, descartados: 0,
+    });
+    // Un back roto que siempre reporta restantes > 0: el loop corta en 100.
+    inmueblesImportacionApiMock.activar.mockResolvedValue({
+      lote: 'lote-1', activados: 1, omitidas: [], restantes: 1,
+    });
+
+    render(baseState());
+    await act(async () => { await Promise.resolve(); });
+
+    const activarBtn = findButtonByText('Activar')!;
+    await act(async () => {
+      activarBtn.click();
+      for (let i = 0; i < 110; i++) await Promise.resolve();
+    });
+
+    expect(container.textContent).not.toContain('¡Importación completada!');
+    expect(container.textContent).toContain('quedaron más por activar');
+  });
+
+  it('un 409 FILA_YA_ACTIVADA refresca la lista — la fila fantasma se va sola', async () => {
+    inmueblesImportacionApiMock.filas.mockResolvedValue({
+      filas: [
+        {
+          id: 'fila-1', lote: 'lote-1', fila: 1, estado: 'PENDIENTE',
+          faltantes: ['posible_duplicado'], overrides: [],
+          candidatos: [{ id: 'p1', code: 7, title: 'Casa 7', address: 'Calle 1', city: 'Bogotá' }],
+          propertyId: null, datos: { title: 'Casa dup' },
+        },
+      ],
+      total: 1, pagina: 1, porPagina: 25,
+    });
+    inmueblesImportacionApiMock.resolver.mockRejectedValue(
+      new ApiError(409, 'ya activada', 'FILA_YA_ACTIVADA'),
+    );
+
+    render(baseState());
+    await act(async () => { await Promise.resolve(); });
+
+    const llamadasAntes = inmueblesImportacionApiMock.filas.mock.calls.length;
+    const usarBtn = findButtonByText('Usar de todos modos')!;
+    await act(async () => {
+      usarBtn.click();
+      await Promise.resolve(); await Promise.resolve();
+    });
+
+    expect(toastMock.error).toHaveBeenCalled();
+    expect(inmueblesImportacionApiMock.filas.mock.calls.length).toBeGreaterThan(llamadasAntes);
+  });
+
   it('descartar lote surfaces 409 LOTE_EN_PROCESO as "wait", never retries silently or navigates away', async () => {
     inmueblesImportacionApiMock.descartarLote.mockRejectedValue(
       new ApiError(409, 'El lote todavía se está procesando.', 'LOTE_EN_PROCESO'),
@@ -349,5 +432,128 @@ describe('<StepConfirmImport> — the review screen once LISTO', () => {
     expect(inmueblesImportacionApiMock.descartarLote).toHaveBeenCalledTimes(1);
     expect(pushMock).not.toHaveBeenCalled();
     expect(container.textContent).toContain('esperá a que termine');
+  });
+});
+
+describe('<StepConfirmImport> — recuperación de fallos del lote', () => {
+  it('🔴 un lote FALLIDO tiene salida: preparar de nuevo, sin re-subir el archivo', async () => {
+    searchParamsState.lote = 'lote-muerto';
+    estadoLoteState.estado = {
+      lote: 'lote-muerto', estado: 'FALLIDO', total: 1, procesadas: 0,
+      pendientes: 0, listos: 0, activados: 0, descartados: 0, jobId: null,
+      error: 'El proceso falló en el servidor.', creadoEn: '2026-09-01T00:00:00.000Z',
+    };
+    render(baseState());
+
+    // El motivo del back se ve, y hay botón.
+    expect(container.textContent).toContain('El proceso falló en el servidor.');
+    const retry = container.querySelector('[data-testid="preparar-de-nuevo"]') as HTMLButtonElement;
+    expect(retry).toBeTruthy();
+
+    await act(async () => { retry.click(); });
+
+    // Volvió al resumen con los datos vivos: el botón de importar está ahí.
+    expect(findButtonByText('inmobiliaria.import.confirm.importButton')).toBeTruthy();
+    // Y el lote muerto se soltó también del estado del wizard.
+    expect(updateState).toHaveBeenCalledWith(expect.objectContaining({ loteRetomado: null }));
+  });
+
+  it('reintentar un preparar() caído reusa la MISMA clave de idempotencia', async () => {
+    inmueblesImportacionApiMock.preparar
+      .mockRejectedValueOnce(new ApiError(0, 'No pudimos conectarnos al servidor.'))
+      .mockResolvedValueOnce({
+        lote: 'lote-2', estado: 'ENCOLADO', total: 1, procesadas: 0, pendientes: 0,
+        listos: 0, activados: 0, descartados: 0, jobId: 'j', error: null, creadoEn: '2026-09-01T00:00:00.000Z',
+      });
+    render(baseState());
+
+    const btn = findButtonByText('inmobiliaria.import.confirm.importButton')!;
+    await act(async () => { btn.click(); });
+    await act(async () => { await vi.runAllTimersAsync(); });
+    expect(container.textContent).toContain('No pudimos conectarnos');
+
+    await act(async () => { findButtonByText('inmobiliaria.import.confirm.importButton')!.click(); });
+    await act(async () => { await vi.runAllTimersAsync(); });
+
+    const claves = inmueblesImportacionApiMock.preparar.mock.calls.map((c) => c[1]);
+    expect(claves).toHaveLength(2);
+    // La clave identifica al INTENTO: dos clics del mismo intento no pueden
+    // encolar dos lotes distintos con las mismas filas.
+    expect(claves[0]).toBe(claves[1]);
+  });
+
+  it('el lote preparado se guarda en el estado del wizard: sobrevive a «Anterior»', async () => {
+    inmueblesImportacionApiMock.preparar.mockResolvedValue({
+      lote: 'lote-9', estado: 'ENCOLADO', total: 1, procesadas: 0, pendientes: 0,
+      listos: 0, activados: 0, descartados: 0, jobId: 'j', error: null, creadoEn: '2026-09-01T00:00:00.000Z',
+    });
+    render(baseState());
+    await act(async () => { findButtonByText('inmobiliaria.import.confirm.importButton')!.click(); });
+    await act(async () => { await vi.runAllTimersAsync(); });
+
+    expect(updateState).toHaveBeenCalledWith(expect.objectContaining({ loteRetomado: 'lote-9' }));
+  });
+
+  it('al montar sin ?lote=, el lote guardado en el wizard retoma solo', async () => {
+    estadoLoteState.estado = {
+      lote: 'lote-guardado', estado: 'LISTO', total: 1, procesadas: 1,
+      pendientes: 0, listos: 1, activados: 0, descartados: 0, jobId: null, error: null,
+      creadoEn: '2026-09-01T00:00:00.000Z',
+    };
+    inmueblesImportacionApiMock.resumen.mockResolvedValue({
+      lote: 'lote-guardado', total: 1, pendientes: 0, listos: 1, activados: 0, descartados: 0,
+    });
+    inmueblesImportacionApiMock.filas.mockResolvedValue({ filas: [], total: 0, pagina: 1, porPagina: 25 });
+
+    render(baseState({ loteRetomado: 'lote-guardado' }));
+    await act(async () => { await Promise.resolve(); });
+
+    expect(inmueblesImportacionApiMock.resumen).toHaveBeenCalledWith('lote-guardado');
+  });
+
+  it('con el sondeo agotado, «consultar de nuevo» revisa el estado y avanza si ya terminó', async () => {
+    searchParamsState.lote = 'lote-1';
+    estadoLoteState.estado = {
+      lote: 'lote-1', estado: 'PROCESANDO', total: 10, procesadas: 4,
+      pendientes: 0, listos: 0, activados: 0, descartados: 0, jobId: 'j', error: null,
+      creadoEn: '2026-09-01T00:00:00.000Z',
+    };
+    estadoLoteState.agotado = true;
+    inmueblesImportacionApiMock.estadoDeLote.mockResolvedValue({
+      lote: 'lote-1', estado: 'LISTO', total: 10, procesadas: 10,
+      pendientes: 2, listos: 8, activados: 0, descartados: 0, jobId: 'j', error: null,
+      creadoEn: '2026-09-01T00:00:00.000Z',
+    });
+    inmueblesImportacionApiMock.resumen.mockResolvedValue({
+      lote: 'lote-1', total: 10, pendientes: 2, listos: 8, activados: 0, descartados: 0,
+    });
+    inmueblesImportacionApiMock.filas.mockResolvedValue({ filas: [], total: 0, pagina: 1, porPagina: 25 });
+
+    render(baseState());
+    const btn = container.querySelector('[data-testid="consultar-de-nuevo"]') as HTMLButtonElement;
+    expect(btn).toBeTruthy();
+
+    await act(async () => { btn.click(); await Promise.resolve(); });
+    await act(async () => { await Promise.resolve(); });
+
+    expect(inmueblesImportacionApiMock.estadoDeLote).toHaveBeenCalledWith('lote-1');
+    // El LISTO de la consulta manual dispara la carga de la revisión.
+    expect(inmueblesImportacionApiMock.resumen).toHaveBeenCalledWith('lote-1');
+  });
+
+  it('las direcciones que cayeron al centro de la ciudad se avisan, no se callan', async () => {
+    geocodeImportRowMock.mockResolvedValue({ lat: 4.6, lng: -74.1, source: 'city' });
+    inmueblesImportacionApiMock.preparar.mockResolvedValue({
+      lote: 'lote-1', estado: 'ENCOLADO', total: 1, procesadas: 0, pendientes: 0,
+      listos: 0, activados: 0, descartados: 0, jobId: 'j', error: null, creadoEn: '2026-09-01T00:00:00.000Z',
+    });
+    render(baseState());
+    await act(async () => { findButtonByText('inmobiliaria.import.confirm.importButton')!.click(); });
+    await act(async () => { await vi.runAllTimersAsync(); });
+
+    expect(toastMock.info).toHaveBeenCalledWith(
+      'Direcciones sin ubicar',
+      expect.objectContaining({ description: expect.stringContaining('1 de 1') }),
+    );
   });
 });

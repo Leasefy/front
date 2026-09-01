@@ -11,7 +11,7 @@
  * una naturaleza y un lugar en el árbol, y eso lo decide el contador.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useDropzone } from "react-dropzone";
 import {
@@ -71,12 +71,15 @@ export function MigrarAsientos({
   onAplicado,
   onIrAlPuc,
   enElMuro = false,
+  onOcupado,
 }: {
   onAplicado: (informe: InformeDeMigracion) => void;
   /** Adentro del muro: abrir el paso 4 en el mismo muro. Sin esto, enlace en pestaña nueva. */
   onIrAlPuc?: () => void;
   /** Adentro del muro no se ofrece «volver a la secuencia»: el muro es la secuencia. */
   enElMuro?: boolean;
+  /** Aviso al muro mientras se revisa o aplica el lote: el pie espera. */
+  onOcupado?: (ocupado: boolean) => void;
 }) {
   const [filas, setFilas] = useState<Record<string, unknown>[]>([]);
   const [encabezados, setEncabezados] = useState<string[]>([]);
@@ -88,6 +91,14 @@ export function MigrarAsientos({
   const [informe, setInforme] = useState<InformeDeMigracion | null>(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // El pie del muro espera mientras el lote se revisa o se aplica — la misma
+  // carrera que en terceros e inmuebles: sin esto ofrecía seguir con la
+  // operación todavía corriendo.
+  useEffect(() => {
+    onOcupado?.(cargando);
+  }, [cargando, onOcupado]);
+  useEffect(() => () => onOcupado?.(false), [onOcupado]);
 
   const volverAEmpezar = () => {
     setFilas([]);
@@ -179,10 +190,13 @@ export function MigrarAsientos({
       onAplicado(r);
     } catch (e) {
       setError(
-        mensajeDeContabilidad(
+        // La segunda frase es un hecho del back, no un consuelo: cada fila
+        // lleva llave de idempotencia y `aplicar` re-prepara antes de
+        // escribir, así que lo ya escrito vuelve como «ya migrado».
+        `${mensajeDeContabilidad(
           e,
-          "No pudimos aplicar el lote. Intentá de nuevo.",
-        ),
+          "No pudimos aplicar el lote.",
+        )} Podés aplicar de nuevo tranquilo: los asientos que ya entraron no se duplican.`,
       );
     } finally {
       setCargando(false);
@@ -191,7 +205,14 @@ export function MigrarAsientos({
 
   if (informe) {
     return (
-      <Informe enElMuro={enElMuro} informe={informe} onOtro={volverAEmpezar} />
+      <Informe
+        enElMuro={enElMuro}
+        informe={informe}
+        onOtro={volverAEmpezar}
+        onReintentar={aplicar}
+        cargando={cargando}
+        error={error}
+      />
     );
   }
 
@@ -609,10 +630,17 @@ function Revision({
 function Informe({
   informe,
   onOtro,
+  onReintentar,
+  cargando = false,
+  error = null,
   enElMuro = false,
 }: {
   informe: InformeDeMigracion;
   onOtro: () => void;
+  /** Volver a aplicar el MISMO lote: lo escrito vuelve como «ya migrado». */
+  onReintentar?: () => void;
+  cargando?: boolean;
+  error?: string | null;
   enElMuro?: boolean;
 }) {
   return (
@@ -656,10 +684,35 @@ function Informe({
                 </li>
               ))}
           </ul>
+          <p className="mt-2 text-sm text-fg-muted">
+            Suelen ser fallas del momento (la conexión, la base ocupada).
+            Reintentar aplica sólo estas: las que ya entraron no se duplican.
+          </p>
+        </div>
+      ) : null}
+
+      {error ? (
+        <div
+          className="mt-4 flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+          role="alert"
+        >
+          <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+          <p className="text-sm text-fg">{error}</p>
         </div>
       ) : null}
 
       <div className="mt-5 flex flex-wrap gap-2">
+        {informe.fallasAlEscribir.length > 0 && onReintentar ? (
+          <Button
+            hideArrow
+            isLoading={cargando}
+            onClick={onReintentar}
+            data-testid="reintentar-fallas"
+          >
+            Reintentar {informe.fallasAlEscribir.length}{" "}
+            {informe.fallasAlEscribir.length === 1 ? "asiento" : "asientos"}
+          </Button>
+        ) : null}
         {/* Adentro del muro no hay secuencia a la que volver: el muro es la secuencia. */}
         {enElMuro ? null : (
           <Button asChild hideArrow>

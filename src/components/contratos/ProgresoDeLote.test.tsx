@@ -85,4 +85,55 @@ describe('<ProgresoDeLote>', () => {
     expect(container.textContent).toContain('No pudimos preparar la migración.')
     expect(container.textContent).not.toContain('4')
   })
+
+  it('FALLIDO ya no es un callejón: ofrece volver al cargador', () => {
+    // Antes el error se mostraba y no había NI UN botón — la única salida
+    // era recargar la página entera.
+    const onVolver = vi.fn()
+    render({
+      estado: { ...base, estado: 'FALLIDO', error: 'x' },
+      agotado: false,
+      onVolverAEmpezar: onVolver,
+    })
+    const boton = container.querySelector('[data-testid="lote-fallido-volver"]')
+    expect(boton).not.toBeNull()
+    act(() => (boton as HTMLButtonElement).click())
+    expect(onVolver).toHaveBeenCalledTimes(1)
+  })
+
+  it('FALLIDO dice que nada se creó y que el archivo se puede volver a subir', () => {
+    render({
+      estado: { ...base, estado: 'FALLIDO', error: 'x' },
+      agotado: false,
+      onVolverAEmpezar: () => {},
+    })
+    expect(container.textContent).toContain('Ningún contrato se creó')
+  })
+
+  it('agotado: ofrece preguntar UNA vez más, a pedido', () => {
+    const onVerificar = vi.fn()
+    render({ estado: base, agotado: true, onVerificarAhora: onVerificar })
+    const boton = container.querySelector('[data-testid="lote-verificar-ahora"]')
+    expect(boton).not.toBeNull()
+    act(() => (boton as HTMLButtonElement).click())
+    expect(onVerificar).toHaveBeenCalledTimes(1)
+  })
+
+  it('mientras verifica, el botón queda deshabilitado — nada de doble consulta', () => {
+    render({
+      estado: base,
+      agotado: true,
+      verificando: true,
+      onVerificarAhora: () => {},
+    })
+    const boton = container.querySelector(
+      '[data-testid="lote-verificar-ahora"]',
+    ) as HTMLButtonElement
+    expect(boton.disabled).toBe(true)
+  })
+
+  it('sin agotar, el botón de verificar no aparece — el sondeo ya pregunta solo', () => {
+    render({ estado: base, agotado: false, onVerificarAhora: () => {} })
+    expect(container.querySelector('[data-testid="lote-verificar-ahora"]')).toBeNull()
+  })
 })

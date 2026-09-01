@@ -55,6 +55,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ApiError } from '@/lib/api/client';
 import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
 import {
   migracionTercerosApi,
@@ -78,7 +79,7 @@ import {
   type MapeoDeColumna,
 } from '@/lib/migracion/columnas-de-tercero';
 import { descargarPlantillaDeTerceros } from '@/lib/migracion/plantilla-de-terceros';
-import { FilaDeTercero } from './FilaDeTercero';
+import { FilaDeTercero, type ResultadoDeAccion } from './FilaDeTercero';
 
 /** Sentinel de Radix: un `<Select>` no admite `value=""`. */
 const IGNORAR = '__ignorar__';
@@ -95,6 +96,35 @@ type Fila = Record<string, unknown>;
 
 const mensaje = (e: unknown, respaldo: string) =>
   e instanceof Error && e.message ? e.message : respaldo;
+
+/**
+ * El parte de una masiva parcial: TODOS los motivos distintos con sus filas,
+ * no sólo el primero. Con 200 filas y cuatro causas, mostrar una sola manda a
+ * la persona a resolver a ciegas las otras tres.
+ */
+export function resumenDeFallidas(r: {
+  pedidas: number;
+  aplicadas: number;
+  fallidas: { id: string; fila: number | null; motivo: string }[];
+}): string {
+  const porMotivo = new Map<string, number[]>();
+  for (const f of r.fallidas) {
+    const filas = porMotivo.get(f.motivo) ?? [];
+    if (f.fila != null) filas.push(f.fila);
+    porMotivo.set(f.motivo, filas);
+  }
+  const partes = [...porMotivo].map(([motivo, filas]) => {
+    if (filas.length === 0) return motivo;
+    const ref = filas.slice(0, 6).join(', ') + (filas.length > 6 ? '…' : '');
+    return `${motivo} (${filas.length === 1 ? 'fila' : 'filas'} ${ref})`;
+  });
+  const n = r.fallidas.length;
+  const quedaron =
+    n === 1
+      ? 'La que no se pudo quedó seleccionada para que la reintentes'
+      : `Las ${n} que no se pudieron quedaron seleccionadas para que las reintentes`;
+  return `Se aplicaron ${r.aplicadas} de ${r.pedidas}. ${quedaron}: ${partes.join(' · ')}`;
+}
 
 export interface MigrarTercerosProps {
   /**
@@ -116,6 +146,14 @@ export interface MigrarTercerosProps {
 export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTercerosProps = {}) {
   const [tipo, setTipo] = useState<TipoDeTercero>(tipoFijo ?? tipoInicial ?? 'PROPIETARIO');
   const [plantilla, setPlantilla] = useState<PlantillaDeTerceros | null>(null);
+  /**
+   * Error PROPIO de la plantilla, separado del `error` general: el general lo
+   * limpia cualquier acción siguiente, y sin plantilla no hay pantalla — el
+   * dropzone y la descarga quedan muertos. Con error propio hay un cartel
+   * estable con su «Reintentar», en vez de una pantalla muda para siempre.
+   */
+  const [errorDePlantilla, setErrorDePlantilla] = useState<string | null>(null);
+  const [intentoDePlantilla, setIntentoDePlantilla] = useState(0);
 
   const [filas, setFilas] = useState<Fila[]>([]);
   const [encabezados, setEncabezados] = useState<string[]>([]);
@@ -148,14 +186,19 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   useEffect(() => {
     let vigente = true;
     setPlantilla(null);
+    setErrorDePlantilla(null);
     migracionTercerosApi
       .plantilla(tipo)
       .then((p) => vigente && setPlantilla(p))
-      .catch((e) => vigente && setError(mensaje(e, 'No pudimos leer las columnas esperadas.')));
+      .catch(
+        (e) =>
+          vigente &&
+          setErrorDePlantilla(mensaje(e, 'No pudimos leer las columnas esperadas.')),
+      );
     return () => {
       vigente = false;
     };
-  }, [tipo]);
+  }, [tipo, intentoDePlantilla]);
 
   // Cambiar de tipo invalida el mapeo: las columnas de un inquilino no son las
   // de un propietario, y remapear contra la plantilla vieja guardaría el banco
@@ -173,12 +216,25 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
 
   // ── Migraciones a medias ──────────────────────────────────────────────────
 
+  /**
+   * `true` cuando la lista de cargas abiertas no se pudo leer. No frena nada
+   * —empezar una carga nueva sigue permitido—, pero se DICE: si la persona
+   * dejó una a medias y no lo ve, vuelve a subir el mismo archivo y duplica
+   * a todo el mundo. Antes este fallo era mudo a propósito, y el silencio
+   * escondía justo ese riesgo.
+   */
+  const [fallaronLosLotes, setFallaronLosLotes] = useState(false);
+
   const refrescarLotesAbiertos = useCallback(() => {
     migracionTercerosApi
       .lotesAbiertos()
-      .then(setLotesAbiertos)
+      .then((lotes) => {
+        setLotesAbiertos(lotes);
+        setFallaronLosLotes(false);
+      })
       .catch(() => {
         // No poder listarlos no puede impedir empezar uno nuevo.
+        setFallaronLosLotes(true);
       });
   }, []);
 
@@ -248,34 +304,62 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     // páginas, y aplicar algo a 300 filas serían doce masivas repetidas.
   }, []);
 
+  /**
+   * El nombre que chocó con una carga que ya existe. Vive aparte del mensaje
+   * de error porque habilita una salida distinta: si esa carga está en la
+   * lista de abiertas, el botón «Retomar esa carga» resuelve el choque en un
+   * clic — que es EXACTAMENTE lo que pasa cuando la red se cortó después de
+   * que el back preparó: el reintento da 409 y la salida es retomar, no
+   * renombrar.
+   */
+  const [loteEnConflicto, setLoteEnConflicto] = useState<string | null>(null);
+
   const preparar = useCallback(async () => {
     setCargando(true);
     setError(null);
+    setLoteEnConflicto(null);
+    let r: ResumenDeLote;
     try {
-      const r = await migracionTercerosApi.preparar(lote.trim(), tipo, aMigrar);
-      setResumen(r);
-      setLoteAbierto(lote.trim());
-      setSeleccion(new Set());
-      await refrescar(lote.trim());
+      r = await migracionTercerosApi.preparar(lote.trim(), tipo, aMigrar);
     } catch (e) {
       // El 409 `LOTE_YA_EXISTE` trae su propio mensaje con el nombre adentro;
       // se muestra tal cual en vez de traducirlo a «error al preparar».
+      if (e instanceof ApiError && e.code === 'LOTE_YA_EXISTE') {
+        setLoteEnConflicto(lote.trim());
+        refrescarLotesAbiertos();
+      }
       setError(mensaje(e, 'No pudimos preparar la carga.'));
-    } finally {
       setCargando(false);
+      return;
     }
-  }, [lote, tipo, aMigrar, refrescar]);
+    // La carga YA existe en el back: pase lo que pase de acá en adelante, la
+    // pantalla es la lista de trabajo. Meter el refresco en el mismo try
+    // hacía que un fallo de red DESPUÉS de preparar dijera «no pudimos
+    // preparar» — y el reintento chocara con un 409 inexplicable.
+    setResumen(r);
+    setLoteAbierto(lote.trim());
+    setSeleccion(new Set());
+    try {
+      await refrescar(lote.trim());
+    } catch {
+      setError(
+        'La carga quedó preparada, pero no pudimos leer sus filas. Tocá «Actualizar la lista».',
+      );
+    }
+    setCargando(false);
+  }, [lote, tipo, aMigrar, refrescar, refrescarLotesAbiertos]);
 
   const retomar = useCallback(
     async (l: LoteDeTerceros) => {
       setError(null);
+      setLoteEnConflicto(null);
       setTipo(l.tipo);
       setLoteAbierto(l.lote);
       setSeleccion(new Set());
       try {
         await refrescar(l.lote);
       } catch (e) {
-        setError(mensaje(e, 'No pudimos abrir esa carga.'));
+        setError(mensaje(e, 'No pudimos abrir esa carga. Reintentá.'));
       }
     },
     [refrescar],
@@ -293,26 +377,65 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     setMapeo([]);
     setNombreDeArchivo('');
     setLote(nombreDeLoteSugerido(tipo));
+    setError(null);
+    setLoteEnConflicto(null);
     refrescarLotesAbiertos();
   }, [tipo, refrescarLotesAbiertos]);
 
   // ── Acciones sobre filas ──────────────────────────────────────────────────
 
+  /** El aviso de cuando la acción SÍ pasó y lo que falló fue releer la lista. */
+  const AVISO_DE_REFRESCO =
+    'El cambio se guardó, pero no pudimos refrescar la lista. Tocá «Actualizar la lista» para verla al día.';
+
+  /**
+   * Devuelve qué pasó, para que la fila que disparó la acción pueda mostrar
+   * el error AL LADO del botón que se apretó — el cartel de arriba no se ve
+   * desde la tarjeta 200 — y conservar lo tecleado.
+   *
+   * La acción y el refresco se atrapan POR SEPARADO: si la acción pasó y lo
+   * que falló fue releer, decirle «no pudimos guardar» a algo que se guardó
+   * es mentirle a la persona (y empujarla a repetir la acción).
+   */
   const conRefresco = useCallback(
-    async (accion: () => Promise<unknown>, respaldo: string) => {
-      if (!loteAbierto) return;
+    async (accion: () => Promise<unknown>, respaldo: string): Promise<ResultadoDeAccion> => {
+      if (!loteAbierto) return { ok: false, mensaje: null };
       setCargando(true);
       setError(null);
       try {
         await accion();
-        await refrescar(loteAbierto, pagina);
       } catch (e) {
-        setError(mensaje(e, respaldo));
+        const m = mensaje(e, respaldo);
+        setError(m);
+        setCargando(false);
+        return { ok: false, mensaje: m };
+      }
+      try {
+        await refrescar(loteAbierto, pagina);
+      } catch {
+        setError(AVISO_DE_REFRESCO);
+      }
+      setCargando(false);
+      return { ok: true, mensaje: null };
+    },
+    [loteAbierto, pagina, refrescar],
+  );
+
+  /** Cambiar de página también puede fallar; que lo diga, no que se quede muda. */
+  const cambiarPagina = useCallback(
+    async (p: number) => {
+      if (!loteAbierto) return;
+      setCargando(true);
+      setError(null);
+      try {
+        await refrescar(loteAbierto, p);
+      } catch (e) {
+        setError(mensaje(e, 'No pudimos traer esa página. Tocá «Actualizar la lista».'));
       } finally {
         setCargando(false);
       }
     },
-    [loteAbierto, pagina, refrescar],
+    [loteAbierto, refrescar],
   );
 
   const aplicar = useCallback(async () => {
@@ -325,7 +448,22 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       setAplicacion(informe);
       await refrescar(loteAbierto, 1);
     } catch (e) {
-      setError(mensaje(e, 'No pudimos crear las fichas.'));
+      /*
+       * El back procesa por tandas y NO deshace lo creado si la conexión se
+       * corta a mitad: reintentar retoma donde quedó, sin duplicar (las filas
+       * aplicadas ya no están LISTO). Decirlo acá es lo que evita que la
+       * persona abandone creyendo que se rompió todo — o que vuelva a subir
+       * el archivo «por las dudas».
+       */
+      setError(
+        `${mensaje(e, 'No pudimos crear las fichas.')} Las que alcanzaron a crearse quedaron creadas: reintentá con el mismo botón y la carga sigue donde quedó, sin duplicar a nadie.`,
+      );
+      // Mejor esfuerzo: que los contadores muestren lo que el back SÍ hizo.
+      try {
+        await refrescar(loteAbierto, 1);
+      } catch {
+        // El error de arriba ya cuenta la historia.
+      }
     } finally {
       setCargando(false);
       onOcupado?.(false);
@@ -350,21 +488,22 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         cargando={cargando}
         error={error}
         onSeleccionCambia={setSeleccion}
-        onPaginaCambia={(p) => void refrescar(loteAbierto, p)}
+        onPaginaCambia={(p) => void cambiarPagina(p)}
+        onActualizar={() => void cambiarPagina(pagina)}
         onCorregir={(id, campos) =>
-          void conRefresco(
+          conRefresco(
             () => migracionTercerosApi.corregir(id, { campos }),
             'No pudimos guardar la corrección.',
           )
         }
         onVincular={(id) =>
-          void conRefresco(
+          conRefresco(
             () => migracionTercerosApi.corregir(id, { vincularAExistente: true }),
             'No pudimos vincular la fila.',
           )
         }
         onDescartar={(id) =>
-          void conRefresco(
+          conRefresco(
             () => migracionTercerosApi.descartar(id),
             'No pudimos descartar la fila.',
           )
@@ -375,13 +514,19 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               Array.from(seleccion),
               cambios,
             );
-            setSeleccion(new Set());
             if (r.fallidas.length > 0) {
-              // Una masiva que dice «listo» tapando lo que no pudo es la
-              // mentira que este diseño evita.
-              setError(
-                `Se aplicaron ${r.aplicadas} de ${r.pedidas}. ${r.fallidas.length} no se pudieron: ${r.fallidas[0].motivo}`,
-              );
+              /*
+               * Las que NO se pudieron quedan SELECCIONADAS: son exactamente
+               * el conjunto a reintentar, y volver a marcarlas a mano entre
+               * doscientas casillas es perder el trabajo de la selección.
+               * Una masiva que dice «listo» tapando lo que no pudo es la
+               * mentira que este diseño evita — y un solo motivo tapando los
+               * otros cuatro, la mitad de esa mentira.
+               */
+              setSeleccion(new Set(r.fallidas.map((f) => f.id)));
+              setError(resumenDeFallidas(r));
+            } else {
+              setSeleccion(new Set());
             }
           }, 'No pudimos aplicar el cambio a las filas seleccionadas.')
         }
@@ -404,8 +549,32 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   // Con el tipo fijo, las cargas sin terminar del OTRO tipo son de otro paso.
   const lotesVisibles = tipoFijo ? lotesAbiertos.filter((l) => l.tipo === tipoFijo) : lotesAbiertos;
 
+  // El 409 con salida: la carga que chocó está ahí para retomarla en un clic.
+  const cargaEnConflicto = loteEnConflicto
+    ? lotesVisibles.find((l) => l.lote === loteEnConflicto) ?? null
+    : null;
+
   return (
     <div className="space-y-6">
+      {fallaronLosLotes ? (
+        <section
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-warning-soft p-4"
+          data-testid="lotes-no-verificados"
+        >
+          <div className="flex items-start gap-2">
+            <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+            <p className="text-sm text-fg">
+              No pudimos verificar si tenés una carga sin terminar. Podés seguir igual — pero si
+              dejaste una a medias, reintentá primero: volver a subir el mismo archivo duplica a
+              las personas.
+            </p>
+          </div>
+          <Button size="sm" variant="outline" hideArrow onClick={refrescarLotesAbiertos}>
+            Reintentar
+          </Button>
+        </section>
+      ) : null}
+
       {lotesVisibles.length > 0 ? (
         <section
           className="space-y-3 rounded-lg border border-primary/30 bg-surface p-5 shadow-sm"
@@ -513,7 +682,12 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             size="sm"
             hideArrow
             disabled={!plantilla}
-            onClick={() => plantilla && void descargarPlantillaDeTerceros(tipo, columnas)}
+            onClick={() =>
+              plantilla &&
+              void descargarPlantillaDeTerceros(tipo, columnas).catch(() =>
+                setError('No pudimos generar la plantilla para descargar. Reintentá.'),
+              )
+            }
           >
             <DownloadSimple className="mr-1.5 h-4 w-4" />
             Descargar la plantilla
@@ -522,6 +696,29 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             O subí el archivo que ya tenés: abajo se muestra cómo entendimos tus columnas.
           </p>
         </div>
+
+        {/* Sin plantilla no hay mapeo ni descarga: si su lectura falló, esta
+            pantalla está muerta — el reintento tiene que estar ACÁ, no en
+            recargar la página entera y perder dónde se estaba parado. */}
+        {errorDePlantilla ? (
+          <div
+            className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-danger-soft p-3"
+            data-testid="error-de-plantilla"
+          >
+            <div className="flex items-start gap-2">
+              <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+              <p className="text-sm text-fg">{errorDePlantilla}</p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              hideArrow
+              onClick={() => setIntentoDePlantilla((n) => n + 1)}
+            >
+              Reintentar
+            </Button>
+          </div>
+        ) : null}
       </section>
 
       <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
@@ -537,7 +734,13 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           <FileArrowUp className="h-8 w-8 text-fg-muted" />
           <div>
             <p className="text-sm font-medium text-fg">
-              {nombreDeArchivo || 'Arrastrá el archivo o hacé clic para elegirlo'}
+              {/* Deshabilitado sin decir por qué = un dropzone que «no anda».
+                  La espera y el fallo de la plantilla se dicen acá mismo. */}
+              {plantilla
+                ? nombreDeArchivo || 'Arrastrá el archivo o hacé clic para elegirlo'
+                : errorDePlantilla
+                  ? 'No se puede subir todavía — reintentá arriba la lectura de columnas.'
+                  : 'Preparando la pantalla: leyendo las columnas esperadas…'}
             </p>
             <p className="text-xs text-fg-subtle">
               Excel o CSV exportado de tu sistema actual. Nada se crea todavía.
@@ -546,9 +749,25 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         </div>
 
         {error ? (
-          <div className="mt-4 flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3">
-            <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
-            <p className="text-sm text-fg">{error}</p>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-danger-soft p-3">
+            <div className="flex items-start gap-2">
+              <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+              <p className="text-sm text-fg">{error}</p>
+            </div>
+            {/* El 409 de «ya existe» con su salida al lado: si la carga que
+                chocó está abierta, retomarla es UN clic — el caso típico es la
+                red que se cortó DESPUÉS de que el back preparó. */}
+            {cargaEnConflicto ? (
+              <Button
+                size="sm"
+                hideArrow
+                disabled={cargando}
+                data-testid="retomar-conflicto"
+                onClick={() => void retomar(cargaEnConflicto)}
+              >
+                Retomar esa carga
+              </Button>
+            ) : null}
           </div>
         ) : null}
       </section>
@@ -730,6 +949,7 @@ function ListaDeTrabajo({
   error,
   onSeleccionCambia,
   onPaginaCambia,
+  onActualizar,
   onCorregir,
   onVincular,
   onDescartar,
@@ -752,9 +972,11 @@ function ListaDeTrabajo({
   error: string | null;
   onSeleccionCambia: (s: Set<string>) => void;
   onPaginaCambia: (p: number) => void;
-  onCorregir: (id: string, campos: FilaTercero) => void;
-  onVincular: (id: string) => void;
-  onDescartar: (id: string) => void;
+  /** Reintenta la lectura de la página actual — la salida de un refresco caído. */
+  onActualizar: () => void;
+  onCorregir: (id: string, campos: FilaTercero) => Promise<ResultadoDeAccion>;
+  onVincular: (id: string) => Promise<ResultadoDeAccion>;
+  onDescartar: (id: string) => Promise<ResultadoDeAccion>;
   onMasivo: (cambios: {
     campos?: FilaTercero;
     vincularAExistente?: boolean;
@@ -809,7 +1031,16 @@ function ListaDeTrabajo({
           </p>
         ) : null}
 
-        {error ? <p className="text-sm text-danger">{error}</p> : null}
+        {error ? (
+          <div className="flex flex-wrap items-center gap-3" data-testid="error-de-lista">
+            <p className="text-sm text-danger">{error}</p>
+            {/* Releer es un GET: siempre es seguro ofrecerlo. Es la salida
+                tanto del refresco caído como de la página que no llegó. */}
+            <Button size="sm" variant="outline" hideArrow disabled={cargando} onClick={onActualizar}>
+              Actualizar la lista
+            </Button>
+          </div>
+        ) : null}
       </section>
 
       {aplicacion ? (

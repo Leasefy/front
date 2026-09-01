@@ -92,6 +92,13 @@ export interface ImportWizardState {
   aiAnalyzed: boolean;
   importProgress: number; // 0-100
   importedCount: number;
+  /**
+   * El lote del servidor que este wizard está trabajando. Se escribe al
+   * preparar y al retomar una carga abierta; StepConfirmImport lo lee al
+   * montar. Vive acá —no en el paso— para sobrevivir a «Anterior» y a un
+   * remount: perderlo hacía re-subir el archivo y duplicar el lote.
+   */
+  loteRetomado?: string | null;
 }
 
 // Target fields that columns can map to

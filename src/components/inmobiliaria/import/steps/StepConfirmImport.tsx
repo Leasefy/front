@@ -24,7 +24,10 @@ import {
   GEOCODE_ROW_DELAY_MS,
 } from "../lib/geocodeImportRow";
 import { generarIdempotencyKey } from "../lib/idempotencia";
-import { activarLoteCompleto } from "../lib/activarLoteCompleto";
+import {
+  activarLoteCompleto,
+  ActivacionInterrumpida,
+} from "../lib/activarLoteCompleto";
 import { RanuraDelPie, type ImportStepProps } from "../ImportWizard";
 import { FilaImportacionRow } from "../FilaImportacionRow";
 import { ProgresoDeLoteInmuebles } from "../ProgresoDeLoteInmuebles";
@@ -67,6 +70,7 @@ export function StepConfirmImport({
   state,
   updateState,
   onSalir,
+  onOcupado,
 }: ImportStepProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -107,11 +111,56 @@ export function StepConfirmImport({
   const [preparando, setPreparando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lote, setLote] = useState<string | null>(
-    () => searchParams?.get("lote") ?? null,
+    // El ?lote= (la notificación) gana; sin él, el lote que el wizard guardó
+    // en su estado — sobrevive a «Anterior»/«Siguiente» y a la tarjeta de
+    // «retomar» del arranque. Antes, volver un paso perdía el lote y la
+    // persona re-subía el archivo: un lote duplicado por cada vuelta atrás.
+    () => searchParams?.get("lote") ?? state.loteRetomado ?? null,
   );
-  const [idempotencyKey] = useState(() => generarIdempotencyKey());
+  /*
+   * Con setter a propósito: tras un lote FALLIDO, reintentar con la MISMA
+   * clave le pediría al back el MISMO lote fallido (la clave es la identidad
+   * del intento). «Preparar de nuevo» genera una clave nueva; el doble clic
+   * dentro de UN intento sigue cubierto porque la clave sólo cambia ahí.
+   */
+  const [idempotencyKey, setIdempotencyKey] = useState(() => generarIdempotencyKey());
 
-  const { estado: estadoLote, agotado } = useEstadoDeLoteInmuebles(lote);
+  const { estado: estadoSondeado, agotado } = useEstadoDeLoteInmuebles(lote);
+
+  /*
+   * La re-consulta manual de cuando el sondeo se agotó (10 min). El sondeo
+   * vive en su hook y no se puede «revivir» sin tocarlo; esto es más simple:
+   * una consulta puntual cuyo resultado — si es más nuevo — le gana al del
+   * sondeo detenido. Se limpia al cambiar de lote.
+   */
+  const [estadoManual, setEstadoManual] = useState<
+    typeof estadoSondeado | null
+  >(null);
+  const [consultando, setConsultando] = useState(false);
+  useEffect(() => {
+    setEstadoManual(null);
+  }, [lote]);
+  const estadoLote = estadoManual ?? estadoSondeado;
+
+  const handleConsultarDeNuevo = async () => {
+    if (!lote) return;
+    setConsultando(true);
+    try {
+      const r = await inmueblesImportacionApi.estadoDeLote(lote);
+      setEstadoManual(r);
+      if (r.estado === "ENCOLADO" || r.estado === "PROCESANDO") {
+        toast.info("Sigue en proceso", {
+          description: `${r.procesadas} de ${r.total} filas procesadas. Podés cerrar esta pestaña — te avisamos al terminar.`,
+        });
+      }
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "No pudimos consultar el estado del lote.",
+      );
+    } finally {
+      setConsultando(false);
+    }
+  };
 
   // ── Phase 2: review ──────────────────────────────────────────────────
   const [resumenLote, setResumenLote] = useState<ResumenLoteInmuebles | null>(
@@ -130,6 +179,26 @@ export function StepConfirmImport({
     omitidas: FilaOmitida[];
   } | null>(null);
   const [isComplete, setIsComplete] = useState(false);
+
+  /*
+   * Aviso al muro mientras hay una operación larga en vuelo — la
+   * geocodificación fila a fila, el `preparar`, el job del servidor y la
+   * activación por tandas. Sin esto, el pie del muro ofrecía «Seguir con
+   * Contratos» con el «Activando…» todavía girando (Nico lo vio). El job
+   * cuenta como ocupado sólo mientras el sondeo sigue vivo: con el sondeo
+   * agotado nadie está mirando el job, y el muro no puede quedar clavado en
+   * «ocupado» para siempre.
+   */
+  const jobCorriendo =
+    !agotado &&
+    (estadoLote?.estado === 'ENCOLADO' || estadoLote?.estado === 'PROCESANDO');
+  const hayOperacionEnVuelo =
+    geocodificando || preparando || activando || descartandoLote || jobCorriendo;
+  useEffect(() => {
+    onOcupado?.(hayOperacionEnVuelo);
+  }, [hayOperacionEnVuelo, onOcupado]);
+  // Al desmontar (cambio de paso, «cancelar») el muro recupera sus botones.
+  useEffect(() => () => onOcupado?.(false), [onOcupado]);
 
   const refrescarRevision = useCallback(async (elLote: string, pag = 1) => {
     try {
@@ -170,31 +239,59 @@ export function StepConfirmImport({
     // Geocodificación secuencial — respeta el límite de LocationIQ. Va antes
     // de `preparar()` porque el back de importación (WU-4) no geocodifica;
     // sin esto, todo inmueble importado caería al centro de la ciudad.
+    //
+    // `geocodeImportRow` ya degrada sola (centro de la ciudad) cuando la
+    // dirección no aparece o LocationIQ falla; acá sólo se CUENTA cuántas
+    // cayeron ahí para decirlo — sin el aviso, un LocationIQ caído dejaba
+    // todo el lote apilado en el centro del mapa y nadie se enteraba. El
+    // try/finally de afuera es la red de seguridad: un throw inesperado en
+    // esta fase dejaba «Preparando…» girando para siempre, sin error y sin
+    // botón.
     const dtos: ImportarInmuebleDto[] = [];
-    for (let i = 0; i < importables.length; i++) {
-      const p = importables[i];
-      setGeoCurrent(i + 1);
-      const coords = await geocodeImportRow(p);
-      dtos.push({
-        ...toImportarInmuebleDto(p),
-        ...(coords.lat != null && coords.lng != null
-          ? { latitude: coords.lat, longitude: coords.lng }
-          : {}),
-      });
-      setGeoProgress(Math.round(((i + 1) / importables.length) * 100));
-      if (i < importables.length - 1) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, GEOCODE_ROW_DELAY_MS),
-        );
+    let sinUbicar = 0;
+    try {
+      for (let i = 0; i < importables.length; i++) {
+        const p = importables[i];
+        setGeoCurrent(i + 1);
+        const coords = await geocodeImportRow(p);
+        if (coords.source !== "geocoded") sinUbicar += 1;
+        dtos.push({
+          ...toImportarInmuebleDto(p),
+          ...(coords.lat != null && coords.lng != null
+            ? { latitude: coords.lat, longitude: coords.lng }
+            : {}),
+        });
+        setGeoProgress(Math.round(((i + 1) / importables.length) * 100));
+        if (i < importables.length - 1) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, GEOCODE_ROW_DELAY_MS),
+          );
+        }
       }
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message
+          ? e.message
+          : "No pudimos preparar los datos del archivo. Intentá de nuevo.",
+      );
+      return;
+    } finally {
+      setGeocodificando(false);
     }
 
-    setGeocodificando(false);
     setPreparando(true);
     try {
       const r = await inmueblesImportacionApi.preparar(dtos, idempotencyKey);
       // El lote es SIEMPRE del servidor — nunca uno generado acá.
       setLote(r.lote);
+      // Persistido en el estado del wizard: sobrevive a «Anterior» y a un
+      // remount del paso. Sin esto, volver un paso perdía el lote.
+      updateState({ loteRetomado: r.lote });
+      if (sinUbicar > 0) {
+        toast.info("Direcciones sin ubicar", {
+          description: `${sinUbicar} de ${dtos.length} direcciones no se encontraron en el mapa: esos inmuebles quedan en el centro de su ciudad y podés ajustar el pin después, en cada ficha.`,
+        });
+      }
     } catch (e) {
       setError(
         e instanceof ApiError && e.messages
@@ -215,13 +312,18 @@ export function StepConfirmImport({
       await inmueblesImportacionApi.resolver(id, cambios);
       await refrescarRevision(lote, pagina);
     } catch (e) {
-      const msg =
-        e instanceof ApiError && e.code === "FILA_YA_ACTIVADA"
-          ? "Esta fila ya se activó — no se puede editar."
-          : e instanceof Error
-            ? e.message
-            : "No pudimos guardar los cambios.";
-      toast.error(msg);
+      if (e instanceof ApiError && e.code === "FILA_YA_ACTIVADA") {
+        toast.error(
+          "Esta fila ya se activó — no se puede editar. La lista se actualizó.",
+        );
+        // La fila que se ve es vieja: refrescar la saca de la lista en vez
+        // de dejar a la persona editando un fantasma que siempre da 409.
+        await refrescarRevision(lote, pagina);
+      } else {
+        toast.error(
+          e instanceof Error ? e.message : "No pudimos guardar los cambios.",
+        );
+      }
     } finally {
       setFilaBusy(null);
     }
@@ -285,6 +387,20 @@ export function StepConfirmImport({
         lote,
         inmueblesImportacionApi.activar,
       );
+      /*
+       * El techo de llamadas NO es éxito: quedan filas sin activar. Decir
+       * «¡Importación completada!» acá le mentiría a la persona con filas
+       * vivas en el lote. Se refresca el resumen (las tandas que sí pasaron
+       * cuentan) y se ofrece seguir — reintentar continúa donde quedó.
+       */
+      if (resultado.detenidoPorLimite) {
+        await refrescarRevision(lote, pagina);
+        setError(
+          `Se activaron ${resultado.activados} inmuebles y quedaron más por activar. ` +
+            `Nada se repite ni se duplica: tocá «Activar» de nuevo para seguir donde quedó.`,
+        );
+        return;
+      }
       setResultadoActivacion(resultado);
       updateState({ importedCount: resultado.activados, importProgress: 100 });
       setIsComplete(true);
@@ -298,7 +414,23 @@ export function StepConfirmImport({
         });
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No pudimos activar el lote.");
+      /*
+       * Un corte a mitad de las tandas trae su progreso: sin esto, la
+       * pantalla decía «no pudimos activar» habiendo activado 1.000, y la
+       * persona no sabía si reintentar duplicaba. No duplica — el back no
+       * repite filas — y hay que decirlo.
+       */
+      if (e instanceof ActivacionInterrumpida) {
+        await refrescarRevision(lote, pagina);
+        setError(
+          e.progreso.activados > 0
+            ? `Se activaron ${e.progreso.activados} inmuebles antes del corte (${e.message}). ` +
+              `Nada se pierde ni se duplica: tocá «Activar» de nuevo y sigue donde quedó.`
+            : `${e.message} No se activó ninguno todavía — tocá «Activar» de nuevo para reintentar.`,
+        );
+      } else {
+        setError(e instanceof Error ? e.message : "No pudimos activar el lote.");
+      }
     } finally {
       setActivando(false);
     }
@@ -399,7 +531,30 @@ export function StepConfirmImport({
   ) {
     return (
       <div className="space-y-6">
-        <ProgresoDeLoteInmuebles estado={estadoLote} agotado={agotado} />
+        <ProgresoDeLoteInmuebles
+          estado={estadoLote}
+          // Con la consulta manual el sondeo «revive» a ojos de la persona:
+          // el cartel de agotado sólo tiene sentido si además no hay botón.
+          agotado={agotado && estadoManual === null}
+        />
+        {agotado && (
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              hideArrow
+              disabled={consultando}
+              isLoading={consultando}
+              onClick={handleConsultarDeNuevo}
+              data-testid="consultar-de-nuevo"
+            >
+              ¿Ya terminó? Consultar de nuevo
+            </Button>
+            <p className="text-xs text-fg-subtle">
+              El proceso sigue del lado del servidor — nada se perdió.
+            </p>
+          </div>
+        )}
         {error && (
           <div
             className="rounded-md bg-danger-soft border border-border p-3"
@@ -414,7 +569,38 @@ export function StepConfirmImport({
 
   // ── Batch FALLIDO ─────────────────────────────────────────────────────
   if (lote && estadoLote?.estado === "FALLIDO") {
-    return <ProgresoDeLoteInmuebles estado={estadoLote} agotado={agotado} />;
+    return (
+      <div className="space-y-6">
+        <ProgresoDeLoteInmuebles estado={estadoLote} agotado={agotado} />
+        {/*
+         * La salida que faltaba: sin este botón, el FALLIDO era un callejón
+         * — «Anterior» volvía a un paso cuyo «Siguiente» aterrizaba otra vez
+         * acá, con el mismo lote muerto. Los datos del archivo siguen en el
+         * wizard: preparar de nuevo arranca un lote NUEVO (clave de
+         * idempotencia nueva — la vieja identifica al intento fallido) sin
+         * re-subir nada.
+         */}
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            hideArrow
+            data-testid="preparar-de-nuevo"
+            onClick={() => {
+              setIdempotencyKey(generarIdempotencyKey());
+              setError(null);
+              setEstadoManual(null);
+              updateState({ loteRetomado: null });
+              setLote(null);
+            }}
+          >
+            Preparar de nuevo
+          </Button>
+          <p className="text-xs text-fg-subtle">
+            Tus datos siguen acá — no hace falta volver a subir el archivo.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   // ── Batch LISTO — review + activate ─────────────────────────────────
@@ -492,10 +678,24 @@ export function StepConfirmImport({
 
         {error && (
           <div
-            className="rounded-md bg-danger-soft border border-border p-3"
+            className="flex flex-wrap items-center gap-3 rounded-md bg-danger-soft border border-border p-3"
             role="alert"
           >
-            <p className="text-sm text-danger">{error}</p>
+            <p className="min-w-0 flex-1 text-sm text-danger">{error}</p>
+            {/* La lista pudo quedar vieja detrás del error (una página que no
+                cargó, una activación cortada): refrescar es siempre una
+                salida segura — no muta nada. */}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              hideArrow
+              disabled={filaBusy !== null || activando || descartandoLote}
+              onClick={() => void refrescarRevision(lote, pagina)}
+              data-testid="revision-actualizar"
+            >
+              Actualizar la lista
+            </Button>
           </div>
         )}
 

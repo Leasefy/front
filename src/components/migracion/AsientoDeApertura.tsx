@@ -35,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ApiError } from "@/lib/api/client";
 import {
   contabilidadApi,
   LARGO_MAXIMO_DE_DESCRIPCION,
@@ -75,13 +76,23 @@ const TEXTO_DEL_PROBLEMA: Record<ProblemaDeApertura, string> = {
 export function AsientoDeApertura({
   cuentas,
   onCreado,
+  onRevisarCargado,
   enElMuro = false,
+  onOcupado,
 }: {
   /** Sólo las imputables y activas: las únicas que reciben movimientos. */
   cuentas: CuentaPuc[];
   onCreado: (asiento: AsientoContable) => void;
+  /**
+   * Con la conexión cortada al enviar no sabemos si el asiento entró. Esto
+   * refresca la franja de «ya cargados» del padre para que la persona MIRE
+   * antes de reintentar, en vez de registrar la apertura dos veces.
+   */
+  onRevisarCargado?: () => void;
   /** Adentro del muro no se ofrece «volver a la secuencia»: el muro es la secuencia. */
   enElMuro?: boolean;
+  /** Aviso al muro mientras el asiento viaja: el pie espera. */
+  onOcupado?: (ocupado: boolean) => void;
 }) {
   const [fecha, setFecha] = useState(hoyContable());
   const [descripcion, setDescripcion] = useState(() =>
@@ -121,6 +132,7 @@ export function AsientoDeApertura({
 
   const enviar = async () => {
     setEnviando(true);
+    onOcupado?.(true);
     setError(null);
     try {
       const asiento = await contabilidadApi.asientos.crear({
@@ -131,14 +143,29 @@ export function AsientoDeApertura({
       setCreado(asiento);
       onCreado(asiento);
     } catch (e) {
-      setError(
-        mensajeDeContabilidad(
-          e,
-          "No pudimos registrar el asiento. Intentá de nuevo.",
-        ),
-      );
+      if (e instanceof ApiError && e.status === 0) {
+        /*
+         * Corte de red EN VUELO: el asiento pudo haber llegado a escribirse
+         * sin que la respuesta volviera. Reintentar a ciegas es el camino a
+         * una apertura doble (el back no tiene llave de idempotencia acá),
+         * así que se refresca la lista de lo cargado y se pide MIRARLA.
+         */
+        onRevisarCargado?.();
+        setError(
+          "Se cortó la conexión al enviar y no sabemos si el asiento alcanzó a registrarse. " +
+            "Mirá arriba lo ya cargado —recién lo actualizamos—: si el asiento aparece, no lo registres de nuevo; si no aparece, intentá otra vez.",
+        );
+      } else {
+        setError(
+          mensajeDeContabilidad(
+            e,
+            "No pudimos registrar el asiento. Intentá de nuevo.",
+          ),
+        );
+      }
     } finally {
       setEnviando(false);
+      onOcupado?.(false);
     }
   };
 

@@ -14,15 +14,26 @@
  */
 
 import { Clock, XCircle } from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { EstadoDeLote } from "@/lib/api/contracts.service";
 
 export function ProgresoDeLote({
   estado,
   agotado,
+  verificando = false,
+  onVerificarAhora,
+  onVolverAEmpezar,
 }: {
   estado: EstadoDeLote | null;
   agotado: boolean;
+  /** El padre está preguntando por el lote ahora mismo. */
+  verificando?: boolean;
+  /** Con el sondeo agotado: preguntar UNA vez más, a pedido. */
+  onVerificarAhora?: () => void;
+  /** La salida del FALLIDO: volver al cargador. Sin esto la tarjeta era un
+   *  callejón — el error se mostraba y no había ni un botón para seguir. */
+  onVolverAEmpezar?: () => void;
 }) {
   if (estado?.estado === "FALLIDO") {
     return (
@@ -36,6 +47,20 @@ export function ProgresoDeLote({
         <p className="text-sm text-muted-foreground">
           {estado.error ?? "No pudimos preparar la migración."}
         </p>
+        <p className="text-sm text-muted-foreground">
+          Ningún contrato se creó. Tu archivo no se modifica: corregí lo que
+          diga el error de arriba y volvé a subirlo.
+        </p>
+        {onVolverAEmpezar ? (
+          <Button
+            variant="outline"
+            hideArrow
+            onClick={onVolverAEmpezar}
+            data-testid="lote-fallido-volver"
+          >
+            Subir el archivo de nuevo
+          </Button>
+        ) : null}
       </Card>
     );
   }
@@ -85,12 +110,25 @@ export function ProgresoDeLote({
       </p>
 
       {agotado ? (
-        <div className="rounded-md border border-border bg-info-soft p-3">
+        <div className="space-y-2 rounded-md border border-border bg-info-soft p-3">
           <p className="text-sm text-info">
             Esto está tardando más de lo esperado. Seguimos trabajando del lado
             del servidor — te avisamos apenas termine, no hace falta que esperes
             acá.
           </p>
+          {onVerificarAhora ? (
+            <Button
+              size="sm"
+              variant="outline"
+              hideArrow
+              disabled={verificando}
+              isLoading={verificando}
+              onClick={onVerificarAhora}
+              data-testid="lote-verificar-ahora"
+            >
+              Ver si ya terminó
+            </Button>
+          ) : null}
         </div>
       ) : null}
     </Card>

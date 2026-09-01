@@ -215,6 +215,28 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   // abierta, nunca el mecanismo de finalización.
   const { estado: estadoLote, agotado } = useEstadoDeLote(lote);
 
+  // La consignación automática corre un loop largo de peticiones: es una
+  // operación en vuelo como cualquier otra y el muro tiene que saberlo.
+  const [consignando, setConsignando] = useState(false);
+
+  /*
+   * Aviso al muro mientras HAY una operación en vuelo — preparar, el job del
+   * servidor, la consignación automática, activar o descartar. Antes sólo se
+   * marcaba `activar()` a mano, y el pie del muro ofrecía «Seguir con Plan de
+   * cuentas» con el job todavía procesando (la misma carrera que Nico vio en
+   * Propiedades). Un job FALLIDO o un sondeo agotado NO son «ocupado»: nadie
+   * está esperando nada y el muro no puede quedar clavado.
+   */
+  const esperandoElJob =
+    Boolean(lote) && !resumen && !agotado && estadoLote?.estado !== "FALLIDO";
+  const hayOperacionEnVuelo =
+    cargando || descartandoLote || consignando || esperandoElJob;
+  useEffect(() => {
+    onOcupado?.(hayOperacionEnVuelo);
+  }, [hayOperacionEnVuelo, onOcupado]);
+  // Al desmontar (cambio de paso en el muro), el pie recupera sus botones.
+  useEffect(() => () => onOcupado?.(false), [onOcupado]);
+
   /**
    * Una clave por archivo leído (no por click): si `preparar()` se reintenta
    * para ESTE mismo archivo, cae en el mismo lote en vez de duplicarlo.
@@ -306,24 +328,44 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
       const duenos = duenosDelArchivo.current;
       if (duenos.size === 0 || lotesConsignados.current.has(elLote)) return;
       lotesConsignados.current.add(elLote);
+      setConsignando(true);
       const candidatas: FilaDeMigracion[] = [];
-      for (let pag = 1; pag < 200; pag++) {
-        const p = await contractsApi.migracion.filas(elLote, {
-          pagina: pag,
-          porPagina: POR_PAGINA,
-          estado: "PENDIENTE",
-        });
-        candidatas.push(
-          ...p.filas.filter(
-            (f) =>
-              f.faltantes.includes("propietario") &&
-              !f.propietarioId &&
-              duenos.has(f.fila),
-          ),
+      try {
+        for (let pag = 1; pag < 200; pag++) {
+          const p = await contractsApi.migracion.filas(elLote, {
+            pagina: pag,
+            porPagina: POR_PAGINA,
+            estado: "PENDIENTE",
+          });
+          candidatas.push(
+            ...p.filas.filter(
+              (f) =>
+                f.faltantes.includes("propietario") &&
+                !f.propietarioId &&
+                duenos.has(f.fila),
+            ),
+          );
+          if (p.filas.length < POR_PAGINA || pag * POR_PAGINA >= p.total)
+            break;
+        }
+      } catch {
+        /*
+         * No llegamos ni a saber cuáles filas consignar (falló el listado).
+         * Se DESMARCA el lote: la próxima entrada a esta lista lo reintenta
+         * solo. Y se dice — un fallo acá era invisible: la persona veía las
+         * filas sin propietario sin saber que la automática nunca corrió.
+         */
+        lotesConsignados.current.delete(elLote);
+        setConsignando(false);
+        toast.error(
+          "No pudimos consignar los propietarios del archivo automáticamente. Las filas quedaron con su formulario — completalas a mano o volvé a entrar para reintentar.",
         );
-        if (p.filas.length < POR_PAGINA || pag * POR_PAGINA >= p.total) break;
+        return;
       }
-      if (candidatas.length === 0) return;
+      if (candidatas.length === 0) {
+        setConsignando(false);
+        return;
+      }
       const aviso = toast.loading(
         `Consignando con el propietario del archivo… 0 de ${candidatas.length}`,
       );
@@ -357,7 +399,14 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
         toast.warning(
           `${hechas - fallidas} consignados; ${fallidas} quedaron para revisar a mano`,
         );
-      await refrescar(elLote);
+      setConsignando(false);
+      // Si el refresco falla, lo consignado ya está consignado: se avisa y
+      // el paginador o recargar traen la lista fresca.
+      await refrescar(elLote).catch(() => {
+        toast.error(
+          "Se consignó, pero no pudimos refrescar la lista. Cambiá de página o recargá para verla al día.",
+        );
+      });
     },
     [refrescar],
   );
@@ -400,7 +449,9 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
     if (!lote) return;
     setCargando(true);
     setError(null);
-    onOcupado?.(true);
+    // `onOcupado` ya no se llama a mano acá: lo cubre el efecto derivado de
+    // `hayOperacionEnVuelo` (cargando ⊃ activar), junto con preparar, el job
+    // y la consignación — que antes quedaban afuera.
     try {
       setActivacion(await contractsApi.migracion.activar(lote, invitar));
       await refrescar(lote);
@@ -408,9 +459,51 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
       setError(e instanceof Error ? e.message : "No pudimos activar.");
     } finally {
       setCargando(false);
-      onOcupado?.(false);
     }
-  }, [lote, invitar, refrescar, onOcupado]);
+  }, [lote, invitar, refrescar]);
+
+  /**
+   * El sondeo llegó a su techo (10 min) y la persona quedó mirando la
+   * pantalla de espera: este botón pregunta UNA vez más, a pedido. Si el
+   * lote ya está LISTO, `refrescar` puebla la lista de trabajo y la pantalla
+   * avanza sola; si sigue procesando, el back responde 409 con su mensaje y
+   * se muestra tal cual — nunca un reintento silencioso.
+   */
+  const verificarAhora = useCallback(async () => {
+    if (!lote) return;
+    setCargando(true);
+    try {
+      await refrescar(lote);
+      await consignarDesdeElArchivo(lote);
+    } catch (e) {
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : "Todavía no está listo — seguimos trabajando del lado del servidor.",
+      );
+    } finally {
+      setCargando(false);
+    }
+  }, [lote, refrescar, consignarDesdeElArchivo]);
+
+  /** Volver al cargador soltando el lote actual. Nada del servidor se toca. */
+  const volverAEmpezar = useCallback(() => {
+    setResumen(null);
+    setLote(null);
+    setFilas([]);
+    setEncabezados([]);
+    setMapeo([]);
+    setActivacion(null);
+    setIdempotencyKey("");
+    setSeleccion(new Set());
+    setError(null);
+    contractsApi.migracion
+      .lotesAbiertos()
+      .then(setLotesAbiertos)
+      .catch(() => {
+        // No poder listarlos no debe impedir empezar uno nuevo.
+      });
+  }, []);
 
   /**
    * Descartar el lote entero (contract.md T-0036 §3.2.C). Nunca reintenta ni
@@ -507,15 +600,27 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
    * el archivo otra vez, duplicando todas las filas. Una cartera de 1.200
    * contratos no se resuelve de una sentada.
    */
+  /**
+   * `true` cuando la lista de migraciones a medias no se pudo leer. No frena
+   * nada — empezar de cero sigue permitido — pero se DICE: si hay una a
+   * medias y la persona no la ve, resube el mismo archivo y duplica las
+   * filas. El silencio escondía justo ese riesgo (misma regla que terceros).
+   */
+  const [fallaronLosLotes, setFallaronLosLotes] = useState(false);
+
   useEffect(() => {
     let vigente = true;
     contractsApi.migracion
       .lotesAbiertos()
       .then((l) => {
-        if (vigente) setLotesAbiertos(l);
+        if (vigente) {
+          setLotesAbiertos(l);
+          setFallaronLosLotes(false);
+        }
       })
       .catch(() => {
         // No poder listarlos no debe impedir empezar uno nuevo.
+        if (vigente) setFallaronLosLotes(true);
       });
     return () => {
       vigente = false;
@@ -558,7 +663,15 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   // dejar explícito que cerrar la pestaña es seguro (el lote es durable
   // server-side; la notificación avisa igual — contrato §3.2.C).
   if (lote && !resumen) {
-    return <ProgresoDeLote estado={estadoLote} agotado={agotado} />;
+    return (
+      <ProgresoDeLote
+        estado={estadoLote}
+        agotado={agotado}
+        verificando={cargando}
+        onVerificarAhora={() => void verificarAhora()}
+        onVolverAEmpezar={volverAEmpezar}
+      />
+    );
   }
 
   // ── Ya se preparó: lista de trabajo ──────────────────────────────────────
@@ -579,20 +692,29 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
         onActivar={() => void activar()}
         descartando={descartandoLote}
         onDescartarLote={descartarLote}
-        onPaginaCambia={(p) => void refrescar(lote, p)}
+        // 🔴 `.catch` y no `void` pelado: un refresco que falla con `void`
+        // es un fallo MUDO — la persona resuelve una fila, la lista no se
+        // mueve, y no hay ni un cartel que diga por qué.
+        onPaginaCambia={(p) =>
+          refrescar(lote, p).catch((e) =>
+            setError(
+              e instanceof Error
+                ? e.message
+                : "No pudimos traer esa página. Probá de nuevo.",
+            ),
+          )
+        }
         onSeleccionCambia={setSeleccion}
-        onFilaResuelta={() => void refrescar(lote, pagina)}
-        onOtroArchivo={() => {
-          setResumen(null);
-          setLote(null);
-          setFilas([]);
-          setEncabezados([]);
-          setMapeo([]);
-          setActivacion(null);
-          setIdempotencyKey("");
-          // Otro archivo, otro lote: nada de la selección anterior aplica.
-          setSeleccion(new Set());
-        }}
+        onFilaResuelta={() =>
+          refrescar(lote, pagina).catch((e) =>
+            setError(
+              e instanceof Error
+                ? e.message
+                : "Se guardó, pero no pudimos refrescar la lista. Cambiá de página para verla al día.",
+            ),
+          )
+        }
+        onOtroArchivo={volverAEmpezar}
       />
     );
   }
@@ -710,6 +832,17 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
         </Card>
       ) : null}
 
+      {fallaronLosLotes ? (
+        <p
+          className="rounded-md border border-border bg-warning-soft p-3 text-sm text-fg"
+          data-testid="lotes-abiertos-fallo"
+        >
+          No pudimos verificar si tenés una migración sin terminar. Si dejaste
+          una a medias, retomala antes de volver a subir el archivo — resubirlo
+          duplica las filas.
+        </p>
+      ) : null}
+
       {resumenTarjeta ? (
         <DialogoDescartarLote
           lote={resumenTarjeta.lote}
@@ -740,6 +873,10 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
             data-testid="archivo-contratos"
             onChange={(e) => {
               const f = e.target.files?.[0];
+              // Sin esto, elegir EL MISMO archivo (corregido y guardado con
+              // el mismo nombre) no dispara `change`: el input retiene el
+              // valor y el reintento tras un error de lectura queda muerto.
+              e.target.value = "";
               if (f) void leerArchivo(f);
             }}
           />

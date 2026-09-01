@@ -41,6 +41,17 @@ import {
 const SIN_VALOR = '__vacio__';
 
 /**
+ * Qué pasó con una acción sobre la fila. Lo devuelve el padre (que es quien
+ * llama al back) para que ESTA tarjeta pueda mostrar el fallo al lado del
+ * botón apretado — el cartel global de arriba no se ve desde la tarjeta 200 —
+ * y decidir si el borrador tecleado se conserva.
+ */
+export interface ResultadoDeAccion {
+  ok: boolean;
+  mensaje: string | null;
+}
+
+/**
  * El valor de una celda listo para un `<input>`.
  *
  * `datos` viene NORMALIZADO por el back: los sí/no son booleanos y el banco es
@@ -139,9 +150,9 @@ export function FilaDeTercero({
   fila: FilaDeStaging;
   columnas: readonly ColumnaDePlantilla[];
   guardando: boolean;
-  onCorregir: (campos: FilaTercero) => void;
-  onVincular: () => void;
-  onDescartar: () => void;
+  onCorregir: (campos: FilaTercero) => Promise<ResultadoDeAccion>;
+  onVincular: () => Promise<ResultadoDeAccion>;
+  onDescartar: () => Promise<ResultadoDeAccion>;
 }) {
   const errores = useMemo(() => fila.errores ?? [], [fila.errores]);
 
@@ -170,6 +181,37 @@ export function FilaDeTercero({
 
   const [borrador, setBorrador] = useState<Record<string, string>>({});
   const hayCambios = Object.keys(borrador).length > 0;
+
+  /**
+   * El fallo de la ÚLTIMA acción de esta fila, al lado de sus botones.
+   *
+   * 🔴 El borrador se limpia SÓLO si la acción pasó. Antes, `Guardar` vaciaba
+   * lo tecleado en el mismo clic: si el guardado fallaba, los quince campos
+   * corregidos volvían a lo de antes y había que teclearlos de nuevo — la
+   * manera más rápida de que alguien abandone una migración de 600 filas.
+   */
+  const [errorDeFila, setErrorDeFila] = useState<string | null>(null);
+
+  const guardar = async () => {
+    setErrorDeFila(null);
+    const r = await onCorregir(borrador as FilaTercero);
+    if (r.ok) setBorrador({});
+    else if (r.mensaje) {
+      setErrorDeFila(`${r.mensaje} Lo que escribiste sigue acá — reintentá Guardar.`);
+    }
+  };
+
+  const vincular = async () => {
+    setErrorDeFila(null);
+    const r = await onVincular();
+    if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintentá.`);
+  };
+
+  const descartar = async () => {
+    setErrorDeFila(null);
+    const r = await onDescartar();
+    if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintentá.`);
+  };
 
   const valorDe = (campo: string): string =>
     borrador[campo] ?? valorEditable(fila.datos[campo]);
@@ -218,7 +260,7 @@ export function FilaDeTercero({
             edita desde Propietarios. Si son dos personas distintas, corregí el documento acá abajo.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" hideArrow disabled={guardando} onClick={onVincular}>
+            <Button size="sm" hideArrow disabled={guardando} onClick={() => void vincular()}>
               <LinkIcon className="mr-1.5 h-4 w-4" />
               Es la misma persona
             </Button>
@@ -254,10 +296,7 @@ export function FilaDeTercero({
           hideArrow
           disabled={!hayCambios || guardando}
           isLoading={guardando}
-          onClick={() => {
-            onCorregir(borrador as FilaTercero);
-            setBorrador({});
-          }}
+          onClick={() => void guardar()}
         >
           Guardar
         </Button>
@@ -282,12 +321,23 @@ export function FilaDeTercero({
           hideArrow
           disabled={guardando}
           className="text-danger hover:bg-danger-soft hover:text-danger"
-          onClick={onDescartar}
+          onClick={() => void descartar()}
         >
           <Trash className="mr-1.5 h-4 w-4" />
           No traer esta fila
         </Button>
       </div>
+
+      {errorDeFila ? (
+        <p
+          className="flex items-start gap-2 text-sm text-danger"
+          data-testid="error-de-fila"
+          role="alert"
+        >
+          <Warning className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{errorDeFila}</span>
+        </p>
+      ) : null}
     </div>
   );
 }

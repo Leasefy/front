@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { activarLoteCompleto } from './activarLoteCompleto';
+import { activarLoteCompleto, ActivacionInterrumpida } from './activarLoteCompleto';
 import type { ResumenActivacionInmuebles } from '@/lib/api/inmuebles-importacion.service';
 
 function resumen(overrides: Partial<ResumenActivacionInmuebles> = {}): ResumenActivacionInmuebles {
@@ -64,5 +64,41 @@ describe('activarLoteCompleto — the restantes loop', () => {
   it('propagates a rejected activar() call instead of swallowing it', async () => {
     const activar = vi.fn().mockRejectedValue(new Error('network down'));
     await expect(activarLoteCompleto('lote-1', activar)).rejects.toThrow('network down');
+  });
+
+  it('🔴 un corte a mitad del loop trae el progreso de las tandas que SÍ pasaron', async () => {
+    /*
+     * La llamada 3 se cae con 1.000 filas ya activadas. Sin el progreso en
+     * el error, la pantalla sólo podía decir «no pudimos activar» — y la
+     * persona no sabía si reintentar duplicaba (no duplica: el back no
+     * repite filas).
+     */
+    const activar = vi
+      .fn()
+      .mockResolvedValueOnce(resumen({ activados: 500, restantes: 700, omitidas: [{ id: 'f1', fila: 3, faltantes: ['canon'] }] }))
+      .mockResolvedValueOnce(resumen({ activados: 500, restantes: 200 }))
+      .mockRejectedValueOnce(new Error('network down'));
+
+    const promesa = activarLoteCompleto('lote-1', activar);
+    await expect(promesa).rejects.toBeInstanceOf(ActivacionInterrumpida);
+    const e = (await promesa.catch((x) => x)) as ActivacionInterrumpida;
+    expect(e.message).toBe('network down');
+    expect(e.progreso.activados).toBe(1000);
+    expect(e.progreso.llamadas).toBe(2);
+    expect(e.progreso.omitidas.map((o) => o.id)).toEqual(['f1']);
+  });
+
+  it('un corte en la PRIMERA llamada reporta cero activados, no inventa progreso', async () => {
+    const activar = vi.fn().mockRejectedValue(new Error('boom'));
+    const e = (await activarLoteCompleto('lote-1', activar).catch((x) => x)) as ActivacionInterrumpida;
+    expect(e).toBeInstanceOf(ActivacionInterrumpida);
+    expect(e.progreso.activados).toBe(0);
+    expect(e.progreso.llamadas).toBe(0);
+  });
+
+  it('un rechazo sin mensaje cae al copy de respaldo, nunca a un error vacío', async () => {
+    const activar = vi.fn().mockRejectedValue('crudo');
+    const e = (await activarLoteCompleto('lote-1', activar).catch((x) => x)) as ActivacionInterrumpida;
+    expect(e.message).toBe('No pudimos activar el lote.');
   });
 });

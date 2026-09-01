@@ -4677,6 +4677,212 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/ai-hub/inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Piloto automático — bandeja única de decisiones humanas pendientes
+         * @description Agrega TODAS las decisiones que esperan a un humano (escalaciones, siniestros, cartas prejurídicas, planes de pago, retención, calidad, hilos de WhatsApp, facturas AP) en una sola lista priorizada. Cada ítem trae su href y, cuando el endpoint acepta un cuerpo fijo de un clic, la acción ejecutable. Fail-soft por fuente.
+         */
+        get: operations["getAiHubInbox"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto automático — feed de actividad de los agentes */
+        get: operations["getAiHubActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/agentes/{agente}/autonomia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto automático — postura de autonomía de un agente */
+        get: operations["getAiHubAgentAutonomia"];
+        /**
+         * Piloto automático — cambiar el modo de autonomía de un agente
+         * @description Persiste el modo (🌑 sombra / 🤝 copiloto / 🚀 autónomo) por agente × agencia y deja rastro en audit_log. Solo OWNER/ADMIN: subir la autonomía es una decisión de gobierno, no de operación.
+         */
+        put: operations["putAiHubAgentAutonomia"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/retenidos/{decisionId}/aprobar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Piloto — aprobar y liberar una acción retenida por autonomía
+         * @description Libera la acción que el copiloto retuvo: una llamada de cobranza (marca el teléfono real con los flags de marcado encendidos) o un cobro por WhatsApp/email. Idempotente: la segunda aprobación devuelve 409 y no emite nada.
+         */
+        post: operations["aprobarRetenidoPiloto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/retenidos/{decisionId}/descartar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Piloto — descartar una acción retenida (no sale nada)
+         * @description Marca la retención como descartada, con auditoría. No emite ningún contacto; si el caso amerita, el priorizador volverá a proponerlo.
+         */
+        post: operations["descartarRetenidoPiloto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/gobierno": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto — qué agentes corren para esta inmobiliaria */
+        get: operations["getAiHubGobierno"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/gobierno/{agente}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Piloto — encender o apagar un agente para esta inmobiliaria
+         * @description Edita la lista `agentes_habilitados`. Apagar desde la herencia materializa la lista (todos menos ese); volver a encenderlos todos colapsa a heredar. Las llaves finas se preservan. Solo OWNER/ADMIN.
+         */
+        put: operations["putAiHubGobierno"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/pulso": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto automático — tablero vivo (en curso, alertas, hoy) */
+        get: operations["getAiHubPulso"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/preparacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto automático — si la inmobiliaria puede operar sola */
+        get: operations["getAiHubPreparacion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/detalle/{itemId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Piloto automático — detalle de un ítem (bandeja, actividad o pulso)
+         * @description Devuelve todo lo que se sabe de un caso: el contexto agrupado, la línea de tiempo derivada de las tablas existentes, las acciones que se ejecutan de un clic y los enlaces a las pantallas que exigen inputs. Acepta los ids con prefijo que ya emiten la bandeja, el feed de actividad y el pulso. 404 cuando el prefijo es desconocido o la fila no pertenece a la agencia.
+         */
+        get: operations["getAiHubDetalle"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/briefing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto automático — briefing del día */
+        get: operations["getAiHubBriefing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/ai-hub/work-items/{agente}/{id}": {
         parameters: {
             query?: never;
@@ -10696,6 +10902,8 @@ export interface components {
             };
             createdAt: string;
             updatedAt: string;
+            certifiedBy?: string;
+            certifiedAt?: string;
         };
         AiHubChatLessonsResponse: {
             lessons: components["schemas"]["AiHubChatLesson"][];
@@ -10799,6 +11007,204 @@ export interface components {
             total: number;
             page: number;
             pageSize: number;
+        };
+        PilotoInboxAccion: {
+            label: string;
+            /** @enum {string} */
+            method: "POST" | "PATCH";
+            path: string;
+            body?: {
+                [key: string]: unknown;
+            };
+        };
+        PilotoInboxItem: {
+            id: string;
+            fuente: string;
+            agente: string;
+            /** @enum {string} */
+            prioridad: "alta" | "media" | "baja";
+            titulo: string;
+            resumen: string;
+            montoCop?: number;
+            desde: string;
+            href: string;
+            accion?: components["schemas"]["PilotoInboxAccion"];
+        };
+        PilotoInboxResponse: {
+            items: components["schemas"]["PilotoInboxItem"][];
+            total: number;
+            porPrioridad: {
+                alta: number;
+                media: number;
+                baja: number;
+            };
+        };
+        PilotoActivityItem: {
+            id: string;
+            at: string;
+            agente: string;
+            tipo: string;
+            titulo: string;
+            detalle?: string;
+            href?: string;
+        };
+        PilotoActivityResponse: {
+            items: components["schemas"]["PilotoActivityItem"][];
+        };
+        AiHubAutonomiaValla: {
+            id: string;
+            label: string;
+            value: string;
+            estado: string;
+        };
+        AiHubAutonomiaResponse: {
+            agente: string;
+            /** @enum {string} */
+            modo: "sombra" | "copiloto" | "autonomo";
+            modosDisponibles: ("sombra" | "copiloto" | "autonomo")[];
+            valla: components["schemas"]["AiHubAutonomiaValla"][];
+            t323: boolean;
+            /** @enum {string} */
+            origen: "piloto" | "politica" | "default";
+            efectoReal: string;
+        };
+        AiHubAutonomiaPutResponse: {
+            agente: string;
+            /** @enum {string} */
+            modo: "sombra" | "copiloto" | "autonomo";
+        };
+        AiHubAutonomiaPutBody: {
+            /** @enum {string} */
+            modo: "sombra" | "copiloto" | "autonomo";
+        };
+        AiHubRetenidoResultado: {
+            /** @enum {boolean} */
+            ok: true;
+            /** @enum {string} */
+            emitido: "llamada" | "cobro" | "dispersion" | "nada";
+        };
+        AiHubGobiernoItem: {
+            agente: string;
+            corre: boolean;
+            /** @enum {string} */
+            origen: "heredado" | "elegido";
+            disponibleGlobal: boolean;
+        };
+        AiHubGobiernoResponse: {
+            agentes: components["schemas"]["AiHubGobiernoItem"][];
+            llavesFinas: string[];
+        };
+        AiHubGobiernoPutBody: {
+            habilitado: boolean;
+        };
+        PilotoPulsoEnCurso: {
+            id: string;
+            tipo: string;
+            titulo: string;
+            detalle?: string;
+            desde?: string;
+            href?: string;
+        };
+        PilotoPulsoCasoRef: {
+            id: string;
+            titulo: string;
+            desde?: string;
+        };
+        PilotoPulsoAlerta: {
+            id: string;
+            /** @enum {string} */
+            severidad: "critica" | "alta" | "media" | "info";
+            titulo: string;
+            detalle: string;
+            href?: string;
+            items?: components["schemas"]["PilotoPulsoCasoRef"][];
+        };
+        PilotoPulsoResponse: {
+            /** @enum {string} */
+            estado: "ok" | "atencion" | "critico";
+            titular: string;
+            enCurso: components["schemas"]["PilotoPulsoEnCurso"][];
+            alertas: components["schemas"]["PilotoPulsoAlerta"][];
+            hoy: {
+                llamadas: number;
+                conversacionesActivas: number;
+                decisionesResueltas: number;
+                contactosPlaneados?: number;
+            };
+        };
+        PilotoPreparacionRequisito: {
+            id: string;
+            titulo: string;
+            /** @enum {string} */
+            estado: "ok" | "falta" | "no_aplica";
+            detalle: string;
+            bloqueante: boolean;
+            comoSeArregla?: string;
+        };
+        PilotoPreparacionResponse: {
+            listo: boolean;
+            requisitos: components["schemas"]["PilotoPreparacionRequisito"][];
+        };
+        PilotoDetalleFila: {
+            label: string;
+            valor: string;
+            enfasis?: boolean;
+        };
+        PilotoDetalleGrupo: {
+            titulo: string;
+            filas: components["schemas"]["PilotoDetalleFila"][];
+        };
+        PilotoDetalleHito: {
+            at: string;
+            titulo: string;
+            detalle?: string;
+        };
+        PilotoDetalleAccion: {
+            label: string;
+            /** @enum {string} */
+            method: "POST" | "PATCH";
+            path: string;
+            body?: {
+                [key: string]: unknown;
+            };
+        };
+        PilotoDetalleEnlace: {
+            label: string;
+            href: string;
+            razon?: string;
+        };
+        PilotoDetalleResponse: {
+            id: string;
+            fuente: string;
+            agente: string;
+            titulo: string;
+            subtitulo?: string;
+            /** @enum {string} */
+            prioridad?: "alta" | "media" | "baja";
+            desde?: string;
+            montoCop?: number;
+            contexto: components["schemas"]["PilotoDetalleGrupo"][];
+            traza: components["schemas"]["PilotoDetalleHito"][];
+            acciones: components["schemas"]["PilotoDetalleAccion"][];
+            enlaces: components["schemas"]["PilotoDetalleEnlace"][];
+            nota?: string;
+        };
+        PilotoBriefingResponse: {
+            fecha: string;
+            saludo: string;
+            resumen: string[];
+            necesitanDeTi: {
+                titulo: string;
+                href: string;
+            }[];
+            numeros: {
+                pendientes: number;
+                altas: number;
+                llamadasHoy: number;
+                promesasCreadasHoy: number;
+                recuperadoMesCop?: number;
+            };
+            narrativa?: string[];
         };
         WorkItemDetailResponse: {
             item: components["schemas"]["WorkItem"];
@@ -20506,6 +20912,770 @@ export interface operations {
             };
             /** @description Unknown or missing `agente` */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAiHubInbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La bandeja priorizada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoInboxResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAiHubActivity: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Actividad reciente, más nuevo primero */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoActivityResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAiHubAgentAutonomia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                agente: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Postura actual */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubAutonomiaResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Agente fuera del roster */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    putAiHubAgentAutonomia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                agente: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiHubAutonomiaPutBody"];
+            };
+        };
+        responses: {
+            /** @description Modo persistido */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubAutonomiaPutResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant / rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Agente desconocido */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    aprobarRetenidoPiloto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                decisionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resuelto */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubRetenidoResultado"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant / rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description No existe en esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Ya estaba resuelto / sin teléfono */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    descartarRetenidoPiloto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                decisionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resuelto */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubRetenidoResultado"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant / rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description No existe en esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Ya estaba resuelto / sin teléfono */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAiHubGobierno: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Estado del gobierno */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubGobiernoResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    putAiHubGobierno: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                agente: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiHubGobiernoPutBody"];
+            };
+        };
+        responses: {
+            /** @description Gobierno actualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubGobiernoResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant / rol insuficiente */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Agente desconocido */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAiHubPulso: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El pulso del piloto */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPulsoResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAiHubPreparacion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los requisitos del piloto, medidos */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoPreparacionResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAiHubDetalle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El detalle del ítem */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDetalleResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Prefijo desconocido o ítem inexistente en esta agencia */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAiHubBriefing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El briefing */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoBriefingResponse"];
+                };
+            };
+            /** @description JWT faltante o inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Cross-tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

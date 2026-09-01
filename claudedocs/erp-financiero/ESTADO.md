@@ -228,3 +228,19 @@ Verificado en navegador (`portofinoqaprb`): tarifas guardadas (reteICA 9,66 ‰)
 **Lo que sigue sin hacer** (no es código de estas dos ramas): Cobre (cuenta comercial), archivo plano SAP/OnePay y el archivo real de Bancolombia, tope legal y tasa de mora unificada (abogado), los 8 escenarios tributarios de Víctor para confirmar las reglas de impuestos, y los tres puntos del back de la migración (429 de invitaciones, `procesadas`, `external_id`).
 
 **Muro a 6 pasos** (pedido de Nico al ver el switch «Propietarios | Inquilinos»): propietarios e inquilinos son dos pasos, cada uno con su archivo y sin switch adentro del muro; la pantalla suelta `/migracion/terceros?tipo=…` conserva el switch. El back cuenta inquilinos migrados aunque todavía no tengan contrato. Y cuando el proveedor de correo no puede mandar la invitación (límite o SMTP), la cuenta se crea igual y la invitación queda pendiente — el informe lo dice; falta el botón de reenvío.
+
+## Auditoría de parsers de la migración (2026-09-01, pedido de Nico: «nada puede fallar ahí»)
+
+Cinco auditorías adversariales en paralelo (batería de datos sucios ANTES de arreglar; regla: ninguna validación se afloja — lo ilegible grita fila y columna, jamás se adivina). Lo que estaba roto y quedó cerrado:
+
+| parser | lo peor que se encontró |
+|---|---|
+| Base (`parseFile`) | celdas-fecha de Excel salían «6/1/26» (ambiguo) o corridas UN DÍA por zona horaria → ahora siempre ISO; un binario corrupto se parseaba como basura → ahora error claro |
+| Terceros | «CC 1.004.997.858» y «1004997858» eran llaves distintas → los duplicados pasaban; «C.C.»/«Cta. de Ahorros» caían a desconocido |
+| Inmuebles | `1'200.000` → $1 · «65,5» → 655 (10×) · «$1.2M» → 1.2 · «Dirección de notificación del propietario» mapeaba al dueño y las fechas del contrato a la consignación |
+| Contratos | `31/02/2026` fabricaba fecha; una fecha basura tumbaba TODAS las filas; el − tipográfico volvía positivo un negativo; comisión 0 desaparecía y 110 tumbaba el lote; el documento del dueño con puntos duplicaba propietarios |
+| Asientos | `110505.0` de Excel se volvía OTRA cuenta en silencio; una letra en el código se recortaba a una cuenta real equivocada; `CE-1` de enero y febrero se fundían en un asiento; una descripción larga tumbaba el lote entero |
+
+Todo con regresión sobre los archivos de muestra reales (01–05 completos: 60+110+120+90 filas y 2.839 líneas contables, débitos exactos $2.141.126.351). Políticas escritas en el código: fechas día-primero (Colombia) y contra el calendario real; seriales de Excel y años de 2 cifras se rechazan; plata «entero o nada» (jamás el prefijo de `parseFloat`); COP al peso (centavos ≠ 0 se rechazan); paréntesis contable = negativo → se rechaza nombrando el lado correcto.
+
+Pendientes menores anotados por los auditores: el faltante no dice el valor ilegible que lo causó (pide campo nuevo en el back) · centavos reales siempre-presentes pedirían decisión de redondeo con el contador · TOCTOU de idempotencia de asientos (dos operadores a la vez) pide índice único (esquema congelado).

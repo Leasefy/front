@@ -258,3 +258,65 @@ Pendientes menores anotados por los auditores: el faltante no dice el valor ileg
 - **Back (Víctor)**: reenvío de invitaciones pendientes · `procesadas` fila a fila en contratos · `external_id`/consecutivos · consignación al importar inmuebles sin contrato · el faltante debería decir el valor ilegible que lo causó · índice único para la idempotencia de asientos · abrir el PR de `cambios-nico-1`.
 - **Decisiones (Nico + terceros)**: tasa de mora unificada y tope legal (abogado) · escenarios tributarios de Víctor · archivo plano real de Bancolombia (PAB/SAP) · cuenta de Cobre · redondeo de centavos con el contador · agencias viejas y PUC · ¿paso 6 exige ≥1 asiento?
 - **Entorno**: el `next dev` de :3011 muere por falta de RAM y puede corromper `.next` (estáticos 404) → `rm -rf .next` y relanzar.
+
+---
+
+## Cierre 2026-09-01 (noche) — todo lo pendiente cerrado
+
+**Ramas** (`cambios-nico-1`, limpias y empujadas): back `dccded1` · front `4e76aff9`.
+**Gates**: back 4.217 tests · front 4.513 tests (suite COMPLETA, ya sin los 195 rojos) · `tsc` 0 en ambos · 81 migraciones aplicadas en dev.
+
+### 🔴 El hallazgo de la sesión: el muro era una trampa
+
+Encontrado **caminando el flujo con datos reales**, no en un test. La agencia importó
+120 inmuebles con el importador —que los crea SIN mandato, por diseño: publicar exige
+mandato y el canon no se inventa— y después activó 90 contratos. Los 90 `Contract` y sus
+90 `Lease` existían en la base. Consignaciones: **cero**.
+
+El paso 4 del muro medía la pertenencia SÓLO por `property.consignaciones.some({agencyId})`,
+así que contaba 0 y el muro seguía tapando el panel entero. **Migrar no sacaba nunca a la
+agencia**: cada contrato que subía la dejaba exactamente igual de afuera.
+
+Arreglo: el `where` del `lease.groupBy` pasa a `OR: [consignación, contract.agencyId]`.
+Es la misma entidad por las dos vías, así que no hay doble conteo, sigue siendo una sola
+consulta, y las dos ramas van scopeadas a la agencia. Verificado de punta a punta: tras el
+arreglo el muro se levantó y la agencia entró al panel.
+
+**Lección**: 4.200 tests verdes no lo vieron. Lo vio el recorrido E2E con datos de verdad.
+
+### Lo demás que se cerró
+
+| Qué | Antes | Ahora |
+|---|---|---|
+| Techo legal del interés de mora | La tasa no tenía tope | `Agency.topeInteresMoraEaPorcentaje` (efectiva anual, configurable porque la usura se certifica mes a mes). Valida componiendo `(1+d)^365`, no `d×365`. El honorario de cobranza NO se mide con esa vara. NULL = sin validar |
+| Impuestos por contrato | El lado del arrendador salía sólo de la ficha del propietario | `Contract.arrendadorResponsableIva` con tres estados (null = heredar, false = afirmar que no). Resolutor único `resolverRegimenDelContrato` que devuelve valor + origen |
+| Dos pestañas sobre la misma fila | Ganaba la última, en silencio | `MigracionTercero.version` + comprobar-y-escribir en una sentencia; 409 `FILA_DESACTUALIZADA` que relee sin perder lo tecleado |
+| Progreso de contratos | Saltaba de 0 al total al terminar | Avanza de verdad, cada 25 filas |
+| El faltante | No decía qué decía la celda ilegible | La cita (recortada) en los tres importadores |
+| Inmuebles importados | Nacían sin mandato y no salían en la grilla, sin explicación | Se avisa por qué y se ofrece completarlos ahí mismo |
+| `external_id` | Se perdía el código del sistema anterior | Viaja en propietarios e inmuebles |
+| Paso 4 (contratos) | Único paso sin zona de arrastre | Recibe el archivo arrastrado, como los otros cinco |
+| `/auth` | «← Inicio», que se lee como navegar | X de cerrar dentro del círculo, arriba a la derecha |
+| Suite del front | 195 rojos | 0. Node 25 expone un `localStorage` roto que vitest no pisa → `vitest.setup.ts` instala el `Storage` real de happy-dom, con guard que lo vuelve inerte solo |
+
+### 🔴 Lo que queda, y de quién es
+
+- **Víctor**: confirmar que **sus** 8 escenarios tributarios son los que quedaron en los
+  tests — los derivó el agente del motor porque la lista no está en la transcripción de la
+  reunión. Ojo especialmente si alguno toca retención sobre la **comisión** de la
+  inmobiliaria: ese eje sigue siendo del propietario, no del contrato.
+- **Juan**: el archivo plano real de Bancolombia (PAB/SAP). En la reunión dice que lo manda;
+  sin el formato real, el generador de lotes sigue SIN-VERIFICAR.
+- **Nico**: la cuenta de Cobre (hablar con Emilio) · QA del muro con **sus** CSV, porque
+  todo lo de hoy pasó por la agencia de prueba, no por sus datos · reenvío de invitaciones
+  pendientes (no existe endpoint ni botón; sus 110 inquilinos quedaron con cuenta creada y
+  sin invitación) · abrir el PR de `cambios-nico-1`.
+- **Deuda conocida**: `Contract.externalId` existe pero **nadie la escribe todavía** — el
+  parser descarta el valor crudo antes de subirlo.
+
+### Método (dos veces esta sesión, para no repetirlo)
+
+- Integrar el trabajo de varios agentes con `git add -A` **barre el `schema.prisma` de otro
+  y deja su migración huérfana**. El esquema y su migración van SIEMPRE en el mismo commit.
+- Un agente reescribió dos archivos cambiando CRLF→LF: 900 líneas de ruido para 60 reales.
+  Revisar `git diff --stat --ignore-all-space` antes de commitear trabajo ajeno.

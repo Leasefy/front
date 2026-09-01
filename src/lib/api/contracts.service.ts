@@ -127,6 +127,10 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // Quién retiene qué. Puede faltar en respuestas viejas: null significa
     // «no vino», y la pantalla cae a los perfiles por defecto diciéndolo.
     perfilesTributarios: bc.perfilesTributarios ?? null,
+    // Ya resuelto por el back, con el origen de cada valor. `null` = respuesta
+    // vieja, y la pantalla lo dice en vez de inventar el efectivo.
+    regimenTributario: bc.regimenTributario ?? null,
+    arrendadorResponsableIva: bc.arrendadorResponsableIva ?? null,
     inquilinoTipoPersona: bc.inquilinoTipoPersona ?? null,
     inquilinoResponsableIva: bc.inquilinoResponsableIva ?? null,
     inquilinoRetenedorRenta: bc.inquilinoRetenedorRenta ?? null,
@@ -544,6 +548,11 @@ export const contractsApi = {
        * El perfil tributario del inquilino. `null` es una acción —«volvé a no
        * saberlo»— y no lo mismo que no mandar el campo, que lo deja como está.
        */
+      /**
+       * Quién GENERA el IVA es el arrendador (el propietario); quién RETIENE
+       * es el inquilino. `null` = volver a heredar de la ficha del propietario.
+       */
+      arrendadorResponsableIva?: boolean | null;
       inquilinoTipoPersona?: 'NATURAL' | 'JURIDICA' | null;
       inquilinoResponsableIva?: boolean | null;
       inquilinoRetenedorRenta?: boolean | null;

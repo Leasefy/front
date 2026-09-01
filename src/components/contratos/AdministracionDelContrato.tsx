@@ -91,6 +91,19 @@ export function AdministracionDelContrato({
   )
 
   /*
+   * El IVA lo GENERA el arrendador; el inquilino sólo RETIENE. Son ejes
+   * distintos, así que es una perilla aparte y no una más del bloque del
+   * inquilino.
+   *
+   * Vacío = heredar de la ficha del propietario, que es como funcionaba antes
+   * de que existiera este campo. Se muestra qué está heredando abajo, porque
+   * «vacío» sin el valor efectivo obliga a ir a buscar la ficha.
+   */
+  const [arrendadorIva, setArrendadorIva] = useState<Ternario>(
+    aTernario(contract.arrendadorResponsableIva),
+  )
+
+  /*
    * Hay DOS comisiones: la del contrato (la que trajo el archivo migrado) y la
    * de la consignación, que es la que la dispersión y el extracto usan para
    * pagarle al propietario. Cuando no coinciden, mostrar una sola sería elegir
@@ -116,6 +129,7 @@ export function AdministracionDelContrato({
         comisionPorcentaje: n,
         // `null` es una acción: «volvé a no saberlo». Distinto de no mandar el
         // campo, que lo deja como estaba.
+        arrendadorResponsableIva: deTernario(arrendadorIva),
         inquilinoTipoPersona: tipoPersona === '' ? null : tipoPersona,
         inquilinoResponsableIva: deTernario(responsableIva),
         inquilinoRetenedorRenta: deTernario(retieneRenta),
@@ -199,6 +213,18 @@ export function AdministracionDelContrato({
               Se guarda también en la consignación: es de donde sale lo que se le
               descuenta al propietario.
             </p>
+          </div>
+
+          <div className="space-y-1 border-t border-border pt-3">
+            <SelectorTernario
+              etiqueta="¿El propietario cobra IVA en este contrato?"
+              valor={arrendadorIva}
+              onChange={setArrendadorIva}
+              si="Sí, el canon lleva IVA"
+              no="No, este contrato no lleva IVA"
+              ayuda={ayudaDelArrendador(contract)}
+              testId="arrendador-responsable-iva"
+            />
           </div>
 
           <div className="space-y-1 border-t border-border pt-3">
@@ -393,6 +419,30 @@ function deTernario(v: Ternario): boolean | null {
   if (v === 'si') return true
   if (v === 'no') return false
   return null
+}
+
+/**
+ * Qué está heredando la perilla del arrendador, en palabras.
+ *
+ * El valor efectivo lo resuelve el BACK (`regimenTributario`) con la misma
+ * función que usa el motor de cobros. Acá sólo se traduce a español: si esta
+ * pantalla lo dedujera por su cuenta, el día que las dos cuentas difieran el
+ * formulario diría una cosa y el cobro cobraría otra.
+ */
+function ayudaDelArrendador(contract: Contract): string {
+  const base =
+    'Quien cobra el IVA es el propietario; el inquilino sólo lo retiene. Sólo aplica en inmuebles comerciales: el arrendamiento de vivienda está excluido.'
+  const r = contract.regimenTributario?.arrendadorResponsableIva
+  if (!r) return base
+  if (r.origen === 'CONTRATO') {
+    return `${base} Hoy lo decide este contrato.`
+  }
+  if (r.origen === 'PROPIETARIO') {
+    return `${base} Sin definir acá se hereda de la ficha del propietario, que hoy dice ${
+      r.valor ? 'que SÍ es responsable de IVA' : 'que NO es responsable de IVA'
+    }.`
+  }
+  return `${base} Sin definir acá y sin el dato en la ficha del propietario, el cobro NO lleva IVA y lo deja dicho.`
 }
 
 /** Un sí / no / no se sabe. El vacío NO es «no»: es que nadie lo afirmó. */

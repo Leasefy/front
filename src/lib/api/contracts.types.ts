@@ -115,6 +115,14 @@ export interface BackendContract {
    * haberlos guardado.
    */
   perfilesTributarios?: PerfilesDelContrato | null;
+  /**
+   * El régimen tributario YA RESUELTO por el back, con el origen de cada
+   * valor. La pantalla lo muestra tal cual: recalcularlo acá sería una
+   * segunda cuenta que un día no coincide con la que cobra.
+   */
+  regimenTributario?: RegimenTributarioDelContrato | null;
+  /** null = heredar de la ficha del propietario. */
+  arrendadorResponsableIva?: boolean | null;
   /*
    * Los campos CRUDOS del perfil del inquilino, tal cual están guardados.
    * `perfilesTributarios.inquilino` ya viene con los defaults mezclados, así
@@ -303,4 +311,24 @@ export interface BackendContractRejection {
     lastName: string;
     email: string;
   };
+}
+
+/** De dónde salió cada valor del régimen. Lo decide el back. */
+export type OrigenDelValorTributario =
+  | 'CONTRATO'
+  | 'PROPIETARIO'
+  | 'TIPO_DE_INMUEBLE'
+  | 'SIN_DEFINIR';
+
+export interface ValorTributarioResuelto {
+  valor: boolean | null;
+  origen: OrigenDelValorTributario;
+}
+
+export interface RegimenTributarioDelContrato {
+  usoComercial: ValorTributarioResuelto;
+  arrendadorResponsableIva: ValorTributarioResuelto;
+  inquilinoRetenedorRenta: ValorTributarioResuelto;
+  inquilinoRetenedorIva: ValorTributarioResuelto;
+  inquilinoRetenedorIca: ValorTributarioResuelto;
 }

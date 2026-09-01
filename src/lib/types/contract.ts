@@ -237,6 +237,34 @@ export interface PerfilTributario {
   esPorDefecto: boolean;
 }
 
+/**
+ * El régimen tributario del contrato, ya resuelto por el back con el origen
+ * de cada valor. Se muestra tal cual: si la pantalla lo recalculara, sería
+ * una segunda cuenta que un día no coincide con la que cobra.
+ *
+ * Se declara acá y no se importa de `contracts.types` por la misma razón que
+ * `PerfilesDelContrato`: ese archivo es la forma del cable, éste la del
+ * dominio.
+ */
+export type OrigenDelValorTributario =
+  | 'CONTRATO'
+  | 'PROPIETARIO'
+  | 'TIPO_DE_INMUEBLE'
+  | 'SIN_DEFINIR';
+
+export interface ValorTributarioResuelto {
+  valor: boolean | null;
+  origen: OrigenDelValorTributario;
+}
+
+export interface RegimenTributarioDelContrato {
+  usoComercial: ValorTributarioResuelto;
+  arrendadorResponsableIva: ValorTributarioResuelto;
+  inquilinoRetenedorRenta: ValorTributarioResuelto;
+  inquilinoRetenedorIva: ValorTributarioResuelto;
+  inquilinoRetenedorIca: ValorTributarioResuelto;
+}
+
 export interface PerfilesDelContrato {
   inquilino: PerfilTributario;
   propietario: PerfilTributario;
@@ -341,6 +369,10 @@ export interface Contract {
    * retención inventada con la misma cara que una real.
    */
   perfilesTributarios?: PerfilesDelContrato | null;
+  /** El régimen ya resuelto por el back, con el origen de cada valor. */
+  regimenTributario?: RegimenTributarioDelContrato | null;
+  /** null = heredar de la ficha del propietario. */
+  arrendadorResponsableIva?: boolean | null;
 
   /**
    * Lo guardado tal cual, para poblar el formulario. `perfilesTributarios` ya

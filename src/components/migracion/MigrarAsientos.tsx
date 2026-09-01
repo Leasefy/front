@@ -190,7 +190,9 @@ export function MigrarAsientos({
   };
 
   if (informe) {
-    return <Informe informe={informe} onOtro={volverAEmpezar} />;
+    return (
+      <Informe enElMuro={enElMuro} informe={informe} onOtro={volverAEmpezar} />
+    );
   }
 
   if (revision) {
@@ -607,9 +609,11 @@ function Revision({
 function Informe({
   informe,
   onOtro,
+  enElMuro = false,
 }: {
   informe: InformeDeMigracion;
   onOtro: () => void;
+  enElMuro?: boolean;
 }) {
   return (
     <section

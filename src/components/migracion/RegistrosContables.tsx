@@ -214,11 +214,13 @@ export function RegistrosContables({
             <AsientoDeApertura
               cuentas={cuentas}
               onCreado={() => void cargar()}
+              enElMuro={Boolean(onIrAlPuc)}
             />
           ) : (
             <MigrarAsientos
               onAplicado={() => void cargar()}
               onIrAlPuc={onIrAlPuc}
+              enElMuro={Boolean(onIrAlPuc)}
             />
           )}
         </>

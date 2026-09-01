@@ -29,6 +29,14 @@ Recaudado en los tres meses: $1.044.630.000 · comisiones: $89.274.000.
 
 - Los correos son `@example.com` a propósito: el correo del inquilino es la llave de su cuenta del
   portal, y no queremos invitar a una persona real por accidente.
+- 🔴 **Los inquilinos no se crean hasta que el back deje de invitar por correo en la misma
+  llamada.** Hoy `aplicar` crea cada inquilino con `inviteUserByEmail` de Supabase, y el
+  proyecto de dev devuelve `429 over_email_send_rate_limit` a la segunda o tercera invitación
+  (probado el 2026-09-01: las 110 filas pasan la revisión, «Listas para crear 110», y al crear cada
+  una dice «No se pudo invitar a …: Error sending invite email» / «email rate limit exceeded»).
+  No es un problema del archivo: el back tiene que crear el usuario sin mandar el correo y
+  encolar las invitaciones aparte (o a un ritmo que el SMTP aguante). Los propietarios sí se
+  crean —no se invitan—: 60 de 60.
 - Los contratos de **vivienda van sin depósito** (Ley 820 de 2003, art. 16 lo prohíbe); los
   comerciales llevan uno o dos cánones.
 - Un 8 % de los contratos se atrasa un mes y paga al siguiente: en el libro diario aparece

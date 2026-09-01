@@ -57,6 +57,8 @@ const INITIAL_STATE: ImportWizardState = {
 export interface ImportStepProps {
   state: ImportWizardState;
   updateState: (partial: Partial<ImportWizardState>) => void;
+  /** Adentro del muro de migración: qué hacer en vez de navegar al portafolio. */
+  onSalir?: () => void;
 }
 
 /**
@@ -231,6 +233,7 @@ export function ImportWizard({ onSalir }: { onSalir?: () => void } = {}) {
     const stepProps: ImportStepProps = {
       state: wizardState,
       updateState,
+      onSalir,
     };
 
     switch (pasoActual) {

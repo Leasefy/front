@@ -60,7 +60,7 @@ import {
 
 const POR_PAGINA = 25;
 
-export function StepConfirmImport({ state, updateState }: ImportStepProps) {
+export function StepConfirmImport({ state, updateState, onSalir }: ImportStepProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useI18n();
@@ -233,7 +233,8 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
     setError(null);
     try {
       await inmueblesImportacionApi.descartarLote(lote);
-      router.push('/panel/inmobiliaria/inmuebles');
+      if (onSalir) onSalir();
+      else router.push('/panel/inmobiliaria/inmuebles');
     } catch (e) {
       if (e instanceof ApiError && e.code === 'LOTE_EN_PROCESO') {
         setError('El lote todavía se está procesando — esperá a que termine antes de descartarlo.');
@@ -320,13 +321,15 @@ export function StepConfirmImport({ state, updateState }: ImportStepProps) {
         </div>
 
         <div className="flex items-center gap-3 animate-fade-in-up">
+          {/* Adentro del muro de migración no hay portafolio que ver todavía:
+              el muro pasa `onSalir` y el botón vuelve a empezar. */}
           <Button
             type="button"
             size="lg"
             hideArrow
-            onClick={() => router.push('/panel/inmobiliaria/inmuebles')}
+            onClick={() => (onSalir ? onSalir() : router.push('/panel/inmobiliaria/inmuebles'))}
           >
-            Ver portafolio
+            {onSalir ? 'Listo' : 'Ver portafolio'}
           </Button>
           <Button
             type="button"

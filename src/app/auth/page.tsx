@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft } from '@phosphor-icons/react';
+import { X } from '@phosphor-icons/react';
 
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
@@ -77,19 +77,30 @@ export default function AuthPage() {
         <div className="w-full bg-background lg:ml-[52%] lg:w-[48%]">
           <div className="flex min-h-screen flex-col px-6 py-6 sm:px-10 sm:py-8 lg:px-16">
             <div className="mx-auto flex w-full max-w-[400px] items-center justify-between">
-              <Link
-                href="/"
-                className="group inline-flex items-center gap-1.5 text-[13px] text-fg-subtle transition-colors hover:text-fg"
-              >
-                <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
-                Inicio
-              </Link>
-
               {/* En móvil no hay panel izquierdo: la marca tiene que estar acá
                   o la pantalla no dice de quién es. */}
               <BrandHomeLink className="inline-flex items-center lg:hidden">
                 <LeasefyLogotype size={20} className="text-fg" title="Leasefy" />
               </BrandHomeLink>
+
+              {/*
+               * Una X de cerrar, no un «← Inicio».
+               *
+               * Entrar a la pantalla de acceso es abrir algo encima del sitio,
+               * y lo que se abre se cierra: la X dice eso sin leerse. Va a la
+               * DERECHA —donde vive el cerrar en la web— y `ml-auto` la
+               * mantiene ahí también en escritorio, donde la marca de al lado
+               * está oculta y sin eso se iría al borde izquierdo.
+               */}
+              <Link
+                href="/"
+                aria-label="Cerrar y volver al inicio"
+                title="Cerrar"
+                className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-full text-fg-subtle transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                data-testid="auth-cerrar"
+              >
+                <X className="h-4 w-4" />
+              </Link>
             </div>
 
             <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center py-12">

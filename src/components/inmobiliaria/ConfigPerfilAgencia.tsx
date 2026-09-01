@@ -95,6 +95,12 @@ interface PerfilFormState {
   reteicaPorMil: number | null;
   reteivaPorcentaje: number;
   baseMinimaRetefuenteCop: number | null;
+  /**
+   * Techo legal del interés de mora, como tasa EFECTIVA ANUAL. `null` = sin
+   * validar. Lo mantiene al día la inmobiliaria: la usura la certifica la
+   * Superfinanciera mes a mes.
+   */
+  topeInteresMoraEaPorcentaje: number | null;
 }
 
 /** Techo de días de plazo — el mismo `@Max(60)` del DTO del back. */
@@ -209,6 +215,9 @@ function buildFormState(agency: AgencyProfile): PerfilFormState {
     reteicaPorMil: decimalANumero(agency.reteicaPorMil),
     reteivaPorcentaje: decimalANumero(agency.reteivaPorcentaje) ?? TARIFAS_POR_DEFECTO.reteivaPorcentaje,
     baseMinimaRetefuenteCop: agency.baseMinimaRetefuenteCop ?? null,
+    // 🔴 `decimalANumero`: un Decimal de Prisma viaja como TEXTO en el JSON, y
+    // un `"28.5"` acá rompe la validación numérica sin decir por qué.
+    topeInteresMoraEaPorcentaje: decimalANumero(agency.topeInteresMoraEaPorcentaje) ?? null,
   };
 }
 
@@ -365,6 +374,10 @@ export function ConfigPerfilAgencia({
     const baseMinima = formData.baseMinimaRetefuenteCop;
     if (baseMinima !== null && (!Number.isInteger(baseMinima) || baseMinima < 0)) {
       newErrors.baseMinimaRetefuenteCop = 'Un monto entero en pesos, o vacío';
+    }
+    const tope = formData.topeInteresMoraEaPorcentaje;
+    if (tope !== null && (!Number.isFinite(tope) || tope <= 0 || tope > 200)) {
+      newErrors.topeInteresMoraEaPorcentaje = 'Un porcentaje anual mayor que 0, o vacío';
     }
 
     setErrors(newErrors);
@@ -1122,6 +1135,40 @@ export function ConfigPerfilAgencia({
                     className={cn('w-full pl-10 tabular-nums', errors.diasParaSiniestro && 'border-danger/30')}
                   />
                 </div>
+              </InputWrapper>
+
+              {/*
+               * El techo legal de la tasa de mora. La tasa la pone la
+               * inmobiliaria, pero la ley le pone un máximo —la usura— que la
+               * Superfinanciera certifica MES A MES: por eso se escribe acá y
+               * no viene quemado en el sistema. Vacío = no se valida ninguna
+               * tasa, que es como venía funcionando.
+               */}
+              <InputWrapper
+                label="Techo legal del interés de mora (% efectivo anual)"
+                error={errors.topeInteresMoraEaPorcentaje}
+                hint="La usura vigente, que certifica la Superfinanciera cada mes. Ninguna regla de interés va a poder pasarse de acá. Vacío = sin validar."
+              >
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min={0}
+                  max={200}
+                  placeholder="Sin validar"
+                  value={formData.topeInteresMoraEaPorcentaje ?? ''}
+                  onChange={(e) =>
+                    updateField(
+                      'topeInteresMoraEaPorcentaje',
+                      e.target.value === '' ? null : Number(e.target.value),
+                    )
+                  }
+                  data-testid="tope-interes-mora"
+                  className={cn(
+                    'tabular-nums',
+                    errors.topeInteresMoraEaPorcentaje && 'border-danger/30',
+                  )}
+                />
               </InputWrapper>
             </div>
           </div>

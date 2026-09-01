@@ -1421,6 +1421,9 @@ export interface AgencyProfile {
   reteicaPorMil?: number | string | null;
   reteivaPorcentaje?: number | string;
   baseMinimaRetefuenteCop?: number | null;
+  /** Techo legal del interés de mora (% efectivo anual). `null` = sin validar.
+   *  Decimal de Prisma: puede llegar como texto — pasar por `decimalANumero`. */
+  topeInteresMoraEaPorcentaje?: number | string | null;
   legalRepresentative?: string | null;
   legalDocumentNumber?: string | null;
   /** Caller's membership in this agency */
@@ -1488,6 +1491,9 @@ export interface UpdateAgencyPayload {
   reteivaPorcentaje?: number;
   /** COP entero ≥ 0; `null` = sin mínimo */
   baseMinimaRetefuenteCop?: number | null;
+  /** Techo legal del interés de mora (% efectivo anual). `null` = sin validar.
+   *  Decimal de Prisma: puede llegar como texto — pasar por `decimalANumero`. */
+  topeInteresMoraEaPorcentaje?: number | string | null;
   legalRepresentative?: string;
   legalDocumentNumber?: string;
 }

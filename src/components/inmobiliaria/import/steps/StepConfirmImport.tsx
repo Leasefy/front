@@ -1,31 +1,34 @@
-'use client';
+"use client";
 
-import { useState, useContext, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useContext, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle,
   FileArrowUp,
   UserCircle,
   WarningCircle,
-} from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
-import { useI18n } from '@/lib/i18n';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Pagination } from '@/components/ui/pagination';
-import { MonoLabel } from '@leasefy/cadence';
-import { toast } from '@/components/ui/toast';
-import { ApiError } from '@/lib/api/client';
-import { faltantesParaElBack } from '../lib/requisitosDelBack';
-import { toImportarInmuebleDto } from '../lib/toImportarInmuebleDto';
-import { geocodeImportRow, GEOCODE_ROW_DELAY_MS } from '../lib/geocodeImportRow';
-import { generarIdempotencyKey } from '../lib/idempotencia';
-import { activarLoteCompleto } from '../lib/activarLoteCompleto';
-import { RanuraDelPie, type ImportStepProps } from '../ImportWizard';
-import { FilaImportacionRow } from '../FilaImportacionRow';
-import { ProgresoDeLoteInmuebles } from '../ProgresoDeLoteInmuebles';
-import { useEstadoDeLoteInmuebles } from '@/lib/hooks/use-estado-de-lote-inmuebles';
+} from "@phosphor-icons/react";
+import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Pagination } from "@/components/ui/pagination";
+import { MonoLabel } from "@leasefy/cadence";
+import { toast } from "@/components/ui/toast";
+import { ApiError } from "@/lib/api/client";
+import { faltantesParaElBack } from "../lib/requisitosDelBack";
+import { toImportarInmuebleDto } from "../lib/toImportarInmuebleDto";
+import {
+  geocodeImportRow,
+  GEOCODE_ROW_DELAY_MS,
+} from "../lib/geocodeImportRow";
+import { generarIdempotencyKey } from "../lib/idempotencia";
+import { activarLoteCompleto } from "../lib/activarLoteCompleto";
+import { RanuraDelPie, type ImportStepProps } from "../ImportWizard";
+import { FilaImportacionRow } from "../FilaImportacionRow";
+import { ProgresoDeLoteInmuebles } from "../ProgresoDeLoteInmuebles";
+import { useEstadoDeLoteInmuebles } from "@/lib/hooks/use-estado-de-lote-inmuebles";
 import {
   inmueblesImportacionApi,
   type FilaDeImportacion,
@@ -33,7 +36,7 @@ import {
   type ResumenLoteInmuebles,
   type FilaOmitida,
   type ImportarInmuebleDto,
-} from '@/lib/api/inmuebles-importacion.service';
+} from "@/lib/api/inmuebles-importacion.service";
 
 /**
  * StepConfirmImport — WU-6: wires the durable backend (WU-4,
@@ -60,28 +63,40 @@ import {
 
 const POR_PAGINA = 25;
 
-export function StepConfirmImport({ state, updateState, onSalir }: ImportStepProps) {
+export function StepConfirmImport({
+  state,
+  updateState,
+  onSalir,
+}: ImportStepProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useI18n();
   const ranuraDelPie = useContext(RanuraDelPie);
 
   const properties = state.properties;
-  const selectedProperties = properties.filter((p) => p.selected && !p.hasErrors);
+  const selectedProperties = properties.filter(
+    (p) => p.selected && !p.hasErrors,
+  );
   const excludedCount = properties.filter((p) => !p.selected).length;
   const acceptedSuggestionsCount = properties.reduce(
     (sum, p) => sum + p.suggestions.filter((s) => s.accepted === true).length,
     0,
   );
-  const remainingErrorsCount = properties.filter((p) => p.selected && p.hasErrors).length;
+  const remainingErrorsCount = properties.filter(
+    (p) => p.selected && p.hasErrors,
+  ).length;
 
   // Las que el back va a rechazar, separadas ANTES de empezar.
   const bloqueadas = selectedProperties
     .map((p) => ({ p, faltan: faltantesParaElBack(p) }))
     .filter((x) => x.faltan.length > 0);
-  const importables = selectedProperties.filter((p) => faltantesParaElBack(p).length === 0);
+  const importables = selectedProperties.filter(
+    (p) => faltantesParaElBack(p).length === 0,
+  );
   const motivosBloqueo = [
-    ...new Set(bloqueadas.flatMap((x) => x.faltan.map((f) => f.etiqueta.toLowerCase()))),
+    ...new Set(
+      bloqueadas.flatMap((x) => x.faltan.map((f) => f.etiqueta.toLowerCase())),
+    ),
   ];
   const importCount = importables.length;
 
@@ -92,14 +107,16 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
   const [preparando, setPreparando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lote, setLote] = useState<string | null>(
-    () => searchParams?.get('lote') ?? null,
+    () => searchParams?.get("lote") ?? null,
   );
   const [idempotencyKey] = useState(() => generarIdempotencyKey());
 
   const { estado: estadoLote, agotado } = useEstadoDeLoteInmuebles(lote);
 
   // ── Phase 2: review ──────────────────────────────────────────────────
-  const [resumenLote, setResumenLote] = useState<ResumenLoteInmuebles | null>(null);
+  const [resumenLote, setResumenLote] = useState<ResumenLoteInmuebles | null>(
+    null,
+  );
   const [pendientes, setPendientes] = useState<FilaDeImportacion[]>([]);
   const [totalPendientes, setTotalPendientes] = useState(0);
   const [pagina, setPagina] = useState(1);
@@ -121,7 +138,7 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
         inmueblesImportacionApi.filas(elLote, {
           pagina: pag,
           porPagina: POR_PAGINA,
-          estado: 'PENDIENTE',
+          estado: "PENDIENTE",
         }),
       ]);
       setResumenLote(r);
@@ -129,7 +146,7 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
       setTotalPendientes(p.total);
       setPagina(p.pagina);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos abrir ese lote.');
+      setError(e instanceof Error ? e.message : "No pudimos abrir ese lote.");
     }
   }, []);
 
@@ -138,7 +155,7 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
   // cargar la lista de trabajo real.
   useEffect(() => {
     if (!lote) return;
-    if (estadoLote?.estado === 'LISTO') {
+    if (estadoLote?.estado === "LISTO") {
       refrescarRevision(lote);
     }
   }, [lote, estadoLote?.estado, refrescarRevision]);
@@ -166,7 +183,9 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
       });
       setGeoProgress(Math.round(((i + 1) / importables.length) * 100));
       if (i < importables.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, GEOCODE_ROW_DELAY_MS));
+        await new Promise((resolve) =>
+          setTimeout(resolve, GEOCODE_ROW_DELAY_MS),
+        );
       }
     }
 
@@ -179,10 +198,10 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
     } catch (e) {
       setError(
         e instanceof ApiError && e.messages
-          ? e.messages.join(' · ')
+          ? e.messages.join(" · ")
           : e instanceof Error
             ? e.message
-            : 'No pudimos preparar la importación.',
+            : "No pudimos preparar la importación.",
       );
     } finally {
       setPreparando(false);
@@ -197,11 +216,11 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
       await refrescarRevision(lote, pagina);
     } catch (e) {
       const msg =
-        e instanceof ApiError && e.code === 'FILA_YA_ACTIVADA'
-          ? 'Esta fila ya se activó — no se puede editar.'
+        e instanceof ApiError && e.code === "FILA_YA_ACTIVADA"
+          ? "Esta fila ya se activó — no se puede editar."
           : e instanceof Error
             ? e.message
-            : 'No pudimos guardar los cambios.';
+            : "No pudimos guardar los cambios.";
       toast.error(msg);
     } finally {
       setFilaBusy(null);
@@ -215,7 +234,9 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
       await inmueblesImportacionApi.descartarFila(id);
       await refrescarRevision(lote, pagina);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'No pudimos descartar la fila.');
+      toast.error(
+        e instanceof Error ? e.message : "No pudimos descartar la fila.",
+      );
     } finally {
       setFilaBusy(null);
     }
@@ -234,12 +255,16 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
     try {
       await inmueblesImportacionApi.descartarLote(lote);
       if (onSalir) onSalir();
-      else router.push('/panel/inmobiliaria/inmuebles');
+      else router.push("/panel/inmobiliaria/inmuebles");
     } catch (e) {
-      if (e instanceof ApiError && e.code === 'LOTE_EN_PROCESO') {
-        setError('El lote todavía se está procesando — esperá a que termine antes de descartarlo.');
+      if (e instanceof ApiError && e.code === "LOTE_EN_PROCESO") {
+        setError(
+          "El lote todavía se está procesando — esperá a que termine antes de descartarlo.",
+        );
       } else {
-        setError(e instanceof Error ? e.message : 'No pudimos descartar el lote.');
+        setError(
+          e instanceof Error ? e.message : "No pudimos descartar el lote.",
+        );
       }
     } finally {
       setDescartandoLote(false);
@@ -256,21 +281,24 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
     setActivando(true);
     setError(null);
     try {
-      const resultado = await activarLoteCompleto(lote, inmueblesImportacionApi.activar);
+      const resultado = await activarLoteCompleto(
+        lote,
+        inmueblesImportacionApi.activar,
+      );
       setResultadoActivacion(resultado);
       updateState({ importedCount: resultado.activados, importProgress: 100 });
       setIsComplete(true);
       if (resultado.omitidas.length > 0) {
-        toast.warning('Importación parcial', {
+        toast.warning("Importación parcial", {
           description: `${resultado.activados} activadas, ${resultado.omitidas.length} todavía con datos pendientes.`,
         });
       } else {
-        toast.success('Importación exitosa', {
+        toast.success("Importación exitosa", {
           description: `${resultado.activados} propiedades importadas correctamente`,
         });
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos activar el lote.');
+      setError(e instanceof Error ? e.message : "No pudimos activar el lote.");
     } finally {
       setActivando(false);
     }
@@ -286,8 +314,8 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
     >
       <FileArrowUp className="w-4 h-4" />
       {geocodificando || preparando
-        ? 'Preparando...'
-        : t('inmobiliaria.import.confirm.importButton', { count: importCount })}
+        ? "Preparando..."
+        : t("inmobiliaria.import.confirm.importButton", { count: importCount })}
     </Button>
   );
 
@@ -306,31 +334,33 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
             ¡Importación completada!
           </h2>
           <p className="text-fg-muted dark:text-fg-subtle">
-            Se importaron{' '}
+            Se importaron{" "}
             <span className="font-semibold text-fg dark:text-white">
               {state.importedCount} propiedades
-            </span>{' '}
+            </span>{" "}
             a tu portafolio
           </p>
           {resultadoActivacion && resultadoActivacion.omitidas.length > 0 && (
             <p className="text-sm text-warning">
-              {resultadoActivacion.omitidas.length} filas quedaron pendientes de datos — volvé a
-              «Revisión» para completarlas.
+              {resultadoActivacion.omitidas.length} filas quedaron pendientes de
+              datos — volvé a «Revisión» para completarlas.
             </p>
           )}
         </div>
 
         <div className="flex items-center gap-3 animate-fade-in-up">
-          {/* Adentro del muro de migración no hay portafolio que ver todavía:
-              el muro pasa `onSalir` y el botón vuelve a empezar. */}
-          <Button
-            type="button"
-            size="lg"
-            hideArrow
-            onClick={() => (onSalir ? onSalir() : router.push('/panel/inmobiliaria/inmuebles'))}
-          >
-            {onSalir ? 'Listo' : 'Ver portafolio'}
-          </Button>
+          {/* Adentro del muro de migración no hay portafolio que ver todavía
+              (el muro tapa esa ruta): queda sólo «Importar más». */}
+          {onSalir ? null : (
+            <Button
+              type="button"
+              size="lg"
+              hideArrow
+              onClick={() => router.push("/panel/inmobiliaria/inmuebles")}
+            >
+              Ver portafolio
+            </Button>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -340,18 +370,18 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
               updateState({
                 method: null,
                 file: null,
-                fileName: '',
+                fileName: "",
                 rawRows: [],
                 headers: [],
                 sheetNames: [],
-                selectedSheet: '',
+                selectedSheet: "",
                 columnMappings: [],
                 properties: [],
                 aiAnalyzed: false,
                 importProgress: 0,
                 importedCount: 0,
               });
-              router.push('/panel/inmobiliaria/inmuebles/importar');
+              router.push("/panel/inmobiliaria/inmuebles/importar");
             }}
           >
             Importar más
@@ -362,12 +392,19 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
   }
 
   // ── Batch staged, still ENCOLADO/PROCESANDO ─────────────────────────
-  if (lote && estadoLote?.estado !== 'LISTO' && estadoLote?.estado !== 'FALLIDO') {
+  if (
+    lote &&
+    estadoLote?.estado !== "LISTO" &&
+    estadoLote?.estado !== "FALLIDO"
+  ) {
     return (
       <div className="space-y-6">
         <ProgresoDeLoteInmuebles estado={estadoLote} agotado={agotado} />
         {error && (
-          <div className="rounded-md bg-danger-soft border border-border p-3" role="alert">
+          <div
+            className="rounded-md bg-danger-soft border border-border p-3"
+            role="alert"
+          >
             <p className="text-sm text-danger">{error}</p>
           </div>
         )}
@@ -376,7 +413,7 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
   }
 
   // ── Batch FALLIDO ─────────────────────────────────────────────────────
-  if (lote && estadoLote?.estado === 'FALLIDO') {
+  if (lote && estadoLote?.estado === "FALLIDO") {
     return <ProgresoDeLoteInmuebles estado={estadoLote} agotado={agotado} />;
   }
 
@@ -392,27 +429,42 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
             Revisá lo que falta antes de activar
           </h2>
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
-            Las filas listas se activan cuando quieras — cerrar esta pestaña no pierde nada.
+            Las filas listas se activan cuando quieras — cerrar esta pestaña no
+            pierde nada.
           </p>
         </div>
 
         {resumenLote && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="rounded-md bg-surface-muted dark:bg-ink p-4">
-              <MonoLabel className="block text-xs text-fg-muted mb-1">Total</MonoLabel>
+              <MonoLabel className="block text-xs text-fg-muted mb-1">
+                Total
+              </MonoLabel>
               <p className="text-2xl font-bold text-fg">{resumenLote.total}</p>
             </div>
             <div className="rounded-md bg-warning-soft p-4">
-              <MonoLabel className="block text-xs text-warning mb-1">Pendientes</MonoLabel>
-              <p className="text-2xl font-bold text-warning">{resumenLote.pendientes}</p>
+              <MonoLabel className="block text-xs text-warning mb-1">
+                Pendientes
+              </MonoLabel>
+              <p className="text-2xl font-bold text-warning">
+                {resumenLote.pendientes}
+              </p>
             </div>
             <div className="rounded-md bg-success-soft p-4">
-              <MonoLabel className="block text-xs text-success mb-1">Listas</MonoLabel>
-              <p className="text-2xl font-bold text-success">{resumenLote.listos}</p>
+              <MonoLabel className="block text-xs text-success mb-1">
+                Listas
+              </MonoLabel>
+              <p className="text-2xl font-bold text-success">
+                {resumenLote.listos}
+              </p>
             </div>
             <div className="rounded-md bg-primary-soft p-4">
-              <MonoLabel className="block text-xs text-primary mb-1">Activadas</MonoLabel>
-              <p className="text-2xl font-bold text-primary">{resumenLote.activados}</p>
+              <MonoLabel className="block text-xs text-primary mb-1">
+                Activadas
+              </MonoLabel>
+              <p className="text-2xl font-bold text-primary">
+                {resumenLote.activados}
+              </p>
             </div>
           </div>
         )}
@@ -439,7 +491,10 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
         )}
 
         {error && (
-          <div className="rounded-md bg-danger-soft border border-border p-3" role="alert">
+          <div
+            className="rounded-md bg-danger-soft border border-border p-3"
+            role="alert"
+          >
             <p className="text-sm text-danger">{error}</p>
           </div>
         )}
@@ -463,8 +518,8 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
             onClick={handleActivar}
           >
             {activando
-              ? 'Activando...'
-              : `Activar ${resumenLote?.listos ?? 0} ${resumenLote?.listos === 1 ? 'inmueble' : 'inmuebles'}`}
+              ? "Activando..."
+              : `Activar ${resumenLote?.listos ?? 0} ${resumenLote?.listos === 1 ? "inmueble" : "inmuebles"}`}
           </Button>
         </div>
       </div>
@@ -490,43 +545,60 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
           </div>
           <div>
             <h3 className="font-semibold text-fg dark:text-white">
-              {t('inmobiliaria.import.confirm.title')}
+              {t("inmobiliaria.import.confirm.title")}
             </h3>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle">{state.fileName}</p>
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+              {state.fileName}
+            </p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 pt-2">
           <div className="rounded-md bg-primary-soft p-4">
             <MonoLabel className="block text-xs text-primary mb-1">
-              {t('inmobiliaria.import.confirm.propertiesToImport')}
+              {t("inmobiliaria.import.confirm.propertiesToImport")}
             </MonoLabel>
             <p className="text-3xl font-bold text-primary">{importCount}</p>
           </div>
 
           <div className="rounded-md bg-surface-muted dark:bg-ink p-4">
             <MonoLabel className="block text-xs text-fg-muted dark:text-fg-subtle mb-1">
-              {t('inmobiliaria.import.confirm.propertiesExcluded')}
+              {t("inmobiliaria.import.confirm.propertiesExcluded")}
             </MonoLabel>
-            <p className="text-3xl font-bold text-fg-muted dark:text-fg-subtle">{excludedCount}</p>
+            <p className="text-3xl font-bold text-fg-muted dark:text-fg-subtle">
+              {excludedCount}
+            </p>
           </div>
 
           <div className="rounded-md bg-success-soft p-4">
             <MonoLabel className="block text-xs text-success mb-1">
-              {t('inmobiliaria.import.confirm.suggestionsAccepted')}
+              {t("inmobiliaria.import.confirm.suggestionsAccepted")}
             </MonoLabel>
-            <p className="text-3xl font-bold text-success">{acceptedSuggestionsCount}</p>
+            <p className="text-3xl font-bold text-success">
+              {acceptedSuggestionsCount}
+            </p>
           </div>
 
           <div
-            className={cn('rounded-md p-4', remainingErrorsCount > 0 ? 'bg-danger-soft' : 'bg-success-soft')}
+            className={cn(
+              "rounded-md p-4",
+              remainingErrorsCount > 0 ? "bg-danger-soft" : "bg-success-soft",
+            )}
           >
             <MonoLabel
-              className={cn('block text-xs mb-1', remainingErrorsCount > 0 ? 'text-danger' : 'text-success')}
+              className={cn(
+                "block text-xs mb-1",
+                remainingErrorsCount > 0 ? "text-danger" : "text-success",
+              )}
             >
-              {t('inmobiliaria.import.confirm.remainingErrors')}
+              {t("inmobiliaria.import.confirm.remainingErrors")}
             </MonoLabel>
-            <p className={cn('text-3xl font-bold', remainingErrorsCount > 0 ? 'text-danger' : 'text-success')}>
+            <p
+              className={cn(
+                "text-3xl font-bold",
+                remainingErrorsCount > 0 ? "text-danger" : "text-success",
+              )}
+            >
               {remainingErrorsCount}
             </p>
           </div>
@@ -537,10 +609,13 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
         <div className="flex items-start gap-3">
           <UserCircle className="w-5 h-5 text-fg-subtle dark:text-fg-muted mt-0.5 flex-shrink-0" />
           <div>
-            <h3 className="font-semibold text-fg dark:text-white text-sm">Asignación de agentes</h3>
+            <h3 className="font-semibold text-fg dark:text-white text-sm">
+              Asignación de agentes
+            </h3>
             <p className="text-sm text-fg-muted dark:text-fg-subtle mt-1">
-              Las propiedades se importarán sin agente asignado. Podrás asignar agentes
-              individualmente o en lote desde el portafolio después de importar.
+              Las propiedades se importarán sin agente asignado. Podrás asignar
+              agentes individualmente o en lote desde el portafolio después de
+              importar.
             </p>
           </div>
         </div>
@@ -552,7 +627,9 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
             Buscando las direcciones en el mapa — {geoCurrent} de {importCount}
           </p>
           <Progress value={geoProgress} size="xs" />
-          <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">{geoProgress}%</p>
+          <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">
+            {geoProgress}%
+          </p>
         </div>
       )}
 
@@ -561,17 +638,21 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
           className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2"
           data-testid="import-bloqueadas"
         >
-          <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <WarningCircle
+            className="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
+            aria-hidden="true"
+          />
           <div className="min-w-0">
             <p className="text-sm font-medium text-warning">
               {bloqueadas.length === 1
-                ? '1 inmueble no se puede importar'
+                ? "1 inmueble no se puede importar"
                 : `${bloqueadas.length} inmuebles no se pueden importar`}
             </p>
             <p className="text-body-sm text-fg-muted mt-0.5">
-              Les falta {motivosBloqueo.join(', ')}. Volvé a{' '}
-              <span className="font-medium text-fg">Revisión</span> con «Anterior» y completalos ahí
-              en cada inmueble; el resto se importa igual.
+              Les falta {motivosBloqueo.join(", ")}. Volvé a{" "}
+              <span className="font-medium text-fg">Revisión</span> con
+              «Anterior» y completalos ahí en cada inmueble; el resto se importa
+              igual.
             </p>
           </div>
         </div>
@@ -583,15 +664,26 @@ export function StepConfirmImport({ state, updateState, onSalir }: ImportStepPro
           role="alert"
           data-testid="import-error"
         >
-          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <WarningCircle
+            className="w-5 h-5 text-danger flex-shrink-0 mt-0.5"
+            aria-hidden="true"
+          />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-danger">No se pudo preparar la importación</p>
-            <p className="text-body-sm text-fg-muted mt-0.5 break-words">El servidor respondió: {error}</p>
+            <p className="text-sm font-medium text-danger">
+              No se pudo preparar la importación
+            </p>
+            <p className="text-body-sm text-fg-muted mt-0.5 break-words">
+              El servidor respondió: {error}
+            </p>
           </div>
         </div>
       )}
 
-      {ranuraDelPie ? createPortal(botonImportar, ranuraDelPie) : <div className="flex justify-end">{botonImportar}</div>}
+      {ranuraDelPie ? (
+        createPortal(botonImportar, ranuraDelPie)
+      ) : (
+        <div className="flex justify-end">{botonImportar}</div>
+      )}
     </div>
   );
 }

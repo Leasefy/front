@@ -9,7 +9,7 @@ el muro de migración de punta a punta con una inmobiliaria de tamaño real.
 | 1 · Terceros | `01-propietarios.csv` | 60 propietarios (6 empresas con NIT, el resto personas con CC/CE), con banco, tipo y número de cuenta, titular y perfil tributario |
 | 1 · Terceros | `02-inquilinos.csv` | 110 inquilinos con documento, correo y teléfono (90 tienen contrato; el resto no) |
 | 2 · Propiedades | `03-inmuebles.csv` | 120 inmuebles en Bogotá 44 · Medellín 36 · Cali 10 · Sabaneta 9 · Envigado 7 · Bucaramanga 7 · Barranquilla 6 · Pereira 1 — 90 arrendados, 2 en venta, el resto disponibles |
-| 3 · Contratos | `04-contratos.csv` | 90 contratos vigentes (23 comerciales), cada uno sobre una dirección del archivo 03 y un inquilino del 02 |
+| 3 · Contratos | `04-contratos.csv` | 90 contratos vigentes (23 comerciales), cada uno sobre una dirección del archivo 03, un inquilino del 02 y el propietario del inmueble (nombre y documento del 01): con eso el paso 3 consigna solo |
 | 5 · Registros contables | `05-asientos-historicos.csv` | 1043 comprobantes / 2839 líneas del libro diario de 2026-06, 2026-07, 2026-08: recaudo, comisión con IVA, giro al propietario con 4×1000, pago de administración y gastos de la oficina |
 
 Recaudado en los tres meses: $1.044.630.000 · comisiones: $89.274.000.

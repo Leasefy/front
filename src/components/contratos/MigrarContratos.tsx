@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 /**
  * MigrarContratos — traer la cartera viva desde otro sistema.
@@ -21,7 +21,7 @@
  *    Un "1.200 procesados" que esconde 300 saltados es peor que un error.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import {
   ArrowRight,
   CheckCircle,
@@ -30,11 +30,12 @@ import {
   Info,
   Warning,
   XCircle,
-} from '@phosphor-icons/react'
+} from "@phosphor-icons/react";
 
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,7 +45,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -52,60 +53,60 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile'
+} from "@/components/ui/select";
+import { parseSpreadsheetFile } from "@/components/inmobiliaria/import/lib/parseFile";
 import {
   mapearColumnas,
   remapear,
   sinMapear,
   type CampoDeContrato,
   type MapeoDeColumna,
-} from '@/lib/contratos/columnas-de-contrato'
-import { armarFilaAMigrar } from '@/lib/contratos/armar-fila'
-import { generarIdempotencyKey } from '@/lib/contratos/idempotencia'
+} from "@/lib/contratos/columnas-de-contrato";
+import { armarFilaAMigrar } from "@/lib/contratos/armar-fila";
+import { generarIdempotencyKey } from "@/lib/contratos/idempotencia";
 import {
   contractsApi,
   type FilaDeMigracion,
   type LoteAbierto,
   type ResumenActivacion,
   type ResumenLote,
-} from '@/lib/api/contracts.service'
-import { useEstadoDeLote } from '@/lib/hooks/use-estado-de-lote'
-import { FaltantesDeFila } from './FaltantesDeFila'
-import { ResolucionMasiva } from './ResolucionMasiva'
-import { ProgresoDeLote } from './ProgresoDeLote'
-import { Pagination } from '@/components/ui/pagination'
+} from "@/lib/api/contracts.service";
+import { useEstadoDeLote } from "@/lib/hooks/use-estado-de-lote";
+import { FaltantesDeFila } from "./FaltantesDeFila";
+import { ResolucionMasiva } from "./ResolucionMasiva";
+import { ProgresoDeLote } from "./ProgresoDeLote";
+import { Pagination } from "@/components/ui/pagination";
 
 const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
-  direccionInmueble: 'Dirección del inmueble',
-  inquilinoNombre: 'Nombre del inquilino',
-  inquilinoCorreo: 'Correo del inquilino',
-  inquilinoTelefono: 'Teléfono del inquilino',
-  inquilinoDocumento: 'Documento del inquilino',
-  fechaInicio: 'Fecha de inicio',
-  fechaFin: 'Fecha de terminación',
-  canon: 'Canon',
-  deposito: 'Depósito',
-  diaDePago: 'Día de pago',
-  uso: 'Uso del inmueble',
-  periodicidad: 'Periodicidad',
-  comision: 'Comisión',
-}
+  direccionInmueble: "Dirección del inmueble",
+  inquilinoNombre: "Nombre del inquilino",
+  inquilinoCorreo: "Correo del inquilino",
+  inquilinoTelefono: "Teléfono del inquilino",
+  inquilinoDocumento: "Documento del inquilino",
+  fechaInicio: "Fecha de inicio",
+  fechaFin: "Fecha de terminación",
+  canon: "Canon",
+  deposito: "Depósito",
+  diaDePago: "Día de pago",
+  uso: "Uso del inmueble",
+  periodicidad: "Periodicidad",
+  comision: "Comisión",
+};
 
 /** Todos los campos posibles, para ofrecerlos en el selector de remapeo. */
-const CAMPOS = Object.keys(NOMBRE_DE_CAMPO) as CampoDeContrato[]
+const CAMPOS = Object.keys(NOMBRE_DE_CAMPO) as CampoDeContrato[];
 
 /** Sentinel de Radix: un `<Select>` no admite `value=""`. */
-const IGNORAR = '__ignorar__'
+const IGNORAR = "__ignorar__";
 
-type Fila = Record<string, unknown>
+type Fila = Record<string, unknown>;
 
 /**
  * Cuántas filas pendientes se piden por página.
@@ -113,26 +114,65 @@ type Fila = Record<string, unknown>
  * Antes se pedían todas: con 1.200 la pantalla pintaba 1.200 tarjetas, cada
  * una con sus propios controles de resolución.
  */
-const POR_PAGINA = 25
+const POR_PAGINA = 25;
+
+/** El propietario que trae una fila del archivo, si lo trae. */
+type DuenoDelArchivo = {
+  nombre: string;
+  documento: string;
+  correo?: string;
+  telefono?: string;
+};
+
+/**
+ * Los propietarios del archivo, por número de fila (0 = primera de datos, el
+ * mismo `fila` que devuelve el back). Sólo cuentan las filas con documento:
+ * sin documento no hay a quién enlazar y el nombre solo crearía homónimos.
+ */
+function duenosDe(
+  filas: Fila[],
+  mapeo: MapeoDeColumna[],
+): Map<number, DuenoDelArchivo> {
+  const col = (campo: CampoDeContrato) =>
+    mapeo.find((m) => m.campo === campo)?.columna;
+  const cNombre = col("propietarioNombre");
+  const cDoc = col("propietarioDocumento");
+  const cCorreo = col("propietarioCorreo");
+  const cTel = col("propietarioTelefono");
+  const out = new Map<number, DuenoDelArchivo>();
+  if (!cDoc) return out;
+  filas.forEach((fila, i) => {
+    const texto = (c?: string) => (c ? String(fila[c] ?? "").trim() : "");
+    const documento = texto(cDoc);
+    if (!documento) return;
+    out.set(i, {
+      nombre: texto(cNombre) || documento,
+      documento,
+      correo: texto(cCorreo) || undefined,
+      telefono: texto(cTel) || undefined,
+    });
+  });
+  return out;
+}
 
 export function MigrarContratos() {
-  const [filas, setFilas] = useState<Fila[]>([])
-  const [encabezados, setEncabezados] = useState<string[]>([])
-  const [mapeo, setMapeo] = useState<MapeoDeColumna[]>([])
-  const [invitar, setInvitar] = useState(true)
-  const [cargando, setCargando] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [lote, setLote] = useState<string | null>(null)
-  const [resumen, setResumen] = useState<ResumenLote | null>(null)
-  const [pendientes, setPendientes] = useState<FilaDeMigracion[]>([])
-  const [totalPendientes, setTotalPendientes] = useState(0)
-  const [pagina, setPagina] = useState(1)
-  const [seleccion, setSeleccion] = useState<Set<string>>(new Set())
-  const [activacion, setActivacion] = useState<ResumenActivacion | null>(null)
+  const [filas, setFilas] = useState<Fila[]>([]);
+  const [encabezados, setEncabezados] = useState<string[]>([]);
+  const [mapeo, setMapeo] = useState<MapeoDeColumna[]>([]);
+  const [invitar, setInvitar] = useState(true);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lote, setLote] = useState<string | null>(null);
+  const [resumen, setResumen] = useState<ResumenLote | null>(null);
+  const [pendientes, setPendientes] = useState<FilaDeMigracion[]>([]);
+  const [totalPendientes, setTotalPendientes] = useState(0);
+  const [pagina, setPagina] = useState(1);
+  const [seleccion, setSeleccion] = useState<Set<string>>(new Set());
+  const [activacion, setActivacion] = useState<ResumenActivacion | null>(null);
   // T-0036 §3.2.C — descartar el lote entero, no fila por fila.
-  const [descartandoLote, setDescartandoLote] = useState(false)
+  const [descartandoLote, setDescartandoLote] = useState(false);
 
-  const [lotesAbiertos, setLotesAbiertos] = useState<LoteAbierto[]>([])
+  const [lotesAbiertos, setLotesAbiertos] = useState<LoteAbierto[]>([]);
 
   /**
    * T-0039 — descartar un lote directamente desde la tarjeta "Tenés una
@@ -148,50 +188,55 @@ export function MigrarContratos() {
    * necesita mostrar (activados incluidos).
    */
   const [resumenTarjeta, setResumenTarjeta] = useState<{
-    lote: string
-    resumen: ResumenLote
-  } | null>(null)
-  const [cargandoResumenDe, setCargandoResumenDe] = useState<string | null>(null)
-  const [descartandoTarjeta, setDescartandoTarjeta] = useState(false)
-  const [errorTarjeta, setErrorTarjeta] = useState<string | null>(null)
+    lote: string;
+    resumen: ResumenLote;
+  } | null>(null);
+  const [cargandoResumenDe, setCargandoResumenDe] = useState<string | null>(
+    null,
+  );
+  const [descartandoTarjeta, setDescartandoTarjeta] = useState(false);
+  const [errorTarjeta, setErrorTarjeta] = useState<string | null>(null);
 
   // Ítem 1 del brief WU-4: sondeo mientras el lote sigue ENCOLADO/PROCESANDO
   // (contrato §11-J9) — es una conveniencia mientras la pestaña sigue
   // abierta, nunca el mecanismo de finalización.
-  const { estado: estadoLote, agotado } = useEstadoDeLote(lote)
+  const { estado: estadoLote, agotado } = useEstadoDeLote(lote);
 
   /**
    * Una clave por archivo leído (no por click): si `preparar()` se reintenta
    * para ESTE mismo archivo, cae en el mismo lote en vez de duplicarlo.
    */
-  const [idempotencyKey, setIdempotencyKey] = useState('')
+  const [idempotencyKey, setIdempotencyKey] = useState("");
 
-  const noMapeados = useMemo(() => sinMapear(mapeo), [mapeo])
+  const noMapeados = useMemo(() => sinMapear(mapeo), [mapeo]);
 
-  const cambiarMapeo = useCallback((columna: string, campo: CampoDeContrato | null) => {
-    setMapeo((actual) => remapear(actual, columna, campo))
-  }, [])
+  const cambiarMapeo = useCallback(
+    (columna: string, campo: CampoDeContrato | null) => {
+      setMapeo((actual) => remapear(actual, columna, campo));
+    },
+    [],
+  );
 
   const restablecerMapeo = useCallback(() => {
-    setMapeo(mapearColumnas(encabezados))
-  }, [encabezados])
+    setMapeo(mapearColumnas(encabezados));
+  }, [encabezados]);
 
   const leerArchivo = useCallback(async (archivo: File) => {
-    setError(null)
-    setActivacion(null)
+    setError(null);
+    setActivacion(null);
     try {
-      const { rows, headers } = await parseSpreadsheetFile(archivo)
-      setFilas(rows as Fila[])
-      setEncabezados(headers)
-      setMapeo(mapearColumnas(headers))
-      setIdempotencyKey(generarIdempotencyKey())
+      const { rows, headers } = await parseSpreadsheetFile(archivo);
+      setFilas(rows as Fila[]);
+      setEncabezados(headers);
+      setMapeo(mapearColumnas(headers));
+      setIdempotencyKey(generarIdempotencyKey());
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos leer el archivo.')
-      setFilas([])
-      setEncabezados([])
-      setMapeo([])
+      setError(e instanceof Error ? e.message : "No pudimos leer el archivo.");
+      setFilas([]);
+      setEncabezados([]);
+      setMapeo([]);
     }
-  }, [])
+  }, []);
 
   /**
    * Trae UNA página de pendientes.
@@ -206,20 +251,20 @@ export function MigrarContratos() {
       contractsApi.migracion.filas(elLote, {
         pagina: pag,
         porPagina: POR_PAGINA,
-        estado: 'PENDIENTE',
+        estado: "PENDIENTE",
       }),
-    ])
-    setResumen(r)
-    setPendientes(p.filas)
-    setTotalPendientes(p.total)
-    setPagina(p.pagina)
+    ]);
+    setResumen(r);
+    setPendientes(p.filas);
+    setTotalPendientes(p.total);
+    setPagina(p.pagina);
     // T-0033 §3.2.G4 — antes reseteaba `seleccion` acá, así que cambiar de
     // página (o refrescar tras resolver una fila) borraba la selección. La
     // única forma de aplicar algo a más de una página era repetir la masiva
     // 55 veces. `seleccion` ahora sobrevive: se resetea explícitamente en
     // los puntos donde el LOTE cambia (`preparar`, `retomar`,
     // `onOtroArchivo`), nunca acá.
-  }, [])
+  }, []);
 
   /**
    * Paso 1: preparar. NO crea contratos.
@@ -229,15 +274,91 @@ export function MigrarContratos() {
    * cuidado —pidiendo desempatar cuando dos inmuebles comparten dirección en
    * vez de elegir uno y quedar perfecto y equivocado.
    */
+  /*
+   * Lo que el archivo dice del propietario no viaja al back (el DTO no lo
+   * admite): se guarda acá y, con el lote listo, se consigna solo. Se pierde
+   * si la persona recarga a mitad — esas filas quedan con su formulario.
+   */
+  const duenosDelArchivo = useRef<Map<number, DuenoDelArchivo>>(new Map());
+  const lotesConsignados = useRef<Set<string>>(new Set());
+
+  /**
+   * Consigna, sin que nadie escriba nada, cada inmueble pendiente cuya fila
+   * trajo el propietario en el archivo. Es el trabajo que antes le tocaba a
+   * la persona fila por fila; lo que falle queda igual que antes, con su
+   * formulario y su buscador.
+   */
+  const consignarDesdeElArchivo = useCallback(
+    async (elLote: string) => {
+      const duenos = duenosDelArchivo.current;
+      if (duenos.size === 0 || lotesConsignados.current.has(elLote)) return;
+      lotesConsignados.current.add(elLote);
+      const candidatas: FilaDeMigracion[] = [];
+      for (let pag = 1; pag < 200; pag++) {
+        const p = await contractsApi.migracion.filas(elLote, {
+          pagina: pag,
+          porPagina: POR_PAGINA,
+          estado: "PENDIENTE",
+        });
+        candidatas.push(
+          ...p.filas.filter(
+            (f) =>
+              f.faltantes.includes("propietario") &&
+              !f.propietarioId &&
+              duenos.has(f.fila),
+          ),
+        );
+        if (p.filas.length < POR_PAGINA || pag * POR_PAGINA >= p.total) break;
+      }
+      if (candidatas.length === 0) return;
+      const aviso = toast.loading(
+        `Consignando con el propietario del archivo… 0 de ${candidatas.length}`,
+      );
+      let hechas = 0;
+      let fallidas = 0;
+      for (const f of candidatas) {
+        const d = duenos.get(f.fila)!;
+        try {
+          await contractsApi.migracion.registrarPropietario(f.id, {
+            nombre: d.nombre,
+            documento: d.documento,
+            correo: d.correo,
+            telefono: d.telefono,
+            comisionPorcentaje: f.datos.comisionPorcentaje,
+          });
+        } catch {
+          fallidas += 1;
+        }
+        hechas += 1;
+        toast.loading(
+          `Consignando con el propietario del archivo… ${hechas} de ${candidatas.length}`,
+          { id: aviso },
+        );
+      }
+      toast.dismiss(aviso);
+      if (fallidas === 0)
+        toast.success(
+          `${hechas} inmuebles consignados con el propietario del archivo`,
+        );
+      else
+        toast.warning(
+          `${hechas - fallidas} consignados; ${fallidas} quedaron para revisar a mano`,
+        );
+      await refrescar(elLote);
+    },
+    [refrescar],
+  );
+
   const preparar = useCallback(async () => {
-    setCargando(true)
-    setError(null)
+    setCargando(true);
+    setError(null);
     try {
       // Cada campo mapeado viaja; lo que no se mapeó (o quedó vacío) viaja
       // ausente, nunca un default inventado — ver `armar-fila.ts`.
-      const aMigrar = filas.map((fila) => armarFilaAMigrar(fila, mapeo))
+      duenosDelArchivo.current = duenosDe(filas, mapeo);
+      const aMigrar = filas.map((fila) => armarFilaAMigrar(fila, mapeo));
 
-      const r = await contractsApi.migracion.preparar(aMigrar, idempotencyKey)
+      const r = await contractsApi.migracion.preparar(aMigrar, idempotencyKey);
       // El lote es SIEMPRE del servidor (contrato §3.2.A2) — generarlo acá
       // podía colisionar entre dos archivos parecidos (N2).
       //
@@ -247,32 +368,34 @@ export function MigrarContratos() {
       // explícito para WU-4: la pantalla de espera (`<ProgresoDeLote>`,
       // debajo) se muestra en su lugar hasta que `estadoLote.estado ===
       // 'LISTO'`, momento en el que el efecto de abajo llama a `refrescar`.
-      setResumen(null)
-      setLote(r.lote)
+      setResumen(null);
+      setLote(r.lote);
       // Nuevo lote entrando: una selección de un lote anterior no puede
       // sobrevivir acá (§3.2.G4) — se resetea en los puntos donde el LOTE
       // cambia, no en cada refresco de página.
-      setSeleccion(new Set())
+      setSeleccion(new Set());
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos preparar la migración.')
+      setError(
+        e instanceof Error ? e.message : "No pudimos preparar la migración.",
+      );
     } finally {
-      setCargando(false)
+      setCargando(false);
     }
-  }, [filas, mapeo, idempotencyKey])
+  }, [filas, mapeo, idempotencyKey]);
 
   const activar = useCallback(async () => {
-    if (!lote) return
-    setCargando(true)
-    setError(null)
+    if (!lote) return;
+    setCargando(true);
+    setError(null);
     try {
-      setActivacion(await contractsApi.migracion.activar(lote, invitar))
-      await refrescar(lote)
+      setActivacion(await contractsApi.migracion.activar(lote, invitar));
+      await refrescar(lote);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos activar.')
+      setError(e instanceof Error ? e.message : "No pudimos activar.");
     } finally {
-      setCargando(false)
+      setCargando(false);
     }
-  }, [lote, invitar, refrescar])
+  }, [lote, invitar, refrescar]);
 
   /**
    * Descartar el lote entero (contract.md T-0036 §3.2.C). Nunca reintenta ni
@@ -283,19 +406,21 @@ export function MigrarContratos() {
    * apretar el botón dos veces.
    */
   const descartarLote = useCallback(async () => {
-    if (!lote) return
-    setDescartandoLote(true)
-    setError(null)
+    if (!lote) return;
+    setDescartandoLote(true);
+    setError(null);
     try {
-      await contractsApi.migracion.descartarLote(lote)
-      setResumen(null)
-      setLote(null)
-      setActivacion(null)
-      setSeleccion(new Set())
+      await contractsApi.migracion.descartarLote(lote);
+      setResumen(null);
+      setLote(null);
+      setActivacion(null);
+      setSeleccion(new Set());
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos descartar el lote.')
+      setError(
+        e instanceof Error ? e.message : "No pudimos descartar el lote.",
+      );
     } finally {
-      setDescartandoLote(false)
+      setDescartandoLote(false);
       // Tanto en éxito como en el 404 de E6 la lista de "Retomar" puede
       // haber cambiado — refrescarla es inofensivo en el resto de los casos
       // (E5: un lote ENCOLADO/PROCESANDO no tiene filas propias todavía y
@@ -305,9 +430,9 @@ export function MigrarContratos() {
         .then(setLotesAbiertos)
         .catch(() => {
           // No poder listarlos no debe impedir seguir.
-        })
+        });
     }
-  }, [lote])
+  }, [lote]);
 
   /**
    * T-0039 — abre la confirmación de "Descartar" desde la tarjeta. Pide el
@@ -318,17 +443,19 @@ export function MigrarContratos() {
    * modal de adentro del lote (§3.2.C6).
    */
   const abrirDescarteDesdeTarjeta = useCallback(async (elLote: string) => {
-    setErrorTarjeta(null)
-    setCargandoResumenDe(elLote)
+    setErrorTarjeta(null);
+    setCargandoResumenDe(elLote);
     try {
-      const r = await contractsApi.migracion.resumen(elLote)
-      setResumenTarjeta({ lote: elLote, resumen: r })
+      const r = await contractsApi.migracion.resumen(elLote);
+      setResumenTarjeta({ lote: elLote, resumen: r });
     } catch (e) {
-      setErrorTarjeta(e instanceof Error ? e.message : 'No pudimos abrir ese lote.')
+      setErrorTarjeta(
+        e instanceof Error ? e.message : "No pudimos abrir ese lote.",
+      );
     } finally {
-      setCargandoResumenDe(null)
+      setCargandoResumenDe(null);
     }
-  }, [])
+  }, []);
 
   /**
    * Confirma el descarte pedido desde la tarjeta. Nunca deja la tarjeta en
@@ -338,24 +465,26 @@ export function MigrarContratos() {
    * modal estaba abierto.
    */
   const confirmarDescarteDesdeTarjeta = useCallback(async () => {
-    if (!resumenTarjeta) return
-    setDescartandoTarjeta(true)
-    setErrorTarjeta(null)
+    if (!resumenTarjeta) return;
+    setDescartandoTarjeta(true);
+    setErrorTarjeta(null);
     try {
-      await contractsApi.migracion.descartarLote(resumenTarjeta.lote)
+      await contractsApi.migracion.descartarLote(resumenTarjeta.lote);
     } catch (e) {
-      setErrorTarjeta(e instanceof Error ? e.message : 'No pudimos descartar el lote.')
+      setErrorTarjeta(
+        e instanceof Error ? e.message : "No pudimos descartar el lote.",
+      );
     } finally {
-      setResumenTarjeta(null)
-      setDescartandoTarjeta(false)
+      setResumenTarjeta(null);
+      setDescartandoTarjeta(false);
       contractsApi.migracion
         .lotesAbiertos()
         .then(setLotesAbiertos)
         .catch(() => {
           // No poder listarlos no debe impedir seguir.
-        })
+        });
     }
-  }, [resumenTarjeta])
+  }, [resumenTarjeta]);
 
   /*
    * Al entrar, buscar migraciones a medias. La lista de trabajo vivía sólo en
@@ -364,32 +493,32 @@ export function MigrarContratos() {
    * contratos no se resuelve de una sentada.
    */
   useEffect(() => {
-    let vigente = true
+    let vigente = true;
     contractsApi.migracion
       .lotesAbiertos()
       .then((l) => {
-        if (vigente) setLotesAbiertos(l)
+        if (vigente) setLotesAbiertos(l);
       })
       .catch(() => {
         // No poder listarlos no debe impedir empezar uno nuevo.
-      })
+      });
     return () => {
-      vigente = false
-    }
-  }, [])
+      vigente = false;
+    };
+  }, []);
 
   const retomar = useCallback((elLote: string) => {
-    setError(null)
+    setError(null);
     // Igual que en `preparar()`: si el lote retomado todavía está
     // ENCOLADO/PROCESANDO (p.ej. se reabrió el importador mientras el job
     // seguía corriendo), no hay lista de trabajo que mostrar todavía — el
     // efecto de abajo llama a `refrescar` recién cuando `estadoLote.estado
     // === 'LISTO'`.
-    setResumen(null)
-    setLote(elLote)
+    setResumen(null);
+    setLote(elLote);
     // Otro lote: la selección del anterior no aplica acá (§3.2.G4).
-    setSeleccion(new Set())
-  }, [])
+    setSeleccion(new Set());
+  }, []);
 
   /*
    * El lote pasó a LISTO (por el sondeo de `useEstadoDeLote`, o porque ya
@@ -397,20 +526,24 @@ export function MigrarContratos() {
    * lista de trabajo real.
    */
   useEffect(() => {
-    if (!lote) return
-    if (estadoLote?.estado === 'LISTO') {
-      refrescar(lote).catch((e) => {
-        setError(e instanceof Error ? e.message : 'No pudimos abrir ese lote.')
-      })
+    if (!lote) return;
+    if (estadoLote?.estado === "LISTO") {
+      refrescar(lote)
+        .then(() => consignarDesdeElArchivo(lote))
+        .catch((e) => {
+          setError(
+            e instanceof Error ? e.message : "No pudimos abrir ese lote.",
+          );
+        });
     }
-  }, [lote, estadoLote?.estado, refrescar])
+  }, [lote, estadoLote?.estado, refrescar, consignarDesdeElArchivo]);
 
   // ── Hay un lote pero todavía no está LISTO: pantalla de espera ───────────
   // Ítem 1 del brief — mostrar progreso mientras el usuario elige esperar, y
   // dejar explícito que cerrar la pestaña es seguro (el lote es durable
   // server-side; la notificación avisa igual — contrato §3.2.C).
   if (lote && !resumen) {
-    return <ProgresoDeLote estado={estadoLote} agotado={agotado} />
+    return <ProgresoDeLote estado={estadoLote} agotado={agotado} />;
   }
 
   // ── Ya se preparó: lista de trabajo ──────────────────────────────────────
@@ -435,18 +568,18 @@ export function MigrarContratos() {
         onSeleccionCambia={setSeleccion}
         onFilaResuelta={() => void refrescar(lote, pagina)}
         onOtroArchivo={() => {
-          setResumen(null)
-          setLote(null)
-          setFilas([])
-          setEncabezados([])
-          setMapeo([])
-          setActivacion(null)
-          setIdempotencyKey('')
+          setResumen(null);
+          setLote(null);
+          setFilas([]);
+          setEncabezados([]);
+          setMapeo([]);
+          setActivacion(null);
+          setIdempotencyKey("");
           // Otro archivo, otro lote: nada de la selección anterior aplica.
-          setSeleccion(new Set())
+          setSeleccion(new Set());
         }}
       />
-    )
+    );
   }
 
   return (
@@ -454,7 +587,10 @@ export function MigrarContratos() {
       {/* Migraciones a medias. Volver a subir el archivo duplicaría las filas:
           por eso se ofrece retomar ANTES del cargador, no después. */}
       {lotesAbiertos.length > 0 ? (
-        <Card className="space-y-3 border-primary/30 p-5" data-testid="lotes-abiertos">
+        <Card
+          className="space-y-3 border-primary/30 p-5"
+          data-testid="lotes-abiertos"
+        >
           <p className="text-sm font-medium text-foreground">
             Tenés una migración sin terminar
           </p>
@@ -462,23 +598,30 @@ export function MigrarContratos() {
             // F1 (contrato §3.2.A3) — `estado` ausente es un lote anterior
             // a T-0031 (sin fila `MigracionLote`): se trata como LISTO,
             // igual que hoy.
-            const procesando = l.estado === 'ENCOLADO' || l.estado === 'PROCESANDO'
+            const procesando =
+              l.estado === "ENCOLADO" || l.estado === "PROCESANDO";
             return (
-              <div key={l.lote} className="flex flex-wrap items-center justify-between gap-2">
+              <div
+                key={l.lote}
+                className="flex flex-wrap items-center justify-between gap-2"
+              >
                 <p className="text-sm text-muted-foreground">
                   <span className="text-foreground">{l.lote}</span>
                   {procesando ? (
                     <span className="inline-flex items-center gap-1 text-primary">
-                      {' · '}
+                      {" · "}
                       <Clock className="h-3 w-3" />
                       {l.total != null
                         ? `procesando ${l.pendientes + l.listos} / ${l.total}`
-                        : 'procesando'}
+                        : "procesando"}
                     </span>
                   ) : (
                     <>
-                      {' · '}
-                      {l.pendientes} {l.pendientes === 1 ? 'fila pendiente' : 'filas pendientes'}
+                      {" · "}
+                      {l.pendientes}{" "}
+                      {l.pendientes === 1
+                        ? "fila pendiente"
+                        : "filas pendientes"}
                       {/*
                        * T-0035 — leía `l.listos`: con el modo sparse prendido
                        * eso daba SIEMPRE 0 en un lote real (todo quedaba
@@ -488,7 +631,9 @@ export function MigrarContratos() {
                        * la palabra «listas», que en modo sparse incluye
                        * filas todavía incompletas.
                        */}
-                      {l.activables > 0 ? ` · ${l.activables} para activar` : ''}
+                      {l.activables > 0
+                        ? ` · ${l.activables} para activar`
+                        : ""}
                     </>
                   )}
                 </p>
@@ -517,8 +662,8 @@ export function MigrarContratos() {
                       // igual, y el owner pidió explícitamente no dejar
                       // llegar al usuario a ese error — se explica en la
                       // propia tarjeta en vez (arriba, "procesando N / total").
-                      if (procesando) return
-                      void abrirDescarteDesdeTarjeta(l.lote)
+                      if (procesando) return;
+                      void abrirDescarteDesdeTarjeta(l.lote);
                     }}
                     data-testid={`descartar-lote-lista-${l.lote}`}
                   >
@@ -534,13 +679,16 @@ export function MigrarContratos() {
                   </Button>
                 </div>
               </div>
-            )
+            );
           })}
           <p className="text-xs text-muted-foreground">
             Si volvés a subir el mismo archivo, las filas se duplican.
           </p>
           {errorTarjeta ? (
-            <p className="text-xs text-destructive" data-testid="error-descartar-lote-tarjeta">
+            <p
+              className="text-xs text-destructive"
+              data-testid="error-descartar-lote-tarjeta"
+            >
               {errorTarjeta}
             </p>
           ) : null}
@@ -553,7 +701,7 @@ export function MigrarContratos() {
           resumen={resumenTarjeta.resumen}
           descartando={descartandoTarjeta}
           onOpenChange={(o) => {
-            if (!o && !descartandoTarjeta) setResumenTarjeta(null)
+            if (!o && !descartandoTarjeta) setResumenTarjeta(null);
           }}
           onConfirmar={() => void confirmarDescarteDesdeTarjeta()}
         />
@@ -576,8 +724,8 @@ export function MigrarContratos() {
             className="sr-only"
             data-testid="archivo-contratos"
             onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (f) void leerArchivo(f)
+              const f = e.target.files?.[0];
+              if (f) void leerArchivo(f);
             }}
           />
         </label>
@@ -633,10 +781,16 @@ export function MigrarContratos() {
                       <Select
                         value={m.campo ?? IGNORAR}
                         onValueChange={(v) =>
-                          cambiarMapeo(m.columna, v === IGNORAR ? null : (v as CampoDeContrato))
+                          cambiarMapeo(
+                            m.columna,
+                            v === IGNORAR ? null : (v as CampoDeContrato),
+                          )
                         }
                       >
-                        <SelectTrigger className="w-full min-w-[200px]" data-testid={`mapeo-${m.columna}`}>
+                        <SelectTrigger
+                          className="w-full min-w-[200px]"
+                          data-testid={`mapeo-${m.columna}`}
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -651,10 +805,10 @@ export function MigrarContratos() {
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {m.isManual
-                        ? 'elegido a mano'
+                        ? "elegido a mano"
                         : m.porque
                           ? `coincidió con «${m.porque}»`
-                          : '—'}
+                          : "—"}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -669,12 +823,12 @@ export function MigrarContratos() {
               <div>
                 <p className="text-sm font-medium text-info">
                   {noMapeados.length === 1
-                    ? 'Una columna no se mapeó'
+                    ? "Una columna no se mapeó"
                     : `${noMapeados.length} columnas no se mapearon`}
                 </p>
                 <p className="mt-0.5 text-body-sm text-fg-muted">
-                  {noMapeados.map((c) => NOMBRE_DE_CAMPO[c]).join(' · ')} — podés
-                  completarlos fila por fila después de revisar.
+                  {noMapeados.map((c) => NOMBRE_DE_CAMPO[c]).join(" · ")} —
+                  podés completarlos fila por fila después de revisar.
                 </p>
               </div>
             </div>
@@ -693,7 +847,7 @@ export function MigrarContratos() {
         </Card>
       ) : null}
     </div>
-  )
+  );
 }
 
 /**
@@ -716,12 +870,12 @@ function DialogoDescartarLote({
   onOpenChange,
   onConfirmar,
 }: {
-  lote: string
-  resumen: ResumenLote
+  lote: string;
+  resumen: ResumenLote;
   /** Nunca rechaza — ver `descartarLote`/`confirmarDescarteDesdeTarjeta`. */
-  descartando: boolean
-  onOpenChange: (open: boolean) => void
-  onConfirmar: () => void
+  descartando: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirmar: () => void;
 }) {
   return (
     // AlertDialog — shadcn, NUNCA window.confirm(). Sin type-to-confirm a
@@ -729,7 +883,7 @@ function DialogoDescartarLote({
     <AlertDialog
       open
       onOpenChange={(o) => {
-        if (!descartando) onOpenChange(o)
+        if (!descartando) onOpenChange(o);
       }}
     >
       <AlertDialogContent>
@@ -737,17 +891,17 @@ function DialogoDescartarLote({
           <AlertDialogTitle>¿Descartar el lote {lote}?</AlertDialogTitle>
           <AlertDialogDescription className="space-y-2 text-left">
             <span className="block">
-              Se van a descartar {resumen.pendientes + resumen.listos}{' '}
-              {resumen.pendientes + resumen.listos === 1 ? 'fila' : 'filas'} de
-              este lote — las que todavía no están completas y las que ya
-              están listas pero sin activar. No se van a convertir en
-              contratos, y se pierde el trabajo ya hecho en ellas: inmueble
-              asignado, propietario registrado, fechas y canon corregidos.
+              Se van a descartar {resumen.pendientes + resumen.listos}{" "}
+              {resumen.pendientes + resumen.listos === 1 ? "fila" : "filas"} de
+              este lote — las que todavía no están completas y las que ya están
+              listas pero sin activar. No se van a convertir en contratos, y se
+              pierde el trabajo ya hecho en ellas: inmueble asignado,
+              propietario registrado, fechas y canon corregidos.
             </span>
             {resumen.activados > 0 ? (
               <span className="block">
-                Los {resumen.activados}{' '}
-                {resumen.activados === 1 ? 'contrato' : 'contratos'} que ya se
+                Los {resumen.activados}{" "}
+                {resumen.activados === 1 ? "contrato" : "contratos"} que ya se
                 activaron de este lote no se tocan — siguen siendo contratos
                 reales.
               </span>
@@ -758,8 +912,8 @@ function DialogoDescartarLote({
               portafolio.
             </span>
             <span className="block">
-              Podés volver a intentarlo subiendo el mismo archivo otra vez —
-              el archivo original no se modifica.
+              Podés volver a intentarlo subiendo el mismo archivo otra vez — el
+              archivo original no se modifica.
             </span>
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -769,16 +923,16 @@ function DialogoDescartarLote({
             tone="danger"
             disabled={descartando}
             onClick={(e) => {
-              e.preventDefault()
-              onConfirmar()
+              e.preventDefault();
+              onConfirmar();
             }}
           >
-            {descartando ? 'Descartando...' : 'Descartar este lote'}
+            {descartando ? "Descartando..." : "Descartar este lote"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }
 
 /**
@@ -807,63 +961,63 @@ function ListaDeTrabajo({
   onPaginaCambia,
   onSeleccionCambia,
 }: {
-  lote: string
-  resumen: ResumenLote
-  pendientes: FilaDeMigracion[]
-  totalPendientes: number
-  pagina: number
-  seleccion: Set<string>
-  activacion: ResumenActivacion | null
-  invitar: boolean
-  setInvitar: (v: boolean) => void
-  cargando: boolean
-  error: string | null
-  onActivar: () => void
+  lote: string;
+  resumen: ResumenLote;
+  pendientes: FilaDeMigracion[];
+  totalPendientes: number;
+  pagina: number;
+  seleccion: Set<string>;
+  activacion: ResumenActivacion | null;
+  invitar: boolean;
+  setInvitar: (v: boolean) => void;
+  cargando: boolean;
+  error: string | null;
+  onActivar: () => void;
   /** T-0036 §3.2.C — nunca rechaza: los errores se reflejan en `error`. */
-  descartando: boolean
-  onDescartarLote: () => Promise<void>
-  onFilaResuelta: () => void
-  onOtroArchivo: () => void
-  onPaginaCambia: (p: number) => void
-  onSeleccionCambia: (s: Set<string>) => void
+  descartando: boolean;
+  onDescartarLote: () => Promise<void>;
+  onFilaResuelta: () => void;
+  onOtroArchivo: () => void;
+  onPaginaCambia: (p: number) => void;
+  onSeleccionCambia: (s: Set<string>) => void;
 }) {
-  const totalPaginas = Math.max(1, Math.ceil(totalPendientes / POR_PAGINA))
+  const totalPaginas = Math.max(1, Math.ceil(totalPendientes / POR_PAGINA));
   const todasMarcadas =
-    pendientes.length > 0 && pendientes.every((f) => seleccion.has(f.id))
+    pendientes.length > 0 && pendientes.every((f) => seleccion.has(f.id));
 
   // T-0033 §3.2.G1 — "Seleccionar las {total} del lote": trae todo el
   // conjunto de ids vía `GET migrar/filas/ids`, sin descargar el `datos` JSON
   // de cada fila. Estado local: sólo le importa a este control.
-  const [seleccionandoTodo, setSeleccionandoTodo] = useState(false)
-  const [notaSeleccion, setNotaSeleccion] = useState<string | null>(null)
+  const [seleccionandoTodo, setSeleccionandoTodo] = useState(false);
+  const [notaSeleccion, setNotaSeleccion] = useState<string | null>(null);
 
   // T-0036 §3.2.C6 — el modal de confirmación de "Descartar este lote".
   // Vive acá (no en el padre): en éxito el padre desmonta este componente
   // entero (deja `lote`/`resumen`), así que el modal se va con él sin
   // necesidad de cerrarlo a mano; en error, `onDescartarLote` resuelve
   // igual (nunca rechaza) y el `.then` de abajo lo cierra.
-  const [confirmarDescarte, setConfirmarDescarte] = useState(false)
-  const puedeDescartarLote = resumen.pendientes + resumen.listos > 0
+  const [confirmarDescarte, setConfirmarDescarte] = useState(false);
+  const puedeDescartarLote = resumen.pendientes + resumen.listos > 0;
 
   async function seleccionarTodoElLote() {
-    setSeleccionandoTodo(true)
-    setNotaSeleccion(null)
+    setSeleccionandoTodo(true);
+    setNotaSeleccion(null);
     try {
-      const r = await contractsApi.migracion.idsDeFilas(lote, 'PENDIENTE')
-      onSeleccionCambia(new Set(r.ids))
+      const r = await contractsApi.migracion.idsDeFilas(lote, "PENDIENTE");
+      onSeleccionCambia(new Set(r.ids));
       // §3.2.G1 — un lote más grande que `MAX_IDS_MASIVA` nunca se aplica en
       // silencio a un subconjunto: se dice explícitamente cuántas de cuántas.
       setNotaSeleccion(
         r.truncado
           ? `Se seleccionaron las primeras ${r.ids.length} de ${r.total} — hay más de las que caben a la vez.`
           : null,
-      )
+      );
     } catch (e) {
       setNotaSeleccion(
-        e instanceof Error ? e.message : 'No pudimos seleccionar todo el lote.',
-      )
+        e instanceof Error ? e.message : "No pudimos seleccionar todo el lote.",
+      );
     } finally {
-      setSeleccionandoTodo(false)
+      setSeleccionandoTodo(false);
     }
   }
 
@@ -873,7 +1027,11 @@ function ListaDeTrabajo({
         <div className="grid gap-3 sm:grid-cols-4">
           <Dato etiqueta="En el archivo" valor={resumen.total} />
           <Dato etiqueta="Listos" valor={resumen.listos} tono="ok" />
-          <Dato etiqueta="Les falta algo" valor={resumen.pendientes} tono="mal" />
+          <Dato
+            etiqueta="Les falta algo"
+            valor={resumen.pendientes}
+            tono="mal"
+          />
           <Dato etiqueta="Ya activados" valor={resumen.activados} />
         </div>
 
@@ -937,14 +1095,19 @@ function ListaDeTrabajo({
                 className="text-xs text-muted-foreground"
                 data-testid="aviso-incompletos"
               >
-                {resumen.activables - resumen.listos} de estos contratos
-                todavía tienen algo pendiente — por ejemplo, sin inmueble
-                asignado. Se van a crear igual, van a decir «Sin inmueble» (o
-                lo que les falte), y vas a poder completarlos después.
+                {resumen.activables - resumen.listos} de estos contratos todavía
+                tienen algo pendiente — por ejemplo, sin inmueble asignado. Se
+                van a crear igual, van a decir «Sin inmueble» (o lo que les
+                falte), y vas a poder completarlos después.
               </p>
             ) : null}
 
-            <Button onClick={onActivar} disabled={cargando} isLoading={cargando} hideArrow>
+            <Button
+              onClick={onActivar}
+              disabled={cargando}
+              isLoading={cargando}
+              hideArrow
+            >
               Activar {resumen.activables} contratos
             </Button>
           </>
@@ -988,7 +1151,9 @@ function ListaDeTrabajo({
           resumen={resumen}
           descartando={descartando}
           onOpenChange={setConfirmarDescarte}
-          onConfirmar={() => void onDescartarLote().then(() => setConfirmarDescarte(false))}
+          onConfirmar={() =>
+            void onDescartarLote().then(() => setConfirmarDescarte(false))
+          }
         />
       ) : null}
 
@@ -997,7 +1162,9 @@ function ListaDeTrabajo({
           <p className="flex items-center gap-2 text-sm font-medium text-foreground">
             <CheckCircle className="h-4 w-4 text-success" weight="fill" />
             {activacion.activadas} contratos activados
-            {activacion.invitados > 0 ? ` · ${activacion.invitados} inquilinos invitados` : ''}
+            {activacion.invitados > 0
+              ? ` · ${activacion.invitados} inquilinos invitados`
+              : ""}
           </p>
           {/*
            * T-0036 §3.2.A4/A6 — el producto entero del cambio: cuántos
@@ -1006,18 +1173,26 @@ function ListaDeTrabajo({
            * el campo no puede afirmar un conteo que no tiene).
            */}
           {activacion.porInvitar ? (
-            <p className="text-sm text-muted-foreground" data-testid="aviso-pendientes-de-invitar">
-              {activacion.porInvitar} {activacion.porInvitar === 1 ? 'inquilino queda' : 'inquilinos quedan'}{' '}
-              pendiente{activacion.porInvitar === 1 ? '' : 's'} de invitar — se hace desde cada
-              contrato.
+            <p
+              className="text-sm text-muted-foreground"
+              data-testid="aviso-pendientes-de-invitar"
+            >
+              {activacion.porInvitar}{" "}
+              {activacion.porInvitar === 1
+                ? "inquilino queda"
+                : "inquilinos quedan"}{" "}
+              pendiente{activacion.porInvitar === 1 ? "" : "s"} de invitar — se
+              hace desde cada contrato.
             </p>
           ) : null}
           {activacion.fallidas > 0 ? (
             <ul className="space-y-1 text-sm text-muted-foreground">
               {activacion.resultados
-                .filter((r) => r.estado === 'fallido')
+                .filter((r) => r.estado === "fallido")
                 .map((r) => (
-                  <li key={r.fila}>Fila {r.fila + 2}: {r.motivo}</li>
+                  <li key={r.fila}>
+                    Fila {r.fila + 2}: {r.motivo}
+                  </li>
                 ))}
             </ul>
           ) : null}
@@ -1035,10 +1210,10 @@ function ListaDeTrabajo({
                   // la de esta página. Con selección across-pages eso borraba
                   // lo elegido en otras páginas; ahora sólo agrega/quita las
                   // de ESTA página, sin tocar el resto.
-                  const s = new Set(seleccion)
-                  if (c === true) pendientes.forEach((f) => s.add(f.id))
-                  else pendientes.forEach((f) => s.delete(f.id))
-                  onSeleccionCambia(s)
+                  const s = new Set(seleccion);
+                  if (c === true) pendientes.forEach((f) => s.add(f.id));
+                  else pendientes.forEach((f) => s.delete(f.id));
+                  onSeleccionCambia(s);
                 }}
               />
               Seleccionar las {pendientes.length} de esta página
@@ -1068,7 +1243,10 @@ function ListaDeTrabajo({
       ) : null}
 
       {notaSeleccion ? (
-        <p className="text-xs text-muted-foreground" data-testid="nota-seleccion">
+        <p
+          className="text-xs text-muted-foreground"
+          data-testid="nota-seleccion"
+        >
           {notaSeleccion}
         </p>
       ) : null}
@@ -1088,14 +1266,14 @@ function ListaDeTrabajo({
               <Checkbox
                 checked={seleccion.has(f.id)}
                 onCheckedChange={(c) => {
-                  const s = new Set(seleccion)
-                  if (c === true) s.add(f.id)
-                  else s.delete(f.id)
-                  onSeleccionCambia(s)
+                  const s = new Set(seleccion);
+                  if (c === true) s.add(f.id);
+                  else s.delete(f.id);
+                  onSeleccionCambia(s);
                 }}
               />
               {/* +2: en el archivo la primera fila de datos es la 2. */}
-              Fila {f.fila + 2} · {f.datos.inquilino?.nombre || 'sin nombre'}
+              Fila {f.fila + 2} · {f.datos.inquilino?.nombre || "sin nombre"}
             </label>
             <p className="text-xs text-muted-foreground">{f.datos.direccion}</p>
           </div>
@@ -1116,7 +1294,7 @@ function ListaDeTrabajo({
         <ArrowRight className="ml-1.5 h-4 w-4" />
       </Button>
     </div>
-  )
+  );
 }
 
 function Dato({
@@ -1124,24 +1302,24 @@ function Dato({
   valor,
   tono,
 }: {
-  etiqueta: string
-  valor: number
-  tono?: 'ok' | 'mal'
+  etiqueta: string;
+  valor: number;
+  tono?: "ok" | "mal";
 }) {
   return (
     <div className="rounded-lg border border-border p-3">
       <p className="text-xs text-muted-foreground">{etiqueta}</p>
       <p
         className={`text-xl font-semibold tabular-nums ${
-          tono === 'ok' && valor > 0
-            ? 'text-success'
-            : tono === 'mal' && valor > 0
-              ? 'text-destructive'
-              : 'text-foreground'
+          tono === "ok" && valor > 0
+            ? "text-success"
+            : tono === "mal" && valor > 0
+              ? "text-destructive"
+              : "text-foreground"
         }`}
       >
         {valor}
       </p>
     </div>
-  )
+  );
 }

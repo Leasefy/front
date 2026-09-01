@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * El muro de migración — la puesta en marcha, dentro del panel.
@@ -60,20 +60,20 @@
  * otra forma, el panel se ve normal. Está en `normalizarEstado()`.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowRight, Check, Lock, Warning } from '@phosphor-icons/react';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowRight, Check, Lock, Warning } from "@phosphor-icons/react";
 
-import { Button } from '@/components/ui/button';
-import { useI18n } from '@/lib/i18n';
-import { cn } from '@/lib/utils';
-import { usePermissions } from '@/lib/hooks/usePermissions';
-import { useLenis } from '@/components/providers/SmoothScroll';
+import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+import { usePermissions } from "@/lib/hooks/usePermissions";
+import { useLenis } from "@/components/providers/SmoothScroll";
 import {
   migracionEstadoApi,
   type EstadoDeMigracion,
   type IdDePasoDeMigracion,
   type PasoDeMigracion,
-} from '@/lib/api/migracion-estado.service';
+} from "@/lib/api/migracion-estado.service";
 import {
   MODULO_DEL_PASO,
   esExigible,
@@ -83,12 +83,12 @@ import {
   pasoQueFrena,
   siguientePaso,
   todoListo,
-} from './muro-reglas';
-import { MigrarTerceros } from './MigrarTerceros';
-import { PlanDeCuentas } from './PlanDeCuentas';
-import { RegistrosContables } from './RegistrosContables';
-import { ImportWizard } from '@/components/inmobiliaria/import/ImportWizard';
-import { MigrarContratos } from '@/components/contratos/MigrarContratos';
+} from "./muro-reglas";
+import { MigrarTerceros } from "./MigrarTerceros";
+import { PlanDeCuentas } from "./PlanDeCuentas";
+import { RegistrosContables } from "./RegistrosContables";
+import { ImportWizard } from "@/components/inmobiliaria/import/ImportWizard";
+import { MigrarContratos } from "@/components/contratos/MigrarContratos";
 
 /** Cada cuánto el muro vuelve a mirar el estado mientras está puesto. */
 export const CADA_CUANTO_SE_REFRESCA_MS = 5_000;
@@ -136,15 +136,15 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!puesto) return;
     const cadaTanto = setInterval(() => {
-      if (document.visibilityState === 'visible') void refrescar();
+      if (document.visibilityState === "visible") void refrescar();
     }, CADA_CUANTO_SE_REFRESCA_MS);
     const alVolver = () => {
-      if (document.visibilityState === 'visible') void refrescar();
+      if (document.visibilityState === "visible") void refrescar();
     };
-    document.addEventListener('visibilitychange', alVolver);
+    document.addEventListener("visibilitychange", alVolver);
     return () => {
       clearInterval(cadaTanto);
-      document.removeEventListener('visibilitychange', alVolver);
+      document.removeEventListener("visibilitychange", alVolver);
     };
   }, [puesto, refrescar]);
 
@@ -157,7 +157,9 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
    * Es lo que vuelve inerte al sidebar y a toda la navegación: sin esto, la
    * persona se pasea por el panel con el muro dibujado encima.
    */
-  const inerte = puesto ? ({ inert: '' } as unknown as Record<string, string>) : {};
+  const inerte = puesto
+    ? ({ inert: "" } as unknown as Record<string, string>)
+    : {};
 
   return (
     <>
@@ -166,12 +168,15 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
         aria-hidden={puesto || undefined}
         data-testid="panel-detras-del-muro"
         className={cn(
-          puesto && 'min-h-screen select-none blur-[3px] saturate-[0.6] pointer-events-none',
+          puesto &&
+            "min-h-screen select-none blur-[3px] saturate-[0.6] pointer-events-none",
         )}
       >
         {children}
       </div>
-      {puesto ? <PanelDeMigracion estado={estado} onResuelta={refrescar} /> : null}
+      {puesto ? (
+        <PanelDeMigracion estado={estado} onResuelta={refrescar} />
+      ) : null}
     </>
   );
 }
@@ -200,7 +205,7 @@ export function PanelDeMigracion({
   const pasos = estado.pasos;
   const listo = todoListo(pasos);
   const exigibles = pasos.filter(esExigible);
-  const hechos = exigibles.filter((p) => p.estado === 'listo').length;
+  const hechos = exigibles.filter((p) => p.estado === "listo").length;
 
   /*
    * Dónde está parada la persona. Arranca en el primer paso sin terminar y
@@ -213,10 +218,16 @@ export function PanelDeMigracion({
   const paso = pasos[indice];
   const siguiente = siguientePaso(pasos, indice);
 
-  const irA = useCallback((i: number) => {
-    setSeleccionado(i);
-    cuerpo.current?.scrollTo({ top: 0 });
-  }, []);
+  const irA = useCallback(
+    (i: number) => {
+      setSeleccionado(i);
+      cuerpo.current?.scrollTo({ top: 0 });
+      // Quien acaba de sembrar el PUC y aprieta «continuar» no debería ver
+      // «primero terminá el PUC» hasta el próximo refresco de 5 s.
+      void onResuelta();
+    },
+    [onResuelta],
+  );
 
   /*
    * Trampa de foco. No es un modal con «cerrar»: es un muro, así que Escape
@@ -233,12 +244,14 @@ export function PanelDeMigracion({
         nodo.querySelectorAll<HTMLElement>(
           'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])',
         ),
-      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+      ).filter(
+        (el) => el.offsetParent !== null || el === document.activeElement,
+      );
 
     nodo.focus();
 
     const alTeclear = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         // Silencioso a propósito: no hay nada que cerrar. Salvo que un
         // diálogo de adentro (un select, una confirmación) esté abierto:
         // esos viven en portales fuera de la caja y Escape es de ellos.
@@ -247,9 +260,10 @@ export function PanelDeMigracion({
         e.stopPropagation();
         return;
       }
-      if (e.key !== 'Tab') return;
+      if (e.key !== "Tab") return;
       // Un portal abierto (diálogo, select) maneja su propio Tab.
-      if (document.activeElement && !nodo.contains(document.activeElement)) return;
+      if (document.activeElement && !nodo.contains(document.activeElement))
+        return;
       const lista = enfocables();
       if (lista.length === 0) {
         e.preventDefault();
@@ -268,8 +282,8 @@ export function PanelDeMigracion({
       }
     };
 
-    document.addEventListener('keydown', alTeclear, true);
-    return () => document.removeEventListener('keydown', alTeclear, true);
+    document.addEventListener("keydown", alTeclear, true);
+    return () => document.removeEventListener("keydown", alTeclear, true);
   }, []);
 
   /*
@@ -282,18 +296,18 @@ export function PanelDeMigracion({
     const controles = lenisRef.current;
     controles.stop();
     const previo = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previo;
       controles.start();
     };
   }, []);
 
-  async function resolver(via: 'terminar' | 'omitir') {
+  async function resolver(via: "terminar" | "omitir") {
     setEnviando(true);
     setFallo(false);
     try {
-      if (via === 'terminar') await migracionEstadoApi.terminar();
+      if (via === "terminar") await migracionEstadoApi.terminar();
       else await migracionEstadoApi.omitir();
       await onResuelta();
       // Si el back todavía dice que bloquea, el muro sigue puesto y los
@@ -329,9 +343,14 @@ export function PanelDeMigracion({
         {/* ── Arriba, fijo: el mapa ─────────────────────────────────────── */}
         <header className="shrink-0 border-b border-border-faint px-5 pb-5 pt-5 sm:px-8 sm:pt-6">
           <div className="flex items-baseline justify-between gap-x-6 font-mono text-[11px] text-fg-subtle">
-            <p className="uppercase tracking-wider">{t('migracion.muro.eyebrow')}</p>
+            <p className="uppercase tracking-wider">
+              {t("migracion.muro.eyebrow")}
+            </p>
             <p className="shrink-0 tabular-nums" data-testid="muro-progreso">
-              {t('migracion.muro.progresoDe', { n: hechos, total: exigibles.length })}
+              {t("migracion.muro.progresoDe", {
+                n: hechos,
+                total: exigibles.length,
+              })}
             </p>
           </div>
           <div className="mt-1.5 flex flex-wrap items-baseline gap-x-4 gap-y-1">
@@ -339,9 +358,11 @@ export function PanelDeMigracion({
               id="muro-migracion-titulo"
               className="text-xl font-semibold tracking-tight text-fg"
             >
-              {t('migracion.muro.titulo')}
+              {t("migracion.muro.titulo")}
             </h1>
-            <p className="text-sm text-fg-muted">{t('migracion.muro.subtitulo')}</p>
+            <p className="text-sm text-fg-muted">
+              {t("migracion.muro.subtitulo")}
+            </p>
           </div>
           <BarraDePasos pasos={pasos} seleccionado={indice} onIr={irA} />
         </header>
@@ -350,12 +371,12 @@ export function PanelDeMigracion({
           <div
             className="flex-1 overflow-y-auto px-5 py-6 sm:px-8"
             data-lenis-prevent
-            style={{ overscrollBehavior: 'contain' }}
+            style={{ overscrollBehavior: "contain" }}
           >
             <ConfirmarArranqueDeCero
               enviando={enviando}
               onCancelar={() => setConfirmando(false)}
-              onAceptar={() => resolver('omitir')}
+              onAceptar={() => resolver("omitir")}
             />
           </div>
         ) : (
@@ -365,17 +386,13 @@ export function PanelDeMigracion({
               ref={cuerpo}
               className="flex-1 overflow-y-auto px-5 py-6 sm:px-8"
               data-lenis-prevent
-              style={{ overscrollBehavior: 'contain' }}
+              style={{ overscrollBehavior: "contain" }}
               data-testid="muro-pasos"
             >
               {listo ? <TodoListo pasos={pasos} /> : null}
 
               {paso ? (
-                <PasoEnFoco
-                  pasos={pasos}
-                  indice={indice}
-                  onIr={irA}
-                />
+                <PasoEnFoco pasos={pasos} indice={indice} onIr={irA} />
               ) : null}
 
               {fallo ? (
@@ -384,7 +401,7 @@ export function PanelDeMigracion({
                   data-testid="muro-fallo"
                 >
                   <Warning className="mt-0.5 h-4 w-4 shrink-0" />
-                  {t('migracion.muro.fallo')}
+                  {t("migracion.muro.fallo")}
                 </p>
               ) : null}
             </div>
@@ -408,30 +425,34 @@ export function PanelDeMigracion({
                   data-testid="muro-arrancar-de-cero"
                   className="rounded-sm text-sm text-fg-muted underline decoration-border-strong underline-offset-4 transition-colors hover:text-fg hover:decoration-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 >
-                  {t('migracion.muro.arrancarDeCero')}
+                  {t("migracion.muro.arrancarDeCero")}
                 </button>
               )}
 
               {listo ? (
                 <Button
-                  onClick={() => resolver('terminar')}
+                  onClick={() => resolver("terminar")}
                   disabled={enviando}
                   data-testid="muro-ya-termine"
                   hideArrow
                 >
-                  {t('migracion.muro.yaTermine')}
+                  {t("migracion.muro.yaTermine")}
                   <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Button>
-              ) : paso && paso.estado === 'listo' && siguiente !== null ? (
-                <Button onClick={() => irA(siguiente)} data-testid="muro-siguiente" hideArrow>
-                  {t('migracion.muro.siguiente', {
+              ) : paso && paso.estado === "listo" && siguiente !== null ? (
+                <Button
+                  onClick={() => irA(siguiente)}
+                  data-testid="muro-siguiente"
+                  hideArrow
+                >
+                  {t("migracion.muro.siguiente", {
                     paso: t(`migracion.pasos.${pasos[siguiente].id}.corto`),
                   })}
                   <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Button>
               ) : (
                 <p className="text-sm text-fg-subtle" data-testid="muro-falta">
-                  {t('migracion.muro.terminaEstePaso')}
+                  {t("migracion.muro.terminaEstePaso")}
                 </p>
               )}
             </footer>
@@ -471,13 +492,13 @@ function BarraDePasos({
 
   return (
     <ol
-      aria-label={t('migracion.muro.progreso')}
+      aria-label={t("migracion.muro.progreso")}
       className="mt-5 grid gap-x-2"
       style={{ gridTemplateColumns: `repeat(${pasos.length}, minmax(0, 1fr))` }}
       data-testid="muro-barra"
     >
       {pasos.map((paso, idx) => {
-        const hecho = paso.estado === 'listo';
+        const hecho = paso.estado === "listo";
         const apagado = !esExigible(paso);
         const habilitado = pasoHabilitado(pasos, idx);
         const frena = pasoQueFrena(pasos, idx);
@@ -491,12 +512,12 @@ function BarraDePasos({
         const subLinea = hecho
           ? null
           : esAhora
-            ? t('migracion.muro.ahora')
+            ? t("migracion.muro.ahora")
             : apagado
-              ? t('migracion.muro.noDisponible')
+              ? t("migracion.muro.noDisponible")
               : habilitado
-                ? t('migracion.muro.pendiente')
-                : t('migracion.muro.enEspera');
+                ? t("migracion.muro.pendiente")
+                : t("migracion.muro.enEspera");
 
         const cuerpo = (
           <>
@@ -504,15 +525,16 @@ function BarraDePasos({
               <span
                 data-testid={`muro-barra-${paso.id}`}
                 className={cn(
-                  'flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-xs font-semibold tabular-nums transition-[color,background-color,border-color,box-shadow]',
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-xs font-semibold tabular-nums transition-[color,background-color,border-color,box-shadow]",
                   hecho
-                    ? 'border-2 border-primary bg-primary text-primary-fg'
+                    ? "border-2 border-primary bg-primary text-primary-fg"
                     : habilitado
-                      ? 'border-2 border-primary bg-surface text-primary'
-                      : 'border border-border bg-surface text-fg-subtle',
-                  apagado && 'border-dashed',
+                      ? "border-2 border-primary bg-surface text-primary"
+                      : "border border-border bg-surface text-fg-subtle",
+                  apagado && "border-dashed",
                   // «Acá estás mirando»: un anillo, sea el paso que sea.
-                  elegido && 'ring-2 ring-primary ring-offset-2 ring-offset-surface',
+                  elegido &&
+                    "ring-2 ring-primary ring-offset-2 ring-offset-surface",
                 )}
               >
                 {hecho ? (
@@ -527,8 +549,8 @@ function BarraDePasos({
                 <span
                   aria-hidden
                   className={cn(
-                    'mx-2 h-0.5 min-w-0 flex-1 rounded-full transition-colors',
-                    hecho ? 'bg-primary' : 'bg-border',
+                    "mx-2 h-0.5 min-w-0 flex-1 rounded-full transition-colors",
+                    hecho ? "bg-primary" : "bg-border",
                   )}
                 />
               ) : null}
@@ -537,12 +559,12 @@ function BarraDePasos({
             <div className="mt-2.5 hidden min-w-0 pr-3 text-left sm:block">
               <p
                 className={cn(
-                  'truncate text-xs font-medium',
+                  "truncate text-xs font-medium",
                   elegido
-                    ? 'text-primary'
+                    ? "text-primary"
                     : hecho || habilitado
-                      ? 'text-fg group-hover:underline group-hover:underline-offset-4'
-                      : 'text-fg-subtle',
+                      ? "text-fg group-hover:underline group-hover:underline-offset-4"
+                      : "text-fg-subtle",
                 )}
                 title={titulo}
               >
@@ -553,14 +575,14 @@ function BarraDePasos({
                   dejaba «· 2» colgando arriba de «inquilinos». */}
               <p
                 className={cn(
-                  'mt-0.5 font-mono text-[11px] leading-snug',
-                  hecho ? 'text-fg-muted' : 'text-fg-subtle',
+                  "mt-0.5 font-mono text-[11px] leading-snug",
+                  hecho ? "text-fg-muted" : "text-fg-subtle",
                 )}
                 title={hecho && paso.detalle ? paso.detalle : undefined}
               >
                 {hecho
-                  ? (paso.detalle ?? t('migracion.muro.hecho'))
-                      .split(' · ')
+                  ? (paso.detalle ?? t("migracion.muro.hecho"))
+                      .split(" · ")
                       .slice(0, 2)
                       .map((parte) => (
                         <span key={parte} className="block truncate">
@@ -575,7 +597,7 @@ function BarraDePasos({
                 «Primero terminá “Propiedades”». En pantalla lo dice el orden. */}
             {!hecho && !apagado && !habilitado && frena ? (
               <span className="sr-only" data-testid={`muro-porque-${paso.id}`}>
-                {t('migracion.muro.primero', {
+                {t("migracion.muro.primero", {
                   paso: t(`migracion.pasos.${frena.id}.titulo`),
                 })}
               </span>
@@ -589,7 +611,7 @@ function BarraDePasos({
             data-testid={`muro-paso-${paso.id}`}
             data-estado={paso.estado}
             data-habilitado={habilitado}
-            aria-current={elegido ? 'step' : undefined}
+            aria-current={elegido ? "step" : undefined}
             className="min-w-0"
           >
             {habilitado ? (
@@ -597,7 +619,7 @@ function BarraDePasos({
                 type="button"
                 onClick={() => onIr(idx)}
                 data-testid={`muro-ir-${paso.id}`}
-                aria-label={t('migracion.muro.irAlPaso', { paso: titulo })}
+                aria-label={t("migracion.muro.irAlPaso", { paso: titulo })}
                 className="group block w-full rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {cuerpo}
@@ -634,13 +656,13 @@ function PasoEnFoco({
   const { t } = useI18n();
   const { canAccess, isLoading } = usePermissions();
   const paso = pasos[indice];
-  const hecho = paso.estado === 'listo';
+  const hecho = paso.estado === "listo";
   const disponible = esExigible(paso);
   const habilitado = pasoHabilitado(pasos, indice);
   const frena = pasoQueFrena(pasos, indice);
   // Mientras los permisos no contestaron no se afirma nada: se muestra.
   // Quien no puede, lo va a saber en cuanto el servicio conteste.
-  const permitido = isLoading || canAccess(MODULO_DEL_PASO[paso.id], 'view');
+  const permitido = isLoading || canAccess(MODULO_DEL_PASO[paso.id], "view");
 
   return (
     <section
@@ -651,7 +673,7 @@ function PasoEnFoco({
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
         <div className="min-w-0 max-w-2xl">
           <p className="font-mono text-[11px] uppercase tracking-wider text-fg-subtle">
-            {t('migracion.muro.pasoDe', { n: indice + 1, total: pasos.length })}
+            {t("migracion.muro.pasoDe", { n: indice + 1, total: pasos.length })}
           </p>
           <h2
             id="muro-en-foco-titulo"
@@ -669,17 +691,19 @@ function PasoEnFoco({
             data-testid="muro-paso-listo"
           >
             <Check className="h-3.5 w-3.5" weight="bold" />
-            {paso.detalle ?? t('migracion.muro.hecho')}
+            {paso.detalle ?? t("migracion.muro.hecho")}
           </p>
         ) : null}
       </div>
 
       <div className="mt-6">
         {!disponible ? (
-          <Aviso testid="muro-aviso-no-disponible">{t('migracion.muro.noDisponibleDetalle')}</Aviso>
+          <Aviso testid="muro-aviso-no-disponible">
+            {t("migracion.muro.noDisponibleDetalle")}
+          </Aviso>
         ) : !habilitado && frena ? (
           <Aviso testid="muro-aviso-frenado">
-            {t('migracion.muro.primero', {
+            {t("migracion.muro.primero", {
               paso: t(`migracion.pasos.${frena.id}.titulo`),
             })}
             <Button
@@ -690,14 +714,16 @@ function PasoEnFoco({
               onClick={() => onIr(pasos.indexOf(frena))}
               data-testid="muro-ir-al-que-frena"
             >
-              {t('migracion.muro.irAlPaso', {
+              {t("migracion.muro.irAlPaso", {
                 paso: t(`migracion.pasos.${frena.id}.corto`),
               })}
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
           </Aviso>
         ) : !permitido ? (
-          <Aviso testid="muro-sin-permiso">{t('migracion.muro.sinPermiso')}</Aviso>
+          <Aviso testid="muro-sin-permiso">
+            {t("migracion.muro.sinPermiso")}
+          </Aviso>
         ) : (
           <div data-testid="muro-contenido" data-paso={paso.id}>
             <ContenidoDelPaso id={paso.id} pasos={pasos} onIr={onIr} />
@@ -721,32 +747,39 @@ function ContenidoDelPaso({
   // Para reiniciar el asistente de inmuebles cuando la persona «cancela»:
   // adentro del muro no hay portafolio al que volver.
   const [vueltaDeInmuebles, setVueltaDeInmuebles] = useState(0);
-  const indiceDe = (otro: IdDePasoDeMigracion) => pasos.findIndex((p) => p.id === otro);
+  const indiceDe = (otro: IdDePasoDeMigracion) =>
+    pasos.findIndex((p) => p.id === otro);
   const irAOtro = (otro: IdDePasoDeMigracion) => {
     const i = indiceDe(otro);
     return i === -1 ? undefined : () => onIr(i);
   };
 
   switch (id) {
-    case 'terceros':
+    case "terceros":
       return <MigrarTerceros />;
-    case 'propiedades':
+    case "propiedades":
       return (
         <ImportWizard
           key={vueltaDeInmuebles}
           onSalir={() => setVueltaDeInmuebles((n) => n + 1)}
         />
       );
-    case 'contratos':
+    case "contratos":
       return <MigrarContratos />;
-    case 'puc':
-      return <PlanDeCuentas onContinuar={irAOtro('contables')} />;
-    case 'contables':
-      return <RegistrosContables onIrAlPuc={irAOtro('puc')} />;
+    case "puc":
+      return <PlanDeCuentas onContinuar={irAOtro("contables")} />;
+    case "contables":
+      return <RegistrosContables onIrAlPuc={irAOtro("puc")} />;
   }
 }
 
-function Aviso({ testid, children }: { testid: string; children: React.ReactNode }) {
+function Aviso({
+  testid,
+  children,
+}: {
+  testid: string;
+  children: React.ReactNode;
+}) {
   return (
     <div
       className="rounded-lg border border-border bg-surface-muted p-5 text-sm text-fg-muted"
@@ -765,8 +798,8 @@ function Aviso({ testid, children }: { testid: string; children: React.ReactNode
 function TodoListo({ pasos }: { pasos: PasoDeMigracion[] }) {
   const { t } = useI18n();
   const conteos = pasos
-    .filter((p) => p.estado === 'listo' && p.detalle)
-    .flatMap((p) => (p.detalle as string).split(' · '));
+    .filter((p) => p.estado === "listo" && p.detalle)
+    .flatMap((p) => (p.detalle as string).split(" · "));
 
   return (
     <section
@@ -778,16 +811,19 @@ function TodoListo({ pasos }: { pasos: PasoDeMigracion[] }) {
       </span>
       <div className="min-w-0 flex-1">
         <p className="font-mono text-[11px] uppercase tracking-wider text-fg-subtle">
-          {t('migracion.muro.todoListo.eyebrow')}
+          {t("migracion.muro.todoListo.eyebrow")}
         </p>
         <h2 className="mt-1 text-lg font-semibold tracking-tight text-fg">
-          {t('migracion.muro.todoListo.titulo')}
+          {t("migracion.muro.todoListo.titulo")}
         </h2>
         <p className="mt-1 max-w-prose text-sm leading-relaxed text-fg-muted">
-          {t('migracion.muro.todoListo.detalle')}
+          {t("migracion.muro.todoListo.detalle")}
         </p>
         {conteos.length > 0 ? (
-          <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={t('migracion.muro.todoListo.eyebrow')}>
+          <ul
+            className="mt-3 flex flex-wrap gap-1.5"
+            aria-label={t("migracion.muro.todoListo.eyebrow")}
+          >
             {conteos.map((c) => (
               <li
                 key={c}
@@ -822,7 +858,10 @@ function ConfirmarArranqueDeCero({
   const { t } = useI18n();
 
   return (
-    <section className="rounded-lg bg-warning-soft p-6 sm:p-7" data-testid="muro-confirmar-cero">
+    <section
+      className="rounded-lg bg-warning-soft p-6 sm:p-7"
+      data-testid="muro-confirmar-cero"
+    >
       <div className="flex items-start gap-5 sm:gap-7">
         <div className="flex w-14 shrink-0 pt-0.5">
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface text-warning">
@@ -831,10 +870,10 @@ function ConfirmarArranqueDeCero({
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="text-xl font-semibold tracking-tight text-fg">
-            {t('migracion.muro.confirmar.titulo')}
+            {t("migracion.muro.confirmar.titulo")}
           </h2>
           <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">
-            {t('migracion.muro.confirmar.detalle')}
+            {t("migracion.muro.confirmar.detalle")}
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Button
@@ -843,7 +882,7 @@ function ConfirmarArranqueDeCero({
               data-testid="muro-confirmar-si"
               hideArrow
             >
-              {t('migracion.muro.confirmar.aceptar')}
+              {t("migracion.muro.confirmar.aceptar")}
             </Button>
             <Button
               variant="outline"
@@ -852,7 +891,7 @@ function ConfirmarArranqueDeCero({
               data-testid="muro-confirmar-no"
               hideArrow
             >
-              {t('migracion.muro.confirmar.cancelar')}
+              {t("migracion.muro.confirmar.cancelar")}
             </Button>
           </div>
         </div>

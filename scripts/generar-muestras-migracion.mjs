@@ -568,8 +568,8 @@ escribir('03-inmuebles.csv', csv(
 ));
 
 escribir('04-contratos.csv', csv(
-  ['Dirección del inmueble', 'Nombre del arrendatario', 'Cédula del arrendatario', 'Correo del arrendatario', 'Teléfono del arrendatario', 'Fecha de inicio', 'Fecha de terminación', 'Canon de arrendamiento', 'Depósito', 'Día de pago', 'Uso del inmueble', 'Periodicidad', 'Comisión de administración'],
-  contratos.map((c) => [c.direccion, c.inquilino.nombre, c.inquilino.documento, c.inquilino.correo, c.inquilino.telefono, c.inicio, c.fin, c.canon, c.deposito, c.diaDePago, c.uso, c.periodicidad, c.comision]),
+  ['Dirección del inmueble', 'Nombre del arrendatario', 'Cédula del arrendatario', 'Correo del arrendatario', 'Teléfono del arrendatario', 'Nombre del propietario', 'Documento del propietario', 'Fecha de inicio', 'Fecha de terminación', 'Canon de arrendamiento', 'Depósito', 'Día de pago', 'Uso del inmueble', 'Periodicidad', 'Comisión de administración'],
+  contratos.map((c) => [c.direccion, c.inquilino.nombre, c.inquilino.documento, c.inquilino.correo, c.inquilino.telefono, c.inmueble.propietario.nombre, c.inmueble.propietario.documento, c.inicio, c.fin, c.canon, c.deposito, c.diaDePago, c.uso, c.periodicidad, c.comision]),
 ));
 
 const filasDeAsientos = [];
@@ -611,7 +611,7 @@ el muro de migración de punta a punta con una inmobiliaria de tamaño real.
 | 1 · Terceros | \`01-propietarios.csv\` | ${resumen.propietarios} propietarios (${resumen.empresas} empresas con NIT, el resto personas con CC/CE), con banco, tipo y número de cuenta, titular y perfil tributario |
 | 1 · Terceros | \`02-inquilinos.csv\` | ${resumen.inquilinos} inquilinos con documento, correo y teléfono (${resumen.contratos} tienen contrato; el resto no) |
 | 2 · Propiedades | \`03-inmuebles.csv\` | ${resumen.inmuebles} inmuebles en ${resumen.ciudades} — ${resumen.contratos} arrendados, ${resumen.enVenta} en venta, el resto disponibles |
-| 3 · Contratos | \`04-contratos.csv\` | ${resumen.contratos} contratos vigentes (${resumen.comerciales} comerciales), cada uno sobre una dirección del archivo 03 y un inquilino del 02 |
+| 3 · Contratos | \`04-contratos.csv\` | ${resumen.contratos} contratos vigentes (${resumen.comerciales} comerciales), cada uno sobre una dirección del archivo 03, un inquilino del 02 y el propietario del inmueble (nombre y documento del 01): con eso el paso 3 consigna solo |
 | 5 · Registros contables | \`05-asientos-historicos.csv\` | ${resumen.asientos} comprobantes / ${resumen.lineas} líneas del libro diario de ${resumen.meses}: recaudo, comisión con IVA, giro al propietario con 4×1000, pago de administración y gastos de la oficina |
 
 Recaudado en los tres meses: ${cop(resumen.recaudado)} · comisiones: ${cop(resumen.comision)}.

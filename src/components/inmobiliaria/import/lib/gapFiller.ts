@@ -3,6 +3,10 @@
 
 import type { ImportProperty, AISuggestion, ParsedRow, ColumnMapping } from './importTypes';
 import { resolveImportListingType } from './requisitosDelBack';
+import { cleanNumericValue } from './valorNumerico';
+
+// Reexport: los tests y cualquier consumidor viejo siguen importándolo de acá.
+export { cleanNumericValue } from './valorNumerico';
 
 // ============================================================================
 // Rent estimates by city + property type (Colombian market data)
@@ -74,36 +78,7 @@ export const COLOMBIAN_CITIES = [
 // Numeric value cleaner — handles Colombian and US formats
 // ============================================================================
 
-export function cleanNumericValue(value: unknown): number | undefined {
-  if (value === null || value === undefined || value === '') return undefined;
-  if (typeof value === 'number') return isNaN(value) ? undefined : value;
 
-  const str = String(value).trim();
-
-  // Strip common text prefixes (aprox, aprox., ~, cerca de, COP, etc.)
-  let cleaned = str
-    .replace(/^(aprox\.?\s*|~\s*|cerca\s*de\s*|approx\.?\s*)/i, '')
-    .replace(/\s*(COP|cop|pesos|m2|mts|m²)$/i, '')
-    .replace(/[$\s]/g, '');
-
-  // Handle Colombian format: 1.800.000 (dots as thousand separators, comma as decimal)
-  if (/^\d{1,3}(\.\d{3})+$/.test(cleaned)) {
-    // All dots are thousand separators
-    cleaned = cleaned.replace(/\./g, '');
-  } else if (/^\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(cleaned)) {
-    // Colombian: 1.800.000,50
-    cleaned = cleaned.replace(/\./g, '').replace(',', '.');
-  } else if (/^\d{1,3}(,\d{3})+(\.?\d{1,2})?$/.test(cleaned)) {
-    // US format: 1,800,000
-    cleaned = cleaned.replace(/,/g, '');
-  } else {
-    // Plain number with possible commas
-    cleaned = cleaned.replace(/,/g, '');
-  }
-
-  const result = parseFloat(cleaned);
-  return isNaN(result) ? undefined : result;
-}
 
 // ============================================================================
 // Property type normalization
@@ -176,6 +151,12 @@ function getCityKey(city: string): string {
 // Row → ImportProperty mapper
 // ============================================================================
 
+/** Cómo escriben «sin dato» los exports reales. En minúscula, comparado tras `trim()`. */
+const MARCADORES_DE_VACIO = new Set([
+  '-', '--', '\u2013', '\u2014', 'n/a', 'na', 'n.a', 'n.a.', 'null', 'nulo',
+  's/d', 'sin dato', 'sin datos', 'no aplica', '#n/a', '#n/d', 'nan', 'none',
+]);
+
 export function mapRowsToProperties(
   rawRows: ParsedRow[],
   columnMappings: ColumnMapping[]
@@ -207,7 +188,9 @@ export function mapRowsToProperties(
         }
       } else {
         const strVal = rawValue !== null && rawValue !== undefined ? String(rawValue).trim() : '';
-        if (strVal) {
+        // «-», «N/A», «null»… son la forma en que un export dice «vacío».
+        // Guardarlos como texto real mete basura visible en el inmueble.
+        if (strVal && !MARCADORES_DE_VACIO.has(strVal.toLowerCase())) {
           (prop as unknown as Record<string, unknown>)[field] = strVal;
         }
       }

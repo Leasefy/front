@@ -70,6 +70,7 @@ import {
   type MapeoDeColumna,
 } from "@/lib/contratos/columnas-de-contrato";
 import { armarFilaAMigrar } from "@/lib/contratos/armar-fila";
+import { documentoComoLlave } from "@/lib/contratos/leer-celdas";
 import { generarIdempotencyKey } from "@/lib/contratos/idempotencia";
 import {
   contractsApi,
@@ -147,7 +148,10 @@ function duenosDe(
   if (!cDoc) return out;
   filas.forEach((fila, i) => {
     const texto = (c?: string) => (c ? String(fila[c] ?? "").trim() : "");
-    const documento = texto(cDoc);
+    // La MISMA llave que usa la migración de terceros: «1.004.997.858» del
+    // archivo de contratos tiene que caer en el propietario que terceros ya
+    // creó como «1004997858», no crear un duplicado.
+    const documento = documentoComoLlave(texto(cDoc));
     if (!documento) return;
     out.set(i, {
       nombre: texto(cNombre) || documento,

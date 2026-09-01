@@ -265,6 +265,23 @@ export const SINONIMOS: Array<{ campo: CampoDeContrato; terminos: string[] }> =
  * ese error se comete UNA vez y sale en la factura.
  */
 export const SIN_CAMPO_EN_CONTRATO = [
+  /*
+   * Direcciones que NO son la del inmueble. Sin esto, «Dirección del
+   * propietario» empataba con el término suelto «propietario» y terminaba de
+   * NOMBRE del propietario; y «Dirección de notificación» se robaba el campo
+   * de la dirección del inmueble si venía antes en el archivo.
+   */
+  "direccion del propietario",
+  "direccion propietario",
+  "direccion del arrendador",
+  "direccion arrendador",
+  "direccion del arrendatario",
+  "direccion arrendatario",
+  "direccion del inquilino",
+  "direccion inquilino",
+  "direccion de notificacion",
+  "direccion de correspondencia",
+  "direccion de cobro",
   "matricula inmobiliaria",
   "chip catastral",
   "estrato",

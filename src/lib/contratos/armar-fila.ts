@@ -23,11 +23,26 @@ import {
   comoEntero,
   comoFecha,
   comoPeriodicidad,
+  comoPorcentaje,
   comoUso,
   hayValor,
+  MAX_COP_POR_MOVIMIENTO,
   textoOpcional,
   valorDe,
 } from './leer-celdas'
+
+/**
+ * Plata de contrato: además de legible tiene que ser POSIBLE. Un canon
+ * negativo no es un canon (y contra el `@Min(0)` del back tumba el lote
+ * entero con 400, no la fila), y uno que supera el INT4 de Postgres tampoco.
+ * Los dos casos vuelven ausentes → faltante visible de ESA fila.
+ */
+function plataDeContrato(v: unknown): number | undefined {
+  if (!hayValor(v)) return undefined
+  const n = comoEntero(v)
+  if (n === undefined || n < 0 || n > MAX_COP_POR_MOVIMIENTO) return undefined
+  return n
+}
 
 export function armarFilaAMigrar(
   fila: Record<string, unknown>,
@@ -57,14 +72,17 @@ export function armarFilaAMigrar(
     },
     startDate: hayValor(rawInicio) ? comoFecha(rawInicio) : undefined,
     endDate: hayValor(rawFin) ? comoFecha(rawFin) : undefined,
-    monthlyRent: hayValor(rawCanon) ? comoEntero(rawCanon) : undefined,
-    deposit: hayValor(rawDeposito) ? comoEntero(rawDeposito) : undefined,
+    monthlyRent: plataDeContrato(rawCanon),
+    deposit: plataDeContrato(rawDeposito),
     // X5: un día de pago ausente o fuera de [1,28] viaja ausente, nunca
     // fabricado como "el 1" — eso es lo que hacía que 1383 filas quedaran
     // fechadas al 1 de todos los meses sin que nadie lo pidiera.
     paymentDay: dia !== undefined && dia >= 1 && dia <= 28 ? dia : undefined,
     usoInmueble: hayValor(rawUso) ? comoUso(rawUso) : undefined,
     periodicidad: comoPeriodicidad(v('periodicidad')),
-    comisionPorcentaje: v('comision') != null ? Number(v('comision')) || undefined : undefined,
+    // «0» es una comisión real (0% existe); «10%» y «10,5» son humanos; 110
+    // no es un porcentaje. `Number(v) || undefined` convertía el 0 en «no hay
+    // dato» — el único caso en que un valor escrito desaparecía en silencio.
+    comisionPorcentaje: comoPorcentaje(v('comision')),
   }
 }

@@ -35,9 +35,35 @@ export function valorDe(
   return col ? fila[col] : undefined
 }
 
+/**
+ * Placeholders que los exports usan para decir «no hay dato»: si viajan como
+ * texto real, el back guarda un documento «N/A» o un teléfono «-» y esa
+ * basura después NO casa con nada (búsquedas, duplicados, consignaciones).
+ * «No hay dato» tiene UNA forma: `undefined`.
+ */
+const PLACEHOLDERS_DE_VACIO = new Set([
+  '-',
+  '--',
+  '.',
+  'n/a',
+  'na',
+  'n.a.',
+  'null',
+  'none',
+  'sin dato',
+  'sin datos',
+  's/d',
+  'nd',
+  'n.d.',
+  'no aplica',
+  'ninguno',
+  'ninguna',
+])
+
 export function textoOpcional(v: unknown): string | undefined {
   const s = v == null ? '' : String(v).trim()
-  return s === '' ? undefined : s
+  if (s === '') return undefined
+  return PLACEHOLDERS_DE_VACIO.has(s.toLowerCase()) ? undefined : s
 }
 
 /**
@@ -73,11 +99,15 @@ export function hayValor(v: unknown): boolean {
 export function comoEntero(v: unknown): number | undefined {
   if (typeof v === 'number') return Number.isFinite(v) ? Math.round(v) : undefined
 
-  const limpio = String(v ?? '').replace(/[^\d,.-]/g, '')
+  // U+2212 (−, el «menos» tipográfico que pegan Excel y Numbers) y el guion
+  // largo son signo, no basura: si se filtran como basura, «−1.800.000» queda
+  // POSITIVO — el signo desaparece en silencio, que es peor que no leer.
+  const conSignoAscii = String(v ?? '').replace(/[\u2212\u2013\u2014]/g, '-')
+  const limpio = conSignoAscii.replace(/[^\d,.-]/g, '')
   if (limpio === '') return undefined
 
   const negativo = limpio.startsWith('-')
-  const sinSigno = negativo ? limpio.slice(1) : limpio
+  const sinSigno = (negativo ? limpio.slice(1) : limpio).replace(/-/g, '')
 
   const separadores = [...sinSigno.matchAll(/[.,]/g)]
   let parteEntera = sinSigno
@@ -92,7 +122,22 @@ export function comoEntero(v: unknown): number | undefined {
       parteDecimal = sinSigno.slice(posicion + 1)
       parteEntera = sinSigno.slice(0, posicion)
     }
-    parteEntera = parteEntera.replace(/[.,]/g, '')
+    /*
+     * Los separadores que quedan son de MILES y tienen que agrupar de a tres:
+     * «1.234.567» sí; «12.34.56» no es un número — es una fecha, una versión o
+     * basura, y leerlo como 1234.56 fabricaría un valor plausible de la nada.
+     */
+    /*
+     * El primer grupo puede ser largo («1800.000» viene de «1'800.000» con el
+     * apóstrofe ya limpiado); los SIGUIENTES tienen que ser de a tres exacto.
+     * «12.34.56» (34 no tiene 3) no es plata y no se lee como si lo fuera.
+     */
+    const grupos = parteEntera.split(/[.,]/)
+    const agrupaBien =
+      grupos.length === 1 ||
+      (grupos[0].length >= 1 && grupos.slice(1).every((g) => g.length === 3))
+    if (!agrupaBien) return undefined
+    parteEntera = grupos.join('')
   }
 
   const parteEnteraValida = /^\d+$/.test(parteEntera)
@@ -104,7 +149,30 @@ export function comoEntero(v: unknown): number | undefined {
   return negativo ? -Math.round(n) : Math.round(n)
 }
 
-const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/
+/**
+ * Tope del back (`MAX_COP_POR_MOVIMIENTO`, INT4 de Postgres). Un canon que lo
+ * supere no es un canon: es una celda corrida o un número mal pegado, y si
+ * viaja, el 400 del DTO tumba el LOTE entero en vez de marcar la fila.
+ */
+export const MAX_COP_POR_MOVIMIENTO = 2_147_483_647
+
+/**
+ * Un porcentaje humano: «10», «10%», «10,5 %», «0». El 0 es un valor real
+ * (una comisión del 0% existe) — por eso esto no puede ser `Number(v) ||
+ * undefined`, que convierte el 0 en «no hay dato». Fuera de [0, 100] no es
+ * un porcentaje: vuelve `undefined`, nunca recortado.
+ */
+export function comoPorcentaje(v: unknown): number | undefined {
+  if (typeof v === 'number') {
+    return Number.isFinite(v) && v >= 0 && v <= 100 ? v : undefined
+  }
+  const s = String(v ?? '')
+    .replace(/[%\s]/g, '')
+    .replace(',', '.')
+  if (s === '' || !/^\d+(\.\d+)?$/.test(s)) return undefined
+  const n = Number(s)
+  return n >= 0 && n <= 100 ? n : undefined
+}
 
 /**
  * `03/04/2026` en Colombia es 3 de abril, no 4 de marzo.
@@ -120,15 +188,57 @@ const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/
  * patrón `dd/mm/aaaa` (o con guiones) o un ISO `aaaa-mm-dd` ya formado;
  * cualquier otra cosa vuelve `undefined`.
  */
+/**
+ * ¿`a-m-d` existe en el calendario? «2026-02-31» y «2026-13-01» tienen forma
+ * de fecha y NO son fechas: si viajan, `@IsDateString()` puede dejarlas pasar
+ * y `new Date()` las corre a otro mes o las vuelve Invalid Date río abajo.
+ * Una fecha imposible es un faltante, no un contrato corrido de mes.
+ */
+function fechaExiste(a: number, m: number, d: number): boolean {
+  if (m < 1 || m > 12 || d < 1) return false
+  const diasDelMes = new Date(Date.UTC(a, m, 0)).getUTCDate()
+  return d <= diasDelMes
+}
+
+const armar = (a: number, m: number, d: number): string | undefined =>
+  fechaExiste(a, m, d)
+    ? `${String(a).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    : undefined
+
 export function comoFecha(v: unknown): string | undefined {
-  if (v instanceof Date) return v.toISOString().slice(0, 10)
+  if (v instanceof Date) {
+    // `new Date('basura')` sigue siendo `instanceof Date`; `.toISOString()`
+    // sobre eso LANZA y tumba el armado de todas las filas.
+    return Number.isNaN(v.getTime()) ? undefined : v.toISOString().slice(0, 10)
+  }
   const s = String(v ?? '').trim()
-  const conBarras = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/)
+
+  // dd/mm/aaaa — también con guiones o puntos. En Colombia el día va primero,
+  // SIEMPRE: «03/04/2026» es 3 de abril. No se intenta adivinar mm/dd; si el
+  // archivo viene en formato gringo, el mes >12 no existe en el calendario y
+  // la fila queda como faltante visible en vez de correrse de mes.
+  const conBarras = s.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/)
   if (conBarras) {
     const [, d, m, a] = conBarras
-    return `${a}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
+    return armar(Number(a), Number(m), Number(d))
   }
-  return FECHA_ISO.test(s) ? s : undefined
+
+  // aaaa/mm/dd y aaaa-mm-dd (el ISO también pasa por acá para validar que la
+  // fecha exista: la regex de forma no sabe que febrero no tiene 31).
+  const conAnioPrimero = s.match(/^(\d{4})[/.\-](\d{1,2})[/.\-](\d{1,2})$/)
+  if (conAnioPrimero) {
+    const [, a, m, d] = conAnioPrimero
+    return armar(Number(a), Number(m), Number(d))
+  }
+
+  /*
+   * Todo lo demás vuelve `undefined` y termina como faltante VISIBLE de la
+   * fila. Incluye a propósito: años de 2 dígitos («1/6/26» — adivinar el
+   * siglo es inventar), seriales de Excel («44713» — el número correcto
+   * depende del sistema de fechas del archivo, que acá ya no existe) y texto
+   * («Jun 1, 2026»). Ninguno se traduce a una fecha que nadie escribió.
+   */
+  return undefined
 }
 
 /**
@@ -160,4 +270,17 @@ const PERIODICIDADES: Record<string, Periodicidad> = {
  */
 export function comoPeriodicidad(v: unknown): Periodicidad | undefined {
   return PERIODICIDADES[normalizar(String(v ?? ''))]
+}
+
+/**
+ * El documento como LLAVE, igual que lo guarda la migración de terceros
+ * (`back/src/inmobiliaria/migracion-terceros/normalizar-tercero.ts`):
+ * mayúsculas y sólo dígitos/letras. «1.004.997.858» y «1004997858» son la
+ * misma persona; si la llave difiere, el paso de contratos crea un
+ * propietario DUPLICADO del que terceros ya creó — dos fichas, dos pagos.
+ */
+export function documentoComoLlave(v: unknown): string {
+  return String(v ?? '')
+    .toUpperCase()
+    .replace(/[^0-9A-Z]/g, '')
 }

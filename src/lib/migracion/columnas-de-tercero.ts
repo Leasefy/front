@@ -103,18 +103,25 @@ export function mapearColumnas(
   }));
 
   // ── Pasada 1: igualdad. Es la regla del back, y no se equivoca. ──────────
+  // También sin espacios, como `columnaDeEncabezado()` del back: «C.C.»
+  // normaliza a «c c» y el alias es «cc»; «NroCuenta» queda «nrocuenta».
   mapeo.forEach((m, i) => {
     const n = normalizarEncabezado(encabezados[i]);
     if (!n) return;
-    for (const columna of columnas) {
-      if (usados.has(columna.campo)) continue;
-      const termino = terminosDe(columna).find((t) => t === n);
-      if (termino) {
-        usados.add(columna.campo);
-        m.campo = columna.campo;
-        m.porque = termino;
-        m.exacto = true;
-        return;
+    const compacto = n.replace(/ /g, '');
+    for (const exigirExacto of [true, false]) {
+      for (const columna of columnas) {
+        if (usados.has(columna.campo)) continue;
+        const termino = terminosDe(columna).find((t) =>
+          exigirExacto ? t === n : t.replace(/ /g, '') === compacto,
+        );
+        if (termino) {
+          usados.add(columna.campo);
+          m.campo = columna.campo;
+          m.porque = termino;
+          m.exacto = true;
+          return;
+        }
       }
     }
   });

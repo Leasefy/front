@@ -170,3 +170,74 @@ describe('depósito (ya funcionaba, no romperlo)', () => {
     expect(armarFilaAMigrar({ Dirección: 'x' }, mapeo).deposit).toBeUndefined()
   })
 })
+
+// ═══ Batería adversarial P4 — la plata imposible no viaja ═══
+
+const ENCABEZADOS_P4 = [
+  'Dirección del inmueble',
+  'Nombre del arrendatario',
+  'Cédula del arrendatario',
+  'Correo del arrendatario',
+  'Fecha de inicio',
+  'Fecha de terminación',
+  'Canon',
+  'Depósito',
+  'Día de pago',
+  'Uso',
+  'Comisión',
+]
+
+const FILA_COMPLETA: Record<string, unknown> = {
+  'Dirección del inmueble': 'Calle 10 # 20-30',
+  'Nombre del arrendatario': 'Ana Pérez',
+  'Cédula del arrendatario': '1020304050',
+  'Correo del arrendatario': 'ana@example.com',
+  'Fecha de inicio': '2026-01-01',
+  'Fecha de terminación': '2027-01-01',
+  Canon: '1.800.000',
+  ['Depósito']: '1.800.000',
+  'Día de pago': '5',
+  Uso: 'VIVIENDA',
+  ['Comisión']: '10',
+}
+
+describe('plata imposible → faltante visible, nunca un 400 de todo el lote', () => {
+  const mapeo = mapearColumnas(ENCABEZADOS_P4)
+
+  it('un canon negativo (incluye el − tipográfico) viaja ausente: contra @Min(0) tumbaría el lote', () => {
+    const fila = armarFilaAMigrar({ ...FILA_COMPLETA, Canon: '−1.800.000' }, mapeo)
+    expect(fila.monthlyRent).toBeUndefined()
+    const fila2 = armarFilaAMigrar({ ...FILA_COMPLETA, Canon: '-1.800.000' }, mapeo)
+    expect(fila2.monthlyRent).toBeUndefined()
+  })
+
+  it('un canon que supera el INT4 de Postgres viaja ausente', () => {
+    const fila = armarFilaAMigrar({ ...FILA_COMPLETA, Canon: '3.000.000.000' }, mapeo)
+    expect(fila.monthlyRent).toBeUndefined()
+  })
+
+  it('un depósito negativo también', () => {
+    const fila = armarFilaAMigrar({ ...FILA_COMPLETA, ['Depósito']: '-500.000' }, mapeo)
+    expect(fila.deposit).toBeUndefined()
+  })
+
+  it('una comisión del 0% VIAJA como 0 — antes desaparecía en silencio', () => {
+    const fila = armarFilaAMigrar({ ...FILA_COMPLETA, ['Comisión']: '0' }, mapeo)
+    expect(fila.comisionPorcentaje).toBe(0)
+  })
+
+  it('«10%» se lee; «110» viaja ausente (contra @Max(100) tumbaría el lote)', () => {
+    expect(armarFilaAMigrar({ ...FILA_COMPLETA, ['Comisión']: '10%' }, mapeo).comisionPorcentaje).toBe(10)
+    expect(armarFilaAMigrar({ ...FILA_COMPLETA, ['Comisión']: '110' }, mapeo).comisionPorcentaje).toBeUndefined()
+  })
+
+  it('un documento «N/A» viaja ausente, no como texto', () => {
+    const fila = armarFilaAMigrar({ ...FILA_COMPLETA, ['Cédula del arrendatario']: 'N/A' }, mapeo)
+    expect(fila.inquilino.documento).toBeUndefined()
+  })
+
+  it('una fecha imposible viaja ausente → el back marca «fechas», no 400', () => {
+    const fila = armarFilaAMigrar({ ...FILA_COMPLETA, ['Fecha de inicio']: '31/02/2026' }, mapeo)
+    expect(fila.startDate).toBeUndefined()
+  })
+})

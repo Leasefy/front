@@ -185,3 +185,45 @@ describe('remapeo manual', () => {
     expect(restablecido[0].isManual).toBeUndefined()
   })
 })
+
+// ═══ Batería adversarial P4 — colisiones de encabezados ═══
+
+describe('direcciones que NO son la del inmueble', () => {
+  it('«Dirección del propietario» no es el NOMBRE del propietario ni la dirección del inmueble', () => {
+    const [m] = mapearColumnas(['Dirección del propietario'])
+    expect(m.campo).toBeNull()
+  })
+  it('«Dirección de notificación» no se roba la dirección del inmueble', () => {
+    const m = mapearColumnas(['Dirección de notificación', 'Dirección del inmueble'])
+    expect(m[0].campo).toBeNull()
+    expect(m[1].campo).toBe('direccionInmueble')
+  })
+  it('«Dirección del arrendador» tampoco cae en ningún campo', () => {
+    expect(mapearColumnas(['Dirección del arrendador'])[0].campo).toBeNull()
+  })
+  it('la dirección del inmueble sigue mapeando aunque venga con tilde y mayúsculas', () => {
+    expect(mapearColumnas(['DIRECCIÓN DEL INMUEBLE'])[0].campo).toBe('direccionInmueble')
+  })
+})
+
+describe('encabezados que se parecen y no son', () => {
+  it('«Fecha de nacimiento» no cae en ninguna fecha del contrato', () => {
+    expect(mapearColumnas(['Fecha de nacimiento'])[0].campo).toBeNull()
+  })
+  it('«Depósito de garantía» es depósito, no canon', () => {
+    expect(mapearColumnas(['Depósito de garantía'])[0].campo).toBe('deposito')
+  })
+  it('«Teléfono» y «Cédula» a secas quedan para mapear a mano', () => {
+    expect(mapearColumnas(['Teléfono'])[0].campo).toBeNull()
+    expect(mapearColumnas(['Cédula'])[0].campo).toBeNull()
+  })
+  it('«NIT del propietario» va al documento del propietario, no al nombre', () => {
+    expect(mapearColumnas(['NIT del propietario'])[0].campo).toBe('propietarioDocumento')
+  })
+  it('«Fecha de vencimiento» es fin, no inicio', () => {
+    expect(mapearColumnas(['Fecha de vencimiento'])[0].campo).toBe('fechaFin')
+  })
+  it('encabezado con espacios dobles y de sobra igual empata', () => {
+    expect(mapearColumnas(['  Canon   de   arrendamiento  '])[0].campo).toBe('canon')
+  })
+})

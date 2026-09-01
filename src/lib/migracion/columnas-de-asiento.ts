@@ -6,8 +6,9 @@
  *
  * Una fila por MOVIMIENTO (una pata del asiento), que es como exportan el
  * libro diario Siigo, World Office, Helisa y un Excel a mano. Las filas con
- * el mismo número de comprobante forman un asiento; si el archivo no trae
- * número, se agrupan las que comparten fecha y descripción.
+ * el mismo número de comprobante Y la misma fecha forman un asiento (los
+ * consecutivos se reinician por mes en varios sistemas); si el archivo no
+ * trae número, se agrupan las que comparten fecha y descripción.
  *
  * ── Qué se reusa de terceros ───────────────────────────────────────────────
  *
@@ -41,7 +42,7 @@ export const COLUMNAS_DE_ASIENTO: readonly (ColumnaDePlantilla & { campo: CampoD
     titulo: 'Número del comprobante',
     obligatoria: false,
     ejemplo: 'CE-0001',
-    alias: ['numero', 'comprobante', 'numero comprobante', 'consecutivo', 'asiento', 'documento', 'numero documento', 'nro', 'no'],
+    alias: ['numero', 'comprobante', 'numero comprobante', 'consecutivo', 'asiento', 'documento', 'numero documento', 'nro', 'no', 'doc', 'no comprobante', 'nro comprobante', 'n comprobante', 'numero asiento'],
     ayuda: 'Las filas con el mismo número forman un asiento. Sin esta columna se agrupan por fecha y descripción.',
   },
   {
@@ -49,7 +50,7 @@ export const COLUMNAS_DE_ASIENTO: readonly (ColumnaDePlantilla & { campo: CampoD
     titulo: 'Fecha',
     obligatoria: true,
     ejemplo: '15/01/2025',
-    alias: ['fecha', 'fecha comprobante', 'fecha asiento', 'date'],
+    alias: ['fecha', 'fecha comprobante', 'fecha asiento', 'fecha documento', 'date'],
     ayuda: 'AAAA-MM-DD o DD/MM/AAAA; con hora también sirve.',
   },
   {
@@ -64,7 +65,7 @@ export const COLUMNAS_DE_ASIENTO: readonly (ColumnaDePlantilla & { campo: CampoD
     titulo: 'Código de cuenta',
     obligatoria: true,
     ejemplo: '110505',
-    alias: ['codigo cuenta', 'cuenta', 'codigo', 'cuenta contable', 'codigo puc', 'puc', 'cta'],
+    alias: ['codigo cuenta', 'cuenta', 'codigo', 'cuenta contable', 'codigo puc', 'puc', 'cta', 'cod cta', 'cod cuenta', 'cta contable', 'codigo contable'],
     ayuda: 'Sólo el código; con puntos o guiones también se entiende (1105-05 → 110505).',
   },
   {
@@ -72,14 +73,14 @@ export const COLUMNAS_DE_ASIENTO: readonly (ColumnaDePlantilla & { campo: CampoD
     titulo: 'Débito',
     obligatoria: false,
     ejemplo: '1.500.000',
-    alias: ['debito', 'debe', 'debitos', 'valor debito'],
+    alias: ['debito', 'debe', 'debitos', 'valor debito', 'valor debe', 'db', 'movimiento debito'],
   },
   {
     campo: 'credito',
     titulo: 'Crédito',
     obligatoria: false,
     ejemplo: '',
-    alias: ['credito', 'haber', 'creditos', 'valor credito'],
+    alias: ['credito', 'haber', 'creditos', 'valor credito', 'valor haber', 'cr', 'movimiento credito'],
   },
   {
     campo: 'detalle',
@@ -92,8 +93,25 @@ export const COLUMNAS_DE_ASIENTO: readonly (ColumnaDePlantilla & { campo: CampoD
 
 function texto(v: unknown): string {
   if (v === null || v === undefined) return '';
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (v instanceof Date) {
+    // Una fecha que SheetJS no pudo armar (Invalid Date) haría reventar
+    // `toISOString` y con él la pantalla entera. Viaja vacía y el back
+    // rechaza la fila con un mensaje que se entiende.
+    return Number.isNaN(v.getTime()) ? '' : v.toISOString().slice(0, 10);
+  }
   return String(v).trim();
+}
+
+/**
+ * Los `@MaxLength` de `MigrarAsientoDto`/`MigrarMovimientoDto`. Una sola celda
+ * más larga que esto haría que class-validator devuelva **400 al lote entero**
+ * (las 40.000 filas buenas incluidas). Se recorta ACÁ para que el archivo
+ * sucio llegue al back, y sea el back el que diga fila por fila qué entra.
+ */
+const LIMITES_DTO = { numero: 60, fecha: 30, descripcion: 1000, codigo: 40, detalle: 1000 } as const;
+
+function cap(s: string, n: number): string {
+  return s.length <= n ? s : s.slice(0, n);
 }
 
 /** El valor crudo del monto: el back normaliza «1.500.000» y «1500000.00». */
@@ -121,15 +139,22 @@ export function armarAsientos(
 
   const asientos = new Map<string, AsientoMigrado>();
   for (const fila of filas) {
-    const codigoCuenta = texto(leer(fila, 'codigoCuenta'));
+    const codigoCuenta = cap(texto(leer(fila, 'codigoCuenta')), LIMITES_DTO.codigo);
     const debito = montoCrudo(leer(fila, 'debito'));
     const credito = montoCrudo(leer(fila, 'credito'));
     if (!codigoCuenta && debito === undefined && credito === undefined) continue;
 
-    const numero = texto(leer(fila, 'numero'));
-    const fecha = texto(leer(fila, 'fecha'));
-    const descripcion = texto(leer(fila, 'descripcion'));
-    const clave = numero ? `n:${numero}` : `fd:${fecha}|${descripcion}`;
+    const numero = cap(texto(leer(fila, 'numero')), LIMITES_DTO.numero);
+    const fecha = cap(texto(leer(fila, 'fecha')), LIMITES_DTO.fecha);
+    const descripcion = cap(texto(leer(fila, 'descripcion')), LIMITES_DTO.descripcion);
+    /*
+     * La clave lleva número Y fecha: Siigo y World Office reinician el
+     * consecutivo por mes, así que el «CE-1» de enero y el de febrero son
+     * asientos distintos. Agruparlos sólo por número los fundía en uno — y
+     * como cada uno cuadra solo, el fundido también cuadra y entraba MAL
+     * sin que nadie lo viera.
+     */
+    const clave = numero ? `n:${numero}|${fecha}` : `fd:${fecha}|${descripcion}`;
 
     let asiento = asientos.get(clave);
     if (!asiento) {
@@ -141,7 +166,7 @@ export function armarAsientos(
     const movimiento: MovimientoMigrado = { codigoCuenta };
     if (debito !== undefined) movimiento.debito = debito;
     if (credito !== undefined) movimiento.credito = credito;
-    const detalle = texto(leer(fila, 'detalle'));
+    const detalle = cap(texto(leer(fila, 'detalle')), LIMITES_DTO.detalle);
     if (detalle) movimiento.descripcion = detalle;
     asiento.movimientos.push(movimiento);
   }

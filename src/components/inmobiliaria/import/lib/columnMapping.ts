@@ -84,6 +84,16 @@ export const ENCABEZADOS_SIN_CAMPO = [
   // No hay campo de correo en la importación. Sin bloquearlo,
   // «Correo propietario» caía en ownerName por el mismo problema de longitud.
   'correo', 'email', 'e-mail',
+  // Medido en la auditoría 2026-09-01, con encabezados reales:
+  //   «Dirección de notificación del propietario» → ownerName ('propietario', 11)
+  //   «Garantía» → monthlyRent (Levenshtein 0.5+)
+  //   «Fecha de inicio» → consignedAt (0.59) — la fecha del CONTRATO entrando
+  //     como fecha de consignación del inmueble, en silencio.
+  // Nada de esto tiene campo acá: mejor sin mapear que mapeado a otra cosa.
+  'notificacion', 'deposito', 'garantia', 'fianza', 'poliza', 'aseguradora',
+  'fecha de inicio', 'fecha inicio', 'inicio del contrato', 'inicio contrato',
+  'fecha fin', 'fecha de fin', 'fin del contrato', 'fin contrato',
+  'vencimiento', 'duracion',
   // T-0038 §3.8: "tipo de negocio"/"tipo negocio" ya NO están bloqueados —
   // tienen destino en `listingType` (ver COLUMN_KEYWORDS). "codigo" queda
   // bloqueado a propósito: el código es asignado por el servidor

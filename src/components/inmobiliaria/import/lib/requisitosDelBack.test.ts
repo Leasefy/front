@@ -195,3 +195,18 @@ describe('escribirCampo', () => {
     expect(escribirCampo(aproximada, 'propertyZone', 'Centro').direccionAproximada).toBe(true);
   });
 });
+
+describe('escribirCampo — el input de reparación entiende los mismos formatos que el archivo (auditoría 2026-09-01)', () => {
+  it('«65,5» de área tipeada a mano es 65,5 — no 655', () => {
+    const p = escribirCampo(inmueble(), 'propertyArea', '65,5');
+    expect(p.propertyArea).toBe(65.5);
+  });
+
+  it("«1'850.000» con apóstrofo de miles entra entero", () => {
+    expect(escribirCampo(inmueble(), 'monthlyRent', "1'850.000").monthlyRent).toBe(1_850_000);
+  });
+
+  it('un texto que no es número queda vacío, nunca un número inventado', () => {
+    expect(escribirCampo(inmueble(), 'monthlyRent', 'tres millones').monthlyRent).toBeUndefined();
+  });
+});

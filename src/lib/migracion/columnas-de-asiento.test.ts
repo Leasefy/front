@@ -7,10 +7,13 @@
  * viajan crudos —normalizarlos es trabajo del back, que ya lo hace bien.
  */
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { describe, it, expect } from 'vitest';
 
 import { mapearColumnas } from './columnas-de-tercero';
-import { armarAsientos, COLUMNAS_DE_ASIENTO, nombreDeLoteDeAsientos } from './columnas-de-asiento';
+import { armarAsientos, COLUMNAS_DE_ASIENTO, nombreDeLoteDeAsientos, type CampoDeAsiento } from './columnas-de-asiento';
 
 /** `MigrarAsientoDto` / `MigrarMovimientoDto` (back-erp/src/inmobiliaria/contabilidad/migracion/dto/index.ts). */
 const DTO_ASIENTO = ['numeroOriginal', 'fecha', 'descripcion', 'movimientos'];
@@ -140,5 +143,124 @@ describe('nombreDeLoteDeAsientos', () => {
     const n = nombreDeLoteDeAsientos(new Date('2026-09-01T00:30:00Z'));
     expect(n).toBe('asientos-2026-09-01-0030');
     expect(n.length).toBeLessThanOrEqual(60);
+  });
+});
+
+// ── La batería adversarial (P5) ─────────────────────────────────────────────
+
+describe('encabezados del mundo real, uno por uno', () => {
+  const CASOS: [string, CampoDeAsiento][] = [
+    ['\uFEFFNúmero del comprobante', 'numero'], // el BOM del CSV pegado al primer encabezado
+    ['N° comprobante', 'numero'],
+    ['Doc', 'numero'],
+    ['Nro Comprobante', 'numero'],
+    ['FECHA', 'fecha'],
+    ['Fecha documento', 'fecha'],
+    ['Cod. Cta', 'codigoCuenta'],
+    ['Código de cuenta', 'codigoCuenta'],
+    ['CTA', 'codigoCuenta'],
+    ['Cta contable', 'codigoCuenta'],
+    ['DEBITO', 'debito'],
+    ['Débitos', 'debito'],
+    ['Valor Debe', 'debito'],
+    ['Db', 'debito'],
+    ['Créditos', 'credito'],
+    ['HABER', 'credito'],
+    ['Valor Haber', 'credito'],
+    ['Cr', 'credito'],
+    ['Observaciones', 'descripcion'],
+    ['Glosa', 'descripcion'],
+  ];
+  it.each(CASOS)('«%s» → %s', (encabezado, campo) => {
+    const m = mapearColumnas(COLUMNAS_DE_ASIENTO, [encabezado]);
+    expect(m[0].campo).toBe(campo);
+  });
+
+  it('«Fecha comprobante» es la fecha, no el comprobante: el empate exacto le gana a la contención', () => {
+    const m = mapearColumnas(COLUMNAS_DE_ASIENTO, ['Fecha comprobante', 'Comprobante']);
+    expect(m.map((x) => x.campo)).toEqual(['fecha', 'numero']);
+  });
+});
+
+describe('los topes del DTO y los datos rotos', () => {
+  const mapeo = mapearColumnas(COLUMNAS_DE_ASIENTO, ['Comprobante', 'Fecha', 'Descripción', 'Cuenta', 'Débito', 'Crédito', 'Detalle']);
+
+  it('🔴 recorta a los MaxLength del DTO: una celda gigante no puede tumbar el lote entero con un 400', () => {
+    const asientos = armarAsientos(
+      [
+        {
+          Comprobante: 'X'.repeat(100),
+          Fecha: '2025-01-15' + ' '.repeat(40),
+          Descripción: 'D'.repeat(1500),
+          Cuenta: '9'.repeat(60),
+          Débito: 100,
+          Detalle: 'd'.repeat(1500),
+        },
+      ],
+      mapeo,
+    );
+    expect(asientos[0].numeroOriginal!.length).toBe(60);
+    expect(asientos[0].fecha.length).toBeLessThanOrEqual(30);
+    expect(asientos[0].descripcion.length).toBe(1000);
+    expect(asientos[0].movimientos[0].codigoCuenta.length).toBe(40);
+    expect(asientos[0].movimientos[0].descripcion!.length).toBe(1000);
+  });
+
+  it('una fecha que SheetJS dejó inválida viaja vacía en vez de reventar la pantalla', () => {
+    const asientos = armarAsientos(
+      [{ Comprobante: 'CE-1', Fecha: new Date(NaN), Descripción: 'Canon', Cuenta: '110505', Débito: 100 }],
+      mapeo,
+    );
+    expect(asientos[0].fecha).toBe('');
+  });
+
+  it('🔴 el mismo número en DOS fechas son DOS asientos: el consecutivo reiniciado por mes no se funde', () => {
+    const asientos = armarAsientos(
+      [
+        { Comprobante: 'CE-1', Fecha: '2025-01-15', Descripción: 'Canon enero', Cuenta: '110505', Débito: 100 },
+        { Comprobante: 'CE-1', Fecha: '2025-01-15', Descripción: 'Canon enero', Cuenta: '413505', Crédito: 100 },
+        { Comprobante: 'CE-1', Fecha: '2025-02-15', Descripción: 'Canon febrero', Cuenta: '110505', Débito: 200 },
+        { Comprobante: 'CE-1', Fecha: '2025-02-15', Descripción: 'Canon febrero', Cuenta: '413505', Crédito: 200 },
+      ],
+      mapeo,
+    );
+    expect(asientos).toHaveLength(2);
+    expect(asientos.map((a) => a.descripcion)).toEqual(['Canon enero', 'Canon febrero']);
+  });
+});
+
+describe('regresión: la muestra real entera pasa por el mapeo y el armado', () => {
+  it('2.839 filas → 1.043 asientos, todos cuadrados, débitos $2.141.126.351', () => {
+    let crudo = readFileSync(resolve(process.cwd(), 'claudedocs/erp-financiero/muestras/05-asientos-historicos.csv'), 'utf8');
+    if (crudo.charCodeAt(0) === 0xfeff) crudo = crudo.slice(1);
+    const lineas = crudo.split('\n').filter((l) => l.trim() !== '');
+    // La muestra no trae comas ni comillas dentro de las celdas: split directo.
+    const encabezados = lineas[0].split(',');
+    const filas = lineas.slice(1).map((l) => {
+      const celdas = l.replace(/\r$/, '').split(',');
+      return Object.fromEntries(encabezados.map((h, i) => [h, celdas[i] ?? '']));
+    });
+    expect(filas).toHaveLength(2839);
+
+    const mapeoReal = mapearColumnas(COLUMNAS_DE_ASIENTO, encabezados);
+    expect(mapeoReal.filter((m) => m.campo).map((m) => m.campo).sort()).toEqual(
+      ['codigoCuenta', 'credito', 'debito', 'descripcion', 'detalle', 'fecha', 'numero'].sort(),
+    );
+
+    const asientos = armarAsientos(filas, mapeoReal);
+    expect(asientos).toHaveLength(1043);
+
+    let totalDebitos = 0;
+    for (const a of asientos) {
+      let d = 0;
+      let c = 0;
+      for (const m of a.movimientos) {
+        d += Number(m.debito ?? 0);
+        c += Number(m.credito ?? 0);
+      }
+      expect(d, a.numeroOriginal).toBe(c);
+      totalDebitos += d;
+    }
+    expect(totalDebitos).toBe(2_141_126_351);
   });
 });

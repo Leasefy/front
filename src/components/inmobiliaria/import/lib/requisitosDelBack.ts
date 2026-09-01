@@ -16,6 +16,7 @@
  */
 
 import type { ImportProperty } from './importTypes';
+import { cleanNumericValue } from './valorNumerico';
 
 /** Campos editables que pueden bloquear la creación. */
 export type CampoRequerido =
@@ -166,8 +167,9 @@ export function escribirCampo(
 
   let valor: string | number | undefined;
   if (numericos.includes(campo)) {
-    const limpio = valorCrudo.replace(/[^\d]/g, '');
-    valor = limpio === '' ? undefined : Number(limpio);
+    // El MISMO limpiador que las celdas del archivo: «65,5» tipeado a mano es
+    // 65,5 — el viejo strip de no-dígitos lo volvía 655.
+    valor = cleanNumericValue(valorCrudo);
   } else {
     valor = valorCrudo;
   }

@@ -341,3 +341,36 @@ describe('nombreDeLoteSugerido', () => {
     expect(a).not.toBe(b);
   });
 });
+
+describe('mapearColumnas — el espejo del back con encabezados del mundo real', () => {
+  const col = (campo: string, titulo: string, alias: string[]): ColumnaDePlantilla => ({
+    campo,
+    titulo,
+    obligatoria: false,
+    ejemplo: '',
+    alias,
+  });
+  const plantilla = [
+    col('documento', 'Número de documento', ['cc', 'nro documento', 'nro de documento']),
+    // mismos alias que la plantilla real del back, incluido el de «N° de cuenta»
+    col('numeroCuenta', 'Número de cuenta', ['nro cuenta', 'nro de cuenta', 'n de cuenta', 'cuenta']),
+  ];
+
+  it.each([
+    ['C.C.', 'documento'],
+    ['NroCuenta', 'numeroCuenta'],
+    ['Nro. de Cuenta', 'numeroCuenta'],
+    ['N°  de   cuenta', 'numeroCuenta'],
+  ])('«%s» empata EXACTO con %s, no por contención', (encabezado, campo) => {
+    const [m] = mapearColumnas(plantilla, [encabezado]);
+    expect(m.campo).toBe(campo);
+    expect(m.exacto).toBe(true);
+  });
+
+  it('el empate compactado nunca le gana a un empate exacto de otra columna', () => {
+    const resultado = mapearColumnas(plantilla, ['Número de documento', 'C.C.']);
+    expect(resultado[0]).toMatchObject({ campo: 'documento', exacto: true });
+    // «C.C.» quería documento pero ya está tomado: queda sin mapear, visible.
+    expect(resultado[1].campo).toBeNull();
+  });
+});

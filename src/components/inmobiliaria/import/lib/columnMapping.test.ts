@@ -183,3 +183,64 @@ describe('una exportación completa, como llega de un sistema real', () => {
     expect(new Set(usados).size).toBe(usados.length)
   })
 })
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Batería adversarial de encabezados (auditoría 2026-09-01): lo que exportan
+// los sistemas colombianos de verdad, y las colisiones que meten el dato de
+// una persona en el campo de otra.
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('encabezados reales de Colombia', () => {
+  const esperado: Array<[string, string | null]> = [
+    ['Canon', 'monthlyRent'],
+    ['Valor arriendo', 'monthlyRent'],
+    ['Vr. Canon', 'monthlyRent'],
+    ['CANON DE ARRENDAMIENTO', 'monthlyRent'],
+    ['Dirección del inmueble', 'propertyAddress'],
+    ['Dir', 'propertyAddress'],
+    ['Tipo', 'propertyType'],
+    ['Tipo inmueble', 'propertyType'],
+    ['Habitaciones', 'bedrooms'],
+    ['Alcobas', 'bedrooms'],
+    ['N° Hab', 'bedrooms'],
+    ['Admón', 'adminFee'],
+    ['Administración', 'adminFee'],
+    ['Área m2', 'propertyArea'],
+    ['Mts2', 'propertyArea'],
+    ['Ciudad/Municipio', 'propertyCity'],
+    // Sin campo nuestro: mejor nada que un campo equivocado.
+    ['Matrícula inmobiliaria', null],
+    ['Estrato', null],
+  ];
+
+  it.each(esperado)('«%s» → %s', (encabezado, campo) => {
+    const [m] = autoMapColumns([encabezado]);
+    expect(m.targetField).toBe(campo);
+  });
+});
+
+describe('colisiones que meten el dato de otra persona u otro contrato', () => {
+  it('«Dirección de notificación del propietario» NO es ni la dirección del inmueble ni su nombre', () => {
+    const [m] = autoMapColumns(['Dirección de notificación del propietario']);
+    expect(m.targetField).toBeNull();
+  });
+
+  it('«Depósito» no cae en departamento por parecido', () => {
+    const [m] = autoMapColumns(['Depósito']);
+    expect(m.targetField).toBeNull();
+  });
+
+  it('las fechas del CONTRATO no caen en la fecha de consignación', () => {
+    for (const h of ['Fecha de inicio', 'Fecha inicio', 'Fecha fin', 'Inicio del contrato', 'Vencimiento']) {
+      const [m] = autoMapColumns([h]);
+      expect(m.targetField, h).toBeNull();
+    }
+    // Y la consignación de verdad sigue llegando a su campo.
+    expect(autoMapColumns(['Fecha de Consignación'])[0].targetField).toBe('consignedAt');
+  });
+
+  it('«Garantía» y «Póliza» no se mapean a nada', () => {
+    expect(autoMapColumns(['Garantía'])[0].targetField).toBeNull();
+    expect(autoMapColumns(['Póliza'])[0].targetField).toBeNull();
+  });
+});

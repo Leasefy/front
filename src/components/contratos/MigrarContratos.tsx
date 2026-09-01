@@ -98,6 +98,10 @@ const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   uso: "Uso del inmueble",
   periodicidad: "Periodicidad",
   comision: "Comisión",
+  propietarioNombre: "Nombre del propietario",
+  propietarioDocumento: "Documento del propietario",
+  propietarioCorreo: "Correo del propietario",
+  propietarioTelefono: "Teléfono del propietario",
 };
 
 /** Todos los campos posibles, para ofrecerlos en el selector de remapeo. */

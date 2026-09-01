@@ -97,17 +97,22 @@ describe('SeleccionarRolPage — invitation guard', () => {
 
     await render()
 
-    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')
+    // getAgencyHomeRoute() always lands on the Piloto automático (role-routes.ts) —
+    // it is the transversal control tower and the first sidebar row, so every
+    // sub-role lands there regardless of agencyRole (see role-routes.ts:5-27).
+    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/piloto')
     expect(container.textContent).not.toContain('Propietario')
   })
 
-  it('redirects an ACTIVE agency member to their per-sub-role landing route (CONTADOR → cobros)', async () => {
+  it('redirects an ACTIVE agency member to the Piloto landing regardless of sub-role (CONTADOR)', async () => {
     authState.hasActiveAgencyMembership = true
     authState.agencyRole = 'CONTADOR'
 
     await render()
 
-    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/cobros')
+    // Sub-role no longer changes the destination — CONTADOR used to land on
+    // /panel/inmobiliaria/cobros; now every sub-role lands on the Piloto.
+    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/piloto')
     expect(container.textContent).not.toContain('Propietario')
   })
 

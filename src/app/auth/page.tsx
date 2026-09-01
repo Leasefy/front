@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { X } from '@phosphor-icons/react';
+import { XCircle } from '@phosphor-icons/react';
 
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
@@ -96,10 +96,12 @@ export default function AuthPage() {
                 href="/"
                 aria-label="Cerrar y volver al inicio"
                 title="Cerrar"
-                className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-full text-fg-subtle transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="ml-auto inline-flex items-center justify-center rounded-full text-fg-subtle transition-colors hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 data-testid="auth-cerrar"
               >
-                <X className="h-4 w-4" />
+                {/* El glifo YA trae el círculo, así que el botón no pone otro
+                    de fondo al pasar el mouse: serían dos anillos. */}
+                <XCircle className="h-7 w-7" weight="light" />
               </Link>
             </div>
 

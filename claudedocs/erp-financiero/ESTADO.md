@@ -244,3 +244,17 @@ Cinco auditorías adversariales en paralelo (batería de datos sucios ANTES de a
 Todo con regresión sobre los archivos de muestra reales (01–05 completos: 60+110+120+90 filas y 2.839 líneas contables, débitos exactos $2.141.126.351). Políticas escritas en el código: fechas día-primero (Colombia) y contra el calendario real; seriales de Excel y años de 2 cifras se rechazan; plata «entero o nada» (jamás el prefijo de `parseFloat`); COP al peso (centavos ≠ 0 se rechazan); paréntesis contable = negativo → se rechaza nombrando el lado correcto.
 
 Pendientes menores anotados por los auditores: el faltante no dice el valor ilegible que lo causó (pide campo nuevo en el back) · centavos reales siempre-presentes pedirían decisión de redondeo con el contador · TOCTOU de idempotencia de asientos (dos operadores a la vez) pide índice único (esquema congelado).
+
+## Cierre 2026-09-01 (tarde-2) — qué falta y fe de erratas
+
+**Ramas al cierre**: back `dc48354` · front `97626523` (`cambios-nico-1`, árboles limpios, todo empujado, sin PR).
+
+⚠️ **Fe de erratas de dos mensajes de commit** (el contenido es correcto; los mensajes se cruzaron): en el FRONT, `1227403e` dice «terceros, contratos y asientos no adivinan nunca» pero contiene los parsers DEL FRONT; en el BACK, `dc48354` dice «cada paso de terceros arranca limpio (key)» pero contiene el endurecimiento de parsers DEL BACK (normalizar-tercero, plantillas, migración de contratos y contable). El arreglo real del `key` es `97626523` (front).
+
+**Hecho en la sesión**: bloques 1 y 2 completos (ver arriba) · muro a 6 pasos con invitación diferida ante el límite de correo · scroll de tablas (`overscroll-x-contain`) · auditoría adversarial de los 5 parsers con regresión sobre las muestras · el pie del muro espera al paso ocupado y sin «» · `key` por paso (el archivo de propietarios ya no se queda pegado en inquilinos; verificado E2E).
+
+**Qué falta**
+- **Nico (QA)**: seguir el muro desde el paso 2 con los 5 CSV; descartar la carga vieja `propietarios-…-1834`; con contratos vivos probar impuestos, asientos automáticos (sembrar el mapeo), extracto bancario real y recaudo.
+- **Back (Víctor)**: reenvío de invitaciones pendientes · `procesadas` fila a fila en contratos · `external_id`/consecutivos · consignación al importar inmuebles sin contrato · el faltante debería decir el valor ilegible que lo causó · índice único para la idempotencia de asientos · abrir el PR de `cambios-nico-1`.
+- **Decisiones (Nico + terceros)**: tasa de mora unificada y tope legal (abogado) · escenarios tributarios de Víctor · archivo plano real de Bancolombia (PAB/SAP) · cuenta de Cobre · redondeo de centavos con el contador · agencias viejas y PUC · ¿paso 6 exige ≥1 asiento?
+- **Entorno**: el `next dev` de :3011 muere por falta de RAM y puede corromper `.next` (estáticos 404) → `rm -rf .next` y relanzar.

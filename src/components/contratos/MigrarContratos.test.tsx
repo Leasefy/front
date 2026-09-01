@@ -1187,3 +1187,69 @@ describe('<MigrarContratos> — la lista de migraciones a medias que falla se di
     expect(container.querySelector('[data-testid="lotes-abiertos-fallo"]')).toBeNull()
   })
 })
+
+describe('<MigrarContratos> — el archivo se puede ARRASTRAR', () => {
+  /*
+   * Este paso era el único de los seis sin zona de arrastre: un `<label>` con
+   * un input escondido, que sólo respondía al clic. Arrastrar encima no hacía
+   * nada, y soltar el archivo fuera de un dropzone hace que el navegador lo
+   * ABRA y se lleve la pestaña con la migración a medias. Nico lo probó y
+   * creyó que se había roto.
+   */
+  function soltar(nombre = 'contratos.csv') {
+    const zona = container.querySelector(
+      '[data-testid="dropzone-contratos"]',
+    ) as HTMLElement
+    const file = new File(['contenido'], nombre, { type: 'text/csv' })
+    const dataTransfer = {
+      files: [file],
+      items: [{ kind: 'file', type: 'text/csv', getAsFile: () => file }],
+      types: ['Files'],
+    }
+    return act(async () => {
+      const evento = new Event('drop', { bubbles: true, cancelable: true })
+      Object.defineProperty(evento, 'dataTransfer', { value: dataTransfer })
+      zona.dispatchEvent(evento)
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  it('la zona de arrastre existe y el input sigue adentro para el clic', async () => {
+    render()
+    await esperar()
+
+    expect(container.querySelector('[data-testid="dropzone-contratos"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="archivo-contratos"]')).not.toBeNull()
+  })
+
+  it('soltar un archivo encima lo lee, igual que elegirlo con el clic', async () => {
+    render()
+    await esperar()
+
+    // `mockClear` acá: el contador del mock del módulo se acumula entre los
+    // tests del archivo, así que sólo el delta de ESTE drop significa algo.
+    vi.mocked(parseSpreadsheetFile).mockClear()
+    vi.mocked(parseSpreadsheetFile).mockResolvedValue({
+      rows: [{ _rowIndex: 0, Inquilino: 'Ana', Canon: '1000000' }],
+      headers: ['Inquilino', 'Canon'],
+      sheetNames: ['Sheet1'],
+    })
+    await soltar()
+
+    expect(parseSpreadsheetFile).toHaveBeenCalledTimes(1)
+    // Y llegó a la pantalla de mapeo: la lectura no se quedó en el aire.
+    expect(container.textContent).toContain('Así entendimos tus columnas')
+  })
+
+  it('un archivo ilegible soltado se explica igual que uno elegido', async () => {
+    render()
+    await esperar()
+
+    vi.mocked(parseSpreadsheetFile).mockRejectedValue(
+      new Error('El archivo está dañado o no es una planilla.'),
+    )
+    await soltar('roto.xlsx')
+
+    expect(container.textContent).toContain('El archivo está dañado')
+  })
+})

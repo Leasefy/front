@@ -22,6 +22,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useDropzone } from "react-dropzone";
 import {
   ArrowRight,
   CheckCircle,
@@ -272,6 +273,15 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
       setMapeo([]);
     }
   }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: (aceptados) => {
+      const archivo = aceptados[0];
+      if (archivo) void leerArchivo(archivo);
+    },
+    maxFiles: 1,
+    multiple: false,
+  });
 
   /**
    * Trae UNA página de pendientes.
@@ -856,31 +866,45 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
       ) : null}
 
       <Card className="p-6">
-        <label className="flex cursor-pointer flex-col items-center gap-3 rounded-lg border border-dashed border-border p-8 text-center hover:bg-muted/40">
+        {/*
+         * Zona de arrastre, no un `<label>` con un input escondido.
+         *
+         * Este paso era el ÚNICO de los seis sin `useDropzone`: los otros
+         * cinco reciben el archivo arrastrado y este se quedaba mirando —
+         * arrastrar encima no hacía nada y, peor, soltarlo fuera de un
+         * dropzone hace que el navegador ABRA el archivo y se lleve la
+         * pestaña con la migración a medias. Nico lo probó y creyó que se
+         * había roto (2026-09-01); nunca había existido.
+         *
+         * `react-dropzone` limpia el input después de cada selección, así
+         * que volver a elegir EL MISMO archivo (corregido, con el mismo
+         * nombre) sigue disparando la lectura — que es lo que el reset
+         * manual de antes garantizaba a mano.
+         */}
+        <div
+          {...getRootProps()}
+          className={`flex cursor-pointer flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center transition-colors ${
+            isDragActive
+              ? "border-primary bg-primary/10"
+              : "border-border hover:bg-muted/40"
+          }`}
+          data-testid="dropzone-contratos"
+        >
+          {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
+          {/* El `data-testid` va aparte: `DropzoneInputProps` no lo tipa. */}
+          <input {...getInputProps()} data-testid="archivo-contratos" />
           <FileArrowUp className="h-8 w-8 text-muted-foreground" />
           <div>
             <p className="text-sm font-medium text-foreground">
-              Subí el archivo de contratos
+              {isDragActive
+                ? "Soltá el archivo acá"
+                : "Arrastrá el archivo de contratos o hacé clic para elegirlo"}
             </p>
             <p className="text-xs text-muted-foreground">
               Excel o CSV exportado de tu sistema actual
             </p>
           </div>
-          <input
-            type="file"
-            accept=".xlsx,.xls,.csv,.txt,.tsv,.ods"
-            className="sr-only"
-            data-testid="archivo-contratos"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              // Sin esto, elegir EL MISMO archivo (corregido y guardado con
-              // el mismo nombre) no dispara `change`: el input retiene el
-              // valor y el reintento tras un error de lectura queda muerto.
-              e.target.value = "";
-              if (f) void leerArchivo(f);
-            }}
-          />
-        </label>
+        </div>
 
         {error ? (
           <div className="mt-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">

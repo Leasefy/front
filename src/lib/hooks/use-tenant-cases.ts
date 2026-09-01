@@ -172,13 +172,15 @@ export interface UseTenantCasesResult {
   refetch: () => Promise<void>;
 }
 
-export function useTenantCases(): UseTenantCasesResult {
+export function useTenantCases(options?: { skip?: boolean }): UseTenantCasesResult {
+  const skip = options?.skip ?? false;
+
   const {
     requests,
     isLoading: requestsLoading,
     error: requestsError,
     refetch: refetchRequests,
-  } = useMyPaymentRequests();
+  } = useMyPaymentRequests({ skip });
 
   const {
     getActive,
@@ -194,7 +196,7 @@ export function useTenantCases(): UseTenantCasesResult {
     isLoading: paymentInfoLoading,
     error: paymentInfoError,
     refetch: refetchPaymentInfo,
-  } = useLeasePaymentInfo(primaryLease?.id ?? null);
+  } = useLeasePaymentInfo(primaryLease?.id ?? null, { skip });
 
   const {
     active: activeApplications,
@@ -208,14 +210,14 @@ export function useTenantCases(): UseTenantCasesResult {
     isLoading: pqrsLoading,
     error: pqrsError,
     refetch: refetchPqrs,
-  } = useTenantPqrs();
+  } = useTenantPqrs({ skip });
 
   const {
     items: acuerdoRows,
     isLoading: acuerdosLoading,
     error: acuerdosError,
     refetch: refetchAcuerdos,
-  } = useTenantAcuerdos();
+  } = useTenantAcuerdos({ skip });
 
   const cases = useMemo<TenantCase[]>(() => {
     const out: TenantCase[] = [];
@@ -301,7 +303,12 @@ export function useTenantCases(): UseTenantCasesResult {
 
   // Tab-gated aggregate refresh (realtime fallback). The source hooks own their
   // first fetch; this only polls + refreshes on re-focus. No SSE/WebSocket here.
-  useVisibilityPolling(() => void refetch(), POLL_INTERVAL_MS, !isLoading);
+  // `skip` must also gate this: once the skipped sources settle their loading
+  // flag to `false` (they never actually fetch, but they do flip `isLoading`
+  // off), `!isLoading` alone would go `true` and start polling — and `refetch`
+  // calls the raw source fetchers directly, bypassing `skip`. Without this,
+  // a skipped mount would still fire a real fetch after the first interval.
+  useVisibilityPolling(() => void refetch(), POLL_INTERVAL_MS, !skip && !isLoading);
 
   return {
     cases,

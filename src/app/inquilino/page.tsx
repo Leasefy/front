@@ -164,6 +164,34 @@ export default function InquilinoPage() {
     return [...dentro].sort((a, b) => a.monthlyRent - b.monthlyRent).slice(0, 4);
   }, [featuredRaw, referenciaHome]);
 
+  /*
+   * `useTenantCases()` MUST be called unconditionally — it used to live below
+   * the three early returns further down (loading / onboarding-incomplete /
+   * error), which is a `react-hooks/rules-of-hooks` violation: the SAME
+   * mounted instance calls a different number of hooks depending on which
+   * branch it took, and React throws the moment it transitions from one of
+   * those early states into the fully-loaded one.
+   *
+   * Hoisting it here fixes the violation, but a naive hoist would ALSO make
+   * it fetch unconditionally — today it only ever mounted (and only ever
+   * fetched) once the dashboard actually reached its full render, so a
+   * visitor stuck loading, mid-onboarding, or looking at the error state
+   * NEVER triggered this fetch. Onboarding-incomplete in particular is not a
+   * rare edge case — it's every new signup. `skip` preserves that exact
+   * gate: it mirrors the same condition the three early returns below test,
+   * so the hook still fetches if and only if the old call site would have
+   * been reached.
+   */
+  const dashboardWillRender =
+    !authLoading &&
+    isOnboardingComplete !== null &&
+    !applicationsLoading &&
+    !leasesLoading &&
+    isOnboardingComplete &&
+    !errorPostulaciones &&
+    !errorArriendos;
+  const { openCasesCount } = useTenantCases({ skip: !dashboardWillRender });
+
   // Loading state — wait for auth + real data so the "new user" banner doesn't flash
   if (authLoading || isOnboardingComplete === null || applicationsLoading || leasesLoading) {
     return (
@@ -213,8 +241,9 @@ export default function InquilinoPage() {
 
   // Casos abiertos — conteo REAL (proyección de las fuentes ya cargadas; ver
   // use-tenant-cases). La tarjeta sólo aparece cuando cuenta algo (>0), igual
-  // que el resto de contadores de este grid.
-  const { openCasesCount } = useTenantCases();
+  // que el resto de contadores de este grid. `openCasesCount` viene del
+  // `useTenantCases()` hoisteado arriba (Rules of Hooks) — acá solo se deriva
+  // el flag de UI.
   const hayCasos = !isNewUser && openCasesCount > 0;
 
   return (

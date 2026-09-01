@@ -67,7 +67,7 @@ interface AvanceDePaso {
 
 const SIN_MEDIR: AvanceDePaso = { hechas: null, porRevisar: 0, loteAbierto: null };
 
-type IdDePaso = 'terceros' | 'propiedades' | 'contratos' | 'puc' | 'contable';
+type IdDePaso = 'terceros' | 'propiedades' | 'contratos' | 'puc' | 'contables';
 
 export function SecuenciaDeMigracion() {
   const { t } = useI18n();
@@ -76,7 +76,7 @@ export function SecuenciaDeMigracion() {
     propiedades: SIN_MEDIR,
     contratos: SIN_MEDIR,
     puc: SIN_MEDIR,
-    contable: SIN_MEDIR,
+    contables: SIN_MEDIR,
   });
   const [midiendo, setMidiendo] = useState(true);
 
@@ -134,7 +134,7 @@ export function SecuenciaDeMigracion() {
         contratos.loteAbierto = abiertos[0]?.lote ?? null;
       }
 
-      setAvance({ terceros, propiedades, contratos, puc: SIN_MEDIR, contable: SIN_MEDIR });
+      setAvance({ terceros, propiedades, contratos, puc: SIN_MEDIR, contables: SIN_MEDIR });
       setMidiendo(false);
     });
 
@@ -163,7 +163,7 @@ export function SecuenciaDeMigracion() {
       disponible: true,
     },
     { id: 'puc' as const, icono: Wallet, href: null, disponible: false },
-    { id: 'contable' as const, icono: ListChecks, href: null, disponible: false },
+    { id: 'contables' as const, icono: ListChecks, href: null, disponible: false },
   ];
 
   const hayAlgoSinTerminar = pasos.some((p) => avance[p.id].porRevisar > 0);

@@ -62,6 +62,7 @@ import { BotonNuevo } from '@/components/inmobiliaria/BotonNuevo';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
+import { MuroDeMigracion } from '@/components/migracion/MuroDeMigracion';
 import { useMigracionesPendientes } from '@/lib/hooks/use-migraciones-pendientes';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -439,57 +440,67 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-plan-page">
-      {/* Global ⌘K shortcut listener — context-aware (skips beta subtree) */}
-      <CommandPaletteShortcuts />
-      {/* Command palette modal — portal renders above everything */}
-      <CommandPalette />
+      {/*
+        El muro de la puesta en marcha. Va acá adentro, envolviendo TODO el
+        panel —sidebar, header, contenido y nav móvil—, para que cubra las
+        156 rutas de una sola vez y ninguna quede por fuera por olvido.
 
-      {/* Inmobiliaria Sidebar */}
-      <PlanSidebar
-        navItems={INMOBILIARIA_NAV_ITEMS}
-        loading={permissionsLoading}
-        logo={{
-          title: agencyName,
-          // El lockup de Leasefy es la firma del PRODUCTO, no un atajo al
-          // panel: el panel ya tiene su "Inicio" en el nav (misma ruta), así
-          // que apuntar acá al panel duplicaba un destino y dejaba sin salida
-          // al sitio público. El logo sale a la landing, como en cualquier
-          // producto con web pública. Ruta relativa a propósito: el host
-          // cambia entre dev (:3001) y producción.
-          href: '/',
-        }}
-        // cadence §Navigation: static brand row + search-opens-⌘K + footer cards
-        workspaceName={agencyName}
-        workspaceLogoUrl={agencyLogoUrl}
-        onSearchClick={openCommandPalette}
-        searchPlaceholder="Buscar"
-        // Punto de partida del panel: con 156 rutas agrupadas por módulo de
-        // negocio, quien entra por primera vez no tiene dónde empezar.
-        belowSearch={<BotonNuevo />}
-        showInvite
-        onInvite={() => router.push('/panel/inmobiliaria/agentes')}
-        showUpgrade={showUpgradeCta}
-        upgradeHref="/panel/inmobiliaria/configuracion"
-      />
+        Cuando no bloquea (que es el caso normal, y también el caso de error)
+        no dibuja nada y no le agrega una sola clase a lo de adentro.
+      */}
+      <MuroDeMigracion>
+        {/* Global ⌘K shortcut listener — context-aware (skips beta subtree) */}
+        <CommandPaletteShortcuts />
+        {/* Command palette modal — portal renders above everything */}
+        <CommandPalette />
 
-      {/* Main content area */}
-      <div
-        className={cn(
-          // pb-20 reserves space for the mobile bottom nav, which is visible
-          // below lg (same breakpoint where the desktop sidebar appears).
-          'transition-all duration-200 pb-20 lg:pb-0',
-          isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
-        )}
-      >
-        {/* Search lives only in the sidebar (aboveNav). Top bar keeps notifications + avatar.
-            leftSlot carries the AI agent breadcrumb — all agent nav lives at the top now
-            (breadcrumb here + WorkspaceNav tabs below), so pages drop their MigaDePan. */}
-        <PlanHeader showMagnifyingGlass={false} leftSlot={<AgentHeaderBreadcrumb />} />
-        <main id="main-content" tabIndex={-1}>{children}</main>
-      </div>
+        {/* Inmobiliaria Sidebar */}
+        <PlanSidebar
+          navItems={INMOBILIARIA_NAV_ITEMS}
+          loading={permissionsLoading}
+          logo={{
+            title: agencyName,
+            // El lockup de Leasefy es la firma del PRODUCTO, no un atajo al
+            // panel: el panel ya tiene su "Inicio" en el nav (misma ruta), así
+            // que apuntar acá al panel duplicaba un destino y dejaba sin salida
+            // al sitio público. El logo sale a la landing, como en cualquier
+            // producto con web pública. Ruta relativa a propósito: el host
+            // cambia entre dev (:3001) y producción.
+            href: '/',
+          }}
+          // cadence §Navigation: static brand row + search-opens-⌘K + footer cards
+          workspaceName={agencyName}
+          workspaceLogoUrl={agencyLogoUrl}
+          onSearchClick={openCommandPalette}
+          searchPlaceholder="Buscar"
+          // Punto de partida del panel: con 156 rutas agrupadas por módulo de
+          // negocio, quien entra por primera vez no tiene dónde empezar.
+          belowSearch={<BotonNuevo />}
+          showInvite
+          onInvite={() => router.push('/panel/inmobiliaria/agentes')}
+          showUpgrade={showUpgradeCta}
+          upgradeHref="/panel/inmobiliaria/configuracion"
+        />
 
-      {/* Mobile bottom navigation — hidden at lg+ (where the sidebar appears) */}
-      <MobileNavBar navItems={INMOBILIARIA_NAV_ITEMS} />
+        {/* Main content area */}
+        <div
+          className={cn(
+            // pb-20 reserves space for the mobile bottom nav, which is visible
+            // below lg (same breakpoint where the desktop sidebar appears).
+            'transition-all duration-200 pb-20 lg:pb-0',
+            isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
+          )}
+        >
+          {/* Search lives only in the sidebar (aboveNav). Top bar keeps notifications + avatar.
+              leftSlot carries the AI agent breadcrumb — all agent nav lives at the top now
+              (breadcrumb here + WorkspaceNav tabs below), so pages drop their MigaDePan. */}
+          <PlanHeader showMagnifyingGlass={false} leftSlot={<AgentHeaderBreadcrumb />} />
+          <main id="main-content" tabIndex={-1}>{children}</main>
+        </div>
+
+        {/* Mobile bottom navigation — hidden at lg+ (where the sidebar appears) */}
+        <MobileNavBar navItems={INMOBILIARIA_NAV_ITEMS} />
+      </MuroDeMigracion>
 
       {/* El <Toaster> es único y vive en el layout raíz (src/app/layout.tsx), fuera de
           <ProtectedRoute>/<AgencySubscriptionGuard>: acá adentro se perdía todo toast

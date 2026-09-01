@@ -104,14 +104,14 @@ describe('SecuenciaDeMigracion', () => {
 
     const pasos = container.querySelectorAll('[data-testid^="paso-"]');
     expect(pasos).toHaveLength(5);
-    // terceros → propiedades → contratos → PUC → contable. El orden no es
+    // terceros → propiedades → contratos → PUC → contables. El orden no es
     // estético: el inmueble necesita dueño y el contrato necesita inmueble.
     const titulos = [...pasos].map((p) => p.textContent ?? '');
     expect(titulos[0]).toContain('migracion.pasos.terceros.titulo');
     expect(titulos[1]).toContain('migracion.pasos.propiedades.titulo');
     expect(titulos[2]).toContain('migracion.pasos.contratos.titulo');
     expect(titulos[3]).toContain('migracion.pasos.puc.titulo');
-    expect(titulos[4]).toContain('migracion.pasos.contable.titulo');
+    expect(titulos[4]).toContain('migracion.pasos.contables.titulo');
   });
 
   it('los pasos 4 y 5 no tienen ningún control clickeable', async () => {

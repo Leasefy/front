@@ -10078,6 +10078,26 @@
   },
   "migracion": {
     "nav": "Migration",
+    "muro": {
+      "eyebrow": "Getting started",
+      "titulo": "Bring your operation over first",
+      "subtitulo": "Your panel is waiting on the other side. Load what you already have in your current system: each step needs the previous one, so they go in order.",
+      "progreso": "Migration progress",
+      "hecho": "Done",
+      "enEspera": "Waiting",
+      "noDisponible": "This can't be loaded here yet. It won't hold you back: you can finish without it.",
+      "primero": "Finish «{{paso}}» first",
+      "faltaTerminar": "Once you finish the steps you'll be able to enter the panel.",
+      "yaTermine": "I'm done",
+      "arrancarDeCero": "I'm not coming from another system, starting from scratch",
+      "fallo": "We couldn't save that. Try again in a moment.",
+      "confirmar": {
+        "titulo": "Starting from scratch?",
+        "detalle": "You'll enter the panel with nothing loaded: every owner, tenant, property and contract will have to be created by hand. If you're coming from another system, migrating saves you that work. You can return to the migration any time from the menu.",
+        "aceptar": "Yes, start from scratch",
+        "cancelar": "Back to the steps"
+      }
+    },
     "eyebrow": "Getting started",
     "titulo": "Migrate your operation",
     "subtitulo": "Bring over what you already have in another system, in the order each step needs the previous one. You can stop halfway and pick it up later — nothing gets lost.",
@@ -10115,7 +10135,7 @@
         "titulo": "Chart of accounts",
         "descripcion": "Your chart of accounts, so entries land where your accountant expects them. Cannot be uploaded from here yet."
       },
-      "contable": {
+      "contables": {
         "titulo": "Accounting entries",
         "descripcion": "Historical balances and movements. It goes last because it needs the chart of accounts in place. Cannot be uploaded from here yet."
       }

@@ -88,7 +88,7 @@ const CLAVES_DE_MIGRACION = [
  * (`migracion.pasos.${paso.id}.titulo`), así que un typo en uno de ellos no lo
  * agarra ni `tsc` ni el linter: sale en pantalla como la clave cruda.
  */
-const CLAVES_DE_PASOS = ['terceros', 'propiedades', 'contratos', 'puc', 'contable'].flatMap(
+const CLAVES_DE_PASOS = ['terceros', 'propiedades', 'contratos', 'puc', 'contables'].flatMap(
   (id) => [`migracion.pasos.${id}.titulo`, `migracion.pasos.${id}.descripcion`],
 );
 

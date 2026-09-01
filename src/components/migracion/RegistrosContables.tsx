@@ -43,7 +43,11 @@ interface ResumenDeCargado {
   parcial: boolean;
 }
 
-export function RegistrosContables() {
+/**
+ * `onIrAlPuc`: adentro del muro el paso 4 se abre en el mismo muro, no en
+ * otra ruta. Sin el callback queda el enlace de siempre.
+ */
+export function RegistrosContables({ onIrAlPuc }: { onIrAlPuc?: () => void } = {}) {
   const [camino, setCamino] = useState<Camino>('apertura');
   const [cuentas, setCuentas] = useState<CuentaPuc[] | null>(null);
   const [resumen, setResumen] = useState<ResumenDeCargado | null>(null);
@@ -128,12 +132,19 @@ export function RegistrosContables() {
               </p>
             </div>
           </div>
-          <Button asChild size="sm" className="mt-4" hideArrow>
-            <Link href={RUTA_DEL_PASO_4}>
+          {onIrAlPuc ? (
+            <Button size="sm" className="mt-4" hideArrow onClick={onIrAlPuc} data-testid="contables-ir-al-puc">
               Ir al paso 4
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-            </Link>
-          </Button>
+            </Button>
+          ) : (
+            <Button asChild size="sm" className="mt-4" hideArrow>
+              <Link href={RUTA_DEL_PASO_4} data-testid="contables-ir-al-puc">
+                Ir al paso 4
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          )}
         </section>
       ) : (
         <>
@@ -173,7 +184,7 @@ export function RegistrosContables() {
           {camino === 'apertura' ? (
             <AsientoDeApertura cuentas={cuentas} onCreado={() => void cargar()} />
           ) : (
-            <MigrarAsientos onAplicado={() => void cargar()} />
+            <MigrarAsientos onAplicado={() => void cargar()} onIrAlPuc={onIrAlPuc} />
           )}
         </>
       )}

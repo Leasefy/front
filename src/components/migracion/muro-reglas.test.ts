@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import type { PasoDeMigracion } from '@/lib/api/migracion-estado.service';
 import {
-  estaExentaDelMuro,
+  siguientePaso,
   normalizarEstado,
   pasoActual,
   pasoHabilitado,
@@ -33,46 +33,6 @@ const RECIEN_LLEGADA: PasoDeMigracion[] = [
   paso('puc', 'pendiente'),
   paso('contables', 'pendiente'),
 ];
-
-// ══════════════════════════════════════════════════════════════════════════
-
-describe('estaExentaDelMuro — las pantallas a las que el propio muro manda', () => {
-  it.each([
-    '/panel/inmobiliaria/migracion',
-    '/panel/inmobiliaria/migracion/terceros',
-    '/panel/inmobiliaria/inmuebles/importar',
-    '/panel/inmobiliaria/contratos/migrar',
-    '/panel/inmobiliaria/migracion/puc',
-    '/panel/inmobiliaria/migracion/contables',
-  ])('%s NO se tapa', (ruta) => {
-    expect(estaExentaDelMuro(ruta)).toBe(true);
-  });
-
-  it('la barra final no cambia nada', () => {
-    expect(estaExentaDelMuro('/panel/inmobiliaria/migracion/')).toBe(true);
-  });
-
-  it.each([
-    '/panel/inmobiliaria',
-    '/panel/inmobiliaria/dashboard',
-    '/panel/inmobiliaria/inmuebles',
-    '/panel/inmobiliaria/contratos',
-  ])('%s sí se tapa', (ruta) => {
-    expect(estaExentaDelMuro(ruta)).toBe(false);
-  });
-
-  it('el prefijo es estricto: una ruta que sólo EMPIEZA parecido no se salva', () => {
-    // Sin el corte por `/`, `startsWith` dejaría entrar cualquier cosa que
-    // arranque igual, y el muro se volvería opcional para quien conozca la URL.
-    expect(estaExentaDelMuro('/panel/inmobiliaria/migracion-masiva')).toBe(false);
-    expect(estaExentaDelMuro('/panel/inmobiliaria/contratos/migrarlo-todo')).toBe(false);
-  });
-
-  it('sin pathname (SSR, primer render) no se considera exenta', () => {
-    expect(estaExentaDelMuro(null)).toBe(false);
-    expect(estaExentaDelMuro(undefined)).toBe(false);
-  });
-});
 
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -235,5 +195,37 @@ describe('todoListo — la puerta de «Ya terminé»', () => {
     expect(todoListo([paso('puc', 'no_disponible'), paso('contables', 'no_disponible')])).toBe(
       false,
     );
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// siguientePaso — a dónde seguir desde donde estoy parado
+// ══════════════════════════════════════════════════════════════════════════
+
+/** Para `siguientePaso` sólo importa el estado; el id es cualquiera válido. */
+const p = (estado: PasoDeMigracion['estado']) => paso('terceros', estado);
+
+describe('siguientePaso', () => {
+  it('desde un paso listo va al primer pendiente que le sigue', () => {
+    expect(siguientePaso([p('listo'), p('pendiente'), p('pendiente')], 0)).toBe(1);
+  });
+
+  it('salta los que le siguen si están frenados y vuelve al que falta ANTES', () => {
+    // Borraron el único propietario: terceros volvió a pendiente y frena a
+    // los de abajo. Desde «propiedades» (listo) hay que volver al 0.
+    expect(siguientePaso([p('pendiente'), p('listo'), p('pendiente')], 1)).toBe(0);
+  });
+
+  it('un no_disponible intercalado no es destino ni frena', () => {
+    expect(siguientePaso([p('listo'), p('no_disponible'), p('pendiente')], 0)).toBe(2);
+  });
+
+  it('con todo listo no hay a dónde ir', () => {
+    expect(siguientePaso([p('listo'), p('listo')], 1)).toBeNull();
+    expect(siguientePaso([p('listo'), p('listo')], 0)).toBeNull();
+  });
+
+  it('si el único pendiente es el mismo, tampoco', () => {
+    expect(siguientePaso([p('listo'), p('pendiente')], 1)).toBeNull();
   });
 });

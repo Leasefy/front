@@ -4,6 +4,12 @@
  * Todo lo que decide **si alguien entra o no al producto** vive acá y es
  * puro: se puede probar sin montar una pantalla, y se lee de un vistazo.
  * La UI (`MuroDeMigracion.tsx`) sólo pinta lo que estas funciones dicen.
+ *
+ * 🔴 No hay rutas exentas. Hubo una lista —las pantallas de cada paso— y
+ * era un agujero: el muro mandaba a `/migracion/terceros`, y ahí la persona
+ * veía la plataforma entera con el sidebar y todo. Ahora el contenido de
+ * cada paso vive ADENTRO del muro, y el muro tapa todas las rutas del panel
+ * hasta que la migración se resuelva.
  */
 
 import type {
@@ -11,47 +17,6 @@ import type {
   PasoDeMigracion,
   IdDePasoDeMigracion,
 } from '@/lib/api/migracion-estado.service';
-
-/**
- * Las rutas que el muro NUNCA tapa.
- *
- * 🔴 Sin esto el muro es una trampa: el paso 2 manda a
- * `/inmuebles/importar`, que es una pantalla del panel — y el muro la
- * taparía, dejando a la persona encerrada mirando el muro que la mandó ahí,
- * sin manera de avanzar.
- *
- * La lista es de PREFIJOS: `/panel/inmobiliaria/migracion` cubre también
- * `/migracion/terceros`, que es donde vive el paso 1 completo.
- */
-export const RUTAS_EXENTAS_DEL_MURO: readonly string[] = [
-  // Paso 1 (y la propia secuencia de arranque, que es la misma pantalla sin muro).
-  '/panel/inmobiliaria/migracion',
-  // Paso 2 — el importador de inmuebles, que ya existía.
-  '/panel/inmobiliaria/inmuebles/importar',
-  // Paso 3 — el importador de contratos, que ya existía.
-  '/panel/inmobiliaria/contratos/migrar',
-  // Pasos 4 y 5 — el plan de cuentas y los registros contables. Ya los cubre
-  // el prefijo de arriba; van explícitos para que nadie los pierda si un día
-  // se mueven de carpeta.
-  '/panel/inmobiliaria/migracion/puc',
-  '/panel/inmobiliaria/migracion/contables',
-];
-
-/**
- * ¿Esta ruta se salva del muro?
- *
- * Prefijo estricto: coincide exacta, o seguida de `/`. Comparar con
- * `startsWith` a secas dejaría pasar `/panel/inmobiliaria/migracion-otra-cosa`,
- * que no es un paso de la migración.
- */
-export function estaExentaDelMuro(pathname: string | null | undefined): boolean {
-  if (!pathname) return false;
-  // Sin la barra final: `/migracion/` y `/migracion` son la misma pantalla.
-  const ruta = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
-  return RUTAS_EXENTAS_DEL_MURO.some(
-    (exenta) => ruta === exenta || ruta.startsWith(`${exenta}/`),
-  );
-}
 
 const IDS_VALIDOS: readonly IdDePasoDeMigracion[] = [
   'terceros',
@@ -150,7 +115,25 @@ export function pasoActual(pasos: PasoDeMigracion[]): number {
 }
 
 /**
- * ¿Se puede ofrecer «Ya terminé»? Sólo con todos los exigibles listos.
+ * A dónde seguir desde el paso `desde`.
+ *
+ * El primer paso habilitado sin terminar después de él; si no hay ninguno,
+ * el primero sin terminar en general (puede estar ANTES: un paso que se
+ * dio por listo y volvió a pendiente porque borraron el único propietario).
+ * `null` cuando no hay a dónde ir — todo listo, o el pendiente es el mismo.
+ */
+export function siguientePaso(pasos: PasoDeMigracion[], desde: number): number | null {
+  for (let i = desde + 1; i < pasos.length; i++) {
+    if (esExigible(pasos[i]) && pasos[i].estado !== 'listo' && pasoHabilitado(pasos, i)) {
+      return i;
+    }
+  }
+  const primero = pasos.findIndex((p) => esExigible(p) && p.estado !== 'listo');
+  return primero !== -1 && primero !== desde ? primero : null;
+}
+
+/**
+ * ¿Se puede ofrecer «Entrar al panel»? Sólo con todos los exigibles listos.
  *
  * Ofrecerlo antes convierte el muro en un cartel que se cierra con un clic,
  * que es exactamente lo que había antes de este trabajo.
@@ -160,11 +143,15 @@ export function todoListo(pasos: PasoDeMigracion[]): boolean {
   return exigibles.length > 0 && exigibles.every((p) => p.estado === 'listo');
 }
 
-/** A dónde manda cada paso. `null` = no hay pantalla todavía. */
-export const RUTA_DEL_PASO: Record<IdDePasoDeMigracion, string | null> = {
-  terceros: '/panel/inmobiliaria/migracion/terceros',
-  propiedades: '/panel/inmobiliaria/inmuebles/importar',
-  contratos: '/panel/inmobiliaria/contratos/migrar',
-  puc: '/panel/inmobiliaria/migracion/puc',
-  contables: '/panel/inmobiliaria/migracion/contables',
+/**
+ * El módulo de permisos que protege cada paso — el mismo `module=` que usan
+ * sus páginas (`PageGuard`), que a su vez es el `@RequirePermission` del back.
+ * Adentro del muro no hay `PageGuard` que redirija: se mira esto y se dice.
+ */
+export const MODULO_DEL_PASO: Record<IdDePasoDeMigracion, string> = {
+  terceros: 'configuracion',
+  propiedades: 'portafolio',
+  contratos: 'contratos',
+  puc: 'configuracion',
+  contables: 'configuracion',
 };

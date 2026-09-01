@@ -67,7 +67,12 @@ export interface ImportStepProps {
  */
 export const RanuraDelPie = createContext<HTMLElement | null>(null);
 
-export function ImportWizard() {
+/**
+ * `onSalir`: adentro del muro de migración no hay portafolio al que volver —
+ * el muro tapa todo hasta que la migración termine. El muro pasa un callback
+ * que reinicia el asistente; sin él (la ruta suelta) se navega como siempre.
+ */
+export function ImportWizard({ onSalir }: { onSalir?: () => void } = {}) {
   const router = useRouter();
   const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);
@@ -206,8 +211,13 @@ export function ImportWizard() {
   }, []);
 
   const confirmCancel = useCallback(() => {
+    if (onSalir) {
+      setShowCancelDialog(false);
+      onSalir();
+      return;
+    }
     router.push('/panel/inmobiliaria/inmuebles');
-  }, [router]);
+  }, [router, onSalir]);
 
   // Step status helper — recibe la POSICIÓN, no el id (ver `visibleSteps`).
   const getStepStatus = (posicion: number) => {

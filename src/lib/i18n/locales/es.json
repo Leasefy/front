@@ -10090,13 +10090,12 @@
     "muro": {
       "eyebrow": "Puesta en marcha",
       "titulo": "Traé tu operación antes de empezar",
-      "subtitulo": "Tu panel está del otro lado. Cargá lo que ya tenés en tu sistema actual, en orden: cada paso necesita al anterior.",
+      "subtitulo": "Todo pasa acá adentro: cargá lo que ya tenés en tu sistema actual, en orden — cada paso necesita al anterior.",
       "progreso": "Progreso de la migración",
       "hecho": "Listo",
       "enEspera": "En espera",
       "noDisponible": "No disponible ahora. No te frena.",
       "primero": "Primero terminá «{{paso}}»",
-      "faltaTerminar": "Cuando termines los pasos vas a poder entrar al panel.",
       "yaTermine": "Entrar al panel",
       "arrancarDeCero": "No vengo de otro sistema, arranco de cero",
       "fallo": "No pudimos guardar eso. Intentá de nuevo en un momento.",
@@ -10109,16 +10108,17 @@
       "pasoDe": "Paso {{n}} de {{total}}",
       "ahora": "Ahora",
       "progresoDe": "{{n}} de {{total}} listos",
-      "volver": "Volver a «{{paso}}»",
       "todoListo": {
         "eyebrow": "Todo listo",
         "titulo": "Tu operación ya está adentro",
-        "detalle": "Los pasos están completos. Si después te falta algo, la migración queda en el menú."
+        "detalle": "Los pasos están completos. Podés seguir cargando desde acá o entrar al panel; la migración queda en el menú por si te falta algo."
       },
-      "nadaDisponible": {
-        "titulo": "Ningún paso está disponible ahora",
-        "detalle": "No pudimos verificar tu migración en este momento. Volvé a intentar en un rato, o entrá directo si arrancás de cero."
-      }
+      "siguiente": "Seguir con «{{paso}}»",
+      "terminaEstePaso": "Cuando termines este paso vas a poder seguir.",
+      "irAlPaso": "Ir a «{{paso}}»",
+      "pendiente": "Pendiente",
+      "noDisponibleDetalle": "Este paso no se pudo verificar en este momento. No te frena: seguí con los demás y volvé después.",
+      "sinPermiso": "Este paso lo tiene que hacer un administrador de tu inmobiliaria: tu usuario no tiene permiso para cargar estos datos."
     },
     "eyebrow": "Arranque",
     "titulo": "Migrá tu operación",

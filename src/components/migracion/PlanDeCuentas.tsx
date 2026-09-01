@@ -129,7 +129,12 @@ type Formulario =
   | { modo: 'crear'; padre: CuentaPuc | null }
   | { modo: 'editar'; cuenta: CuentaPuc };
 
-export function PlanDeCuentas() {
+/**
+ * `onContinuar`: adentro del muro de migración no se navega a otra ruta — el
+ * paso 5 se abre en el mismo muro. Sin el callback (la página suelta, ya con
+ * el muro abajo) sigue siendo un enlace a la ruta del paso 5.
+ */
+export function PlanDeCuentas({ onContinuar }: { onContinuar?: () => void } = {}) {
   const [arbol, setArbol] = useState<CuentaEnArbol[] | null>(null);
   const [pendientes, setPendientes] = useState<CuentaSemilla[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -322,12 +327,19 @@ export function PlanDeCuentas() {
           <p className="text-sm text-fg-muted">
             Cuando el plan esté como tu contador lo quiere, seguí con los registros contables.
           </p>
-          <Button asChild hideArrow>
-            <Link href={RUTA_DEL_PASO_5} data-testid="puc-continuar">
+          {onContinuar ? (
+            <Button hideArrow onClick={onContinuar} data-testid="puc-continuar">
               Continuar al paso 5
               <ArrowRight className="ml-1.5 h-4 w-4" />
-            </Link>
-          </Button>
+            </Button>
+          ) : (
+            <Button asChild hideArrow>
+              <Link href={RUTA_DEL_PASO_5} data-testid="puc-continuar">
+                Continuar al paso 5
+                <ArrowRight className="ml-1.5 h-4 w-4" />
+              </Link>
+            </Button>
+          )}
         </div>
       ) : null}
     </div>

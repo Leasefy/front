@@ -54,7 +54,14 @@ const IGNORAR = '__ignorar__';
 const MAX_FILAS_EN_PANTALLA = 50;
 const RUTA_DEL_PASO_4 = '/panel/inmobiliaria/migracion/puc';
 
-export function MigrarAsientos({ onAplicado }: { onAplicado: (informe: InformeDeMigracion) => void }) {
+export function MigrarAsientos({
+  onAplicado,
+  onIrAlPuc,
+}: {
+  onAplicado: (informe: InformeDeMigracion) => void;
+  /** Adentro del muro: abrir el paso 4 en el mismo muro. Sin esto, enlace en pestaña nueva. */
+  onIrAlPuc?: () => void;
+}) {
   const [filas, setFilas] = useState<Record<string, unknown>[]>([]);
   const [encabezados, setEncabezados] = useState<string[]>([]);
   const [mapeo, setMapeo] = useState<MapeoDeColumna[]>([]);
@@ -149,6 +156,7 @@ export function MigrarAsientos({ onAplicado }: { onAplicado: (informe: InformeDe
         cargando={cargando}
         error={error}
         onRevisarDeNuevo={revisar}
+        onIrAlPuc={onIrAlPuc}
         onAplicar={aplicar}
         onOtroArchivo={volverAEmpezar}
       />
@@ -316,6 +324,7 @@ function Revision({
   cargando,
   error,
   onRevisarDeNuevo,
+  onIrAlPuc,
   onAplicar,
   onOtroArchivo,
 }: {
@@ -323,6 +332,7 @@ function Revision({
   cargando: boolean;
   error: string | null;
   onRevisarDeNuevo: () => void;
+  onIrAlPuc?: () => void;
   onAplicar: () => void;
   onOtroArchivo: () => void;
 }) {
@@ -375,12 +385,19 @@ function Revision({
             ))}
           </ul>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button asChild size="sm" variant="outline" hideArrow>
-              <Link href={RUTA_DEL_PASO_4} target="_blank" rel="noopener">
+            {onIrAlPuc ? (
+              <Button size="sm" variant="outline" hideArrow onClick={onIrAlPuc}>
                 Crear las cuentas en el paso 4
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-              </Link>
-            </Button>
+              </Button>
+            ) : (
+              <Button asChild size="sm" variant="outline" hideArrow>
+                <Link href={RUTA_DEL_PASO_4} target="_blank" rel="noopener">
+                  Crear las cuentas en el paso 4
+                  <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            )}
             <Button size="sm" variant="ghost" hideArrow onClick={onRevisarDeNuevo} isLoading={cargando} data-testid="revisar-de-nuevo">
               Ya las creé, revisar de nuevo
             </Button>

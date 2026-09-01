@@ -117,12 +117,25 @@ activo y el 5 en espera.
   habilita hasta que débitos = créditos) o **migrar el histórico** (Excel → mapear →
   revisar → aplicar; las cuentas que no existan en el PUC se avisan, no se crean solas).
   **Este paso lo dejé sin hacer** para que lo hagas vos y veas bajar el muro.
-- El muro se rediseñó el 2026-09-01: la barra de pasos en columnas iguales (como el
-  onboarding de cuenta), **una sola tarjeta con el paso que toca ahora** y el pie con las
-  salidas. Con los cinco listos la tarjeta resume lo cargado y ofrece «Entrar al panel».
-  «No vengo de otro sistema, arranco de cero» está siempre que falte algo, pide
-  confirmación y es la salida para una inmobiliaria nueva. Los pasos ya hechos son
-  enlaces en la barra, para volver a cargar más sin esperar a que baje el muro.
+- 🔴 **Todo pasa adentro del muro (2026-09-01, segunda vuelta).** La primera versión
+  tenía un «Empezar» por paso que mandaba a la pantalla del paso, y esas pantallas estaban
+  exentas del muro: un clic y se veía la plataforma entera. Ahora **no hay rutas exentas**:
+  el muro tapa todo el panel y el contenido completo de cada paso (subir archivo, bajar
+  plantilla, revisar, aplicar) se monta adentro — los mismos componentes de las pantallas
+  sueltas (`MigrarTerceros`, `ImportWizard`, `MigrarContratos`, `PlanDeCuentas`,
+  `RegistrosContables`). Es un panel casi a pantalla completa: arriba la barra de pasos
+  (columnas iguales, como el onboarding de cuenta; los habilitados son botones), en el
+  medio el paso elegido con scroll propio, abajo las salidas.
+- El muro vuelve a pedir el estado **cada 5 s** mientras está puesto: cuando un paso pasa
+  a «listo», la barra lo marca y el pie ofrece «Seguir con «X»» — pero nunca te cambia de
+  paso solo, y un fallo de red no lo baja (bajarlo desmontaría el archivo que estás
+  revisando). Con los cinco listos aparece la franja «Todo listo» con los conteos y
+  «Entrar al panel». «No vengo de otro sistema, arranco de cero» está mientras falte algo.
+- Los saltos entre pasos que tenían los componentes (PUC → «Continuar al paso 5»,
+  contables → «Ir al paso 4», el «cancelar» del importador de inmuebles) ahora se quedan
+  adentro del muro; en las pantallas sueltas siguen siendo enlaces.
+- Si tu usuario no tiene permiso para un paso (`configuracion` / `portafolio` /
+  `contratos`), el muro lo dice en vez de dejar que el componente falle con 403.
 
 🔴 **Las 4 agencias que ya operaban quedaron marcadas como «migración completada»** por
 la migración `20260901020000`, para que no vieran el muro mañana. Si querés que también

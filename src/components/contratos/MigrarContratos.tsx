@@ -163,7 +163,12 @@ function duenosDe(
   return out;
 }
 
-export function MigrarContratos() {
+export interface MigrarContratosProps {
+  /** Aviso hacia el muro: `true` mientras se están ACTIVANDO los contratos. */
+  onOcupado?: (ocupado: boolean) => void;
+}
+
+export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   const [filas, setFilas] = useState<Fila[]>([]);
   const [encabezados, setEncabezados] = useState<string[]>([]);
   const [mapeo, setMapeo] = useState<MapeoDeColumna[]>([]);
@@ -395,6 +400,7 @@ export function MigrarContratos() {
     if (!lote) return;
     setCargando(true);
     setError(null);
+    onOcupado?.(true);
     try {
       setActivacion(await contractsApi.migracion.activar(lote, invitar));
       await refrescar(lote);
@@ -402,8 +408,9 @@ export function MigrarContratos() {
       setError(e instanceof Error ? e.message : "No pudimos activar.");
     } finally {
       setCargando(false);
+      onOcupado?.(false);
     }
-  }, [lote, invitar, refrescar]);
+  }, [lote, invitar, refrescar, onOcupado]);
 
   /**
    * Descartar el lote entero (contract.md T-0036 §3.2.C). Nunca reintenta ni

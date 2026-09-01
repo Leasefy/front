@@ -51,8 +51,17 @@ vi.mock('next/link', () => ({
  * saltos entre pasos (PUC → contables, contables → PUC) se quedan adentro.
  */
 vi.mock('./MigrarTerceros', () => ({
-  MigrarTerceros: ({ tipoFijo }: { tipoFijo?: 'PROPIETARIO' | 'INQUILINO' }) => (
-    <div data-testid={`contenido-${tipoFijo === 'INQUILINO' ? 'inquilinos' : 'propietarios'}`} />
+  MigrarTerceros: ({
+    tipoFijo,
+    onOcupado,
+  }: {
+    tipoFijo?: 'PROPIETARIO' | 'INQUILINO';
+    onOcupado?: (o: boolean) => void;
+  }) => (
+    <div data-testid={`contenido-${tipoFijo === 'INQUILINO' ? 'inquilinos' : 'propietarios'}`}>
+      <button type="button" data-testid="paso-ocupado-on" onClick={() => onOcupado?.(true)} />
+      <button type="button" data-testid="paso-ocupado-off" onClick={() => onOcupado?.(false)} />
+    </div>
   ),
 }));
 vi.mock('./PlanDeCuentas', () => ({
@@ -486,6 +495,46 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
 // ══════════════════════════════════════════════════════════════════════════
 // El refresco del estado
 // ══════════════════════════════════════════════════════════════════════════
+
+describe('el pie espera a que el paso termine de crear', () => {
+  it('mientras el paso avisa «ocupado», no se ofrece seguir ni terminar; al soltar, vuelve', async () => {
+    // Propietarios listo → normalmente el pie ofrece «Seguir con Inquilinos».
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [paso('propietarios', 'listo', 60, '60 propietarios'), ...RECIEN_LLEGADA.slice(1)],
+    });
+
+    await pintar();
+    await click('muro-ir-propietarios');
+    expect(q('muro-siguiente')).not.toBeNull();
+
+    await click('paso-ocupado-on');
+    expect(q('muro-siguiente')).toBeNull();
+    expect(q('muro-ya-termine')).toBeNull();
+    expect(q('muro-ocupado')).not.toBeNull();
+
+    await click('paso-ocupado-off');
+    expect(q('muro-ocupado')).toBeNull();
+    expect(q('muro-siguiente')).not.toBeNull();
+  });
+
+  it('cambiar de paso suelta la señal: el aviso de ocupado no persigue a la persona', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [paso('propietarios', 'listo', 60, '60 propietarios'), ...RECIEN_LLEGADA.slice(1)],
+    });
+
+    await pintar();
+    await click('muro-ir-propietarios');
+    await click('paso-ocupado-on');
+    expect(q('muro-ocupado')).not.toBeNull();
+
+    await click('muro-ir-inquilinos');
+    expect(q('muro-ocupado')).toBeNull();
+  });
+});
 
 describe('el muro vuelve a mirar el estado mientras está puesto', () => {
   it('cada 5 s; un fallo de red NO lo baja; una respuesta nueva actualiza la barra sin mover a la persona', async () => {

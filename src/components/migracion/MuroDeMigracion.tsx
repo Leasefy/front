@@ -199,6 +199,13 @@ export function PanelDeMigracion({
   const caja = useRef<HTMLDivElement>(null);
   const cuerpo = useRef<HTMLDivElement>(null);
   const [confirmando, setConfirmando] = useState(false);
+  /*
+   * `true` mientras el paso en foco está CREANDO (fichas, contratos). El
+   * refresco de 5 s puede marcar el paso «listo» apenas las primeras filas
+   * existen; ofrecer «Seguir con…» con la creación corriendo confunde — el
+   * pie espera a que el paso diga que terminó.
+   */
+  const [ocupado, setOcupado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState(false);
 
@@ -220,6 +227,7 @@ export function PanelDeMigracion({
 
   const irA = useCallback(
     (i: number) => {
+      setOcupado(false);
       setSeleccionado(i);
       cuerpo.current?.scrollTo({ top: 0 });
       // Quien acaba de sembrar el PUC y aprieta «continuar» no debería ver
@@ -392,7 +400,7 @@ export function PanelDeMigracion({
               {listo ? <TodoListo pasos={pasos} /> : null}
 
               {paso ? (
-                <PasoEnFoco pasos={pasos} indice={indice} onIr={irA} />
+                <PasoEnFoco pasos={pasos} indice={indice} onIr={irA} onOcupado={setOcupado} />
               ) : null}
 
               {fallo ? (
@@ -429,7 +437,11 @@ export function PanelDeMigracion({
                 </button>
               )}
 
-              {listo ? (
+              {ocupado ? (
+                <p className="text-sm text-fg-subtle" data-testid="muro-ocupado">
+                  {t("migracion.muro.ocupado")}
+                </p>
+              ) : listo ? (
                 <Button
                   onClick={() => resolver("terminar")}
                   disabled={enviando}
@@ -648,10 +660,12 @@ function PasoEnFoco({
   pasos,
   indice,
   onIr,
+  onOcupado,
 }: {
   pasos: PasoDeMigracion[];
   indice: number;
   onIr: (i: number) => void;
+  onOcupado: (ocupado: boolean) => void;
 }) {
   const { t } = useI18n();
   const { canAccess, isLoading } = usePermissions();
@@ -726,7 +740,7 @@ function PasoEnFoco({
           </Aviso>
         ) : (
           <div data-testid="muro-contenido" data-paso={paso.id}>
-            <ContenidoDelPaso id={paso.id} pasos={pasos} onIr={onIr} />
+            <ContenidoDelPaso id={paso.id} pasos={pasos} onIr={onIr} onOcupado={onOcupado} />
           </div>
         )}
       </div>
@@ -739,10 +753,12 @@ function ContenidoDelPaso({
   id,
   pasos,
   onIr,
+  onOcupado,
 }: {
   id: IdDePasoDeMigracion;
   pasos: PasoDeMigracion[];
   onIr: (i: number) => void;
+  onOcupado: (ocupado: boolean) => void;
 }) {
   // Para reiniciar el asistente de inmuebles cuando la persona «cancela»:
   // adentro del muro no hay portafolio al que volver.
@@ -757,9 +773,9 @@ function ContenidoDelPaso({
   switch (id) {
     case "propietarios":
       // Un paso por tipo: adentro del muro no hay switch que entender.
-      return <MigrarTerceros tipoFijo="PROPIETARIO" />;
+      return <MigrarTerceros tipoFijo="PROPIETARIO" onOcupado={onOcupado} />;
     case "inquilinos":
-      return <MigrarTerceros tipoFijo="INQUILINO" />;
+      return <MigrarTerceros tipoFijo="INQUILINO" onOcupado={onOcupado} />;
     case "propiedades":
       return (
         <ImportWizard
@@ -768,7 +784,7 @@ function ContenidoDelPaso({
         />
       );
     case "contratos":
-      return <MigrarContratos />;
+      return <MigrarContratos onOcupado={onOcupado} />;
     case "puc":
       return <PlanDeCuentas onContinuar={irAOtro("contables")} />;
     case "contables":

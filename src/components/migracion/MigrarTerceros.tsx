@@ -105,9 +105,15 @@ export interface MigrarTercerosProps {
   tipoFijo?: TipoDeTercero;
   /** Con qué tipo arranca la pantalla suelta (`/migracion/terceros?tipo=…`). */
   tipoInicial?: TipoDeTercero;
+  /**
+   * Aviso hacia el muro: `true` mientras se están CREANDO las fichas.
+   * Sin esto, el pie ofrecía «Seguir con Inquilinos» apenas el conteo del
+   * estado pasaba de cero, con la creación todavía corriendo (Nico lo vio).
+   */
+  onOcupado?: (ocupado: boolean) => void;
 }
 
-export function MigrarTerceros({ tipoFijo, tipoInicial }: MigrarTercerosProps = {}) {
+export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTercerosProps = {}) {
   const [tipo, setTipo] = useState<TipoDeTercero>(tipoFijo ?? tipoInicial ?? 'PROPIETARIO');
   const [plantilla, setPlantilla] = useState<PlantillaDeTerceros | null>(null);
 
@@ -313,6 +319,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial }: MigrarTercerosProps = 
     if (!loteAbierto) return;
     setCargando(true);
     setError(null);
+    onOcupado?.(true);
     try {
       const informe = await migracionTercerosApi.aplicar(loteAbierto);
       setAplicacion(informe);
@@ -321,8 +328,9 @@ export function MigrarTerceros({ tipoFijo, tipoInicial }: MigrarTercerosProps = 
       setError(mensaje(e, 'No pudimos crear las fichas.'));
     } finally {
       setCargando(false);
+      onOcupado?.(false);
     }
-  }, [loteAbierto, refrescar]);
+  }, [loteAbierto, refrescar, onOcupado]);
 
   // ══ Lista de trabajo ══════════════════════════════════════════════════════
 

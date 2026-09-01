@@ -10095,7 +10095,7 @@
       "hecho": "Done",
       "enEspera": "Waiting",
       "noDisponible": "Unavailable right now. Won't hold you back.",
-      "primero": "Finish «{{paso}}» first",
+      "primero": "Finish {{paso}} first",
       "yaTermine": "Enter the panel",
       "arrancarDeCero": "I'm not coming from another system, starting from scratch",
       "fallo": "We couldn't save that. Try again in a moment.",
@@ -10113,9 +10113,10 @@
         "titulo": "Your operation is in",
         "detalle": "Every step is complete. You can keep loading from here or enter the panel; the migration stays in the menu in case something is missing."
       },
-      "siguiente": "Continue with «{{paso}}»",
+      "siguiente": "Continue with {{paso}}",
+      "ocupado": "This step is still creating records — wait for it to finish.",
       "terminaEstePaso": "Once you finish this step you'll be able to continue.",
-      "irAlPaso": "Go to «{{paso}}»",
+      "irAlPaso": "Go to {{paso}}",
       "pendiente": "Pending",
       "noDisponibleDetalle": "This step couldn't be verified right now. It won't hold you back: continue with the others and come back later.",
       "sinPermiso": "An administrator of your agency has to do this step: your user doesn't have permission to load this data."

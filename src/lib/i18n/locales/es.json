@@ -10096,7 +10096,7 @@
       "hecho": "Listo",
       "enEspera": "En espera",
       "noDisponible": "No disponible ahora. No te frena.",
-      "primero": "Primero terminá «{{paso}}»",
+      "primero": "Primero terminá {{paso}}",
       "yaTermine": "Entrar al panel",
       "arrancarDeCero": "No vengo de otro sistema, arranco de cero",
       "fallo": "No pudimos guardar eso. Intentá de nuevo en un momento.",
@@ -10114,9 +10114,10 @@
         "titulo": "Tu operación ya está adentro",
         "detalle": "Los pasos están completos. Podés seguir cargando desde acá o entrar al panel; la migración queda en el menú por si te falta algo."
       },
-      "siguiente": "Seguir con «{{paso}}»",
+      "siguiente": "Seguir con {{paso}}",
+      "ocupado": "Se están creando los registros de este paso — esperá a que termine.",
       "terminaEstePaso": "Cuando termines este paso vas a poder seguir.",
-      "irAlPaso": "Ir a «{{paso}}»",
+      "irAlPaso": "Ir a {{paso}}",
       "pendiente": "Pendiente",
       "noDisponibleDetalle": "Este paso no se pudo verificar en este momento. No te frena: seguí con los demás y volvé después.",
       "sinPermiso": "Este paso lo tiene que hacer un administrador de tu inmobiliaria: tu usuario no tiene permiso para cargar estos datos."

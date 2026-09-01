@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Camino A del paso 5: el asiento de apertura.
@@ -13,27 +13,34 @@
  * test). Acá sólo se pintan.
  */
 
-import { useMemo, useState } from 'react';
-import Link from 'next/link';
-import { CheckCircle, Plus, Warning, X } from '@phosphor-icons/react';
-import { CurrencyInput } from '@leasefy/cadence';
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { CheckCircle, Plus, Warning, X } from "@phosphor-icons/react";
+import { CurrencyInput } from "@leasefy/cadence";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   contabilidadApi,
   LARGO_MAXIMO_DE_DESCRIPCION,
   type AsientoContable,
   type CuentaPuc,
-} from '@/lib/api/contabilidad.service';
+} from "@/lib/api/contabilidad.service";
 import {
   descripcionSugerida,
   filaVacia,
@@ -44,37 +51,47 @@ import {
   totalesDeApertura,
   type FilaDeApertura,
   type ProblemaDeApertura,
-} from '@/lib/migracion/asiento-de-apertura';
-import { formatCurrency } from '@/lib/format';
+} from "@/lib/migracion/asiento-de-apertura";
+import { formatCurrency } from "@/lib/format";
 
-import { mensajeDeContabilidad } from './contabilidad-errores';
+import { mensajeDeContabilidad } from "./contabilidad-errores";
 
 /** Sentinel: Radix `Select` no admite `value=""`. */
-const SIN_CUENTA = '__sin_cuenta__';
+const SIN_CUENTA = "__sin_cuenta__";
 
 const TEXTO_DEL_PROBLEMA: Record<ProblemaDeApertura, string> = {
-  SIN_FECHA: 'Falta la fecha de corte (un día real, AAAA-MM-DD).',
-  POCAS_LINEAS: 'Un asiento necesita al menos dos líneas con cuenta y monto.',
-  SIN_CUENTA: 'Hay una línea con monto pero sin cuenta.',
-  SIN_MONTO: 'Hay una línea con cuenta pero sin monto.',
-  AMBIGUA: 'Una línea tiene débito y crédito a la vez: elegí uno.',
-  FUERA_DE_RANGO: 'Un monto es demasiado grande para una sola línea: partilo en dos.',
-  CUENTA_REPETIDA: 'La misma cuenta aparece dos veces: sumá los saldos en una línea.',
-  DESCUADRADO: 'No cuadra: los débitos tienen que ser iguales a los créditos.',
+  SIN_FECHA: "Falta la fecha de corte (un día real, AAAA-MM-DD).",
+  POCAS_LINEAS: "Un asiento necesita al menos dos líneas con cuenta y monto.",
+  SIN_CUENTA: "Hay una línea con monto pero sin cuenta.",
+  SIN_MONTO: "Hay una línea con cuenta pero sin monto.",
+  AMBIGUA: "Una línea tiene débito y crédito a la vez: elegí uno.",
+  FUERA_DE_RANGO:
+    "Un monto es demasiado grande para una sola línea: partilo en dos.",
+  CUENTA_REPETIDA:
+    "La misma cuenta aparece dos veces: sumá los saldos en una línea.",
+  DESCUADRADO: "No cuadra: los débitos tienen que ser iguales a los créditos.",
 };
 
 export function AsientoDeApertura({
   cuentas,
   onCreado,
+  enElMuro = false,
 }: {
   /** Sólo las imputables y activas: las únicas que reciben movimientos. */
   cuentas: CuentaPuc[];
   onCreado: (asiento: AsientoContable) => void;
+  /** Adentro del muro no se ofrece «volver a la secuencia»: el muro es la secuencia. */
+  enElMuro?: boolean;
 }) {
   const [fecha, setFecha] = useState(hoyContable());
-  const [descripcion, setDescripcion] = useState(() => descripcionSugerida(hoyContable()));
+  const [descripcion, setDescripcion] = useState(() =>
+    descripcionSugerida(hoyContable()),
+  );
   const [descripcionTocada, setDescripcionTocada] = useState(false);
-  const [filas, setFilas] = useState<FilaDeApertura[]>(() => [filaVacia(), filaVacia()]);
+  const [filas, setFilas] = useState<FilaDeApertura[]>(() => [
+    filaVacia(),
+    filaVacia(),
+  ]);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creado, setCreado] = useState<AsientoContable | null>(null);
@@ -93,10 +110,14 @@ export function AsientoDeApertura({
   };
 
   const editar = (id: string, cambio: Partial<FilaDeApertura>) =>
-    setFilas((previas) => previas.map((f) => (f.id === id ? { ...f, ...cambio } : f)));
+    setFilas((previas) =>
+      previas.map((f) => (f.id === id ? { ...f, ...cambio } : f)),
+    );
 
   const quitar = (id: string) =>
-    setFilas((previas) => (previas.length > 2 ? previas.filter((f) => f.id !== id) : previas));
+    setFilas((previas) =>
+      previas.length > 2 ? previas.filter((f) => f.id !== id) : previas,
+    );
 
   const enviar = async () => {
     setEnviando(true);
@@ -110,7 +131,12 @@ export function AsientoDeApertura({
       setCreado(asiento);
       onCreado(asiento);
     } catch (e) {
-      setError(mensajeDeContabilidad(e, 'No pudimos registrar el asiento. Intentá de nuevo.'));
+      setError(
+        mensajeDeContabilidad(
+          e,
+          "No pudimos registrar el asiento. Intentá de nuevo.",
+        ),
+      );
     } finally {
       setEnviando(false);
     }
@@ -123,21 +149,31 @@ export function AsientoDeApertura({
         data-testid="apertura-creado"
       >
         <div className="flex items-start gap-3">
-          <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-success" weight="fill" />
+          <CheckCircle
+            className="mt-0.5 h-5 w-5 shrink-0 text-success"
+            weight="fill"
+          />
           <div>
             <h2 className="font-medium text-fg">
-              Asiento N.º {creado.numero} registrado con fecha {creado.fecha.slice(0, 10)}
+              Asiento N.º {creado.numero} registrado con fecha{" "}
+              {creado.fecha.slice(0, 10)}
             </h2>
             <p className="mt-1 text-sm text-fg-muted">
-              {creado.movimientos.length} líneas por {formatCurrency(totales.debitos)}. Los
-              asientos no se editan: si algo quedó mal, se reversa y se registra de nuevo.
+              {creado.movimientos.length} líneas por{" "}
+              {formatCurrency(totales.debitos)}. Los asientos no se editan: si
+              algo quedó mal, se reversa y se registra de nuevo.
             </p>
           </div>
         </div>
         <div className="mt-5 flex flex-wrap gap-2">
-          <Button asChild hideArrow>
-            <Link href="/panel/inmobiliaria/migracion">Volver a la secuencia</Link>
-          </Button>
+          {/* Adentro del muro no hay secuencia a la que volver: el muro es la secuencia. */}
+          {enElMuro ? null : (
+            <Button asChild hideArrow>
+              <Link href="/panel/inmobiliaria/migracion">
+                Volver a la secuencia
+              </Link>
+            </Button>
+          )}
           <Button
             variant="outline"
             hideArrow
@@ -163,15 +199,18 @@ export function AsientoDeApertura({
         Saldos iniciales
       </h2>
       <p className="mt-1 max-w-2xl text-sm text-fg-muted">
-        Un solo asiento con la fecha de corte y el saldo de cada cuenta a esa fecha: bancos, lo
-        que te deben los inquilinos, lo que les debés a los propietarios, el patrimonio. Los
-        saldos deudores van en débito y los acreedores en crédito, y los dos totales tienen que
-        ser iguales.
+        Un solo asiento con la fecha de corte y el saldo de cada cuenta a esa
+        fecha: bancos, lo que te deben los inquilinos, lo que les debés a los
+        propietarios, el patrimonio. Los saldos deudores van en débito y los
+        acreedores en crédito, y los dos totales tienen que ser iguales.
       </p>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-[12rem_1fr]">
         <div className="space-y-1">
-          <label htmlFor="apertura-fecha" className="text-sm font-medium text-fg">
+          <label
+            htmlFor="apertura-fecha"
+            className="text-sm font-medium text-fg"
+          >
             Fecha de corte
           </label>
           <Input
@@ -183,7 +222,10 @@ export function AsientoDeApertura({
           />
         </div>
         <div className="space-y-1">
-          <label htmlFor="apertura-descripcion" className="text-sm font-medium text-fg">
+          <label
+            htmlFor="apertura-descripcion"
+            className="text-sm font-medium text-fg"
+          >
             Descripción
           </label>
           <Input
@@ -216,9 +258,14 @@ export function AsientoDeApertura({
                 <TableCell>
                   <Select
                     value={fila.cuentaId ?? SIN_CUENTA}
-                    onValueChange={(v) => editar(fila.id, { cuentaId: v === SIN_CUENTA ? null : v })}
+                    onValueChange={(v) =>
+                      editar(fila.id, { cuentaId: v === SIN_CUENTA ? null : v })
+                    }
                   >
-                    <SelectTrigger aria-label={`Cuenta de la línea ${i + 1}`} data-testid={`apertura-cuenta-${i}`}>
+                    <SelectTrigger
+                      aria-label={`Cuenta de la línea ${i + 1}`}
+                      data-testid={`apertura-cuenta-${i}`}
+                    >
                       <SelectValue placeholder="Elegí la cuenta" />
                     </SelectTrigger>
                     <SelectContent>
@@ -235,7 +282,9 @@ export function AsientoDeApertura({
                   <CurrencyInput
                     aria-label={`Débito de la línea ${i + 1}`}
                     value={fila.debitoCop > 0 ? fila.debitoCop : undefined}
-                    onChange={(v) => editar(fila.id, { debitoCop: Number.isFinite(v) ? v : 0 })}
+                    onChange={(v) =>
+                      editar(fila.id, { debitoCop: Number.isFinite(v) ? v : 0 })
+                    }
                     invalid={fila.debitoCop > 0 && fila.creditoCop > 0}
                     className="text-right"
                     data-testid={`apertura-debito-${i}`}
@@ -245,7 +294,11 @@ export function AsientoDeApertura({
                   <CurrencyInput
                     aria-label={`Crédito de la línea ${i + 1}`}
                     value={fila.creditoCop > 0 ? fila.creditoCop : undefined}
-                    onChange={(v) => editar(fila.id, { creditoCop: Number.isFinite(v) ? v : 0 })}
+                    onChange={(v) =>
+                      editar(fila.id, {
+                        creditoCop: Number.isFinite(v) ? v : 0,
+                      })
+                    }
                     invalid={fila.debitoCop > 0 && fila.creditoCop > 0}
                     className="text-right"
                     data-testid={`apertura-credito-${i}`}
@@ -292,21 +345,30 @@ export function AsientoDeApertura({
         <Total
           etiqueta="Diferencia"
           valor={Math.abs(totales.diferencia)}
-          tono={totales.diferencia === 0 && totales.debitos > 0 ? 'ok' : totales.diferencia !== 0 ? 'mal' : undefined}
+          tono={
+            totales.diferencia === 0 && totales.debitos > 0
+              ? "ok"
+              : totales.diferencia !== 0
+                ? "mal"
+                : undefined
+          }
           nota={
             totales.diferencia === 0
               ? totales.debitos > 0
-                ? 'Cuadra'
+                ? "Cuadra"
                 : undefined
               : totales.diferencia > 0
-                ? 'Faltan créditos'
-                : 'Faltan débitos'
+                ? "Faltan créditos"
+                : "Faltan débitos"
           }
         />
       </div>
 
       {problemas.length > 0 && totales.debitos + totales.creditos > 0 ? (
-        <ul className="mt-3 space-y-1 text-sm text-fg-muted" data-testid="apertura-problemas">
+        <ul
+          className="mt-3 space-y-1 text-sm text-fg-muted"
+          data-testid="apertura-problemas"
+        >
           {problemas.map((p) => (
             <li key={p} className="flex items-start gap-2">
               <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
@@ -317,14 +379,23 @@ export function AsientoDeApertura({
       ) : null}
 
       {error ? (
-        <div className="mt-4 flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3" role="alert">
+        <div
+          className="mt-4 flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+          role="alert"
+        >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
           <p className="text-sm text-fg">{error}</p>
         </div>
       ) : null}
 
       <div className="mt-5">
-        <Button onClick={enviar} disabled={!puedeEnviar} isLoading={enviando} hideArrow data-testid="apertura-enviar">
+        <Button
+          onClick={enviar}
+          disabled={!puedeEnviar}
+          isLoading={enviando}
+          hideArrow
+          data-testid="apertura-enviar"
+        >
           Registrar el asiento de apertura
         </Button>
       </div>
@@ -340,7 +411,7 @@ function Total({
 }: {
   etiqueta: string;
   valor: number;
-  tono?: 'ok' | 'mal';
+  tono?: "ok" | "mal";
   nota?: string;
 }) {
   return (
@@ -348,12 +419,22 @@ function Total({
       <p className="text-xs text-fg-muted">{etiqueta}</p>
       <p
         className={`font-mono text-lg font-semibold tabular-nums ${
-          tono === 'ok' ? 'text-success' : tono === 'mal' ? 'text-danger' : 'text-fg'
+          tono === "ok"
+            ? "text-success"
+            : tono === "mal"
+              ? "text-danger"
+              : "text-fg"
         }`}
       >
         {formatCurrency(valor)}
       </p>
-      {nota ? <p className={`text-xs ${tono === 'ok' ? 'text-success' : 'text-fg-muted'}`}>{nota}</p> : null}
+      {nota ? (
+        <p
+          className={`text-xs ${tono === "ok" ? "text-success" : "text-fg-muted"}`}
+        >
+          {nota}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -225,3 +225,50 @@ describe('<DesgloseAdeudado> estado de pago', () => {
     expect(container.textContent).not.toContain('recibos.desglose.saldo');
   });
 });
+
+describe('<DesgloseAdeudado> con impuestos y retenciones', () => {
+  it('pinta IVA sumando y las tres retenciones restando, con el total del caso revisado a mano', () => {
+    // Canon 2.000.000 + IVA 380.000 − RF 70.000 − ReteICA 19.320 − ReteIVA 57.000 = 2.233.680
+    render({
+      cobro: {
+        ...COBRO,
+        rentAmount: 2_000_000,
+        adminAmount: 0,
+        totalAmount: 2_233_680,
+        lateFee: 0,
+        totalWithFees: 2_233_680,
+        pendingAmount: 2_233_680,
+      },
+      conceptos: [
+        concepto({ id: 'c', tipo: 'CANON', nombre: 'Canon de arrendamiento', valorCop: 2_000_000, orden: 0 }),
+        concepto({ id: 'i', tipo: 'IVA', nombre: 'IVA sobre el canon', valorCop: 380_000, orden: 1 }),
+        concepto({ id: 'rf', tipo: 'RETEFUENTE', nombre: 'Retención en la fuente sobre el canon', valorCop: 70_000, resta: true, orden: 2 }),
+        concepto({ id: 'ica', tipo: 'RETEICA', nombre: 'ReteICA sobre el canon', valorCop: 19_320, resta: true, orden: 3 }),
+        concepto({ id: 'riva', tipo: 'RETEIVA', nombre: 'ReteIVA sobre el IVA del canon', valorCop: 57_000, resta: true, orden: 4 }),
+      ],
+    });
+
+    const texto = container.textContent ?? '';
+    expect(texto).toContain('IVA sobre el canon');
+    expect(texto).toContain('$380000');
+    expect(texto).toContain('− $70000');
+    expect(texto).toContain('− $19320');
+    expect(texto).toContain('− $57000');
+    expect(texto).toContain('$2233680');
+    // Ni sumado (2.526.320) ni con las retenciones sumadas (2.380.000 + …).
+    expect(texto).not.toContain('$2526320');
+  });
+
+  it('un cobro sin líneas de impuesto no cambia', () => {
+    render({
+      cobro: COBRO,
+      conceptos: [
+        concepto({ id: 'x1', tipo: 'CANON', nombre: 'Canon', valorCop: 1_800_000, orden: 1 }),
+        concepto({ id: 'x2', tipo: 'ADMINISTRACION', nombre: 'Administración', valorCop: 150_000, orden: 2 }),
+      ],
+    });
+    const texto = container.textContent ?? '';
+    expect(texto).toContain('$1950000');
+    expect(texto).not.toContain('recibos.desglose.descuentos');
+  });
+});

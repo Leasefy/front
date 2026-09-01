@@ -1,0 +1,373 @@
+'use client';
+
+/**
+ * Extracto bancario — la conciliación que emite recibos de caja.
+ *
+ * Distinto de la «Conciliación IA» del sidebar (el workspace del micro de
+ * agentes): esto es el extracto del banco contra los cobros con saldo, y
+ * conciliar una línea es emitir el recibo. Permisos: `cobros`/view para ver,
+ * `cobros`/create para conciliar (es emitir un recibo), `cobros`/edit para
+ * ignorar y reabrir.
+ */
+
+import { useCallback, useEffect, useState } from 'react';
+import { Bank, ShieldCheck } from '@phosphor-icons/react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/components/ui/toast';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { usePermissions } from '@/lib/hooks/usePermissions';
+import { conciliacionBancariaApi } from '@/lib/api/conciliacion-bancaria.service';
+import type {
+  CandidatoDeConciliacion,
+  EstadoDelMovimientoBancario,
+  MovimientoBancario,
+  ResumenDeConciliacion,
+} from '@/lib/api/conciliacion-bancaria.types';
+import { CargarExtracto } from './CargarExtracto';
+import { MovimientoFila } from './MovimientoFila';
+import { diaLegible, mensajeDe } from './formato';
+
+const POR_PAGINA = 50;
+
+const TITULO_DE_LA_PESTANA: Record<EstadoDelMovimientoBancario, string> = {
+  PENDIENTE: 'Pendientes',
+  CONCILIADO: 'Conciliados',
+  IGNORADO: 'Ignorados',
+};
+
+export function ExtractoBancario() {
+  const { canAccess, isLoading: permisosCargando } = usePermissions();
+  const puedeConciliar = permisosCargando || canAccess('cobros', 'create');
+  const puedeEditar = permisosCargando || canAccess('cobros', 'edit');
+
+  const [pestana, setPestana] = useState<EstadoDelMovimientoBancario>('PENDIENTE');
+  const [resumen, setResumen] = useState<ResumenDeConciliacion | null>(null);
+  const [movimientos, setMovimientos] = useState<MovimientoBancario[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [pagina, setPagina] = useState(0);
+  const [cargando, setCargando] = useState(true);
+  const [errorDeCarga, setErrorDeCarga] = useState<unknown>(null);
+  const [ocupados, setOcupados] = useState<ReadonlySet<string>>(new Set());
+  const [ignorando, setIgnorando] = useState<MovimientoBancario | null>(null);
+  const [motivo, setMotivo] = useState('');
+  const [confirmandoSeguros, setConfirmandoSeguros] = useState(false);
+  const [corriendoSeguros, setCorriendoSeguros] = useState(false);
+
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    setErrorDeCarga(null);
+    try {
+      const [r, pag] = await Promise.all([
+        conciliacionBancariaApi.resumen(),
+        conciliacionBancariaApi.listar({ estado: pestana, limite: POR_PAGINA, desplazamiento: pagina * POR_PAGINA }),
+      ]);
+      setResumen(r);
+      setMovimientos(pag.data);
+      setTotal(pag.total);
+    } catch (error) {
+      setErrorDeCarga(error);
+    } finally {
+      setCargando(false);
+    }
+  }, [pestana, pagina]);
+
+  useEffect(() => {
+    void cargar();
+  }, [cargar]);
+
+  const marcar = (id: string, ocupado: boolean) =>
+    setOcupados((s) => {
+      const n = new Set(s);
+      if (ocupado) n.add(id);
+      else n.delete(id);
+      return n;
+    });
+
+  const conciliar = async (m: MovimientoBancario, c: CandidatoDeConciliacion) => {
+    marcar(m.id, true);
+    try {
+      const r = await conciliacionBancariaApi.conciliar(m.id, c.cobroId);
+      toast.success(`Recibo N.º ${r.recibo.numero} emitido a ${c.tenantName ?? c.propertyTitle}.`);
+      await cargar();
+    } catch (error) {
+      toast.error(mensajeDe(error, 'No se pudo conciliar el movimiento.'));
+    } finally {
+      marcar(m.id, false);
+    }
+  };
+
+  const ignorar = async () => {
+    if (!ignorando) return;
+    const m = ignorando;
+    marcar(m.id, true);
+    try {
+      await conciliacionBancariaApi.ignorar(m.id, motivo.trim());
+      toast.success('Movimiento ignorado.');
+      setIgnorando(null);
+      setMotivo('');
+      await cargar();
+    } catch (error) {
+      toast.error(mensajeDe(error, 'No se pudo ignorar el movimiento.'));
+    } finally {
+      marcar(m.id, false);
+    }
+  };
+
+  const reabrir = async (m: MovimientoBancario) => {
+    marcar(m.id, true);
+    try {
+      await conciliacionBancariaApi.reabrir(m.id);
+      toast.success('El movimiento volvió a pendientes.');
+      await cargar();
+    } catch (error) {
+      toast.error(mensajeDe(error, 'No se pudo reabrir el movimiento.'));
+    } finally {
+      marcar(m.id, false);
+    }
+  };
+
+  const conciliarSeguros = async () => {
+    setCorriendoSeguros(true);
+    try {
+      const r = await conciliacionBancariaApi.conciliarSeguros();
+      const partes = [
+        `${r.conciliados} ${r.conciliados === 1 ? 'conciliado' : 'conciliados'}`,
+        `${r.sinCandidatoSeguro} sin candidato seguro`,
+      ];
+      if (r.errores.length > 0) partes.push(`${r.errores.length} con error`);
+      (r.errores.length > 0 ? toast.error : toast.success)(partes.join(' · '), {
+        description: r.errores[0]?.mensaje,
+      });
+      setConfirmandoSeguros(false);
+      await cargar();
+    } catch (error) {
+      toast.error(mensajeDe(error, 'No se pudo conciliar en lote.'));
+    } finally {
+      setCorriendoSeguros(false);
+    }
+  };
+
+  const segurosEnPantalla = (movimientos ?? []).filter(
+    (m) => m.estado === 'PENDIENTE' && m.candidatos.filter((c) => c.seguro).length === 1,
+  ).length;
+
+  const cambiarPestana = (v: string) => {
+    setPestana(v as EstadoDelMovimientoBancario);
+    setPagina(0);
+  };
+
+  const paginas = Math.max(1, Math.ceil(total / POR_PAGINA));
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="resumen">
+        <Cifra etiqueta="Pendientes de conciliar" valor={resumen ? String(resumen.pendientes) : '—'} />
+        <Cifra etiqueta="Conciliados este mes" valor={resumen ? String(resumen.conciliadosEsteMes) : '—'} />
+        <Cifra etiqueta="Ignorados" valor={resumen ? String(resumen.ignorados) : '—'} />
+        <Cifra
+          etiqueta="Último extracto"
+          valor={resumen?.ultimoExtracto ? diaLegible(resumen.ultimoExtracto.cargadoAt) : 'Ninguno'}
+          detalle={resumen?.ultimoExtracto?.nombre ?? undefined}
+        />
+      </div>
+
+      {puedeConciliar && <CargarExtracto onCargado={() => void cargar()} />}
+
+      <section className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Tabs value={pestana} onValueChange={cambiarPestana}>
+            <TabsList variant="underline" className="justify-start">
+              {(Object.keys(TITULO_DE_LA_PESTANA) as EstadoDelMovimientoBancario[]).map((e) => (
+                <TabsTrigger key={e} value={e} data-testid={`pestana-${e}`}>
+                  {TITULO_DE_LA_PESTANA[e]}
+                  {e === 'PENDIENTE' && resumen ? ` (${resumen.pendientes})` : ''}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          {pestana === 'PENDIENTE' && puedeConciliar && (
+            <Button
+              variant="secondary"
+              hideArrow
+              disabled={segurosEnPantalla === 0 || corriendoSeguros}
+              onClick={() => setConfirmandoSeguros(true)}
+              data-testid="conciliar-seguros"
+            >
+              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+              Conciliar los seguros ({segurosEnPantalla})
+            </Button>
+          )}
+        </div>
+
+        {cargando && movimientos === null ? (
+          <div className="flex flex-col items-center gap-3 py-16 text-center">
+            <Spinner size="lg" />
+            <p className="text-sm text-fg-muted">Cargando movimientos...</p>
+          </div>
+        ) : errorDeCarga ? (
+          <FalloDeCarga error={errorDeCarga} queEs="los movimientos del extracto" onReintentar={cargar} />
+        ) : !movimientos || movimientos.length === 0 ? (
+          <EmptyState
+            icon={Bank}
+            title={
+              pestana === 'PENDIENTE'
+                ? 'Nada pendiente de conciliar'
+                : pestana === 'CONCILIADO'
+                  ? 'Todavía no hay movimientos conciliados'
+                  : 'No hay movimientos ignorados'
+            }
+            description={
+              pestana === 'PENDIENTE'
+                ? 'Cargá el extracto del banco y acá aparecen las líneas con los cobros que se les parecen.'
+                : 'Cuando concilies o ignores una línea del extracto, queda acá con su rastro.'
+            }
+          />
+        ) : (
+          <>
+            <ul
+              className="divide-y divide-border rounded-lg border border-border bg-surface"
+              data-testid="movimientos"
+            >
+              {movimientos.map((m) => (
+                <MovimientoFila
+                  key={m.id}
+                  movimiento={m}
+                  ocupado={ocupados.has(m.id)}
+                  puedeConciliar={puedeConciliar}
+                  puedeEditar={puedeEditar}
+                  onConciliar={(mov, c) => void conciliar(mov, c)}
+                  onIgnorar={(mov) => {
+                    setIgnorando(mov);
+                    setMotivo('');
+                  }}
+                  onReabrir={(mov) => void reabrir(mov)}
+                />
+              ))}
+            </ul>
+            {paginas > 1 && (
+              <div className="flex items-center justify-between text-xs text-fg-muted">
+                <span className="font-mono tabular-nums">
+                  Página {pagina + 1} de {paginas} · {total} movimientos
+                </span>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="secondary" hideArrow disabled={pagina === 0} onClick={() => setPagina((p) => p - 1)}>
+                    Anterior
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    hideArrow
+                    disabled={pagina + 1 >= paginas}
+                    onClick={() => setPagina((p) => p + 1)}
+                  >
+                    Siguiente
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
+      <Dialog open={ignorando !== null} onOpenChange={(abierto) => !abierto && setIgnorando(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ignorar este movimiento</DialogTitle>
+            <DialogDescription>
+              {ignorando ? `«${ignorando.descripcion}» del ${diaLegible(ignorando.fecha)}.` : ''} Queda escrito por
+              qué no es un pago de canon; se puede volver a pendiente después.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 px-6 py-4">
+            <Label htmlFor="motivo-ignorar">Motivo</Label>
+            <Textarea
+              id="motivo-ignorar"
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="Es la nómina de la oficina, no un pago de canon."
+              rows={3}
+              maxLength={300}
+            />
+            <p className="text-xs text-fg-muted">Entre 5 y 300 caracteres.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" hideArrow onClick={() => setIgnorando(null)}>
+              Cancelar
+            </Button>
+            <Button
+              hideArrow
+              disabled={motivo.trim().length < 5 || (ignorando ? ocupados.has(ignorando.id) : true)}
+              onClick={() => void ignorar()}
+              data-testid="confirmar-ignorar"
+            >
+              Ignorar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={confirmandoSeguros} onOpenChange={setConfirmandoSeguros}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conciliar {segurosEnPantalla} {segurosEnPantalla === 1 ? 'movimiento seguro' : 'movimientos seguros'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se emite un recibo de caja por cada línea que tiene un solo cobro con el valor exacto y el
+              nombre o la dirección en la descripción. Lo que tenga dudas queda pendiente para que lo
+              mires vos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={corriendoSeguros}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void conciliarSeguros();
+              }}
+              disabled={corriendoSeguros}
+              data-testid="confirmar-seguros"
+            >
+              {corriendoSeguros ? 'Conciliando…' : 'Conciliar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+function Cifra({ etiqueta, valor, detalle }: { etiqueta: string; valor: string; detalle?: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">
+      <p className="font-mono text-[11px] uppercase tracking-wide text-fg-muted">{etiqueta}</p>
+      <p className="mt-1 font-mono text-2xl tabular-nums text-fg">{valor}</p>
+      {detalle && (
+        <p className="mt-0.5 truncate text-xs text-fg-muted" title={detalle}>
+          {detalle}
+        </p>
+      )}
+    </div>
+  );
+}

@@ -1414,6 +1414,13 @@ export interface AgencyProfile {
   /** Dispersión: código en todos los lotes, y umbral COP para segundo aprobador (null = nunca). */
   dispersionExigePin?: boolean;
   dispersionMontoDobleAprobacion?: number | null;
+  /** Tarifas tributarias (Decimal en el back: viaja como TEXTO; el formulario lo convierte). `reteicaPorMil` y la base mínima: null = no configurada. */
+  ivaPorcentaje?: number | string;
+  retefuenteArrendamientoPorcentaje?: number | string;
+  retefuenteComisionPorcentaje?: number | string;
+  reteicaPorMil?: number | string | null;
+  reteivaPorcentaje?: number | string;
+  baseMinimaRetefuenteCop?: number | null;
   legalRepresentative?: string | null;
   legalDocumentNumber?: string | null;
   /** Caller's membership in this agency */
@@ -1473,6 +1480,14 @@ export interface UpdateAgencyPayload {
   dispersionExigePin?: boolean;
   /** COP entero ≥ 0; `null` = nunca por monto */
   dispersionMontoDobleAprobacion?: number | null;
+  /** Tarifas tributarias, 0..100 (la reteICA es por mil). `null` = no configurada. */
+  ivaPorcentaje?: number;
+  retefuenteArrendamientoPorcentaje?: number;
+  retefuenteComisionPorcentaje?: number;
+  reteicaPorMil?: number | null;
+  reteivaPorcentaje?: number;
+  /** COP entero ≥ 0; `null` = sin mínimo */
+  baseMinimaRetefuenteCop?: number | null;
   legalRepresentative?: string;
   legalDocumentNumber?: string;
 }

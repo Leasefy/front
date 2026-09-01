@@ -80,6 +80,15 @@ export function AdministracionDelContrato({
   const [retieneRenta, setRetieneRenta] = useState<Ternario>(
     aTernario(contract.inquilinoRetenedorRenta),
   )
+  const [responsableIva, setResponsableIva] = useState<Ternario>(
+    aTernario(contract.inquilinoResponsableIva),
+  )
+  const [retieneIva, setRetieneIva] = useState<Ternario>(
+    aTernario(contract.inquilinoRetenedorIva),
+  )
+  const [retieneIca, setRetieneIca] = useState<Ternario>(
+    aTernario(contract.inquilinoRetenedorIca),
+  )
 
   /*
    * Hay DOS comisiones: la del contrato (la que trajo el archivo migrado) y la
@@ -108,7 +117,10 @@ export function AdministracionDelContrato({
         // `null` es una acción: «volvé a no saberlo». Distinto de no mandar el
         // campo, que lo deja como estaba.
         inquilinoTipoPersona: tipoPersona === '' ? null : tipoPersona,
+        inquilinoResponsableIva: deTernario(responsableIva),
         inquilinoRetenedorRenta: deTernario(retieneRenta),
+        inquilinoRetenedorIva: deTernario(retieneIva),
+        inquilinoRetenedorIca: deTernario(retieneIca),
       })
       onActualizado(actualizado)
       setEditando(false)
@@ -224,10 +236,38 @@ export function AdministracionDelContrato({
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              La retención la practica quien paga. Sin este dato se asume el
-              comportamiento típico de su tipo de persona y se avisa.
+              La retención la practica quien paga. Sin este dato el cobro NO
+              descuenta retención: se corrige acá y sale en el próximo cobro.
             </p>
           </div>
+
+          <SelectorTernario
+            etiqueta="¿Es responsable de IVA?"
+            valor={responsableIva}
+            onChange={setResponsableIva}
+            si="Sí, responsable de IVA"
+            no="No es responsable"
+            ayuda="Informativo para la factura del inquilino; el IVA del canon lo decide el propietario y el uso del inmueble."
+            testId="inquilino-responsable-iva"
+          />
+          <SelectorTernario
+            etiqueta="¿Practica reteIVA?"
+            valor={retieneIva}
+            onChange={setRetieneIva}
+            si="Sí, es agente de retención de IVA"
+            no="No retiene IVA"
+            ayuda="Sólo aplica si el canon lleva IVA (inmueble comercial). Se calcula sobre el valor del IVA."
+            testId="inquilino-retenedor-iva"
+          />
+          <SelectorTernario
+            etiqueta="¿Practica reteICA?"
+            valor={retieneIca}
+            onChange={setRetieneIca}
+            si="Sí, es agente de retención de ICA"
+            no="No retiene ICA"
+            ayuda="Necesita la tarifa del municipio configurada en la inmobiliaria; sin tarifa no se practica."
+            testId="inquilino-retenedor-ica"
+          />
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
@@ -280,7 +320,40 @@ export function AdministracionDelContrato({
                   : 'No retiene'
                 : null
             }
-            ausente="Sin configurar — se asume por su tipo de persona"
+            ausente="Sin configurar — el cobro no descuenta retención"
+          />
+          <Fila
+            etiqueta="IVA del inquilino"
+            valor={
+              contract.inquilinoResponsableIva == null
+                ? null
+                : contract.inquilinoResponsableIva
+                  ? 'Responsable de IVA'
+                  : 'No responsable'
+            }
+            ausente="Sin configurar"
+          />
+          <Fila
+            etiqueta="ReteIVA del inquilino"
+            valor={
+              contract.inquilinoRetenedorIva == null
+                ? null
+                : contract.inquilinoRetenedorIva
+                  ? 'Practica reteIVA sobre el IVA del canon'
+                  : 'No retiene IVA'
+            }
+            ausente="Sin configurar — no se descuenta reteIVA"
+          />
+          <Fila
+            etiqueta="ReteICA del inquilino"
+            valor={
+              contract.inquilinoRetenedorIca == null
+                ? null
+                : contract.inquilinoRetenedorIca
+                  ? 'Practica reteICA sobre el canon'
+                  : 'No retiene ICA'
+            }
+            ausente="Sin configurar — no se descuenta reteICA"
           />
 
           {discrepan ? (
@@ -320,6 +393,41 @@ function deTernario(v: Ternario): boolean | null {
   if (v === 'si') return true
   if (v === 'no') return false
   return null
+}
+
+/** Un sí / no / no se sabe. El vacío NO es «no»: es que nadie lo afirmó. */
+function SelectorTernario({
+  etiqueta,
+  valor,
+  onChange,
+  si,
+  no,
+  ayuda,
+  testId,
+}: {
+  etiqueta: string
+  valor: Ternario
+  onChange: (v: Ternario) => void
+  si: string
+  no: string
+  ayuda: string
+  testId: string
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs text-muted-foreground">{etiqueta}</label>
+      <Select value={valor} onValueChange={(v) => onChange(v as Ternario)}>
+        <SelectTrigger data-testid={testId}>
+          <SelectValue placeholder="No se sabe" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="si">{si}</SelectItem>
+          <SelectItem value="no">{no}</SelectItem>
+        </SelectContent>
+      </Select>
+      <p className="text-xs text-muted-foreground">{ayuda}</p>
+    </div>
+  )
 }
 
 function Fila({

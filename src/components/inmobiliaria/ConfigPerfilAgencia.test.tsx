@@ -305,6 +305,31 @@ describe('<ConfigPerfilAgencia>', () => {
     expect(props.onSave).toHaveBeenCalledWith({ diasDePlazo: 5 })
   })
 
+  it('las tarifas llegan del back como texto (Decimal) y guardar no las rechaza ni las manda sin cambio', async () => {
+    const props = render({
+      agency: {
+        ...AGENCY,
+        ivaPorcentaje: '19',
+        retefuenteArrendamientoPorcentaje: '3.5',
+        retefuenteComisionPorcentaje: '11',
+        reteicaPorMil: null,
+        reteivaPorcentaje: '15',
+      } as AgencyProfile,
+    })
+    enterEditMode()
+
+    const reteica = container.querySelector('[data-testid="reteica-por-mil"]') as HTMLInputElement
+    expect(reteica.value).toBe('')
+    act(() => {
+      setInputValue(reteica, '9.66')
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledTimes(1)
+    expect(props.onSave).toHaveBeenCalledWith({ reteicaPorMil: 9.66 })
+  })
+
   it('cambiar los días para siniestro manda { diasParaSiniestro: 45 }', async () => {
     const props = render()
     enterEditMode()
@@ -450,5 +475,90 @@ describe('<ConfigPerfilAgencia>', () => {
 
     expect(props.onSave).not.toHaveBeenCalled()
     expect(container.textContent).toContain('El nombre de la agencia es obligatorio')
+  })
+})
+
+describe('<ConfigPerfilAgencia> — impuestos y retenciones', () => {
+  it('muestra las tarifas en modo lectura, con la reteICA sin configurar como tal', () => {
+    render({ agency: { ...AGENCY, ivaPorcentaje: 19, retefuenteArrendamientoPorcentaje: 3.5, reteicaPorMil: null } })
+    const text = container.textContent ?? ''
+    expect(text).toContain('Impuestos y retenciones')
+    expect(text).toContain('19 %')
+    expect(text).toContain('3.5 %')
+    expect(text).toContain('Sin configurar — no se practica')
+  })
+
+  it('cambiar la retefuente manda el decimal tal cual (3.5 no es 35) y nada más', async () => {
+    const props = render({ agency: { ...AGENCY, retefuenteArrendamientoPorcentaje: 3.5 } })
+    enterEditMode()
+    const input = container.querySelector('[data-testid="retefuente-arrendamiento"]') as HTMLInputElement
+    expect(input.value).toBe('3.5')
+    act(() => {
+      setInputValue(input, '2.5')
+    })
+    await clickSave()
+    expect(props.onSave).toHaveBeenCalledWith({ retefuenteArrendamientoPorcentaje: 2.5 })
+  })
+
+  it('configurar la reteICA manda el por mil como número; vaciarla manda null', async () => {
+    const props = render({ agency: { ...AGENCY, reteicaPorMil: null } })
+    enterEditMode()
+    const input = container.querySelector('[data-testid="reteica-por-mil"]') as HTMLInputElement
+    expect(input.value).toBe('')
+    act(() => {
+      setInputValue(input, '9.66')
+    })
+    await clickSave()
+    expect(props.onSave).toHaveBeenCalledWith({ reteicaPorMil: 9.66 })
+
+    const props2 = render({ agency: { ...AGENCY, reteicaPorMil: 9.66 } })
+    enterEditMode()
+    const input2 = container.querySelector('[data-testid="reteica-por-mil"]') as HTMLInputElement
+    act(() => {
+      setInputValue(input2, '')
+    })
+    await clickSave()
+    expect(props2.onSave).toHaveBeenCalledWith({ reteicaPorMil: null })
+  })
+
+  it('rechaza un IVA de 150 % sin llamar al back', async () => {
+    const props = render()
+    enterEditMode()
+    const input = container.querySelector('[data-testid="iva-porcentaje"]') as HTMLInputElement
+    act(() => {
+      setInputValue(input, '150')
+    })
+    await clickSave()
+    expect(props.onSave).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Un porcentaje entre 0 y 100')
+  })
+
+  it('la base mínima se lee en pesos enteros y vacía manda null', async () => {
+    const props = render({ agency: { ...AGENCY, baseMinimaRetefuenteCop: null } })
+    enterEditMode()
+    const input = container.querySelector('[data-testid="base-minima-retefuente"]') as HTMLInputElement
+    act(() => {
+      setInputValue(input, '523740')
+    })
+    await clickSave()
+    expect(props.onSave).toHaveBeenCalledWith({ baseMinimaRetefuenteCop: 523740 })
+  })
+
+  it('un NIT sin dígito de verificación ya no bloquea guardar la configuración', async () => {
+    const props = render({ agency: { ...AGENCY, nit: '1004997858' } })
+    enterEditMode()
+    const input = container.querySelector('[data-testid="dias-de-plazo"]') as HTMLInputElement
+    act(() => {
+      setInputValue(input, '5')
+    })
+    await clickSave()
+    expect(props.onSave).toHaveBeenCalledWith({ diasDePlazo: 5 })
+  })
+
+  it('un NIT con letras sigue siendo inválido', async () => {
+    const props = render({ agency: { ...AGENCY, nit: 'ABC-1' } })
+    enterEditMode()
+    await clickSave()
+    expect(props.onSave).not.toHaveBeenCalled()
   })
 })

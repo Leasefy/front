@@ -40,6 +40,11 @@ vi.mock('sonner', () => ({
 }));
 
 // El detalle se pide por HTTP; acá interesa el formulario, no la petición.
+let mediosConfigurados: { id: string; nombre: string; tipo: string; activo: boolean }[] = [];
+vi.mock('@/lib/hooks/use-medios-de-pago', () => ({
+  useMediosDePago: () => ({ medios: mediosConfigurados, cargando: false, error: null, refrescar: vi.fn() }),
+}));
+
 vi.mock('@/lib/hooks/useDetalleDeCobro', () => ({
   useDetalleDeCobro: () => ({
     detalle: null,
@@ -362,4 +367,43 @@ describe('<RegistrarPagoModal> el desglose', () => {
       expect(enviado).not.toBe(saldo / 1000);
     },
   );
+});
+
+describe('<RegistrarPagoModal> los medios configurados por la inmobiliaria', () => {
+  afterEach(() => {
+    mediosConfigurados = [];
+  });
+
+  it('sin medios configurados ofrece la lista fija y manda su valor histórico', async () => {
+    const onSubmit = abrir();
+    expect(porTexto('recibos.form.medios.transferencia')).toHaveLength(1);
+    elegirMedio('transferencia');
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ medio: 'transferencia' });
+  });
+
+  it('con medios configurados ofrece sólo los activos y manda el NOMBRE del medio', async () => {
+    mediosConfigurados = [
+      { id: 'm1', nombre: 'Transferencia a Bancolombia', tipo: 'TRANSFERENCIA', activo: true },
+      { id: 'm2', nombre: 'Efectivo en la oficina', tipo: 'EFECTIVO', activo: true },
+      { id: 'm3', nombre: 'Cuenta vieja', tipo: 'TRANSFERENCIA', activo: false },
+    ];
+    const onSubmit = abrir();
+    expect(porTexto('recibos.form.medios.transferencia')).toHaveLength(0);
+    expect(porTexto('Cuenta vieja')).toHaveLength(0);
+    act(() => porTexto('Transferencia a Bancolombia')[0].click());
+    await enviar();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ medio: 'Transferencia a Bancolombia' });
+  });
+
+  it('un nombre más largo que el DTO viaja recortado a 40 caracteres', async () => {
+    const largo = 'Transferencia a la cuenta de ahorros número dos de Bancolombia';
+    mediosConfigurados = [{ id: 'm1', nombre: largo, tipo: 'TRANSFERENCIA', activo: true }];
+    const onSubmit = abrir();
+    act(() => porTexto(largo)[0].click());
+    await enviar();
+    const medio = (onSubmit.mock.calls[0][0] as { medio: string }).medio;
+    expect(medio).toBe(largo.slice(0, 40));
+    expect(medio.length).toBe(40);
+  });
 });

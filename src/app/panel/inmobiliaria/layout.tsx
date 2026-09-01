@@ -314,6 +314,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // Toda la cartera por edad de la deuda. `cobros` muestra el mes corriente;
     // esto es lo acumulado, que es lo que trae una inmobiliaria que se pasa.
     { label: t('inmobiliaria.nav.cartera'),      href: '/panel/inmobiliaria/cartera', scope: 'finanzas',      icon: CurrencyCircleDollar, module: 'cobros' },
+    // Cuánto llegó, cuánto hay disponible y el estado mensual, en un solo lugar.
+    { label: t('inmobiliaria.nav.recaudo'),      href: '/panel/inmobiliaria/recaudo', scope: 'finanzas',      icon: ChartLineUp,         module: 'cobros' },
     {
       // F6: Conciliación is the first complete agent workspace — the parent
       // now points at the Sala (/ai/conciliacion); the legacy /conciliacion

@@ -111,3 +111,25 @@ describe('asientos.cierre / cerrar / detalle', () => {
     expect(clienteMock.get).toHaveBeenCalledWith('/inmobiliaria/contabilidad/asientos/x%20y');
   });
 });
+
+describe('mapeo', () => {
+  it('obtener pega al GET pelado', async () => {
+    await contabilidadApi.mapeo.obtener();
+    expect(clienteMock.get).toHaveBeenCalledWith('/inmobiliaria/contabilidad/mapeo');
+  });
+
+  it('guardar manda { entradas } con SOLO evento y cuentaId por entrada (forbidNonWhitelisted)', async () => {
+    clienteMock.put.mockReset().mockResolvedValue({});
+    await contabilidadApi.mapeo.guardar([
+      { evento: 'RECIBO_BANCOS', cuentaId: 'c-1', nombre: 'de más' } as never,
+    ]);
+    expect(clienteMock.put).toHaveBeenCalledWith('/inmobiliaria/contabilidad/mapeo', {
+      entradas: [{ evento: 'RECIBO_BANCOS', cuentaId: 'c-1' }],
+    });
+  });
+
+  it('sembrar hace POST a /mapeo/semilla', async () => {
+    await contabilidadApi.mapeo.sembrar();
+    expect(clienteMock.post).toHaveBeenCalledWith('/inmobiliaria/contabilidad/mapeo/semilla', {});
+  });
+});

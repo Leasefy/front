@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import { Progress } from '@/components/ui/progress';
 import { PayRentModal } from '@/components/tenant/PayRentModal';
+import { MediosDePagoDeLaInmobiliaria } from '@/components/tenant/MediosDePagoDeLaInmobiliaria';
 import type {
   BackendTenantPaymentRequest,
   TenantPaymentRequestStatus,
@@ -336,6 +337,9 @@ export default function PagosPage() {
             <p className="text-sm text-fg-muted mt-2">{t('payments.summary.nextDue')}</p>
           </div>
         </motion.div>
+
+        {/* Cómo pagar: los medios que configuró la inmobiliaria (no se pinta si no hay) */}
+        <MediosDePagoDeLaInmobiliaria />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content - Payment History */}

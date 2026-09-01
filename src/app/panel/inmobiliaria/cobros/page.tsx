@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import {
   CurrencyCircleDollar,
   Gear,
+  Bank,
   Scales,
   Table,
   SquaresFour,
@@ -378,6 +379,12 @@ function CobrosContent() {
             <Link href="/panel/inmobiliaria/cobros/reglas-de-mora">
               <Scales className="w-4 h-4" />
               <span className="hidden sm:inline">Reglas de mora</span>
+            </Link>
+          </Button>
+          <Button asChild variant="secondary" hideArrow>
+            <Link href="/panel/inmobiliaria/cobros/extracto-bancario">
+              <Bank className="w-4 h-4" />
+              <span className="hidden sm:inline">Extracto bancario</span>
             </Link>
           </Button>
           <Button variant="secondary" hideArrow onClick={() => setIsConfigOpen(true)}>

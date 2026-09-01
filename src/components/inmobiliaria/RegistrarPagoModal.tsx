@@ -66,6 +66,8 @@ import type {
   RespuestaDeRecibo,
 } from '@/lib/api/recibos-de-caja.types';
 import { useDetalleDeCobro } from '@/lib/hooks/useDetalleDeCobro';
+import { useMediosDePago } from '@/lib/hooks/use-medios-de-pago';
+import { ICONO_DEL_TIPO } from './medios-de-pago/legible';
 import { DesgloseAdeudado } from './DesgloseAdeudado';
 
 /**
@@ -83,6 +85,29 @@ const MEDIOS = [
 ] as const;
 
 const ORIGEN_MINIMO = 5;
+
+/** El DTO del back acepta `medio` como texto libre de hasta 40 caracteres. */
+const LARGO_MAXIMO_DEL_MEDIO = 40;
+
+/**
+ * Los medios configurados por la inmobiliaria (activos), como chips. Si no
+ * hay ninguno, la lista fija de arriba. El valor que viaja es el NOMBRE del
+ * medio, recortado al largo del DTO: es lo que la persona de caja reconoce.
+ */
+export function mediosParaElegir(
+  configurados: { nombre: string; tipo: keyof typeof ICONO_DEL_TIPO; activo: boolean }[] | null | undefined,
+): { valor: string; etiqueta: string | null; clave: string | null; icono: typeof Bank }[] {
+  const activos = (configurados ?? []).filter((m) => m.activo);
+  if (activos.length === 0) {
+    return MEDIOS.map((m) => ({ valor: m.valor, etiqueta: null, clave: m.clave, icono: m.icono }));
+  }
+  return activos.map((m) => ({
+    valor: m.nombre.trim().slice(0, LARGO_MAXIMO_DEL_MEDIO),
+    etiqueta: m.nombre,
+    clave: null,
+    icono: ICONO_DEL_TIPO[m.tipo] ?? DotsThree,
+  }));
+}
 
 /** El pie del modal vive fuera del <form>; los enlaza el atributo `form`. */
 const ID_FORM = 'form-recibo-de-caja';
@@ -115,6 +140,8 @@ export function RegistrarPagoModal({
   onConciliar,
 }: RegistrarPagoModalProps) {
   const { t, formatCurrency, formatDate } = useI18n();
+  const { medios: mediosConfigurados } = useMediosDePago({ enabled: isOpen });
+  const opcionesDeMedio = React.useMemo(() => mediosParaElegir(mediosConfigurados), [mediosConfigurados]);
 
   const hoy = React.useMemo(() => new Date().toISOString().split('T')[0], []);
 
@@ -474,7 +501,7 @@ export function RegistrarPagoModal({
                   {t('recibos.form.medioLabel')}
                 </span>
                 <div className="flex flex-wrap gap-2">
-                  {MEDIOS.map((m) => {
+                  {opcionesDeMedio.map((m) => {
                     const Icono = m.icono;
                     return (
                       <Chip
@@ -483,7 +510,7 @@ export function RegistrarPagoModal({
                         onClick={() => setMedio(m.valor)}
                         icon={<Icono className="h-4 w-4" />}
                       >
-                        {t(m.clave)}
+                        {m.etiqueta ?? t(m.clave!)}
                       </Chip>
                     );
                   })}

@@ -500,6 +500,73 @@ function conQuery(path: string, params: Record<string, string | undefined>): str
   return s ? `${path}?${s}` : path;
 }
 
+// ── Mapeo contable (asientos automáticos) ──────────────────────────────────
+
+/** `EventoContable` en `schema.prisma`: los ocho movimientos que el sistema asienta solo. */
+export type EventoContable =
+  | 'RECIBO_BANCOS'
+  | 'RECIBO_CAJA'
+  | 'RECAUDO_CANON_TERCEROS'
+  | 'RECAUDO_ADMINISTRACION'
+  | 'RECAUDO_OTROS_TERCEROS'
+  | 'INGRESO_COMISION'
+  | 'IVA_GENERADO'
+  | 'GIRO_PROPIETARIO_BANCOS';
+
+export const EVENTOS_CONTABLES: readonly EventoContable[] = [
+  'RECIBO_BANCOS',
+  'RECIBO_CAJA',
+  'RECAUDO_CANON_TERCEROS',
+  'RECAUDO_ADMINISTRACION',
+  'RECAUDO_OTROS_TERCEROS',
+  'INGRESO_COMISION',
+  'IVA_GENERADO',
+  'GIRO_PROPIETARIO_BANCOS',
+];
+
+export type LadoDelEvento = 'DEBE' | 'HABER';
+
+export interface CuentaResumida {
+  id: string;
+  codigo: string;
+  nombre: string;
+  activa: boolean;
+  imputable: boolean;
+}
+
+/** Una fila de `GET /mapeo`: el evento, su explicación, la cuenta asignada y la propuesta. */
+export interface MapeoDeEvento {
+  evento: EventoContable;
+  nombre: string;
+  explicacion: string;
+  lado: LadoDelEvento;
+  codigoPropuesto: string;
+  cuenta: CuentaResumida | null;
+  propuesta: CuentaResumida | null;
+}
+
+export interface MapeoContable {
+  eventos: MapeoDeEvento[];
+  completo: boolean;
+  faltantes: EventoContable[];
+}
+
+/** `EntradaDeMapeoDto`. */
+export const CLAVES_DE_ENTRADA_DE_MAPEO = ['evento', 'cuentaId'] as const;
+
+export interface EntradaDeMapeo {
+  evento: EventoContable;
+  cuentaId: string;
+}
+
+/** Respuesta de `POST /mapeo/semilla`. */
+export interface ResultadoDeSemillaDeMapeo {
+  asignados: EventoContable[];
+  yaEstaban: EventoContable[];
+  sinCuenta: { evento: EventoContable; codigo: string }[];
+  mapeo: MapeoContable;
+}
+
 // ══ API ═════════════════════════════════════════════════════════════════════
 
 export const contabilidadApi = {
@@ -633,6 +700,25 @@ export const contabilidadApi = {
           hasta: filtros.hasta,
         }),
       );
+    },
+  },
+
+  mapeo: {
+    /** Los ocho eventos con su cuenta (o null) y la que la semilla propone. */
+    async obtener(): Promise<MapeoContable> {
+      return apiClient.get<MapeoContable>(`${BASE}/mapeo`);
+    },
+
+    /** Asigna cuentas. Lo que no viene no se toca. Cada entrada sale filtrada al DTO. */
+    async guardar(entradas: EntradaDeMapeo[]): Promise<MapeoContable> {
+      return apiClient.put<MapeoContable>(`${BASE}/mapeo`, {
+        entradas: entradas.map((e) => soloClaves(e, CLAVES_DE_ENTRADA_DE_MAPEO)),
+      });
+    },
+
+    /** Asigna las cuentas propuestas a los eventos vacíos; no pisa lo asignado. */
+    async sembrar(): Promise<ResultadoDeSemillaDeMapeo> {
+      return apiClient.post<ResultadoDeSemillaDeMapeo>(`${BASE}/mapeo/semilla`, {});
     },
   },
 

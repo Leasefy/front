@@ -25,6 +25,7 @@ import {
   Shield,
   CaretRight,
   Compass,
+  Wallet,
 } from '@phosphor-icons/react';
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext';
 import { resetAgentIntros } from '@/components/tour/AgentIntroModal';
@@ -55,6 +56,7 @@ import { DEFAULT_ROLE_PERMISSIONS } from '@/lib/types/inmobiliaria';
 import { useNotificationSettings } from '@/lib/hooks/useSettings';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
+import { MediosDePago } from '@/components/inmobiliaria/medios-de-pago/MediosDePago';
 import type {
   UpdateAgencyPayload,
   AgencyIntegration,
@@ -111,7 +113,7 @@ function rolePermissionsToPermMap(rp: RolePermissions): PermMap {
 // Types
 // ============================================================================
 
-type ConfigTab = 'perfil' | 'branding' | 'usuarios' | 'permisos' | 'integraciones' | 'facturacion' | 'notificaciones' | 'preferencias' | 'seguridad';
+type ConfigTab = 'perfil' | 'branding' | 'usuarios' | 'permisos' | 'integraciones' | 'medios-de-pago' | 'facturacion' | 'notificaciones' | 'preferencias' | 'seguridad';
 
 interface TabConfig {
   id: ConfigTab;
@@ -130,6 +132,7 @@ const TAB_ICONS: Record<ConfigTab, React.ElementType> = {
   usuarios: Users,
   permisos: ShieldCheck,
   integraciones: Plugs,
+  'medios-de-pago': Wallet,
   facturacion: CreditCard,
   notificaciones: Bell,
   preferencias: Globe,
@@ -198,6 +201,8 @@ function ConfiguracionContent() {
     { id: 'usuarios', label: t('inmobiliaria.config.tabs.usuarios'), icon: TAB_ICONS.usuarios, description: t('inmobiliaria.config.tabs.usuariosDesc') },
     { id: 'permisos', label: t('inmobiliaria.config.tabs.permisos'), icon: TAB_ICONS.permisos, description: t('inmobiliaria.config.tabs.permisosDesc') },
     { id: 'integraciones', label: t('inmobiliaria.config.tabs.integraciones'), icon: TAB_ICONS.integraciones, description: t('inmobiliaria.config.tabs.integracionesDesc') },
+    // Copy literal: la pestaña es nueva y las claves i18n las agrega quien cierre el bloque.
+    { id: 'medios-de-pago', label: 'Medios de pago', icon: TAB_ICONS['medios-de-pago'], description: 'Cómo te paga el inquilino: cuentas, enlaces y efectivo' },
     { id: 'facturacion', label: t('inmobiliaria.config.tabs.facturacion'), icon: TAB_ICONS.facturacion, description: t('inmobiliaria.config.tabs.facturacionDesc') },
     { id: 'notificaciones', label: t('inmobiliaria.config.tabs.notificaciones'), icon: TAB_ICONS.notificaciones, description: t('inmobiliaria.config.tabs.notificacionesDesc') },
     { id: 'preferencias', label: t('inmobiliaria.config.tabs.preferencias'), icon: TAB_ICONS.preferencias, description: t('inmobiliaria.config.tabs.preferenciasDesc') },
@@ -614,6 +619,11 @@ function ConfiguracionContent() {
               onConfigure={handleConfigureIntegration}
             />
           )
+        )}
+
+        {/* Medios de pago — lo que el inquilino ve en «Cómo pagar» y el selector del recibo de caja */}
+        {activeTab === 'medios-de-pago' && (
+          <MediosDePago agencia={config?.agency ?? null} />
         )}
 
         {/* Facturacion Tab — plan/precio/límites vienen de la suscripción REAL

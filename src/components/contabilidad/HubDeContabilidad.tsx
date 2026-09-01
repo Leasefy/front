@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, BookOpenText, ChartBar, TreeStructure } from '@phosphor-icons/react';
+import { ArrowRight, BookOpenText, ChartBar, Plugs, TreeStructure } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 
 import { contabilidadApi } from '@/lib/api/contabilidad.service';
@@ -44,6 +44,12 @@ const DESTINOS: Destino[] = [
     icono: ChartBar,
     titulo: 'Reportes',
     texto: 'Balance de prueba, libro auxiliar por cuenta y estado de cuenta por tercero.',
+  },
+  {
+    href: `${BASE}/mapeo`,
+    icono: Plugs,
+    titulo: 'Mapeo contable',
+    texto: 'A qué cuenta va cada asiento automático: recibos de caja, anulaciones y giros a propietarios.',
   },
 ];
 
@@ -119,7 +125,7 @@ export function HubDeContabilidad() {
         <Cifra etiqueta="Cerrada hasta" numero={cierre} />
       </dl>
 
-      <nav aria-label="Secciones de contabilidad" className="grid gap-4 md:grid-cols-3">
+      <nav aria-label="Secciones de contabilidad" className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {DESTINOS.map((d) => (
           <Link
             key={d.href}

@@ -211,3 +211,18 @@ Verificado en navegador (agencia `portofinoqaprb`): configuración guardada cont
 Hallazgos de paso: la validación vieja del NIT exigía dígito de verificación y bloqueaba guardar toda la configuración (se relaja en el bloque 2) · `GET /inmobiliaria/config` sí devuelve la fila entera de la agencia · el back arrancado sin `PORT=3007` toma el `:3000`.
 
 **Bloque 2 — en curso**: impuestos y retenciones por contrato (IVA/RF/ICA/RIVA con tarifas por inmobiliaria), asientos automáticos con mapeo contable, extracto bancario → recibos de caja, vista de recaudo, medios de pago por inmobiliaria (Cobre queda como tarjeta deshabilitada hasta tener cuenta). Esquema y migración `20260901040000` ya aplicados (back `e792547`).
+
+**Bloque 2 — subido** (mismo día, más tarde; hashes en el último commit de cada rama):
+
+| pieza | dónde |
+|---|---|
+| Impuestos y retenciones (IVA sobre canon comercial, retefuente, reteICA, reteIVA — sólo con el motor v2 y cuando el contrato dice quién retiene) + tarifas por inmobiliaria + liquidación del propietario con las retenciones a su nombre y el IVA de la comisión | back `cobros/impuestos/`, `liquidacion/impuestos-de-la-liquidacion.ts`; front Configuración → «Impuestos y retenciones», ficha del contrato → perfil tributario, desglose del cobro |
+| Asientos automáticos (recibo de caja → bancos/caja contra 2815 por concepto; anulación → reversa; lote pagado → giro + comisión) con mapeo contable por evento y semilla de un clic | back `contabilidad/mapeo/`, `asientos-automaticos.service.ts` + listener de eventos; front `/contabilidad/mapeo` |
+| Extracto bancario → recibos de caja (carga CSV/XLSX, huella idempotente, candidatos puntuados, conciliar emite el recibo, «conciliar los seguros», ignorar/reabrir; anular el recibo devuelve la línea a pendiente) | back `conciliacion-bancaria/`; front `/cobros/extracto-bancario` |
+| Vista de recaudo (llegó · pendiente · dispersado · disponible, definidos por escrito; 12 meses; por medio) | back `recaudo/`; front `/recaudo` (sidebar) |
+| Medios de pago por inmobiliaria (transferencia, efectivo, PSE, Nequi, Daviplata, enlace de pago; número tapado al inquilino; alimenta el recibo de caja y «Cómo pagar» del inquilino; Cobre como tarjeta pendiente) | back `medios-de-pago/`; front Configuración → «Medios de pago», `/inquilino/pagos` |
+| NIT sin dígito de verificación ya no bloquea guardar la configuración; las tarifas `Decimal` llegan como texto y el formulario las convierte | `ConfigPerfilAgencia.tsx` |
+
+Verificado en navegador (`portofinoqaprb`): tarifas guardadas (reteICA 9,66 ‰) con el NIT sin DV, medio «Efectivo en la oficina» creado, mapeo sembrado con las 8 cuentas, extracto de 4 líneas cargado (3 nuevas · 1 repetida · 1 salida) y recaudo. Sin cobros en esa agencia no hay candidatos que conciliar ni asientos automáticos que ver: eso queda para probarlo con la agencia de Nico cuando tenga contratos y recibos.
+
+**Lo que sigue sin hacer** (no es código de estas dos ramas): Cobre (cuenta comercial), archivo plano SAP/OnePay y el archivo real de Bancolombia, tope legal y tasa de mora unificada (abogado), los 8 escenarios tributarios de Víctor para confirmar las reglas de impuestos, y los tres puntos del back de la migración (429 de invitaciones, `procesadas`, `external_id`).

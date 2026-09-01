@@ -74,6 +74,10 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'page', title: 'Lotes al banco', context: 'Finanzas', href: '/panel/inmobiliaria/dispersiones/lotes', keywords: 'lote archivo plano bancolombia pab codigo aprobacion pagos masivos', permission: { module: 'dispersiones', action: 'view' } },
   { kind: 'page', title: 'Reglas de mora', context: 'Finanzas', href: '/panel/inmobiliaria/cobros/reglas-de-mora', keywords: 'mora interes gasto administrativo plazo reglas cobro', permission: { module: 'cobros', action: 'view' } },
   { kind: 'page', title: 'Contabilidad', context: 'Finanzas', href: '/panel/inmobiliaria/contabilidad', keywords: 'puc cuentas asientos partida doble balance de prueba libro auxiliar estado de cuenta cierre' },
+  { kind: 'page', title: 'Recaudo', context: 'Finanzas', href: '/panel/inmobiliaria/recaudo', keywords: 'recaudo cuanto llego disponible mensual recibos', permission: { module: 'cobros', action: 'view' } },
+  { kind: 'page', title: 'Extracto bancario', context: 'Finanzas', href: '/panel/inmobiliaria/cobros/extracto-bancario', keywords: 'conciliacion bancaria extracto banco movimientos recibos automaticos', permission: { module: 'cobros', action: 'view' } },
+  { kind: 'page', title: 'Mapeo contable', context: 'Finanzas', href: '/panel/inmobiliaria/contabilidad/mapeo', keywords: 'contabilidad mapeo cuentas asientos automaticos puc eventos' },
+  { kind: 'page', title: 'Medios de pago', context: 'Configuración', href: '/panel/inmobiliaria/configuracion?tab=medios-de-pago', keywords: 'medios de pago transferencia efectivo pse nequi enlace cobre', permission: { module: 'configuracion', action: 'view' } },
   { kind: 'page', title: 'Tesorería', context: 'Finanzas', href: '/panel/inmobiliaria/tesoreria', keywords: 'caja bancos saldos' },
   { kind: 'page', title: 'Facturación', context: 'Finanzas', href: '/panel/inmobiliaria/facturacion', keywords: 'facturas cobrar dian' },
 

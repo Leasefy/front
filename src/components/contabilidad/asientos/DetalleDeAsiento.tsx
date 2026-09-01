@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 /**
  * Un asiento abierto en un cajón: sus líneas, sus totales y la única acción
  * que admite — reversar. No hay «editar» ni «borrar» porque el back no los
@@ -170,9 +172,27 @@ export function DetalleDeAsiento({ asiento, abierto, onCerrar, onReversado }: De
               </div>
 
               {asiento.origenId ? (
-                <p className="font-mono text-xs text-fg-subtle">
-                  Generado por {NOMBRE_DE_ORIGEN[asiento.origen]?.toLowerCase() ?? asiento.origen} ·{' '}
-                  {asiento.origenId}
+                <p className="font-mono text-xs text-fg-subtle" data-testid="origen-del-asiento">
+                  {asiento.origen === 'RECIBO_DE_CAJA' ? (
+                    <>Generado por el recibo de caja · {asiento.origenId}</>
+                  ) : asiento.origen === 'DISPERSION' ? (
+                    <>
+                      Generado por el lote de dispersión ·{' '}
+                      <Link
+                        href={`/panel/inmobiliaria/dispersiones/lotes/${asiento.origenId}`}
+                        className="underline underline-offset-2 hover:text-fg"
+                      >
+                        abrir el lote
+                      </Link>
+                    </>
+                  ) : asiento.origen === 'MANUAL' ? (
+                    <>Reversa del asiento · {asiento.origenId}</>
+                  ) : (
+                    <>
+                      Generado por {NOMBRE_DE_ORIGEN[asiento.origen]?.toLowerCase() ?? asiento.origen} ·{' '}
+                      {asiento.origenId}
+                    </>
+                  )}
                 </p>
               ) : null}
 

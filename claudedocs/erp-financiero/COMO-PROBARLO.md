@@ -141,3 +141,14 @@ activo y el 5 en espera.
 la migración `20260901020000`, para que no vieran el muro mañana. Si querés que también
 pasen por el PUC, es borrar ese `UPDATE`. Ojo al criterio: marca a las que tienen un
 contrato **vigente**; una con todos sus arriendos vencidos y sin PUC quedaría afuera.
+
+## Las pantallas del bloque 1 (2026-09-01)
+
+Todas están detrás del muro: la agencia tiene que haber migrado o haber elegido «arranco de cero».
+
+1. **Configuración → Perfil → Editar**: sección «Cobros y mora» — prendé «Motor de cobros con reglas de mora», poné días de plazo (p. ej. 5) y días para siniestro (30). Sección «Dispersiones» — código en todos los lotes y/o umbral del segundo aprobador. Guardar. Si el NIT no tiene dígito de verificación y no te deja guardar, es la validación vieja (se relaja en el bloque 2).
+2. **Cobros → Reglas de mora**: con la lista vacía aparecen dos plantillas («Interés diario después del plazo», «10 % de gasto administrativo desde el 15»); un clic cada una. «Nueva regla» abre el editor; las validaciones son las del back (un interés diario mayor que 1 % se frena con el mismo mensaje).
+3. **Contratos → Nuevo / Editar**: junto a «Día de pago» están «Días de plazo antes de la mora» (vacío = los de la inmobiliaria) y el switch «Prorratear el primer mes».
+4. **Cartera**: la sección «En siniestro» aparece siempre, con el plazo real de la configuración; se llena cuando el cron de la 1 a. m. pasa un cobro a siniestro (sólo con el motor prendido).
+5. **Dispersiones → Lotes al banco**: «Armar lote de <mes>» toma las dispersiones pendientes del mes; sin dispersiones el back lo dice. Con lote: pedir aprobación (el código llega por correo a quien puede aprobar; el creador no puede aprobar su propio lote), aprobar con el código, generar el archivo (sólo PAB; el nombre lleva `SIN-VERIFICAR` hasta tener el archivo real del banco), descargar, marcar pagado con la referencia, anular con motivo.
+6. **Contabilidad general** (sidebar): hub → Plan de cuentas (el mismo PUC del muro), Asientos (libro paginado, detalle en panel lateral, reversar, «Asiento manual» con partida doble en vivo, «Cerrar período…»), Reportes (balance de prueba con «cuadra», libro auxiliar por cuenta, estado de cuenta por tercero).

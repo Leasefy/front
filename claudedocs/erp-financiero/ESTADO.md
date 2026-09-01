@@ -190,3 +190,24 @@ vivos sin arriesgar un cobro mal hecho.
 - Pantallas de reglas de mora y contabilidad fuera de la migración; conciliación bancaria; medios de pago.
 
 **Sigue**: Nico recorre el muro desde cero con los 5 CSV → feedback → Víctor toma los puntos de back y abre el PR de `cambios-nico-1`.
+
+## 2026-09-01 (tarde) — «lo necesito TODO»: auditoría y bloque 1
+
+Auditoría de la lista completa de Nico contra el código (no contra la memoria): **10 hechos · 10 a medias · 7 sin hacer**. El patrón: el back tenía casi todo y el front no tenía pantalla para seis módulos, así que para la inmobiliaria no existían.
+
+**Bloque 1 — subido** (back `b3e3e9e`, front `1d96e397`, rama `cambios-nico-1`):
+
+| pieza | dónde |
+|---|---|
+| Prorrateo del primer mes + días de plazo por contrato | `/contratos/nuevo`, `/contratos/[id]/editar`; DTOs del back |
+| Configuración «Cobros y mora» (motor con reglas, plazo, siniestro a N días, % fijo) y «Dispersiones» (código en todos los lotes, umbral del segundo aprobador) | `/configuracion` → Perfil; `update-agency.dto.ts` |
+| Reglas de mora (lista, editor, dos plantillas de un clic, aviso vivo del motor) | `/cobros/reglas-de-mora` |
+| Lotes al banco (armar, pedir código, aprobar, archivo PAB, pagado, anular) | `/dispersiones/lotes`, `/dispersiones/lotes/[id]` |
+| Contabilidad fuera del muro (hub, PUC, asientos, reversa, asiento manual, cierre, balance de prueba, libro auxiliar, estado de cuenta) | `/contabilidad/*` — sidebar «Contabilidad general» |
+| Siniestro a N días (cron 1 a. m. con motor v2 → DEFAULTED + evento `cobro.siniestro`; sección «En siniestro» en cartera) | back `cobros.service.ts`, `reports.service.ts`; migración `20260901030000` |
+
+Verificado en navegador (agencia `portofinoqaprb`): configuración guardada contra el back, dos reglas creadas (plantilla y editor), cartera, lotes hasta el error del back sin dispersiones, 1.043 asientos reales y balance de prueba que cuadra. **No se vio en navegador el formulario de contrato** (esa agencia no tiene contratos y `/contratos/nuevo` exige `applicationId`); queda cubierto por tests de payload.
+
+Hallazgos de paso: la validación vieja del NIT exigía dígito de verificación y bloqueaba guardar toda la configuración (se relaja en el bloque 2) · `GET /inmobiliaria/config` sí devuelve la fila entera de la agencia · el back arrancado sin `PORT=3007` toma el `:3000`.
+
+**Bloque 2 — en curso**: impuestos y retenciones por contrato (IVA/RF/ICA/RIVA con tarifas por inmobiliaria), asientos automáticos con mapeo contable, extracto bancario → recibos de caja, vista de recaudo, medios de pago por inmobiliaria (Cobre queda como tarjeta deshabilitada hasta tener cuenta). Esquema y migración `20260901040000` ya aplicados (back `e792547`).

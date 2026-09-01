@@ -52,8 +52,13 @@ const DTO_ACTUALIZAR_CUENTA = ['nombre', 'naturaleza', 'activa', 'imputable'];
 /** `ListarCuentasDto` (…/puc/dto/listar-cuentas.dto.ts). */
 const DTO_LISTAR_CUENTAS = ['soloActivas', 'soloImputables', 'busqueda'];
 
-/** `CrearAsientoDto` + `MovimientoDto` (…/asientos/dto/crear-asiento.dto.ts). */
-const DTO_CREAR_ASIENTO = ['fecha', 'descripcion', 'movimientos'];
+/**
+ * `CrearAsientoDto` + `MovimientoDto` (…/asientos/dto/crear-asiento.dto.ts).
+ *
+ * `claveIdempotencia` es la llave del intento: el back devuelve el asiento ya
+ * escrito en vez de registrar la apertura dos veces cuando se corta la red.
+ */
+const DTO_CREAR_ASIENTO = ['fecha', 'descripcion', 'movimientos', 'claveIdempotencia'];
 const DTO_MOVIMIENTO = ['cuentaId', 'debitoCop', 'creditoCop', 'terceroTipo', 'terceroId', 'descripcion'];
 
 /** `ListarAsientosDto` (…/asientos/dto/listar-asientos.dto.ts). */

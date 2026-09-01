@@ -565,73 +565,33 @@ describe('migracionTercerosApi.lotesAbiertos', () => {
     return fn;
   }
 
-  it('deriva los lotes de /filas y pide el resumen real de cada uno', async () => {
+  it('pide el endpoint real del back, sin derivar nada', async () => {
     /*
-     * 🔴 El back NO tiene `GET /lotes` (el de contratos sí). Se deriva de la
-     * primera página de `/filas`. Los conteos NO se derivan de esa página —
-     * serían los de la página, no los del lote— sino de `/resumen`.
+     * 🔴 Antes esto se derivaba de UNA página de 200 filas más un `/resumen`
+     * por lote. Con una carga real de 600 propietarios los lotes viejos no
+     * entraban en esa página: la tarjeta de «carga sin terminar» no aparecía
+     * y la persona resubía el archivo, duplicando a todo el mundo. El back
+     * ahora tiene `GET /lotes` (un groupBy) y los ve todos.
      */
-    const fetchMock = mockFetchPorUrl(
-      {
-        filas: [
-          filaDeStaging({ id: 'a', lote: 'propietarios-marzo', updatedAt: '2026-08-30T10:00:00.000Z' }),
-          filaDeStaging({ id: 'b', lote: 'propietarios-marzo', updatedAt: '2026-08-31T09:00:00.000Z' }),
-          filaDeStaging({ id: 'c', lote: 'inquilinos-abril', tipo: 'INQUILINO', updatedAt: '2026-08-29T08:00:00.000Z' }),
-        ],
-        total: 3,
-        pagina: 1,
-        porPagina: 200,
-      },
-      {
-        'propietarios-marzo': {
-          cuerpo: { ...RESUMEN_VACIO, lote: 'propietarios-marzo', total: 640, requierenAtencion: 12, listos: 628 },
-        },
-        'inquilinos-abril': {
-          cuerpo: { ...RESUMEN_VACIO, lote: 'inquilinos-abril', total: 300, requierenAtencion: 3, listos: 297 },
-        },
-      },
-    );
+    const fetchMock = mockFetchOnce([
+      { ...RESUMEN_VACIO, lote: 'propietarios-marzo', tipo: 'PROPIETARIO', actualizado: '2026-08-31T09:00:00.000Z', total: 640, requierenAtencion: 12, listos: 628 },
+      { ...RESUMEN_VACIO, lote: 'inquilinos-abril', tipo: 'INQUILINO', actualizado: '2026-08-29T08:00:00.000Z', total: 300, requierenAtencion: 3, listos: 297 },
+    ]);
 
     const lotes = await migracionTercerosApi.lotesAbiertos();
 
-    // 1 listado + 1 resumen por lote DISTINTO. No uno por fila: marzo trae dos.
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(queryDe(llamada(fetchMock)[0]).get('porPagina')).toBe('200');
-
-    // Ordenados por lo último tocado: marzo tiene una fila del 31.
+    // UNA sola petición, no 1 + N.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(llamada(fetchMock)[0]).toContain('/inmobiliaria/migracion-terceros/lotes');
+    // El orden y el filtrado los decide el back: acá no se reordena nada.
     expect(lotes.map((l) => l.lote)).toEqual(['propietarios-marzo', 'inquilinos-abril']);
     expect(lotes[0].total).toBe(640);
-    expect(lotes[0].tipo).toBe('PROPIETARIO');
     expect(lotes[1].tipo).toBe('INQUILINO');
   });
 
-  it('esconde los lotes que ya no tienen nada que retomar', async () => {
-    // Un lote aplicado entero no es trabajo pendiente: ofrecerlo en «retomar»
-    // manda a alguien a una lista vacía.
-    mockFetchPorUrl(
-      { filas: [filaDeStaging({ lote: 'ya-esta', estado: 'APLICADO' })], total: 1, pagina: 1, porPagina: 200 },
-      { 'ya-esta': { cuerpo: { ...RESUMEN_VACIO, lote: 'ya-esta', total: 40, aplicados: 40 } } },
-    );
+  it('una lista vacía es una lista vacía: no hay nada que retomar', async () => {
+    mockFetchOnce([]);
 
     expect(await migracionTercerosApi.lotesAbiertos()).toEqual([]);
-  });
-
-  it('un resumen que falla no se lleva puestos a los demás lotes', async () => {
-    mockFetchPorUrl(
-      {
-        filas: [filaDeStaging({ lote: 'bueno' }), filaDeStaging({ lote: 'roto', id: 'z' })],
-        total: 2,
-        pagina: 1,
-        porPagina: 200,
-      },
-      {
-        bueno: { cuerpo: { ...RESUMEN_VACIO, lote: 'bueno', total: 5, requierenAtencion: 5 } },
-        roto: { cuerpo: { message: 'boom' }, ok: false },
-      },
-    );
-
-    const lotes = await migracionTercerosApi.lotesAbiertos();
-
-    expect(lotes.map((l) => l.lote)).toEqual(['bueno']);
   });
 });

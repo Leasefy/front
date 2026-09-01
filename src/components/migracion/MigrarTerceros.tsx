@@ -79,6 +79,11 @@ import {
   type MapeoDeColumna,
 } from '@/lib/migracion/columnas-de-tercero';
 import { descargarPlantillaDeTerceros } from '@/lib/migracion/plantilla-de-terceros';
+import {
+  aplicarLoteDeTerceros,
+  AplicacionInterrumpida,
+  type ProgresoDeAplicacion,
+} from '@/lib/migracion/aplicar-lote-de-terceros';
 import { FilaDeTercero, type ResultadoDeAccion } from './FilaDeTercero';
 
 /** Sentinel de Radix: un `<Select>` no admite `value=""`. */
@@ -170,6 +175,8 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   const [aplicacion, setAplicacion] = useState<ResumenDeAplicacion | null>(null);
 
   const [lotesAbiertos, setLotesAbiertos] = useState<LoteDeTerceros[]>([]);
+  /** Avance de la creación por tandas: `null` mientras no hay una corriendo. */
+  const [progreso, setProgreso] = useState<ProgresoDeAplicacion | null>(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -442,21 +449,37 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     if (!loteAbierto) return;
     setCargando(true);
     setError(null);
+    setProgreso(null);
     onOcupado?.(true);
     try {
-      const informe = await migracionTercerosApi.aplicar(loteAbierto);
+      /*
+       * Por tandas, no de un saque: crear 600 inquilinos son 600 invitaciones
+       * por correo, y en UNA petición HTTP eso es un timeout de proxy con el
+       * servidor todavía trabajando. El loop pide de a poco y muestra avance
+       * real en vez de una rueda girando cinco minutos.
+       */
+      const informe = await aplicarLoteDeTerceros(
+        loteAbierto,
+        (l) => migracionTercerosApi.aplicar(l),
+        setProgreso,
+      );
       setAplicacion(informe);
       await refrescar(loteAbierto, 1);
     } catch (e) {
       /*
-       * El back procesa por tandas y NO deshace lo creado si la conexión se
-       * corta a mitad: reintentar retoma donde quedó, sin duplicar (las filas
-       * aplicadas ya no están LISTO). Decirlo acá es lo que evita que la
-       * persona abandone creyendo que se rompió todo — o que vuelva a subir
-       * el archivo «por las dudas».
+       * Nada de lo creado se deshace si la conexión se corta a mitad:
+       * reintentar retoma donde quedó, sin duplicar (las filas aplicadas ya
+       * no están LISTO). Decirlo —y decir CUÁNTAS alcanzaron— es lo que evita
+       * que la persona abandone creyendo que se rompió todo, o que vuelva a
+       * subir el archivo «por las dudas».
        */
+      const hechas = e instanceof AplicacionInterrumpida ? e.parcial.aplicadas : 0;
       setError(
-        `${mensaje(e, 'No pudimos crear las fichas.')} Las que alcanzaron a crearse quedaron creadas: reintentá con el mismo botón y la carga sigue donde quedó, sin duplicar a nadie.`,
+        `${mensaje(e, 'No pudimos crear las fichas.')} ` +
+          (hechas > 0
+            ? `Alcanzaron a crearse ${hechas}: quedaron creadas. `
+            : 'Lo que alcanzó a crearse quedó creado. ') +
+          'Reintentá con el mismo botón y la carga sigue donde quedó, sin duplicar a nadie.',
       );
       // Mejor esfuerzo: que los contadores muestren lo que el back SÍ hizo.
       try {
@@ -466,6 +489,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       }
     } finally {
       setCargando(false);
+      setProgreso(null);
       onOcupado?.(false);
     }
   }, [loteAbierto, refrescar, onOcupado]);
@@ -479,6 +503,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         tipo={tipo}
         enElMuro={Boolean(tipoFijo)}
         resumen={resumen}
+        progreso={progreso}
         columnas={columnas}
         pendientes={pendientes}
         totalPendientes={totalPendientes}
@@ -939,6 +964,7 @@ function ListaDeTrabajo({
   tipo,
   enElMuro,
   resumen,
+  progreso,
   columnas,
   pendientes,
   totalPendientes,
@@ -962,6 +988,8 @@ function ListaDeTrabajo({
   /** Adentro del asistente hay un pie con el botón de seguir; suelto, no. */
   enElMuro: boolean;
   resumen: ResumenDeLote;
+  /** Avance de la creación por tandas mientras corre. */
+  progreso: ProgresoDeAplicacion | null;
   columnas: readonly import('@/lib/api/migracion-terceros.service').ColumnaDePlantilla[];
   pendientes: FilaDeStaging[];
   totalPendientes: number;
@@ -1015,6 +1043,25 @@ function ListaDeTrabajo({
                   ? 'inquilino'
                   : 'inquilinos'}
             </Button>
+            {/*
+             * El avance real mientras corre. Una rueda girando cinco minutos
+             * sin un número es indistinguible de algo colgado: es cuando la
+             * gente recarga la página a mitad de una creación.
+             */}
+            {progreso ? (
+              <p className="text-sm text-fg" data-testid="progreso-de-aplicacion" aria-live="polite">
+                Creando…{' '}
+                <span className="font-mono tabular-nums">{progreso.aplicadas}</span> creadas
+                {progreso.restantes > 0 ? (
+                  <>
+                    {', '}
+                    <span className="font-mono tabular-nums">{progreso.restantes}</span> por crear
+                  </>
+                ) : null}
+                . No cierres esta pestaña.
+              </p>
+            ) : null}
+
             <p className="text-xs text-fg-subtle">
               {/* Decir de antemano qué pasa: el correo sale al aplicar, y una
                   invitación no se puede des-enviar. */}

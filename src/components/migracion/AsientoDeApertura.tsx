@@ -36,6 +36,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ApiError } from "@/lib/api/client";
+import { generarIdempotencyKey } from "@/lib/contratos/idempotencia";
 import {
   contabilidadApi,
   LARGO_MAXIMO_DE_DESCRIPCION,
@@ -106,6 +107,16 @@ export function AsientoDeApertura({
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creado, setCreado] = useState<AsientoContable | null>(null);
+  /*
+   * La llave del intento: UNA por formulario, no por clic.
+   *
+   * Es lo que vuelve seguro el reintento después de un corte de red. Si la
+   * petición alcanzó a escribirse, el segundo envío con la misma llave
+   * devuelve ESE asiento en vez de registrar la apertura dos veces. Por eso
+   * se genera al montar y no dentro de `enviar()`: una llave nueva por clic
+   * no protegería de nada.
+   */
+  const [claveIdempotencia] = useState(() => generarIdempotencyKey());
 
   const ordenadas = useMemo(
     () => [...cuentas].sort((a, b) => a.codigo.localeCompare(b.codigo)),
@@ -139,6 +150,7 @@ export function AsientoDeApertura({
         fecha,
         descripcion: descripcion.trim() || descripcionSugerida(fecha),
         movimientos: movimientosDeApertura(filas),
+        claveIdempotencia,
       });
       setCreado(asiento);
       onCreado(asiento);
@@ -146,14 +158,15 @@ export function AsientoDeApertura({
       if (e instanceof ApiError && e.status === 0) {
         /*
          * Corte de red EN VUELO: el asiento pudo haber llegado a escribirse
-         * sin que la respuesta volviera. Reintentar a ciegas es el camino a
-         * una apertura doble (el back no tiene llave de idempotencia acá),
-         * así que se refresca la lista de lo cargado y se pide MIRARLA.
+         * sin que la respuesta volviera. Reintentar ES seguro —la llave del
+         * intento hace que el back devuelva el asiento que ya escribió en vez
+         * de crear otro—, así que el copy lo dice en vez de mandar a auditar a
+         * mano. Igual se refresca lo cargado: si ya está, se ve arriba.
          */
         onRevisarCargado?.();
         setError(
-          "Se cortó la conexión al enviar y no sabemos si el asiento alcanzó a registrarse. " +
-            "Mirá arriba lo ya cargado —recién lo actualizamos—: si el asiento aparece, no lo registres de nuevo; si no aparece, intentá otra vez.",
+          "Se cortó la conexión al enviar. Volvé a tocar «Registrar»: si el asiento alcanzó a guardarse, " +
+            "lo vas a ver tal cual quedó — no se registra dos veces.",
         );
       } else {
         setError(

@@ -249,6 +249,12 @@ export interface ResumenDeAplicacion {
   /** Cuentas creadas sin invitación por el límite de correo del proveedor. Un back viejo no lo manda. */
   sinInvitar?: number;
   resultados: ResultadoDeFila[];
+  /**
+   * Cuántas filas listas quedaron sin intentarse en esta llamada: mientras
+   * sea > 0 hay que volver a llamar. Un back viejo no lo manda — ausente se
+   * lee como 0, o sea «no queda nada», que es el comportamiento de antes.
+   */
+  restantes?: number;
 }
 
 /** Un lote con su tipo, para la tarjeta de «retomar». */
@@ -469,50 +475,30 @@ export const migracionTercerosApi = {
     return total;
   },
 
-  /** 3. Crear de verdad las fichas de las filas `LISTO`. */
-  async aplicar(lote: string): Promise<ResumenDeAplicacion> {
-    return apiClient.post<ResumenDeAplicacion>(`${BASE}/aplicar`, { lote });
+  /**
+   * 3. Crear de verdad las fichas de las filas `LISTO`, POR TANDAS.
+   *
+   * `maximo` es cuántas toma esta llamada; la respuesta trae `restantes`. El
+   * loop vive en `aplicarLoteCompleto`, para que una carga de 600 no viva
+   * dentro de una sola petición HTTP que cualquier proxy puede cortar.
+   */
+  async aplicar(lote: string, maximo?: number): Promise<ResumenDeAplicacion> {
+    return apiClient.post<ResumenDeAplicacion>(`${BASE}/aplicar`, {
+      lote,
+      ...(maximo === undefined ? {} : { maximo }),
+    });
   },
 
   /**
    * Los lotes con trabajo abierto, para poder retomar.
    *
-   * 🔴 El back **no tiene** un `GET /lotes` (el de contratos sí:
-   * `/contracts/migrar/lotes`). Se deriva de la primera página de `filas`, que
-   * el back ordena por `estado asc, createdAt asc` — o sea, las
-   * `REQUIERE_ATENCION` primero. El sesgo juega a favor: lo que sale son
-   * justamente los lotes que necesitan a alguien. Un lote ya aplicado entero
-   * puede no aparecer, y está bien: no hay nada que retomar en él.
-   *
-   * Después se pide el `resumen` de cada uno, porque los conteos derivados de
-   * una página serían los de esa página, no los del lote.
+   * Un solo `GET /lotes` del back (un `groupBy`), no una derivación desde una
+   * página de filas: derivarlo dejaba invisibles los lotes que no cabían en
+   * las primeras 200 filas — con una carga real de 600 propietarios, la
+   * tarjeta de «tenés una carga sin terminar» no aparecía y la persona
+   * resubía el archivo, duplicando a todo el mundo.
    */
   async lotesAbiertos(): Promise<LoteDeTerceros[]> {
-    const pagina = await migracionTercerosApi.filas({ porPagina: 200 });
-
-    const vistos = new Map<string, { tipo: TipoDeTercero; actualizado: string }>();
-    for (const fila of pagina.filas) {
-      const previo = vistos.get(fila.lote);
-      if (!previo || fila.updatedAt > previo.actualizado) {
-        vistos.set(fila.lote, { tipo: fila.tipo, actualizado: fila.updatedAt });
-      }
-    }
-
-    const resumenes = await Promise.all(
-      [...vistos.entries()].map(async ([lote, meta]) => {
-        try {
-          const r = await migracionTercerosApi.resumen(lote);
-          return { ...r, ...meta };
-        } catch {
-          // Un lote que no se puede resumir no debe impedir listar los otros.
-          return null;
-        }
-      }),
-    );
-
-    return resumenes
-      .filter((l): l is LoteDeTerceros => l !== null)
-      .filter((l) => l.requierenAtencion + l.listos + l.borradores > 0)
-      .sort((a, b) => b.actualizado.localeCompare(a.actualizado));
+    return apiClient.get<LoteDeTerceros[]>(`${BASE}/lotes`);
   },
 };

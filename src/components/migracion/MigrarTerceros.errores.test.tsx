@@ -275,10 +275,67 @@ describe('la lista de trabajo', () => {
 
     await clic('Crear 2 inquilinos');
 
-    expect(container.textContent).toContain('quedaron creadas');
+    // El hecho, no la frase: lo creado no se pierde y reintentar no duplica.
+    expect(container.textContent).toContain('quedó creado');
     expect(container.textContent).toContain('sin duplicar');
     // Releyó, para que «Ya creadas» muestre lo que el back SÍ alcanzó a hacer.
     expect(api.resumen.mock.calls.length).toBeGreaterThan(resumenAntes);
+  });
+
+  it('🔴 si el corte fue DESPUÉS de crear algunas, dice cuántas', async () => {
+    /*
+     * «Lo que alcanzó a crearse quedó creado» sobre 100 fichas ya creadas es
+     * verdad pero no sirve: el número es lo que deja a la persona reintentar
+     * tranquila en vez de ir a contar a mano.
+     */
+    await abrirLista();
+    api.aplicar
+      .mockResolvedValueOnce({
+        lote: 'inquilinos-x',
+        intentadas: 100,
+        aplicadas: 100,
+        fallidas: 0,
+        invitados: 100,
+        resultados: [],
+        restantes: 40,
+      })
+      .mockRejectedValueOnce(new Error('No pudimos conectarnos al servidor.'));
+
+    await clic('Crear 2 inquilinos');
+
+    expect(container.textContent).toContain('Alcanzaron a crearse 100');
+    expect(container.textContent).toContain('sin duplicar');
+  });
+
+  it('la creación por tandas sigue llamando hasta que no queden', async () => {
+    await abrirLista();
+    api.aplicar
+      .mockResolvedValueOnce({
+        lote: 'inquilinos-x',
+        intentadas: 100,
+        aplicadas: 100,
+        fallidas: 0,
+        invitados: 100,
+        resultados: [],
+        restantes: 20,
+      })
+      .mockResolvedValueOnce({
+        lote: 'inquilinos-x',
+        intentadas: 20,
+        aplicadas: 20,
+        fallidas: 0,
+        invitados: 20,
+        resultados: [],
+        restantes: 0,
+      });
+
+    await clic('Crear 2 inquilinos');
+
+    expect(api.aplicar).toHaveBeenCalledTimes(2);
+    // El informe suma las dos tandas, no muestra sólo la última.
+    expect(container.querySelector('[data-testid="informe-aplicacion"]')?.textContent).toContain(
+      '120',
+    );
   });
 
   it('una masiva parcial deja seleccionadas las fallidas y nombra CADA motivo', async () => {

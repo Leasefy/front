@@ -205,12 +205,25 @@ export interface MovimientoNuevo {
 
 /** `CrearAsientoDto`. `fecha` es `AAAA-MM-DD` a secas: con hora el back la
  * rechaza (`FECHA_INVALIDA`). */
-export const CLAVES_DE_CREAR_ASIENTO = ['fecha', 'descripcion', 'movimientos'] as const;
+export const CLAVES_DE_CREAR_ASIENTO = [
+  'fecha',
+  'descripcion',
+  'movimientos',
+  'claveIdempotencia',
+] as const;
 
 export interface AsientoNuevo {
   fecha: string;
   descripcion: string;
   movimientos: MovimientoNuevo[];
+  /**
+   * La llave del intento: dos envíos con el MISMO valor producen UN asiento —
+   * el segundo devuelve el primero. Se genera una vez por formulario, NO por
+   * clic: si la red se corta con la petición en vuelo el asiento ya quedó
+   * escrito, y reintentar con una llave nueva registraría la apertura dos
+   * veces (los saldos iniciales contados doble).
+   */
+  claveIdempotencia?: string;
 }
 
 /** `MAX_COP_POR_MOVIMIENTO` en `asientos.service.ts`: es un `Int` de Postgres. */

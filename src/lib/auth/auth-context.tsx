@@ -6,14 +6,15 @@ import { toFrontendRole } from './types'
 import { fetchAgencyProfile, type AgencyFetchResult } from './agency-fetch'
 import { toast } from 'sonner'
 import { getSupabase } from '@/lib/supabase/client'
-import { apiClient, ApiError, setAccessToken, setUnauthorizedHandler } from '@/lib/api/client'
+import { apiClient, ApiError, getAccessToken, setAccessToken, setUnauthorizedHandler } from '@/lib/api/client'
 import {
   terminarSesion,
   purgarSesionLocal,
   registrarCierreDeSesion,
   haySesionGuardada,
 } from './session-terminal'
-import { claimSession } from '@/lib/api/session.service'
+import { claimSession, revokeSession } from '@/lib/api/session.service'
+import { getDeviceId } from '@/lib/auth/device-id'
 import {
   readActiveContext,
   writeActiveContext,
@@ -251,6 +252,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * `onAuthStateChange`, que se registra una sola vez y capturaría un valor viejo.
    */
   const cierreVoluntarioRef = useRef(false)
+  /** Un cierre en curso: un 401 de sesión desplazada no abre otro (ver signOut). */
+  const cerrandoRef = useRef(false)
 
   /**
    * ¿Hubo alguna sesión viva en esta carga de página?
@@ -539,8 +542,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * device just displaced another one — tell the user.
    */
   const claimActiveSession = useCallback(async (token: string) => {
+    // El id de ESTE navegador. Sin él, el back sólo sabe que había una sesión
+    // anterior y la reporta como «otro dispositivo» aunque fuera la de este
+    // mismo navegador — el cartel salía en cada login.
     const result = await Promise.race([
-      claimSession(token).catch(() => null),
+      claimSession(token, { deviceId: getDeviceId() }).catch(() => null),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
     ])
     if (result?.superseded) {
@@ -800,10 +806,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     cierreVoluntarioRef.current = true
     // Best-effort FCM cleanup with the token still in memory.
     // Awaited but with a hard timeout so a slow backend can't stall logout.
-    await Promise.race([
-      removeFcmToken().catch(() => {}),
-      new Promise((resolve) => setTimeout(resolve, 1500)),
-    ])
+    //
+    // Y la revocación en el SERVIDOR, con el mismo tope. Sin esto el cierre
+    // era sólo local: el back seguía teniendo esta sesión como la activa, y
+    // el siguiente login la encontraba y avisaba «cerramos tu sesión en otro
+    // dispositivo» — sobre una sesión que el usuario mismo cerró. Es lo que
+    // ya hace el cierre por inactividad (IdleSessionGuard).
+    //
+    // 🔴 `cerrandoRef`: si la sesión ya fue desplazada por otro dispositivo,
+    // el revoke responde 401 SESSION_SUPERSEDED, y ese 401 vuelve a caer en
+    // el backstop de abajo, que llama a signOut, que revoca, que da 401… La
+    // bandera corta la cadena: mientras se está cerrando, un 401 de sesión
+    // desplazada no abre otro cierre.
+    cerrandoRef.current = true
+    const tokenVivo = getAccessToken()
+    try {
+      await Promise.race([
+        Promise.all([
+          removeFcmToken().catch(() => {}),
+          tokenVivo ? revokeSession(tokenVivo).catch(() => {}) : Promise.resolve(),
+        ]),
+        new Promise((resolve) => setTimeout(resolve, 1500)),
+      ])
+    } finally {
+      cerrandoRef.current = false
+    }
 
     // Limpieza síncrona — tiene que salir bien aunque Supabase se cuelgue abajo.
     // Vive en session-terminal.ts porque el cierre por sesión vencida necesita
@@ -843,7 +870,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     setUnauthorizedHandler((code) => {
       if (code === 'SESSION_SUPERSEDED') {
-        void signOut()
+        if (!cerrandoRef.current) void signOut()
         return
       }
       terminarSesion('expirada')

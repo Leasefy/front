@@ -23,8 +23,11 @@ void React // jsx-preserve
 
 type AuthEventCallback = (event: string, session: unknown) => Promise<void> | void
 
-const { getMock, supabaseSignOutMock, authCallbacks } = vi.hoisted(() => ({
+const { getMock, postMock, supabaseSignOutMock, authCallbacks } = vi.hoisted(() => ({
   getMock: vi.fn(),
+  // Resolves so the single-session claim (POST /auth/session/claim) in the
+  // bootstrap path returns a promise (its .catch/await must not throw).
+  postMock: vi.fn().mockResolvedValue({ superseded: false }),
   supabaseSignOutMock: vi.fn().mockResolvedValue({ error: null }),
   authCallbacks: [] as AuthEventCallback[],
 }))
@@ -57,12 +60,11 @@ vi.mock('@/lib/api/client', () => {
   return {
     apiClient: {
       get: (...args: unknown[]) => getMock(...args),
-      // Resolves so the single-session claim (POST /auth/session/claim) in the
-      // bootstrap path returns a promise (its .catch/await must not throw).
-      post: vi.fn().mockResolvedValue({ superseded: false }),
+      post: (...args: unknown[]) => postMock(...args),
       patch: vi.fn(),
     },
     ApiError,
+    getAccessToken: () => 'jwt-token',
     setAccessToken: vi.fn(),
     setUnauthorizedHandler: vi.fn(),
   }
@@ -124,6 +126,7 @@ beforeEach(() => {
   captured = null
   authCallbacks.length = 0
   getMock.mockReset()
+  postMock.mockReset().mockResolvedValue({ superseded: false })
   supabaseSignOutMock.mockClear()
   container = document.createElement('div')
   document.body.appendChild(container)
@@ -402,6 +405,90 @@ describe('AuthProvider — agency membership detection (personal-role coexistenc
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('AuthProvider — sesión única: «otro dispositivo» tiene que ser otro dispositivo', () => {
+  const usuario = {
+    id: 'u1',
+    email: 'ana@example.com',
+    firstName: 'Ana',
+    lastName: 'Pérez',
+    role: 'TENANT',
+    onboardingCompletedAt: '2026-06-01T12:00:00.000Z',
+  }
+
+  it('el claim manda el id estable de este navegador, el mismo en cada login', async () => {
+    getMock.mockResolvedValue(usuario)
+    await renderProviderAndEmitInitialSession()
+
+    const claims = postMock.mock.calls.filter((c) => c[0] === '/auth/session/claim')
+    expect(claims).toHaveLength(1)
+    const body = claims[0][1] as { deviceId?: string }
+    expect(body.deviceId).toMatch(/^[A-Za-z0-9_-]{8,64}$/)
+    expect(localStorage.getItem('leasefy:device-id')).toBe(body.deviceId)
+    expect(claims[0][2]).toBe('jwt-token')
+  })
+
+  it('cerrar sesión revoca en el SERVIDOR con el token todavía vivo: el siguiente login no encuentra una sesión «de otro dispositivo»', async () => {
+    getMock.mockResolvedValue(usuario)
+    await renderProviderAndEmitInitialSession()
+
+    await act(async () => {
+      await captured!.signOut()
+    })
+
+    const revocaciones = postMock.mock.calls.filter((c) => c[0] === '/auth/session/revoke')
+    expect(revocaciones).toHaveLength(1)
+    expect(revocaciones[0][2]).toBe('jwt-token')
+    // Y el id del navegador sobrevive al cierre: es lo que el próximo claim
+    // tiene que volver a mandar para que sea «el mismo dispositivo».
+    expect(localStorage.getItem('leasefy:device-id')).toMatch(/^[A-Za-z0-9_-]{8,64}$/)
+  })
+
+  it('si la sesión ya fue desplazada, el revoke del cierre (401 SESSION_SUPERSEDED) NO encadena otro cierre', async () => {
+    getMock.mockResolvedValue(usuario)
+    await renderProviderAndEmitInitialSession()
+
+    // El back rechaza el revoke como lo haría con una sesión desplazada, y el
+    // cliente real dispara el backstop de 401 antes de tirar el error.
+    const { setUnauthorizedHandler } = await import('@/lib/api/client')
+    const handler = (setUnauthorizedHandler as unknown as { mock: { calls: unknown[][] } }).mock.calls.at(-1)?.[0] as
+      | ((code: string) => void)
+      | undefined
+    expect(handler).toBeTypeOf('function')
+    postMock.mockImplementation((path: string) => {
+      if (path === '/auth/session/revoke') {
+        handler!('SESSION_SUPERSEDED')
+        return Promise.reject(new ApiError(401, 'superseded'))
+      }
+      return Promise.resolve({ superseded: false })
+    })
+
+    await act(async () => {
+      await captured!.signOut()
+    })
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    const revocaciones = postMock.mock.calls.filter((c) => c[0] === '/auth/session/revoke')
+    expect(revocaciones).toHaveLength(1)
+    expect(captured!.user).toBeNull()
+  })
+
+  it('un back caído no traba el cierre de sesión', async () => {
+    getMock.mockResolvedValue(usuario)
+    await renderProviderAndEmitInitialSession()
+    postMock.mockRejectedValue(new Error('backend caído'))
+
+    await act(async () => {
+      await captured!.signOut()
+    })
+
+    expect(captured!.user).toBeNull()
+    expect(supabaseSignOutMock).toHaveBeenCalled()
   })
 })
 

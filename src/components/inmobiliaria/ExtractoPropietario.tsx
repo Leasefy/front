@@ -44,9 +44,11 @@ import { nombreDelMes } from '@/lib/utils/mes';
 
 interface ExtractoPropietarioProps {
   extracto: ExtractoPropietarioType;
-  onDownloadPDF?: () => void;
+  /** Baja el PDF. Sin esto el botón no se muestra: un botón que no hace nada es peor que ninguno. */
+  onDownloadPDF?: () => void | Promise<void>;
   onPrint?: () => void;
-  onEmail?: () => void;
+  /** Manda el extracto al correo del propietario. Sin esto el botón no se muestra. */
+  onEmail?: () => void | Promise<void>;
   className?: string;
 }
 
@@ -137,7 +139,9 @@ function formatMonthYear(monthStr: string, loc: string): string {
   // `new Date('2026-08-01')` es medianoche UTC: al pintarlo en hora local
   // (Colombia, UTC-5) retrocede al 31 de julio y el extracto decía «Julio de
   // 2026» sobre los cobros de agosto. Ver lib/utils/mes.
-  return nombreDelMes(monthStr, loc === 'en' ? 'en' : 'es');
+  // Sólo la inicial en mayúscula: con `capitalize` de CSS salía «Septiembre De 2026».
+  const nombre = nombreDelMes(monthStr, loc === 'en' ? 'en' : 'es');
+  return nombre.charAt(0).toUpperCase() + nombre.slice(1);
 }
 
 /**
@@ -207,20 +211,22 @@ export function ExtractoPropietario({
     resetKey: `${extracto.propietarioId}|${extracto.month}`,
   });
 
-  // Handle PDF download
+  // Handle PDF download — se espera al handler: el «PDF descargado» se dice
+  // cuando bajó, no cuando se apretó el botón.
   const handleDownloadPDF = async () => {
-    if (onDownloadPDF) {
-      setIsDownloading(true);
-      try {
-        onDownloadPDF();
-        toast.success(t('inmobiliaria.propietario.extracto.pdfDownloaded'), {
-          description: `${t('inmobiliaria.propietario.extracto.extractOf')} ${extracto.propietarioName} - ${formatMonthYear(extracto.month, locale)}`,
-        });
-      } catch {
-        toast.error(t('inmobiliaria.propietario.extracto.pdfError'));
-      } finally {
-        setIsDownloading(false);
-      }
+    if (!onDownloadPDF) return;
+    setIsDownloading(true);
+    try {
+      await onDownloadPDF();
+      toast.success(t('inmobiliaria.propietario.extracto.pdfDownloaded'), {
+        description: `${t('inmobiliaria.propietario.extracto.extractOf')} ${extracto.propietarioName} - ${formatMonthYear(extracto.month, locale)}`,
+      });
+    } catch (error) {
+      toast.error(t('inmobiliaria.propietario.extracto.pdfError'), {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -233,21 +239,22 @@ export function ExtractoPropietario({
     }
   };
 
-  // Handle email
+  // Handle email — antes esperaba un segundo de mentira y decía «enviado»
+  // sin mandar nada. Ahora se espera al handler y se informa lo que pasó.
   const handleEmail = async () => {
-    if (onEmail) {
-      setIsSendingEmail(true);
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-        onEmail();
-        toast.success(t('inmobiliaria.propietario.extracto.emailSent'), {
-          description: `${t('inmobiliaria.propietario.extracto.emailSentTo')} ${propietario?.email || extracto.propietarioName}`,
-        });
-      } catch {
-        toast.error(t('inmobiliaria.propietario.extracto.emailError'));
-      } finally {
-        setIsSendingEmail(false);
-      }
+    if (!onEmail) return;
+    setIsSendingEmail(true);
+    try {
+      await onEmail();
+      toast.success(t('inmobiliaria.propietario.extracto.emailSent'), {
+        description: `${t('inmobiliaria.propietario.extracto.emailSentTo')} ${propietario?.email || extracto.propietarioName}`,
+      });
+    } catch (error) {
+      toast.error(t('inmobiliaria.propietario.extracto.emailError'), {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -267,7 +274,9 @@ export function ExtractoPropietario({
       )}
     >
       {/* Header - Inmobiliaria Info */}
-      <div className="p-6 border-b border-border bg-gradient-to-r from-primary to-primary dark:from-primary/30 dark:to-primary/30 print:bg-transparent">
+      {/* Banda neutra: con el azul de marca de fondo, el nombre de la agencia
+          (texto oscuro) y el NIT (gris) no se leían. Sin gradientes (DESIGN.md). */}
+      <div className="p-6 border-b border-border bg-surface-muted print:bg-transparent">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center">
@@ -281,7 +290,7 @@ export function ExtractoPropietario({
                 NIT: {agencyConfig?.nit}
               </p>
               <p className="text-sm text-muted-foreground">
-                {agencyConfig?.address}, {agencyConfig?.city}
+                {[agencyConfig?.address, agencyConfig?.city].filter(Boolean).join(', ')}
               </p>
             </div>
           </div>
@@ -303,7 +312,7 @@ export function ExtractoPropietario({
             </h2>
             <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              {t('inmobiliaria.propietario.extracto.period')}: <span className="font-medium text-foreground capitalize">{formatMonthYear(extracto.month, locale)}</span>
+              {t('inmobiliaria.propietario.extracto.period')}: <span className="font-medium text-foreground">{formatMonthYear(extracto.month, locale)}</span>
             </p>
           </div>
           <div className="text-sm text-muted-foreground">
@@ -335,26 +344,30 @@ export function ExtractoPropietario({
             </div>
           </div>
 
-          {/* Bank Account */}
-          {propietario && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Bank className="w-4 h-4 text-primary" />
-                {t('inmobiliaria.propietario.extracto.bankAccount')}
-              </div>
-              <div className="pl-6 space-y-2">
-                <p className="text-foreground font-medium capitalize">
-                  {propietario.bankAccount.bank.replace(/_/g, ' ')}
-                </p>
-                <p className="text-sm text-muted-foreground capitalize">
-                  {propietario.bankAccount.accountType === 'savings' ? t('inmobiliaria.propietario.extracto.savings') : t('inmobiliaria.propietario.extracto.checking')}: {propietario.bankAccount.accountNumber}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {propietario.bankAccount.accountHolder}
-                </p>
-              </div>
+          {/* Bank Account — sale del extracto mismo (`bankInfo`), no de la
+              lista de propietarios: la lista llegaba con el banco plano y
+              leer `bankAccount.bank` de ahí tumbaba el modal entero. */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Bank className="w-4 h-4 text-primary" />
+              {t('inmobiliaria.propietario.extracto.bankAccount')}
             </div>
-          )}
+            <div className="pl-6 space-y-2" data-testid="extracto-banco">
+              {extracto.bankInfo?.bankAccountNumber ? (
+                <>
+                  <p className="text-foreground font-medium">{extracto.bankInfo.bankName ?? '—'}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {extracto.bankInfo.bankAccountType ?? ''}{extracto.bankInfo.bankAccountType ? ': ' : ''}{extracto.bankInfo.bankAccountNumber}
+                  </p>
+                  {extracto.bankInfo.bankAccountHolder && (
+                    <p className="text-sm text-muted-foreground">{extracto.bankInfo.bankAccountHolder}</p>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('inmobiliaria.propietario.extracto.sinCuenta')}</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -577,48 +590,55 @@ export function ExtractoPropietario({
             <Printer className="w-4 h-4" />
             {t('inmobiliaria.propietario.extracto.print')}
           </Button>
-          <Button
-            variant="outline"
-            onClick={handleEmail}
-            disabled={isSendingEmail || !propietario?.email}
-            className="gap-2"
-          >
-            {isSendingEmail ? (
-              <>
-                <Spinner size="sm" variant="current" />
-                {t('inmobiliaria.propietario.extracto.sending')}
-              </>
-            ) : (
-              <>
-                <Envelope className="w-4 h-4" />
-                {t('inmobiliaria.propietario.extracto.sendEmail')}
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={handleDownloadPDF}
-            disabled={isDownloading}
-            className="gap-2 bg-primary hover:opacity-90 text-primary-fg"
-          >
-            {isDownloading ? (
-              <>
-                <Spinner size="sm" variant="current" />
-                {t('inmobiliaria.propietario.extracto.downloading')}
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4" />
-                {t('inmobiliaria.propietario.extracto.downloadPDF')}
-              </>
-            )}
-          </Button>
+          {onEmail && (
+            <Button
+              variant="outline"
+              onClick={handleEmail}
+              disabled={isSendingEmail || !propietario?.email}
+              title={!propietario?.email ? t('inmobiliaria.propietario.extracto.sinCorreo') : undefined}
+              className="gap-2"
+              data-testid="extracto-enviar"
+            >
+              {isSendingEmail ? (
+                <>
+                  <Spinner size="sm" variant="current" />
+                  {t('inmobiliaria.propietario.extracto.sending')}
+                </>
+              ) : (
+                <>
+                  <Envelope className="w-4 h-4" />
+                  {t('inmobiliaria.propietario.extracto.sendEmail')}
+                </>
+              )}
+            </Button>
+          )}
+          {onDownloadPDF && (
+            <Button
+              onClick={handleDownloadPDF}
+              disabled={isDownloading}
+              className="gap-2 bg-primary hover:opacity-90 text-primary-fg"
+              data-testid="extracto-descargar"
+            >
+              {isDownloading ? (
+                <>
+                  <Spinner size="sm" variant="current" />
+                  {t('inmobiliaria.propietario.extracto.downloading')}
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  {t('inmobiliaria.propietario.extracto.downloadPDF')}
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Print Footer */}
       <div className="hidden print:block p-6 text-center text-xs text-muted-foreground border-t border-border">
         <p>{agencyConfig?.name} - NIT {agencyConfig?.nit}</p>
-        <p>{agencyConfig?.address}, {agencyConfig?.city}</p>
+        <p>{[agencyConfig?.address, agencyConfig?.city].filter(Boolean).join(', ')}</p>
         <p className="mt-2">{t('inmobiliaria.propietario.extracto.documentGenerated')} {formatDate(extracto.generatedAt, locale)}</p>
       </div>
     </motion.div>

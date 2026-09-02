@@ -282,7 +282,10 @@ describe('ContratoDetallePage — el propietario', () => {
 
     const ficha = container.querySelector('[data-testid="propietario-ficha"]')
     expect(ficha?.textContent).toBe('Jorge Restrepo')
-    expect(ficha?.getAttribute('href')).toBe('/panel/inmobiliaria/propietarios/po-9')
+    // Lleva `?volver=` con este contrato: la ficha del propietario vuelve acá.
+    expect(ficha?.getAttribute('href')).toBe(
+      `/panel/inmobiliaria/propietarios/po-9?volver=${encodeURIComponent(`/panel/inmobiliaria/contratos/${CONTRACT_ID}`)}`,
+    )
     expect(container.textContent).toContain('71234567')
     expect(container.textContent).not.toContain('victor ortiz')
   })

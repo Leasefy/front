@@ -13,6 +13,13 @@ export type DocumentType = 'CC' | 'CE' | 'NIT' | 'PASSPORT';
 
 export interface PropietarioBankAccount {
   bank: BankCode;
+  /**
+   * El nombre del banco tal como llegó del back («Nequi», «Banco de Bogota»).
+   * `bank` es el código del catálogo del front y queda vacío cuando el nombre
+   * no está ahí (las billeteras no están); sin esto la ficha decía «Banco: »
+   * en blanco para 8 de cada 60 propietarios.
+   */
+  bankName?: string;
   accountType: AccountType;
   accountNumber: string;
   accountHolder: string;

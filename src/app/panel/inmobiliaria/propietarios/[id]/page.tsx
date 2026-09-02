@@ -1,9 +1,9 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useMemo, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -18,7 +18,6 @@ import {
   TrashSimple,
   Clock,
   CurrencyDollar,
-  CalendarCheck,
   House,
   Warning,
   CheckCircle,
@@ -26,13 +25,10 @@ import {
   FileText,
   Download,
   Plus,
-  ArrowRight,
   Tag,
   Copy,
   Check,
-  CaretRight,
   Note,
-  SpinnerGap,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -40,18 +36,40 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
 import { SegmentedControl, IconButton } from '@leasefy/cadence';
+import { BackButton } from '@/components/ui/back-button';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListSeparator,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   PropietarioStats,
   PropietarioBankInfo,
   PropietarioForm,
 } from '@/components/inmobiliaria';
+import { ExtractoDelPropietarioDialog } from '@/components/inmobiliaria/ExtractoDelPropietarioDialog';
 import {
   usePropietario,
   useConsignaciones,
   useDispersiones,
 } from '@/lib/hooks/useInmobiliaria';
-import type { Propietario, PropietarioFormData, Consignacion, Dispersion } from '@/lib/types/inmobiliaria';
+import { propietariosApi } from '@/lib/api/inmobiliaria.service';
+import { ApiError } from '@/lib/api/client';
+import { descargarDatosDelPropietario } from '@/lib/propietarios/exportar-datos';
+import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
+import type { PropietarioFormData, Consignacion, Dispersion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+
+const LISTA_DE_PROPIETARIOS = '/panel/inmobiliaria/propietarios';
+
+/** Qué decirle a quien falló una llamada: el mensaje del back si vino, si no el genérico. */
+function mensajeDe(error: unknown, porDefecto: string): string {
+  if (error instanceof ApiError) return error.messages?.join(' · ') ?? error.message;
+  if (error instanceof Error && error.message) return error.message;
+  return porDefecto;
+}
 
 /**
  * Modal Component - Uses portal to render at document.body level
@@ -315,12 +333,21 @@ function PropietarioDetailContent() {
   const { t, locale } = useI18n();
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params.id as string;
+
+  // De dónde se entró (`?volver=`): el contrato, el inmueble, un cobro o la
+  // lista. «Volver» lleva ahí, y lo dice.
+  const rutaDeVuelta = rutaDeRegreso(searchParams.get('volver'), LISTA_DE_PROPIETARIOS);
+  const etiquetaDeVuelta = t(`inmobiliaria.propietarios.detail.backTo.${lugarDeRegreso(rutaDeVuelta)}`);
+  const rutaDeEstaFicha = `${LISTA_DE_PROPIETARIOS}/${id}`;
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
-  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const [showExtracto, setShowExtracto] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [activeTab, setTab] = useState<'properties' | 'payments' | 'notes'>('properties');
@@ -328,7 +355,7 @@ function PropietarioDetailContent() {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
   // Fetch propietario and keep local state for updates
-  const { propietario: fetchedPropietario, isLoading } = usePropietario(id);
+  const { propietario: fetchedPropietario, isLoading, refetch } = usePropietario(id);
   const [propietario, setPropietario] = useState(fetchedPropietario);
 
   // Update local state when fetched data changes
@@ -368,9 +395,9 @@ function PropietarioDetailContent() {
           <p className="text-sm text-muted-foreground mb-4 max-w-sm">
             {t('inmobiliaria.propietarios.notFoundDesc')}
           </p>
-          <Button hideArrow onClick={() => router.push('/panel/inmobiliaria/propietarios')}>
+          <Button hideArrow onClick={() => router.push(rutaDeVuelta)}>
             <CaretLeft className="w-4 h-4" />
-            {t('inmobiliaria.propietarios.backToList')}
+            {etiquetaDeVuelta}
           </Button>
         </div>
       </div>
@@ -397,53 +424,81 @@ function PropietarioDetailContent() {
     }
   };
 
+  // Editar, borrar y las notas iban contra un `setTimeout`: el cartel verde
+  // salía y nada se guardaba. Ahora pegan al back y la ficha se vuelve a leer.
   const handleEditSubmit = async (data: PropietarioFormData) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    toast.success(t('inmobiliaria.propietarios.toasts.updated'));
-    setShowEditModal(false);
+    try {
+      const actualizado = await propietariosApi.update(propietario.id, data);
+      setPropietario(actualizado);
+      toast.success(t('inmobiliaria.propietarios.toasts.updated'));
+      setShowEditModal(false);
+      await refetch();
+    } catch (error) {
+      toast.error(t('inmobiliaria.propietarios.toasts.updateError'), {
+        description: mensajeDe(error, ''),
+      });
+    }
   };
 
-  const handleDelete = () => {
-    toast.success(t('inmobiliaria.propietarios.toasts.deleted', { name: propietario.name }));
-    router.push('/panel/inmobiliaria/propietarios');
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await propietariosApi.delete(propietario.id);
+      toast.success(t('inmobiliaria.propietarios.toasts.deleted', { name: propietario.name }));
+      router.push(LISTA_DE_PROPIETARIOS);
+    } catch (error) {
+      toast.error(t('inmobiliaria.propietarios.toasts.deleteError'), {
+        description: mensajeDe(error, ''),
+      });
+      setIsDeleting(false);
+    }
   };
 
   const handleSaveNotes = async () => {
     setIsSavingNotes(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      // Update local state
-      if (propietario) {
-        setPropietario({
-          ...propietario,
-          notes: notesValue,
-          updatedAt: new Date().toISOString(),
-        });
-      }
+      const actualizado = await propietariosApi.update(propietario.id, { notes: notesValue });
+      setPropietario(actualizado);
       toast.success(t('inmobiliaria.propietarios.detail.notesSaved'));
       setShowNotesModal(false);
+      await refetch();
+    } catch (error) {
+      toast.error(t('inmobiliaria.propietarios.toasts.updateError'), {
+        description: mensajeDe(error, ''),
+      });
     } finally {
       setIsSavingNotes(false);
     }
   };
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const archivo = await descargarDatosDelPropietario(propietario, consignaciones, dispersiones);
+      toast.success(t('inmobiliaria.propietarios.detail.exportDone'), {
+        description: t('inmobiliaria.propietarios.detail.exportDoneDesc', { archivo }),
+      });
+    } catch (error) {
+      toast.error(t('inmobiliaria.propietarios.detail.exportError'), {
+        description: mensajeDe(error, ''),
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // «Nueva consignación» abre el asistente con este propietario ya elegido, y
+  // al terminar vuelve acá — con el inmueble nuevo en la lista.
+  const nuevaConsignacion = () =>
+    router.push(
+      conRegreso(`/panel/inmobiliaria/inmuebles/nuevo?propietarioId=${propietario.id}`, rutaDeEstaFicha),
+    );
+
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Button
-          variant="link"
-          size="sm"
-          hideArrow
-          onClick={() => router.push('/panel/inmobiliaria/propietarios')}
-          className="h-auto p-0 text-xs font-normal text-muted-foreground hover:text-foreground"
-        >
-          {t('inmobiliaria.propietarios.title')}
-        </Button>
-        <CaretRight className="w-3 h-3" />
-        <span className="text-foreground">{propietario.name}</span>
-      </div>
+      {/* Volver: a donde se entró, y dice a dónde. Antes había una miga de
+          pan en texto chico que no se leía como navegación. */}
+      <BackButton href={rutaDeVuelta} label={etiquetaDeVuelta} />
 
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
@@ -491,61 +546,41 @@ function PropietarioDetailContent() {
             {t('inmobiliaria.propietarios.edit')}
           </Button>
 
-          <div className="relative">
-            <Button
-              variant="outline"
-              size="icon"
-              hideArrow
-              aria-label={t('inmobiliaria.propietarios.detail.exportData')}
-              onClick={() => setShowActionsMenu(!showActionsMenu)}
-            >
-              <DotsThree className="w-5 h-5" weight="bold" />
-            </Button>
-
-            <AnimatePresence>
-              {showActionsMenu && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="absolute right-0 top-full mt-1 w-48 p-2 rounded-xl border border-border bg-card z-10"
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    hideArrow
-                    className="w-full justify-start gap-3 px-3 font-normal text-foreground"
-                  >
-                    <FileText className="w-4 h-4" />
-                    <span>{t('inmobiliaria.propietarios.detail.generateStatement')}</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    hideArrow
-                    className="w-full justify-start gap-3 px-3 font-normal text-foreground"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>{t('inmobiliaria.propietarios.detail.exportData')}</span>
-                  </Button>
-                  <div className="h-px bg-border my-1" />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    hideArrow
-                    onClick={() => {
-                      setShowActionsMenu(false);
-                      setShowDeleteModal(true);
-                    }}
-                    className="w-full justify-start gap-3 px-3 font-normal text-danger hover:bg-danger-soft"
-                  >
-                    <TrashSimple className="w-4 h-4" />
-                    <span>{t('inmobiliaria.common.delete')}</span>
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          {/* Las tres acciones del menú hacen algo: extracto del mes (con
+              PDF y correo), exportar a Excel, eliminar. Antes las dos primeras
+              no tenían `onClick`. */}
+          <DropdownList>
+            <DropdownListTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                hideArrow
+                aria-label={t('inmobiliaria.propietarios.detail.moreActions')}
+                data-testid="propietario-acciones"
+              >
+                <DotsThree className="w-5 h-5" weight="bold" />
+              </Button>
+            </DropdownListTrigger>
+            <DropdownListContent align="end" className="w-52">
+              <DropdownListItem onSelect={() => setShowExtracto(true)} data-testid="accion-extracto">
+                <FileText className="w-4 h-4" />
+                <span className="text-sm">{t('inmobiliaria.propietarios.detail.generateStatement')}</span>
+              </DropdownListItem>
+              <DropdownListItem onSelect={() => void handleExport()} disabled={isExporting} data-testid="accion-exportar">
+                <Download className="w-4 h-4" />
+                <span className="text-sm">{t('inmobiliaria.propietarios.detail.exportData')}</span>
+              </DropdownListItem>
+              <DropdownListSeparator />
+              <DropdownListItem
+                onSelect={() => setShowDeleteModal(true)}
+                className="text-danger focus:bg-danger-soft focus:text-danger"
+                data-testid="accion-eliminar"
+              >
+                <TrashSimple className="w-4 h-4" />
+                <span className="text-sm">{t('inmobiliaria.common.delete')}</span>
+              </DropdownListItem>
+            </DropdownListContent>
+          </DropdownList>
         </div>
       </div>
 
@@ -713,7 +748,7 @@ function PropietarioDetailContent() {
                     <p className="text-sm text-muted-foreground mb-4 max-w-sm">
                       {t('inmobiliaria.propietarios.detail.noProperties')}
                     </p>
-                    <Button hideArrow onClick={() => toast.info('Próximamente')}>
+                    <Button hideArrow onClick={nuevaConsignacion} data-testid="nueva-consignacion">
                       <Plus className="w-4 h-4" />
                       {t('inmobiliaria.propietarios.detail.newConsignment')}
                     </Button>
@@ -825,15 +860,23 @@ function PropietarioDetailContent() {
             </div>
           )}
           <div className="flex items-center gap-3 justify-end pt-4">
-            <Button variant="secondary" hideArrow onClick={() => setShowDeleteModal(false)}>
+            <Button variant="secondary" hideArrow onClick={() => setShowDeleteModal(false)} disabled={isDeleting}>
               {t('inmobiliaria.common.cancel')}
             </Button>
-            <Button variant="destructive" hideArrow onClick={handleDelete}>
+            <Button variant="destructive" hideArrow onClick={handleDelete} isLoading={isDeleting} disabled={isDeleting}>
               {t('inmobiliaria.common.delete')}
             </Button>
           </div>
         </div>
       </Modal>
+
+      {/* Extracto del mes */}
+      <ExtractoDelPropietarioDialog
+        propietarioId={propietario.id}
+        propietarioName={propietario.name}
+        abierto={showExtracto}
+        onOpenChange={setShowExtracto}
+      />
 
       {/* Notes Modal */}
       <Modal
@@ -880,7 +923,11 @@ function PropietarioDetailContent() {
 export default function PropietarioDetailPage() {
   return (
     <PageGuard module="propietarios">
-      <PropietarioDetailContent />
+      {/* `useSearchParams` obliga a un límite de Suspense: sin él, `next build`
+          falla al prerenderizar la ruta. */}
+      <Suspense fallback={null}>
+        <PropietarioDetailContent />
+      </Suspense>
     </PageGuard>
   );
 }

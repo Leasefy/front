@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { conRegreso } from '@/lib/nav/ruta-de-regreso';
 import { motion } from 'framer-motion';
 import {
   User,
@@ -145,9 +146,11 @@ interface PropietarioSectionProps {
   propietario: Propietario | undefined;
   /** Cambiar de propietario (se vendió, heredó). Sin esto no se muestra el botón. */
   onCambiar?: () => void;
+  /** La ruta de esta ficha, para que «Volver» en la del propietario regrese acá. */
+  rutaDeOrigen?: string;
 }
 
-export function PropietarioSection({ propietario, onCambiar }: PropietarioSectionProps) {
+export function PropietarioSection({ propietario, onCambiar, rutaDeOrigen }: PropietarioSectionProps) {
   const { t } = useI18n();
 
   if (!propietario) {
@@ -201,7 +204,11 @@ export function PropietarioSection({ propietario, onCambiar }: PropietarioSectio
               </button>
             )}
             <Link
-              href={`/panel/inmobiliaria/propietarios/${propietario.id}`}
+              href={
+                rutaDeOrigen
+                  ? conRegreso(`/panel/inmobiliaria/propietarios/${propietario.id}`, rutaDeOrigen)
+                  : `/panel/inmobiliaria/propietarios/${propietario.id}`
+              }
               className="text-sm text-primary hover:text-primary dark:hover:text-primary flex items-center gap-1"
             >
               {t('inmobiliaria.consignaciones.detail.viewProfile')}

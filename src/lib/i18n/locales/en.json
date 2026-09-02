@@ -1676,6 +1676,18 @@
         "notesSaved": "Notes saved",
         "generateStatement": "Generate statement",
         "exportData": "Export data",
+        "exportDone": "Data exported",
+        "exportDoneDesc": "{{archivo}} was downloaded",
+        "exportError": "Could not export. Try again.",
+        "moreActions": "More actions",
+        "backTo": {
+          "lista": "Back to owners",
+          "contrato": "Back to the contract",
+          "inmueble": "Back to the property",
+          "cobro": "Back to collections",
+          "dispersiones": "Back to disbursements",
+          "otro": "Back"
+        },
         "createdAt": "Created",
         "updatedAt": "Updated",
         "statusInProcess": "In process",
@@ -2723,6 +2735,7 @@
       },
       "new": {
         "title": "New Consignment",
+        "backToOwner": "Back to the owner",
         "subtitle": "Add a new property to the portfolio",
         "step1": "Owner",
         "step2": "Property",
@@ -4204,7 +4217,12 @@
         "pdfError": "Error downloading PDF",
         "emailSent": "Statement sent",
         "emailSentTo": "Statement sent to",
-        "emailError": "Error sending email"
+        "emailError": "The statement could not be sent",
+        "sinCorreo": "The owner has no email on file",
+        "sinCuenta": "No bank account on file",
+        "elegirMes": "Statement month",
+        "cargando": "Building the statement…",
+        "sinDatos": "The statement for that month could not be loaded."
       },
       "form": {
         "personalInfo": "Personal information",

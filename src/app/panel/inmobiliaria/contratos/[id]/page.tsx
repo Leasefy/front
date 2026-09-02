@@ -13,6 +13,7 @@
 import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { leerRespaldo, etiquetaDeTipo } from '@/lib/inmobiliaria/respaldo';
+import { conRegreso } from '@/lib/nav/ruta-de-regreso';
 import Link from 'next/link';
 import {
   CaretLeft,
@@ -885,7 +886,7 @@ function FilaDelPropietario({ contract }: { contract: Contract }) {
         <span className="text-muted-foreground">Propietario</span>
         <span className="text-right">
           <Link
-            href={`/panel/inmobiliaria/propietarios/${p.id}`}
+            href={conRegreso(`/panel/inmobiliaria/propietarios/${p.id}`, `/panel/inmobiliaria/contratos/${contract.id}`)}
             className="font-medium text-foreground hover:underline"
             data-testid="propietario-ficha"
           >

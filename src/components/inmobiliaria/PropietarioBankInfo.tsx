@@ -141,7 +141,7 @@ export function PropietarioBankInfo({
         <div className="flex items-center justify-between py-2 border-b border-border-faint dark:border-border-strong">
           <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.bank')}</span>
           <span className="font-medium text-fg dark:text-white">
-            {bank?.name || bankAccount.bank}
+            {bank?.name || bankAccount.bankName || bankAccount.bank}
           </span>
         </div>
 
@@ -230,7 +230,7 @@ export function PropietarioBankInfoCompact({
       </div>
       <div className="min-w-0">
         <p className="text-sm font-medium text-fg dark:text-white truncate">
-          {bank?.name || bankAccount.bank} {maskAccount(bankAccount.accountNumber)}
+          {bank?.name || bankAccount.bankName || bankAccount.bank} {maskAccount(bankAccount.accountNumber)}
         </p>
         <p className="text-xs text-fg-muted dark:text-fg-subtle">
           {accountTypeLabel} • {bankAccount.accountHolder}

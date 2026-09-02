@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { conRegreso } from '@/lib/nav/ruta-de-regreso';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -397,7 +398,7 @@ export function CobroDetail({
                     <p className="text-sm text-muted-foreground">{propietario.email ?? '—'}</p>
                   </div>
                   <Link
-                    href={`/panel/inmobiliaria/propietarios/${propietario.id}`}
+                    href={conRegreso(`/panel/inmobiliaria/propietarios/${propietario.id}`, '/panel/inmobiliaria/cobros')}
                     className="text-sm text-primary hover:underline"
                   >
                     {t('inmobiliaria.cobros.detail.viewProfile')}

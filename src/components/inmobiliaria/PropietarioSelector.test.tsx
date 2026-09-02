@@ -83,4 +83,12 @@ describe('<PropietarioSelector>', () => {
     act(() => tarjeta('Yesica').click());
     expect(onChange).toHaveBeenCalledWith('p2');
   });
+
+  it('el elegido va primero, aunque en la lista venga después', () => {
+    // Desde la ficha del propietario se llega con él ya marcado: tiene que
+    // verse arriba, no en la página 4 de 200.
+    render('p2', vi.fn());
+    const texto = container.textContent ?? '';
+    expect(texto.indexOf('Yesica')).toBeLessThan(texto.indexOf('Yolanda'));
+  });
 });

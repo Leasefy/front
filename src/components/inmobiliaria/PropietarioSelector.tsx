@@ -58,15 +58,21 @@ export function PropietarioSelector({
 
   // Filter propietarios by search
   const filteredPropietarios = useMemo(() => {
-    if (!search.trim()) return propietarios;
-    const query = search.toLowerCase();
-    return propietarios.filter(
-      (p) =>
-        p.name.toLowerCase().includes(query) ||
-        (p.email?.toLowerCase().includes(query) ?? false) ||
-        p.documentNumber.includes(query)
-    );
-  }, [propietarios, search]);
+    const query = search.trim().toLowerCase();
+    const filtrados = query
+      ? propietarios.filter(
+          (p) =>
+            p.name.toLowerCase().includes(query) ||
+            (p.email?.toLowerCase().includes(query) ?? false) ||
+            p.documentNumber.includes(query)
+        )
+      : propietarios;
+    // El elegido va primero: cuando se llega con el propietario ya marcado
+    // (desde su ficha) tiene que verse arriba, no en la página 4 de 200.
+    const elegido = value ? filtrados.find((p) => p.id === value) : undefined;
+    if (!elegido) return filtrados;
+    return [elegido, ...filtrados.filter((p) => p.id !== elegido.id)];
+  }, [propietarios, search, value]);
 
   const handleSelectPropietario = (propietario: Propietario) => {
     // Close new form if open

@@ -32,6 +32,7 @@ describe('normalizePropietario', () => {
     })
     expect(p.bankAccount).toEqual({
       bank: 'bancolombia',
+      bankName: 'Bancolombia',
       accountType: 'checking',
       accountNumber: '91234567890',
       accountHolder: 'JORGE RESTREPO',
@@ -53,5 +54,16 @@ describe('normalizePropietario', () => {
     expect(codigoDeBanco('Bancolombia S.A.')).toBe('bancolombia')
     expect(codigoDeBanco('Banco Desconocido del Sur')).toBe('')
     expect(codigoDeBanco(null)).toBe('')
+  })
+
+  it('reconoce el nombre sin tildes, como llega de una migración', () => {
+    expect(codigoDeBanco('Banco de Bogota')).toBe('bogota')
+    expect(codigoDeBanco('Itau')).toBe('itau')
+  })
+
+  it('una billetera que no está en el catálogo conserva su nombre para mostrarlo', () => {
+    const p = normalizePropietario({ ...base, bankName: 'Nequi', bankAccountNumber: '3001234567' })
+    expect(p.bankAccount.bank).toBe('')
+    expect(p.bankAccount.bankName).toBe('Nequi')
   })
 })

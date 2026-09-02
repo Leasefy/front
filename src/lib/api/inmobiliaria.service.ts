@@ -176,13 +176,18 @@ type PropietarioDelBack = Omit<Propietario, 'bankAccount' | 'propertyCount' | 'a
   pendingBalance?: number;
 };
 
+/** Minúsculas y sin tildes: «Banco de Bogota» e «Itau» (así llegan de una migración) tienen que dar con «Bogotá» e «Itaú». */
+function llano(texto: string): string {
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+}
+
 /** «Bancolombia S.A.» → `bancolombia`; sin coincidencia queda vacío (nunca se inventa un banco). */
 export function codigoDeBanco(nombre: string | null | undefined): BankCode | '' {
-  const n = (nombre ?? '').trim().toLowerCase();
+  const n = llano(nombre ?? '');
   if (!n) return '';
-  const exacto = COLOMBIAN_BANKS.find((b) => b.name.toLowerCase() === n || b.shortName.toLowerCase() === n);
+  const exacto = COLOMBIAN_BANKS.find((b) => llano(b.name) === n || llano(b.shortName) === n);
   if (exacto) return exacto.code;
-  const parcial = COLOMBIAN_BANKS.find((b) => n.includes(b.shortName.toLowerCase()) || n.includes(b.code));
+  const parcial = COLOMBIAN_BANKS.find((b) => n.includes(llano(b.shortName)) || n.includes(b.code));
   return parcial?.code ?? '';
 }
 
@@ -196,6 +201,7 @@ export function normalizePropietario(raw: PropietarioDelBack): Propietario {
     pendingBalance: raw.pendingBalance ?? 0,
     bankAccount: {
       bank: codigoDeBanco(bankName) as BankCode,
+      ...(bankName ? { bankName } : {}),
       accountType: (bankAccountType ?? '').toLowerCase().startsWith('corr') ? 'checking' : 'savings',
       accountNumber: bankAccountNumber ?? '',
       accountHolder: bankAccountHolder ?? '',
@@ -255,8 +261,11 @@ export const propietariosApi = {
     if (params?.city) query.set('city', params.city);
     if (params?.tags) query.set('tags', params.tags);
     const qs = query.toString();
-    const res = await apiClient.get<{ data: Propietario[] } | Propietario[]>(`${BASE}/propietarios${qs ? `?${qs}` : ''}`);
-    return lista(res);
+    // La lista viene con el banco plano igual que la ficha: se normaliza fila
+    // por fila, o cualquier pantalla que lea `bankAccount` de un propietario
+    // de la lista (el extracto, el selector) revienta con «reading 'bank'».
+    const res = await apiClient.get<{ data: PropietarioDelBack[] } | PropietarioDelBack[]>(`${BASE}/propietarios${qs ? `?${qs}` : ''}`);
+    return lista(res).map(normalizePropietario);
   },
 
   async getById(id: string): Promise<Propietario> {
@@ -270,7 +279,12 @@ export const propietariosApi = {
   },
 
   async update(id: string, data: Partial<PropietarioFormData>): Promise<Propietario> {
-    return apiClient.patch<Propietario>(`${BASE}/propietarios/${id}`, mapPropietarioBankFields(data));
+    // El back expone `PUT /propietarios/:id` (no PATCH): con PATCH respondía
+    // 404 y «Editar» nunca guardó nada. La respuesta viene en la forma del
+    // cable (banco plano), por eso se normaliza igual que `getById`.
+    return normalizePropietario(
+      await apiClient.put<PropietarioDelBack>(`${BASE}/propietarios/${id}`, mapPropietarioBankFields(data)),
+    );
   },
 
   async delete(id: string): Promise<void> {
@@ -295,6 +309,19 @@ export const propietariosApi = {
   async getExtracto(id: string, month?: string): Promise<ExtractoPropietario> {
     const qs = month ? `?month=${month}` : '';
     return apiClient.get<ExtractoPropietario>(`${BASE}/propietarios/${id}/extracto${qs}`);
+  },
+
+  /** El mismo extracto del mes, como PDF. */
+  async getExtractoPdf(id: string, month: string): Promise<Blob> {
+    return apiClient.getBlob(`${BASE}/propietarios/${id}/extracto.pdf?month=${encodeURIComponent(month)}`);
+  },
+
+  /** Manda el PDF del mes al correo del propietario. Devuelve a quién se mandó. */
+  async enviarExtracto(id: string, month: string): Promise<{ enviadoA: string; month: string }> {
+    return apiClient.post<{ enviadoA: string; month: string }>(
+      `${BASE}/propietarios/${id}/extracto/enviar`,
+      { month },
+    );
   },
 };
 

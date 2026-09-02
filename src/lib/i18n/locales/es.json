@@ -1677,6 +1677,18 @@
         "notesSaved": "Notas guardadas",
         "generateStatement": "Generar extracto",
         "exportData": "Exportar datos",
+        "exportDone": "Datos exportados",
+        "exportDoneDesc": "Se descargó {{archivo}}",
+        "exportError": "No se pudo exportar. Intenta de nuevo.",
+        "moreActions": "Más acciones",
+        "backTo": {
+          "lista": "Volver a propietarios",
+          "contrato": "Volver al contrato",
+          "inmueble": "Volver al inmueble",
+          "cobro": "Volver a cobros",
+          "dispersiones": "Volver a dispersiones",
+          "otro": "Volver"
+        },
         "createdAt": "Creado",
         "updatedAt": "Actualizado",
         "statusInProcess": "En proceso",
@@ -2724,6 +2736,7 @@
       },
       "new": {
         "title": "Nueva Consignación",
+        "backToOwner": "Volver al propietario",
         "subtitle": "Agregar una nueva propiedad al portafolio",
         "step1": "Propietario",
         "step2": "Propiedad",
@@ -4205,7 +4218,12 @@
         "pdfError": "Error al descargar PDF",
         "emailSent": "Extracto enviado",
         "emailSentTo": "Se envió el extracto a",
-        "emailError": "Error al enviar email"
+        "emailError": "No se pudo enviar el extracto",
+        "sinCorreo": "El propietario no tiene correo registrado",
+        "sinCuenta": "Sin cuenta bancaria registrada",
+        "elegirMes": "Mes del extracto",
+        "cargando": "Armando el extracto…",
+        "sinDatos": "No se pudo cargar el extracto de ese mes."
       },
       "form": {
         "personalInfo": "Información personal",

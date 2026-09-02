@@ -443,7 +443,9 @@ describe('propietariosApi.create — maps front bank fields to the wire contract
 });
 
 describe('propietariosApi.update — applies the same wire mapping on a partial payload', () => {
-  it('PATCHes only the given fields, translated to the wire contract', async () => {
+  // PUT, no PATCH: el back sólo registra `@Put(':id')` y con PATCH respondía
+  // 404 — «Editar» en la ficha nunca guardó nada (Nico, 2026-09-02).
+  it('PUTs only the given fields, translated to the wire contract', async () => {
     const fetchMock = mockFetchOnce({ id: 'prop-1' });
 
     await propietariosApi.update('prop-1', {
@@ -455,7 +457,7 @@ describe('propietariosApi.update — applies the same wire mapping on a partial 
 
     const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url.endsWith('/inmobiliaria/propietarios/prop-1')).toBe(true);
-    expect(opts.method).toBe('PATCH');
+    expect(opts.method).toBe('PUT');
     const body = JSON.parse(opts.body as string);
     expect(body).toEqual({
       bankCode: 'BBVA',

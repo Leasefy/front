@@ -462,6 +462,7 @@ function ConsignacionDetailContent() {
             <PropietarioSection
               propietario={propietario ?? undefined}
               onCambiar={() => setShowCambiarPropietario(true)}
+              rutaDeOrigen={`/panel/inmobiliaria/inmuebles/${consignacionId}`}
             />
           </motion.div>
 

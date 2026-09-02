@@ -22,24 +22,15 @@ import { CuentaDeCobro } from '@/components/cobros/cuenta-de-cobro/CuentaDeCobro
 import { agencyApi, cobrosApi } from '@/lib/api/inmobiliaria.service';
 import type { CobroConDesglose } from '@/lib/api/recibos-de-caja.types';
 import type { AgencyProfile } from '@/lib/types/inmobiliaria';
+import { rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 
 const LISTA_DE_COBROS = '/panel/inmobiliaria/cobros';
-
-/**
- * `?volver=` sólo se respeta si apunta adentro del panel: un enlace de
- * regreso que sale a otro dominio es un open redirect con otro nombre.
- */
-function rutaDeRegreso(volver: string | null): string {
-  if (!volver) return LISTA_DE_COBROS;
-  if (!volver.startsWith('/panel/') || volver.startsWith('//')) return LISTA_DE_COBROS;
-  return volver;
-}
 
 function CuentaDeCobroContent() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const id = params.id;
-  const volverA = rutaDeRegreso(searchParams.get('volver'));
+  const volverA = rutaDeRegreso(searchParams.get('volver'), LISTA_DE_COBROS);
 
   const [cobro, setCobro] = useState<CobroConDesglose | null>(null);
   const [agencia, setAgencia] = useState<AgencyProfile | null>(null);

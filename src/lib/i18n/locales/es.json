@@ -2566,7 +2566,7 @@
       "closedPerMonth": "cerrados/mes",
       "noAgentsInZone": "No hay agentes disponibles en esta zona",
       "noActiveAgentsAvailable": "No hay agentes activos disponibles",
-      "sinAgentesTodavia": "Todavía no hay agentes en tu equipo, así que queda sin agente responsable. Cuando invites a tu equipo, lo asignás desde el detalle del inmueble.",
+      "sinAgentesTodavia": "Todavía no hay agentes en tu equipo, así que queda sin agente responsable. Cuando invites a tu equipo, lo asignas desde el detalle del inmueble.",
       "agentAssigned": "Agente asignado: {{name}}",
       "propsShort": "Props.",
       "viewDetail": "Ver detalle",
@@ -2605,7 +2605,7 @@
     },
     "portafolio": {
       "title": "Inmuebles",
-      "subtitle": "Los inmuebles que administrás, con su consignación.",
+      "subtitle": "Los inmuebles que administras, con su propietario y su comisión.",
       "search": "Buscar inmueble...",
       "addProperty": "Nueva consignación",
       "noProperties": "Todavía no administrás ningún inmueble",
@@ -2679,7 +2679,7 @@
         "cards": "Cards"
       },
       "degradedNotice": {
-        "title": "No pudimos cargar los inmuebles importados sin mandato",
+        "title": "No pudimos cargar los inmuebles importados sin propietario",
         "description": "Tu portafolio se sigue mostrando con lo que sí cargó. Puede faltar alguna propiedad reciente.",
         "retry": "Reintentar"
       },
@@ -2855,12 +2855,12 @@
         },
         "mandateBatch": {
           "title": "¿De quién son estos inmuebles?",
-          "subtitle": "Elegí el propietario y la comisión de la agencia para los {{count}} inmuebles que acabás de traer, todos a la vez. Si son de dueños distintos, hacelo después uno por uno desde el portafolio.",
-          "subtitleUno": "Elegí el propietario y la comisión de la agencia para el inmueble que acabás de traer. Si no es de un solo dueño, hacelo después desde el portafolio.",
+          "subtitle": "Elige el propietario y la comisión de la agencia para los {{count}} inmuebles que acabas de traer, todos a la vez. Si son de dueños distintos, hazlo después uno por uno desde el portafolio.",
+          "subtitleUno": "Elige el propietario y la comisión de la agencia para el inmueble que acabas de traer. Si no es de un solo dueño, hazlo después desde el portafolio.",
           "propertiesListLabel": "Inmuebles",
           "propietarioLabel": "Propietario",
           "commissionLabel": "Comisión de la agencia",
-          "contractDateLabel": "Desde cuándo los administrás",
+          "contractDateLabel": "Desde cuándo los administras",
           "agenteLabel": "Agente responsable (opcional)",
           "skip": "Hacerlo después",
           "confirm": "Guardar para todos",
@@ -2868,12 +2868,12 @@
             "allSucceededTitle": "Propietario asignado",
             "allSucceededDesc": "{{count}} inmuebles ya tienen propietario y comisión.",
             "partialTitle": "Quedaron algunos sin propietario",
-            "partialDesc": "{{succeeded}} inmuebles quedaron con propietario, {{failed}} no. Completalos desde el portafolio.",
+            "partialDesc": "{{succeeded}} inmuebles quedaron con propietario, {{failed}} no. Complétalos desde el portafolio.",
             "allFailedTitle": "No se pudo asignar el propietario",
-            "allFailedDesc": "Ningún inmueble quedó con propietario. Completalos desde el portafolio cuando quieras.",
+            "allFailedDesc": "Ningún inmueble quedó con propietario. Complétalos desde el portafolio cuando quieras.",
             "publishPartialTitle": "Propietario guardado; falta publicar algunos",
-            "publishPartialDesc": "{{count}} inmuebles quedaron con propietario pero no se pudieron publicar. Abrilos desde el portafolio y publicalos cuando quieras — no los cargues de nuevo.",
-            "errorDesc": "No pudimos guardar el propietario. Probá de nuevo en un momento."
+            "publishPartialDesc": "{{count}} inmuebles quedaron con propietario pero no se pudieron publicar. Ábrelos desde el portafolio y publícalos cuando quieras — no los cargues de nuevo.",
+            "errorDesc": "No pudimos guardar el propietario. Prueba de nuevo en un momento."
           }
         }
       },
@@ -3071,27 +3071,27 @@
         "emptyTitle": "No se encontraron propiedades",
         "emptyDescription": "Ajusta los filtros o agrega una nueva consignación",
         "adminFee": "+ {{amount}} admin",
-        "missingMandate": "Falta mandato"
+        "missingMandate": "Sin propietario"
       },
       "mandateDialog": {
-        "title": "Completar mandato",
-        "subtitle": "Termina de consignar «{{title}}»: ya tenemos los datos del inmueble, sólo faltan los del mandato.",
+        "title": "¿De quién es este inmueble?",
+        "subtitle": "El enlace nos dio los datos de «{{title}}», pero no quién es el dueño ni qué comisión cobras por administrarlo. Sin eso no se puede publicar ni pagarle a nadie.",
         "propietarioLabel": "Propietario",
         "commissionLabel": "Comisión de la agencia",
         "saleCommissionLabel": "Comisión de venta",
-        "contractDateLabel": "Fecha del contrato",
+        "contractDateLabel": "Desde cuándo lo administras",
         "agenteLabel": "Agente asignado (opcional)",
-        "saleListingNotice": "Esta propiedad está en venta: el mandato no lleva canon de arriendo, sólo la comisión de venta.",
+        "saleListingNotice": "Este inmueble está en venta: no lleva canon de arriendo, sólo la comisión que cobras por venderlo.",
         "cancel": "Cancelar",
-        "confirm": "Completar mandato",
+        "confirm": "Guardar propietario",
         "toasts": {
-          "successTitle": "Mandato completado",
-          "successDesc": "«{{title}}» ya tiene mandato y comisión, y quedó publicado.",
-          "alreadyExistsTitle": "Ese mandato ya existía — actualizamos tu portafolio.",
-          "publishErrorTitle": "El mandato quedó guardado; falta publicar el inmueble",
-          "publishErrorDesc": "{{reason}} Abrilo desde el portafolio y publicalo cuando quieras — no lo cargues de nuevo.",
+          "successTitle": "Propietario asignado",
+          "successDesc": "«{{title}}» ya tiene propietario y comisión, y quedó publicado.",
+          "alreadyExistsTitle": "Ese inmueble ya tenía propietario — actualizamos tu portafolio.",
+          "publishErrorTitle": "El propietario quedó guardado; falta publicar el inmueble",
+          "publishErrorDesc": "{{reason}} Ábrelo desde el portafolio y publícalo cuando quieras — no lo cargues de nuevo.",
           "publishErrorFallbackReason": "No pudimos publicarlo.",
-          "errorDesc": "No pudimos completar el mandato. Probá de nuevo en un momento."
+          "errorDesc": "No pudimos guardar el propietario. Prueba de nuevo en un momento."
         }
       },
       "detail": {
@@ -3113,7 +3113,7 @@
         "agentTitle": "Agente Asignado",
         "noAgentAssigned": "No hay agente asignado",
         "commissionDistribution": "Distribución de comisión",
-        "commissionSplitNotAvailableForSale": "Un mandato de venta no reparte comisión entre agente e inmobiliaria en este momento.",
+        "commissionSplitNotAvailableForSale": "Un inmueble en venta no reparte comisión entre agente e inmobiliaria en este momento.",
         "agentShare": "Agente",
         "agencyShare": "Inmobiliaria",
         "reassignAgent": "Reasignar agente",
@@ -10352,7 +10352,7 @@
       },
       "propiedades": {
         "titulo": "Propiedades",
-        "descripcion": "Los inmuebles que administrás, con su dirección y su dueño. Sin esto, los contratos entran sin a qué apuntar.",
+        "descripcion": "Los inmuebles que administras, con su dirección y su dueño. Sin esto, los contratos entran sin a qué apuntar.",
         "corto": "Propiedades"
       },
       "contratos": {

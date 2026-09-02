@@ -159,7 +159,7 @@ export function AsignacionModal({
               {t('inmobiliaria.agente.currentAgent')}
             </label>
             {currentAgente ? (
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-fg-muted flex items-center justify-center text-white text-sm font-semibold shrink-0">
                   {currentAgente.avatar ? (
                     <img
@@ -263,7 +263,7 @@ export function AsignacionModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="sticky bottom-0 -mx-6 px-6 py-4 border-t border-border dark:border-border-strong bg-surface dark:bg-[#14130F] flex items-center gap-3">
+        <div className="sticky bottom-0 -mx-6 px-6 py-4 border-t border-border dark:border-border-strong bg-surface dark:bg-bg flex items-center gap-3">
           <Button
             variant="secondary"
             hideArrow

@@ -329,7 +329,7 @@ export function AISuggestionCard({
 
   return (
     <div
-      className="animate-stagger-in rounded-xl border border-border dark:border-border-strong overflow-hidden bg-surface dark:bg-[#14130F]"
+      className="animate-stagger-in rounded-xl border border-border dark:border-border-strong overflow-hidden bg-surface dark:bg-bg"
       style={{ animationDelay: `${Math.min(index, 20) * 50}ms` }}
     >
       {/* Header row */}

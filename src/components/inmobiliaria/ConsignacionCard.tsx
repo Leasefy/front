@@ -134,7 +134,7 @@ export function ConsignacionCard({
           'w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 text-left',
           selected
             ? 'border-primary/30 bg-primary-soft dark:border-primary/30'
-            : 'border-border dark:border-border-strong bg-surface dark:bg-[#14130F] hover:border-border dark:hover:border-border-strong'
+            : 'border-border dark:border-border-strong bg-surface dark:bg-bg hover:border-border dark:hover:border-border-strong'
         )}
       >
         {/* Thumbnail or Icon */}
@@ -196,7 +196,7 @@ export function ConsignacionCard({
     <motion.div
       whileHover={{ y: -2 }}
       className={cn(
-        'w-full rounded-xl border bg-surface dark:bg-[#14130F] overflow-hidden transition-all duration-200 group',
+        'w-full rounded-xl border bg-surface dark:bg-bg overflow-hidden transition-all duration-200 group',
         selected
           ? 'border-primary/30 ring-2 ring-primary/30'
           : 'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:',

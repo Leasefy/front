@@ -441,7 +441,7 @@ export function ImportWizard({
       </div>
 
       {/* Step Content */}
-      <div className="bg-surface dark:bg-[#14130F] rounded-xl border border-border dark:border-border-strong">
+      <div className="bg-surface dark:bg-bg rounded-xl border border-border dark:border-border-strong">
         <div className="p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -462,7 +462,7 @@ export function ImportWizard({
         {!(pasoActual === 5 && wizardState.importedCount > 0) && (
           // El pie tiene fondo propio: sin `rounded-b-xl` pinta por encima de
           // las esquinas del card y las dos de abajo quedan cuadradas.
-          <div className="px-6 py-4 rounded-b-xl border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-[#14130F] flex items-center justify-between">
+          <div className="px-6 py-4 rounded-b-xl border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex items-center justify-between">
             {/* Cancel Button */}
             <Button
               type="button"
@@ -536,7 +536,7 @@ export function ImportWizard({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-xl bg-surface dark:bg-[#14130F] border border-border dark:border-border-strong"
+              className="w-full max-w-md p-6 rounded-xl bg-surface dark:bg-bg border border-border dark:border-border-strong"
             >
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">

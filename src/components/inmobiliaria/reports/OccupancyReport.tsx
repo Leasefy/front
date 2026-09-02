@@ -93,7 +93,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Occupancy by Zone - CSS Bar Chart */}
-      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] p-5">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
           <MapPin className="w-4 h-4 text-fg-muted" />
           Ocupacion por zona
@@ -129,7 +129,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Monthly Occupancy Trend - CSS Dot/Bar Chart */}
-      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] p-5">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg p-5">
         <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
           <TrendUp className="w-4 h-4 text-fg-muted" />
           Tendencia de ocupacion (12 meses)
@@ -168,7 +168,7 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
       </div>
 
       {/* Property Table */}
-      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] overflow-hidden">
+      <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden">
         <div className="p-4 border-b border-border dark:border-border-strong">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <House className="w-4 h-4 text-fg-muted" />
@@ -271,7 +271,7 @@ function KPICard({
 }) {
   const colors = COLOR_MAP[color];
   return (
-    <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
+    <div className="p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
       <div className="flex items-center gap-3">
         <div
           className={cn(

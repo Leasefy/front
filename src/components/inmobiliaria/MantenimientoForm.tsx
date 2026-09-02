@@ -203,7 +203,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]"
+                className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg"
               >
                 {filteredConsignaciones.length > 0 ? (
                   filteredConsignaciones.map((consignacion) => (

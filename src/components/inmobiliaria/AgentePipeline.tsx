@@ -51,7 +51,7 @@ export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps
   return (
     <div
       className={cn(
-        'rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F] overflow-hidden',
+        'rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden',
         className
       )}
     >
@@ -102,7 +102,7 @@ export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps
                     <button
                       key={item.id}
                       onClick={() => handleItemClick(item)}
-                      className="w-full flex items-start gap-3 p-3 rounded-xl bg-surface-muted dark:bg-[#14130F] hover:bg-surface-muted dark:hover:bg-ink transition-colors text-left group"
+                      className="w-full flex items-start gap-3 p-3 rounded-xl bg-surface-muted dark:bg-bg hover:bg-surface-muted dark:hover:bg-ink transition-colors text-left group"
                     >
                       {/* Property Thumbnail */}
                       <div className="w-12 h-12 rounded-md bg-surface-muted dark:bg-ink overflow-hidden shrink-0">

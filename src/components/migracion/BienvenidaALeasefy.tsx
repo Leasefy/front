@@ -29,7 +29,7 @@ import { ArrowRight } from "@phosphor-icons/react";
 import confetti from "canvas-confetti";
 
 import { Button } from "@/components/ui/button";
-import { LeasefySymbol } from "@/components/brand/LeasefySymbol";
+import { LeasefyMonogram } from "@/components/brand/LeasefyMonogram";
 import type { PasoDeMigracion } from "@/lib/api/migracion-estado.service";
 
 /** Los de la marca: cobalto y sus tintes, más un neutro cálido. */
@@ -102,9 +102,11 @@ export function BienvenidaALeasefy({
           initial={sinMovimiento ? false : { scale: 0.6, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.15, type: "spring", stiffness: 260, damping: 18 }}
-          className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft"
+          className="mx-auto flex h-20 w-20 items-center justify-center rounded-full shadow-lg shadow-primary/20"
         >
-          <LeasefySymbol size={32} className="text-primary" title="Leasefy" />
+          {/* El logo azul, redondo (Nico, 2026-09-01) — la firma del producto
+              en el momento del producto, no la ola monocroma del chrome. */}
+          <LeasefyMonogram size={80} title="Leasefy" />
         </motion.div>
 
         <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.18em] text-fg-subtle">

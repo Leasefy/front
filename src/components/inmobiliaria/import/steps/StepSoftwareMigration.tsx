@@ -202,7 +202,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
                 'animate-stagger-in rounded-xl border transition-all cursor-pointer',
                 isExpanded
                   ? 'border-primary/30 bg-primary-soft/50 dark:bg-primary/10'
-                  : 'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong bg-surface dark:bg-[#14130F]'
+                  : 'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong bg-surface dark:bg-bg'
               )}
               style={{ animationDelay: `${index * 80}ms` }}
               onClick={() => handleCardClick(software.id)}

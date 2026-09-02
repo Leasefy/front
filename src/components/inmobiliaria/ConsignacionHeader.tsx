@@ -137,7 +137,7 @@ export function ConsignacionHeader({
   const canViewPortal = !!consignacion.propertyId;
 
   return (
-    <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]">
+    <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg">
       <div className="flex flex-col lg:flex-row rounded-xl">
         {/* Image/Thumbnail Section */}
         <div className="relative w-full lg:w-80 xl:w-96 h-48 lg:h-auto shrink-0 bg-surface-muted dark:bg-ink overflow-hidden rounded-t-xl lg:rounded-t-none lg:rounded-l-xl">

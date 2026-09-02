@@ -66,7 +66,7 @@ export function PropietarioBankInfo({
   return (
     <div
       className={cn(
-        'p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]',
+        'p-4 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg',
         className
       )}
     >

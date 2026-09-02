@@ -216,7 +216,7 @@ export function ExportButton({
       <DropdownListContent
         align="end"
         className={cn(
-          'p-1.5 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#14130F]',
+          'p-1.5 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-bg',
           sizeConfig.dropdown
         )}
       >

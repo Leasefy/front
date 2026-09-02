@@ -157,7 +157,7 @@ function SummaryCards({ data, t }: { data: SolicitudMantenimiento[]; t: (key: st
       {cards.map((card) => (
         <div
           key={card.labelKey}
-          className="p-4 rounded-xl bg-surface dark:bg-[#14130F] border border-border dark:border-border-strong"
+          className="p-4 rounded-xl bg-surface dark:bg-bg border border-border dark:border-border-strong"
         >
           <div className="flex items-center gap-2 mb-1">
             <div className={cn('w-2 h-2 rounded-full', card.color)} />

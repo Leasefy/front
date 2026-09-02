@@ -78,6 +78,12 @@ vi.mock('./RegistrosContables', () => ({
     </div>
   ),
 }));
+// canvas-confetti pide un contexto 2D real y happy-dom devuelve null: la
+// bienvenida lo dispararía al levantarse el muro y reventaría el test.
+vi.mock('canvas-confetti', () => ({
+  default: Object.assign(vi.fn(), { reset: vi.fn() }),
+}));
+
 vi.mock('@/components/inmobiliaria/import/ImportWizard', () => ({
   ImportWizard: () => <div data-testid="contenido-propiedades" />,
 }));
@@ -591,6 +597,81 @@ describe('el muro vuelve a mirar el estado mientras está puesto', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+/**
+ * Nico: «cuando se termine la migración sería bueno darle un feedback top
+ * con animación de bienvenido a Leasefy, con confeti, y ahí sí luego de eso
+ * ya puede hacer lo que quiera». Antes el muro desaparecía de golpe y el
+ * panel aparecía sin que nadie dijera que ya estaba adentro.
+ */
+describe('la bienvenida cuando el muro se levanta', () => {
+  const LISTOS = RECIEN_LLEGADA.map((p) => ({
+    ...p,
+    estado: 'listo' as const,
+    conteo: 7,
+    detalle: `7 ${p.id}`,
+  }));
+
+  it('aparece en la transición puesto → levantado, con lo que entró, y un botón la cierra', async () => {
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: LISTOS })
+      .mockResolvedValue({ bloquea: false, resuelta: 'completada', pasos: LISTOS });
+
+    vi.useFakeTimers();
+    try {
+      await pintar();
+      expect(q('bienvenida-a-leasefy')).toBeNull();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5_000);
+      });
+
+      const bienvenida = q('bienvenida-a-leasefy');
+      expect(bienvenida).not.toBeNull();
+      expect(bienvenida?.textContent).toContain('Bienvenido a Leasefy');
+      expect(bienvenida?.textContent).toContain('Migración completa');
+      // Lo que entró, paso por paso, con el texto que armó el back.
+      expect(q('bienvenida-resumen')?.textContent).toContain('7 propietarios');
+      // Y el panel de atrás sigue tapado hasta que la persona entre.
+      expect(q('panel-detras-del-muro')?.getAttribute('aria-hidden')).toBe('true');
+
+      await act(async () => {
+        (q('bienvenida-entrar') as HTMLButtonElement).click();
+      });
+      expect(q('bienvenida-a-leasefy')).toBeNull();
+      expect(q('panel-detras-del-muro')?.getAttribute('aria-hidden')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('«arranco de cero» también saluda, sin resumen', async () => {
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
+      .mockResolvedValue({ bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA });
+
+    vi.useFakeTimers();
+    try {
+      await pintar();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5_000);
+      });
+      const bienvenida = q('bienvenida-a-leasefy');
+      expect(bienvenida?.textContent).toContain('Bienvenido a Leasefy');
+      expect(bienvenida?.textContent).toContain('Todo listo');
+      expect(q('bienvenida-resumen')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('NO aparece para quien entra con el panel ya abierto: no está terminando nada', async () => {
+    estadoMock.estado.mockResolvedValue({ bloquea: false, resuelta: 'completada', pasos: LISTOS });
+
+    await pintar();
+    expect(q('muro-migracion')).toBeNull();
+    expect(q('bienvenida-a-leasefy')).toBeNull();
   });
 });
 

@@ -91,6 +91,7 @@ import { PlanDeCuentas } from "./PlanDeCuentas";
 import { RegistrosContables } from "./RegistrosContables";
 import { ImportWizard } from "@/components/inmobiliaria/import/ImportWizard";
 import { MigrarContratos } from "@/components/contratos/MigrarContratos";
+import { BienvenidaALeasefy } from "./BienvenidaALeasefy";
 
 /** Cada cuánto el muro vuelve a mirar el estado mientras está puesto. */
 export const CADA_CUANTO_SE_REFRESCA_MS = 5_000;
@@ -101,6 +102,19 @@ export const CADA_CUANTO_SE_REFRESCA_MS = 5_000;
 
 export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   const [estado, setEstado] = useState<EstadoDeMigracion | null>(null);
+  /*
+   * El muro estaba puesto y dejó de estarlo EN ESTA SESIÓN: ése es el momento
+   * que se celebra (`BienvenidaALeasefy`). Se detecta en `refrescar`, nunca en
+   * la consulta inicial — quien entra con el panel ya abierto no está
+   * terminando nada. El espejo en ref es para leer el estado anterior sin
+   * meter un efecto secundario adentro del updater de React.
+   */
+  const estadoAnterior = useRef<EstadoDeMigracion | null>(null);
+  estadoAnterior.current = estado;
+  const [bienvenida, setBienvenida] = useState<{
+    pasos: PasoDeMigracion[];
+    resuelta: "completada" | "omitida";
+  } | null>(null);
 
   const consultar = useCallback(async () => {
     try {
@@ -123,7 +137,19 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   const refrescar = useCallback(async () => {
     try {
       const bruto = await migracionEstadoApi.estado();
-      setEstado(normalizarEstado(bruto));
+      const nuevo = normalizarEstado(bruto);
+      const previo = estadoAnterior.current;
+      if (previo !== null && nuevo === null) {
+        // Se levantó. Los conteos salen de la respuesta que LEVANTA el muro,
+        // no del último estado bloqueado: ése es de antes de terminar el
+        // último paso, y el paso recién terminado saldría con 0.
+        const pasos = Array.isArray(bruto.pasos) ? bruto.pasos : previo.pasos;
+        setBienvenida({
+          pasos,
+          resuelta: bruto.resuelta === "omitida" ? "omitida" : "completada",
+        });
+      }
+      setEstado(nuevo);
     } catch {
       // Se queda como estaba.
     }
@@ -159,7 +185,8 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
    * Es lo que vuelve inerte al sidebar y a toda la navegación: sin esto, la
    * persona se pasea por el panel con el muro dibujado encima.
    */
-  const inerte = puesto
+  const tapado = puesto || bienvenida !== null;
+  const inerte = tapado
     ? ({ inert: "" } as unknown as Record<string, string>)
     : {};
 
@@ -167,10 +194,10 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
     <>
       <div
         {...inerte}
-        aria-hidden={puesto || undefined}
+        aria-hidden={tapado || undefined}
         data-testid="panel-detras-del-muro"
         className={cn(
-          puesto &&
+          tapado &&
             "min-h-screen select-none blur-[3px] saturate-[0.6] pointer-events-none",
         )}
       >
@@ -178,6 +205,13 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
       </div>
       {puesto ? (
         <PanelDeMigracion estado={estado} onResuelta={refrescar} />
+      ) : null}
+      {bienvenida ? (
+        <BienvenidaALeasefy
+          pasos={bienvenida.pasos}
+          resuelta={bienvenida.resuelta}
+          onEntrar={() => setBienvenida(null)}
+        />
       ) : null}
     </>
   );

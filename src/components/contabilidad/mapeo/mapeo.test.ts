@@ -49,6 +49,9 @@ describe('mapeo (puro)', () => {
       'los lotes de pago a propietarios',
     ]);
     expect(loQueNoSeAsienta(['INGRESO_COMISION'])).toEqual(['los lotes que liquidan comisión']);
+    expect(loQueNoSeAsienta(['CARTERA_INQUILINOS'])).toEqual([
+      'la causación de cada cobro (lo que debe el arrendatario)',
+    ]);
     expect(loQueNoSeAsienta([])).toEqual([]);
   });
 });

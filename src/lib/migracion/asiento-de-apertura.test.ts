@@ -10,12 +10,14 @@
 import { describe, it, expect } from 'vitest';
 
 import {
+  esCuentaDeTerceros,
   esFechaContable,
   movimientosDeApertura,
   problemasDeApertura,
   puedeEnviarApertura,
   totalesDeApertura,
   type FilaDeApertura,
+  type TerceroDeApertura,
 } from './asiento-de-apertura';
 
 function fila(cuentaId: string | null, debitoCop = 0, creditoCop = 0): FilaDeApertura {
@@ -96,6 +98,24 @@ describe('🔴 puedeEnviarApertura — descuadrado NO viaja', () => {
     expect(problemasDeApertura(filas, FECHA)).toContain('CUENTA_REPETIDA');
   });
 
+  /*
+   * La cartera de tres inquilinos son tres líneas en 130505, una por
+   * tercero: no es una cuenta repetida. Dos líneas al MISMO tercero sí.
+   */
+  it('la misma cuenta con terceros distintos son líneas distintas', () => {
+    const ana: TerceroDeApertura = { tipo: 'ARRENDATARIO', id: 'u-ana', nombre: 'Ana' };
+    const luis: TerceroDeApertura = { tipo: 'ARRENDATARIO', id: 'u-luis', nombre: 'Luis' };
+    const filas = [
+      { ...fila('c1', 100), tercero: ana },
+      { ...fila('c1', 200), tercero: luis },
+      fila('c2', 0, 300),
+    ];
+    expect(problemasDeApertura(filas, FECHA)).not.toContain('CUENTA_REPETIDA');
+    expect(puedeEnviarApertura(filas, FECHA)).toBe(true);
+    const repetidas = [{ ...fila('c1', 100), tercero: ana }, { ...fila('c1', 200), tercero: ana }, fila('c2', 0, 300)];
+    expect(problemasDeApertura(repetidas, FECHA)).toContain('CUENTA_REPETIDA');
+  });
+
   it('sin fecha válida no viaja aunque cuadre', () => {
     const filas = [fila('c1', 100), fila('c2', 0, 100)];
     expect(puedeEnviarApertura(filas, '2026-02-30')).toBe(false);
@@ -110,5 +130,29 @@ describe('movimientosDeApertura — la forma de MovimientoDto', () => {
       { cuentaId: 'c1', debitoCop: 100 },
       { cuentaId: 'c2', creditoCop: 100 },
     ]);
+  });
+
+  it('el tercero viaja como terceroTipo + terceroId, tal como lo asienta el motor', () => {
+    const filas = [
+      { ...fila('c1', 100), tercero: { tipo: 'ARRENDATARIO', id: 'u-ana', nombre: 'Ana Pérez' } as TerceroDeApertura },
+      fila('c2', 0, 100),
+    ];
+    expect(movimientosDeApertura(filas)[0]).toEqual({
+      cuentaId: 'c1',
+      debitoCop: 100,
+      terceroTipo: 'ARRENDATARIO',
+      terceroId: 'u-ana',
+      descripcion: 'Ana Pérez',
+    });
+  });
+});
+
+describe('esCuentaDeTerceros', () => {
+  it('deudores (13), cuentas por pagar (23) e ingresos para terceros (28) llevan tercero; bancos y patrimonio no', () => {
+    expect(esCuentaDeTerceros('130505')).toBe(true);
+    expect(esCuentaDeTerceros('28150505')).toBe(true);
+    expect(esCuentaDeTerceros('233595')).toBe(true);
+    expect(esCuentaDeTerceros('111005')).toBe(false);
+    expect(esCuentaDeTerceros('3105')).toBe(false);
   });
 });

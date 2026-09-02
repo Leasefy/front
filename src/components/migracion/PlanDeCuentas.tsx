@@ -59,6 +59,8 @@ import {
   type ResultadoSemilla,
 } from '@/lib/api/contabilidad.service';
 
+import { MapeoContable } from '@/components/contabilidad/mapeo/MapeoContable';
+
 import { mensajeDeContabilidad } from './contabilidad-errores';
 import { ImportarCuentas } from './ImportarCuentas';
 
@@ -286,6 +288,15 @@ export function PlanDeCuentas({
             {semilla.existentes > 0 && semilla.creadas > 0
               ? ` ${semilla.existentes} ya existían y se dejaron como estaban.`
               : ''}
+            {/* El mapeo se siembra con el plan (2026-09-02): se dice acá para
+                que «tengo PUC» y «asiento» sean la misma cosa. */}
+            {semilla.mapeo
+              ? semilla.mapeo.sinCuenta.length === 0
+                ? ' Los asientos automáticos ya tienen su cuenta.'
+                : ` Faltan cuentas para ${semilla.mapeo.sinCuenta.length} asientos automáticos: asignalas abajo.`
+              : semilla.mapeo === null
+                ? ' No se pudieron asignar las cuentas de los asientos automáticos: asignalas abajo.'
+                : ''}
           </p>
         </div>
       ) : null}
@@ -400,6 +411,31 @@ export function PlanDeCuentas({
               ))}
             </ul>
           )}
+        </section>
+      ) : null}
+
+      {hayCuentas ? (
+        /*
+         * Qué cuenta recibe cada asiento automático. Vive acá, en el paso del
+         * PUC, porque es lo que le falta al plan para que el motor asiente:
+         * antes estaba sólo en Contabilidad → Mapeo, nadie lo abría, y con el
+         * mapeo vacío cada recibo pasaba sin asiento (2026-09-02).
+         */
+        <section
+          className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+          aria-labelledby="puc-mapeo-titulo"
+          data-testid="puc-mapeo"
+        >
+          <div className="mb-4">
+            <h2 id="puc-mapeo-titulo" className="font-medium text-fg">
+              Cuentas de los asientos automáticos
+            </h2>
+            <p className="text-sm text-fg-muted">
+              A qué cuenta va cada cobro, recibo y giro. Sin esto, el plan existe pero nada se
+              asienta solo.
+            </p>
+          </div>
+          <MapeoContable />
         </section>
       ) : null}
 

@@ -29,6 +29,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
 import {
   contabilidadApi,
+  type AsientosFaltantes,
   type EventoContable,
   type MapeoContable as Mapeo,
 } from '@/lib/api/contabilidad.service';
@@ -42,19 +43,57 @@ export function MapeoContable() {
   const [error, setError] = useState<unknown>(null);
   const [guardando, setGuardando] = useState<ReadonlySet<EventoContable>>(new Set());
   const [sembrando, setSembrando] = useState(false);
+  /*
+   * Lo que pasó sin asiento por falta de mapeo (2026-09-02). Antes esto era
+   * un `warn` en el log del back y la pantalla decía «se asienta a mano»;
+   * ahora se cuenta y se reprocesa con un botón. `null` = no se pudo leer:
+   * la tabla de mapeo sigue sirviendo igual.
+   */
+  const [faltantes, setFaltantes] = useState<AsientosFaltantes | null>(null);
+  const [reprocesando, setReprocesando] = useState(false);
   const { cuentas, cargando: cuentasCargando } = useCuentas();
+
+  const cargarFaltantes = useCallback(async () => {
+    try {
+      setFaltantes(await contabilidadApi.asientos.faltantes());
+    } catch {
+      setFaltantes(null);
+    }
+  }, []);
 
   const cargar = useCallback(async () => {
     setCargando(true);
     setError(null);
     try {
       setMapeo(await contabilidadApi.mapeo.obtener());
+      void cargarFaltantes();
     } catch (e) {
       setError(e);
     } finally {
       setCargando(false);
     }
-  }, []);
+  }, [cargarFaltantes]);
+
+  const reprocesar = async () => {
+    setReprocesando(true);
+    try {
+      const r = await contabilidadApi.asientos.reprocesar();
+      if (r.asentados > 0) {
+        toast.success(`${r.asentados} asiento${r.asentados === 1 ? '' : 's'} generado${r.asentados === 1 ? '' : 's'}.`);
+      }
+      if (r.sinResolver > 0) {
+        toast.warning(
+          `${r.sinResolver} sigue${r.sinResolver === 1 ? '' : 'n'} sin asiento${r.motivos[0] ? `: ${r.motivos[0]}` : '.'}`,
+        );
+      }
+      if (r.asentados === 0 && r.sinResolver === 0) toast.success('No había nada pendiente de asentar.');
+      await cargarFaltantes();
+    } catch (e) {
+      toast.error(mensajeDeContabilidad(e, 'No se pudo reprocesar.'));
+    } finally {
+      setReprocesando(false);
+    }
+  };
 
   useEffect(() => {
     void cargar();
@@ -124,15 +163,16 @@ export function MapeoContable() {
     <div className="space-y-5" data-testid="mapeo-contable">
       {mapeo.completo ? (
         <Banner variant="success" title="Todos los eventos tienen cuenta">
-          Los recibos de caja, sus anulaciones y los lotes pagados se asientan solos.
+          Los cobros se causan al emitirse, y los recibos de caja, sus anulaciones y los lotes
+          pagados se asientan solos.
         </Banner>
       ) : (
         <Banner variant="warning" title="Sin una cuenta en un evento, ese asiento no se genera">
           <div className="space-y-3">
             {apagados.length > 0 && (
               <p>
-                Hoy quedan sin asiento automático: {apagados.join('; ')}. Lo que no se asentó no se
-                recupera solo — se asienta a mano.
+                Hoy quedan sin asiento automático: {apagados.join('; ')}. Lo que se quede sin
+                asentar se recupera con «Reprocesar» cuando el mapeo esté completo.
               </p>
             )}
             {sembrables.length > 0 && (
@@ -146,6 +186,34 @@ export function MapeoContable() {
           </div>
         </Banner>
       )}
+
+      {faltantes && faltantes.total > 0 ? (
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4"
+          data-testid="asientos-faltantes"
+        >
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium text-fg">
+              {faltantes.total === 1 ? '1 movimiento sin asiento' : `${faltantes.total} movimientos sin asiento`}
+            </p>
+            <p className="text-xs text-fg-muted">
+              {[
+                faltantes.cobros > 0 ? `${faltantes.cobros} cobro${faltantes.cobros === 1 ? '' : 's'} sin causar` : null,
+                faltantes.recibos > 0 ? `${faltantes.recibos} recibo${faltantes.recibos === 1 ? '' : 's'} de caja` : null,
+                faltantes.lotes > 0 ? `${faltantes.lotes} lote${faltantes.lotes === 1 ? '' : 's'} de giros` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+              {faltantes.mapeoCompleto
+                ? '. Con el mapeo completo, se asientan con la fecha de su documento.'
+                : '. Completá el mapeo y reprocesá.'}
+            </p>
+          </div>
+          <Button size="sm" hideArrow onClick={() => void reprocesar()} disabled={reprocesando} data-testid="reprocesar-asientos">
+            {reprocesando ? 'Reprocesando…' : 'Reprocesar'}
+          </Button>
+        </div>
+      ) : null}
 
       <div className="overflow-x-auto rounded-lg border border-border bg-surface">
         <Table>

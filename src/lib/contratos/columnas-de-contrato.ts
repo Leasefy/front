@@ -24,6 +24,8 @@
 /** Los campos de un contrato migrado que se pueden llenar desde un archivo. */
 export type CampoDeContrato =
   | "direccionInmueble"
+  | "codigoInmueble"
+  | "ciudadInmueble"
   | "inquilinoNombre"
   | "inquilinoCorreo"
   | "inquilinoTelefono"
@@ -239,6 +241,52 @@ export const SINONIMOS: Array<{ campo: CampoDeContrato; terminos: string[] }> =
         "owner",
       ],
     },
+    /*
+     * El código del inmueble — el «#144» que la inmobiliaria ve en Inmuebles.
+     * Cuando el archivo lo trae, el back resuelve por código ANTES que por
+     * dirección (Nico, 2026-09-02: 90 contratos sin inmueble porque ninguna
+     * dirección coincidía letra a letra). Sin «codigo» ni «id» a secas: eso
+     * empataría con el número del contrato o con «código postal».
+     */
+    {
+      campo: "codigoInmueble",
+      terminos: [
+        "codigo del inmueble",
+        "codigo de inmueble",
+        "codigo inmueble",
+        "id del inmueble",
+        "id de inmueble",
+        "id inmueble",
+        "codigo del predio",
+        "codigo predio",
+        "codigo de la propiedad",
+        "codigo propiedad",
+        "numero de inmueble",
+        "numero del inmueble",
+        "no. inmueble",
+        "# inmueble",
+        "property code",
+        "property id",
+      ],
+    },
+    /*
+     * La ciudad del inmueble: sólo sirve para CREAR el inmueble cuando no
+     * está cargado (`Property.city` es obligatoria). «ciudad» a secas va de
+     * último y después de bloquear la del propietario/inquilino en
+     * `SIN_CAMPO_EN_CONTRATO`.
+     */
+    {
+      campo: "ciudadInmueble",
+      terminos: [
+        "ciudad del inmueble",
+        "ciudad inmueble",
+        "municipio del inmueble",
+        "municipio inmueble",
+        "ciudad",
+        "municipio",
+        "city",
+      ],
+    },
     {
       /*
        * Va de última y SIN `inmueble` ni `predio` a secas. Con esos términos,
@@ -282,6 +330,16 @@ export const SIN_CAMPO_EN_CONTRATO = [
   "direccion de notificacion",
   "direccion de correspondencia",
   "direccion de cobro",
+  // Ciudades que NO son la del inmueble — sin esto «Ciudad del propietario»
+  // caía en `ciudadInmueble` por el término suelto «ciudad».
+  "ciudad del propietario",
+  "ciudad propietario",
+  "ciudad del arrendador",
+  "ciudad del arrendatario",
+  "ciudad del inquilino",
+  "ciudad inquilino",
+  "ciudad de notificacion",
+  "codigo postal",
   "matricula inmobiliaria",
   "chip catastral",
   "estrato",

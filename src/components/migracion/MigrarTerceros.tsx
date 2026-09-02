@@ -1257,6 +1257,20 @@ function ListaDeTrabajo({
                 ))}
             </ul>
           ) : null}
+          {/* Se aplicaron, pero con algo que mirar: la cuenta ya tenía otro
+              documento. No es un fallo — la persona quedó vinculada — pero
+              dos documentos para un mismo correo no se callan. */}
+          {aplicacion.resultados.some((r) => r.advertencia) ? (
+            <ul className="space-y-1 text-sm text-warning" data-testid="advertencias-aplicacion">
+              {aplicacion.resultados
+                .filter((r) => r.advertencia)
+                .map((r) => (
+                  <li key={r.id}>
+                    Fila <span className="font-mono tabular-nums">{r.fila}</span>: {r.advertencia}
+                  </li>
+                ))}
+            </ul>
+          ) : null}
         </section>
       ) : null}
 

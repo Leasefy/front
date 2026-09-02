@@ -308,6 +308,36 @@ describe('la lista de trabajo', () => {
     expect(container.textContent).toContain('sin duplicar');
   });
 
+  it('una fila aplicada con advertencia (la cuenta ya tenía otro documento) la muestra, sin contarla como fallo', async () => {
+    await abrirLista();
+    api.aplicar.mockResolvedValueOnce({
+      lote: 'inquilinos-x',
+      intentadas: 2,
+      aplicadas: 2,
+      fallidas: 0,
+      invitados: 0,
+      resultados: [
+        { id: 'f-1', fila: 1, estado: 'aplicado', userId: 'u-1', invitado: false },
+        {
+          id: 'f-2',
+          fila: 2,
+          estado: 'aplicado',
+          userId: 'u-2',
+          invitado: false,
+          advertencia:
+            'La cuenta de ana@correo.co ya tiene otro documento registrado (99887766); se vinculó igual y se dejó el de la cuenta.',
+        },
+      ],
+      restantes: 0,
+    });
+
+    await clic('Crear 2 inquilinos');
+
+    const advertencias = container.querySelector('[data-testid="advertencias-aplicacion"]');
+    expect(advertencias?.textContent).toContain('99887766');
+    expect(advertencias?.querySelectorAll('li')).toHaveLength(1);
+  });
+
   it('la creación por tandas sigue llamando hasta que no queden', async () => {
     await abrirLista();
     api.aplicar

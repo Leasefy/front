@@ -227,3 +227,39 @@ describe('encabezados que se parecen y no son', () => {
     expect(mapearColumnas(['  Canon   de   arrendamiento  '])[0].campo).toBe('canon')
   })
 })
+
+/**
+ * El código del inmueble (el «#144» de Inmuebles) y la ciudad. Nico
+ * (2026-09-02): 90 contratos sin inmueble porque ninguna dirección coincidía;
+ * un código es exacto. Lo que no puede pasar es que «Código» a secas (el del
+ * contrato) o «Código postal» caigan acá, ni que «Ciudad del propietario» sea
+ * la ciudad del inmueble.
+ */
+describe('código y ciudad del inmueble', () => {
+  it('«Código del inmueble», «ID inmueble» y «# inmueble» van al código', () => {
+    expect(campoDe('Código del inmueble')).toBe('codigoInmueble')
+    expect(campoDe('ID inmueble')).toBe('codigoInmueble')
+    expect(campoDe('# inmueble')).toBe('codigoInmueble')
+    expect(campoDe('Código propiedad')).toBe('codigoInmueble')
+  })
+
+  it('«Código» a secas y «Código postal» NO son el código del inmueble', () => {
+    expect(campoDe('Código')).toBeNull()
+    expect(campoDe('Código postal')).toBeNull()
+    expect(campoDe('Código del contrato')).toBeNull()
+  })
+
+  it('«Ciudad» y «Municipio» son la ciudad del inmueble', () => {
+    expect(campoDe('Ciudad')).toBe('ciudadInmueble')
+    expect(campoDe('Municipio del inmueble')).toBe('ciudadInmueble')
+  })
+
+  it('la ciudad del propietario o del inquilino no es la del inmueble', () => {
+    expect(campoDe('Ciudad del propietario')).toBeNull()
+    expect(campoDe('Ciudad del inquilino')).toBeNull()
+  })
+
+  it('«Uso del inmueble» sigue siendo el uso, no el código ni la dirección', () => {
+    expect(campoDe('Uso del inmueble')).toBe('uso')
+  })
+})

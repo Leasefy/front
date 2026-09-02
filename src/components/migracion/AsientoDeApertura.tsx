@@ -45,6 +45,7 @@ import {
 } from "@/lib/api/contabilidad.service";
 import {
   descripcionSugerida,
+  esCuentaDeTerceros,
   filaVacia,
   hoyContable,
   movimientosDeApertura,
@@ -57,6 +58,7 @@ import {
 import { formatCurrency } from "@/lib/format";
 
 import { mensajeDeContabilidad } from "./contabilidad-errores";
+import { TerceroDeApertura } from "./TerceroDeApertura";
 
 /** Sentinel: Radix `Select` no admite `value=""`. */
 const SIN_CUENTA = "__sin_cuenta__";
@@ -122,6 +124,7 @@ export function AsientoDeApertura({
     () => [...cuentas].sort((a, b) => a.codigo.localeCompare(b.codigo)),
     [cuentas],
   );
+  const porId = useMemo(() => new Map(cuentas.map((c) => [c.id, c])), [cuentas]);
   const totales = totalesDeApertura(filas);
   const problemas = problemasDeApertura(filas, fecha);
   const puedeEnviar = puedeEnviarApertura(filas, fecha) && !enviando;
@@ -298,9 +301,15 @@ export function AsientoDeApertura({
                 <TableCell>
                   <Select
                     value={fila.cuentaId ?? SIN_CUENTA}
-                    onValueChange={(v) =>
-                      editar(fila.id, { cuentaId: v === SIN_CUENTA ? null : v })
-                    }
+                    onValueChange={(v) => {
+                      const cuentaId = v === SIN_CUENTA ? null : v;
+                      const codigo = cuentaId ? (porId.get(cuentaId)?.codigo ?? "") : "";
+                      editar(fila.id, {
+                        cuentaId,
+                        // Bancos o patrimonio no llevan tercero: se limpia.
+                        ...(esCuentaDeTerceros(codigo) ? {} : { tercero: null }),
+                      });
+                    }}
                   >
                     <SelectTrigger
                       aria-label={`Cuenta de la línea ${i + 1}`}
@@ -317,6 +326,15 @@ export function AsientoDeApertura({
                       ))}
                     </SelectContent>
                   </Select>
+                  {/* Cartera y terceros llevan nombre: una línea por
+                      propietario o inquilino, opcional. */}
+                  {fila.cuentaId && esCuentaDeTerceros(porId.get(fila.cuentaId)?.codigo ?? "") ? (
+                    <TerceroDeApertura
+                      valor={fila.tercero}
+                      onCambio={(tercero) => editar(fila.id, { tercero })}
+                      testId={`apertura-tercero-${i}`}
+                    />
+                  ) : null}
                 </TableCell>
                 <TableCell>
                   <CurrencyInput

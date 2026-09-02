@@ -277,3 +277,28 @@ describe('el propietario del archivo viaja en la fila', () => {
     expect(fila).not.toHaveProperty('propietario')
   })
 })
+
+describe('código y ciudad del inmueble', () => {
+  it('un código numérico viaja como entero, con o sin «#»', () => {
+    const mapeo = mapearColumnas(['Código del inmueble', 'Ciudad'])
+    expect(armarFilaAMigrar({ 'Código del inmueble': '144', Ciudad: 'Medellín' }, mapeo)).toMatchObject({
+      codigoInmueble: 144,
+      ciudad: 'Medellín',
+    })
+    expect(armarFilaAMigrar({ 'Código del inmueble': '#7' }, mapeo).codigoInmueble).toBe(7)
+    expect(armarFilaAMigrar({ 'Código del inmueble': 12 }, mapeo).codigoInmueble).toBe(12)
+  })
+
+  it('un código que no es nuestro consecutivo («A-12», «0», vacío) viaja ausente, nunca 400ea el lote', () => {
+    const mapeo = mapearColumnas(['Código del inmueble'])
+    expect(armarFilaAMigrar({ 'Código del inmueble': 'A-12' }, mapeo).codigoInmueble).toBeUndefined()
+    expect(armarFilaAMigrar({ 'Código del inmueble': '0' }, mapeo).codigoInmueble).toBeUndefined()
+    expect(armarFilaAMigrar({ 'Código del inmueble': '' }, mapeo).codigoInmueble).toBeUndefined()
+    expect(armarFilaAMigrar({ 'Código del inmueble': '1.5' }, mapeo).codigoInmueble).toBeUndefined()
+  })
+
+  it('sin columna de ciudad no manda ciudad (el back cae a la de la inmobiliaria)', () => {
+    const mapeo = mapearColumnas(['Dirección'])
+    expect(armarFilaAMigrar({ Dirección: 'x' }, mapeo).ciudad).toBeUndefined()
+  })
+})

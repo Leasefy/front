@@ -198,6 +198,17 @@ export function ImportarCuentas({
               : `${resultado.invalidas} no entraron — están marcadas abajo con su motivo.`
             : ""}
         </p>
+        {/* El mapeo automático por código sobre el plan importado
+            (2026-09-02): lo que coincidió quedó asignado; lo demás se dice. */}
+        {resultado.mapeo ? (
+          <p className="mt-1 text-sm text-fg-muted" data-testid="puc-importacion-mapeo">
+            {resultado.mapeo.sinCuenta.length === 0
+              ? "Los asientos automáticos ya tienen su cuenta en tu plan."
+              : `Tu plan no tiene ${resultado.mapeo.sinCuenta
+                  .map((c) => c.codigo)
+                  .join(", ")}: asigná esas cuentas en «Cuentas de los asientos automáticos», más abajo.`}
+          </p>
+        ) : null}
         {resultado.invalidas > 0 ? (
           <TablaDeRevision
             filas={resultado.filas.filter((f) => f.veredicto === "INVALIDA")}

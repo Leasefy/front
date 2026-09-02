@@ -36,6 +36,14 @@ const { pucMock } = vi.hoisted(() => ({
   },
 }));
 
+/*
+ * El mapeo contable se monta adentro del paso (2026-09-02); es un componente
+ * con su propia carga y sus propios tests. Acá sólo importa que esté.
+ */
+vi.mock('@/components/contabilidad/mapeo/MapeoContable', () => ({
+  MapeoContable: () => <div data-testid="mapeo-contable-embebido" />,
+}));
+
 vi.mock('@/lib/api/contabilidad.service', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api/contabilidad.service')>(
     '@/lib/api/contabilidad.service',
@@ -184,6 +192,31 @@ describe('la semilla', () => {
 
     // Con cuentas, se puede seguir al paso 5.
     expect(q('puc-continuar')?.getAttribute('href')).toBe('/panel/inmobiliaria/migracion/contables');
+
+    // Y el mapeo de los asientos automáticos vive en este mismo paso.
+    expect(q('puc-mapeo')).not.toBeNull();
+    expect(q('mapeo-contable-embebido')).not.toBeNull();
+  });
+
+  it('dice qué pasó con el mapeo que se sembró junto con el plan', async () => {
+    pucMock.arbol.mockResolvedValueOnce([]).mockResolvedValue(ARBOL_SEMBRADO);
+    pucMock.sembrar.mockResolvedValue({
+      creadas: 99,
+      existentes: 0,
+      total: 99,
+      codigosCreados: [],
+      mapeo: {
+        asignados: ['RECIBO_BANCOS'],
+        yaEstaban: [],
+        sinCuenta: [{ evento: 'IVA_GENERADO', codigo: '240805' }, { evento: 'INGRESO_COMISION', codigo: '415510' }],
+        mapeo: { eventos: [], completo: false, faltantes: ['IVA_GENERADO', 'INGRESO_COMISION'] },
+      },
+    });
+
+    await pintar();
+    await click('puc-sembrar');
+
+    expect(q('puc-semilla-resultado')?.textContent).toContain('Faltan cuentas para 2 asientos automáticos');
   });
 
   it('sembrar dos veces no asusta: dice que ya estaba y no rompe nada', async () => {

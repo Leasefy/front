@@ -84,8 +84,21 @@ export function armarFilaAMigrar(
     // no es un porcentaje. `Number(v) || undefined` convertía el 0 en «no hay
     // dato» — el único caso en que un valor escrito desaparecía en silencio.
     comisionPorcentaje: comoPorcentaje(v('comision')),
+    // El «#144» de Inmuebles: gana a la dirección en el back. Un código que
+    // no es un entero positivo viaja ausente (un «A-12» del sistema viejo no
+    // es nuestro consecutivo) — el back lo diría con 400 para TODO el lote.
+    codigoInmueble: codigoDeInmueble(v('codigoInmueble')),
+    ciudad: textoOpcional(v('ciudadInmueble'))?.slice(0, 50),
     ...propietarioDe(v),
   }
+}
+
+function codigoDeInmueble(raw: unknown): number | undefined {
+  if (!hayValor(raw)) return undefined
+  const texto = String(raw).trim().replace(/^#/, '')
+  if (!/^\d+$/.test(texto)) return undefined
+  const n = Number(texto)
+  return Number.isSafeInteger(n) && n >= 1 ? n : undefined
 }
 
 /**

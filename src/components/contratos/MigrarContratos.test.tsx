@@ -33,6 +33,8 @@ vi.mock('@/lib/api/contracts.service', () => ({
       activar: vi.fn(),
       estadoDeLote: vi.fn(),
       idsDeFilas: vi.fn(),
+      inmueblesFaltantes: vi.fn(),
+      crearInmueblesFaltantes: vi.fn(),
     },
   },
 }))
@@ -1076,6 +1078,90 @@ describe('<MigrarContratos> — invitar:false ya no crea nada, y el resumen lo d
       /pendient.*invitar|invitar.*pendient/,
     )
   })
+
+  it('con el modo sparse apagado, el resumen dice cuántas quedaron sin activar por no tener inmueble', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(1)
+    await confirmarRevision()
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: 1,
+      activadas: 1,
+      fallidas: 0,
+      invitados: 1,
+      sinInmueble: 89,
+      sparse: false,
+      resultados: [
+        { fila: 0, estado: 'creado', contratoId: 'c-1', inquilinoInvitado: true },
+      ],
+    })
+
+    await act(async () => {
+      boton('Activar 1 contratos')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const aviso = container.querySelector('[data-testid="aviso-sin-inmueble"]')
+    const texto = (aviso?.textContent ?? '').toLowerCase()
+    expect(texto).toContain('89')
+    expect(texto).toMatch(/sin activar/)
+    expect(texto).not.toMatch(/se activaron/)
+  })
+
+  it('con el modo sparse prendido, el resumen dice cuántas se activaron sin inmueble y que no cobran', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(1)
+    await confirmarRevision()
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: 1,
+      activadas: 1,
+      fallidas: 0,
+      invitados: 0,
+      sinInmueble: 1,
+      sparse: true,
+      resultados: [
+        { fila: 0, estado: 'creado', contratoId: 'c-1', inquilinoInvitado: false },
+      ],
+    })
+
+    await act(async () => {
+      boton('Activar 1 contratos')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const texto = (
+      container.querySelector('[data-testid="aviso-sin-inmueble"]')?.textContent ?? ''
+    ).toLowerCase()
+    expect(texto).toMatch(/se activó sin inmueble/)
+    expect(texto).toMatch(/cobros/)
+  })
+
+  it('sin `sinInmueble` (back viejo) o en 0, el resumen no dice nada de inmuebles', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(1)
+    await confirmarRevision()
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: 1,
+      activadas: 1,
+      fallidas: 0,
+      invitados: 1,
+      sinInmueble: 0,
+      sparse: false,
+      resultados: [
+        { fila: 0, estado: 'creado', contratoId: 'c-1', inquilinoInvitado: true },
+      ],
+    })
+
+    await act(async () => {
+      boton('Activar 1 contratos')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(container.querySelector('[data-testid="resultado-activacion"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="aviso-sin-inmueble"]')).toBeNull()
+  })
 })
 
 /**
@@ -1090,6 +1176,44 @@ describe('<MigrarContratos> — invitar:false ya no crea nada, y el resumen lo d
  * de selección —algunas marcadas, otras no— sobre contratos que ya existían y
  * que desde ahí no se podían tocar.
  */
+describe('<MigrarContratos> — «Crear los N inmuebles que faltan» vive en el resumen del lote', () => {
+  it('con filas sin inmueble aparece el botón con el número del back; sin ellas, no', async () => {
+    render()
+    await esperar()
+    vi.mocked(contractsApi.migracion.inmueblesFaltantes).mockResolvedValue({
+      candidatas: 90,
+      activadas: 90,
+      ambiguas: 0,
+      sinDireccion: 0,
+    })
+    await avanzarAListaDeTrabajo()
+    await act(async () => {})
+
+    expect(contractsApi.migracion.inmueblesFaltantes).toHaveBeenCalledWith('lote-1')
+    const abrir = container.querySelector(
+      '[data-testid="crear-inmuebles-faltantes-abrir"]',
+    )
+    expect(abrir?.textContent).toContain('90')
+    // Vive en la tarjeta del resumen, no abajo con la selección.
+    expect(container.querySelector('[data-testid="lista-de-trabajo"]')?.contains(abrir)).toBe(true)
+  })
+
+  it('sin inmuebles faltantes no hay botón', async () => {
+    render()
+    await esperar()
+    vi.mocked(contractsApi.migracion.inmueblesFaltantes).mockResolvedValue({
+      candidatas: 0,
+      activadas: 0,
+      ambiguas: 0,
+      sinDireccion: 0,
+    })
+    await avanzarAListaDeTrabajo()
+    await act(async () => {})
+
+    expect(container.querySelector('[data-testid="crear-inmuebles-faltantes"]')).toBeNull()
+  })
+})
+
 describe('<MigrarContratos> — activar apaga la lista', () => {
   const activarTodo = async (activables: number) => {
     render()

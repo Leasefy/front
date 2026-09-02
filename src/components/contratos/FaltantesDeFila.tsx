@@ -32,7 +32,12 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
   inmueble: {
     titulo: "No encontramos el inmueble",
     porque:
-      "La dirección del archivo no coincide con ninguno de tu portafolio. No es obligatorio: podés migrar el contrato igual, sin inmueble.",
+      "La dirección del archivo no coincide con ninguno de tu portafolio. Sin inmueble el contrato no se activa: no tendría consignación ni cobros.",
+  },
+  inmueble_codigo: {
+    titulo: "El código del inmueble no existe",
+    porque:
+      "El archivo trae un código de inmueble que no está en tu portafolio — probablemente es el del sistema anterior. Elegí el inmueble por la dirección, o crealo.",
   },
   inmueble_ambiguo: {
     titulo: "Hay más de un inmueble con esa dirección",
@@ -55,6 +60,11 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
       "Sin correo no hay a quién invitar ni cómo distinguirlo de un homónimo.",
   },
   inquilino_nombre: { titulo: "Falta el nombre del inquilino", porque: "" },
+  inquilino_documento_ajeno: {
+    titulo: "Ese documento es de una cuenta que no es de inquilino",
+    porque:
+      "Coincide con un agente o un propietario con cuenta en el portal. No se le cuelga un arriendo a esa persona: corregí el documento, o vacialo para que el contrato se resuelva por el correo.",
+  },
   fechas: {
     titulo: "Las fechas no cuadran",
     porque: "La de fin no es posterior a la de inicio.",
@@ -91,7 +101,8 @@ export function celdaDelFaltante(
 ): string | null {
   const datos = fila.datos as {
     direccion?: unknown;
-    inquilino?: { nombre?: unknown; correo?: unknown };
+    codigoInmueble?: unknown;
+    inquilino?: { nombre?: unknown; correo?: unknown; documento?: unknown };
   } | null;
   const texto = (v: unknown) => {
     const t = String(v ?? '').trim();
@@ -102,10 +113,18 @@ export function celdaDelFaltante(
     case 'inmueble':
     case 'inmueble_ambiguo':
       return texto(datos?.direccion);
+    case 'inmueble_codigo':
+      return texto(
+        datos?.codigoInmueble != null
+          ? `#${String(datos.codigoInmueble)} · ${String(datos.direccion ?? '')}`
+          : datos?.direccion,
+      );
     case 'inquilino_correo':
       return texto(datos?.inquilino?.correo);
     case 'inquilino_nombre':
       return texto(datos?.inquilino?.nombre);
+    case 'inquilino_documento_ajeno':
+      return texto(datos?.inquilino?.documento);
     default:
       return null;
   }
@@ -169,7 +188,9 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
           ) : null}
 
           <div className="mt-3">
-            {f === "inmueble" || f === "inmueble_ambiguo" ? (
+            {f === "inmueble" ||
+            f === "inmueble_ambiguo" ||
+            f === "inmueble_codigo" ? (
               <ElegirInmueble fila={fila} ocupado={ocupado} correr={correr} />
             ) : null}
             {f === "inmueble_ocupado" ? (
@@ -209,6 +230,13 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
                     }),
                   )
                 }
+              />
+            ) : null}
+            {f === "inquilino_documento_ajeno" ? (
+              <DocumentoDelInquilino
+                fila={fila}
+                ocupado={ocupado}
+                correr={correr}
               />
             ) : null}
             {f === "uso" ? (
@@ -288,15 +316,16 @@ function ElegirInmueble({
   return (
     <div className="space-y-3">
       {/*
-       * T-0033 §3.2.C2/E4 — el checklist ya no bloquea la activación (§3.2.C2):
-       * la fila igual se activa sin inmueble si el usuario presiona Activar
-       * sin resolver esto. Sin esta nota, el componente lee como "tenés que
-       * resolver esto sí o sí", que ahora es falso. No hay tercer botón: es
-       * puramente informativo.
+       * 2026-09-02 — sin inmueble el contrato NO se activa (el modo sparse
+       * del back quedó apagado por defecto: una agencia activó 90 contratos
+       * así, «Sin inmueble», y ninguno generó un cobro). La nota anterior
+       * decía lo contrario. No hay tercer botón: es puramente informativo,
+       * la fila se queda pendiente hasta que se le elija o cree el inmueble.
        */}
       <p className="text-xs text-muted-foreground">
-        No hace falta resolver esto para migrar el contrato: si lo dejás así, se
-        va a activar igual y va a decir «Sin inmueble».
+        Sin inmueble el contrato no se activa: no tendría consignación ni
+        generaría cobros. Elegí uno de los candidatos o crealo desde la
+        dirección del archivo.
       </p>
       {fila.candidatos.length > 0 ? (
         <div className="space-y-1.5">
@@ -609,6 +638,57 @@ function Fechas({
         }
       >
         Guardar
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * Corregir el documento del inquilino, o quitarlo.
+ *
+ * Son dos salidas y no una: el archivo pudo traer la cédula equivocada (se
+ * corrige), o pudo traer una que de verdad es de otra persona con cuenta y el
+ * inquilino no tiene documento conocido (se vacía, y la fila vuelve a
+ * resolverse por correo, como siempre).
+ */
+function DocumentoDelInquilino({
+  fila,
+  ocupado,
+  correr,
+}: {
+  fila: FilaDeMigracion;
+  ocupado: boolean;
+  correr: (a: () => Promise<FilaDeMigracion>) => Promise<void>;
+}) {
+  return (
+    <div className="space-y-2">
+      <CampoSimple
+        icono={User}
+        etiqueta="Documento del inquilino"
+        ocupado={ocupado}
+        onGuardar={(v) =>
+          correr(() =>
+            contractsApi.migracion.resolver(fila.id, {
+              inquilinoDocumento: v,
+            }),
+          )
+        }
+      />
+      <Button
+        variant="ghost"
+        size="sm"
+        hideArrow
+        disabled={ocupado}
+        data-testid="quitar-documento-inquilino"
+        onClick={() =>
+          void correr(() =>
+            contractsApi.migracion.resolver(fila.id, {
+              inquilinoDocumento: "",
+            }),
+          )
+        }
+      >
+        Quitar el documento y resolver por correo
       </Button>
     </div>
   );

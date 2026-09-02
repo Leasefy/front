@@ -25,6 +25,7 @@ export function eventosSembrables(mapeo: MapeoContable): EventoContable[] {
 export function loQueNoSeAsienta(faltantes: readonly EventoContable[]): string[] {
   const f = new Set(faltantes);
   const frases: string[] = [];
+  if (f.has('CARTERA_INQUILINOS')) frases.push('la causación de cada cobro (lo que debe el arrendatario)');
   if (f.has('RECIBO_BANCOS') || f.has('RECAUDO_CANON_TERCEROS')) {
     frases.push('los recibos de caja por transferencia, PSE o pasarela');
   }

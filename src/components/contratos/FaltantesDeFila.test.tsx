@@ -169,15 +169,22 @@ describe('<FaltantesDeFila> — inmueble_ocupado ya no es un callejón sin salid
  * esto sí o sí", que ahora es falso — gana copy explicativa, ningún
  * botón ni acción nueva.
  */
-describe('<FaltantesDeFila> — sin inmueble ya no lee como obligatorio (T-0033)', () => {
-  it('EXPLICACION.inmueble dice que se puede migrar igual, sin inmueble', () => {
-    expect(EXPLICACION.inmueble?.porque).toMatch(/migrar.*sin inmueble/i)
+/*
+ * 2026-09-02 — al revés de T-0033: el modo sparse del back quedó APAGADO por
+ * defecto (una agencia activó 90 contratos sin inmueble y ninguno cobró), así
+ * que sin inmueble la fila no se activa, y el copy tiene que decirlo.
+ */
+describe('<FaltantesDeFila> — sin inmueble el contrato no se activa', () => {
+  it('EXPLICACION.inmueble NO promete que se pueda migrar igual', () => {
+    expect(EXPLICACION.inmueble?.porque).not.toMatch(/migrar.*igual/i)
+    expect(EXPLICACION.inmueble?.porque).toMatch(/no se activa/i)
   })
 
   it('<ElegirInmueble> muestra la nota informativa, sin agregar un tercer botón', () => {
     render(filaBase({ faltantes: ['inmueble'], propertyId: null, candidatos: [] }))
 
-    expect(container.textContent).toMatch(/no hace falta resolver esto/i)
+    expect(container.textContent).toMatch(/no se activa/i)
+    expect(container.textContent).not.toMatch(/no hace falta resolver esto/i)
     // Las dos acciones de siempre siguen intactas: ninguna nueva aparece.
     const botones = Array.from(container.querySelectorAll('button')).map(
       (b) => b.textContent,
@@ -295,3 +302,88 @@ describe('el faltante dice QUÉ decía el archivo', () => {
     expect(celdaDelFaltante(f, 'inmueble')!).toHaveLength(61); // 60 + «…»
   });
 });
+
+/**
+ * `inmueble_codigo` (2026-09-02): el archivo trajo «#N» y no hay #N. NO se
+ * cae a la dirección en silencio — es la señal de que el archivo trae los
+ * códigos del sistema viejo. Se resuelve igual que `inmueble`: elegir un
+ * candidato o crear.
+ */
+describe('<FaltantesDeFila> — el código del inmueble no existe', () => {
+  it('lo explica, muestra el código y la dirección del archivo, y ofrece las mismas salidas que «inmueble»', () => {
+    const f = filaBase({
+      faltantes: ['inmueble_codigo'],
+      propertyId: null,
+      candidatos: [],
+      datos: {
+        direccion: 'Cra 43A # 5-15',
+        codigoInmueble: 999,
+        inquilino: { nombre: 'Ana', correo: 'ana@correo.co' },
+      },
+    })
+    expect(EXPLICACION.inmueble_codigo?.titulo).toBeTruthy()
+    expect(celdaDelFaltante(f, 'inmueble_codigo')).toBe('#999 · Cra 43A # 5-15')
+
+    render(f)
+    expect(container.textContent).toContain(EXPLICACION.inmueble_codigo.titulo)
+    const botones = Array.from(container.querySelectorAll('button')).map((b) => b.textContent)
+    expect(botones).toContain('El inmueble no está cargado — crearlo')
+  })
+})
+
+describe('<FaltantesDeFila> — el documento del inquilino es de otra cuenta', () => {
+  it('EXPLICACION lo describe y muestra el documento que trajo el archivo', () => {
+    expect(EXPLICACION.inquilino_documento_ajeno?.titulo).toBeTruthy()
+    expect(EXPLICACION.inquilino_documento_ajeno?.titulo).not.toBe('inquilino_documento_ajeno')
+
+    const fila = filaBase({
+      faltantes: ['inquilino_documento_ajeno'],
+      datos: {
+        direccion: 'Cra 1',
+        inquilino: { nombre: 'Ana', correo: 'ana@x.co', documento: '71234567' },
+      },
+    })
+    expect(celdaDelFaltante(fila, 'inquilino_documento_ajeno')).toBe('71234567')
+  })
+
+  it('corregir el documento manda inquilinoDocumento con el nuevo', () => {
+    render(
+      filaBase({
+        faltantes: ['inquilino_documento_ajeno'],
+        datos: {
+          direccion: 'Cra 1',
+          inquilino: { nombre: 'Ana', correo: 'ana@x.co', documento: '71234567' },
+        },
+      }),
+    )
+
+    const input = container.querySelector('input[type="text"]') as HTMLInputElement
+    expect(input).toBeTruthy()
+    typeInto(input, '1004997858')
+    const guardar = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Guardar'),
+    )
+    act(() => {
+      guardar?.click()
+    })
+
+    expect(contractsApi.migracion.resolver).toHaveBeenCalledWith('f-1', {
+      inquilinoDocumento: '1004997858',
+    })
+  })
+
+  it('quitar el documento manda inquilinoDocumento vacío: la fila vuelve al correo', () => {
+    render(filaBase({ faltantes: ['inquilino_documento_ajeno'] }))
+
+    const quitar = container.querySelector(
+      '[data-testid="quitar-documento-inquilino"]',
+    ) as HTMLButtonElement
+    act(() => {
+      quitar.click()
+    })
+
+    expect(contractsApi.migracion.resolver).toHaveBeenCalledWith('f-1', {
+      inquilinoDocumento: '',
+    })
+  })
+})

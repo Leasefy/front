@@ -14,12 +14,45 @@
 
 import { MAX_COP_POR_MOVIMIENTO, type MovimientoNuevo } from '@/lib/api/contabilidad.service';
 
+/** A quién se le imputa un saldo de cartera o de terceros. */
+export type TipoDeTerceroDeApertura = 'PROPIETARIO' | 'ARRENDATARIO';
+
+export interface TerceroDeApertura {
+  tipo: TipoDeTerceroDeApertura;
+  /** `Propietario.id` o el `tenantId` del inquilino — el mismo id que asienta el motor. */
+  id: string;
+  /** Sólo para mostrar. */
+  nombre: string;
+}
+
 /** Una fila del formulario. Los montos en pesos enteros; `NaN`/0 = vacío. */
 export interface FilaDeApertura {
   id: string;
   cuentaId: string | null;
   debitoCop: number;
   creditoCop: number;
+  /**
+   * Opcional, y sólo tiene sentido en cuentas de cartera o de terceros
+   * (`esCuentaDeTerceros`). Sin él, el saldo entra sin nombre: el estado
+   * de cuenta por propietario/inquilino nace en cero aunque la cartera exista
+   * (medido 2026-09-02).
+   */
+  tercero?: TerceroDeApertura | null;
+}
+
+/**
+ * Las cuentas que llevan tercero: 13 deudores (lo que deben los
+ * arrendatarios), 28 ingresos recibidos para terceros (lo que se le debe al
+ * propietario) y 23 cuentas por pagar. En las demás (bancos, patrimonio) un
+ * tercero no significa nada.
+ */
+export function esCuentaDeTerceros(codigo: string): boolean {
+  return /^(13|23|28)/.test(codigo);
+}
+
+/** Para poder tener una línea por tercero en la misma cuenta. */
+function llaveDeLinea(f: FilaDeApertura): string {
+  return `${f.cuentaId}::${f.tercero?.tipo ?? ''}::${f.tercero?.id ?? ''}`;
 }
 
 export type ProblemaDeApertura =
@@ -89,7 +122,7 @@ export function problemasDeApertura(
   const vivas = filasConContenido(filas);
   if (vivas.length < 2) problemas.add('POCAS_LINEAS');
 
-  const cuentasVistas = new Set<string>();
+  const lineasVistas = new Set<string>();
   for (const f of vivas) {
     const d = monto(f.debitoCop);
     const c = monto(f.creditoCop);
@@ -98,8 +131,11 @@ export function problemasDeApertura(
     if (d > 0 && c > 0) problemas.add('AMBIGUA');
     if (d > MAX_COP_POR_MOVIMIENTO || c > MAX_COP_POR_MOVIMIENTO) problemas.add('FUERA_DE_RANGO');
     if (f.cuentaId) {
-      if (cuentasVistas.has(f.cuentaId)) problemas.add('CUENTA_REPETIDA');
-      cuentasVistas.add(f.cuentaId);
+      // La misma cuenta puede repetirse si es un tercero distinto cada vez:
+      // la cartera de tres inquilinos son tres líneas en 130505.
+      const llave = llaveDeLinea(f);
+      if (lineasVistas.has(llave)) problemas.add('CUENTA_REPETIDA');
+      lineasVistas.add(llave);
     }
   }
 
@@ -120,6 +156,11 @@ export function movimientosDeApertura(filas: readonly FilaDeApertura[]): Movimie
     const c = monto(f.creditoCop);
     if (d > 0) m.debitoCop = d;
     if (c > 0) m.creditoCop = c;
+    if (f.tercero) {
+      m.terceroTipo = f.tercero.tipo;
+      m.terceroId = f.tercero.id;
+      m.descripcion = f.tercero.nombre;
+    }
     return m;
   });
 }

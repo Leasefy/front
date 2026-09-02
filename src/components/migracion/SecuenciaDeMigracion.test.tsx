@@ -31,10 +31,11 @@ vi.mock('@/lib/i18n', () => ({
 const { tercerosMock, inmueblesMock, contratosMock, contabilidadMock } = vi.hoisted(() => ({
   tercerosMock: { lotesAbiertos: vi.fn(), filas: vi.fn() },
   inmueblesMock: { lotesAbiertos: vi.fn() },
-  contratosMock: { lotesAbiertos: vi.fn() },
+  contratosMock: { lotesAbiertos: vi.fn(), resumen: vi.fn() },
   contabilidadMock: {
     puc: { listar: vi.fn() },
     asientos: { listar: vi.fn() },
+    mapeo: { obtener: vi.fn() },
   },
 }));
 
@@ -105,8 +106,22 @@ beforeEach(() => {
     desplazamiento: 0,
     asientos: [],
   });
+  contabilidadMock.mapeo.obtener.mockResolvedValue({ eventos: [], completo: true, faltantes: [] });
   inmueblesMock.lotesAbiertos.mockResolvedValue([]);
   contratosMock.lotesAbiertos.mockResolvedValue([]);
+  contratosMock.resumen.mockResolvedValue(RESUMEN_CONTRATOS());
+});
+
+const RESUMEN_CONTRATOS = (over: Record<string, unknown> = {}) => ({
+  lote: null,
+  total: 0,
+  pendientes: 0,
+  listos: 0,
+  activados: 0,
+  descartados: 0,
+  activables: 0,
+  activadosSinInmueble: 0,
+  ...over,
 });
 
 afterEach(async () => {
@@ -237,14 +252,97 @@ describe('SecuenciaDeMigracion', () => {
     expect(paso1.textContent).not.toContain('migracion.estados.enCurso');
   });
 
-  it('no afirma que no migraste contratos: ese conteo el back no lo da', async () => {
+  it('no afirma que no migraste contratos cuando el resumen no llega', async () => {
     /*
      * `/contracts/migrar/lotes` lista sólo lo que sigue ABIERTO — no sabe
-     * cuántos contratos se activaron históricamente. Poner 0 ahí le diría «no
-     * migraste ninguno» a quien migró 1.200 la semana pasada.
+     * cuántos contratos se activaron históricamente. Eso lo dice `resumen`;
+     * si falla, no se inventa un 0 que le diría «no migraste ninguno» a
+     * quien migró 1.200 la semana pasada.
      */
+    contratosMock.resumen.mockRejectedValue(new Error('403'));
     await pintar();
-    const paso3 = container.querySelector('[data-testid="paso-3"]')!;
-    expect(paso3.textContent).not.toContain('migracion.avance.hechas');
+    const paso4 = container.querySelector('[data-testid="paso-4"]')!;
+    expect(paso4.textContent).not.toContain('migracion.avance.hechas');
+    expect(paso4.textContent).not.toContain('contratos-sin-inmueble');
+  });
+
+  it('los contratos activados se cuentan con `activados` del resumen de la agencia', async () => {
+    contratosMock.resumen.mockResolvedValue(RESUMEN_CONTRATOS({ activados: 90 }));
+    await pintar();
+    const paso4 = container.querySelector('[data-testid="paso-4"]')!;
+    expect(paso4.textContent).toContain('migracion.avance.hechas::{"n":90}');
+    expect(paso4.textContent).toContain('migracion.estados.conDatos');
+    expect(paso4.querySelector('[data-testid="contratos-sin-inmueble"]')).toBeNull();
+  });
+
+  it('contratos activos sin inmueble: el paso NO está hecho, lo dice en rojo y manda a resolverlo', async () => {
+    /*
+     * El caso real del 2026-09-02: 90 contratos activados sin inmueble, sin
+     * consignación, sin cobros — y el paso decía «con datos migrados».
+     */
+    contratosMock.resumen.mockResolvedValue(
+      RESUMEN_CONTRATOS({ activados: 90, activadosSinInmueble: 90 }),
+    );
+    await pintar();
+    const paso4 = container.querySelector('[data-testid="paso-4"]')!;
+    expect(paso4.textContent).not.toContain('migracion.estados.conDatos');
+    expect(paso4.textContent).toContain('migracion.estados.sinInmueble');
+    const aviso = paso4.querySelector('[data-testid="contratos-sin-inmueble"]')!;
+    expect(aviso.textContent).toContain('migracion.avance.sinInmueble::{"n":90}');
+    expect(aviso.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/contratos/migrar');
+    // El aviso es del paso 4: los demás no lo heredan.
+    expect(container.querySelectorAll('[data-testid="contratos-sin-inmueble"]')).toHaveLength(1);
+  });
+
+  it('PUC con cuentas pero sin mapeo: el paso NO está hecho y manda a asignar las cuentas', async () => {
+    /*
+     * Medido el 2026-09-02: 140 cuentas, mapeo vacío, el paso decía «con
+     * datos migrados» y ningún recibo se asentaba.
+     */
+    contabilidadMock.puc.listar.mockResolvedValue([{ id: 'c-1' }, { id: 'c-2' }]);
+    contabilidadMock.mapeo.obtener.mockResolvedValue({
+      eventos: [],
+      completo: false,
+      faltantes: ['RECIBO_BANCOS', 'RECAUDO_CANON_TERCEROS', 'CARTERA_INQUILINOS'],
+    });
+    await pintar();
+    const paso5 = container.querySelector('[data-testid="paso-5"]')!;
+    expect(paso5.textContent).not.toContain('migracion.estados.conDatos');
+    const aviso = paso5.querySelector('[data-testid="puc-sin-mapeo"]')!;
+    expect(aviso.textContent).toContain('migracion.avance.sinMapeo::{"n":3}');
+    expect(aviso.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/contabilidad/mapeo');
+    expect(container.querySelectorAll('[data-testid="puc-sin-mapeo"]')).toHaveLength(1);
+  });
+
+  it('con UN solo evento sin cuenta el aviso va en singular (no «1 asientos»)', async () => {
+    contabilidadMock.puc.listar.mockResolvedValue([{ id: 'c-1' }]);
+    contabilidadMock.mapeo.obtener.mockResolvedValue({
+      eventos: [],
+      completo: false,
+      faltantes: ['CARTERA_INQUILINOS'],
+    });
+    await pintar();
+    const aviso = container.querySelector('[data-testid="puc-sin-mapeo"]')!;
+    expect(aviso.textContent).toContain('migracion.avance.sinMapeoUno');
+    expect(aviso.textContent).not.toContain('sinMapeo::');
+  });
+
+  it('si el mapeo no se pudo leer, el PUC se mide por las cuentas como antes', async () => {
+    contabilidadMock.puc.listar.mockResolvedValue([{ id: 'c-1' }]);
+    contabilidadMock.mapeo.obtener.mockRejectedValue(new Error('403'));
+    await pintar();
+    const paso5 = container.querySelector('[data-testid="paso-5"]')!;
+    expect(paso5.querySelector('[data-testid="puc-sin-mapeo"]')).toBeNull();
+    expect(paso5.textContent).toContain('migracion.estados.conDatos');
+  });
+
+  it('un back viejo sin `activadosSinInmueble` no dispara el aviso', async () => {
+    contratosMock.resumen.mockResolvedValue(
+      RESUMEN_CONTRATOS({ activados: 12, activadosSinInmueble: undefined }),
+    );
+    await pintar();
+    const paso4 = container.querySelector('[data-testid="paso-4"]')!;
+    expect(paso4.querySelector('[data-testid="contratos-sin-inmueble"]')).toBeNull();
+    expect(paso4.textContent).toContain('migracion.estados.conDatos');
   });
 });

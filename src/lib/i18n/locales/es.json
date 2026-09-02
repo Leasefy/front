@@ -8529,24 +8529,51 @@
       "citaAccionError": "No se pudo actualizar la cita"
     },
     "terceroIA": {
-      "errorTooLarge": "La imagen supera el tamaño máximo (8 MB). Usa una foto más liviana.",
-      "docKindLabel": "Tipo de documento",
-      "intro": "Sube una foto de la cédula o el RUT y la IA prellenará el formulario del tercero. Revisa y corrige antes de guardar.",
-      "kindCedula": "Cédula",
-      "kindRut": "RUT",
-      "uploadTitle": "Subir foto del documento",
-      "uploadHint": "Arrastra o haz clic — cédula (CC/CE) o RUT, en imagen.",
-      "uploadChange": "Cambiar foto",
+      "intro": "Subí la cédula, el RUT, la certificación bancaria… en foto, PDF o Word. La IA arma el propietario con todo y vos revisás antes de guardar.",
+      "uploadTitle": "Subir los documentos",
+      "uploadMore": "Subir otro documento",
+      "uploadHint": "Arrastrá o hacé clic — cédula, RUT, certificación bancaria, cámara de comercio. Fotos, PDF o Word; hasta {{max}} archivos.",
+      "agregarOtro": "Agregar otro archivo",
+      "quitar": "Quitar {{nombre}}",
       "extract": "Extraer datos",
+      "extractN": "Extraer datos de {{n}} archivos",
       "cancel": "Cancelar",
       "extracting": "Leyendo el documento…",
-      "reviewBannerTitle": "Revisa y corrige",
-      "reviewBannerDesc": "La IA prellenó los datos (confianza {{confidence}}%). Verifícalos y completa lo que falte antes de guardar.",
-      "manualNote": "Completa los datos del tercero manualmente.",
-      "errorTitle": "No pudimos leer el documento",
-      "errorUnavailable": "El servicio de IA no está disponible ahora. Puedes llenar el formulario manualmente.",
-      "errorGeneric": "Ocurrió un error al procesar el documento. Intenta de nuevo o llena el formulario manualmente.",
-      "errorImageOnly": "Sube una imagen (foto del documento).",
+      "extractingN": "Leyendo {{n}} documento(s)…",
+      "reviewBannerTitle": "Revisá y corregí",
+      "reviewBannerDesc": "La IA prellenó los datos (confianza {{confidence}}%). Verificalos y completá lo que falte antes de guardar.",
+      "detectados": "Leyó",
+      "bancoFueraDeLista": "La certificación dice «{{banco}}», que no está en la lista de bancos del formulario: elegí el que corresponda o dejalo vacío.",
+      "conflictosTitle": "Los documentos no coinciden",
+      "conflictosDesc": "En estos campos un documento dice una cosa y otro dice otra. Elegí el valor correcto (o corregilo abajo).",
+      "usarValorDe": "Usar el valor de {{documento}}",
+      "campos": {
+        "nombre": "Nombre",
+        "razonSocial": "Razón social",
+        "tipoDocumento": "Tipo de documento",
+        "numeroDocumento": "Número de documento",
+        "fechaNacimiento": "Fecha de nacimiento",
+        "lugarExpedicion": "Lugar de expedición",
+        "correo": "Correo",
+        "telefono": "Teléfono",
+        "direccion": "Dirección",
+        "ciudad": "Ciudad",
+        "banco": "Banco",
+        "bancoNombre": "Banco",
+        "tipoCuenta": "Tipo de cuenta",
+        "numeroCuenta": "Número de cuenta",
+        "titularCuenta": "Titular de la cuenta",
+        "fieldConfidence": "Confianza"
+      },
+      "manualNote": "Completá los datos del tercero manualmente.",
+      "errorTitle": "No pudimos leer los documentos",
+      "errorUnavailable": "El servicio de IA no está disponible ahora. Podés llenar el formulario manualmente.",
+      "errorGeneric": "Ocurrió un error al procesar los documentos. Intentá de nuevo o llená el formulario manualmente.",
+      "errorUnsupported": "Ese formato no se puede leer. Subí una foto (JPG, PNG), un PDF o un archivo de Word (.doc, .docx).",
+      "errorTooLarge": "Un archivo supera el tamaño máximo (10 MB). Comprimilo o subí una copia más liviana.",
+      "errorTotalTooLarge": "Los archivos suman más de 20 MB. Subí menos archivos o más livianos.",
+      "errorDemasiados": "Máximo {{max}} archivos por propietario.",
+      "errorSinArchivos": "Subí al menos un documento.",
       "retry": "Reintentar",
       "fillManual": "Llenar manual"
     },
@@ -10352,17 +10379,23 @@
     "retomarAviso": "Tenés una carga sin terminar. Retomala desde donde quedó — volver a subir el archivo duplica las filas.",
     "orden": {
       "titulo": "El orden importa",
-      "detalle": "Cada paso necesita al anterior: el inmueble necesita dueño y el contrato se pega a la dirección del inmueble. Podés saltarte un paso si ya tenés esos datos cargados, pero nada te va a esperar después."
+      "detalle": "Cada paso necesita al anterior: el inmueble necesita dueño y el contrato se pega al inmueble (por código o dirección). Podés saltarte un paso si ya tenés esos datos cargados, pero nada te va a esperar después."
     },
     "estados": {
       "enConstruccion": "En construcción",
       "noDisponible": "No disponible",
       "enCurso": "Sin terminar",
-      "conDatos": "Con datos migrados"
+      "conDatos": "Con datos migrados",
+      "sinInmueble": "Sin inmueble"
     },
     "avance": {
       "hechas": "{{n}} ya migrados",
-      "porRevisar": "{{n}} por revisar en «{{lote}}»"
+      "porRevisar": "{{n}} por revisar en «{{lote}}»",
+      "sinInmueble": "{{n}} activos sin inmueble: no generan cobros hasta que se les vincule su inmueble.",
+      "resolverSinInmueble": "Crear o vincular los inmuebles",
+      "sinMapeo": "Faltan cuentas para {{n}} asientos automáticos: los recibos y giros pasan sin asiento hasta asignarlas.",
+      "sinMapeoUno": "Falta la cuenta de 1 asiento automático: ese movimiento pasa sin asiento hasta asignarla.",
+      "resolverSinMapeo": "Asignar las cuentas"
     },
     "pasos": {
       "propietarios": {
@@ -10382,7 +10415,7 @@
       },
       "contratos": {
         "titulo": "Contratos",
-        "descripcion": "Tu cartera viva. Entran vigentes y firmados: no hay que volver a firmarlos. El contrato se pega a la dirección del inmueble.",
+        "descripcion": "Tu cartera viva. Entran vigentes y firmados: no hay que volver a firmarlos. El contrato se pega al inmueble por su código o por la dirección; si no está cargado, se crea desde el archivo.",
         "corto": "Contratos"
       },
       "puc": {

@@ -85,11 +85,14 @@ import { FilaDeRevision } from "./FilaDeRevision";
 import { propietariosApi } from "@/lib/api/inmobiliaria.service";
 import type { Propietario } from "@/lib/types/inmobiliaria";
 import { ResolucionMasiva } from "./ResolucionMasiva";
+import { CrearInmueblesFaltantes } from "./CrearInmueblesFaltantes";
 import { ProgresoDeLote } from "./ProgresoDeLote";
 import { Pagination } from "@/components/ui/pagination";
 
 const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   direccionInmueble: "Dirección del inmueble",
+  codigoInmueble: "Código del inmueble (#)",
+  ciudadInmueble: "Ciudad del inmueble",
   inquilinoNombre: "Nombre del inquilino",
   inquilinoCorreo: "Correo del inquilino",
   inquilinoTelefono: "Teléfono del inquilino",
@@ -1227,6 +1230,13 @@ function ListaDeTrabajo({
    */
   const [propietarios, setPropietarios] = useState<Propietario[]>([]);
   const [falloPropietarios, setFalloPropietarios] = useState(false);
+  /*
+   * Se vuelve a pedir cada vez que una acción crea fichas: «Crear los N
+   * inmuebles que faltan» consigna al propietario del archivo y, si no
+   * existía, lo crea — con la lista vieja la fila decía «Elegir propietario…»
+   * sobre una consignación que sí tenía dueño (QA, 2026-09-02).
+   */
+  const [versionPropietarios, setVersionPropietarios] = useState(0);
   useEffect(() => {
     let vigente = true;
     propietariosApi
@@ -1245,7 +1255,7 @@ function ListaDeTrabajo({
     return () => {
       vigente = false;
     };
-  }, []);
+  }, [versionPropietarios]);
 
   /**
    * Ya se activó: la lista de revisión no tiene nada más que hacer.
@@ -1377,6 +1387,22 @@ function ListaDeTrabajo({
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
         {/*
+         * Las filas sin inmueble — incluidas las YA activadas — no cobran.
+         * Se ofrece crearlos de a muchos desde el archivo; el componente se
+         * oculta solo cuando no falta ninguno. Va acá, con el resumen, y no
+         * abajo con la selección: es lo primero que hay que ver de un lote
+         * que quedó «activo» sin cobrar (Nico, 2026-09-02).
+         */}
+        <CrearInmueblesFaltantes
+          key={`${lote}-${resumen.activados}`}
+          lote={lote}
+          onListo={() => {
+            setVersionPropietarios((v) => v + 1);
+            onFilaResuelta();
+          }}
+        />
+
+        {/*
          * T-0036 §3.2.C6 — visualmente separado de Activar: uno es el
          * camino feliz, el otro es irreversible. Sólo vive acá adentro,
          * nunca en la tarjeta "Retomar" (§11-L5) — descartar 1.365 filas de
@@ -1444,6 +1470,31 @@ function ListaDeTrabajo({
                 : "inquilinos quedan"}{" "}
               pendiente{activacion.porInvitar === 1 ? "" : "s"} de invitar — se
               hace desde cada contrato.
+            </p>
+          ) : null}
+          {/*
+           * 2026-09-02 — las filas sin inmueble de esta corrida. `sparse` dice
+           * cómo leerlas: prendido en el back, se activaron igual y NO van a
+           * cobrar; apagado (el default), quedaron sin activar hasta tener
+           * inmueble. Ausente o `0` ⇒ sin línea.
+           */}
+          {activacion.sinInmueble ? (
+            <p className="text-sm text-danger" data-testid="aviso-sin-inmueble">
+              {activacion.sparse
+                ? `${activacion.sinInmueble} ${
+                    activacion.sinInmueble === 1
+                      ? "contrato se activó"
+                      : "contratos se activaron"
+                  } sin inmueble: no ${
+                    activacion.sinInmueble === 1 ? "genera" : "generan"
+                  } cobros hasta que se le vincule uno desde su ficha.`
+                : `${activacion.sinInmueble} ${
+                    activacion.sinInmueble === 1
+                      ? "contrato quedó"
+                      : "contratos quedaron"
+                  } sin activar porque no ${
+                    activacion.sinInmueble === 1 ? "tiene" : "tienen"
+                  } inmueble: elegilo o crealo en la lista y volvé a activar.`}
             </p>
           ) : null}
           {activacion.fallidas > 0 ? (

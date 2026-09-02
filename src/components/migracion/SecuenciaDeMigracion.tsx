@@ -64,6 +64,18 @@ interface AvanceDePaso {
   porRevisar: number;
   /** El nombre del lote sin terminar, para poder retomarlo. */
   loteAbierto: string | null;
+  /**
+   * Sólo contratos: los que se activaron SIN inmueble. Están «migrados» y
+   * no generan cobros — el paso no está terminado mientras haya uno.
+   * Ausente = no se pudo medir (back viejo o 403).
+   */
+  sinInmueble?: number;
+  /**
+   * Sólo PUC: los asientos automáticos sin cuenta en el mapeo. Con cuentas
+   * pero sin mapeo, ningún recibo ni giro se asienta — el paso no está
+   * terminado mientras falte uno. Ausente = no se pudo medir.
+   */
+  sinMapeo?: number;
 }
 
 const SIN_MEDIR: AvanceDePaso = { hechas: null, porRevisar: 0, loteAbierto: null };
@@ -100,7 +112,9 @@ export function SecuenciaDeMigracion() {
       contractsApi.migracion.lotesAbiertos(),
       contabilidadApi.puc.listar(),
       contabilidadApi.asientos.listar({ limite: 1 }),
-    ]).then(([lotesTerceros, aplicadosPropietarios, aplicadosInquilinos, lotesInmuebles, lotesContratos, cuentas, asientos]) => {
+      contractsApi.migracion.resumen(),
+      contabilidadApi.mapeo.obtener(),
+    ]).then(([lotesTerceros, aplicadosPropietarios, aplicadosInquilinos, lotesInmuebles, lotesContratos, cuentas, asientos, resumenContratos, mapeo]) => {
       if (!vigente) return;
 
       // Un paso por tipo: cada uno cuenta sus filas aplicadas y sus lotes abiertos.
@@ -134,16 +148,34 @@ export function SecuenciaDeMigracion() {
         const abiertos = lotesContratos.value;
         /*
          * `lotesAbiertos` de contratos lista sólo lo que sigue abierto: NO
-         * sabe cuántos contratos ya se activaron históricamente. Dejarlo en
-         * `null` es lo honesto — poner 0 diría «no migraste ninguno» a quien
-         * migró 1.200 la semana pasada.
+         * sabe cuántos contratos ya se activaron históricamente. Eso lo
+         * dice `resumen()` (abajo); si tampoco llega, `hechas` queda en
+         * `null` — poner 0 diría «no migraste ninguno» a quien migró 1.200
+         * la semana pasada.
          */
         contratos.porRevisar = abiertos.reduce((n, l) => n + l.pendientes + l.listos, 0);
         contratos.loteAbierto = abiertos[0]?.lote ?? null;
       }
+      if (resumenContratos.status === 'fulfilled') {
+        /*
+         * `resumen()` sin lote es la agencia entera: cuántas filas se
+         * activaron en total, y —lo que importa— cuántos de esos contratos
+         * quedaron ACTIVOS sin inmueble. Una agencia real migró 90 así:
+         * activos, sin consignación, sin cobros, y el paso decía «hecho».
+         */
+        contratos.hechas = resumenContratos.value.activados;
+        contratos.sinInmueble = resumenContratos.value.activadosSinInmueble;
+      }
 
       const puc: AvanceDePaso = { ...SIN_MEDIR };
       if (cuentas.status === 'fulfilled') puc.hechas = cuentas.value.length;
+      /*
+       * Tener cuentas no alcanza: sin el mapeo el motor no sabe a qué cuenta
+       * va cada recibo y no asienta nada (medido 2026-09-02, en silencio).
+       * Sembrar el PUC ahora siembra el mapeo, así que para quien arranca de
+       * cero esto queda en cero solo.
+       */
+      if (mapeo.status === 'fulfilled') puc.sinMapeo = mapeo.value.faltantes.length;
 
       const contables: AvanceDePaso = { ...SIN_MEDIR };
       if (asientos.status === 'fulfilled') {
@@ -267,7 +299,11 @@ function TarjetaDePaso({
 }) {
   const { t } = useI18n();
 
-  const hecho = (avance.hechas ?? 0) > 0;
+  const sinInmueble = avance.sinInmueble ?? 0;
+  const sinMapeo = avance.sinMapeo ?? 0;
+  // Un contrato activo sin inmueble no cobra, y un PUC sin mapeo no asienta:
+  // con uno solo de los dos, el paso no está hecho.
+  const hecho = (avance.hechas ?? 0) > 0 && sinInmueble === 0 && sinMapeo === 0;
   const enCurso = avance.porRevisar > 0;
 
   return (
@@ -301,6 +337,7 @@ function TarjetaDePaso({
                 disponible={disponible}
                 hecho={hecho}
                 enCurso={enCurso}
+                sinInmueble={sinInmueble > 0}
                 midiendo={midiendo}
               />
             </div>
@@ -320,6 +357,45 @@ function TarjetaDePaso({
                   lote: avance.loteAbierto ?? '',
                 })}
               </p>
+            ) : null}
+            {sinMapeo > 0 ? (
+              /*
+               * Ámbar: hay plan de cuentas, falta decirle al motor a cuál va
+               * cada asiento. El enlace va al mapeo, no al PUC.
+               */
+              <div
+                className="flex items-start gap-2 rounded-md border border-border bg-warning-soft p-2.5"
+                data-testid="puc-sin-mapeo"
+              >
+                <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" weight="fill" />
+                <p className="text-sm text-fg">
+                  {sinMapeo === 1
+                    ? t('migracion.avance.sinMapeoUno')
+                    : t('migracion.avance.sinMapeo', { n: sinMapeo })}{' '}
+                  <Link href="/panel/inmobiliaria/contabilidad/mapeo" className="font-medium text-warning hover:underline">
+                    {t('migracion.avance.resolverSinMapeo')}
+                  </Link>
+                </p>
+              </div>
+            ) : null}
+            {sinInmueble > 0 && href ? (
+              /*
+               * Rojo y no ámbar: no es «a medio revisar», es cartera que se
+               * ve migrada y no factura. El enlace va a la pantalla del paso,
+               * que es donde se crean o vinculan los inmuebles que faltan.
+               */
+              <div
+                className="flex items-start gap-2 rounded-md border border-danger/30 bg-danger-soft p-2.5"
+                data-testid="contratos-sin-inmueble"
+              >
+                <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" weight="fill" />
+                <p className="text-sm text-fg">
+                  {t('migracion.avance.sinInmueble', { n: sinInmueble })}{' '}
+                  <Link href={href} className="font-medium text-danger hover:underline">
+                    {t('migracion.avance.resolverSinInmueble')}
+                  </Link>
+                </p>
+              </div>
             ) : null}
           </div>
         </div>
@@ -352,11 +428,13 @@ function EtiquetaDeEstado({
   disponible,
   hecho,
   enCurso,
+  sinInmueble,
   midiendo,
 }: {
   disponible: boolean;
   hecho: boolean;
   enCurso: boolean;
+  sinInmueble: boolean;
   midiendo: boolean;
 }) {
   const { t } = useI18n();
@@ -367,6 +445,14 @@ function EtiquetaDeEstado({
   // Mientras se mide no se afirma nada: un «sin empezar» que en un segundo
   // pasa a «847 migrados» es la clase de parpadeo que hace desconfiar.
   if (midiendo) return null;
+  if (sinInmueble) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-danger">
+        <Warning className="h-3.5 w-3.5" weight="fill" />
+        {t('migracion.estados.sinInmueble')}
+      </span>
+    );
+  }
   if (enCurso) {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-warning">

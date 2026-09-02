@@ -101,6 +101,12 @@ export interface ResultadoSemilla {
   existentes: number;
   total: number;
   codigosCreados: string[];
+  /**
+   * El mapeo contable, sembrado en la misma operación (2026-09-02): sin él
+   * las cuentas existen pero ningún recibo ni giro se asienta. `null` sólo
+   * si esa parte falló; `undefined` en un back anterior.
+   */
+  mapeo?: ResultadoDeSemillaDeMapeo | null;
 }
 
 /** `CrearCuentaDto`. `codigo` sólo dígitos; `padreId` opcional (sin él el
@@ -172,6 +178,8 @@ export interface RevisionDeImportacionPuc {
 
 export interface ResultadoImportacionPuc extends RevisionDeImportacionPuc {
   creadas: number;
+  /** El mapeo automático por código sobre el plan importado; `sinCuenta` = lo que hay que asignar a mano. */
+  mapeo?: ResultadoDeSemillaDeMapeo | null;
 }
 
 // ── Asientos ───────────────────────────────────────────────────────────────
@@ -559,8 +567,9 @@ function conQuery(path: string, params: Record<string, string | undefined>): str
 
 // ── Mapeo contable (asientos automáticos) ──────────────────────────────────
 
-/** `EventoContable` en `schema.prisma`: los ocho movimientos que el sistema asienta solo. */
+/** `EventoContable` en `schema.prisma`: los nueve movimientos que el sistema asienta solo. */
 export type EventoContable =
+  | 'CARTERA_INQUILINOS'
   | 'RECIBO_BANCOS'
   | 'RECIBO_CAJA'
   | 'RECAUDO_CANON_TERCEROS'
@@ -571,6 +580,7 @@ export type EventoContable =
   | 'GIRO_PROPIETARIO_BANCOS';
 
 export const EVENTOS_CONTABLES: readonly EventoContable[] = [
+  'CARTERA_INQUILINOS',
   'RECIBO_BANCOS',
   'RECIBO_CAJA',
   'RECAUDO_CANON_TERCEROS',
@@ -580,6 +590,23 @@ export const EVENTOS_CONTABLES: readonly EventoContable[] = [
   'IVA_GENERADO',
   'GIRO_PROPIETARIO_BANCOS',
 ];
+
+/** `GET /asientos/faltantes`: lo que pasó sin asiento por falta de mapeo. */
+export interface AsientosFaltantes {
+  recibos: number;
+  lotes: number;
+  cobros: number;
+  total: number;
+  mapeoCompleto: boolean;
+  eventosSinCuenta: EventoContable[];
+}
+
+/** `POST /asientos/reprocesar`. */
+export interface ResultadoDeReproceso {
+  asentados: number;
+  sinResolver: number;
+  motivos: string[];
+}
 
 export type LadoDelEvento = 'DEBE' | 'HABER';
 
@@ -727,6 +754,16 @@ export const contabilidadApi = {
       return apiClient.get<Cierre>(`${BASE}/asientos/cierre`);
     },
 
+    /** Recibos, giros y cobros que quedaron sin asiento por falta de mapeo. */
+    async faltantes(): Promise<AsientosFaltantes> {
+      return apiClient.get<AsientosFaltantes>(`${BASE}/asientos/faltantes`);
+    },
+
+    /** Vuelve a asentar lo que quedó afuera. Idempotente por documento. */
+    async reprocesar(): Promise<ResultadoDeReproceso> {
+      return apiClient.post<ResultadoDeReproceso>(`${BASE}/asientos/reprocesar`, {});
+    },
+
     /**
      * Cierra todo lo que tenga fecha ≤ `hasta`. Después no entra ningún
      * asiento con fecha adentro; una fecha anterior a la frontera vigente
@@ -774,7 +811,7 @@ export const contabilidadApi = {
   },
 
   mapeo: {
-    /** Los ocho eventos con su cuenta (o null) y la que la semilla propone. */
+    /** Los nueve eventos con su cuenta (o null) y la que la semilla propone. */
     async obtener(): Promise<MapeoContable> {
       return apiClient.get<MapeoContable>(`${BASE}/mapeo`);
     },

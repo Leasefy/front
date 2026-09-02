@@ -8528,24 +8528,51 @@
       "citaAccionError": "Could not update the visit"
     },
     "terceroIA": {
-      "errorTooLarge": "The image exceeds the maximum size (8 MB). Use a smaller photo.",
-      "docKindLabel": "Document type",
-      "intro": "Upload a photo of the ID or RUT and AI will prefill the third-party form. Review and correct before saving.",
-      "kindCedula": "ID card",
-      "kindRut": "RUT",
-      "uploadTitle": "Upload document photo",
-      "uploadHint": "Drag or click — ID (CC/CE) or RUT, as an image.",
-      "uploadChange": "Change photo",
+      "intro": "Upload the ID, the RUT, the bank certificate… as photos, PDF or Word. AI builds the owner from all of them and you review before saving.",
+      "uploadTitle": "Upload the documents",
+      "uploadMore": "Upload another document",
+      "uploadHint": "Drag or click — ID, RUT, bank certificate, chamber of commerce. Photos, PDF or Word; up to {{max}} files.",
+      "agregarOtro": "Add another file",
+      "quitar": "Remove {{nombre}}",
       "extract": "Extract data",
+      "extractN": "Extract data from {{n}} files",
       "cancel": "Cancel",
       "extracting": "Reading the document…",
+      "extractingN": "Reading {{n}} document(s)…",
       "reviewBannerTitle": "Review and correct",
       "reviewBannerDesc": "AI prefilled the data (confidence {{confidence}}%). Verify it and complete anything missing before saving.",
+      "detectados": "Read",
+      "bancoFueraDeLista": "The certificate says «{{banco}}», which is not in the form's bank list: pick the matching one or leave it empty.",
+      "conflictosTitle": "The documents disagree",
+      "conflictosDesc": "On these fields one document says one thing and another says something else. Pick the right value (or fix it below).",
+      "usarValorDe": "Use the value from {{documento}}",
+      "campos": {
+        "nombre": "Name",
+        "razonSocial": "Company name",
+        "tipoDocumento": "Document type",
+        "numeroDocumento": "Document number",
+        "fechaNacimiento": "Date of birth",
+        "lugarExpedicion": "Place of issue",
+        "correo": "Email",
+        "telefono": "Phone",
+        "direccion": "Address",
+        "ciudad": "City",
+        "banco": "Bank",
+        "bancoNombre": "Bank",
+        "tipoCuenta": "Account type",
+        "numeroCuenta": "Account number",
+        "titularCuenta": "Account holder",
+        "fieldConfidence": "Confidence"
+      },
       "manualNote": "Fill in the third-party details manually.",
-      "errorTitle": "We couldn't read the document",
+      "errorTitle": "We couldn't read the documents",
       "errorUnavailable": "The AI service is unavailable right now. You can fill the form manually.",
-      "errorGeneric": "Something went wrong processing the document. Try again or fill the form manually.",
-      "errorImageOnly": "Upload an image (a photo of the document).",
+      "errorGeneric": "Something went wrong processing the documents. Try again or fill the form manually.",
+      "errorUnsupported": "That format can't be read. Upload a photo (JPG, PNG), a PDF or a Word file (.doc, .docx).",
+      "errorTooLarge": "A file exceeds the maximum size (10 MB). Compress it or upload a lighter copy.",
+      "errorTotalTooLarge": "The files add up to more than 20 MB. Upload fewer or lighter files.",
+      "errorDemasiados": "Maximum {{max}} files per owner.",
+      "errorSinArchivos": "Upload at least one document.",
       "retry": "Retry",
       "fillManual": "Fill manually"
     },
@@ -10351,17 +10378,23 @@
     "retomarAviso": "You have an unfinished upload. Pick it up where you left off — uploading the file again duplicates the rows.",
     "orden": {
       "titulo": "The order matters",
-      "detalle": "Each step needs the one before it: a property needs an owner, and a lease attaches to the property address. You can skip a step if that data is already loaded, but nothing will wait for you afterwards."
+      "detalle": "Each step needs the one before it: a property needs an owner, and a lease attaches to a property (by code or address). You can skip a step if that data is already loaded, but nothing will wait for you afterwards."
     },
     "estados": {
       "enConstruccion": "Under construction",
       "noDisponible": "Unavailable",
       "enCurso": "Unfinished",
-      "conDatos": "Data migrated"
+      "conDatos": "Data migrated",
+      "sinInmueble": "No property"
     },
     "avance": {
       "hechas": "{{n}} already migrated",
-      "porRevisar": "{{n}} to review in “{{lote}}”"
+      "porRevisar": "{{n}} to review in “{{lote}}”",
+      "sinInmueble": "{{n}} active without a property: they will not bill until a property is linked.",
+      "resolverSinInmueble": "Create or link the properties",
+      "sinMapeo": "{{n}} automatic entries have no account yet: receipts and payouts are not posted until you assign them.",
+      "sinMapeoUno": "1 automatic entry has no account yet: that movement is not posted until you assign it.",
+      "resolverSinMapeo": "Assign the accounts"
     },
     "pasos": {
       "propietarios": {
@@ -10381,7 +10414,7 @@
       },
       "contratos": {
         "titulo": "Leases",
-        "descripcion": "Your live portfolio. They come in active and signed — no need to sign them again. A lease attaches to the property address.",
+        "descripcion": "Your live portfolio. They come in active and signed — no need to sign them again. A lease attaches to a property by code or address; if it is not loaded yet, it is created from the file.",
         "corto": "Leases"
       },
       "puc": {

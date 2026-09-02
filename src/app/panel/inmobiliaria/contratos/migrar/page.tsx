@@ -46,9 +46,9 @@ export default function MigrarContratosPage() {
             y su cartera. Entran vigentes y firmados: no hay que volver a
             firmarlos.{' '}
             <span className="text-foreground">
-              Los inmuebles tienen que estar cargados primero
+              El contrato se pega al inmueble por su código o por la dirección
             </span>{' '}
-            — el contrato se pega a la dirección.
+            — y si el inmueble no está cargado, se crea desde el archivo.
           </p>
         </header>
 

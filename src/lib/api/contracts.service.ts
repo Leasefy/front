@@ -395,6 +395,34 @@ export const contractsApi = {
       );
     },
 
+    /**
+     * Cuántos inmuebles faltan en el lote — el número que el botón muestra
+     * ANTES de confirmar. Mismo criterio que la acción: nunca promete un
+     * número distinto del que después se aplica.
+     */
+    async inmueblesFaltantes(lote: string): Promise<PrevisualizacionInmueblesFaltantes> {
+      const q = new URLSearchParams({ lote });
+      return apiClient.get<PrevisualizacionInmueblesFaltantes>(
+        `/contracts/migrar/inmuebles-faltantes?${q.toString()}`,
+      );
+    },
+
+    /**
+     * «Crear los N inmuebles que faltan»: con la dirección del archivo, a
+     * nombre de la inmobiliaria, consignados al propietario que dice el
+     * archivo — y vinculados al contrato si la fila ya se activó. Devuelve
+     * qué se creó, qué se omitió y qué falló, fila por fila.
+     */
+    async crearInmueblesFaltantes(
+      seleccion: { lote: string } | { ids: string[] },
+      ciudad?: string,
+    ): Promise<ResultadoInmueblesFaltantes> {
+      return apiClient.post<ResultadoInmueblesFaltantes>(
+        '/contracts/migrar/inmuebles-faltantes',
+        { ...seleccion, ciudad: ciudad?.trim() || undefined },
+      );
+    },
+
     /** Registrar al propietario y consignar. Sin esto no se genera un cobro. */
     async registrarPropietario(
       id: string,
@@ -682,6 +710,14 @@ function mapBackendContractRejection(br: BackendContractRejection): ContractReje
  */
 export interface FilaAMigrar {
   direccion: string;
+  /**
+   * El «#144» de Inmuebles, cuando el archivo lo trae. El back resuelve por
+   * código ANTES que por dirección; un código inexistente deja la fila con
+   * `inmueble_codigo`, nunca se cae a la dirección en silencio.
+   */
+  codigoInmueble?: number;
+  /** Sólo para CREAR el inmueble cuando no está cargado. */
+  ciudad?: string;
   inquilino: { nombre: string; correo: string; telefono?: string; documento?: string };
   startDate?: string;
   endDate?: string;
@@ -710,11 +746,18 @@ export type EstadoMigracion = 'PENDIENTE' | 'LISTO' | 'ACTIVADO' | 'DESCARTADO';
  */
 export type Faltante =
   | 'inmueble'
+  | 'inmueble_codigo'
   | 'inmueble_ambiguo'
   | 'inmueble_ocupado'
   | 'propietario'
   | 'inquilino_correo'
   | 'inquilino_nombre'
+  /**
+   * El documento del inquilino es de una cuenta que NO es de inquilino (un
+   * agente, un propietario con cuenta). No se enlaza: alguien tiene que
+   * mirar ese documento — corregirlo, o vaciarlo para volver al correo.
+   */
+  | 'inquilino_documento_ajeno'
   | 'fechas'
   | 'canon'
   | 'uso'
@@ -767,6 +810,8 @@ export interface CambiosDeFila {
   propertyId?: string;
   inquilinoCorreo?: string;
   inquilinoNombre?: string;
+  /** Corregir el documento del inquilino; '' lo quita y la fila vuelve a resolverse por correo. */
+  inquilinoDocumento?: string;
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
   monthlyRent?: number;
   startDate?: string;
@@ -846,6 +891,30 @@ export interface IdsDeFilas {
 }
 
 /** Qué pasó con cada fila de una resolución masiva, una por una. */
+/** Lo que «Crear los N inmuebles que faltan» haría sobre un lote, contado sin hacerlo. */
+export interface PrevisualizacionInmueblesFaltantes {
+  /** Filas a las que se les crearía (o resolvería) el inmueble. */
+  candidatas: number;
+  /** De esas, cuántas ya son contratos activos (se vinculan además). */
+  activadas: number;
+  /** Con dos inmuebles de la misma dirección: se resuelven a mano. */
+  ambiguas: number;
+  /** Sin dirección en el archivo: no hay con qué crear. */
+  sinDireccion: number;
+}
+
+export interface ResultadoInmueblesFaltantes {
+  pedidas: number;
+  /** Inmuebles nuevos. */
+  creados: number;
+  /** Filas que quedaron con inmueble (creado o ya existente). */
+  vinculados: number;
+  /** De las vinculadas, cuántas quedaron consignadas al propietario del archivo. */
+  consignados: number;
+  omitidas: Array<{ id: string; fila: number; motivo: string }>;
+  fallidas: Array<{ id: string; fila: number; motivo: string }>;
+}
+
 export interface ResultadoMasivo {
   pedidas: number;
   aplicadas: number;
@@ -877,6 +946,13 @@ export interface ResumenLote {
    * acá ni inferirla del nombre del flag.
    */
   activables: number;
+  /**
+   * Contratos migrados ACTIVOS sin inmueble (2026-09-02): se activaron con
+   * el modo sparse del back prendido y no tienen consignación — no generan
+   * cobros. Sin `lote`, toda la agencia. Un back viejo no lo manda:
+   * `undefined` ⇒ no se afirma nada, nunca un `0`.
+   */
+  activadosSinInmueble?: number;
 }
 
 /**
@@ -935,6 +1011,17 @@ export interface ResultadoDeFila {
    */
   inquilinoPendienteDeInvitar?: boolean;
   motivo?: string;
+  /**
+   * El inquilino ya tenía cuenta en la agencia (paso 2 del muro) con OTRO
+   * correo, o el archivo no traía correo, y se lo reconoció por el
+   * documento: se enlazó esa cuenta y no se invitó a nadie. Ausente ⇒ false.
+   */
+  inquilinoResueltoPorDocumento?: boolean;
+  /**
+   * El documento del inquilino es de una cuenta que no es de inquilino: el
+   * contrato quedó sin inquilino a propósito (no cuenta como «por invitar»).
+   */
+  inquilinoDocumentoAjeno?: boolean;
 }
 
 export interface ResumenActivacion {
@@ -948,6 +1035,15 @@ export interface ResumenActivacion {
    * todavía no manda este campo no puede afirmar un conteo que no tiene.
    */
   porInvitar?: number;
+  /**
+   * 2026-09-02 — las filas sin inmueble de ESTA corrida. Con `sparse`
+   * prendido en el back: cuántas se ACTIVARON sin inmueble (contratos que no
+   * generan cobros). Apagado: cuántas PENDIENTE sin inmueble quedaron SIN
+   * activar. Ausente ⇒ no renderizar nada.
+   */
+  sinInmueble?: number;
+  /** El modo con el que corrió la activación — para leer `sinInmueble`. */
+  sparse?: boolean;
   resultados: ResultadoDeFila[];
 }
 

@@ -251,6 +251,11 @@ export interface ResultadoDeFila {
   /** `true` sólo cuando ESTA corrida mandó la invitación al portal. */
   invitado: boolean;
   motivo?: string;
+  /**
+   * Se aplicó, pero hay algo que mirar: la cuenta de ese correo ya tenía
+   * OTRO documento y se dejó el de la cuenta. Un back viejo no lo manda.
+   */
+  advertencia?: string;
 }
 
 export interface ResumenDeAplicacion {

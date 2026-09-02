@@ -55,7 +55,7 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import type { CobroConDesglose } from './recibos-de-caja.types';
 import { adaptarDispersion, type DispersionDelBack } from './dispersion-adapter';
-import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
+import type { InventoryItem, VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
 import type { BankCode, AccountType } from '@/lib/types/payment-accounts';
 
 const BASE = '/inmobiliaria';
@@ -488,6 +488,19 @@ export const consignacionesApi = {
    * `Agente.id`, que es un `AgencyMember.id`. Mandar el equivocado devuelve 400
    * por `IsUUID` sólo si no es UUID; si lo es, asigna a nadie en silencio.
    */
+  /**
+   * PUT /inmobiliaria/consignaciones/:id/inventario — el inventario del
+   * inmueble como lista completa (agregar, editar y quitar son «mandar la
+   * lista nueva»). Devuelve la consignación con el inventario guardado.
+   */
+  async actualizarInventario(id: string, items: InventoryItem[]): Promise<Consignacion> {
+    const raw = await apiClient.put<RawConsignacion>(
+      `${BASE}/consignaciones/${id}/inventario`,
+      { items },
+    );
+    return normalizeConsignacion(raw);
+  },
+
   async assignAgent(id: string, agenteUserId: string): Promise<Consignacion> {
     const raw = await apiClient.put<RawConsignacion>(
       `${BASE}/consignaciones/${id}/assign-agent`,
@@ -495,7 +508,32 @@ export const consignacionesApi = {
     );
     return normalizeConsignacion(raw);
   },
+
+  /**
+   * El historial del inmueble: lo que le pasó a la consignación, escrito
+   * cuando pasó y por quién (GET /inmobiliaria/consignaciones/:id/historial).
+   */
+  async getHistorial(id: string): Promise<EventoDelInmueble[]> {
+    const r = await apiClient.get<{ eventos: EventoDelInmueble[] }>(
+      `${BASE}/consignaciones/${id}/historial`,
+    );
+    return r.eventos ?? [];
+  },
 };
+
+/** Un evento del historial del inmueble, tal como lo entrega el back. */
+export interface EventoDelInmueble {
+  id: string;
+  tipo: string;
+  titulo: string;
+  detalle: string | null;
+  /** Nombre de quien lo hizo, o «Sistema». */
+  actor: string;
+  esSistema: boolean;
+  /** ISO. */
+  fecha: string;
+  metadata: Record<string, unknown>;
+}
 
 // ============================================================================
 // Inmuebles sin consignación (T-0030) — read-only, second source of the

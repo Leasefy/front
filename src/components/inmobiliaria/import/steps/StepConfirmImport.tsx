@@ -28,6 +28,9 @@ import {
   activarLoteCompleto,
   ActivacionInterrumpida,
 } from "../lib/activarLoteCompleto";
+import { emparejarFilasConFotos, subirFotosDelLote } from "../lib/subirFotosDelLote";
+import { traerFotoComoArchivo } from "@/lib/inmuebles/enlaces.service";
+import { uploadPropertyPhotos } from "@/lib/api/property-photos";
 import { CompletarMandatosLoteDialog } from "../CompletarMandatosLoteDialog";
 import {
   agentesApi,
@@ -190,6 +193,53 @@ export function StepConfirmImport({
     omitidas: FilaOmitida[];
   } | null>(null);
   const [isComplete, setIsComplete] = useState(false);
+
+  /**
+   * Las fotos de los inmuebles traídos por ENLACE se suben después de que el
+   * lote los creó (ver `subirFotosDelLote`). `fotosSubidas` guarda a qué
+   * inmuebles ya se les subió, para no repetir en una segunda tanda.
+   */
+  const [fotosProgreso, setFotosProgreso] = useState<{ hechos: number; total: number } | null>(null);
+  const [fotosSubidas] = useState(() => new Set<string>());
+  const subirFotosDeLosActivados = useCallback(
+    async (elLote: string) => {
+      // Sin los inmuebles del asistente (lote retomado por URL) no hay de
+      // dónde sacar las URLs de las fotos: se salta sin ruido.
+      if (importables.length === 0) return;
+      const filas: FilaDeImportacion[] = [];
+      for (let pagina = 1; pagina <= 25; pagina++) {
+        const p = await inmueblesImportacionApi.filas(elLote, { pagina, porPagina: 200, estado: 'ACTIVADO' });
+        filas.push(...p.filas);
+        if (p.filas.length < 200) break;
+      }
+      const pares = emparejarFilasConFotos(filas, importables).filter((x) => !fotosSubidas.has(x.propertyId));
+      if (pares.length === 0) return;
+      setFotosProgreso({ hechos: 0, total: pares.length });
+      try {
+        const r = await subirFotosDelLote(
+          pares,
+          {
+            traer: traerFotoComoArchivo,
+            subir: uploadPropertyPhotos,
+            alAvanzar: (hechos, total) => setFotosProgreso({ hechos, total }),
+          },
+          fotosSubidas,
+        );
+        if (r.subidas > 0) {
+          toast.success("Fotos listas", {
+            description: `${r.subidas} ${r.subidas === 1 ? "foto subida" : "fotos subidas"} a ${r.inmuebles} ${r.inmuebles === 1 ? "inmueble" : "inmuebles"}${r.fallidas > 0 ? ` · ${r.fallidas} no se pudieron bajar` : ""}.`,
+          });
+        } else if (r.fallidas > 0) {
+          toast.warning("Las fotos no se pudieron traer", {
+            description: `Ninguna de las ${r.fallidas} fotos de la ficha se pudo bajar. Podés subirlas desde cada inmueble.`,
+          });
+        }
+      } finally {
+        setFotosProgreso(null);
+      }
+    },
+    [importables, fotosSubidas],
+  );
 
   /*
    * El mandato, al terminar.
@@ -476,6 +526,8 @@ export function StepConfirmImport({
       // dueños distintos es la asociación equivocada, y «mandato» es una
       // palabra que la inmobiliaria no usa (Nico, 2026-09-01).
       if (resultado.activados > 0 && !onSalir) void buscarSinMandato(lote);
+      // Las fotos van después de crear: el back no ve archivos.
+      if (resultado.activados > 0) void subirFotosDeLosActivados(lote);
       if (resultado.omitidas.length > 0) {
         toast.warning("Importación parcial", {
           description: `${resultado.activados} activadas, ${resultado.omitidas.length} todavía con datos pendientes.`,
@@ -544,6 +596,12 @@ export function StepConfirmImport({
             </span>{" "}
             a tu portafolio
           </p>
+          {fotosProgreso && (
+            <p className="text-sm text-fg-muted" data-testid="fotos-progreso" aria-live="polite">
+              Subiendo las fotos de las fichas… {fotosProgreso.hechos} de {fotosProgreso.total}{" "}
+              {fotosProgreso.total === 1 ? "inmueble" : "inmuebles"}. No cierres esta pestaña.
+            </p>
+          )}
           {resultadoActivacion && resultadoActivacion.omitidas.length > 0 && (
             <p className="text-sm text-warning">
               {resultadoActivacion.omitidas.length} filas quedaron pendientes de

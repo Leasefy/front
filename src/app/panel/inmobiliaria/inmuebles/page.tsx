@@ -387,11 +387,15 @@ function PortafolioContent() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {/* Captura con IA — venía de «Inmuebles · catálogo». */}
+          {/* Captura con IA — venía de «Inmuebles · catálogo». Apagada a pedido
+              de Nico (2026-09-02: «eso no sirve ahora»). La ruta
+              /inmuebles/captura sigue existiendo; cuando la captura esté a la
+              altura, se vuelve a mostrar acá.
           <Button variant="secondary" hideArrow onClick={handleCaptura}>
             <Sparkle className="w-4 h-4 text-primary" weight="fill" />
             {t('inmobiliaria.inmuebles.acciones.captura')}
           </Button>
+          */}
           {/* Import (secundaria) */}
           <Button variant="secondary" hideArrow onClick={handleImportar}>
             <FileArrowUp className="w-4 h-4" />

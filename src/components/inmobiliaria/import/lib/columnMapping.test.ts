@@ -244,3 +244,12 @@ describe('colisiones que meten el dato de otra persona u otro contrato', () => {
     expect(autoMapColumns(['Póliza'])[0].targetField).toBeNull();
   });
 });
+
+describe('la cédula del propietario tiene su propia columna', () => {
+  it('«Cédula del propietario» va a ownerDocument, no a ownerName ni a un documento suelto', () => {
+    const r = autoMapColumns(['Dirección', 'Propietario', 'Cédula del propietario', 'Canon']);
+    const porCampo = Object.fromEntries(r.map((m) => [m.targetField, m.sourceColumn]));
+    expect(porCampo.ownerName).toBe('Propietario');
+    expect(porCampo.ownerDocument).toBe('Cédula del propietario');
+  });
+});

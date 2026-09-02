@@ -251,6 +251,40 @@ export function PropertyDetailView({
         {/* Hero Image Grid - Premium style with rounded corners */}
         <section className="pt-4 md:pt-6">
           <div className="container-platform">
+            {property.images.length === 0 ? (
+              /* Sin fotos (importado por CSV, o el agente todavía no las subió):
+                 un espacio acotado y con marca, no una imagen rota en un hero
+                 de 65vh en blanco (Nico, 2026-09-02). */
+              <div
+                className="flex h-[220px] md:h-[280px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-surface-muted text-center"
+                data-testid="hero-sin-fotos"
+                role="img"
+                aria-label={`Sin fotos de ${property.title}`}
+              >
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Buildings className="h-8 w-8" weight="duotone" />
+                </div>
+                <p className="text-[15px] font-medium text-foreground">Todavía no hay fotos de este inmueble</p>
+                <p className="text-[13px] text-muted-foreground">
+                  Pídelas por el chat o agenda una visita para conocerlo.
+                </p>
+              </div>
+            ) : property.images.length === 1 ? (
+              <button
+                onClick={() => openGallery(0)}
+                aria-label={`Ver galeria de imagenes de ${property.title}`}
+                className="relative block h-[45vh] w-full overflow-hidden rounded-xl md:h-[55vh] cursor-pointer group"
+              >
+                <Image
+                  src={property.images[0]}
+                  alt={property.title}
+                  fill
+                  className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  sizes="100vw"
+                  priority
+                />
+              </button>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3 h-[45vh] md:h-[65vh]">
               {/* Main large image */}
               <button
@@ -317,6 +351,7 @@ export function PropertyDetailView({
                 )}
               </div>
             </div>
+            )}
           </div>
         </section>
 

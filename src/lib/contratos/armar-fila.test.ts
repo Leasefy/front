@@ -241,3 +241,39 @@ describe('plata imposible → faltante visible, nunca un 400 de todo el lote', (
     expect(fila.startDate).toBeUndefined()
   })
 })
+
+/**
+ * Nico, 2026-09-02: el propietario del archivo viaja en la fila para que el
+ * back consigne solo al resolver el inmueble — antes se quedaba en la memoria
+ * del navegador y una recarga lo perdía.
+ */
+describe('el propietario del archivo viaja en la fila', () => {
+  const mapeo = [
+    { columna: 'Dirección', campo: 'direccionInmueble' },
+    { columna: 'Inquilino', campo: 'inquilinoNombre' },
+    { columna: 'Correo', campo: 'inquilinoCorreo' },
+    { columna: 'Propietario', campo: 'propietarioNombre' },
+    { columna: 'Cédula propietario', campo: 'propietarioDocumento' },
+  ] as never
+
+  it('con documento, viaja con nombre y documento', () => {
+    const fila = armarFilaAMigrar(
+      { Dirección: 'Cra 1', Inquilino: 'Ana', Correo: 'a@b.co', Propietario: 'Jorge Restrepo', 'Cédula propietario': '71.234.567' },
+      mapeo,
+    )
+    expect(fila.propietario).toEqual({
+      documento: '71.234.567',
+      nombre: 'Jorge Restrepo',
+      correo: undefined,
+      telefono: undefined,
+    })
+  })
+
+  it('sin documento no viaja nada del propietario', () => {
+    const fila = armarFilaAMigrar(
+      { Dirección: 'Cra 1', Inquilino: 'Ana', Correo: 'a@b.co', Propietario: 'Jorge Restrepo', 'Cédula propietario': '' },
+      mapeo,
+    )
+    expect(fila).not.toHaveProperty('propietario')
+  })
+})

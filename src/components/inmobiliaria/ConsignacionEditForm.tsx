@@ -443,15 +443,16 @@ export function ConsignacionEditForm({
           <h3 className="font-semibold">{t('inmobiliaria.consignaciones.editForm.contractTerms')}</h3>
         </div>
 
-        {/* Agent Selection — disabled: reassignment is not wired yet (the
-            backend expects a User id via assign-agent; the front only has
-            AgencyMember ids). No fake success: the field is read-only. */}
+        {/* Agente: el valor es el User id (`agente.userId`), que es lo que
+            `assign-agent` exige y lo que la consignación guarda en `agenteId`.
+            Los agentes sin cuenta todavía (invitación pendiente) no se listan:
+            no se les puede asignar nada. La página llama a assign-agent sólo
+            si cambió. */}
         <InputWrapper
           label={t('inmobiliaria.consignaciones.editForm.assignedAgent')}
-          helper={t('inmobiliaria.consignaciones.editForm.agentReassignSoon')}
+          helper={t('inmobiliaria.consignaciones.editForm.agentReassignHelp')}
         >
           <Select
-            disabled
             value={formData.agenteId || undefined}
             onValueChange={(v) => {
               setFormData((prev) => ({ ...prev, agenteId: v }));
@@ -463,11 +464,13 @@ export function ConsignacionEditForm({
               <SelectValue placeholder={t('inmobiliaria.consignaciones.editForm.selectAgent')} />
             </SelectTrigger>
             <SelectContent>
-              {agentes.map((agente) => (
-                <SelectItem key={agente.id} value={agente.id}>
-                  {agente.name} - {agente.zone || t('inmobiliaria.consignaciones.editForm.noZone')}
-                </SelectItem>
-              ))}
+              {agentes
+                .filter((agente) => !!agente.userId)
+                .map((agente) => (
+                  <SelectItem key={agente.id} value={agente.userId!}>
+                    {agente.name} - {agente.zone || t('inmobiliaria.consignaciones.editForm.noZone')}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </InputWrapper>

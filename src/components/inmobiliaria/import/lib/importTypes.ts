@@ -47,6 +47,8 @@ export interface ImportProperty {
   bedrooms?: number;
   bathrooms?: number;
   ownerName?: string;
+  /** Cédula/NIT del propietario: con esto el back resuelve la ficha sin ambigüedad. */
+  ownerDocument?: string;
   ownerPhone?: string;
   status?: string;
   notes?: string;
@@ -121,6 +123,7 @@ export const TARGET_FIELDS = [
   { key: 'bedrooms', label: 'Habitaciones', required: false },
   { key: 'bathrooms', label: 'Baños', required: false },
   { key: 'ownerName', label: 'Propietario', required: false },
+  { key: 'ownerDocument', label: 'Cédula / NIT del propietario', required: false },
   { key: 'ownerPhone', label: 'Teléfono propietario', required: false },
   { key: 'status', label: 'Estado', required: false },
   { key: 'notes', label: 'Observaciones', required: false },

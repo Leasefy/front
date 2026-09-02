@@ -45,6 +45,12 @@ vi.mock('@/lib/api/agenda.service', () => ({
   agendaApi: { getAgenda: () => getAgendaMock() },
 }))
 
+// El historial REAL (2026-09-02): lo que el back escribió cuando pasó.
+const getHistorialMock = vi.fn()
+vi.mock('@/lib/api/inmobiliaria.service', () => ({
+  consignacionesApi: { getHistorial: () => getHistorialMock() },
+}))
+
 import { ConsignacionTimeline } from './ConsignacionTimeline'
 import type { Consignacion } from '@/lib/types/inmobiliaria'
 
@@ -78,6 +84,7 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container)
   getAgendaMock.mockResolvedValue({ eventos: [], resumen: {} })
+  getHistorialMock.mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -174,5 +181,45 @@ describe('los tres estados que antes no existían', () => {
     expect(container.querySelector('[data-testid="timeline-fallo-agenda"]')).not.toBeNull()
     // El hito guardado no depende de la agenda: sigue ahí.
     expect(container.textContent).toContain('consignacionCreated')
+  })
+})
+
+/**
+ * Nico (2026-09-02): «le cambié de estado al inmueble y aquí en el historial
+ * no pasó nada». Ahora el back escribe cada cosa que pasa y esto la muestra,
+ * con quién la hizo.
+ */
+describe('el historial real del back', () => {
+  it('muestra los eventos escritos, con quién, y no duplica «Consignación creada»', async () => {
+    getHistorialMock.mockResolvedValue([
+      { id: 'e-2', tipo: 'estado_cambiado', titulo: 'Estado: En mantenimiento', detalle: 'Antes estaba disponible.', actor: 'Nico García', esSistema: false, fecha: '2026-09-02T05:10:00.000Z', metadata: {} },
+      { id: 'e-1', tipo: 'consignacion_creada', titulo: 'Consignación creada', detalle: 'Propietario Yolanda Cardona', actor: 'Sistema', esSistema: true, fecha: '2026-09-01T05:00:00.000Z', metadata: {} },
+    ])
+    await montar()
+    const texto = container.textContent ?? ''
+    expect(texto).toContain('Estado: En mantenimiento')
+    expect(texto).toContain('Antes estaba disponible.')
+    expect(texto).toContain('Nico García')
+    expect(texto).toContain('Consignación creada')
+    // El hito derivado de la fecha de contrato NO se suma cuando el back ya lo trae.
+    expect(texto).not.toContain('consignacionCreatedDesc')
+    // 2 del historial + el vencimiento del arriendo (fecha guardada, sigue siendo un hecho).
+    expect(texto).toContain('eventsCount:{"count":3}')
+  })
+
+  it('un tipo que el front no conoce igual se muestra', async () => {
+    getHistorialMock.mockResolvedValue([
+      { id: 'e-9', tipo: 'algo_nuevo', titulo: 'Pasó algo nuevo', detalle: null, actor: 'Sistema', esSistema: true, fecha: '2026-09-02T05:10:00.000Z', metadata: {} },
+    ])
+    await montar()
+    expect(container.textContent).toContain('Pasó algo nuevo')
+  })
+
+  it('si el historial falla, avisa y conserva los hitos del registro', async () => {
+    getHistorialMock.mockRejectedValue(new Error('500'))
+    await montar()
+    const texto = container.textContent ?? ''
+    expect(texto).toContain('consignacionCreated')
+    expect(container.querySelector('[data-testid="timeline-fallo-agenda"]')).not.toBeNull()
   })
 })

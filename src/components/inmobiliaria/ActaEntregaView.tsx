@@ -13,6 +13,8 @@ import {
   Info,
   X,
   Image,
+  PencilSimple,
+  Trash,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -39,7 +41,14 @@ import type { InventoryItem } from '@/lib/types/inmobiliaria';
 interface ActaEntregaViewProps {
   inventoryItems: InventoryItem[] | undefined;
   contractDate: string;
+  /**
+   * Sin `onAddItem` la vista es de sólo lectura (p. ej. un rol que no edita).
+   * Con él, agregar / editar / quitar están vivos: el inventario se carga
+   * desde que el inmueble entra a la agencia, no hace falta entrega ni acta.
+   */
   onAddItem?: () => void;
+  onEditItem?: (item: InventoryItem) => void;
+  onDeleteItem?: (item: InventoryItem) => void;
   onPrint?: () => void;
   onDownload?: () => void;
 }
@@ -93,6 +102,8 @@ export function ActaEntregaView({
   inventoryItems,
   contractDate,
   onAddItem,
+  onEditItem,
+  onDeleteItem,
   onPrint,
   onDownload,
 }: ActaEntregaViewProps) {
@@ -229,6 +240,11 @@ export function ActaEntregaView({
                     <TableHead className="text-center py-3 px-2">
                       {t('inmobiliaria.acta.thPhoto')}
                     </TableHead>
+                    {(onEditItem || onDeleteItem) && (
+                      <TableHead className="py-3 px-2">
+                        <span className="sr-only">{t('inmobiliaria.acta.thActions')}</span>
+                      </TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -291,6 +307,38 @@ export function ActaEntregaView({
                             )}
                           </div>
                         </TableCell>
+                        {(onEditItem || onDeleteItem) && (
+                          <TableCell className="py-3 px-2">
+                            <div className="flex items-center justify-end gap-1">
+                              {onEditItem && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  hideArrow
+                                  className="h-8 w-8"
+                                  onClick={() => onEditItem(item)}
+                                  aria-label={t('inmobiliaria.acta.editItem')}
+                                  data-testid={`inventario-editar-${item.id}`}
+                                >
+                                  <PencilSimple className="w-4 h-4" />
+                                </Button>
+                              )}
+                              {onDeleteItem && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  hideArrow
+                                  className="h-8 w-8 text-danger"
+                                  onClick={() => onDeleteItem(item)}
+                                  aria-label={t('inmobiliaria.acta.deleteItem')}
+                                  data-testid={`inventario-quitar-${item.id}`}
+                                >
+                                  <Trash className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        )}
                       </motion.tr>
                     );
                   })}
@@ -320,10 +368,36 @@ export function ActaEntregaView({
                           {t('inmobiliaria.acta.quantity')}: {item.quantity}
                         </p>
                       </div>
-                      <Badge variant={style.variant} className="gap-1">
-                        <Icon className="w-3 h-3" />
-                        {t(style.labelKey)}
-                      </Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge variant={style.variant} className="gap-1">
+                          <Icon className="w-3 h-3" />
+                          {t(style.labelKey)}
+                        </Badge>
+                        {onEditItem && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            hideArrow
+                            className="h-8 w-8"
+                            onClick={() => onEditItem(item)}
+                            aria-label={t('inmobiliaria.acta.editItem')}
+                          >
+                            <PencilSimple className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {onDeleteItem && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            hideArrow
+                            className="h-8 w-8 text-danger"
+                            onClick={() => onDeleteItem(item)}
+                            aria-label={t('inmobiliaria.acta.deleteItem')}
+                          >
+                            <Trash className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     {item.notes && (
                       <p className="text-sm text-muted-foreground mb-2">
@@ -369,18 +443,19 @@ export function ActaEntregaView({
               <span className="text-sm text-muted-foreground">
                 {t('inmobiliaria.acta.total')}: {totalFiltrado} items
               </span>
-              <Button
-                variant="link"
-                size="sm"
-                hideArrow
-                onClick={onAddItem}
-                className="h-auto gap-1.5 px-0 opacity-50 cursor-not-allowed hover:no-underline"
-                disabled
-                title={t('inmobiliaria.acta.comingSoon')}
-              >
-                <Plus className="w-4 h-4" />
-                {t('inmobiliaria.acta.addItem')}
-              </Button>
+              {onAddItem && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  hideArrow
+                  onClick={onAddItem}
+                  className="h-auto gap-1.5 px-0"
+                  data-testid="inventario-agregar-item"
+                >
+                  <Plus className="w-4 h-4" />
+                  {t('inmobiliaria.acta.addItem')}
+                </Button>
+              )}
             </div>
           </div>
         ) : (
@@ -392,16 +467,17 @@ export function ActaEntregaView({
               description={t('inmobiliaria.acta.noInventoryDesc')}
               className="py-10"
             />
-            <Button
-              hideArrow
-              onClick={onAddItem}
-              className="gap-2 opacity-50 cursor-not-allowed"
-              disabled
-              title={t('inmobiliaria.acta.comingSoon')}
-            >
-              <Plus className="w-4 h-4" />
-              {t('inmobiliaria.acta.addInventory')}
-            </Button>
+            {onAddItem && (
+              <Button
+                hideArrow
+                onClick={onAddItem}
+                className="gap-2"
+                data-testid="inventario-agregar"
+              >
+                <Plus className="w-4 h-4" />
+                {t('inmobiliaria.acta.addInventory')}
+              </Button>
+            )}
           </div>
         )}
       </div>

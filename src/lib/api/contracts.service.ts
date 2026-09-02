@@ -667,6 +667,12 @@ export interface FilaAMigrar {
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
   periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
   comisionPorcentaje?: number;
+  /**
+   * El propietario que trae el archivo. Con documento, el back consigna el
+   * inmueble apenas lo resuelve — la fila no vuelve a pedir lo que el
+   * archivo ya dijo, ni siquiera si la persona recarga a mitad.
+   */
+  propietario?: { nombre?: string; documento?: string; correo?: string; telefono?: string };
 }
 
 export type EstadoMigracion = 'PENDIENTE' | 'LISTO' | 'ACTIVADO' | 'DESCARTADO';

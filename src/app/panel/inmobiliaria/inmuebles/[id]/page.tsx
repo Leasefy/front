@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
+import { FotosDelInmueble } from '@/components/inmobiliaria/FotosDelInmueble';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +32,7 @@ import {
   useAgenteDeConsignacion,
 } from '@/lib/hooks/useInmobiliaria';
 import { useProperty } from '@/lib/hooks/useProperties';
-import type { PropertyAvailability, ConsignacionFormData, Consignacion } from '@/lib/types/inmobiliaria';
+import type { PropertyAvailability, ConsignacionFormData, Consignacion, InventoryItem } from '@/lib/types/inmobiliaria';
 
 // Components
 import { ConsignacionHeader } from '@/components/inmobiliaria/ConsignacionHeader';
@@ -42,9 +43,14 @@ import {
   CurrentLeaseSection,
   DocumentsSection,
 } from '@/components/inmobiliaria/ConsignacionDetailSections';
+import { CambiarPropietarioDialog } from '@/components/inmobiliaria/CambiarPropietarioDialog';
 import { ActaEntregaView } from '@/components/inmobiliaria/ActaEntregaView';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
 import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
+import {
+  InventarioItemDialog,
+  type ItemDeInventarioBorrador,
+} from '@/components/inmobiliaria/InventarioItemDialog';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 
 /**
@@ -172,10 +178,14 @@ function ConsignacionDetailContent() {
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [consignacionData, setConsignacionData] = useState<Consignacion | null>(null);
+  // Inventario: `undefined` = diálogo cerrado; `null` = agregar; ítem = editar.
+  const [itemDeInventario, setItemDeInventario] = useState<InventoryItem | null | undefined>(undefined);
+  const [guardandoInventario, setGuardandoInventario] = useState(false);
   const [showTerminateDialog, setShowTerminateDialog] = useState(false);
   const [isTerminating, setIsTerminating] = useState(false);
   const [showCitaModal, setShowCitaModal] = useState(false);
   const [showAsignarAgente, setShowAsignarAgente] = useState(false);
+  const [showCambiarPropietario, setShowCambiarPropietario] = useState(false);
 
   // Fetch data
   const { consignacion: fetchedConsignacion } = useConsignacion(consignacionId);
@@ -191,7 +201,7 @@ function ConsignacionDetailContent() {
   // (consignacion.propertyThumbnail is never populated by the back — see
   // ledger §2.1). A failed/loading fetch just leaves `property` unset, which
   // ConsignacionHeader already renders as its placeholder icon.
-  const { property } = useProperty(consignacion?.propertyId);
+  const { property, refetch: refetchProperty } = useProperty(consignacion?.propertyId);
 
   // Handlers
   const handleEdit = useCallback(() => {
@@ -204,7 +214,7 @@ function ConsignacionDetailContent() {
     try {
       // PUT /inmobiliaria/consignaciones/:id — the service maps enum casing
       // and strips agent reassignment (see ConsignacionUpdateInput).
-      const updated = await consignacionesApi.update(consignacion.id, {
+      let updated = await consignacionesApi.update(consignacion.id, {
         propertyTitle: data.propertyTitle,
         propertyAddress: data.propertyAddress,
         propertyCity: data.propertyCity,
@@ -215,6 +225,12 @@ function ConsignacionDetailContent() {
         commissionPercent: data.commissionPercent,
         minimumTerm: data.minimumTerm,
       });
+
+      // El agente va por su propia ruta (`assign-agent` exige el User id):
+      // el formulario ya trae ese id como valor del selector. Sólo si cambió.
+      if (data.agenteId && data.agenteId !== consignacion.agenteId) {
+        updated = await consignacionesApi.assignAgent(consignacion.id, data.agenteId);
+      }
 
       setConsignacionData(updated);
       setShowEditModal(false);
@@ -302,6 +318,55 @@ function ConsignacionDetailContent() {
     setShowAsignarAgente(true);
   }, []);
 
+  /**
+   * El inventario vive en la consignación como lista completa: agregar,
+   * editar y quitar son «mandar la lista nueva» (PUT …/inventario). Se carga
+   * desde que el inmueble entra a la agencia — sin contrato, entrega ni acta.
+   */
+  const guardarInventario = useCallback(
+    async (items: InventoryItem[], mensaje: string) => {
+      if (!consignacion) return;
+      setGuardandoInventario(true);
+      try {
+        const updated = await consignacionesApi.actualizarInventario(consignacion.id, items);
+        setConsignacionData(updated);
+        setItemDeInventario(undefined);
+        toast.success(mensaje);
+      } catch (err) {
+        toast.error(t('inmobiliaria.acta.itemDialog.error'), {
+          description: err instanceof Error ? err.message : undefined,
+        });
+      } finally {
+        setGuardandoInventario(false);
+      }
+    },
+    [consignacion, t],
+  );
+
+  const handleGuardarItem = useCallback(
+    (item: ItemDeInventarioBorrador) => {
+      const actuales = consignacion?.inventoryItems ?? [];
+      const completo = { ...item, id: item.id ?? `it-${Date.now()}` } as InventoryItem;
+      const existe = actuales.some((i) => i.id === completo.id);
+      const siguientes = existe
+        ? actuales.map((i) => (i.id === completo.id ? completo : i))
+        : [...actuales, completo];
+      void guardarInventario(siguientes, t('inmobiliaria.acta.itemDialog.saved'));
+    },
+    [consignacion?.inventoryItems, guardarInventario, t],
+  );
+
+  const handleQuitarItem = useCallback(
+    (item: InventoryItem) => {
+      const actuales = consignacion?.inventoryItems ?? [];
+      void guardarInventario(
+        actuales.filter((i) => i.id !== item.id),
+        t('inmobiliaria.acta.itemDialog.removed'),
+      );
+    },
+    [consignacion?.inventoryItems, guardarInventario, t],
+  );
+
   const handleViewInventory = useCallback(() => {
     inventoryRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
@@ -377,12 +442,27 @@ function ConsignacionDetailContent() {
             <PropertyInfoSection consignacion={consignacion} />
           </motion.div>
 
+          {/* Las fotos viven en el Property; sin propertyId (mandato sin
+              inmueble) no hay galería que mostrar. */}
+          {consignacion.propertyId && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.12 }}
+            >
+              <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} />
+            </motion.div>
+          )}
+
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <PropietarioSection propietario={propietario ?? undefined} />
+            <PropietarioSection
+              propietario={propietario ?? undefined}
+              onCambiar={() => setShowCambiarPropietario(true)}
+            />
           </motion.div>
 
           <motion.div
@@ -442,6 +522,9 @@ function ConsignacionDetailContent() {
             <ActaEntregaView
               inventoryItems={consignacion.inventoryItems}
               contractDate={consignacion.contractDate}
+              onAddItem={() => setItemDeInventario(null)}
+              onEditItem={(item) => setItemDeInventario(item)}
+              onDeleteItem={handleQuitarItem}
             />
           </motion.div>
 
@@ -471,6 +554,16 @@ function ConsignacionDetailContent() {
           onCancel={() => setShowEditModal(false)}
         />
       </Modal>
+
+      {/* Cambiar de propietario: reapunta la consignación, no la tumba. */}
+      {consignacion && (
+        <CambiarPropietarioDialog
+          open={showCambiarPropietario}
+          consignacion={consignacion}
+          onClose={() => setShowCambiarPropietario(false)}
+          onCambiado={(actualizada) => setConsignacionData(actualizada)}
+        />
+      )}
 
       {/* Terminate confirmation — shadcn AlertDialog, NOT browser confirm() */}
       <AlertDialog
@@ -514,6 +607,14 @@ function ConsignacionDetailContent() {
         onCreated={() => {}}
         presetPropertyId={consignacion.propertyId}
         presetPropertyTitle={consignacion.propertyTitle}
+      />
+
+      <InventarioItemDialog
+        abierto={itemDeInventario !== undefined}
+        item={itemDeInventario ?? null}
+        guardando={guardandoInventario}
+        onCerrar={() => setItemDeInventario(undefined)}
+        onGuardar={handleGuardarItem}
       />
 
       <AsignarAgente

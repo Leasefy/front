@@ -15,6 +15,10 @@ import {
   CaretDown,
   Clock,
   User,
+  PencilSimple,
+  Image,
+  Package,
+  Receipt,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -22,6 +26,7 @@ import { useI18n } from '@/lib/i18n';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
 import { agendaApi } from '@/lib/api/agenda.service';
 import type { EventoAgenda, EventoTipo } from '@/lib/api/agenda.types';
+import { consignacionesApi, type EventoDelInmueble } from '@/lib/api/inmobiliaria.service';
 
 /**
  * Cómo se dibuja cada tipo de evento de la agenda en esta línea de tiempo.
@@ -46,7 +51,36 @@ type TimelineEventType =
   | 'candidate_approved'
   | 'contract_signed'
   | 'handover_completed'
-  | 'lease_renewal';
+  | 'lease_renewal'
+  | 'status_changed'
+  | 'data_edited'
+  | 'owner_changed'
+  | 'photos'
+  | 'inventory'
+  | 'receipt';
+
+/**
+ * Los eventos REALES del historial (back, `consignacion_eventos`) y cómo se
+ * dibuja cada tipo. Un tipo nuevo del back que no esté acá se dibuja como
+ * «datos editados»: nunca se pierde una línea por no tener ícono.
+ */
+const TIPO_DEL_HISTORIAL: Record<string, TimelineEventType> = {
+  consignacion_creada: 'consignacion_created',
+  estado_cambiado: 'status_changed',
+  datos_editados: 'data_edited',
+  propietario_cambiado: 'owner_changed',
+  agente_asignado: 'agent_assigned',
+  fotos_agregadas: 'photos',
+  fotos_quitadas: 'photos',
+  inventario_agregado: 'inventory',
+  inventario_quitado: 'inventory',
+  contrato_creado: 'contract_signed',
+  contrato_terminado: 'lease_renewal',
+  recibo_emitido: 'receipt',
+  recibo_anulado: 'receipt',
+  publicada: 'property_published',
+  despublicada: 'property_published',
+};
 
 interface TimelineEvent {
   id: string;
@@ -104,6 +138,36 @@ const EVENT_STYLES: Record<TimelineEventType, { bg: string; text: string; icon: 
     text: 'text-danger',
     icon: ArrowsClockwise,
   },
+  status_changed: {
+    bg: 'bg-warning-soft',
+    text: 'text-warning',
+    icon: ArrowsClockwise,
+  },
+  data_edited: {
+    bg: 'bg-surface-muted dark:bg-ink',
+    text: 'text-fg-muted dark:text-fg-subtle',
+    icon: PencilSimple,
+  },
+  owner_changed: {
+    bg: 'bg-primary-soft',
+    text: 'text-primary',
+    icon: User,
+  },
+  photos: {
+    bg: 'bg-surface-muted dark:bg-ink',
+    text: 'text-fg-muted dark:text-fg-subtle',
+    icon: Image,
+  },
+  inventory: {
+    bg: 'bg-surface-muted dark:bg-ink',
+    text: 'text-fg-muted dark:text-fg-subtle',
+    icon: Package,
+  },
+  receipt: {
+    bg: 'bg-success-soft',
+    text: 'text-success',
+    icon: Receipt,
+  },
 };
 
 interface ConsignacionTimelineProps {
@@ -145,6 +209,45 @@ export function ConsignacionTimeline({
   const [cargandoAgenda, setCargandoAgenda] = useState(true);
   const [falloAgenda, setFalloAgenda] = useState(false);
 
+  //   3. (2026-09-02) El historial REAL: `consignacion_eventos` en el back,
+  //      escrito por cada servicio cuando pasa algo (estado, edición,
+  //      propietario, agente, fotos, inventario, contrato, recibos). Es la
+  //      fuente principal; los hitos derivados del registro (1) quedan sólo
+  //      como respaldo si este endpoint no responde, para no mostrar un
+  //      historial vacío por una caída.
+  const [historial, setHistorial] = useState<EventoDelInmueble[] | null>(null);
+  const [falloHistorial, setFalloHistorial] = useState(false);
+
+  useEffect(() => {
+    let vivo = true;
+    setHistorial(null);
+    setFalloHistorial(false);
+    consignacionesApi
+      .getHistorial(consignacion.id)
+      .then((r) => {
+        if (vivo) setHistorial(r);
+      })
+      .catch(() => {
+        if (vivo) setFalloHistorial(true);
+      });
+    return () => {
+      vivo = false;
+    };
+    // Se vuelve a leer cada vez que la consignación cambia en pantalla
+    // (estado, propietario, agente, datos): el cambio que la persona acaba
+    // de hacer tiene que aparecer en el historial sin recargar. Medido
+    // 2026-09-02: cambiar el estado quedaba registrado en el back y la
+    // tarjeta seguía en «1 eventos».
+  }, [
+    consignacion.id,
+    consignacion.availability,
+    consignacion.propietarioId,
+    consignacion.agenteId,
+    consignacion.updatedAt,
+    consignacion.commissionPercent,
+    consignacion.monthlyRent,
+  ]);
+
   useEffect(() => {
     let vivo = true;
     setCargandoAgenda(true);
@@ -173,8 +276,26 @@ export function ConsignacionTimeline({
   const events = useMemo(() => {
     const reales: TimelineEvent[] = [];
 
+    // Lo que de verdad le pasó al inmueble, escrito cuando pasó.
+    for (const e of historial ?? []) {
+      reales.push({
+        id: `hist-${e.id}`,
+        type: TIPO_DEL_HISTORIAL[e.tipo] ?? 'data_edited',
+        date: e.fecha,
+        title: e.titulo,
+        description: e.detalle ?? '',
+        actor: e.esSistema ? t('inmobiliaria.consignaciones.timeline.actors.system') : e.actor,
+      });
+    }
+    // Mientras el historial real no llegó, no se dibuja el respaldo: si se
+    // pintara y después se quitara, AnimatePresence lo deja un rato en
+    // pantalla y el historial se vería duplicado.
+    const hayHistorial = (historial?.length ?? 0) > 0 || (historial === null && !falloHistorial);
+
     // Hito 1 — la consignación existe desde que se registró. Fecha guardada.
-    if (consignacion.contractDate) {
+    // Sólo cuando el historial real no trae nada (caída o consignación
+    // anterior al registro): si trae, ya viene «Consignación creada».
+    if (consignacion.contractDate && !hayHistorial) {
       reales.push({
         id: 'hito-consignacion',
         type: 'consignacion_created',
@@ -227,7 +348,7 @@ export function ConsignacionTimeline({
     return [...reales, ...deLaAgenda].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
-  }, [consignacion, agenteName, eventosAgenda, t]);
+  }, [consignacion, agenteName, eventosAgenda, historial, falloHistorial, t]);
 
   const visibleEvents = isExpanded ? events : events.slice(0, maxVisibleItems);
   const hasMoreEvents = events.length > maxVisibleItems;
@@ -251,7 +372,7 @@ export function ConsignacionTimeline({
       <div className="p-5">
         {/* Cargando, falló y vacío son tres cosas distintas. Antes ninguna
             existía: siempre había eventos porque siempre se inventaban. */}
-        {cargandoAgenda && events.length === 0 ? (
+        {(cargandoAgenda || (historial === null && !falloHistorial)) && events.length === 0 ? (
           <p className="py-6 text-center text-sm text-fg-muted dark:text-fg-subtle">
             {t('common.loading')}
           </p>
@@ -335,7 +456,7 @@ export function ConsignacionTimeline({
 
         {/* Si la agenda no respondió, decirlo — pero sin borrar los hitos del
             registro, que no dependen de ella. */}
-        {falloAgenda && (
+        {(falloAgenda || falloHistorial) && (
           <p className="mt-3 text-xs text-fg-muted dark:text-fg-subtle" data-testid="timeline-fallo-agenda">
             {t('inmobiliaria.consignaciones.timeline.loadFailed')}
           </p>

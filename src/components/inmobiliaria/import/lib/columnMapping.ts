@@ -38,6 +38,9 @@ export const COLUMN_KEYWORDS: Record<string, string[]> = {
   bedrooms:         ['numero de habitaciones', 'alcobas', 'habitaciones', 'cuartos', 'dormitorios', 'hab', 'recamaras', 'bedrooms'],
   bathrooms:        ['numero de banos', 'banos', 'bano', 'bathrooms', 'wc'],
   ownerName:        ['nombre del propietario', 'nombre propietario', 'propietario', 'arrendador', 'dueno', 'owner'],
+  // Más específico que ownerName ('propietario', 11) y que cualquier 'documento'
+  // suelto: la cédula del dueño resuelve la ficha sin adivinar por nombre.
+  ownerDocument:    ['cedula del propietario', 'documento del propietario', 'nit del propietario', 'cedula propietario', 'documento propietario', 'nit propietario', 'cc propietario', 'identificacion del propietario', 'identificacion propietario', 'cedula del arrendador', 'documento del arrendador'],
   // OJO: el nivel 1 gana por LONGITUD de la palabra clave, así que cualquier
   // variante «<algo> propietario» tiene que ser MÁS LARGA que 'propietario'
   // (11) o el teléfono termina en el campo del nombre. Pasó con

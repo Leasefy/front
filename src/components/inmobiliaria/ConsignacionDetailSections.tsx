@@ -143,9 +143,11 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
 
 interface PropietarioSectionProps {
   propietario: Propietario | undefined;
+  /** Cambiar de propietario (se vendió, heredó). Sin esto no se muestra el botón. */
+  onCambiar?: () => void;
 }
 
-export function PropietarioSection({ propietario }: PropietarioSectionProps) {
+export function PropietarioSection({ propietario, onCambiar }: PropietarioSectionProps) {
   const { t } = useI18n();
 
   if (!propietario) {
@@ -187,13 +189,25 @@ export function PropietarioSection({ propietario }: PropietarioSectionProps) {
               </p>
             </div>
           </div>
-          <Link
-            href={`/panel/inmobiliaria/propietarios/${propietario.id}`}
-            className="text-sm text-primary hover:text-primary dark:hover:text-primary flex items-center gap-1"
-          >
-            {t('inmobiliaria.consignaciones.detail.viewProfile')}
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          <div className="flex items-center gap-3">
+            {onCambiar && (
+              <button
+                type="button"
+                onClick={onCambiar}
+                className="text-sm text-fg-muted hover:text-fg"
+                data-testid="cambiar-propietario"
+              >
+                Cambiar
+              </button>
+            )}
+            <Link
+              href={`/panel/inmobiliaria/propietarios/${propietario.id}`}
+              className="text-sm text-primary hover:text-primary dark:hover:text-primary flex items-center gap-1"
+            >
+              {t('inmobiliaria.consignaciones.detail.viewProfile')}
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
 
         {/* Bank Account — only when payout data exists */}

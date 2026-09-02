@@ -84,5 +84,27 @@ export function armarFilaAMigrar(
     // no es un porcentaje. `Number(v) || undefined` convertía el 0 en «no hay
     // dato» — el único caso en que un valor escrito desaparecía en silencio.
     comisionPorcentaje: comoPorcentaje(v('comision')),
+    ...propietarioDe(v),
+  }
+}
+
+/**
+ * El propietario del archivo viaja en la fila (Nico, 2026-09-02: «que tome el
+ * que viene desde la migración»). Sólo con documento: sin él no hay ficha que
+ * resolver ni crear, y el nombre solo se presta a homónimos. En blanco no
+ * viaja nada.
+ */
+function propietarioDe(
+  v: (campo: CampoDeContrato) => unknown,
+): Pick<FilaAMigrar, 'propietario'> {
+  const documento = textoOpcional(v('propietarioDocumento'))
+  if (!documento) return {}
+  return {
+    propietario: {
+      documento,
+      nombre: textoOpcional(v('propietarioNombre')),
+      correo: textoOpcional(v('propietarioCorreo')),
+      telefono: textoOpcional(v('propietarioTelefono')),
+    },
   }
 }

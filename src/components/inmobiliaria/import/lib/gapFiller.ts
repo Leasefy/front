@@ -296,16 +296,11 @@ export function analyzeProperties(properties: ImportProperty[]): ImportProperty[
       });
     }
 
-    // Rule 2: Missing propertyZone
-    if (!prop.propertyZone) {
-      suggestions.push({
-        field: 'propertyZone',
-        suggestedValue: 'Por definir',
-        confidence: 'baja',
-        reasoning: 'No se detectó barrio o zona. Revisa manualmente.',
-        accepted: null,
-      });
-    }
+    // (Antes acá se sugería «Por definir» como barrio. Un barrio es un dato,
+    // no una suposición: aceptar esa sugerencia guardaba la palabra «Por
+    // definir» como barrio del inmueble y pasaba la validación del back con
+    // un valor falso. Hoy el barrio faltante lo pide `faltantesParaElBack`,
+    // con un campo para escribir el de verdad.)
 
     // Rule 5: Missing commissionPercent (0% is valid — only suggest when undefined/NaN)
     if (

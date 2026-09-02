@@ -28,6 +28,7 @@ import {
   VideoCamera,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { formatCurrency as formatearPesos } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -262,6 +263,18 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
                       {p.propertyArea && (
                         <span className="text-xs text-fg-muted">{p.propertyArea} m²</span>
                       )}
+                      {/* Qué se ofrece y por cuánto, en la misma línea: una
+                          venta de $320.000.000 que se lee como un canon mensual
+                          pasa desapercibida si el precio no dice de qué es. */}
+                      {p.salePrice ? (
+                        <span className="text-xs text-fg-muted" data-testid={`negocio-${p._rowIndex}`}>
+                          venta · {formatearPesos(p.salePrice)}
+                        </span>
+                      ) : p.monthlyRent ? (
+                        <span className="text-xs text-fg-muted" data-testid={`negocio-${p._rowIndex}`}>
+                          arriendo · {formatearPesos(p.monthlyRent)}/mes
+                        </span>
+                      ) : null}
                       {otrosFaltantes.length > 0 && (
                         <span className="text-xs text-warning">
                           falta {otrosFaltantes.join(', ')}

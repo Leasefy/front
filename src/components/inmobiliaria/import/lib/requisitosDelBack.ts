@@ -21,6 +21,7 @@ import { cleanNumericValue } from './valorNumerico';
 /** Campos editables que pueden bloquear la creación. */
 export type CampoRequerido =
   | 'propertyAddress'
+  | 'propertyZone'
   | 'monthlyRent'
   | 'salePrice'
   | 'bathrooms'
@@ -73,6 +74,20 @@ export function faltantesParaElBack(p: ImportProperty): RequisitoFaltante[] {
       campo: 'propertyAddress',
       etiqueta: 'Dirección',
       ayuda: 'Sin dirección el inmueble no se puede crear.',
+      tipo: 'texto',
+    });
+  }
+
+  // El barrio lo exige la activación en el back (`revisar()` →
+  // `faltantes: ['barrio']`) igual que lo exige el asistente de consignación.
+  // Faltaba ACÁ: la revisión decía «3 listos» y el back devolvía uno
+  // pendiente por barrio — dos listas que dicen lo mismo terminan diciendo
+  // cosas distintas (2026-09-01, tres enlaces reales de Fincaraíz).
+  if (!p.propertyZone?.trim()) {
+    faltan.push({
+      campo: 'propertyZone',
+      etiqueta: 'Barrio',
+      ayuda: 'El barrio o sector del inmueble.',
       tipo: 'texto',
     });
   }

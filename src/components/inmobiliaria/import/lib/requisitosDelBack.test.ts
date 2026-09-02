@@ -15,6 +15,7 @@ function inmueble(parcial: Partial<ImportProperty> = {}): ImportProperty {
     _rowIndex: 0,
     propertyAddress: 'Calle 39A # 25-14',
     propertyCity: 'Bogotá',
+    propertyZone: 'Teusaquillo',
     monthlyRent: 1_900_000,
     bathrooms: 1,
     propertyArea: 35,
@@ -33,6 +34,7 @@ describe('faltantesParaElBack', () => {
 
   it.each([
     ['propertyAddress', { propertyAddress: '' }],
+    ['propertyZone', { propertyZone: '' }],
     ['monthlyRent', { monthlyRent: undefined }],
     ['bathrooms', { bathrooms: undefined }],
     ['propertyArea', { propertyArea: undefined }],

@@ -149,12 +149,22 @@ export function aImportProperty(leido: InmuebleDesdeEnlace, indice: number): Imp
   anotar('propertyAddress', leido.direccion);
   anotar('propertyCity', leido.ciudad);
   anotar('propertyZone', leido.barrio);
+  anotar('propertyDepartment', leido.departamento);
   anotar('propertyType', leido.tipo);
+  anotar('listingType', leido.negocio);
   anotar('monthlyRent', leido.canon);
+  anotar('salePrice', leido.precioVenta);
   anotar('adminFee', leido.administracion);
   anotar('propertyArea', leido.area);
   anotar('bedrooms', leido.habitaciones);
   anotar('bathrooms', leido.banos);
+
+  // `listingType` es texto libre en el asistente («Venta» / «Arriendo», lo
+  // que traería una celda de Excel); `resolveImportListingType` lo entiende.
+  // Sin negocio leído se deja vacío: la revisión asume arriendo, que es lo
+  // que asumía antes, pero ahora sin fingir que la ficha lo dijo.
+  const listingType =
+    leido.negocio?.valor === 'venta' ? 'Venta' : leido.negocio?.valor === 'arriendo' ? 'Arriendo' : undefined;
 
   return {
     _rowIndex: indice,
@@ -162,8 +172,11 @@ export function aImportProperty(leido: InmuebleDesdeEnlace, indice: number): Imp
     propertyAddress: leido.direccion?.valor,
     propertyCity: leido.ciudad?.valor,
     propertyZone: leido.barrio?.valor,
+    propertyDepartment: leido.departamento?.valor,
     propertyType: leido.tipo?.valor,
+    listingType,
     monthlyRent: leido.canon?.valor,
+    salePrice: leido.precioVenta?.valor,
     adminFee: leido.administracion?.valor,
     propertyArea: leido.area?.valor,
     bedrooms: leido.habitaciones?.valor,

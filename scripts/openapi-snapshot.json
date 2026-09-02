@@ -11115,6 +11115,12 @@
           },
           "updatedAt": {
             "type": "string"
+          },
+          "certifiedBy": {
+            "type": "string"
+          },
+          "certifiedAt": {
+            "type": "string"
           }
         },
         "required": [
@@ -11585,6 +11591,806 @@
           "total",
           "page",
           "pageSize"
+        ]
+      },
+      "PilotoInboxAccion": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "POST",
+              "PATCH"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "body": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "label",
+          "method",
+          "path"
+        ]
+      },
+      "PilotoInboxItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fuente": {
+            "type": "string"
+          },
+          "agente": {
+            "type": "string"
+          },
+          "prioridad": {
+            "type": "string",
+            "enum": [
+              "alta",
+              "media",
+              "baja"
+            ]
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "resumen": {
+            "type": "string"
+          },
+          "montoCop": {
+            "type": "number"
+          },
+          "desde": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          },
+          "accion": {
+            "$ref": "#/components/schemas/PilotoInboxAccion"
+          }
+        },
+        "required": [
+          "id",
+          "fuente",
+          "agente",
+          "prioridad",
+          "titulo",
+          "resumen",
+          "desde",
+          "href"
+        ]
+      },
+      "PilotoInboxResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoInboxItem"
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "porPrioridad": {
+            "type": "object",
+            "properties": {
+              "alta": {
+                "type": "integer"
+              },
+              "media": {
+                "type": "integer"
+              },
+              "baja": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "alta",
+              "media",
+              "baja"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "porPrioridad"
+        ]
+      },
+      "PilotoActivityItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string"
+          },
+          "agente": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "detalle": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "agente",
+          "tipo",
+          "titulo"
+        ]
+      },
+      "PilotoActivityResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoActivityItem"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AiHubAutonomiaValla": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "value",
+          "estado"
+        ]
+      },
+      "AiHubAutonomiaResponse": {
+        "type": "object",
+        "properties": {
+          "agente": {
+            "type": "string"
+          },
+          "modo": {
+            "type": "string",
+            "enum": [
+              "sombra",
+              "copiloto",
+              "autonomo"
+            ]
+          },
+          "modosDisponibles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "sombra",
+                "copiloto",
+                "autonomo"
+              ]
+            }
+          },
+          "valla": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubAutonomiaValla"
+            }
+          },
+          "t323": {
+            "type": "boolean"
+          },
+          "origen": {
+            "type": "string",
+            "enum": [
+              "piloto",
+              "politica",
+              "default"
+            ]
+          },
+          "efectoReal": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "agente",
+          "modo",
+          "modosDisponibles",
+          "valla",
+          "t323",
+          "origen",
+          "efectoReal"
+        ]
+      },
+      "AiHubAutonomiaPutResponse": {
+        "type": "object",
+        "properties": {
+          "agente": {
+            "type": "string"
+          },
+          "modo": {
+            "type": "string",
+            "enum": [
+              "sombra",
+              "copiloto",
+              "autonomo"
+            ]
+          }
+        },
+        "required": [
+          "agente",
+          "modo"
+        ]
+      },
+      "AiHubAutonomiaPutBody": {
+        "type": "object",
+        "properties": {
+          "modo": {
+            "type": "string",
+            "enum": [
+              "sombra",
+              "copiloto",
+              "autonomo"
+            ]
+          }
+        },
+        "required": [
+          "modo"
+        ],
+        "additionalProperties": false
+      },
+      "AiHubRetenidoResultado": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "emitido": {
+            "type": "string",
+            "enum": [
+              "llamada",
+              "cobro",
+              "dispersion",
+              "nada"
+            ]
+          }
+        },
+        "required": [
+          "ok",
+          "emitido"
+        ]
+      },
+      "AiHubGobiernoItem": {
+        "type": "object",
+        "properties": {
+          "agente": {
+            "type": "string"
+          },
+          "corre": {
+            "type": "boolean"
+          },
+          "origen": {
+            "type": "string",
+            "enum": [
+              "heredado",
+              "elegido"
+            ]
+          },
+          "disponibleGlobal": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "agente",
+          "corre",
+          "origen",
+          "disponibleGlobal"
+        ]
+      },
+      "AiHubGobiernoResponse": {
+        "type": "object",
+        "properties": {
+          "agentes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiHubGobiernoItem"
+            }
+          },
+          "llavesFinas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "agentes",
+          "llavesFinas"
+        ]
+      },
+      "AiHubGobiernoPutBody": {
+        "type": "object",
+        "properties": {
+          "habilitado": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "habilitado"
+        ],
+        "additionalProperties": false
+      },
+      "PilotoPulsoEnCurso": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "detalle": {
+            "type": "string"
+          },
+          "desde": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "titulo"
+        ]
+      },
+      "PilotoPulsoCasoRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "desde": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "titulo"
+        ]
+      },
+      "PilotoPulsoAlerta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "severidad": {
+            "type": "string",
+            "enum": [
+              "critica",
+              "alta",
+              "media",
+              "info"
+            ]
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "detalle": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoPulsoCasoRef"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "severidad",
+          "titulo",
+          "detalle"
+        ]
+      },
+      "PilotoPulsoResponse": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "atencion",
+              "critico"
+            ]
+          },
+          "titular": {
+            "type": "string"
+          },
+          "enCurso": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoPulsoEnCurso"
+            }
+          },
+          "alertas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoPulsoAlerta"
+            }
+          },
+          "hoy": {
+            "type": "object",
+            "properties": {
+              "llamadas": {
+                "type": "integer"
+              },
+              "conversacionesActivas": {
+                "type": "integer"
+              },
+              "decisionesResueltas": {
+                "type": "integer"
+              },
+              "contactosPlaneados": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "llamadas",
+              "conversacionesActivas",
+              "decisionesResueltas"
+            ]
+          }
+        },
+        "required": [
+          "estado",
+          "titular",
+          "enCurso",
+          "alertas",
+          "hoy"
+        ]
+      },
+      "PilotoPreparacionRequisito": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "falta",
+              "no_aplica"
+            ]
+          },
+          "detalle": {
+            "type": "string"
+          },
+          "bloqueante": {
+            "type": "boolean"
+          },
+          "comoSeArregla": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "estado",
+          "detalle",
+          "bloqueante"
+        ]
+      },
+      "PilotoPreparacionResponse": {
+        "type": "object",
+        "properties": {
+          "listo": {
+            "type": "boolean"
+          },
+          "requisitos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoPreparacionRequisito"
+            }
+          }
+        },
+        "required": [
+          "listo",
+          "requisitos"
+        ]
+      },
+      "PilotoDetalleFila": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "valor": {
+            "type": "string"
+          },
+          "enfasis": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "label",
+          "valor"
+        ]
+      },
+      "PilotoDetalleGrupo": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string"
+          },
+          "filas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoDetalleFila"
+            }
+          }
+        },
+        "required": [
+          "titulo",
+          "filas"
+        ]
+      },
+      "PilotoDetalleHito": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "detalle": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "at",
+          "titulo"
+        ]
+      },
+      "PilotoDetalleAccion": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "POST",
+              "PATCH"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "body": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "label",
+          "method",
+          "path"
+        ]
+      },
+      "PilotoDetalleEnlace": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          },
+          "razon": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "href"
+        ]
+      },
+      "PilotoDetalleResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fuente": {
+            "type": "string"
+          },
+          "agente": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "subtitulo": {
+            "type": "string"
+          },
+          "prioridad": {
+            "type": "string",
+            "enum": [
+              "alta",
+              "media",
+              "baja"
+            ]
+          },
+          "desde": {
+            "type": "string"
+          },
+          "montoCop": {
+            "type": "number"
+          },
+          "contexto": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoDetalleGrupo"
+            }
+          },
+          "traza": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoDetalleHito"
+            }
+          },
+          "acciones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoDetalleAccion"
+            }
+          },
+          "enlaces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PilotoDetalleEnlace"
+            }
+          },
+          "nota": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fuente",
+          "agente",
+          "titulo",
+          "contexto",
+          "traza",
+          "acciones",
+          "enlaces"
+        ]
+      },
+      "PilotoBriefingResponse": {
+        "type": "object",
+        "properties": {
+          "fecha": {
+            "type": "string"
+          },
+          "saludo": {
+            "type": "string"
+          },
+          "resumen": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "necesitanDeTi": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "titulo": {
+                  "type": "string"
+                },
+                "href": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "titulo",
+                "href"
+              ]
+            }
+          },
+          "numeros": {
+            "type": "object",
+            "properties": {
+              "pendientes": {
+                "type": "integer"
+              },
+              "altas": {
+                "type": "integer"
+              },
+              "llamadasHoy": {
+                "type": "integer"
+              },
+              "promesasCreadasHoy": {
+                "type": "integer"
+              },
+              "recuperadoMesCop": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "pendientes",
+              "altas",
+              "llamadasHoy",
+              "promesasCreadasHoy"
+            ]
+          },
+          "narrativa": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "fecha",
+          "saludo",
+          "resumen",
+          "necesitanDeTi",
+          "numeros"
         ]
       },
       "WorkItemDetailResponse": {
@@ -36874,6 +37680,1368 @@
           },
           "404": {
             "description": "Unknown or missing `agente`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/inbox": {
+      "get": {
+        "operationId": "getAiHubInbox",
+        "summary": "Piloto automático — bandeja única de decisiones humanas pendientes",
+        "description": "Agrega TODAS las decisiones que esperan a un humano (escalaciones, siniestros, cartas prejurídicas, planes de pago, retención, calidad, hilos de WhatsApp, facturas AP) en una sola lista priorizada. Cada ítem trae su href y, cuando el endpoint acepta un cuerpo fijo de un clic, la acción ejecutable. Fail-soft por fuente.",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "La bandeja priorizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoInboxResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/activity": {
+      "get": {
+        "operationId": "getAiHubActivity",
+        "summary": "Piloto automático — feed de actividad de los agentes",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "example": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actividad reciente, más nuevo primero",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoActivityResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/agentes/{agente}/autonomia": {
+      "get": {
+        "operationId": "getAiHubAgentAutonomia",
+        "summary": "Piloto automático — postura de autonomía de un agente",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "cobranza"
+            },
+            "required": true,
+            "name": "agente",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Postura actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubAutonomiaResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agente fuera del roster",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putAiHubAgentAutonomia",
+        "summary": "Piloto automático — cambiar el modo de autonomía de un agente",
+        "description": "Persiste el modo (🌑 sombra / 🤝 copiloto / 🚀 autónomo) por agente × agencia y deja rastro en audit_log. Solo OWNER/ADMIN: subir la autonomía es una decisión de gobierno, no de operación.",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "cobranza"
+            },
+            "required": true,
+            "name": "agente",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiHubAutonomiaPutBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Modo persistido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubAutonomiaPutResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant / rol insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agente desconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/retenidos/{decisionId}/aprobar": {
+      "post": {
+        "operationId": "aprobarRetenidoPiloto",
+        "summary": "Piloto — aprobar y liberar una acción retenida por autonomía",
+        "description": "Libera la acción que el copiloto retuvo: una llamada de cobranza (marca el teléfono real con los flags de marcado encendidos) o un cobro por WhatsApp/email. Idempotente: la segunda aprobación devuelve 409 y no emite nada.",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "decisionId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resuelto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubRetenidoResultado"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant / rol insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe en esta agencia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya estaba resuelto / sin teléfono",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/retenidos/{decisionId}/descartar": {
+      "post": {
+        "operationId": "descartarRetenidoPiloto",
+        "summary": "Piloto — descartar una acción retenida (no sale nada)",
+        "description": "Marca la retención como descartada, con auditoría. No emite ningún contacto; si el caso amerita, el priorizador volverá a proponerlo.",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "decisionId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resuelto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubRetenidoResultado"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant / rol insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe en esta agencia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya estaba resuelto / sin teléfono",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/gobierno": {
+      "get": {
+        "operationId": "getAiHubGobierno",
+        "summary": "Piloto — qué agentes corren para esta inmobiliaria",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado del gobierno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubGobiernoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/gobierno/{agente}": {
+      "put": {
+        "operationId": "putAiHubGobierno",
+        "summary": "Piloto — encender o apagar un agente para esta inmobiliaria",
+        "description": "Edita la lista `agentes_habilitados`. Apagar desde la herencia materializa la lista (todos menos ese); volver a encenderlos todos colapsa a heredar. Las llaves finas se preservan. Solo OWNER/ADMIN.",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "agente",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiHubGobiernoPutBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Gobierno actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiHubGobiernoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant / rol insuficiente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Agente desconocido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/pulso": {
+      "get": {
+        "operationId": "getAiHubPulso",
+        "summary": "Piloto automático — tablero vivo (en curso, alertas, hoy)",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El pulso del piloto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPulsoResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/preparacion": {
+      "get": {
+        "operationId": "getAiHubPreparacion",
+        "summary": "Piloto automático — si la inmobiliaria puede operar sola",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Los requisitos del piloto, medidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoPreparacionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/detalle/{itemId}": {
+      "get": {
+        "operationId": "getAiHubDetalle",
+        "summary": "Piloto automático — detalle de un ítem (bandeja, actividad o pulso)",
+        "description": "Devuelve todo lo que se sabe de un caso: el contexto agrupado, la línea de tiempo derivada de las tablas existentes, las acciones que se ejecutan de un clic y los enlaces a las pantallas que exigen inputs. Acepta los ids con prefijo que ya emiten la bandeja, el feed de actividad y el pulso. 404 cuando el prefijo es desconocido o la fila no pertenece a la agencia.",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 120,
+              "example": "esc:6f1a2b3c-0000-4000-8000-000000000001"
+            },
+            "required": true,
+            "name": "itemId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El detalle del ítem",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDetalleResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prefijo desconocido o ítem inexistente en esta agencia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/ai-hub/briefing": {
+      "get": {
+        "operationId": "getAiHubBriefing",
+        "summary": "Piloto automático — briefing del día",
+        "tags": [
+          "agency",
+          "ai-hub",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El briefing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoBriefingResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT faltante o inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cross-tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Base de datos no disponible",
             "content": {
               "application/json": {
                 "schema": {

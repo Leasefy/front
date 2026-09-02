@@ -27,9 +27,10 @@ export interface UseTenantPqrsResult {
   refetch: () => Promise<void>;
 }
 
-export function useTenantPqrs(): UseTenantPqrsResult {
+export function useTenantPqrs(options?: { skip?: boolean }): UseTenantPqrsResult {
+  const skip = options?.skip ?? false;
   const [items, setItems] = useState<SolicitudPqrs[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!skip);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPqrs = useCallback(async () => {
@@ -48,8 +49,12 @@ export function useTenantPqrs(): UseTenantPqrsResult {
   }, []);
 
   useEffect(() => {
+    if (skip) {
+      setIsLoading(false);
+      return;
+    }
     fetchPqrs();
-  }, [fetchPqrs]);
+  }, [fetchPqrs, skip]);
 
   return {
     items,

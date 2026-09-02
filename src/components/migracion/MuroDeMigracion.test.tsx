@@ -525,7 +525,10 @@ describe('el pie espera a que el paso termine de crear', () => {
     expect(q('muro-siguiente')).not.toBeNull();
   });
 
-  it('cambiar de paso suelta la señal: el aviso de ocupado no persigue a la persona', async () => {
+  it('mientras el paso está ocupado, TODO el paso queda inerte y no se puede cambiar de paso ni arrancar de cero', async () => {
+    // Con «Activar 90 contratos» girando, la lista, los checks, la paginación
+    // y «subir otro archivo» seguían editables (Nico, 2026-09-01). La pantalla
+    // tiene que quedar exactamente como la dejó al apretar el botón.
     estadoMock.estado.mockResolvedValue({
       bloquea: true,
       resuelta: null,
@@ -535,10 +538,22 @@ describe('el pie espera a que el paso termine de crear', () => {
     await pintar();
     await click('muro-ir-propietarios');
     await click('paso-ocupado-on');
-    expect(q('muro-ocupado')).not.toBeNull();
 
+    const contenido = q('muro-contenido')!;
+    expect(contenido.hasAttribute('inert')).toBe(true);
+    expect(contenido.getAttribute('aria-busy')).toBe('true');
+    expect((q('muro-ir-inquilinos') as HTMLButtonElement).disabled).toBe(true);
+    expect((q('muro-arrancar-de-cero') as HTMLButtonElement).disabled).toBe(true);
+
+    // Sigue en el mismo paso: nada lo movió.
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('propietarios');
+
+    // Al soltar, todo vuelve.
+    await click('paso-ocupado-off');
+    expect(q('muro-contenido')!.hasAttribute('inert')).toBe(false);
+    expect((q('muro-ir-inquilinos') as HTMLButtonElement).disabled).toBe(false);
     await click('muro-ir-inquilinos');
-    expect(q('muro-ocupado')).toBeNull();
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('inquilinos');
   });
 });
 

@@ -419,7 +419,12 @@ export function PanelDeMigracion({
               {t("migracion.muro.subtitulo")}
             </p>
           </div>
-          <BarraDePasos pasos={pasos} seleccionado={indice} onIr={irA} />
+          <BarraDePasos
+            pasos={pasos}
+            seleccionado={indice}
+            onIr={irA}
+            bloqueada={ocupado}
+          />
         </header>
 
         {confirmando ? (
@@ -447,7 +452,13 @@ export function PanelDeMigracion({
               {listo ? <TodoListo pasos={pasos} /> : null}
 
               {paso ? (
-                <PasoEnFoco pasos={pasos} indice={indice} onIr={irA} onOcupado={setOcupado} />
+                <PasoEnFoco
+                  pasos={pasos}
+                  indice={indice}
+                  onIr={irA}
+                  onOcupado={setOcupado}
+                  ocupado={ocupado}
+                />
               ) : null}
 
               {fallo ? (
@@ -476,7 +487,7 @@ export function PanelDeMigracion({
                 <button
                   type="button"
                   onClick={() => setConfirmando(true)}
-                  disabled={enviando}
+                  disabled={enviando || ocupado}
                   data-testid="muro-arrancar-de-cero"
                   className="rounded-sm text-sm text-fg-muted underline decoration-border-strong underline-offset-4 transition-colors hover:text-fg hover:decoration-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                 >
@@ -541,10 +552,13 @@ function BarraDePasos({
   pasos,
   seleccionado,
   onIr,
+  bloqueada = false,
 }: {
   pasos: PasoDeMigracion[];
   seleccionado: number;
   onIr: (i: number) => void;
+  /** Con una operación en vuelo no se cambia de paso: desmontar el paso a mitad de una activación es perder la pantalla. */
+  bloqueada?: boolean;
 }) {
   const { t } = useI18n();
   const ahora = pasoActual(pasos);
@@ -677,9 +691,10 @@ function BarraDePasos({
               <button
                 type="button"
                 onClick={() => onIr(idx)}
+                disabled={bloqueada}
                 data-testid={`muro-ir-${paso.id}`}
                 aria-label={t("migracion.muro.irAlPaso", { paso: titulo })}
-                className="group block w-full rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="group block w-full rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-progress"
               >
                 {cuerpo}
               </button>
@@ -708,11 +723,20 @@ function PasoEnFoco({
   indice,
   onIr,
   onOcupado,
+  ocupado,
 }: {
   pasos: PasoDeMigracion[];
   indice: number;
   onIr: (i: number) => void;
   onOcupado: (ocupado: boolean) => void;
+  /**
+   * Hay una operación larga en vuelo en este paso (activar, crear en masa,
+   * sembrar el PUC…). Mientras dure, la pantalla queda EXACTAMENTE como la
+   * dejó la persona al apretar el botón: nada se puede tocar — ni la lista,
+   * ni la paginación, ni los checks, ni «subir otro archivo» (Nico,
+   * 2026-09-01: con «Activar 90 contratos» girando, todo seguía editable).
+   */
+  ocupado: boolean;
 }) {
   const { t } = useI18n();
   const { canAccess, isLoading } = usePermissions();
@@ -786,7 +810,17 @@ function PasoEnFoco({
             {t("migracion.muro.sinPermiso")}
           </Aviso>
         ) : (
-          <div data-testid="muro-contenido" data-paso={paso.id}>
+          <div
+            data-testid="muro-contenido"
+            data-paso={paso.id}
+            data-ocupado={ocupado ? "" : undefined}
+            aria-busy={ocupado || undefined}
+            // `inert` crudo por la misma razón que en el muro: React 18 no lo
+            // tipa como booleano (ver `inerte` arriba). Congela clicks, foco y
+            // teclado de TODO el paso; el spinner y el conteo siguen vivos.
+            {...(ocupado ? ({ inert: "" } as unknown as Record<string, string>) : {})}
+            className={ocupado ? "cursor-progress" : undefined}
+          >
             <ContenidoDelPaso id={paso.id} pasos={pasos} onIr={onIr} onOcupado={onOcupado} />
           </div>
         )}

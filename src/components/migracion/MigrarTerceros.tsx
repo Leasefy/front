@@ -325,6 +325,19 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
    */
   const [loteEnConflicto, setLoteEnConflicto] = useState<string | null>(null);
 
+  /*
+   * Aviso al muro mientras HAY una operación en vuelo — preparar, crear en
+   * masa, vincular/descartar en masa, cada corrección con refresco. Antes
+   * sólo `aplicar` lo marcaba a mano: «todos son la misma persona» y las
+   * masivas corrían con la pantalla editable y el pie del muro ofreciendo
+   * seguir (Nico, 2026-09-01). Derivado de `cargando`, que es el único
+   * interruptor que TODAS las operaciones largas de este paso ya prenden.
+   */
+  useEffect(() => {
+    onOcupado?.(cargando);
+  }, [cargando, onOcupado]);
+  useEffect(() => () => onOcupado?.(false), [onOcupado]);
+
   const preparar = useCallback(async () => {
     setCargando(true);
     setError(null);
@@ -523,7 +536,6 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     setCargando(true);
     setError(null);
     setProgreso(null);
-    onOcupado?.(true);
     try {
       /*
        * Por tandas, no de un saque: crear 600 inquilinos son 600 invitaciones
@@ -563,9 +575,8 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     } finally {
       setCargando(false);
       setProgreso(null);
-      onOcupado?.(false);
     }
-  }, [loteAbierto, refrescar, onOcupado]);
+  }, [loteAbierto, refrescar]);
 
   // ══ Lista de trabajo ══════════════════════════════════════════════════════
 

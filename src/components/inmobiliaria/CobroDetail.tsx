@@ -23,6 +23,7 @@ import {
   CaretRight,
   XCircle,
   Bank,
+  Printer,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -591,6 +592,16 @@ export function CobroDetail({
               </Button>
             )}
           </div>
+          {/* El documento del período, imprimible: la cuenta de cobro. */}
+          <Button asChild variant="ghost" className="w-full">
+            <Link
+              href={`/panel/inmobiliaria/cobros/${cobro.id}/cuenta-de-cobro?volver=${encodeURIComponent('/panel/inmobiliaria/cobros')}`}
+              data-testid="cuenta-de-cobro"
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              Cuenta de cobro
+            </Link>
+          </Button>
           {isLate && (
             <Button
               variant="ghost"

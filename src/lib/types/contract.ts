@@ -390,8 +390,8 @@ export interface Contract {
   landlordSignature: Signature | null;
   tenantSignature: Signature | null;
 
-  // Uploaded PDF flow
-  contractOrigin?: 'GENERATED' | 'UPLOADED_PDF';
+  // Uploaded PDF flow. `MIGRATED` = entró por la migración (casi siempre sin PDF).
+  contractOrigin?: 'GENERATED' | 'UPLOADED_PDF' | 'MIGRATED';
   uploadedPdfPath?: string;
   insuranceTier?: 'NONE' | 'BASIC' | 'PREMIUM';
   customClauses?: Array<{ title: string; content: string }>;

@@ -17,6 +17,14 @@ import { useState } from 'react'
 import { Receipt, WarningCircle } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -165,201 +173,339 @@ export function AdministracionDelContrato({
     }
   }
 
+  const regimen = contract.regimenTributario ?? null
+  const ivaDelCanon = leerIvaDelCanon(contract)
+
   return (
-    <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+    <section className="rounded-xl border border-border bg-card p-5 space-y-4" data-testid="administracion">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Receipt className="w-4 h-4 text-muted-foreground" />
-          <h3 className="text-base font-semibold text-foreground">Administración</h3>
+          <h3 className="text-base font-semibold text-foreground">Cómo se cobra</h3>
         </div>
-        {puedeEditar && !editando ? (
+        {puedeEditar ? (
           <Button variant="ghost" size="sm" hideArrow onClick={() => setEditando(true)}>
             Corregir
           </Button>
         ) : null}
       </div>
 
-      {editando ? (
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Uso del inmueble</label>
-            <Select value={uso} onValueChange={(v) => setUso(v as Uso)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sin definir" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(USOS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>
-                    {v}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Vivienda está excluida de IVA; comercial no.
+      <div className="space-y-2">
+        <Fila
+          etiqueta="Uso del inmueble"
+          valor={contract.usoInmueble ? USOS[contract.usoInmueble as Uso] : null}
+          ausente="Sin definir — no se sabe si el canon lleva IVA"
+        />
+        <Fila
+          etiqueta="Periodicidad"
+          valor={
+            contract.periodicidad
+              ? PERIODICIDADES[contract.periodicidad as Periodicidad]
+              : null
+          }
+          ausente="Sin definir"
+        />
+        <Fila
+          etiqueta="Día de pago"
+          valor={contract.paymentDueDay ? `Día ${contract.paymentDueDay}` : null}
+          ausente="El de la inmobiliaria"
+        />
+        <Fila
+          etiqueta="Plazo antes de la mora"
+          valor={
+            contract.diasDePlazo != null
+              ? `${contract.diasDePlazo} ${contract.diasDePlazo === 1 ? 'día' : 'días'}`
+              : null
+          }
+          ausente="Los días de la inmobiliaria"
+        />
+        <Fila
+          etiqueta="Primer mes"
+          valor={contract.prorratearPrimerMes ? 'Prorrateado por días' : 'Mes completo'}
+          ausente=""
+        />
+        <Fila
+          etiqueta="Comisión"
+          valor={deConsignacion != null ? `${deConsignacion}%` : null}
+          ausente="Sin consignación: este inmueble no genera cobros"
+        />
+        {discrepan ? (
+          <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft/40 p-2.5">
+            <WarningCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
+            <p className="text-xs text-foreground">
+              El contrato dice <strong>{delContrato}%</strong> y la consignación{' '}
+              <strong>{deConsignacion}%</strong>. Al propietario se le descuenta la
+              de la consignación. Corregí acá para dejar las dos iguales.
             </p>
           </div>
+        ) : null}
+      </div>
 
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Periodicidad de cobro</label>
-            <Select
-              value={periodicidad}
-              onValueChange={(v) => setPeriodicidad(v as Periodicidad)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sin definir" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(PERIODICIDADES).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>
-                    {v}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Comisión de administración (%)</label>
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              max="100"
-              value={comision}
-              onChange={(e) => setComision(e.target.value)}
+      {/*
+        Impuestos, resumidos: una línea para el IVA del canon (lo decide el
+        uso y el propietario) y una fila de chips para lo que retiene el
+        inquilino. Antes eran seis filas de texto largo que decían lo mismo
+        que estos chips, y el ojo no encontraba el que faltaba.
+      */}
+      <div className="space-y-2 border-t border-border pt-3" data-testid="impuestos">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Impuestos
+        </p>
+        <Fila etiqueta="IVA sobre el canon" valor={ivaDelCanon.valor} ausente={ivaDelCanon.ausente} />
+        <div className="flex items-start justify-between gap-3 text-sm">
+          <span className="text-muted-foreground">Inquilino</span>
+          <div className="flex flex-wrap justify-end gap-1.5">
+            <Chip
+              texto={
+                contract.inquilinoTipoPersona === 'JURIDICA'
+                  ? 'Empresa'
+                  : contract.inquilinoTipoPersona === 'NATURAL'
+                    ? 'Persona natural'
+                    : 'Tipo sin definir'
+              }
+              estado={contract.inquilinoTipoPersona ? 'si' : 'vacio'}
             />
-            <p className="text-xs text-muted-foreground">
-              Se guarda también en la consignación: es de donde sale lo que se le
-              descuenta al propietario.
-            </p>
-          </div>
-
-          <div className="space-y-1 border-t border-border pt-3">
-            <label className="text-xs text-muted-foreground">
-              Días de plazo antes de la mora
-            </label>
-            <Input
-              type="number"
-              step="1"
-              min="0"
-              max="60"
-              value={diasDePlazo}
-              onChange={(e) => setDiasDePlazo(e.target.value)}
-              placeholder="Los de la inmobiliaria"
-              data-testid="dias-de-plazo"
+            <Chip
+              texto={
+                contract.inquilinoRetenedorRenta == null
+                  ? 'Retefuente sin definir'
+                  : contract.inquilinoRetenedorRenta
+                    ? 'Retiene renta'
+                    : 'No retiene renta'
+              }
+              estado={aTernario(contract.inquilinoRetenedorRenta) || 'vacio'}
+              testId="chip-retefuente"
             />
-            <p className="text-xs text-muted-foreground">
-              La mora corre desde el día de pago más este plazo. Vacío = los
-              días que tiene configurados la inmobiliaria.
-            </p>
-          </div>
-
-          <label className="flex cursor-pointer items-start gap-2 text-sm text-foreground">
-            <Checkbox
-              checked={prorratear}
-              onCheckedChange={(v) => setProrratear(v === true)}
-              className="mt-0.5"
-              data-testid="prorratear-primer-mes"
+            <Chip
+              texto={
+                contract.inquilinoRetenedorIva == null
+                  ? 'ReteIVA sin definir'
+                  : contract.inquilinoRetenedorIva
+                    ? 'Retiene IVA'
+                    : 'No retiene IVA'
+              }
+              estado={aTernario(contract.inquilinoRetenedorIva) || 'vacio'}
+              testId="chip-reteiva"
             />
-            <span>
-              Prorratear el primer mes
-              <span className="block text-xs text-muted-foreground">
-                El primer cobro sale por los días ocupados, no por el mes
-                completo.
-              </span>
-            </span>
-          </label>
-
-          <div className="space-y-1 border-t border-border pt-3">
-            <SelectorTernario
-              etiqueta="¿El propietario cobra IVA en este contrato?"
-              valor={arrendadorIva}
-              onChange={setArrendadorIva}
-              si="Sí, el canon lleva IVA"
-              no="No, este contrato no lleva IVA"
-              ayuda={ayudaDelArrendador(contract)}
-              testId="arrendador-responsable-iva"
+            <Chip
+              texto={
+                contract.inquilinoRetenedorIca == null
+                  ? 'ReteICA sin definir'
+                  : contract.inquilinoRetenedorIca
+                    ? 'Retiene ICA'
+                    : 'No retiene ICA'
+              }
+              estado={aTernario(contract.inquilinoRetenedorIca) || 'vacio'}
+              testId="chip-reteica"
+            />
+            <Chip
+              texto={
+                contract.inquilinoResponsableIva == null
+                  ? 'IVA propio sin definir'
+                  : contract.inquilinoResponsableIva
+                    ? 'Responsable de IVA'
+                    : 'No responsable de IVA'
+              }
+              estado={aTernario(contract.inquilinoResponsableIva) || 'vacio'}
             />
           </div>
+        </div>
+        {regimen &&
+        (regimen.inquilinoRetenedorRenta.valor == null ||
+          regimen.inquilinoRetenedorIva.valor == null ||
+          regimen.inquilinoRetenedorIca.valor == null) ? (
+          <p className="text-xs text-muted-foreground">
+            Lo que está sin definir no se descuenta en el cobro. Se corrige acá y
+            sale en el próximo.
+          </p>
+        ) : null}
+      </div>
 
-          <div className="space-y-1 border-t border-border pt-3">
-            <label className="text-xs text-muted-foreground">
-              El inquilino es
-            </label>
-            <Select
-              value={tipoPersona}
-              onValueChange={(v) => setTipoPersona(v as TipoPersona)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="No se sabe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="NATURAL">Persona natural</SelectItem>
-                <SelectItem value="JURIDICA">Empresa</SelectItem>
-              </SelectContent>
-            </Select>
+      {/*
+        El formulario va en un diálogo: son once campos, y en la columna
+        angosta era un scroll de dos pantallas. En el diálogo caben en dos
+        columnas, agrupados por lo que deciden.
+      */}
+      <Dialog open={editando} onOpenChange={(v) => !guardando && setEditando(v)}>
+        <DialogContent className="max-w-3xl" data-testid="administracion-dialogo">
+          <DialogHeader>
+            <DialogTitle>Cómo se cobra este contrato</DialogTitle>
+            <DialogDescription>
+              Nada de esto va en el documento firmado: corregirlo no invalida
+              firmas. Lo que cambies sale en el próximo cobro.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+            <fieldset className="space-y-3">
+              <legend className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Cobro
+              </legend>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Uso del inmueble</label>
+                <Select value={uso} onValueChange={(v) => setUso(v as Uso)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sin definir" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(USOS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>
+                        {v}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Vivienda está excluida de IVA; comercial no.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Periodicidad de cobro</label>
+                <Select
+                  value={periodicidad}
+                  onValueChange={(v) => setPeriodicidad(v as Periodicidad)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sin definir" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(PERIODICIDADES).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>
+                        {v}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Comisión de administración (%)</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={comision}
+                  onChange={(e) => setComision(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Se guarda también en la consignación: es de donde sale lo que
+                  se le descuenta al propietario.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  Días de plazo antes de la mora
+                </label>
+                <Input
+                  type="number"
+                  step="1"
+                  min="0"
+                  max="60"
+                  value={diasDePlazo}
+                  onChange={(e) => setDiasDePlazo(e.target.value)}
+                  placeholder="Los de la inmobiliaria"
+                  data-testid="dias-de-plazo"
+                />
+                <p className="text-xs text-muted-foreground">
+                  La mora corre desde el día de pago más este plazo. Vacío = los
+                  días de la inmobiliaria.
+                </p>
+              </div>
+
+              <label className="flex cursor-pointer items-start gap-2 text-sm text-foreground">
+                <Checkbox
+                  checked={prorratear}
+                  onCheckedChange={(v) => setProrratear(v === true)}
+                  className="mt-0.5"
+                  data-testid="prorratear-primer-mes"
+                />
+                <span>
+                  Prorratear el primer mes
+                  <span className="block text-xs text-muted-foreground">
+                    El primer cobro sale por los días ocupados, no por el mes
+                    completo.
+                  </span>
+                </span>
+              </label>
+            </fieldset>
+
+            <fieldset className="space-y-3">
+              <legend className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Impuestos
+              </legend>
+              <SelectorTernario
+                etiqueta="¿El propietario cobra IVA en este contrato?"
+                valor={arrendadorIva}
+                onChange={setArrendadorIva}
+                si="Sí, el canon lleva IVA"
+                no="No, este contrato no lleva IVA"
+                ayuda={ayudaDelArrendador(contract)}
+                testId="arrendador-responsable-iva"
+              />
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">El inquilino es</label>
+                <Select
+                  value={tipoPersona}
+                  onValueChange={(v) => setTipoPersona(v as TipoPersona)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="No se sabe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NATURAL">Persona natural</SelectItem>
+                    <SelectItem value="JURIDICA">Empresa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <SelectorTernario
+                etiqueta="¿Practica retención en la fuente?"
+                valor={retieneRenta}
+                onChange={setRetieneRenta}
+                si="Sí, es agente retenedor"
+                no="No retiene"
+                ayuda="La retención la practica quien paga. Sin este dato el cobro NO descuenta retención."
+                testId="inquilino-retenedor-renta"
+              />
+              <SelectorTernario
+                etiqueta="¿Es responsable de IVA?"
+                valor={responsableIva}
+                onChange={setResponsableIva}
+                si="Sí, responsable de IVA"
+                no="No es responsable"
+                ayuda="Informativo para la cuenta de cobro; el IVA del canon lo decide el propietario y el uso."
+                testId="inquilino-responsable-iva"
+              />
+              <SelectorTernario
+                etiqueta="¿Practica reteIVA?"
+                valor={retieneIva}
+                onChange={setRetieneIva}
+                si="Sí, es agente de retención de IVA"
+                no="No retiene IVA"
+                ayuda="Sólo si el canon lleva IVA (comercial). Se calcula sobre el IVA."
+                testId="inquilino-retenedor-iva"
+              />
+              <SelectorTernario
+                etiqueta="¿Practica reteICA?"
+                valor={retieneIca}
+                onChange={setRetieneIca}
+                si="Sí, es agente de retención de ICA"
+                no="No retiene ICA"
+                ayuda="Necesita la tarifa del municipio configurada en la inmobiliaria."
+                testId="inquilino-retenedor-ica"
+              />
+            </fieldset>
           </div>
-
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">
-              ¿Practica retención en la fuente?
-            </label>
-            <Select
-              value={retieneRenta}
-              onValueChange={(v) => setRetieneRenta(v as Ternario)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="No se sabe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="si">Sí, es agente retenedor</SelectItem>
-                <SelectItem value="no">No retiene</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              La retención la practica quien paga. Sin este dato el cobro NO
-              descuenta retención: se corrige acá y sale en el próximo cobro.
-            </p>
-          </div>
-
-          <SelectorTernario
-            etiqueta="¿Es responsable de IVA?"
-            valor={responsableIva}
-            onChange={setResponsableIva}
-            si="Sí, responsable de IVA"
-            no="No es responsable"
-            ayuda="Informativo para la factura del inquilino; el IVA del canon lo decide el propietario y el uso del inmueble."
-            testId="inquilino-responsable-iva"
-          />
-          <SelectorTernario
-            etiqueta="¿Practica reteIVA?"
-            valor={retieneIva}
-            onChange={setRetieneIva}
-            si="Sí, es agente de retención de IVA"
-            no="No retiene IVA"
-            ayuda="Sólo aplica si el canon lleva IVA (inmueble comercial). Se calcula sobre el valor del IVA."
-            testId="inquilino-retenedor-iva"
-          />
-          <SelectorTernario
-            etiqueta="¿Practica reteICA?"
-            valor={retieneIca}
-            onChange={setRetieneIca}
-            si="Sí, es agente de retención de ICA"
-            no="No retiene ICA"
-            ayuda="Necesita la tarifa del municipio configurada en la inmobiliaria; sin tarifa no se practica."
-            testId="inquilino-retenedor-ica"
-          />
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-          <div className="flex gap-2">
-            <Button size="sm" hideArrow disabled={guardando} onClick={() => void guardar()}>
-              {guardando ? 'Guardando…' : 'Guardar'}
-            </Button>
+          <DialogFooter>
             <Button
               variant="ghost"
-              size="sm"
               hideArrow
               disabled={guardando}
               onClick={() => {
@@ -369,106 +515,61 @@ export function AdministracionDelContrato({
             >
               Cancelar
             </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <Fila
-            etiqueta="Uso del inmueble"
-            valor={contract.usoInmueble ? USOS[contract.usoInmueble as Uso] : null}
-            ausente="Sin definir — no se sabe si el canon lleva IVA"
-          />
-          <Fila
-            etiqueta="Periodicidad"
-            valor={
-              contract.periodicidad
-                ? PERIODICIDADES[contract.periodicidad as Periodicidad]
-                : null
-            }
-            ausente="Sin definir"
-          />
-          <Fila
-            etiqueta="Comisión"
-            valor={deConsignacion != null ? `${deConsignacion}%` : null}
-            ausente="Sin consignación: este inmueble no genera cobros"
-          />
-          <Fila
-            etiqueta="Plazo antes de la mora"
-            valor={
-              contract.diasDePlazo != null
-                ? `${contract.diasDePlazo} ${contract.diasDePlazo === 1 ? 'día' : 'días'}`
-                : null
-            }
-            ausente="Los días de la inmobiliaria"
-          />
-          <Fila
-            etiqueta="Primer mes"
-            valor={contract.prorratearPrimerMes ? 'Se prorratea por los días ocupados' : 'Mes completo'}
-            ausente=""
-          />
-
-          {/* Lo GUARDADO en el contrato, no el perfil: `esPorDefecto` del perfil
-              es true mientras falte CUALQUIER campo (reteICA, IVA…), y con la
-              retención ya dicha la fila seguía diciendo «sin configurar — no
-              descuenta», que es falso. */}
-          <Fila
-            etiqueta="Retención del inquilino"
-            valor={
-              contract.inquilinoRetenedorRenta == null
-                ? null
-                : contract.inquilinoRetenedorRenta
-                  ? 'Es agente retenedor'
-                  : 'No retiene'
-            }
-            ausente="Sin configurar — el cobro no descuenta retención"
-          />
-          <Fila
-            etiqueta="IVA del inquilino"
-            valor={
-              contract.inquilinoResponsableIva == null
-                ? null
-                : contract.inquilinoResponsableIva
-                  ? 'Responsable de IVA'
-                  : 'No responsable'
-            }
-            ausente="Sin configurar"
-          />
-          <Fila
-            etiqueta="ReteIVA del inquilino"
-            valor={
-              contract.inquilinoRetenedorIva == null
-                ? null
-                : contract.inquilinoRetenedorIva
-                  ? 'Practica reteIVA sobre el IVA del canon'
-                  : 'No retiene IVA'
-            }
-            ausente="Sin configurar — no se descuenta reteIVA"
-          />
-          <Fila
-            etiqueta="ReteICA del inquilino"
-            valor={
-              contract.inquilinoRetenedorIca == null
-                ? null
-                : contract.inquilinoRetenedorIca
-                  ? 'Practica reteICA sobre el canon'
-                  : 'No retiene ICA'
-            }
-            ausente="Sin configurar — no se descuenta reteICA"
-          />
-
-          {discrepan ? (
-            <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft/40 p-2.5">
-              <WarningCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
-              <p className="text-xs text-foreground">
-                El contrato dice <strong>{delContrato}%</strong> y la consignación{' '}
-                <strong>{deConsignacion}%</strong>. Al propietario se le descuenta la
-                de la consignación. Corregí acá para dejar las dos iguales.
-              </p>
-            </div>
-          ) : null}
-        </div>
-      )}
+            <Button hideArrow disabled={guardando} isLoading={guardando} onClick={() => void guardar()}>
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
+  )
+}
+
+/**
+ * El IVA del canon en una línea. Lo resuelve el BACK (`regimenTributario`,
+ * la misma función del motor de cobros); acá sólo se pone en palabras.
+ */
+function leerIvaDelCanon(contract: Contract): { valor: string | null; ausente: string } {
+  const r = contract.regimenTributario
+  if (!r) return { valor: null, ausente: 'Sin datos del régimen' }
+  const comercial = r.usoComercial.valor
+  const propietario = r.arrendadorResponsableIva.valor
+  if (comercial === false) return { valor: 'No lleva (vivienda)', ausente: '' }
+  if (comercial === null) return { valor: null, ausente: 'Sin definir el uso — no se sabe si lleva IVA' }
+  if (propietario === true) {
+    return {
+      valor: `Sí, 19 %${r.arrendadorResponsableIva.origen === 'PROPIETARIO' ? ' (por la ficha del propietario)' : ''}`,
+      ausente: '',
+    }
+  }
+  if (propietario === false) return { valor: 'No lleva (el propietario no es responsable)', ausente: '' }
+  return { valor: null, ausente: 'Sin definir si el propietario cobra IVA — el cobro sale sin IVA' }
+}
+
+/** Un dato tributario en un chip: dicho que sí, dicho que no, o sin decir. */
+function Chip({
+  texto,
+  estado,
+  testId,
+}: {
+  texto: string
+  estado: 'si' | 'no' | 'vacio'
+  testId?: string
+}) {
+  return (
+    <span
+      data-testid={testId}
+      data-estado={estado}
+      className={
+        estado === 'si'
+          ? 'rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary'
+          : estado === 'no'
+            ? 'rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground'
+            : 'rounded-full border border-dashed border-warning/60 px-2 py-0.5 text-xs text-warning'
+      }
+    >
+      {texto}
+    </span>
   )
 }
 

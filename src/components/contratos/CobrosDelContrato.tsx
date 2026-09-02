@@ -37,8 +37,17 @@ import { nombreDelMes } from '@/lib/utils/mes'
 import { cn } from '@/lib/utils'
 import type { Contract } from '@/lib/types/contract'
 
+export interface ResumenDeCobros {
+  total: number
+  saldo: number
+  enMora: number
+  pendientes: number
+}
+
 interface Props {
   contract: Contract
+  /** Para el resumen de arriba: cuántos períodos, cuánto se debe, cuántos en mora. */
+  onResumen?: (r: ResumenDeCobros) => void
 }
 
 const ESTADO: Record<CobroStatus, { etiqueta: string; variante: 'warning' | 'success' | 'default' | 'destructive' }> = {
@@ -49,7 +58,7 @@ const ESTADO: Record<CobroStatus, { etiqueta: string; variante: 'warning' | 'suc
   defaulted: { etiqueta: 'Siniestro', variante: 'destructive' },
 }
 
-export function CobrosDelContrato({ contract }: Props) {
+export function CobrosDelContrato({ contract, onResumen }: Props) {
   const [cobros, setCobros] = useState<CobroConDesglose[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [abierto, setAbierto] = useState<string | null>(null)
@@ -71,12 +80,17 @@ export function CobrosDelContrato({ contract }: Props) {
     void cargar()
   }, [cargar])
 
-  const resumen = useMemo(() => {
+  const resumen = useMemo<ResumenDeCobros>(() => {
     const lista = cobros ?? []
     const saldo = lista.reduce((s, c) => s + (c.pendingAmount ?? 0), 0)
     const enMora = lista.filter((c) => c.status === 'late' || c.status === 'defaulted').length
-    return { total: lista.length, saldo, enMora }
+    const pendientes = lista.filter((c) => (c.pendingAmount ?? 0) > 0).length
+    return { total: lista.length, saldo, enMora, pendientes }
   }, [cobros])
+
+  useEffect(() => {
+    if (cobros !== null) onResumen?.(resumen)
+  }, [cobros, resumen, onResumen])
 
   const volverA = `/panel/inmobiliaria/contratos/${contract.id}`
 

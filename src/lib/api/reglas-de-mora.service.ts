@@ -19,10 +19,13 @@
 
 import { apiClient } from '@/lib/api/client';
 import type {
+  AjusteDeReglaDelContrato,
   CambiosDeReglaDeMora,
   NuevaReglaDeMora,
   ReglaDeMora,
   ReglaDeMoraCruda,
+  ReglaDeMoraDelContrato,
+  ReglaDeMoraDelContratoCruda,
 } from './reglas-de-mora.types';
 
 const BASE = '/inmobiliaria/reglas-de-mora';
@@ -82,7 +85,54 @@ function cuerpoDeCambios(cambios: CambiosDeReglaDeMora): Record<string, unknown>
   return cuerpo;
 }
 
+function normalizarDelContrato(cruda: ReglaDeMoraDelContratoCruda): ReglaDeMoraDelContrato {
+  return {
+    ...cruda,
+    regla: normalizarRegla(cruda.regla),
+    valor: Number(cruda.valor),
+    valorDeLaAgencia: Number(cruda.valorDeLaAgencia),
+  };
+}
+
+function cuerpoDeAjuste(ajuste: AjusteDeReglaDelContrato): Record<string, unknown> {
+  const cuerpo: Record<string, unknown> = {};
+  if (ajuste.aplica !== undefined) cuerpo.aplica = ajuste.aplica;
+  // `null` SÍ viaja: es «volvé a lo de la agencia».
+  if (ajuste.valor !== undefined) cuerpo.valor = ajuste.valor;
+  if (ajuste.disparadorDia !== undefined) cuerpo.disparadorDia = ajuste.disparadorDia;
+  return cuerpo;
+}
+
 export const reglasDeMoraApi = {
+  /**
+   * Las reglas de la agencia vistas desde UN contrato: todas las activas, con
+   * lo efectivo para ese contrato y lo de la agencia al lado.
+   */
+  async delContrato(contractId: string): Promise<ReglaDeMoraDelContrato[]> {
+    const res = await apiClient.get<
+      ReglaDeMoraDelContratoCruda[] | { data: ReglaDeMoraDelContratoCruda[] }
+    >(`/contracts/${contractId}/reglas-de-mora`);
+    const lista = Array.isArray(res) ? res : (res?.data ?? []);
+    return lista.map(normalizarDelContrato);
+  },
+
+  /**
+   * Excluir una regla para el contrato, o pisarle el valor o el día. Puede
+   * fallar con 400 y un mensaje en español (tasa sobre el techo legal, día
+   * fuera de 1-31): se muestra tal cual.
+   */
+  async ajustarEnContrato(
+    contractId: string,
+    reglaId: string,
+    ajuste: AjusteDeReglaDelContrato,
+  ): Promise<ReglaDeMoraDelContrato> {
+    const res = await apiClient.put<ReglaDeMoraDelContratoCruda>(
+      `/contracts/${contractId}/reglas-de-mora/${reglaId}`,
+      cuerpoDeAjuste(ajuste),
+    );
+    return normalizarDelContrato(res);
+  },
+
   /** Las reglas de la inmobiliaria, en orden de aplicación. */
   async listar(): Promise<ReglaDeMora[]> {
     const res = await apiClient.get<ReglaDeMoraCruda[] | { data: ReglaDeMoraCruda[] }>(BASE);
@@ -121,6 +171,7 @@ export const reglasDeMoraApi = {
 };
 
 export type {
+  AjusteDeReglaDelContrato,
   BaseDeCalculo,
   CambiosDeReglaDeMora,
   ConceptoDeRegla,
@@ -129,4 +180,5 @@ export type {
   NuevaReglaDeMora,
   ReglaDeMora,
   ReglaDeMoraCruda,
+  ReglaDeMoraDelContrato,
 } from './reglas-de-mora.types';

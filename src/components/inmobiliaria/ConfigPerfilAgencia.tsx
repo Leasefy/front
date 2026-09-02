@@ -84,6 +84,8 @@ interface PerfilFormState {
   diasDePlazo: number;
   /** Días de mora con saldo a partir de los cuales un cobro pasa a siniestro. */
   diasParaSiniestro: number;
+  /** Días de mora a partir de los cuales hay que reportar el caso a la aseguradora (antes del siniestro). */
+  diasParaAvisoAseguradora: number;
   // Controles de la dispersión (Agency.dispersionExigePin / dispersionMontoDobleAprobacion)
   dispersionExigePin: boolean;
   /** COP entero; `null` = nunca por monto. */
@@ -109,6 +111,8 @@ const MAX_DIAS_DE_PLAZO = 60;
 const MIN_DIAS_PARA_SINIESTRO = 1;
 const MAX_DIAS_PARA_SINIESTRO = 365;
 const DIAS_PARA_SINIESTRO_POR_DEFECTO = 30;
+/** Portofino reporta a la aseguradora al día 8 de mora. */
+const DIAS_PARA_AVISO_ASEGURADORA_POR_DEFECTO = 8;
 
 // Day offsets offered as reminder chips (backend accepts 0..30)
 const REMINDER_DAYS_OPTIONS = [1, 2, 3, 5, 7, 10, 15, 30];
@@ -204,6 +208,8 @@ function buildFormState(agency: AgencyProfile): PerfilFormState {
     motorDeCobrosV2: agency.motorDeCobrosV2 ?? false,
     diasDePlazo: agency.diasDePlazo ?? 0,
     diasParaSiniestro: agency.diasParaSiniestro ?? DIAS_PARA_SINIESTRO_POR_DEFECTO,
+    diasParaAvisoAseguradora:
+      agency.diasParaAvisoAseguradora ?? DIAS_PARA_AVISO_ASEGURADORA_POR_DEFECTO,
     dispersionExigePin: agency.dispersionExigePin ?? false,
     dispersionMontoDobleAprobacion: agency.dispersionMontoDobleAprobacion ?? null,
     ivaPorcentaje: decimalANumero(agency.ivaPorcentaje) ?? TARIFAS_POR_DEFECTO.ivaPorcentaje,
@@ -357,6 +363,16 @@ export function ConfigPerfilAgencia({
     ) {
       newErrors.diasParaSiniestro = `Entre ${MIN_DIAS_PARA_SINIESTRO} y ${MAX_DIAS_PARA_SINIESTRO} días`;
     }
+    if (
+      !Number.isInteger(formData.diasParaAvisoAseguradora) ||
+      formData.diasParaAvisoAseguradora < MIN_DIAS_PARA_SINIESTRO ||
+      formData.diasParaAvisoAseguradora > MAX_DIAS_PARA_SINIESTRO
+    ) {
+      newErrors.diasParaAvisoAseguradora = `Entre ${MIN_DIAS_PARA_SINIESTRO} y ${MAX_DIAS_PARA_SINIESTRO} días`;
+    } else if (formData.diasParaAvisoAseguradora >= formData.diasParaSiniestro) {
+      // El aviso es ANTES del siniestro; después no avisa nada.
+      newErrors.diasParaAvisoAseguradora = 'Tiene que ser antes del siniestro';
+    }
     const umbral = formData.dispersionMontoDobleAprobacion;
     if (umbral !== null && (!Number.isInteger(umbral) || umbral < 0)) {
       newErrors.dispersionMontoDobleAprobacion = 'Un monto entero en pesos, o vacío';
@@ -424,6 +440,7 @@ export function ConfigPerfilAgencia({
       'disbursementDay',
       'diasDePlazo',
       'diasParaSiniestro',
+      'diasParaAvisoAseguradora',
     ] as const;
     for (const field of numberFields) {
       if (formData[field] !== original[field]) {
@@ -1137,6 +1154,30 @@ export function ConfigPerfilAgencia({
                 </div>
               </InputWrapper>
 
+              <InputWrapper
+                label="Días de mora para avisar a la aseguradora"
+                error={errors.diasParaAvisoAseguradora}
+                hint="Antes del siniestro: a estos días de mora se avisa al equipo que hay que reportar el caso a la aseguradora del contrato."
+              >
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={MIN_DIAS_PARA_SINIESTRO}
+                    max={MAX_DIAS_PARA_SINIESTRO}
+                    step={1}
+                    value={formData.diasParaAvisoAseguradora}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      updateField('diasParaAvisoAseguradora', Number.isNaN(n) ? 0 : n);
+                    }}
+                    data-testid="dias-para-aviso-aseguradora"
+                    className={cn('w-full pl-10 tabular-nums', errors.diasParaAvisoAseguradora && 'border-danger/30')}
+                  />
+                </div>
+              </InputWrapper>
+
               {/*
                * El techo legal de la tasa de mora. La tasa la pone la
                * inmobiliaria, pero la ley le pone un máximo —la usura— que la
@@ -1191,7 +1232,10 @@ export function ConfigPerfilAgencia({
               <div className="text-foreground font-semibold tabular-nums">
                 {agency.diasParaSiniestro ?? DIAS_PARA_SINIESTRO_POR_DEFECTO} días de mora
               </div>
-              <div className="text-[11px] text-muted-foreground">sólo con el motor prendido</div>
+              <div className="text-[11px] text-muted-foreground">
+                aviso a la aseguradora a los{' '}
+                {agency.diasParaAvisoAseguradora ?? DIAS_PARA_AVISO_ASEGURADORA_POR_DEFECTO} · sólo con el motor prendido
+              </div>
             </div>
           </div>
         )}

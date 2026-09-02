@@ -2,12 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { ArrowsClockwise } from '@phosphor-icons/react';
+import { Eyebrow } from '@leasefy/cadence';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { useI18n } from '@/lib/i18n';
-import { MonoLabel, BrandDot } from '@/components/brand';
-import { Spinner } from '@/components/ui';
-import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { useRenovaciones, renovacionesApi } from '@/lib/hooks/useInmobiliaria';
 import { getRenovacionStatusLabel } from '@/lib/types/inmobiliaria';
 import type { Renovacion } from '@/lib/types/inmobiliaria';
@@ -75,44 +72,31 @@ function RenovacionesContent() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-1">
-        <span className="inline-flex items-center gap-2 mb-1">
-          <BrandDot />
-          <MonoLabel className="text-[11px] font-medium text-primary">
-            {t('inmobiliaria.nav.renovaciones')}
-          </MonoLabel>
-        </span>
-        <h1 className="font-heading text-2xl font-semibold text-fg tracking-tight">
+      {/* Encabezado — el mismo de Contratos (eyebrow + título + qué es). */}
+      <header className="space-y-1">
+        <Eyebrow>Portafolio</Eyebrow>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           {t('inmobiliaria.nav.renovaciones')}
         </h1>
-        <p className="text-sm text-fg-muted">
-          Contratos próximos a vencer y su proceso de renovación.
+        <p className="text-sm text-muted-foreground max-w-2xl">
+          Los contratos que entran en sus últimos 90 días y cómo va cada
+          renovación: propuesta, aceptación del inquilino y firma.
         </p>
-      </div>
+      </header>
 
-      {Boolean(error) && (
-        <FalloDeCarga
-          error={error}
-          queEs="las renovaciones"
-          onReintentar={refetch}
-        />
-      )}
-
-      {!error && isLoading && renovaciones.length === 0 ? (
-        <div className="flex min-h-[40vh] items-center justify-center">
-          <Spinner />
-        </div>
-      ) : !error ? (
-        <RenovacionesTable
-          data={renovaciones}
-          onStartRenewal={openWorkflow}
-          onNotifyTenant={handleNotifyTenant}
-          onViewDetails={openWorkflow}
-          onCalculateIPC={openWorkflow}
-          onViewHistory={openWorkflow}
-        />
-      ) : null}
+      {/* La carga, el fallo y el vacío viven DENTRO de la tarjeta de la tabla,
+          como en Contratos: nada suelto por fuera. */}
+      <RenovacionesTable
+        data={renovaciones}
+        isLoading={isLoading}
+        error={error}
+        onReintentar={() => void refetch()}
+        onStartRenewal={openWorkflow}
+        onNotifyTenant={handleNotifyTenant}
+        onViewDetails={openWorkflow}
+        onCalculateIPC={openWorkflow}
+        onViewHistory={openWorkflow}
+      />
 
       {/* Renovacion Workflow Sheet */}
       {selectedRenovacion && (
@@ -120,12 +104,14 @@ function RenovacionesContent() {
           renovacion={selectedRenovacion}
           open={isWorkflowOpen}
           onClose={handleClose}
-          onSendNotification={async (message, nr, naf) => {
+          onSendNotification={async (message, nr, naf, ipc) => {
             await renovacionesApi.updateStage(selectedRenovacion.id, {
               status: 'notified',
               notificationMessage: message,
               ...(nr ? { negotiatedRent: nr } : {}),
               ...(naf ? { negotiatedAdminFee: naf } : {}),
+              // El IPC que escribió la inmobiliaria queda en la renovación.
+              ...(ipc != null ? { ipcRate: ipc } : {}),
             });
             await recargarRenovaciones();
             toast.success('Propuesta enviada al inquilino');

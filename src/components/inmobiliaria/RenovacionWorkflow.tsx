@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,7 @@ import {
   WorkflowSidebar,
 } from './RenovacionWorkflowSteps';
 import type { WorkflowStep } from './RenovacionWorkflowSteps';
-import { getCurrentIPC, calculateNewRent } from '@/lib/constants/inmobiliaria-data';
+import { agencyApi } from '@/lib/api/inmobiliaria.service';
 
 // ============================================================================
 // Types
@@ -52,7 +52,12 @@ import { getCurrentIPC, calculateNewRent } from '@/lib/constants/inmobiliaria-da
 interface RenovacionWorkflowProps {
   renovacion: Renovacion;
   onStepComplete?: (step: RenovacionStatus, negotiatedRent?: number, negotiatedAdminFee?: number, notificationMessage?: string) => void;
-  onSendNotification?: (message: string, newRent: number, newAdminFee: number) => Promise<void>;
+  onSendNotification?: (
+    message: string,
+    newRent: number,
+    newAdminFee: number,
+    ipcRate?: number | null,
+  ) => Promise<void>;
   onUploadDocument?: (file: File) => Promise<void>;
   onTerminate?: (reason: string) => void;
   onNoteAdd?: (note: string) => void;
@@ -77,19 +82,35 @@ export function RenovacionWorkflow({
   const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState<RenovacionStatus>(renovacion.status);
 
-  // The AGENCY sets the new values (IPC is only a suggestion). Lifted to the
-  // workflow so the price chosen in Revisión flows into the notification message
-  // and persists through the whole flow.
-  const ipc = getCurrentIPC();
+  // The AGENCY sets the new values. Lifted to the workflow so the price
+  // chosen flows into the notification message and persists through the
+  // whole flow. Nada se prellena con un IPC inventado: arranca en lo que ya
+  // se negoció o propuso, y si no, en el canon actual.
   const [newRent, setNewRent] = useState<number>(
-    renovacion.negotiatedRent || calculateNewRent(renovacion.currentRent, ipc.rate),
+    renovacion.negotiatedRent || renovacion.proposedRent || renovacion.currentRent,
   );
   const [newAdminFee, setNewAdminFee] = useState<number>(
-    renovacion.negotiatedAdminFee ??
-      (renovacion.currentAdminFee
-        ? calculateNewRent(renovacion.currentAdminFee, ipc.rate)
-        : 0),
+    renovacion.negotiatedAdminFee ?? renovacion.currentAdminFee ?? 0,
   );
+  const [ipcRate, setIpcRate] = useState<number | null>(renovacion.ipcRate ?? null);
+
+  // Con qué se firma el mensaje al inquilino: el nombre real de la agencia,
+  // no uno escrito en el código.
+  const [agencyName, setAgencyName] = useState('');
+  useEffect(() => {
+    let vigente = true;
+    agencyApi
+      .getMyAgency()
+      .then((a) => {
+        if (vigente) setAgencyName(a.razonSocial || a.name || '');
+      })
+      .catch(() => {
+        // Sin nombre, el mensaje sale sin firma: se ve, no se inventa.
+      });
+    return () => {
+      vigente = false;
+    };
+  }, []);
 
   const WORKFLOW_STEPS: WorkflowStep[] = useMemo(() => [
     {
@@ -140,8 +161,11 @@ export function RenovacionWorkflow({
             renovacion={renovacion}
             newRent={newRent}
             newAdminFee={newAdminFee}
+            ipcRate={ipcRate}
+            agencyName={agencyName}
             onNewRentChange={setNewRent}
             onNewAdminFeeChange={setNewAdminFee}
+            onIpcRateChange={setIpcRate}
             onNotify={async (channel, message) => {
               if (channel === 'whatsapp') {
                 const phone = (renovacion.tenantPhone || '').replace(/\D/g, '');
@@ -150,7 +174,7 @@ export function RenovacionWorkflow({
                   : `https://wa.me/?text=${encodeURIComponent(message)}`;
                 window.open(url, '_blank');
               }
-              await onSendNotification?.(message, newRent, newAdminFee);
+              await onSendNotification?.(message, newRent, newAdminFee, ipcRate);
               goToNextStep(newRent, newAdminFee);
             }}
           />

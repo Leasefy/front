@@ -26,7 +26,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Plus, Receipt, Trash, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { MoneyInput } from '@/components/ui/money-input'
 import {
   Select,
   SelectContent,
@@ -255,12 +255,13 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
             <label className="text-xs text-muted-foreground">
               Valor mensual (antes de impuestos)
             </label>
-            <Input
-              type="number"
-              min="1"
+            {/* Agrupa de a miles mientras se escribe: «5.678.888» se lee;
+                «5678888» se cuenta con el dedo. */}
+            <MoneyInput
               value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              placeholder="180000"
+              onChange={setValor}
+              placeholder="180.000"
+              data-testid="valor-del-concepto"
             />
           </div>
 

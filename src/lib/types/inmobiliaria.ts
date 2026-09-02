@@ -1141,14 +1141,21 @@ export interface Renovacion {
   propertyTitle: string;
   propertyAddress: string;
   tenantName: string;
-  tenantPhone: string;
-  tenantEmail: string;
+  /**
+   * El contacto NO está en la fila de la renovación: el back lo saca del
+   * contrato vivo del inmueble al leer, y puede no haberlo.
+   */
+  tenantPhone: string | null;
+  tenantEmail: string | null;
   propietarioName: string;
+  /** El contrato vivo del inmueble, resuelto por el back al leer. */
+  contractId?: string | null;
 
   // Current lease
   currentRent: number;
   leaseStartDate: string;
   leaseEndDate: string;
+  /** Recalculado por el back en cada lectura desde `leaseEndDate`. */
   daysUntilExpiry: number;
   urgencyBucket: '0-30' | '31-60' | '61-90' | '90+';
 
@@ -1210,12 +1217,14 @@ export function getRenovacionStatusLabel(status: RenovacionStatus): string {
 }
 
 export function getUrgencyColor(bucket: '0-30' | '31-60' | '61-90' | '90+'): string {
-  // Ascending severity by days overdue: warning → critical.
+  // Son días HASTA vencer, no de mora: menos días = más crítico. Los mismos
+  // tonos que los cajones de la tabla (Críticas / Urgentes / Próximas); antes
+  // el pill iba al revés que los chips.
   const colors = {
-    '0-30': 'bg-warning-soft text-warning',
-    '31-60': 'bg-danger-soft text-danger',
-    '61-90': 'bg-danger-soft text-danger',
-    '90+': 'bg-danger-soft text-danger',
+    '0-30': 'bg-danger-soft text-danger',
+    '31-60': 'bg-warning-soft text-warning',
+    '61-90': 'bg-primary-soft text-primary',
+    '90+': 'bg-muted text-muted-foreground',
   };
   return colors[bucket];
 }
@@ -1411,6 +1420,8 @@ export interface AgencyProfile {
   diasDePlazo?: number;
   /** Días de mora con saldo a partir de los cuales un cobro pasa a siniestro (sólo con el motor prendido). */
   diasParaSiniestro?: number;
+  /** Días de mora a partir de los cuales se avisa que hay que reportar el caso a la aseguradora (antes del siniestro). */
+  diasParaAvisoAseguradora?: number;
   /** Dispersión: código en todos los lotes, y umbral COP para segundo aprobador (null = nunca). */
   dispersionExigePin?: boolean;
   dispersionMontoDobleAprobacion?: number | null;
@@ -1480,6 +1491,8 @@ export interface UpdateAgencyPayload {
   diasDePlazo?: number;
   /** 1..365 */
   diasParaSiniestro?: number;
+  /** 1..365 */
+  diasParaAvisoAseguradora?: number;
   dispersionExigePin?: boolean;
   /** COP entero ≥ 0; `null` = nunca por monto */
   dispersionMontoDobleAprobacion?: number | null;

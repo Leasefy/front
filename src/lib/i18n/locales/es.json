@@ -2201,7 +2201,7 @@
         "startRenewal": "Iniciar renovación"
       },
       "renovacion": {
-        "sheetTitle": "Renovacion de contrato",
+        "sheetTitle": "Renovación de contrato",
         "steps": {
           "revision": {
             "label": "Revision",
@@ -2299,7 +2299,7 @@
         },
         "sidebar": {
           "statusLabel": "Estado:",
-          "daysUntilExpiry": "dias hasta vencimiento",
+          "daysUntilExpiry": "días hasta vencimiento",
           "history": "Historial",
           "addNote": "Agregar nota",
           "notePlaceholder": "Escriba una nota...",

@@ -1,17 +1,27 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+/**
+ * Renovaciones — la tabla, con el mismo patrón que Contratos.
+ *
+ * Una tarjeta: encabezado (icono, título, qué hace el clic), los filtros
+ * adentro, la tabla del DS y el vacío DENTRO de la tabla (fila con colSpan),
+ * no un cartel suelto debajo de un encabezado flotante. Antes esta tabla
+ * vivía sin tarjeta, con checkboxes y acciones masivas que abrían UN solo
+ * cajón para N filas, y un vacío que no distinguía «no hay» de «el filtro no
+ * encontró».
+ *
+ * Todo lo que se pinta viene del back: los conteos de los cajones se cuentan
+ * sobre la lista real, los días los recalcula el back al leer.
+ */
+
+import { useMemo, useState } from 'react';
 import {
   SortAscending,
   SortDescending,
   DotsThree,
   Eye,
   ArrowsClockwise,
-  CheckSquare,
   Warning,
-  HouseLine,
-  User,
   Funnel,
   Bell,
   Calculator,
@@ -21,8 +31,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Checkbox } from '@/components/ui/checkbox';
+import { SinDatos } from '@/components/estado/SinDatos';
 import {
   Select,
   SelectContent,
@@ -51,6 +60,7 @@ import {
 import { Chip } from '@leasefy/cadence';
 import type { Renovacion, RenovacionStatus } from '@/lib/types/inmobiliaria';
 import {
+  formatCurrency,
   getRenovacionStatusColor,
   getRenovacionStatusLabel,
   getUrgencyColor,
@@ -58,18 +68,20 @@ import {
 
 type SortField = 'propertyTitle' | 'tenantName' | 'propietarioName' | 'daysUntilExpiry' | 'status' | 'currentRent';
 type SortDirection = 'asc' | 'desc';
-type BucketFilter = 'all' | '0-30' | '31-60' | '61-90' | '90+';
+type BucketFilter = 'all' | '0-30' | '31-60' | '61-90';
 type StatusFilter = 'all' | RenovacionStatus;
 
 interface RenovacionesTableProps {
   data: Renovacion[];
+  /** Mientras carga se pintan filas de esqueleto, no «no hay renovaciones». */
+  isLoading?: boolean;
   /**
    * Lo que tiró la carga, si falló.
    *
-   * Sin esto la tabla afirmaba «no hay renovaciones» sobre una petición muerta:
-   * `operaciones/page.tsx` pasa `renovacionesData ?? []`, así que un fallo
-   * llegaba acá como lista vacía y se pintaba como cartera al día. El vacío son
-   * DOS (nunca hubo / el filtro no encontró) y con red de por medio son TRES.
+   * Sin esto la tabla afirmaba «no hay renovaciones» sobre una petición
+   * muerta: un fallo llegaba como lista vacía y se pintaba como cartera al
+   * día. El vacío son DOS (nunca hubo / el filtro no encontró) y con red de
+   * por medio son TRES.
    */
   error?: unknown;
   /** Para el botón de reintentar del estado de fallo. */
@@ -82,35 +94,54 @@ interface RenovacionesTableProps {
 }
 
 /**
- * Format currency to Colombian Peso
+ * «31 dic 2026», leyendo la parte `YYYY-MM-DD`: la fecha es un DATE que viaja
+ * como medianoche UTC, y en Bogotá `new Date(iso)` cae al día anterior.
  */
-function formatCurrencyLocal(amount: number, loc: string): string {
-  return new Intl.NumberFormat(loc === 'es' ? 'es-CL' : 'en-US', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+function fechaCorta(iso: string | null | undefined, locale: string): string {
+  const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
+  if (!partes) return '—';
+  const d = new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]));
+  return d
+    .toLocaleDateString(locale === 'en' ? 'en-US' : 'es-CO', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+    .replace(/ de /g, ' ')
+    .replace(/\.$/, '');
 }
 
-/**
- * Format date to display
- */
-function formatDate(dateStr: string, loc: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString(loc === 'es' ? 'es-CL' : 'en-US', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+const ORDEN_DE_ESTADO: Record<RenovacionStatus, number> = {
+  terminated: 0,
+  pending: 1,
+  notified: 2,
+  negotiating: 3,
+  approved: 4,
+  signed: 5,
+  completed: 6,
+};
+
+const COLUMNAS = 9;
+
+function FilasDeCarga() {
+  return (
+    <>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <tr key={i} className="border-b border-border last:border-0 animate-pulse">
+          {Array.from({ length: COLUMNAS }).map((__, j) => (
+            <td key={j} className="px-5 py-4">
+              <div className="h-4 rounded bg-muted w-20" />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
+  );
 }
 
-/**
- * RenovacionesTable - Contract renewals table
- * Shows expiring contracts with urgency indicators and workflow actions
- */
 export function RenovacionesTable({
   data,
+  isLoading = false,
   error,
   onReintentar,
   onStartRenewal,
@@ -124,46 +155,36 @@ export function RenovacionesTable({
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [bucketFilter, setBucketFilter] = useState<BucketFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
-  // Count items by bucket
-  const bucketCounts = useMemo(() => {
-    return {
+  const bucketCounts = useMemo(
+    () => ({
       all: data.length,
-      '0-30': data.filter(r => r.urgencyBucket === '0-30').length,
-      '31-60': data.filter(r => r.urgencyBucket === '31-60').length,
-      '61-90': data.filter(r => r.urgencyBucket === '61-90').length,
-      '90+': data.filter(r => r.urgencyBucket === '90+').length,
-    };
-  }, [data]);
+      '0-30': data.filter((r) => r.urgencyBucket === '0-30').length,
+      '31-60': data.filter((r) => r.urgencyBucket === '31-60').length,
+      '61-90': data.filter((r) => r.urgencyBucket === '61-90').length,
+    }),
+    [data],
+  );
 
-  // Filter and sort items
-  const filteredAndSortedItems = useMemo(() => {
+  const filtradas = useMemo(() => {
     let result = [...data];
-
-    // Apply bucket filter
     if (bucketFilter !== 'all') {
       result = result.filter((item) => item.urgencyBucket === bucketFilter);
     }
-
-    // Apply status filter
     if (statusFilter !== 'all') {
       result = result.filter((item) => item.status === statusFilter);
     }
-
-    // Sort
     result.sort((a, b) => {
       let aVal: string | number = '';
       let bVal: string | number = '';
-
       switch (sortField) {
         case 'propertyTitle':
           aVal = a.propertyTitle.toLowerCase();
           bVal = b.propertyTitle.toLowerCase();
           break;
         case 'tenantName':
-          aVal = a.tenantName.toLowerCase();
-          bVal = b.tenantName.toLowerCase();
+          aVal = (a.tenantName ?? '').toLowerCase();
+          bVal = (b.tenantName ?? '').toLowerCase();
           break;
         case 'propietarioName':
           aVal = a.propietarioName.toLowerCase();
@@ -178,49 +199,24 @@ export function RenovacionesTable({
           bVal = b.currentRent;
           break;
         case 'status':
-          const statusOrder: Record<RenovacionStatus, number> = {
-            terminated: 0,
-            pending: 1,
-            notified: 2,
-            negotiating: 3,
-            approved: 4,
-            signed: 5,
-            completed: 6,
-          };
-          aVal = statusOrder[a.status];
-          bVal = statusOrder[b.status];
+          aVal = ORDEN_DE_ESTADO[a.status];
+          bVal = ORDEN_DE_ESTADO[b.status];
           break;
       }
-
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-
     return result;
   }, [data, bucketFilter, statusFilter, sortField, sortDirection]);
 
-  /**
-   * Paginado de presentación: `useRenovaciones()` trae todas las renovaciones y
-   * crecen con la cantidad de contratos por vencer.
-   *
-   * `resetKey` sólo con los filtros: ordenar cambia el orden, no el conjunto, y
-   * mandar al usuario a la página 1 por cambiar de columna sería molesto.
-   *
-   * «Seleccionar todo» sigue operando sobre TODO lo filtrado, no sobre la
-   * página visible — la acción masiva es sobre el filtro, no sobre el recorte.
+  /*
+   * Paginado de presentación: `useRenovaciones()` trae todas y crecen con la
+   * cantidad de contratos por vencer. `resetKey` sólo con los filtros:
+   * ordenar cambia el orden, no el conjunto.
    */
-  const {
-    pageItems,
-    total,
-    page,
-    pageSize,
-    setPage,
-    setPageSize,
-    shouldPaginate,
-  } = useTablePagination(filteredAndSortedItems, {
-    resetKey: `${bucketFilter}|${statusFilter}`,
-  });
+  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
+    useTablePagination(filtradas, { resetKey: `${bucketFilter}|${statusFilter}` });
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -231,36 +227,10 @@ export function RenovacionesTable({
     }
   };
 
-  const toggleSelectItem = (id: string) => {
-    const newSelected = new Set(selectedItems);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedItems(newSelected);
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedItems.size === filteredAndSortedItems.length) {
-      setSelectedItems(new Set());
-    } else {
-      setSelectedItems(new Set(filteredAndSortedItems.map((i) => i.id)));
-    }
-  };
-
   const SortIcon = sortDirection === 'asc' ? SortAscending : SortDescending;
 
-  const SortableHeader = ({
-    field,
-    children,
-    className,
-  }: {
-    field: SortField;
-    children: React.ReactNode;
-    className?: string;
-  }) => (
-    <TableHead className={cn('text-left p-4', className)}>
+  const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
+    <TableHead className="whitespace-nowrap">
       {/*
         allowlist: disparador de orden — no hay primitiva en Cadence. El
         `<button>` no hereda las mayúsculas del `TH` (el navegador fuerza
@@ -268,6 +238,7 @@ export function RenovacionesTable({
         resto de la tipografía con `inherit`. Canónico: DispersionTable.
       */}
       <button
+        type="button"
         onClick={() => handleSort(field)}
         className="flex items-center gap-2 font-[inherit] text-[inherit] uppercase tracking-[inherit] text-fg-subtle transition-colors hover:text-fg"
       >
@@ -277,56 +248,54 @@ export function RenovacionesTable({
     </TableHead>
   );
 
-  const hasSelection = selectedItems.size > 0;
+  const hayFiltros = bucketFilter !== 'all' || statusFilter !== 'all';
+  const limpiarFiltros = () => {
+    setBucketFilter('all');
+    setStatusFilter('all');
+  };
+
+  const chip = (valor: BucketFilter, etiqueta: string, tono: string) => (
+    <Chip selected={bucketFilter === valor} onClick={() => setBucketFilter(valor)}>
+      {etiqueta}
+      <span
+        className={cn(
+          'ml-1.5 px-1.5 py-0.5 rounded text-xs tabular-nums',
+          bucketFilter === valor && valor !== 'all' ? tono : 'bg-muted',
+        )}
+      >
+        {bucketCounts[valor]}
+      </span>
+    </Chip>
+  );
 
   return (
-    <div>
-      <div className="p-5 space-y-5">
-      {/* Filter Tabs and Status Filter */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        {/* Bucket Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Chip selected={bucketFilter === 'all'} onClick={() => setBucketFilter('all')}>
-            {t('inmobiliaria.finance.renewals.all')}
-            <span className="ml-1.5 px-1.5 py-0.5 rounded text-xs tabular-nums bg-muted">
-              {bucketCounts.all}
-            </span>
-          </Chip>
-          <Chip selected={bucketFilter === '0-30'} onClick={() => setBucketFilter('0-30')}>
-            {t('inmobiliaria.finance.renewals.critical')}
-            <span className={cn(
-              'ml-1.5 px-1.5 py-0.5 rounded text-xs tabular-nums',
-              bucketFilter === '0-30' ? 'bg-danger-soft text-danger' : 'bg-muted'
-            )}>
-              {bucketCounts['0-30']}
-            </span>
-          </Chip>
-          <Chip selected={bucketFilter === '31-60'} onClick={() => setBucketFilter('31-60')}>
-            {t('inmobiliaria.finance.renewals.urgent')}
-            <span className={cn(
-              'ml-1.5 px-1.5 py-0.5 rounded text-xs tabular-nums',
-              bucketFilter === '31-60' ? 'bg-warning-soft text-warning' : 'bg-muted'
-            )}>
-              {bucketCounts['31-60']}
-            </span>
-          </Chip>
-          <Chip selected={bucketFilter === '61-90'} onClick={() => setBucketFilter('61-90')}>
-            {t('inmobiliaria.finance.renewals.upcoming')}
-            <span className={cn(
-              'ml-1.5 px-1.5 py-0.5 rounded text-xs tabular-nums',
-              bucketFilter === '61-90' ? 'bg-primary-soft text-primary' : 'bg-muted'
-            )}>
-              {bucketCounts['61-90']}
-            </span>
-          </Chip>
+    <section
+      className="rounded-xl border border-border bg-card overflow-hidden"
+      data-testid="renovaciones-tabla"
+    >
+      {/* Encabezado de la tarjeta — el mismo de Contratos. */}
+      <div className="flex flex-col gap-3 p-5 border-b border-border sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-surface-muted flex items-center justify-center flex-shrink-0">
+            <ArrowsClockwise className="w-[18px] h-[18px] text-fg-muted" weight="duotone" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-foreground">
+              {t('inmobiliaria.nav.renovaciones')}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Toca una renovación para ver el detalle y avanzarla.
+            </p>
+          </div>
         </div>
 
-        {/* Status Filter Dropdown */}
         <div className="flex items-center gap-2">
           <Funnel className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">{t('inmobiliaria.finance.renewals.statusLabel')}:</span>
+          <span className="text-sm text-muted-foreground">
+            {t('inmobiliaria.finance.renewals.statusLabel')}:
+          </span>
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-            <SelectTrigger className="h-9 w-auto gap-2 text-sm font-medium">
+            <SelectTrigger className="h-9 w-auto gap-2 text-sm font-medium" data-testid="filtro-estado">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -343,338 +312,226 @@ export function RenovacionesTable({
         </div>
       </div>
 
-      {/* Bulk Actions */}
-      <AnimatePresence>
-        {hasSelection && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="flex items-center gap-3 p-3 rounded-md bg-muted/50"
-          >
-            <span className="text-sm font-medium text-foreground">
-              {selectedItems.size} {t('inmobiliaria.finance.renewals.selected')}
-            </span>
-            <div className="flex items-center gap-2 ml-auto">
-              {onNotifyTenant && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  hideArrow
-                  onClick={() => {
-                    selectedItems.forEach(id => {
-                      const item = data.find(r => r.id === id);
-                      if (item) onNotifyTenant(item);
-                    });
-                    setSelectedItems(new Set());
-                  }}
-                  className="gap-2"
-                >
-                  <Bell className="w-4 h-4" />
-                  {t('inmobiliaria.finance.renewals.notify')}
-                </Button>
-              )}
-              {onStartRenewal && (
-                <Button
-                  size="sm"
-                  hideArrow
-                  onClick={() => {
-                    selectedItems.forEach(id => {
-                      const item = data.find(r => r.id === id);
-                      if (item) onStartRenewal(item);
-                    });
-                    setSelectedItems(new Set());
-                  }}
-                  className="gap-2"
-                >
-                  <ArrowsClockwise className="w-4 h-4" />
-                  {t('inmobiliaria.finance.renewals.startRenewal')}
-                </Button>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Los cajones de urgencia: 0-30 críticas, 31-60 urgentes, 61-90 próximas
+          (el preaviso de la Ley 820 son 90 días). */}
+      <div className="flex flex-wrap items-center gap-2 px-5 py-3 border-b border-border">
+        {chip('all', t('inmobiliaria.finance.renewals.all'), 'bg-muted')}
+        {chip('0-30', t('inmobiliaria.finance.renewals.critical'), 'bg-danger-soft text-danger')}
+        {chip('31-60', t('inmobiliaria.finance.renewals.urgent'), 'bg-warning-soft text-warning')}
+        {chip('61-90', t('inmobiliaria.finance.renewals.upcoming'), 'bg-primary-soft text-primary')}
+      </div>
 
-      {/* Data Table */}
-      <div className="overflow-x-auto -mx-5 mt-5 border-t border-border">
-        <Table className="w-full min-w-[1100px]">
-          <TableHeader>
-            <TableRow className="border-b border-border">
-              <TableHead className="w-12 p-4">
-                <Checkbox
-                  checked={
-                    selectedItems.size === filteredAndSortedItems.length &&
-                    filteredAndSortedItems.length > 0
-                  }
-                  onCheckedChange={() => toggleSelectAll()}
-                  aria-label="Seleccionar todo"
-                />
-              </TableHead>
-              <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.renewals.property')}</SortableHeader>
-              <SortableHeader field="tenantName">{t('inmobiliaria.finance.renewals.tenant')}</SortableHeader>
-              <SortableHeader field="propietarioName">{t('inmobiliaria.finance.renewals.owner')}</SortableHeader>
-              <TableHead className="p-4 text-left">
-                {t('inmobiliaria.finance.renewals.expiration')}
-              </TableHead>
-              <SortableHeader field="daysUntilExpiry">{t('inmobiliaria.finance.renewals.days')}</SortableHeader>
-              <SortableHeader field="currentRent">{t('inmobiliaria.finance.renewals.currentRent')}</SortableHeader>
-              <TableHead className="p-4 text-left">
-                {t('inmobiliaria.finance.renewals.proposed')}
-              </TableHead>
-              <SortableHeader field="status">{t('inmobiliaria.finance.renewals.status')}</SortableHeader>
-              <TableHead className="w-12 p-4"></TableHead>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.renewals.property')}</SortableHeader>
+            <SortableHeader field="tenantName">{t('inmobiliaria.finance.renewals.tenant')}</SortableHeader>
+            <SortableHeader field="propietarioName">{t('inmobiliaria.finance.renewals.owner')}</SortableHeader>
+            <TableHead className="whitespace-nowrap">{t('inmobiliaria.finance.renewals.expiration')}</TableHead>
+            <SortableHeader field="daysUntilExpiry">{t('inmobiliaria.finance.renewals.days')}</SortableHeader>
+            <SortableHeader field="currentRent">{t('inmobiliaria.finance.renewals.currentRent')}</SortableHeader>
+            <TableHead className="whitespace-nowrap">{t('inmobiliaria.finance.renewals.proposed')}</TableHead>
+            <SortableHeader field="status">{t('inmobiliaria.finance.renewals.status')}</SortableHeader>
+            <TableHead className="w-12" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading && data.length === 0 && <FilasDeCarga />}
+
+          {/* Falló → vacío, en ese orden: si la petición murió, `data` llega
+              vacía y pintar «no hay renovaciones» sería afirmar que la cartera
+              está al día sin haberlo podido verificar. */}
+          {!isLoading && Boolean(error) && (
+            <TableRow>
+              <TableCell colSpan={COLUMNAS} className="p-0">
+                <FalloDeCarga error={error} queEs="las renovaciones" onReintentar={onReintentar} />
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pageItems.map((item, index) => {
-              const isUrgent = item.urgencyBucket === '0-30';
-              const isSelected = selectedItems.has(item.id);
-              const ipcIncrease = item.proposedRent
-                ? ((item.proposedRent - item.currentRent) / item.currentRent * 100).toFixed(1)
+          )}
+
+          {!isLoading && !error && filtradas.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={COLUMNAS} className="p-0">
+                <SinDatos
+                  queSon="renovaciones"
+                  icono={ArrowsClockwise}
+                  hayFiltros={hayFiltros}
+                  onLimpiarFiltros={limpiarFiltros}
+                  titulo="Sin renovaciones en curso"
+                  descripcion="Cuando un contrato entre en sus últimos 90 días, aparece acá solo, con su inquilino y su canon."
+                />
+              </TableCell>
+            </TableRow>
+          )}
+
+          {pageItems.map((item) => {
+            const esCritica = item.urgencyBucket === '0-30';
+            const propuesto = item.negotiatedRent || item.proposedRent;
+            const incremento =
+              propuesto && item.currentRent > 0
+                ? (((propuesto - item.currentRent) / item.currentRent) * 100).toFixed(1)
                 : null;
 
-              return (
-                <motion.tr
-                  key={item.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.02 }}
-                  className={cn(
-                    'border-b border-border/60 transition-colors',
-                    isSelected && 'bg-primary-soft',
-                    !isSelected && 'hover:bg-muted/50'
-                  )}
-                >
-                  {/* Checkbox */}
-                  <TableCell className="p-4">
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => toggleSelectItem(item.id)}
-                      aria-label="Seleccionar fila"
-                    />
-                  </TableCell>
+            return (
+              <TableRow
+                key={item.id}
+                onClick={() => onViewDetails?.(item)}
+                className={cn(
+                  'border-b border-border last:border-0 transition-colors',
+                  onViewDetails && 'cursor-pointer hover:bg-muted/40',
+                )}
+                data-testid={`renovacion-${item.id}`}
+              >
+                <TableCell className="px-5 py-4 max-w-[240px]">
+                  <p className="font-medium text-foreground truncate">{item.propertyTitle}</p>
+                  <p className="text-xs text-muted-foreground truncate">{item.propertyAddress}</p>
+                </TableCell>
 
-                  {/* Property */}
-                  <TableCell className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          'w-10 h-10 rounded-md flex items-center justify-center shrink-0',
-                          isUrgent
-                            ? 'bg-danger-soft'
-                            : 'bg-primary-soft'
-                        )}
-                      >
-                        <HouseLine
-                          className={cn(
-                            'w-5 h-5',
-                            isUrgent
-                              ? 'text-danger'
-                              : 'text-primary'
-                          )}
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-foreground truncate max-w-[160px]">
-                          {item.propertyTitle}
-                        </p>
-                        <p className="text-sm text-muted-foreground truncate max-w-[160px]">
-                          {item.propertyAddress}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
+                <TableCell className="px-5 py-4 max-w-[200px]">
+                  <p className="text-foreground truncate">{item.tenantName || '—'}</p>
+                  {item.tenantPhone ? (
+                    <p className="text-xs text-muted-foreground truncate">{item.tenantPhone}</p>
+                  ) : null}
+                </TableCell>
 
-                  {/* Tenant */}
-                  <TableCell className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-foreground truncate max-w-[120px]">
-                          {item.tenantName}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate max-w-[120px]">
-                          {item.tenantPhone}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
+                <TableCell className="px-5 py-4 max-w-[160px]">
+                  <span className="text-foreground truncate block">{item.propietarioName}</span>
+                </TableCell>
 
-                  {/* Propietario */}
-                  <TableCell className="p-4">
-                    <span className="text-sm text-foreground truncate block max-w-[100px]">
-                      {item.propietarioName}
-                    </span>
-                  </TableCell>
+                <TableCell className="px-5 py-4 whitespace-nowrap text-muted-foreground tabular-nums">
+                  {fechaCorta(item.leaseEndDate, locale)}
+                </TableCell>
 
-                  {/* End Date */}
-                  <TableCell className="p-4">
-                    <span className="text-sm text-foreground">
-                      {formatDate(item.leaseEndDate, locale)}
-                    </span>
-                  </TableCell>
-
-                  {/* Days Until Expiry */}
-                  <TableCell className="p-4">
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium',
-                        getUrgencyColor(item.urgencyBucket)
-                      )}
-                    >
-                      {isUrgent && <Warning className="w-3.5 h-3.5" weight="fill" />}
-                      {item.daysUntilExpiry}d
-                    </span>
-                  </TableCell>
-
-                  {/* Current Rent */}
-                  <TableCell className="p-4">
-                    <span className="text-sm font-medium text-foreground">
-                      {formatCurrencyLocal(item.currentRent, locale)}
-                    </span>
-                  </TableCell>
-
-                  {/* Proposed Rent */}
-                  <TableCell className="p-4">
-                    {item.proposedRent && (
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-foreground">
-                          {formatCurrencyLocal(item.negotiatedRent || item.proposedRent, locale)}
-                        </span>
-                        {ipcIncrease && (
-                          <span className="inline-flex items-center gap-1 text-xs text-success">
-                            <TrendUp className="w-3 h-3" />
-                            +{ipcIncrease}% IPC
-                          </span>
-                        )}
-                      </div>
+                <TableCell className="px-5 py-4 whitespace-nowrap">
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium tabular-nums',
+                      getUrgencyColor(item.urgencyBucket),
                     )}
-                  </TableCell>
+                  >
+                    {esCritica && <Warning className="w-3.5 h-3.5" weight="fill" />}
+                    {item.daysUntilExpiry} {item.daysUntilExpiry === 1 ? 'día' : 'días'}
+                  </span>
+                </TableCell>
 
-                  {/* Status */}
-                  <TableCell className="p-4">
-                    <span
-                      className={cn(
-                        'inline-flex px-2.5 py-1 rounded-full text-xs font-medium',
-                        getRenovacionStatusColor(item.status)
-                      )}
-                    >
-                      {getRenovacionStatusLabel(item.status)}
-                    </span>
-                  </TableCell>
+                <TableCell className="px-5 py-4 whitespace-nowrap tabular-nums font-mono text-foreground">
+                  {formatCurrency(item.currentRent)}
+                </TableCell>
 
-                  {/* Actions */}
-                  <TableCell className="p-4">
-                    <DropdownList>
-                      <DropdownListTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          hideArrow
-                          onClick={(e) => e.stopPropagation()}
-                          className="h-8 w-8 text-muted-foreground"
+                <TableCell className="px-5 py-4 whitespace-nowrap tabular-nums font-mono">
+                  {propuesto ? (
+                    <div className="flex flex-col">
+                      <span className="text-foreground">{formatCurrency(propuesto)}</span>
+                      {incremento ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-success font-sans">
+                          <TrendUp className="w-3 h-3" />
+                          {Number(incremento) >= 0 ? '+' : ''}
+                          {incremento}%
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+
+                <TableCell className="px-5 py-4 whitespace-nowrap">
+                  <span
+                    className={cn(
+                      'inline-flex px-2.5 py-1 rounded-full text-xs font-medium',
+                      getRenovacionStatusColor(item.status),
+                    )}
+                  >
+                    {getRenovacionStatusLabel(item.status)}
+                  </span>
+                </TableCell>
+
+                <TableCell className="px-3 py-4 text-right">
+                  <DropdownList>
+                    <DropdownListTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        hideArrow
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-8 w-8 text-muted-foreground"
+                        aria-label="Acciones"
+                      >
+                        <DotsThree className="w-5 h-5" weight="bold" />
+                      </Button>
+                    </DropdownListTrigger>
+                    <DropdownListContent align="end" className="w-52" onClick={(e) => e.stopPropagation()}>
+                      {onViewDetails && (
+                        <DropdownListItem
+                          onSelect={() => onViewDetails(item)}
+                          className="flex items-center gap-3 px-3 py-2 cursor-pointer"
                         >
-                          <DotsThree className="w-5 h-5" weight="bold" />
-                        </Button>
-                      </DropdownListTrigger>
-                      <DropdownListContent align="end" className="w-52">
-                        {onViewDetails && (
+                          <Eye className="w-4 h-4" />
+                          <span>{t('inmobiliaria.finance.renewals.viewDetails')}</span>
+                        </DropdownListItem>
+                      )}
+                      {onNotifyTenant && item.status === 'pending' && (
+                        <DropdownListItem
+                          onSelect={() => onNotifyTenant(item)}
+                          className="flex items-center gap-3 px-3 py-2 cursor-pointer"
+                        >
+                          <Bell className="w-4 h-4" />
+                          <span>{t('inmobiliaria.finance.renewals.notifyTenant')}</span>
+                        </DropdownListItem>
+                      )}
+                      {onStartRenewal && ['pending', 'notified'].includes(item.status) && (
+                        <>
+                          <DropdownListSeparator />
                           <DropdownListItem
-                            onSelect={() => onViewDetails(item)}
-                            className="flex items-center gap-3 px-3 py-2 cursor-pointer"
+                            onSelect={() => onStartRenewal(item)}
+                            className="flex items-center gap-3 px-3 py-2 cursor-pointer text-primary focus:text-primary"
                           >
-                            <Eye className="w-4 h-4" />
-                            <span>{t('inmobiliaria.finance.renewals.viewDetails')}</span>
+                            <ArrowsClockwise className="w-4 h-4" />
+                            <span>{t('inmobiliaria.finance.renewals.startNegotiation')}</span>
                           </DropdownListItem>
-                        )}
-                        {onNotifyTenant && item.status === 'pending' && (
-                          <DropdownListItem
-                            onSelect={() => onNotifyTenant(item)}
-                            className="flex items-center gap-3 px-3 py-2 cursor-pointer"
-                          >
-                            <Bell className="w-4 h-4" />
-                            <span>{t('inmobiliaria.finance.renewals.notifyTenant')}</span>
-                          </DropdownListItem>
-                        )}
-                        {onStartRenewal && ['pending', 'notified'].includes(item.status) && (
-                          <>
-                            <DropdownListSeparator />
-                            <DropdownListItem
-                              onSelect={() => onStartRenewal(item)}
-                              className="flex items-center gap-3 px-3 py-2 cursor-pointer text-primary focus:text-primary"
-                            >
-                              <ArrowsClockwise className="w-4 h-4" />
-                              <span>{t('inmobiliaria.finance.renewals.startNegotiation')}</span>
-                            </DropdownListItem>
-                          </>
-                        )}
-                        {onCalculateIPC && (
-                          <DropdownListItem
-                            onSelect={() => onCalculateIPC(item)}
-                            className="flex items-center gap-3 px-3 py-2 cursor-pointer"
-                          >
-                            <Calculator className="w-4 h-4" />
-                            <span>{t('inmobiliaria.finance.renewals.calculateIPC')}</span>
-                          </DropdownListItem>
-                        )}
-                        {onViewHistory && (
-                          <DropdownListItem
-                            onSelect={() => onViewHistory(item)}
-                            className="flex items-center gap-3 px-3 py-2 cursor-pointer"
-                          >
-                            <ClockCounterClockwise className="w-4 h-4" />
-                            <span>{t('inmobiliaria.finance.renewals.viewHistory')}</span>
-                          </DropdownListItem>
-                        )}
-                      </DropdownListContent>
-                    </DropdownList>
-                  </TableCell>
-                </motion.tr>
-              );
-            })}
-          </TableBody>
-        </Table>
+                        </>
+                      )}
+                      {onCalculateIPC && (
+                        <DropdownListItem
+                          onSelect={() => onCalculateIPC(item)}
+                          className="flex items-center gap-3 px-3 py-2 cursor-pointer"
+                        >
+                          <Calculator className="w-4 h-4" />
+                          <span>{t('inmobiliaria.finance.renewals.calculateIPC')}</span>
+                        </DropdownListItem>
+                      )}
+                      {onViewHistory && (
+                        <DropdownListItem
+                          onSelect={() => onViewHistory(item)}
+                          className="flex items-center gap-3 px-3 py-2 cursor-pointer"
+                        >
+                          <ClockCounterClockwise className="w-4 h-4" />
+                          <span>{t('inmobiliaria.finance.renewals.viewHistory')}</span>
+                        </DropdownListItem>
+                      )}
+                    </DropdownListContent>
+                  </DropdownList>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
 
-        {/* Pie: sólo si hay más de una página. */}
-        {shouldPaginate && (
-          <div className="border-t border-border px-4 py-3">
-            <TablePagination
-              total={total}
-              page={page}
-              pageSize={pageSize}
-              pageSizeOptions={PAGE_SIZE_OPTIONS}
-              onPageChange={setPage}
-              onPageSizeChange={setPageSize}
-            />
-          </div>
-        )}
-
-        {/* Falló → vacío, en ese orden: si la petición murió, `data` llega
-            vacía y pintar «no hay renovaciones» sería afirmar que la cartera
-            está al día sin haberlo podido verificar. */}
-        {error ? (
-          <FalloDeCarga
-            error={error}
-            queEs="las renovaciones"
-            onReintentar={onReintentar}
+      {/* Pie: sólo si hay más de una página. */}
+      {shouldPaginate && (
+        <div className="border-t border-border px-4 py-3">
+          <TablePagination
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
           />
-        ) : filteredAndSortedItems.length === 0 ? (
-          <EmptyState
-            icon={CheckSquare}
-            title={t('inmobiliaria.finance.renewals.noRenewals')}
-            description={
-              bucketFilter === 'all' && statusFilter === 'all'
-                ? t('inmobiliaria.finance.renewals.noRenewalsDesc')
-                : t('inmobiliaria.finance.renewals.noRenewalsFiltered')
-            }
-          />
-        ) : null}
-      </div>
-      </div>
-    </div>
+        </div>
+      )}
+    </section>
   );
 }
 

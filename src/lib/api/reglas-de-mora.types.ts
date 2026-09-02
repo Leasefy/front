@@ -86,3 +86,42 @@ export interface NuevaReglaDeMora {
  * es la única manera de QUITAR un tope que ya existía.
  */
 export type CambiosDeReglaDeMora = Partial<NuevaReglaDeMora>;
+
+/**
+ * Una regla de la agencia vista desde UN contrato — `GET /contracts/:id/reglas-de-mora`.
+ *
+ * `valor` y `disparadorDia` son lo EFECTIVO para este contrato (lo propio si
+ * lo pisó, si no lo de la agencia); `*DeLaAgencia` va al lado para poder
+ * decir «propio» y ofrecer volver a la general. Sin ajuste, `esPropio` es
+ * `false` y las dos columnas coinciden.
+ */
+export interface ReglaDeMoraDelContrato {
+  regla: ReglaDeMora;
+  /** `false` = esta regla no se le aplica a este contrato. */
+  aplica: boolean;
+  valor: number;
+  valorDeLaAgencia: number;
+  disparadorDia: number;
+  disparadorDiaDeLaAgencia: number;
+  esPropio: boolean;
+}
+
+/** Como llega del back: los `valor` son `Decimal` y pueden viajar como string. */
+export type ReglaDeMoraDelContratoCruda = Omit<
+  ReglaDeMoraDelContrato,
+  'regla' | 'valor' | 'valorDeLaAgencia'
+> & {
+  regla: ReglaDeMoraCruda;
+  valor: number | string;
+  valorDeLaAgencia: number | string;
+};
+
+/**
+ * El cuerpo de `PUT /contracts/:id/reglas-de-mora/:reglaId`. `null` es una
+ * acción («volvé a lo de la agencia»), distinta de no mandar la clave.
+ */
+export interface AjusteDeReglaDelContrato {
+  aplica?: boolean;
+  valor?: number | null;
+  disparadorDia?: number | null;
+}

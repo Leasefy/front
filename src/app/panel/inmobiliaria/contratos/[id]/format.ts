@@ -25,7 +25,15 @@ import { formatCurrency } from '@/lib/format';
 
 export function formatDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
-  const date = new Date(iso);
+  /*
+   * Las fechas del contrato son DATE y viajan como medianoche UTC
+   * («2025-03-01T00:00:00.000Z»). `new Date(iso)` en Bogotá cae al 28 de
+   * febrero a las 7 pm: se lee la parte YYYY-MM-DD como fecha local.
+   */
+  const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  const date = partes
+    ? new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]))
+    : new Date(iso);
   if (Number.isNaN(date.getTime())) return null;
   return date.toLocaleDateString('es-CO', {
     day: 'numeric',

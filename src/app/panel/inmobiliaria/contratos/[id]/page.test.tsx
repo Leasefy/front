@@ -109,6 +109,10 @@ vi.mock('@/components/contratos/InvitarInquilino', () => ({
   InvitarInquilino: () =>
     React.createElement('div', { 'data-testid': 'invitar-inquilino' }),
 }))
+vi.mock('@/components/contratos/ReglasDeMoraDelContrato', () => ({
+  ReglasDeMoraDelContrato: () =>
+    React.createElement('div', { 'data-testid': 'reglas-de-mora' }),
+}))
 vi.mock('@/components/contratos/CobrosDelContrato', () => ({
   CobrosDelContrato: () =>
     React.createElement('div', { 'data-testid': 'cobros' }),
@@ -258,5 +262,39 @@ describe('ContratoDetallePage — la cuenta del contrato', () => {
 
     expect(container.querySelector('[data-testid="vincular-inmueble"]')).toBeNull()
     expect(container.textContent).not.toContain('Sin inmueble vinculado')
+  })
+})
+
+describe('ContratoDetallePage — el resumen de arriba', () => {
+  it('el número es el título y los cuatro números van en la franja', async () => {
+    withContract(
+      contract({
+        code: 99,
+        monthlyRent: 2_100_000,
+        endDate: '2099-12-31T00:00:00.000Z',
+        paymentDueDay: 5,
+        diasDePlazo: 3,
+      }),
+    )
+
+    await renderPage()
+
+    const h1 = container.querySelector('h1')!
+    expect(h1.textContent).toBe('Contrato #99')
+    const franja = container.querySelector('[data-testid="resumen-del-contrato"]')!
+    expect(franja.textContent).toContain('2.100.000')
+    expect(franja.textContent).toContain('31 dic 2099')
+    expect(franja.textContent).toContain('Día 5')
+    expect(franja.textContent).toContain('+3 de plazo')
+    // Activo no lleva banda verde: el chip ya lo dice.
+    expect(container.textContent).not.toContain('Los pagos se registran automáticamente')
+  })
+
+  it('un contrato vencido lo dice en la franja, no sólo en el chip', async () => {
+    withContract(contract({ endDate: '2020-01-31T00:00:00.000Z' }))
+
+    await renderPage()
+
+    expect(container.querySelector('[data-testid="resumen-del-contrato"]')!.textContent).toContain('vencido hace')
   })
 })

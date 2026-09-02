@@ -96,7 +96,7 @@ function render(c: Contract) {
 }
 
 function boton(texto: string) {
-  return Array.from(container.querySelectorAll('button')).find((b) =>
+  return Array.from(document.querySelectorAll('button')).find((b) =>
     b.textContent?.includes(texto),
   )
 }
@@ -114,7 +114,7 @@ describe('la perilla del arrendador', () => {
     editar()
 
     expect(
-      container.querySelector('[data-testid="arrendador-responsable-iva"]'),
+      document.querySelector('[data-testid="arrendador-responsable-iva"]'),
     ).not.toBeNull()
   })
 
@@ -133,8 +133,8 @@ describe('la perilla del arrendador', () => {
     editar()
 
     // El valor efectivo, no sólo «vacío»: sin esto hay que ir a la ficha.
-    expect(container.textContent).toContain('se hereda de la ficha del propietario')
-    expect(container.textContent).toContain('SÍ es responsable de IVA')
+    expect(document.body.textContent).toContain('se hereda de la ficha del propietario')
+    expect(document.body.textContent).toContain('SÍ es responsable de IVA')
   })
 
   it('cuando lo decide el contrato, lo dice — no finge que hereda', () => {
@@ -152,7 +152,7 @@ describe('la perilla del arrendador', () => {
     )
     editar()
 
-    expect(container.textContent).toContain('lo decide este contrato')
+    expect(document.body.textContent).toContain('lo decide este contrato')
   })
 
   it('sin dato en ninguna parte, avisa que el cobro NO llevará IVA', () => {
@@ -169,7 +169,7 @@ describe('la perilla del arrendador', () => {
     )
     editar()
 
-    expect(container.textContent).toContain('el cobro NO lleva IVA')
+    expect(document.body.textContent).toContain('el cobro NO lleva IVA')
   })
 
   it('guardar manda el campo: sin definir viaja como null («volvé a heredar»)', async () => {
@@ -213,14 +213,14 @@ describe('la perilla del arrendador', () => {
 describe('los términos de cobro del contrato', () => {
   it('en lectura, dice el plazo propio o que hereda los días de la inmobiliaria', () => {
     render(contrato({ diasDePlazo: null, prorratearPrimerMes: false }))
-    expect(container.textContent).toContain('Los días de la inmobiliaria')
-    expect(container.textContent).toContain('Mes completo')
+    expect(document.body.textContent).toContain('Los días de la inmobiliaria')
+    expect(document.body.textContent).toContain('Mes completo')
 
     act(() => root.unmount())
     root = createRoot(container)
     render(contrato({ diasDePlazo: 3, prorratearPrimerMes: true }))
-    expect(container.textContent).toContain('3 días')
-    expect(container.textContent).toContain('Se prorratea por los días ocupados')
+    expect(document.body.textContent).toContain('3 días')
+    expect(document.body.textContent).toContain('Prorrateado por días')
   })
 
   it('guardar manda diasDePlazo (vacío = null) y prorratearPrimerMes', async () => {
@@ -228,13 +228,13 @@ describe('los términos de cobro del contrato', () => {
     render(contrato({ diasDePlazo: null, prorratearPrimerMes: false }))
     editar()
 
-    const plazo = container.querySelector<HTMLInputElement>('[data-testid="dias-de-plazo"]')!
+    const plazo = document.querySelector<HTMLInputElement>('[data-testid="dias-de-plazo"]')!
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
     act(() => {
       setter.call(plazo, '7')
       plazo.dispatchEvent(new Event('input', { bubbles: true }))
     })
-    const prorratear = container.querySelector<HTMLButtonElement>('[data-testid="prorratear-primer-mes"]')!
+    const prorratear = document.querySelector<HTMLButtonElement>('[data-testid="prorratear-primer-mes"]')!
     act(() => prorratear.click())
 
     await act(async () => {
@@ -250,7 +250,7 @@ describe('los términos de cobro del contrato', () => {
     render(contrato())
     editar()
 
-    const plazo = container.querySelector<HTMLInputElement>('[data-testid="dias-de-plazo"]')!
+    const plazo = document.querySelector<HTMLInputElement>('[data-testid="dias-de-plazo"]')!
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
     act(() => {
       setter.call(plazo, '90')
@@ -261,6 +261,6 @@ describe('los términos de cobro del contrato', () => {
     })
 
     expect(actualizar).not.toHaveBeenCalled()
-    expect(container.textContent).toContain('entre 0 y 60')
+    expect(document.body.textContent).toContain('entre 0 y 60')
   })
 })

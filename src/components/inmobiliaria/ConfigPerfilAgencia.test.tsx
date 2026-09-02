@@ -345,6 +345,37 @@ describe('<ConfigPerfilAgencia>', () => {
     expect(props.onSave).toHaveBeenCalledWith({ diasParaSiniestro: 45 })
   })
 
+  it('cambiar los días para avisar a la aseguradora manda { diasParaAvisoAseguradora: 10 }', async () => {
+    const props = render()
+    enterEditMode()
+
+    const input = container.querySelector('[data-testid="dias-para-aviso-aseguradora"]') as HTMLInputElement
+    // Sin dato de la agencia, el default de Portofino: día 8.
+    expect(input.value).toBe('8')
+    act(() => {
+      setInputValue(input, '10')
+    })
+
+    await clickSave()
+
+    expect(props.onSave).toHaveBeenCalledWith({ diasParaAvisoAseguradora: 10 })
+  })
+
+  it('el aviso a la aseguradora tiene que ser ANTES del siniestro: no llama al back', async () => {
+    const props = render()
+    enterEditMode()
+
+    const input = container.querySelector('[data-testid="dias-para-aviso-aseguradora"]') as HTMLInputElement
+    act(() => {
+      setInputValue(input, '30')
+    })
+
+    await clickSave()
+
+    expect(props.onSave).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('antes del siniestro')
+  })
+
   it('un siniestro a los 0 días no existe: no llama al back', async () => {
     const props = render()
     enterEditMode()

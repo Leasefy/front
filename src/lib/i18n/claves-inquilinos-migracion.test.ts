@@ -91,7 +91,7 @@ const CLAVES_DE_MIGRACION = [
 /**
  * Los cinco pasos de la secuencia, cada uno con título y descripción.
  *
- * Los ids son los que `SecuenciaDeMigracion` arma con plantilla
+ * Los ids son los que `MuroDeMigracion` arma con plantilla
  * (`migracion.pasos.${paso.id}.titulo`), así que un typo en uno de ellos no lo
  * agarra ni `tsc` ni el linter: sale en pantalla como la clave cruda.
  */

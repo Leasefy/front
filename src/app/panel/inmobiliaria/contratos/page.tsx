@@ -22,6 +22,9 @@ import {
   CaretRight,
   House,
   User,
+  GearSix,
+  UploadSimple,
+  ListPlus,
 } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
@@ -36,6 +39,14 @@ import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { useContracts } from '@/lib/hooks/useContracts';
 import { NuevoContratoBoton } from '@/components/inmobiliaria/SelectorPostulacion';
+import { AlertaAccionable } from '@/components/ui/alerta-accionable';
+import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
+import {
+  DropdownList,
+  DropdownListContent,
+  DropdownListItem,
+  DropdownListTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   CONTRACT_STATUS_LABELS,
   CONTRACT_STATUS_COLORS,
@@ -105,6 +116,10 @@ function ContratosContent() {
   const tx = (es: string, en: string) => (locale === 'en' ? en : es);
 
   const { contracts, stats, isLoading, error, refetch } = useContracts();
+  // Contratos migrados que existen y no cobran (sin inmueble o sin
+  // propietario). Vivía en la página de migración, que ya no existe: se dice
+  // acá, que es donde la persona está mirando sus contratos.
+  const deuda = useMigracionConDeuda();
 
   useAutoRefresh(refetch);
 
@@ -155,16 +170,39 @@ function ContratosContent() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" asChild hideArrow>
-            <Link href="/panel/inmobiliaria/contratos/migrar">
-              {tx('Migrar', 'Migrate')}
-            </Link>
-          </Button>
-          <Button variant="outline" asChild hideArrow>
-            <Link href="/panel/inmobiliaria/contratos/conceptos">
-              {tx('Conceptos', 'Concepts')}
-            </Link>
-          </Button>
+          {/*
+           * Nico (2026-09-02): «Migrar» y «Conceptos» no son acciones del
+           * día a día — son configuración. Un engranaje con la jerarquía del
+           * botón secundario, y adentro las dos: migrar contratos y agregar
+           * conceptos. El botón primario queda solo con «Nuevo contrato».
+           */}
+          <DropdownList>
+            <DropdownListTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                hideArrow
+                aria-label={tx('Configuración de contratos', 'Contract settings')}
+                data-testid="contratos-configuracion"
+              >
+                <GearSix className="w-5 h-5" />
+              </Button>
+            </DropdownListTrigger>
+            <DropdownListContent align="end" className="w-56">
+              <DropdownListItem asChild data-testid="accion-migrar-contratos">
+                <Link href="/panel/inmobiliaria/contratos/migrar">
+                  <UploadSimple className="w-4 h-4" />
+                  <span className="text-sm">{tx('Migrar contratos', 'Migrate contracts')}</span>
+                </Link>
+              </DropdownListItem>
+              <DropdownListItem asChild data-testid="accion-agregar-conceptos">
+                <Link href="/panel/inmobiliaria/contratos/conceptos">
+                  <ListPlus className="w-4 h-4" />
+                  <span className="text-sm">{tx('Agregar conceptos', 'Add concepts')}</span>
+                </Link>
+              </DropdownListItem>
+            </DropdownListContent>
+          </DropdownList>
           {/* Antes navegaba a /contratos/nuevo a secas, y esa pantalla exige
               `?applicationId=`: el botón principal de Contratos mostraba
               "Falta el parámetro applicationId" en vez de crear nada. Ahora
@@ -172,6 +210,38 @@ function ContratosContent() {
           <NuevoContratoBoton />
         </div>
       </header>
+
+      {deuda ? (
+        <AlertaAccionable
+          severidad="danger"
+          titulo={
+            deuda.sinInmueble > 0 && deuda.sinPropietario > 0
+              ? tx(
+                  `${deuda.sinInmueble} contratos migrados sin inmueble y ${deuda.sinPropietario} sin propietario: no generan cobros.`,
+                  `${deuda.sinInmueble} migrated contracts without a property and ${deuda.sinPropietario} without an owner: they will not bill.`,
+                )
+              : deuda.sinInmueble > 0
+                ? tx(
+                    `${deuda.sinInmueble} ${deuda.sinInmueble === 1 ? 'contrato migrado' : 'contratos migrados'} sin inmueble: no ${deuda.sinInmueble === 1 ? 'genera' : 'generan'} cobros.`,
+                    `${deuda.sinInmueble} migrated ${deuda.sinInmueble === 1 ? 'contract' : 'contracts'} without a property: will not bill.`,
+                  )
+                : tx(
+                    `${deuda.sinPropietario} ${deuda.sinPropietario === 1 ? 'contrato migrado' : 'contratos migrados'} sin propietario: no ${deuda.sinPropietario === 1 ? 'genera' : 'generan'} cobros.`,
+                    `${deuda.sinPropietario} migrated ${deuda.sinPropietario === 1 ? 'contract' : 'contracts'} without an owner: will not bill.`,
+                  )
+          }
+          accion={{
+            label: tx('Completarlos en la migración', 'Complete them in the migration'),
+            href: '/panel/inmobiliaria/contratos/migrar',
+          }}
+          data-testid="alerta-migrados-sin-cobrar"
+        >
+          {tx(
+            'El cobro sale de la consignación del inmueble. Desde la migración se les crea el inmueble que falta y se elige el propietario, de a uno o en masa.',
+            'Billing comes from the property consignment. From the migration you can create the missing property and pick the owner, one by one or in bulk.',
+          )}
+        </AlertaAccionable>
+      ) : null}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

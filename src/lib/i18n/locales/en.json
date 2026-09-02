@@ -10334,7 +10334,7 @@
       "canonVigente": "Current monthly rent"
     },
     "vacioDescripcion": "There are no leases in your agency yet. Bring over the ones you already have in another system and the tenants will show up on their own.",
-    "vacioMigrar": "Migrate my third parties",
+    "vacioMigrar": "Migrate my tenants",
     "vacioContrato": "Migrate leases",
     "sinContacto": "No email or phone",
     "sinInmueble": "No property assigned",

@@ -43,7 +43,6 @@ import {
   Umbrella,
   Warning,
   UsersThree,
-  UploadSimple,
   AirTrafficControl,
 } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -386,14 +385,6 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // Gated por el módulo 'dashboard' que lo gobierna (todos los roles lo tienen
     // ⇒ visible tras cargar permisos; oculto durante la carga — fail-closed).
     { label: t('inmobiliaria.nav.dashboard'),    href: '/panel/inmobiliaria/dashboard', scope: 'general',    icon: SquaresFour,   exact: true, module: 'dashboard' },
-    /*
-     * Traer la inmobiliaria entera: terceros → inmuebles → contratos → PUC →
-     * contabilidad. Es la barrera real de adopción, no una utilidad: Portofino
-     * estuvo dos meses intentando migrarse al ERP anterior y lo abandonó.
-     * `configuracion` porque en los defaults sólo el ADMIN lo tiene, y esto
-     * crea propietarios e inquilinos de verdad.
-     */
-    { label: t('migracion.nav'),                 href: '/panel/inmobiliaria/migracion', scope: 'general',          icon: UploadSimple,  module: 'configuracion' },
     { label: t('inmobiliaria.nav.reportes'),     href: '/panel/inmobiliaria/reportes', scope: 'general',     icon: ChartLine,     module: 'reportes' },
     { label: t('inmobiliaria.nav.analitica'),    href: '/panel/inmobiliaria/analytics', scope: 'general',    icon: ChartLineUp,   module: 'analytics' },
     { label: t('inmobiliaria.nav.equipo'),       href: '/panel/inmobiliaria/agentes', scope: 'general',      icon: Users,         module: 'agentes' },

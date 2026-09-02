@@ -309,7 +309,6 @@ describe('el muro tapa TODAS las rutas del panel — también las de los pasos',
   it.each([
     '/panel/inmobiliaria/dashboard',
     '/panel/inmobiliaria/inmuebles',
-    '/panel/inmobiliaria/migracion',
     '/panel/inmobiliaria/migracion/terceros',
     '/panel/inmobiliaria/inmuebles/importar',
     '/panel/inmobiliaria/contratos/migrar',

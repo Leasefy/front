@@ -191,7 +191,7 @@ function ContenidoDeInquilinos() {
               hayFiltros ? undefined : (
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   <Button asChild hideArrow>
-                    <Link href="/panel/inmobiliaria/migracion">
+                    <Link href="/panel/inmobiliaria/migracion/terceros?tipo=inquilinos">
                       <UploadSimple className="mr-1.5 h-4 w-4" />
                       {t('inquilinos.vacioMigrar')}
                     </Link>

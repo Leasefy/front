@@ -63,7 +63,12 @@ const NAV_CATALOG: NavEntry[] = [
   { kind: 'action', title: 'Importar propiedades', context: 'Consignaciones', href: '/panel/inmobiliaria/inmuebles/importar', keywords: 'importar excel csv masivo', permission: { module: 'portafolio', action: 'create' } },
   { kind: 'page', title: 'Propietarios', context: 'Portafolio', href: '/panel/inmobiliaria/propietarios', keywords: 'dueños landlords', permission: { module: 'propietarios', action: 'view' } },
   { kind: 'page', title: 'Inquilinos', context: 'Portafolio', href: '/panel/inmobiliaria/inquilinos', keywords: 'arrendatarios tenants quien vive', permission: { module: 'contratos', action: 'view' } },
-  { kind: 'page', title: 'Migrar mi inmobiliaria', context: 'Configuración', href: '/panel/inmobiliaria/migracion', keywords: 'importar traer terceros propietarios inquilinos inmuebles contratos contabilidad excel', permission: { module: 'configuracion', action: 'view' } },
+  // La migración de arranque es el muro; estas son las pantallas de cada paso
+  // para después (una inmobiliaria que arrancó de cero y ahora sí quiere traer).
+  { kind: 'action', title: 'Migrar propietarios e inquilinos', context: 'Configuración', href: '/panel/inmobiliaria/migracion/terceros', keywords: 'importar traer terceros propietarios inquilinos excel', permission: { module: 'configuracion', action: 'view' } },
+  { kind: 'action', title: 'Migrar contratos', context: 'Contratos', href: '/panel/inmobiliaria/contratos/migrar', keywords: 'importar traer contratos cartera excel', permission: { module: 'contratos', action: 'create' } },
+  { kind: 'action', title: 'Migrar el plan de cuentas (PUC)', context: 'Contabilidad', href: '/panel/inmobiliaria/migracion/puc', keywords: 'importar puc cuentas contabilidad excel', permission: { module: 'configuracion', action: 'view' } },
+  { kind: 'action', title: 'Migrar registros contables', context: 'Contabilidad', href: '/panel/inmobiliaria/migracion/contables', keywords: 'importar asientos apertura saldos contabilidad excel', permission: { module: 'configuracion', action: 'view' } },
   { kind: 'page', title: 'Prospección (Pipeline)', context: 'Portafolio', href: '/panel/inmobiliaria/pipeline', keywords: 'leads captacion kanban', permission: { module: 'pipeline', action: 'view' } },
   { kind: 'page', title: 'Equipo', context: 'Portafolio', href: '/panel/inmobiliaria/agentes', keywords: 'agentes usuarios miembros', permission: { module: 'agentes', action: 'view' } },
   { kind: 'action', title: 'Nuevo agente', context: 'Equipo', href: '/panel/inmobiliaria/agentes', keywords: 'invitar crear agente miembro equipo', permission: { module: 'agentes', action: 'create' } },

@@ -30,11 +30,11 @@ function ContenidoDeContables() {
     <div className="space-y-6 p-6 lg:p-8">
       <header className="space-y-1">
         <Link
-          href="/panel/inmobiliaria/migracion"
+          href="/panel/inmobiliaria/contabilidad"
           className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
         >
           <ArrowLeft className="h-4 w-4" />
-          {t('migracion.nav')}
+          {t('inmobiliaria.nav.contabilidad')}
         </Link>
         <Eyebrow>{t('migracion.eyebrow')}</Eyebrow>
         <h1 className="text-2xl font-semibold tracking-tight text-fg">

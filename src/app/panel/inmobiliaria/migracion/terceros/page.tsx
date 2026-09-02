@@ -43,12 +43,14 @@ function ContenidoDeTerceros() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <header className="space-y-1">
+        {/* La página «Migración» ya no existe (el muro es la migración):
+            se vuelve a la sección de la que se entra. */}
         <Link
-          href="/panel/inmobiliaria/migracion"
+          href={tipoInicial === 'INQUILINO' ? '/panel/inmobiliaria/inquilinos' : '/panel/inmobiliaria/propietarios'}
           className="inline-flex items-center gap-2 text-sm text-fg-muted hover:text-fg"
         >
           <ArrowLeft className="h-4 w-4" />
-          {t('migracion.nav')}
+          {tipoInicial === 'INQUILINO' ? t('inmobiliaria.nav.inquilinos') : t('inmobiliaria.nav.propietarios')}
         </Link>
         <Eyebrow>{t('migracion.eyebrow')}</Eyebrow>
         <h1 className="text-2xl font-semibold tracking-tight text-fg">

@@ -30,7 +30,19 @@ export function useMigracionesPendientes(): { pendientes: number | undefined } {
   const cargar = useCallback(async () => {
     try {
       const lotes = await contractsApi.migracion.lotesAbiertos()
-      setPendientes(lotes.reduce((total, lote) => total + lote.pendientes, 0))
+      // Por completar = filas pendientes + contratos ya activados que no
+      // cobran (sin inmueble o sin propietario). Un back viejo no manda los
+      // dos últimos: `?? 0`, nunca un NaN que apague el badge.
+      setPendientes(
+        lotes.reduce(
+          (total, lote) =>
+            total +
+            lote.pendientes +
+            (lote.activadosSinInmueble ?? 0) +
+            (lote.activadosSinPropietario ?? 0),
+          0,
+        ),
+      )
     } catch {
       // Sin dato no se inventa uno.
       setPendientes(undefined)

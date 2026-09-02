@@ -209,11 +209,11 @@ export function AsientoDeApertura({
           </div>
         </div>
         <div className="mt-5 flex flex-wrap gap-2">
-          {/* Adentro del muro no hay secuencia a la que volver: el muro es la secuencia. */}
+          {/* Adentro del muro no hay a dónde ir: el muro es la migración. */}
           {enElMuro ? null : (
             <Button asChild hideArrow>
-              <Link href="/panel/inmobiliaria/migracion">
-                Volver a la secuencia
+              <Link href="/panel/inmobiliaria/contabilidad">
+                Ir a Contabilidad
               </Link>
             </Button>
           )}

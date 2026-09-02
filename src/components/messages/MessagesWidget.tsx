@@ -311,7 +311,7 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
     if (result === 'ok') {
       toast.success(locale === 'es' ? 'Conversación archivada' : 'Conversation archived');
       // Optimistically drop the archived thread from view, then re-sync.
-      setSelectedApplicationId(null);
+      setSelectedConversationId(null);
       setShowMobileChat(false);
       refetchConversations();
     } else {

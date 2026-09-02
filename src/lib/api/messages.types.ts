@@ -31,7 +31,14 @@ export interface BackendLastMessage {
  */
 export interface BackendConversation {
   id: string;
-  applicationId: string;
+  /** NEW. Absent on an older back build → treat as `'APPLICATION'` (every
+   * thread it can return is one). Present but not in the enum → throw (C19). */
+  kind?: string;
+  /** BREAKING: was `string`. `null` on a PROPERTY_INQUIRY thread. */
+  applicationId: string | null;
+  /** NEW top-level field. Absent on an older build → fall back to
+   * `property.id`, which has always been there. */
+  propertyId?: string;
   /**
    * Lease this conversation belongs to. OPTIONAL — the current backend groups
    * chat by `applicationId` only and does NOT return this yet (COMU-01 external
@@ -84,7 +91,9 @@ export interface BackendChatMessage {
  */
 export interface BackendConversationWithMessages {
   id: string;
-  applicationId: string;
+  kind?: string;
+  applicationId: string | null;
+  propertyId?: string;
   /** Lease this thread belongs to — OPTIONAL (COMU-01 external dep; see `BackendConversation.leaseId`). */
   leaseId?: string;
   /** Caso this thread belongs to — OPTIONAL (COMU-01 external dep; see `BackendConversation.caseId`). */
@@ -140,7 +149,9 @@ export interface ChatConversation {
   /** contract-addendum-2.md §B.3 — the identity. Selection MUST key on this,
    * never on `applicationId` (which is `null` on many rows). */
   id: string;
-  applicationId: string;
+  kind: ConversationKind;
+  /** Display / deep-link hint only. Always null-guard — never a selection key. */
+  applicationId: string | null;
   /** Lease id — OPTIONAL, carried through only when the backend returns it (COMU-01 external dep). */
   leaseId?: string;
   /** Caso id — OPTIONAL, carried through only when the backend returns it (COMU-01 external dep). */

@@ -13,9 +13,12 @@ import { AssistantBubble } from './AssistantBubble';
 import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
 import { AgentActivityIndicator } from './AgentActivityIndicator';
+import { AgentTaskThread } from './AgentTaskThread';
+import { AgentTaskProgress } from './AgentTaskProgress';
 import { ResponseCard } from './ResponseCard';
 import { WorkspaceView } from './WorkspaceView';
 import { DecisionCard } from './DecisionCard';
+import { ChatConversationBar } from './ChatConversationBar';
 
 interface ChatContainerProps {
   className?: string;
@@ -95,28 +98,52 @@ export function ChatContainer({ className }: ChatContainerProps) {
     streamingContent,
     activeAgentBlock,
     isAgentsRunning,
+    turnSteps,
     retryAgent,
     selectDecisionOption,
   } = useBetaChatContext();
 
   const [workspaceMessageId, setWorkspaceMessageId] = useState<string | null>(null);
+  // El contenedor de mensajes sólo existe con mensajes; el listener de scroll
+  // se engancha cuando aparece.
+  const hasMessagesForScroll = messages.length > 0;
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesAreaRef = useRef<HTMLDivElement>(null);
   const lastWorkspaceTriggerId = useRef<string | null>(null);
 
-  /** Check if user is near the bottom of the scroll container */
-  const isNearBottom = useCallback((): boolean => {
-    const container = messagesAreaRef.current;
-    if (!container) return true;
-    return container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-  }, []);
-
-  // Smart auto-scroll: only scroll if user is near bottom
+  // ── Auto-scroll que sigue la respuesta (patrón Claude / ChatGPT) ──────────
+  //
+  // Nico, 2026-08-27: «cuando llega algo nuevo le toca a uno hacer scroll
+  // down, y no debería: él debería ir haciendo el scroll».
+  //
+  // Lo que había medía «¿estás cerca del fondo?» DENTRO del efecto, o sea
+  // DESPUÉS de que el contenido nuevo ya se pintó. Un párrafo largo o un
+  // bloque de agentes hacía crecer `scrollHeight` más de 100px de golpe, la
+  // medición concluía «el usuario se alejó del fondo» y no bajaba — justo
+  // cuando más contenido llegaba. La pregunta correcta no es dónde está el
+  // scroll ahora, sino qué hizo el USUARIO: si él no se despegó del fondo,
+  // se lo sigue; si subió a leer algo, se lo respeta hasta que vuelva abajo.
+  // Eso se sabe escuchando el scroll, no midiendo después del render.
+  const siguiendo = useRef(true);
   useEffect(() => {
-    if (isNearBottom()) {
-      scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages, streamingContent, isThinking, activeAgentBlock, isAgentsRunning, isNearBottom]);
+    const el = messagesAreaRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      siguiendo.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [hasMessagesForScroll]);
+
+  useEffect(() => {
+    if (!siguiendo.current) return;
+    const el = messagesAreaRef.current;
+    if (!el) return;
+    // Directo, sin `smooth`: durante el streaming llegan varios cambios por
+    // segundo y una animación encadenada sobre otra tartamudea; el salto
+    // inmediato al fondo es lo que hacen Claude y ChatGPT.
+    el.scrollTop = el.scrollHeight;
+  }, [messages, streamingContent, isThinking, activeAgentBlock, isAgentsRunning]);
 
   // Auto-enter workspace mode when an actionable response with steps completes
   useEffect(() => {
@@ -174,6 +201,12 @@ export function ChatContainer({ className }: ChatContainerProps) {
     >
       {hasMessages ? (
         <>
+          {/* Barra de conversación — plantillas siempre alcanzables + terminar.
+              Sin esto, escribir el primer mensaje tapaba el estado-0 para
+              siempre: no había forma de volver a las plantillas ni de cerrar
+              la conversación y empezar otra (Nico, 2026-08-27). */}
+          <ChatConversationBar onSelectTemplate={sendMessage} />
+
           {/* Messages area */}
           {/* data-lenis-prevent: Lenis hijacks wheel events globally; without it
               this nested scroller only moves via the scrollbar. Scrollbar is
@@ -201,7 +234,27 @@ export function ChatContainer({ className }: ChatContainerProps) {
 
                 // "Estado de hoy" KPI glance — rendered under the reply when the
                 // backend (or mock) attached a snapshot to this turn.
-                const snapshotCard = message.snapshot ? (
+                // Sólo cuando los números CAMBIARON respecto a la última vez
+                // que se mostraron (Nico, 2026-08-27: «no repitas esta
+                // información en cada respuesta»). El backend adjunta el
+                // snapshot en cada turno; repetir cinco tarjetas idénticas
+                // debajo de cada respuesta es ruido, no información.
+                const snapshotPrevio = messages
+                  .slice(0, index)
+                  .reverse()
+                  .find((m) => m.role === 'assistant' && m.snapshot)?.snapshot;
+                // 🔴 Se compara lo que SE VE, no el objeto entero. El snapshot
+                // trae `generatedAt` —la hora en que se tomó—, que cambia en
+                // cada turno: comparar el JSON completo daba SIEMPRE distinto y
+                // el deduplicador nunca disparaba, así que las cinco tarjetas
+                // volvían a salir debajo de cada respuesta con los mismos
+                // números (Nico, 2026-08-31, segunda vez que lo reporta).
+                const snapshotEsNuevo =
+                  message.snapshot &&
+                  (!snapshotPrevio ||
+                    JSON.stringify(snapshotTiles(snapshotPrevio)) !==
+                      JSON.stringify(snapshotTiles(message.snapshot)));
+                const snapshotCard = snapshotEsNuevo && message.snapshot ? (
                   <ChatDataCard tiles={snapshotTiles(message.snapshot)} />
                 ) : null;
 
@@ -213,11 +266,12 @@ export function ChatContainer({ className }: ChatContainerProps) {
                   return null;
                 }
 
-                // During agent execution: show activity block, hide assistant bubble
-                if (isLastAssistant && isAgentsRunning && activeAgentBlock) {
+                // Agentes corriendo: la tarea EN el hilo, a la manera de Manus
+                // (filas planas + reloj vivo), en vez de la tarjeta con borde.
+                if (isLastAssistant && isAgentsRunning && turnSteps.length > 0) {
                   return (
                     <div key={message.id} className="space-y-3 animate-fade-in">
-                      <AgentActivityIndicator activity={activeAgentBlock} />
+                      <AgentTaskThread steps={turnSteps} />
                     </div>
                   );
                 }
@@ -346,15 +400,27 @@ export function ChatContainer({ className }: ChatContainerProps) {
               })}
 
               {/* Typing indicator shown during the thinking delay */}
-              {isThinking && <TypingIndicator />}
+              {isThinking && (
+                <TypingIndicator
+                  // El par pendiente (pregunta + placeholder) no es contexto leído.
+                  historyCount={Math.max(0, messages.length - 2)}
+                  snapshot={messages[messages.length - 1]?.snapshot ?? null}
+                />
+              )}
 
               {/* Scroll sentinel */}
               <div ref={scrollRef} />
             </div>
           </div>
 
-          {/* Chat input - floating at bottom */}
-          <ChatInput onSend={sendMessage} disabled={isBusy} />
+          {/* Chat input, con el progreso de la tarea FUSIONADO encima (patrón
+              Manus): sólo mientras hay trabajo; al terminar desaparece y el
+              hilo queda como registro. */}
+          <ChatInput
+            onSend={sendMessage}
+            disabled={isBusy}
+            topSlot={turnSteps.length > 0 ? <AgentTaskProgress steps={turnSteps} /> : null}
+          />
         </>
       ) : (
         /* Empty state — Manus-style: greeting + hero input + pills, all centered */

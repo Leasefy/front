@@ -44,6 +44,14 @@ export default defineConfig({
       // cadence/node_modules (e.g. react-remove-scroll) that `dedupe` misses.
       react: path.resolve(__dirname, './node_modules/react'),
       'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
+      // 'server-only' is a build-time-only guard (Next aliases it via webpack:
+      // no-op on the server, throw on the client). Vitest's node resolver can't
+      // see that alias, so point it at Next's bundled empty (server) module so
+      // server-only modules load in tests.
+      'server-only': path.resolve(
+        __dirname,
+        './node_modules/next/dist/compiled/server-only/empty.js'
+      ),
     },
     // `@leasefy/cadence` is a file:../cadence dep — without dedupe, Radix
     // modules under cadence/node_modules load their own React copy and every

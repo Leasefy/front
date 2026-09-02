@@ -7,8 +7,12 @@
  * mutations go through `applicationsApi` (application-scoped routes).
  */
 
-import { apiClient } from './client';
-import type { BackendDocumentFull } from './documents.types';
+import { apiClient, ApiError } from './client';
+import type {
+  BackendDocumentFull,
+  DocumentSignedUrl,
+  DocumentConsent,
+} from './documents.types';
 import type { BackendDocument, DocumentReviewStatus } from './applications.types';
 import { normalizeReviewStatus } from '@/lib/documents/review-status';
 
@@ -80,5 +84,44 @@ export const documentsApi = {
       `/applications/${candidateId}/documents`
     );
     return docs.map(mapDocument);
+  },
+
+  /**
+   * GET /documents/:id/signed-url — short-lived, ownership-checked URL to the
+   * document's bytes. Returns `{ url, expiresAt }` ({@link DocumentSignedUrl}),
+   * modeled 1:1 on `contractsApi.getSignedPdfUrl` ({@link file://src/lib/api/contracts.service.ts}).
+   *
+   * This is the anti-IDOR download path: the **backend** mints the URL, verifies
+   * the caller owns the document, and stamps `expiresAt`. The frontend can neither
+   * sign nor ownership-check — so if this endpoint is missing/blocked this throws
+   * (an `ApiError`); it never fabricates a fake signed URL. Tenant-reachable
+   * paths must consume this instead of the raw persistent `DocumentItem.url`.
+   */
+  async getSignedUrl(docId: string): Promise<DocumentSignedUrl> {
+    return apiClient.get<DocumentSignedUrl>(`/documents/${docId}/signed-url`);
+  },
+
+  /**
+   * POST /documents/:id/consent — records the tenant's per-purpose Ley 1581
+   * consent ({@link DocumentConsent}) for SIC audit.
+   *
+   * Best-effort: the authoritative, SIC-audit consent store is **backend-owned**.
+   * If the endpoint is absent (404) or forbidden (403) this degrades to a resolved
+   * no-op rather than blocking the flow — the real, enforcing gate is the
+   * unchecked-default consent UI (v7-02-03), which won't let the user proceed
+   * without ticking `purposeDocAccess`. Any other error is re-thrown so genuine
+   * failures are not swallowed.
+   */
+  async recordConsent(docId: string, consent: DocumentConsent): Promise<void> {
+    try {
+      await apiClient.post<void>(`/documents/${docId}/consent`, consent);
+    } catch (err) {
+      // Missing/blocked endpoint → silent no-op (persistence is a disclosed
+      // backend dependency). Surface everything else.
+      if (err instanceof ApiError && (err.status === 404 || err.status === 403)) {
+        return;
+      }
+      throw err;
+    }
   },
 };

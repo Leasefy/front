@@ -5,32 +5,33 @@
  * algo. Va primero y es la sección con más peso visual; todo lo demás es
  * información.
  *
- * ── Qué reemplaza y por qué ─────────────────────────────────────────────────
- * El Resumen tenía CUATRO superficies contestando la misma pregunta:
+ * ── Un tablero LITERAL, no un filtro ────────────────────────────────────────
+ * Primer intento (2026-08-25 mañana): celdas-resumen que filtraban una lista
+ * de abajo. Nico lo devolvió el mismo día: «cuando yo te decía tablero era
+ * literal un tablero encerradito más bonito, con tooodas las alertas». La
+ * celda seleccionada escondía el resto y las piezas sueltas (celdas, alerta
+ * de umbral, leyenda, lista) flotaban sin marco.
  *
- *   · el banner «Ver pendientes 6»
- *   · la fila de tarjetas, con «Esperan tu aprobación 6»
- *   · la tarjeta «Revisar escalaciones pendientes», con el botón 6
- *   · «Qué necesita tu atención hoy», con la lista real
+ * Ahora es UN recuadro con columnas por urgencia —estilo tablero de trabajo—
+ * y TODO visible a la vez: nada se esconde detrás de un clic. Una columna
+ * larga scrollea dentro de sí misma (con `data-lenis-prevent`, porque Lenis
+ * se roba el scroll de los contenedores anidados).
  *
- * Cuatro veces el mismo 6, tres botones a dos rutas distintas, y la lista —lo
- * único accionable— al final. Acá es una sola: la frase de estado, lo urgente
- * en su propia línea, y los pendientes como lista.
+ * ── El orden de las columnas no es estético ─────────────────────────────────
+ * 1. Siniestros: los únicos que bloquean plata. La base no deja radicar sin
+ *    firma humana; mientras nadie apruebe, la reclamación no se presenta ante
+ *    la aseguradora. Por eso tienen columna propia y van primero.
+ * 2. Urgente (alta) → 3. Puede esperar (media) → 4. Sin afán (baja).
  *
- * ── El orden no es estético ─────────────────────────────────────────────────
- * 1. Siniestros: son los únicos que bloquean plata. La base no deja radicar sin
- *    firma humana, así que mientras nadie apruebe, la reclamación no se
- *    presenta ante la aseguradora. Van con su antigüedad, que es la parte que
- *    mueve a actuar.
- * 2. Alertas de umbral del reporte diario.
- * 3. El resto de pendientes, por prioridad.
+ * Dentro de cada columna, el que MÁS lleva esperando va arriba: es una cola
+ * de trabajo, no un feed de novedades.
  *
- * Los siniestros NO se repiten abajo: `usePendientes` ya los trae, y mostrarlos
- * en el aviso y otra vez en la lista es contar dos veces el mismo trabajo.
+ * Las alertas de umbral del reporte diario (morosidad sobre el límite, etc.)
+ * son información, no trabajo: van al pie del tablero, en una línea.
  */
 
 import Link from 'next/link'
-import { ArrowRight, CheckCircle, Clock, Siren, Warning } from '@phosphor-icons/react'
+import { CheckCircle, Clock, Siren, Warning } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui'
@@ -39,33 +40,29 @@ import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 
 const NS = 'inmobiliaria.ai.cobranza.pendientes'
 const PENDIENTES_HREF = '/panel/inmobiliaria/ai/cobranza/pendientes'
-const SINIESTROS_HREF = '/panel/inmobiliaria/ai/cobranza/siniestros'
 
-/** Cuántos pendientes se muestran acá. El resto, en su pantalla. */
-const TOPE = 5
+// ── Columnas del tablero ─────────────────────────────────────────────────────
 
-const PRIORIDAD_TOKEN: Record<
-  PendienteItem['prioridad'],
-  { bg: string; text: string; ring: string; label: string }
-> = {
-  alta: { bg: 'bg-danger-soft', text: 'text-danger', ring: 'ring-danger', label: 'Alta' },
-  media: { bg: 'bg-warning-soft', text: 'text-warning', ring: 'ring-warning', label: 'Media' },
-  baja: { bg: 'bg-success-soft', text: 'text-success', ring: 'ring-success', label: 'Baja' },
-}
+type ColumnaId = 'siniestros' | 'alta' | 'media' | 'baja'
 
-const GRUPO_ES: Record<string, string> = {
+const COLUMNAS: Array<{ id: ColumnaId; label: string; tinte: string; punto: string }> = [
+  { id: 'siniestros', label: 'Bloquean plata', tinte: 'text-danger', punto: 'bg-danger' },
+  { id: 'alta', label: 'Urgente', tinte: 'text-danger', punto: 'bg-danger' },
+  { id: 'media', label: 'Puede esperar', tinte: 'text-warning', punto: 'bg-warning' },
+  { id: 'baja', label: 'Sin afán', tinte: 'text-success', punto: 'bg-success' },
+]
+
+/** Qué trámite es cada ficha — la columna mezcla tipos y hay que distinguirlos. */
+const TIPO_FICHA: Record<string, string> = {
   escalaciones: 'Escalación',
   cartas: 'Carta prejurídica',
   siniestros: 'Siniestro',
   planes: 'Plan de pago',
   promesas: 'Promesa de pago',
-  conversaciones: 'WhatsApp — el agente te lo pasó',
+  conversaciones: 'WhatsApp',
 }
 
-/** Días enteros transcurridos desde una fecha ISO. */
-function diasDesde(iso: string): number {
-  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000))
-}
+// ── Utilidades ───────────────────────────────────────────────────────────────
 
 function haceCuanto(iso: string): string {
   const seg = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000))
@@ -77,43 +74,51 @@ function haceCuanto(iso: string): string {
   return `hace ${Math.round(hr / 24)}d`
 }
 
-function Fila({ item }: { item: PendienteItem }) {
-  const token = PRIORIDAD_TOKEN[item.prioridad]
-  const grupo = GRUPO_ES[item.grupo] ?? item.grupo
-  // El título es la persona; el grupo, la segunda línea. Cuando el dato no
-  // trae nombre —un deudor borrado— el grupo sube y no se repite abajo: sin
-  // nombre no hay segunda línea que escribir.
-  const titulo = item.titulo || grupo
-  const subtitulo = item.titulo ? grupo : null
+const COP = new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
+  maximumFractionDigits: 0,
+})
+
+// ── Fichas del tablero ───────────────────────────────────────────────────────
+
+function Ficha({ item }: { item: PendienteItem }) {
+  const tipo = TIPO_FICHA[item.grupo] ?? item.grupo
+  // El título es la persona. Cuando el dato no trae nombre —un deudor
+  // borrado, una escalación sin masked id— el motivo o el tipo suben al
+  // título y no se repiten abajo.
+  const titulo = item.titulo || item.reason || tipo
+  const meta = [
+    tipo,
+    item.montoCop != null ? COP.format(item.montoCop) : null,
+  ].filter(Boolean)
 
   return (
     <li>
       <Link
         href={item.href}
         data-testid={`te-toca-${item.key}`}
-        className="group flex items-center gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-surface-muted"
+        className="group block rounded-lg border border-border bg-card px-2.5 py-2 transition-colors hover:bg-surface-muted"
       >
-        <span
-          className={`inline-flex items-center text-xs font-medium uppercase tracking-wide px-2 py-0.5 rounded-full ring-1 shrink-0 ${token.bg} ${token.text} ${token.ring}`}
-        >
-          {token.label}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-fg truncate">{titulo}</p>
-          {subtitulo && <p className="text-xs text-fg-muted truncate">{subtitulo}</p>}
-        </div>
-        <span className="hidden sm:inline-flex items-center gap-1 text-xs text-fg-muted tabular-nums shrink-0">
-          <Clock className="w-3 h-3" aria-hidden="true" />
-          {haceCuanto(item.fecha)}
-        </span>
-        <ArrowRight
-          className="w-4 h-4 text-fg-muted shrink-0 transition-transform group-hover:translate-x-0.5"
-          aria-hidden="true"
-        />
+        <p className="text-sm font-medium text-fg truncate">{titulo}</p>
+        <p className="flex items-center gap-1 text-xs text-fg-muted truncate">
+          <span className="truncate">{meta.join(' · ')}</span>
+          <span className="ml-auto inline-flex items-center gap-1 tabular-nums shrink-0">
+            <Clock className="w-3 h-3" aria-hidden="true" />
+            {haceCuanto(item.fecha)}
+          </span>
+        </p>
+        {/* El motivo textual (lo último que escribió el deudor, la razón de la
+            escalación) — solo cuando no es ya el título. */}
+        {item.titulo && item.reason && (
+          <p className="text-xs text-fg-muted truncate mt-0.5">{item.reason}</p>
+        )}
       </Link>
     </li>
   )
 }
+
+// ── Componente ───────────────────────────────────────────────────────────────
 
 export interface CobranzaTeTocaATiProps {
   /** Casos en mora (S1..SX) del overview. */
@@ -131,14 +136,24 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
 
   // Los siniestros salen de `usePendientes`, NO de un `useInsuranceClaims`
   // propio. Con dos llamadas al mismo endpoint las respuestas llegaban
-  // distintas: el aviso decía que no había ninguno mientras la lista de abajo
-  // mostraba dos. Una pantalla, una fuente.
-  const porRadicar = items.filter((i) => i.grupo === 'siniestros')
-  const restoDePendientes = items.filter((i) => i.grupo !== 'siniestros')
+  // distintas: el tablero decía una cifra y la lista otra. Una pantalla, una
+  // fuente.
+  const porColumna: Record<ColumnaId, PendienteItem[]> = {
+    siniestros: [],
+    alta: [],
+    media: [],
+    baja: [],
+  }
+  for (const i of items) {
+    if (i.grupo === 'siniestros') porColumna.siniestros.push(i)
+    else porColumna[i.prioridad].push(i)
+  }
+  // Cola de trabajo: el que MÁS lleva esperando, arriba.
+  for (const col of Object.values(porColumna)) {
+    col.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+  }
 
-  const visibles = restoDePendientes.slice(0, TOPE)
-  const restantes = Math.max(0, restoDePendientes.length - TOPE)
-  const totalQueEspera = porRadicar.length + restoDePendientes.length
+  const totalQueEspera = items.length
 
   // Mientras todavía se está contando NO se afirma nada. «Nada espera tu
   // aprobación» sobre una lista que aún no llegó es una afirmación falsa
@@ -155,8 +170,6 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
     <section className="space-y-3" data-testid="cobranza-te-toca">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold text-fg">Te toca a ti</h2>
-        {/* La frase de estado. Antes ocupaba un banner entero con las mismas
-            cifras que repetían las tarjetas de abajo. */}
         <p className="text-sm text-fg-muted max-w-2xl">
           <span className="text-fg font-medium">{frase}</span>{' '}
           El agente gestionó{' '}
@@ -165,75 +178,21 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
         </p>
       </div>
 
-      {/* 1 — Siniestros: los únicos que bloquean plata. */}
-      {porRadicar.length > 0 && (
+      {contando && (
         <div
-          role="alert"
-          className="rounded-xl border border-warning/30 bg-warning-soft p-3 flex items-start gap-3 text-sm text-warning"
+          className="rounded-2xl border border-border bg-card p-4 grid grid-cols-2 lg:grid-cols-4 gap-3"
+          aria-hidden="true"
         >
-          <Siren className="w-4 h-4 shrink-0 mt-0.5" weight="fill" aria-hidden="true" />
-          <div className="flex-1 min-w-0 space-y-1">
-            <p>
-              <strong className="font-semibold">
-                {porRadicar.length === 1
-                  ? '1 siniestro espera tu firma'
-                  : `${porRadicar.length} siniestros esperan tu firma`}
-              </strong>
-              {(() => {
-                const dias = porRadicar.reduce((m, c) => Math.max(m, diasDesde(c.fecha)), 0)
-                if (dias === 0) return '.'
-                return (
-                  <>
-                    {' — el más antiguo lleva '}
-                    <span className="font-mono tabular-nums">{dias}</span>
-                    {dias === 1 ? ' día' : ' días'}.
-                  </>
-                )
-              })()}
-            </p>
-            <p className="text-xs opacity-90">
-              Hasta que los apruebes no se radican ante la aseguradora.
-            </p>
-          </div>
-          <Button asChild variant="secondary" size="sm" hideArrow className="shrink-0">
-            <Link href={SINIESTROS_HREF}>Revisar</Link>
-          </Button>
-        </div>
-      )}
-
-      {/* 2 — Alertas de umbral. `message_es` viene redactado del agente. */}
-      {alertas.map((a, i) => (
-        <div
-          key={`${a.code}-${i}`}
-          role="alert"
-          className={[
-            'rounded-xl border p-3 flex items-start gap-3 text-sm',
-            a.level === 'CRITICAL'
-              ? 'border-danger/30 bg-danger-soft text-danger'
-              : 'border-warning/30 bg-warning-soft text-warning',
-          ].join(' ')}
-        >
-          <Warning className="w-4 h-4 shrink-0 mt-0.5" weight="fill" aria-hidden="true" />
-          <p>{a.message_es}</p>
-        </div>
-      ))}
-
-      {/* 3 — El resto, por prioridad. */}
-      {isLoading && items.length === 0 && !error && (
-        <div className="space-y-2" aria-hidden="true">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-14 rounded-lg border border-border bg-card animate-pulse" />
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-40 rounded-xl bg-surface-muted animate-pulse" />
           ))}
         </div>
       )}
 
-      {/* Cargando, falló y «no hay» son tres cosas distintas. Sobre un fallo no
-          se dice «todo al día»: no lo sabemos.
-
-          Y un fallo PARCIAL tampoco es un fallo total: `usePendientes` junta
-          cinco fuentes y sigue rindiendo las que sí respondieron. Decir «no
-          pudimos cargar tus pendientes» encima de cuatro pendientes cargados
-          es falso de las dos maneras — ni cargó todo, ni falló todo. */}
+      {/* Un fallo PARCIAL no es un fallo total: `usePendientes` junta seis
+          fuentes y sigue rindiendo las que sí respondieron. Decir «no pudimos
+          cargar tus pendientes» encima de un tablero con fichas es falso de
+          las dos maneras — ni cargó todo, ni falló todo. */}
       {error && !isLoading && (
         <div
           role="alert"
@@ -245,7 +204,7 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
           ].join(' ')}
         >
           {totalQueEspera > 0
-            ? 'Puede que falte algo en esta lista: una de las fuentes no respondió.'
+            ? 'Puede que falte algo en este tablero: una de las fuentes no respondió.'
             : 'No pudimos cargar tus pendientes.'}{' '}
           <span className="opacity-80">{error}</span>
         </div>
@@ -263,20 +222,96 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
         </div>
       )}
 
-      {visibles.length > 0 && (
-        <ul className="space-y-2">
-          {visibles.map((item) => (
-            <Fila key={item.key} item={item} />
-          ))}
-        </ul>
-      )}
+      {/* El tablero: un recuadro, cuatro columnas, todo visible. */}
+      {totalQueEspera > 0 && (
+        <div
+          data-testid="te-toca-tablero"
+          className="rounded-2xl border border-border bg-card p-3 sm:p-4 space-y-3"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start">
+            {COLUMNAS.map((col) => {
+              const fichas = porColumna[col.id]
+              const vacia = fichas.length === 0
+              return (
+                <div
+                  key={col.id}
+                  data-testid={`te-toca-col-${col.id}`}
+                  className="rounded-xl bg-surface-muted p-2.5 space-y-2 min-w-0"
+                >
+                  <p className="flex items-center gap-1.5 px-0.5 text-xs font-medium uppercase tracking-wide text-fg-muted">
+                    {col.id === 'siniestros' ? (
+                      <Siren
+                        className={`w-3.5 h-3.5 ${vacia ? '' : col.tinte}`}
+                        weight="fill"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <span
+                        className={`inline-block w-1.5 h-1.5 rounded-full ${vacia ? 'bg-border-strong' : col.punto}`}
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span className="truncate">{col.label}</span>
+                    <span
+                      className={`ml-auto font-mono tabular-nums text-sm ${vacia ? 'text-fg-muted' : col.tinte}`}
+                    >
+                      {fichas.length}
+                    </span>
+                  </p>
 
-      {restantes > 0 && (
-        <Button asChild variant="outline" size="sm" hideArrow className="w-full sm:w-auto">
-          <Link href={PENDIENTES_HREF}>
-            Ver {restantes} {restantes === 1 ? 'pendiente más' : 'pendientes más'}
-          </Link>
-        </Button>
+                  {col.id === 'siniestros' && !vacia && (
+                    <p className="px-0.5 text-xs text-fg-muted">
+                      Sin tu firma no se radican ante la aseguradora.
+                    </p>
+                  )}
+
+                  {vacia ? (
+                    <p className="px-0.5 py-6 text-center text-xs text-fg-muted">
+                      Nada pendiente
+                    </p>
+                  ) : (
+                    <ul
+                      data-lenis-prevent
+                      className="space-y-1.5 max-h-96 overflow-y-auto pr-0.5"
+                      style={{ overscrollBehavior: 'contain' }}
+                    >
+                      {fichas.map((item) => (
+                        <Ficha key={item.key} item={item} />
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Alertas de umbral del reporte diario: información, no trabajo —
+              una línea al pie, no un banner. `message_es` viene redactado del
+              agente. */}
+          {alertas.length > 0 && (
+            <div className="space-y-1 border-t border-border pt-2.5">
+              {alertas.map((a, i) => (
+                <p
+                  key={`${a.code}-${i}`}
+                  role="alert"
+                  className={[
+                    'flex items-center gap-2 text-xs px-1',
+                    a.level === 'CRITICAL' ? 'text-danger' : 'text-warning',
+                  ].join(' ')}
+                >
+                  <Warning className="w-3.5 h-3.5 shrink-0" weight="fill" aria-hidden="true" />
+                  {a.message_es}
+                </p>
+              ))}
+            </div>
+          )}
+
+          <Button asChild variant="outline" size="sm" hideArrow className="w-full sm:w-auto">
+            <Link href={PENDIENTES_HREF}>
+              Ver los {totalQueEspera} pendientes
+            </Link>
+          </Button>
+        </div>
       )}
     </section>
   )

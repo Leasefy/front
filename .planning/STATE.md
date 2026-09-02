@@ -1,116 +1,112 @@
 ---
 gsd_state_version: 1.0
-milestone: avaluos-ui
-milestone_name: Avalúos UI — Public Valuation Flow
-status: complete
-stopped_at: null
-last_updated: "2026-06-03"
-last_activity: 2026-06-03 — Phase 34-avaluos-ui plan 05 (Agency panel pages — list, nuevo wizard, detail) DONE
+milestone: v7.0
+milestone_name: Portal del Inquilino
+status: planning
+last_updated: "2026-07-16T22:30:00.000Z"
+last_activity: 2026-07-16
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_phases: 7
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-29)
-See: .planning/ERP-CRM-AUTOPILOT-PROGRAM.md — **program backbone (6 milestones, multi-repo)**
-See: .planning/research/ERP-VISION/GAP-ANALYSIS.md — **gap analysis (16 dominios) + maps por repo**
-See: .planning/milestones/v6.0-{REQUIREMENTS,ROADMAP}.md — **detalle del milestone activo**
+See: .planning/PROJECT.md
+See: .planning/research/portal-inquilino/GAP-ANALYSIS.md — **gap analysis del portal (qué tiene / qué falta) + research (FEATURES/PITFALLS/ARCHITECTURE/STACK)**
+See: .planning/REQUIREMENTS.md — **requerimientos v7.0 (por pilar) + traceability REQ→fase**
+See: .planning/ROADMAP.md — **fases v7-01..v7-07 (goals, REQ-IDs, success criteria, deps externas)**
 
-**Core value:** El usuario habla, los agentes ejecutan; el sistema opera la inmobiliaria (no es un Excel con UI).
-**Current focus:** ✅ **v6.0 — Backoffice Unificado ERP·CRM·Autopilot (frontend-first) COMPLETO (8/8)**. Todas las secciones del ERP existen en el panel de forma aditiva + los momentos autopilot por IA (terceros, captura de propiedad). El motor backend (M1–M3) y los go-lives externos siguen en el programa. Próximo paso del programa: decidir/arrancar M1 (motor ERP) — ver `ERP-CRM-AUTOPILOT-PROGRAM.md`.
+**Core value:** El usuario habla, los agentes ejecutan; el sistema opera la relación de arriendo (no es un Excel con UI). Para el inquilino: que pueda **OPERAR** su arriendo (pagar, pedir, ver, seguir, acordar, comunicar), no solo quejarse.
 
-## ⚠️ Numeración de fases — `v6-NN` (CRÍTICO)
+**Current focus:** 🚧 **v7.0 — Portal del Inquilino (frontend-first)**. Cierra P1: el portal `/inquilino` es hoy un **funnel de adquisición** (buscar→aplicar→firmar→pagar) **sin capa de operación post-firma**. v7.0 suma esa capa (Estado de casos, Solicitudes/PQRS, Acuerdos de pago), sube parcial→real 3 pilares (Pagos Wompi real, Documentos del arriendo, Comunicación atada al caso) y limpia superficies fake (dashboard/perfil/config). Aditivo, sin romper el CRM ni el portal existente.
 
-v6.0 usa el namespace **`v6-01` … `v6-08`** (NO enteros sueltos). Razón: el repo **`agent`** corre un milestone **`v2.1-frontend`** cuyas fases (29→37→…) aterrizan commits de FRONTEND en ESTE repo (`ai/cobranza`, `ai/cotizador`). mvp ya tiene commits `32-xx`…`36-xx`, y `agent` Phase 37 (cobranza-aggregate-analytics) es la siguiente — seguirá 38, 39… Si v6.0 usara enteros (37-44) colisionaría con ese stream paralelo en el historial de mvp. Commits de v6.0: **`feat(v6-01): …`**.
+## ⚠️ Numeración de fases — `v7-NN` (CRÍTICO)
 
-## ⛔ Restricción dura del milestone (2026-05-29)
+v7.0 usa el namespace **`v7-01` … `v7-07`** (NO enteros sueltos), misma razón que `v6-NN`: el repo `agent` aterriza commits de FRONTEND en ESTE repo con numeración `3x-xx`; enteros sueltos colisionarían en el historial de mvp. Commits de v7.0: **`feat(v7-01): …`**. NO crear directorios de fase con enteros sueltos.
 
-**ADITIVO — no romper el CRM existente.** El usuario fue enfático ("ya hay mucho del CRM"). Todo trabajo entra como rutas/módulos nuevos vía `canAccess(module,'view')`; la "unificación" es una capa de nav/IA encima, no un rewrite. Leer `docs/DESIGN.md` antes de cualquier UI.
+## ⛔ Restricción dura del milestone
+
+**ADITIVO — no romper el portal `/inquilino` existente ni el CRM.** Todo entra como rutas/servicios nuevos o extensiones aditivas; **reusar** contratos existentes (`pqrs.types.ts`, `tenant-payment-requests.types.ts`, `SignatureForm`/`SignaturePad`, patrón Wompi de avalúos), NO forkear. Leer `docs/DESIGN.md` antes de cualquier UI.
+
+## ⚖️ Guardrails legales Colombia (NO negociables — de `PITFALLS.md`, codificados como success criteria)
+
+- PQRS reusa `pqrs.types.ts` (no forkear) · **SLA 15 días hábiles** (Ley 1480/2011) computado y visible.
+- **Acuerdos NUNCA auto-aprueban** (T-323/2024 + Circular SIC 001/2025) — pasan por el gate del `agent`.
+- Mensajes/recordatorios respetan el **gate de contacto** (Ley 2300/2023: máx 1/día); **no preguntar "por qué" la mora** (art. 7); nada de amenazas Datacrédito sin gate de 3 partes.
+- Docs con **Habeas Data** (Ley 1581/2012): consentimiento por propósito, ARCO/borrar, sin IDOR.
+- "Saldo"/"acuerdo" trazan a **única fuente de verdad** (`tenant-payment-requests.types.ts`), sin dark patterns en mora.
 
 ## Current Position
 
-Milestone: v6.0 — Backoffice Unificado ERP·CRM·Autopilot (frontend-first) — ✅ COMPLETO
-Phase: **v6-01..v6-08 DONE** ✅ — milestone v6.0 cerrado (8/8)
+Milestone: v7.0 — Portal del Inquilino
+Phase: v7-01 Fundación & Limpieza del Portal (next to plan)
+Plan: —
+Status: Roadmap creado (7 fases, 27/27 REQ mapeados) — listo para `/gsd:plan-phase v7-01`
+Last activity: 2026-07-16 — ROADMAP.md v7.0 creado (7 fases v7-01..v7-07); traceability REQ→fase completa
 
----
+## Roadmap (v7.0 — 7 fases)
 
-## Current Position — Phase 34 (Avalúos UI)
+| Fase | Nombre | REQ-IDs | # criterios |
+|------|--------|---------|-------------|
+| v7-01 | Fundación & Limpieza del Portal | BASE-01..04, PAGO-01 | 5 |
+| v7-02 | Documentos del Arriendo | DOCU-01..04 | 4 |
+| v7-03 | Estado de Casos (Hub) | CASO-01..03 | 4 |
+| v7-04 | Pagos Reales (Wompi) | PAGO-02..05 | 4 |
+| v7-05 | Comunicación | COMU-01..03 | 4 |
+| v7-06 | Solicitudes / PQRS | SOLI-01..04 | 4 |
+| v7-07 | Acuerdos de Pago (LAST) | ACUE-01..04 | 4 |
 
-Milestone: avaluos-ui — Avalúos UI — Public Valuation Flow
-Phase: 34-avaluos-ui — ✅ COMPLETE (5/5 plans done)
-Plan: 34-05 DONE — phase complete
-Status: Complete
-Last activity: 2026-06-03 — 34-05 Agency panel pages (list, nuevo wizard, detail) DONE
-
-Progress: [█████████████████████████████] 100% — 5 de 5 planes
-
-**Plans (34-NN):**
-- [x] **34-01** Foundation — types, service client, /avaluo public landing — ✅ done (2026-06-03)
-- [x] **34-02** Wompi session route — server-side SHA-256 integrity hash — ✅ done (2026-06-03)
-- [x] **34-03** Wizard UI — AvaluoContext, AvaluoWizardShell, 4 step components, /avaluo/nuevo — ✅ done (2026-06-03)
-- [x] **34-04** Confirmation + status polling page — ✅ done (2026-06-03)
-- [x] **34-05** Agency panel pages — list, nuevo wizard (email pre-filled), detail — ✅ done (2026-06-03)
-
-**Phases (v6-NN):**
-- [x] **v6-01** IA Unificada & Command Center (UNIF) — ✅ done, branch `feat/v6.0-01-ia-unificada-command-center`
-- [x] **v6-02** Facturación ⭐ (FACT) — ✅ done (sección frontend + contrato `facturacion.types.ts`; motor DIAN → M2)
-- [x] **v6-03** Conciliación bancaria (CONC) — ✅ done (sección frontend + contrato `conciliacion.types.ts`; motor → M2)
-- [x] **v6-04** Egresos / Tesorería (EGR) — ✅ done (vista ERP fórmula neto completa, aditiva sobre `dispersiones`; ledger → M1)
-- [x] **v6-05** Informes & Insights (INFO) — ✅ done (motor `lib/insights` + `InsightsPanel` en /hoy; INFO-01/02/03 cubierto por `reportes` existente; data real → hooks/M1-M2)
-- [x] **v6-06** PQRS + Agenda (PQRS/AGEN) — ✅ done (secciones `/pqrs` + `/agenda` + contratos `pqrs.types.ts`/`agenda.types.ts` + i18n es/en; PQRS-01..03 y AGEN-01..02 cubiertos; triage IA + agregación → M1. Nav-flip + i18n quedaron bundled en commits `37-07` por sesión paralela en el mismo working tree — contenido correcto, mensaje mislabeled)
-- [x] **v6-07** Terceros por IA (TERC) — ✅ done CROSS-REPO. **agent** (`0cd2dff` + `0d53f61`): `POST /terceros/extract` (tool `extract-tercero.ts` Claude Vision base64/URL + ruta Hono JWT+role + 5 tests; `0d53f61` = hardening del review: bodyLimit 12MB + rate-limit 20/min por usuario). Review v6-07 adversarial: wiring/contract PASS, design PASS, security 2 MEDIUM (fixed). **mvp** (`ddcc218`): botón aditivo "Crear con IA" en propietarios → captura foto cédula/RUT → fetch al agente con JWT → prellena `PropietarioForm` → guarda con el handler manual existente (flujo manual intacto). Contratos `terceros-extract.{types,service}.ts` + i18n. TERC-01..04 cubiertos. E2E real requiere agente corriendo + JWT válido.
-- [x] **v6-08** Captura propiedad foto+audio — stretch (CAPT) — ✅ done CROSS-REPO. **agent** (`e5f01f1`): `POST /property-capture/extract` (tool `extract-property.ts` = OpenAI Whisper transcribe + Claude ficha + descripción comercial, fotos opcionales vía Vision; ruta Hono JWT+role+bodyLimit 24MB+rate-limit 10/min; 6 tests). **mvp** (`ee30376`): botón aditivo "Capturar con IA" en propiedades → ruta `/propiedades/captura` con `PropertyIACapture` (grabar audio MediaRecorder + fotos → extrae → form de revisión editable → `propertiesApi.create`). Manual `/nueva` intacto. CAPT-01..04 cubiertos. E2E real requiere agente corriendo + OPENAI/ANTHROPIC keys + JWT.
-
-**Next (programa, no v6.0):** v6.0 frontend-first está COMPLETO. Lo que sigue es el motor backend y go-lives externos (otra milestone del programa): **M1** decidir/arrancar el motor ERP (conciliación, ledger/tesorería autoritativo, posteo contable); **M2** facturación electrónica DIAN (proveedor autorizado); luego cablear data real en las secciones v6 (reemplazar empty-states/contratos por hooks). Push + PR de ambas ramas (mvp + agent) cuando el usuario lo confirme. Nota: `gsd-sdk` NO está instalado.
-
-## ⏸️ v5.0 — Pausado (histórico)
-
-v5.0 (Agency Plan-Gated Features & AI Agent UX) quedó **pausado 2026-05-12**. Phases 1–33 completas. Items diferidos: Automatic Reminders, Contract Expiry Reminders (overlap con INFO/notificaciones de v6.0 — reconsiderar al planear v6-05). Después, la UI de cobranza/cotizador (carpetas `ai/cobranza`, `ai/cotizador`) entró bajo el milestone `v2.1-frontend` del repo `agent` (numeración `29`→`37+`, commits `3x-xx` en mvp) — por eso el roadmap formal de mvp llegó a 33 pero hay commits `34-xx`/`35-xx`/`36-xx`.
+Orden: v7-01 → v7-02 → v7-03 → v7-04 → v7-05 → v7-06 → v7-07 (Acuerdos al final por dep dura cross-repo en `agent`).
 
 ## Previous Milestones
 
 - v1.0 MVP Frontend (2026-01-29): 11 phases, 35 plans
 - v2.0 Design System & QA (2026-02-02): 4 phases
 - v3.0 Inmobiliaria Module (2026-02-08): 10 phases, 33 plans
-- v3.1 Landing & SEO (2026-02-10): i18n, pricing, SEO
+- v3.1 Landing & SEO (2026-02-10)
 - v4.0 AI Agent Platform Beta (2026-02-10): 9 phases, 21 plans
 - v5.0 Agency Plan-Gated Features (2026-03-26 → paused 2026-05-12): Phases 26–33
-- (paralelo, repo `agent`) v2.1-frontend: Phases 29–36 done en mvp; Phase 37 next
+- v6.0 Backoffice Unificado ERP·CRM·Autopilot (2026-05-29 → COMPLETO 8/8): v6-01..v6-08 frontend-first; motores DIAN/conciliación/ledger → programa M1–M3. Detalle: `milestones/v6.0-*`.
+- avaluos-ui — Avalúos UI Public Valuation Flow (2026-06-03): phase 34, 5 plans.
+- (paralelo, repo `agent`) v2.1-frontend: commits `3x-xx` en mvp (`ai/cobranza`, `ai/cotizador`).
 
 ## Decisions
 
 | ID | Decision | Rationale | Phase |
 |----|----------|-----------|-------|
-| v6-numbering | v6.0 usa namespace `v6-NN`, no enteros | Evitar colisión con el stream `agent` v2.1-frontend (29→37+) que commitea frontend en mvp | v6.0 |
-| v6-frontend-first | v6.0 arranca frontend-first (secciones ERP completas en UI) antes del motor backend | El motor ERP (M1) está bloqueado en decisión de arquitectura de equipo; el frontend entrega valor sin ese bloqueo | v6.0 |
-| v6-additive-only | Todo el trabajo v6.0 es aditivo; no se reescribe el CRM existente | Usuario enfático: "no romper lo que ya hay" | v6.0 |
-| v6-home-mvp | UI del ERP+CRM+Autopilot vive en `rent/mvp`; motor en `back-main`; IA (Mastra) en `agent`; `admin` interno | Ver GAP-ANALYSIS §3 | v6.0 |
-| v6-erp-sections-now | Las secciones ERP existen en el frontend ya, con contrato api-client + estado vacío honesto | Visión "todo en uno"; backend rellena por detrás | v6.0 |
-| v6-agents-mastra | Toda capacidad de IA nueva (terceros, audio→ficha, PQRS triage) = agente/tool de **Mastra** en `agent` | Framework decidido del proyecto | v6.0 |
+| v7-scope-full | v7.0 = los 6 pilares del portal + limpieza (frontend-first) | Nico: es su propuesta original; el fix completo de P1 | v7.0 |
+| v7-numbering | v7.0 usa namespace `v7-NN` | Evitar colisión con el stream `agent` (`3x-xx`) en mvp | v7.0 |
+| v7-frontend-first | UI + contrato api-client + empty-state honesto ahora; data real detrás | Deps externas (Wompi productivo, RLS tenant en `agent`) bloquean data, no UI; mismo playbook que v6.0 | v7.0 |
+| v7-additive | Aditivo — no romper el portal `/inquilino` ni el CRM; reusar contratos, no forkear | El portal ya existe (~55-60% real); es sumar capa de operación, no reescribir | v7.0 |
+| v7-reuse-agency-models | Superficie tenant sobre modelos agency existentes (`SolicitudPqrs`, `SolicitudMantenimiento`, motor de acuerdos `computeOffer`/T-323) | Evita divergencia de estado con `panel/inmobiliaria` | v7.0 |
+| v7-phase-order | 7 fases: Fundación → Docs → Casos → Pagos → Comunicación → PQRS → Acuerdos (LAST) | Orden dependency-aware de ARCHITECTURE.md; Acuerdos al final por dep dura cross-repo (RLS tenant en `agent`) | v7.0 |
+| v7-pago01-in-base | PAGO-01 (estado de cuenta real) va en v7-01, no en v7-04 | El "próximo pago" del dashboard (BASE-01) ES el estado de cuenta real; misma data del lease-context que la fundación establece | v7.0 |
+| v6-additive-only | (histórico) Todo el trabajo es aditivo; no reescribir lo que existe | Usuario enfático | v6.0 |
+| v6-agents-mastra | (histórico) Toda IA nueva = agente/tool de Mastra en `agent` | Framework decidido | v6.0 |
 
 ## Session Continuity
 
-Last session: 2026-06-03 — 34-05 done (panel list page, nuevo wizard, detail page; phase 34 COMPLETE).
-Stopped at: Completed 34-05-PLAN.md — phase 34-avaluos-ui fully done
-Resume file: None (milestone avaluos-ui complete)
+Last session: 2026-07-16 — v7.0 ROADMAP creado. 7 fases (v7-01..v7-07), 27/27 REQ-IDs mapeados, success criteria con guardrails legales codificados, deps externas por fase. Rama de planning `plan/v7.0-portal-inquilino` (off `feat/leasefy-ds-redesign`).
+Stopped at: ROADMAP.md + REQUIREMENTS.md (traceability) + STATE.md escritos → siguiente `/gsd:plan-phase v7-01`.
+Resume file: `.planning/ROADMAP.md`
 
 ## Accumulated Context
 
 ### Roadmap Evolution
-- 2026-05-29: Gap analysis de la visión ERP+CRM+Autopilot (workflow, 4 repos) → programa de 6 milestones en `ERP-CRM-AUTOPILOT-PROGRAM.md`.
-- 2026-05-29: v6.0 definido (frontend-first, v6-01..v6-08) tras feedback: incluir TODAS las secciones ERP, especialmente facturación, aditivo.
-- 2026-05-29: v6-01 implementado + verificado (sidebar agrupado, landing `/hoy`, secciones "Pronto"); fix de build pre-existente (4 directivas eslint huérfanas en cotizador).
-- 2026-05-29: renumbered 37-44 → v6-01..v6-08 para no colisionar con el stream `agent`.
+- 2026-07-16: v7.0 Portal del Inquilino definido. Portal existente auditado: funnel de adquisición completo (backend real, firma OTP) **sin capa post-firma**. Gap: pilares 2/4/5 (casos, PQRS, acuerdos) FALTAN; 1/3/6 (pagos, docs, comunicación) PARCIALES; perfil/dashboard/config fake.
+- 2026-07-16: ROADMAP creado — **7 fases v7-01..v7-07** derivadas de las 7 categorías (BASE+PAGO-01 fusionados en la fundación; PAGO-02..05 en Pagos). Orden dependency-aware (ARCHITECTURE.md). Acuerdos (v7-07) AL FINAL por dep dura cross-repo. Todos los pilares son UI (UI hint: yes en cada fase).
 
-### External blockers (programa)
-- Decisión de equipo: ¿qué monolito es el motor ERP? (`back-main` es scaffold; mvp consume otro backend vía `NEXT_PUBLIC_BACKEND_URL`). Bloquea M1.
-- DIAN: requiere proveedor tecnológico autorizado (D2/M2).
-- Credenciales: Vapi, 360dialog/Kapso, Wompi/Bold, DataCrédito, carriers Bolívar/Sekure (Phase 27 cotizador pausada).
-- Dev local: `.env`/`.env.local` apunta `NEXT_PUBLIC_BACKEND_URL` a producción (api.leasefy.co) → CORS bloquea localhost; las páginas permission-gated no cargan data en dev sin backend local.
+### External blockers (v7.0 — bloquean *data real*, no la UI frontend-first)
+- **Pasarela real (v7-04):** Wompi/Bold productivo para arriendo (hoy PSE-mock `/pse-mock/*`). Patrón ya existe (avalúos: `WompiPayButton` + ruta server-side hash de integridad). Webhook rent-specific en NestJS.
+- **`agent` tenant-scoped (v7-07, v7-03, v7-05):** rutas + RLS tenant para Acuerdos de pago (pilar 5), push de estado de casos, y gate de contacto/`requiresHumanReview` vía HTTP. Hoy agency-only; `agent` ya expone `cartera/payment-plans` con `paymentUrl`.
+- **Backend NestJS (v7-01, v7-02, v7-05, v7-06):** endpoints lease-scoped (documentos/mensajes), `slaVenceAt` PQRS, perfil get/update, config actions.
+- **Dev local:** `NEXT_PUBLIC_BACKEND_URL` apunta a prod (api.leasefy.co) → CORS bloquea localhost.
+
+### v6.0 (histórico) — External blockers del programa
+- Motor ERP (M1) bloqueado en decisión de equipo (¿qué monolito?); DIAN requiere proveedor autorizado (M2).

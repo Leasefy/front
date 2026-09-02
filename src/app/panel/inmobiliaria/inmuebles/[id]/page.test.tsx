@@ -65,6 +65,12 @@ vi.mock('@/lib/hooks/useInmobiliaria', () => ({
   useConsignacion: (...args: unknown[]) => useConsignacionMock(...args),
   usePropietario: (...args: unknown[]) => usePropietarioMock(...args),
   useAgente: (...args: unknown[]) => useAgenteMock(...args),
+  // La página resuelve el agente del mandato con este hook (busca por
+  // userId O por id de miembro); acá no se prueba eso, pero sin el export
+  // el mock del módulo tumba el render entero.
+  useAgenteDeConsignacion: () => ({ agente: undefined, isLoading: false, error: null }),
+  // <AsignarAgente> pide la lista para el selector; vacía basta acá.
+  useAgentes: () => ({ agentes: [], isLoading: false, error: null, errorCrudo: null, refetch: async () => {} }),
 }));
 
 vi.mock('@/lib/hooks/useProperties', () => ({

@@ -17,6 +17,7 @@ import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Select,
@@ -391,35 +392,18 @@ function EditarContratoContent() {
                 onChange={(e) => updateForm('endDate', e.target.value)}
               />
             </Field>
-            <Field
-              label="Canon mensual (COP)"
-              error={validation.monthlyRent}
-              hint={form.monthlyRent ? formatCurrency(Number(form.monthlyRent)) : 'Mínimo 100.000 COP'}
-            >
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={100_000}
-                step={1000}
+            <Field label="Canon mensual (COP)" error={validation.monthlyRent} hint="Mínimo $ 100.000">
+              <MoneyInput
                 value={form.monthlyRent}
-                onChange={(e) => updateForm('monthlyRent', e.target.value)}
-                className="tabular-nums"
+                onChange={(crudo) => updateForm('monthlyRent', crudo)}
               />
             </Field>
             <Field
               label="Depósito (COP)"
               error={validation.deposit}
-              hint={form.deposit ? formatCurrency(Number(form.deposit)) : 'Opcional — dejar vacío si no aplica'}
+              hint="Opcional — dejar vacío si no aplica"
             >
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={0}
-                step={1000}
-                value={form.deposit}
-                onChange={(e) => updateForm('deposit', e.target.value)}
-                className="tabular-nums"
-              />
+              <MoneyInput value={form.deposit} onChange={(crudo) => updateForm('deposit', crudo)} />
             </Field>
             <Field label="Día de pago" error={validation.paymentDay} hint="Día del mes (1 a 28)">
               <Input

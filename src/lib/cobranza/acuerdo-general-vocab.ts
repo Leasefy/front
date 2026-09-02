@@ -74,7 +74,11 @@ export function cuandoAplica(a: AcuerdoGeneral): string {
 export function queOfrece(a: AcuerdoGeneral): string {
   const partes: string[] = []
 
-  if (a.discountPct > 0) {
+  // El «sobre qué» manda: un porcentaje con `discountKind: 'none'` es un
+  // acuerdo escrito a medias (descuento sobre nada), y el back lo rechaza al
+  // prenderlo. No lo enunciamos como «40% sobre intereses» —eso sería afirmar
+  // un descuento que no existe—; si la mitad falta, la frase no lo menciona.
+  if (a.discountPct > 0 && a.discountKind !== 'none') {
     const sobre =
       a.discountKind === 'intereses_total'
         ? 'de los intereses'

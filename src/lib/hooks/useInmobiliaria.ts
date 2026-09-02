@@ -312,6 +312,23 @@ export function useAgente(id: string | undefined) {
   return { agente: data, ...rest };
 }
 
+/**
+ * El agente de un mandato, venga el id que venga.
+ *
+ * `Consignacion.agenteId` sale de `raw.agenteId ?? raw.agenteUserId`, y el back
+ * sólo manda el segundo: un **`User.id`**. Pero `agentesApi.getById` espera un
+ * `AgencyMember.id`. Pedirle uno por el otro no falla con estruendo — devuelve
+ * nada, y la pantalla del inmueble decía «No hay agente asignado» aunque en la
+ * base sí lo hubiera. Se busca en la lista, que trae los dos identificadores.
+ */
+export function useAgenteDeConsignacion(agenteRef: string | undefined) {
+  const { agentes, ...rest } = useAgentes();
+  const agente: Agente | undefined = agenteRef
+    ? agentes.find((a) => a.userId === agenteRef || a.id === agenteRef)
+    : undefined;
+  return { agente, ...rest };
+}
+
 export function useAgenteConsignaciones(id: string | undefined) {
   const { data, ...rest } = useApiData(
     () => (id ? agentesApi.getConsignaciones(id) : Promise.reject('No ID')),

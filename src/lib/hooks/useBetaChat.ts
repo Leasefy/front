@@ -15,6 +15,7 @@ import type {
   BetaPreferences,
   ActionProposal,
   ChatSnapshot,
+  TurnStep,
 } from '@/lib/types/beta-chat';
 import type { DailyBriefing } from '@/lib/types/beta-chat';
 import { DEFAULT_PREFERENCES } from '@/lib/data/default-preferences';
@@ -27,9 +28,11 @@ import {
   suggestedActionToResponseAction,
   backendAgentToFrontType,
   executeAction,
+  resolveChatApproval,
   type BackendDispatch,
   type BackendSuggestedAction,
   type BackendActionProposal,
+  type BackendPendingApproval,
   type BackendSnapshot,
 } from '@/lib/api/ai-hub-chat';
 
@@ -98,7 +101,22 @@ function generateTitle(text: string): string {
 function getPreview(messages: ChatMessage[]): string {
   if (messages.length === 0) return 'Nueva conversacion';
   const last = messages[messages.length - 1];
-  const text = last.content.replace(/\n/g, ' ').trim();
+  // Sin markdown crudo en el preview: el historial mostraba «**Deudores
+  // activos» y «- ** El resumen…» — los asteriscos y guiones del formato
+  // metidos en una línea de texto plano. Se quitan las marcas, no el texto.
+  const text = last.content
+    .replace(/```[\s\S]*?```/g, ' ')          // bloques de código
+    .replace(/`([^`]*)`/g, '$1')                // código en línea
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1') // links e imágenes → su texto
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')        // encabezados
+    .replace(/^\s*[-*+]\s+/gm, '')             // viñetas
+    .replace(/^\s*\d+\.\s+/gm, '')            // listas numeradas
+    .replace(/(\*\*|__)(.*?)\1/g, '$2')        // negrita
+    .replace(/(\*|_)(.*?)\1/g, '$2')           // cursiva
+    .replace(/^\s*>\s?/gm, '')                 // citas
+    .replace(/\n/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
   if (text.length <= PREVIEW_MAX_LENGTH) return text;
   return text.slice(0, PREVIEW_MAX_LENGTH).replace(/\s+\S*$/, '') + '...';
 }
@@ -138,10 +156,28 @@ function deserializeConversations(json: string): Conversation[] {
     return parsed.map((c) => ({
       id: c.id,
       title: c.title,
-      messages: c.messages.map((m) => ({
-        ...m,
-        timestamp: new Date(m.timestamp),
-      })),
+      messages: c.messages.map((m) => {
+        // Un mensaje guardado a mitad de vuelo (`sending` / `streaming`) no
+        // tiene ninguna petición viva detrás cuando se recarga la página:
+        // se quedaba mostrando el orbe para siempre (Nico, 2026-08-27: «¿por
+        // qué quedan ahí solos?»). Se cierra como interrumpido, con texto, y
+        // así el avatar pasa al de marca y «Rehacer» sigue disponible.
+        const enVuelo =
+          m.role === 'assistant' && (m.status === 'sending' || m.status === 'streaming');
+        return {
+          ...m,
+          timestamp: new Date(m.timestamp),
+          ...(enVuelo
+            ? {
+                status: 'complete' as const,
+                content:
+                  m.content.trim().length > 0
+                    ? m.content
+                    : 'Esta respuesta se interrumpió al recargar la página. Vuelve a preguntar o toca «Volver a generar».',
+              }
+            : {}),
+        };
+      }),
       createdAt: new Date(c.createdAt),
       updatedAt: new Date(c.updatedAt),
     }));
@@ -239,6 +275,12 @@ export interface UseBetaChatReturn {
   // Agent execution
   activeAgentBlock: AgentActivityBlock | null;
   isAgentsRunning: boolean;
+  /**
+   * Los pasos del turno EN CURSO, en orden. Se arman con los eventos del
+   * stream, así que el plan cambia según lo que el asistente hace de verdad.
+   * Vacío cuando no hay un turno corriendo.
+   */
+  turnSteps: TurnStep[];
   retryAgent: (executionId: string) => void;
 
   // Decision handling
@@ -248,6 +290,10 @@ export interface UseBetaChatReturn {
 
   // Agent activity aggregation
   allAgentActivities: AgentActivityEntry[];
+
+  // Message actions (acciones bajo cada respuesta)
+  regenerateResponse: (assistantMessageId: string) => void;
+  rateMessage: (messageId: string, rating: 'up' | 'down') => void;
 
   // Conversation management
   conversations: Conversation[];
@@ -317,6 +363,58 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   // Agent execution state
   const [activeAgentBlock, setActiveAgentBlock] = useState<AgentActivityBlock | null>(null);
   const [isAgentsRunning, setIsAgentsRunning] = useState(false);
+
+  // ── Pasos del turno ──────────────────────────────────────────────────────
+  // El plan que se ve en «Progreso de la tarea». No es una lista fija: se
+  // construye con los eventos del stream (snapshot → despachos → redacción),
+  // por eso una pregunta de cartera y una cotización muestran pasos distintos.
+  // El ref existe porque las callbacks del stream leen el estado anterior y
+  // React no lo tiene actualizado dentro del mismo tick.
+  const [turnSteps, setTurnSteps] = useState<TurnStep[]>([]);
+  const turnStepsRef = useRef<TurnStep[]>([]);
+
+  const aplicarPasos = useCallback((next: TurnStep[]) => {
+    turnStepsRef.current = next;
+    setTurnSteps(next);
+  }, []);
+
+  const parchearPaso = useCallback(
+    (id: string, patch: Partial<TurnStep>) => {
+      aplicarPasos(turnStepsRef.current.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    },
+    [aplicarPasos]
+  );
+
+  /** Inserta un paso REAL antes de «redactar», que siempre va al final. */
+  const insertarPaso = useCallback(
+    (step: TurnStep) => {
+      const actuales = turnStepsRef.current;
+      const i = actuales.findIndex((p) => p.kind === 'redactar');
+      const next = i === -1 ? [...actuales, step] : [...actuales.slice(0, i), step, ...actuales.slice(i)];
+      aplicarPasos(next);
+    },
+    [aplicarPasos]
+  );
+
+  /** Cierra el turno: lo que quedó corriendo se da por hecho, y se limpia. */
+  const cerrarPasos = useCallback(
+    (comoFallo?: string) => {
+      const ahora = new Date();
+      aplicarPasos(
+        turnStepsRef.current.map((p) =>
+          p.status === 'running' || p.status === 'pending'
+            ? {
+                ...p,
+                status: comoFallo ? ('failed' as const) : ('done' as const),
+                ...(comoFallo && p.status === 'running' ? { detail: comoFallo } : {}),
+                completedAt: ahora,
+              }
+            : p
+        )
+      );
+    },
+    [aplicarPasos]
+  );
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -415,6 +513,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       charIndexRef.current = 0;
       setIsThinking(false);
       setIsStreaming(true);
+      parchearPaso('redactar', { status: 'running', startedAt: new Date() });
 
       // Update status to streaming
       setConversations((prev) =>
@@ -459,6 +558,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           setIsStreaming(false);
           setStreamingContent('');
           charTimeoutRef.current = null;
+          cerrarPasos();
+          aplicarPasos([]);
           return;
         }
 
@@ -473,7 +574,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
 
       revealNextChar();
     },
-    [getCharDelay]
+    [getCharDelay, parchearPaso, cerrarPasos, aplicarPasos]
   );
 
   // ========================================================================
@@ -509,6 +610,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       setActiveAgentBlock(null);
       setIsAgentsRunning(false);
       pendingStreamRef.current = null;
+      // El turno se cortó: lo que estaba corriendo NO se puede dar por hecho.
+      aplicarPasos([]);
       setConversations((prev) =>
         prev.map((c) =>
           c.id !== conversationId
@@ -525,7 +628,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         )
       );
     },
-    [clearTimeouts]
+    [clearTimeouts, aplicarPasos]
   );
 
   /**
@@ -845,10 +948,37 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         handlers: {
           onSnapshot: (s) => {
             collected.snapshot = backendSnapshotToChat(s);
+            // El snapshot es la PRIMERA prueba de que el backend ya leyó el
+            // estado de la agencia: cierra «entender» y llena el paso de
+            // cartera con las cifras que de verdad llegaron.
+            const ahora = new Date();
+            parchearPaso('entender', { status: 'done', completedAt: ahora });
+            parchearPaso(
+              'cartera',
+              s
+                ? {
+                    status: 'done',
+                    completedAt: ahora,
+                    detailKey: 'beta.tasks.detail.cartera',
+                    detailVars: {
+                      deudores: s.deudoresActivos,
+                      escalaciones: s.escalacionesPendientes,
+                      prejuridico: s.enPrejuridico,
+                    },
+                  }
+                : { status: 'done', completedAt: ahora, detailKey: 'beta.tasks.detail.carteraVacia' }
+            );
           },
           onMessage: (text, actions) => {
             messageText = text;
             messageActions = actions;
+            // Llegó texto: el orquestador ya decidió y está escribiendo. Si
+            // todavía no se había cerrado «entender» (agencia sin snapshot),
+            // se cierra acá.
+            const ahora = new Date();
+            if (turnStepsRef.current.some((p) => p.id === 'entender' && p.status === 'running')) {
+              parchearPaso('entender', { status: 'done', completedAt: ahora });
+            }
           },
           onDispatchStart: (agent, taskDescription) => {
             const exec: AgentExecution = {
@@ -869,6 +999,21 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             setIsThinking(false);
             setIsAgentsRunning(true);
             setActiveAgentBlock(liveBlock);
+            // Cada despacho es un paso propio, con la tarea que escribió el
+            // orquestador. Acá es donde el plan deja de ser genérico: dos
+            // preguntas distintas despachan agentes distintos.
+            insertarPaso({
+              id: exec.id,
+              kind: 'agente',
+              // Título corto arriba y la tarea REAL como sub-línea: el
+              // orquestador escribe un párrafo entero como `taskDescription`
+              // (verificado en vivo: cinco renglones), y de título no se lee.
+              labelKey: 'beta.tasks.plan.consultAgent',
+              detail: taskDescription,
+              agentType: exec.agentType,
+              status: 'running',
+              startedAt: exec.startedAt,
+            });
           },
           onDispatchResult: (dispatch) => {
             resultDispatches.push(dispatch);
@@ -891,6 +1036,58 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             });
             liveBlock = { ...liveBlock, agents };
             setActiveAgentBlock(liveBlock);
+            // El paso se cierra con lo que el agente EFECTIVAMENTE respondió:
+            // su resumen, y el siguiente paso que propone si lo trae.
+            const cerrado = agents.find((x) => x.status !== 'running' && x.agentType === agentType);
+            if (cerrado) {
+              const detalle = [dispatch.summary, dispatch.nextStep].filter(Boolean).join(' · ');
+              parchearPaso(cerrado.id, {
+                status: dispatch.status === 'failed' ? 'failed' : 'done',
+                completedAt: new Date(),
+                ...(detalle ? { detail: detalle } : {}),
+              });
+            }
+          },
+          // Pasos internos del especialista: cada herramienta que ejecutó de
+          // verdad. Se cuelgan del agente que los produjo, y el paso anterior
+          // se cierra al llegar el siguiente — el backend avisa cuando una
+          // herramienta TERMINÓ, así que el que está en curso es siempre el
+          // último que llegó.
+          onToolStep: ({ tool, label }) => {
+            // Llega cuando la herramienta YA se ejecutó (Mastra avisa al cerrar
+            // el paso), así que nace en «hecho». Sin reloj: no sabemos cuánto
+            // tardó cada una por separado, y un 0:00 al lado sería inventarlo.
+            const actuales = turnStepsRef.current;
+            const previos = actuales.filter((p) => p.kind === 'herramienta');
+            const ultimo = previos[previos.length - 1];
+            if (ultimo && ultimo.label === label) {
+              parchearPaso(ultimo.id, { repeticiones: (ultimo.repeticiones ?? 1) + 1 });
+              return;
+            }
+            insertarPaso({
+              id: `tool-${tool}-${previos.length}`,
+              kind: 'herramienta',
+              label,
+              status: 'done',
+            });
+          },
+          // Acción vinculante propuesta por un especialista. Se convierte en la
+          // tarjeta de decisión que ya existe; `pendingDecisionRef` la adjunta
+          // al mensaje cuando termina de escribirse, igual que cualquier otra.
+          onPendingApproval: (approval: BackendPendingApproval) => {
+            pendingDecisionRef.current = {
+              id: approval.id,
+              approvalId: approval.id,
+              title: approval.title,
+              description: approval.description,
+              category: backendAgentToFrontType(approval.agent),
+              options: approval.options.map((o) => ({
+                id: o.id,
+                label: o.label,
+                description: o.description,
+                recommendation: o.recommendation,
+              })),
+            };
           },
           // F5: action_proposal events — append to the assistant message (D-42-03 fail-open).
           onActionProposal: (proposal: BackendActionProposal) => {
@@ -956,7 +1153,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         liveBlock,
       };
     },
-    []
+    [parchearPaso, insertarPaso]
   );
 
   // ========================================================================
@@ -1018,6 +1215,22 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       pendingDecisionRef.current = null;
       pendingResponseMetaRef.current = null;
 
+      // Plan inicial del turno. Sólo dos pasos son ciertos ANTES de que el
+      // backend hable: leer la pregunta y responder. Todo lo del medio lo
+      // agregan los eventos del stream, que es lo que lo hace contextual.
+      aplicarPasos([
+        {
+          id: 'entender',
+          kind: 'entender',
+          labelKey: 'beta.tasks.plan.understand',
+          detail: trimmed,
+          status: 'running',
+          startedAt: new Date(),
+        },
+        { id: 'cartera', kind: 'cartera', labelKey: 'beta.tasks.plan.snapshot', status: 'pending' },
+        { id: 'redactar', kind: 'redactar', labelKey: 'beta.tasks.plan.write', status: 'pending' },
+      ]);
+
       // No agent configured — fail visibly
       if (!agencyId || !isAgentConfigured()) {
         finalizeError(
@@ -1051,7 +1264,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             finalizeError(
               assistantId,
               conversationId,
-              'No pude conectarme con el asistente en este momento. Intentá de nuevo en un momento.'
+              'No pude conectarme con el asistente en este momento. Intenta de nuevo en un momento.'
             );
           }
         }
@@ -1067,8 +1280,87 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       runStreamTurn,
       finishTurn,
       finalizeError,
+      aplicarPasos,
     ]
   );
+
+  // ========================================================================
+  // Message actions
+  // ========================================================================
+
+  /**
+   * Pedido de regeneración en vuelo.
+   *
+   * No se puede recortar la conversación y llamar a `sendMessage` en el mismo
+   * tick: `sendMessage` está memoizado sobre `conversations` y arma el
+   * historial desde ese valor, así que la versión que tengo en la mano todavía
+   * incluye los mensajes que acabo de quitar — y el modelo recibiría de
+   * historial la respuesta que estamos rehaciendo. El efecto de abajo dispara
+   * cuando el estado recortado ya aterrizó.
+   */
+  const regeneracionPendienteRef = useRef<string | null>(null);
+
+  /**
+   * Rehace la última respuesta del asistente.
+   *
+   * Recorta desde el mensaje del usuario que la originó (inclusive) y lo vuelve
+   * a enviar: así el turno se rehace entero por el mismo camino que cualquier
+   * otro (SSE con respaldo POST), sin duplicar la lógica de red.
+   */
+  const regenerateResponse = useCallback(
+    (assistantMessageId: string) => {
+      if (isThinking || isStreaming || isAgentsRunning || !activeConversationId) return;
+      const conv = conversations.find((c) => c.id === activeConversationId);
+      if (!conv) return;
+
+      const idx = conv.messages.findIndex((m) => m.id === assistantMessageId);
+      if (idx < 1) return;
+
+      // El mensaje de usuario más cercano hacia atrás. Se busca en vez de
+      // asumir `idx - 1` porque entre medio puede haber bloques de sistema.
+      let u = idx - 1;
+      while (u >= 0 && conv.messages[u].role !== 'user') u -= 1;
+      if (u < 0) return;
+
+      const texto = conv.messages[u].content;
+      if (!texto.trim()) return;
+
+      const conversationId = activeConversationId;
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === conversationId
+            ? { ...c, messages: c.messages.slice(0, u), updatedAt: new Date() }
+            : c
+        )
+      );
+      regeneracionPendienteRef.current = texto;
+    },
+    [isThinking, isStreaming, isAgentsRunning, activeConversationId, conversations]
+  );
+
+  /** Marca el pulgar. Volver a tocar el mismo pulgar lo quita. */
+  const rateMessage = useCallback(
+    (messageId: string, rating: 'up' | 'down') => {
+      setConversations((prev) =>
+        prev.map((c) => ({
+          ...c,
+          messages: c.messages.map((m) =>
+            m.id === messageId ? { ...m, feedback: m.feedback === rating ? null : rating } : m
+          ),
+        }))
+      );
+    },
+    []
+  );
+
+  useEffect(() => {
+    const texto = regeneracionPendienteRef.current;
+    if (texto === null) return;
+    regeneracionPendienteRef.current = null;
+    sendMessage(texto);
+    // Depende de `conversations` a propósito: es el cambio de ese estado (el
+    // recorte) lo que habilita este envío con el historial ya correcto.
+  }, [conversations, sendMessage]);
 
   // ========================================================================
   // Conversation CRUD
@@ -1144,6 +1436,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
 
       // Find the option label for the user response message
       let optionLabel = '';
+      let aprobacion: string | undefined;
       setConversations((prev) =>
         prev.map((c) => {
           if (c.id !== activeConversationId) return c;
@@ -1153,6 +1446,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               if (m.id !== messageId || !m.decision) return m;
               const option = m.decision.options.find((o) => o.id === optionId);
               if (option) optionLabel = option.label;
+              aprobacion = m.decision.approvalId;
               return {
                 ...m,
                 decision: {
@@ -1167,6 +1461,21 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         })
       );
 
+      // Una aprobación se REGISTRA en el backend (señal de aprendizaje) y no
+      // abre otro turno: la acción no se ejecuta acá, se ejecuta en su frente,
+      // así que pedirle al modelo que opine de nuevo sólo gastaría un turno.
+      if (aprobacion && agencyId) {
+        void resolveChatApproval({
+          agencyId,
+          approvalId: aprobacion,
+          outcome: optionId === 'cancel' ? 'rejected' : 'approved',
+        }).catch(() => {
+          // Fail-soft: la tarjeta ya quedó marcada; no se rompe la conversación.
+          console.warn('[useBetaChat] no se pudo registrar la decisión de aprobación');
+        });
+        return;
+      }
+
       // Send a user message confirming the selection, then trigger a mock response
       if (optionLabel) {
         // Small delay so the decision card updates visually first
@@ -1175,7 +1484,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         }, 300);
       }
     },
-    [activeConversationId, sendMessage]
+    [activeConversationId, sendMessage, agencyId]
   );
 
   // ========================================================================
@@ -1395,6 +1704,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     // Agent execution
     activeAgentBlock,
     isAgentsRunning,
+    turnSteps,
     retryAgent,
 
     // Decision handling
@@ -1404,6 +1714,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
 
     // Agent activity aggregation
     allAgentActivities,
+
+    // Message actions
+    regenerateResponse,
+    rateMessage,
 
     // Conversation management
     conversations,

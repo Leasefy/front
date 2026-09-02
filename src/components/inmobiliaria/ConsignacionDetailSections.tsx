@@ -259,8 +259,22 @@ export function AgenteSection({ agente, commissionPercent, isSaleListing, onReas
   if (!agente) {
     return (
       <SectionCard title={t('inmobiliaria.consignaciones.detail.agentTitle')} icon={<Briefcase className="w-4 h-4" />}>
-        <div className="text-center py-4 text-fg-muted dark:text-fg-subtle">
-          {t('inmobiliaria.consignaciones.detail.noAgentAssigned')}
+        {/* El vacío tiene salida. Antes era sólo la frase: quedaba claro que no
+            había agente y no había forma de poner uno. */}
+        <div className="py-6 text-center">
+          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            {t('inmobiliaria.consignaciones.detail.noAgentAssigned')}
+          </p>
+          {onReassign && (
+            <>
+              <p className="mx-auto mt-1 max-w-xs text-xs text-fg-subtle">
+                Quien quede a cargo atiende las visitas y responde a los candidatos.
+              </p>
+              <Button hideArrow className="mt-4" onClick={onReassign}>
+                Asignar agente
+              </Button>
+            </>
+          )}
         </div>
       </SectionCard>
     );

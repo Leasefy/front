@@ -92,22 +92,25 @@ describe('SeleccionarRolPage — invitation guard', () => {
     expect(container.textContent).toContain('Inquilino')
   })
 
+  // Desde el 2026-08-31 el Piloto automático es el inicio de TODO miembro
+  // (`AGENCY_HOME_ROUTE` en role-routes.ts): este test quedó sin actualizar
+  // en `feature/cambios-nico` y se alineó al mezclar esa rama.
   it('redirects an ACTIVE agency member to the agency panel (never the picker)', async () => {
     authState.hasActiveAgencyMembership = true
 
     await render()
 
-    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria')
+    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/piloto')
     expect(container.textContent).not.toContain('Propietario')
   })
 
-  it('redirects an ACTIVE agency member to their per-sub-role landing route (CONTADOR → cobros)', async () => {
+  it('un CONTADOR también aterriza en el Piloto: ya no hay ruta por sub-rol', async () => {
     authState.hasActiveAgencyMembership = true
     authState.agencyRole = 'CONTADOR'
 
     await render()
 
-    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/cobros')
+    expect(replaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/piloto')
     expect(container.textContent).not.toContain('Propietario')
   })
 

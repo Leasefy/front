@@ -1,25 +1,27 @@
 import type { AgencyMemberRole, UserRole } from './types'
 import type { ActiveContext } from './active-context'
 
+/** El Piloto automático es la entrada al panel para TODO miembro. */
+export const AGENCY_HOME_ROUTE = '/panel/inmobiliaria/piloto'
+
 /**
- * Per-agency-sub-role landing route for an agency member after login. Each role
- * lands on a destination it CAN access by its default permissions (Inicio is
- * ungated for all members, so an unknown/null sub-role falls back safely there).
- * ADMIN → Inicio (full access); AGENTE → pipeline; CONTADOR → cobros;
- * VIEWER → dashboard.
+ * Landing route for an agency member after login.
+ *
+ * ── Por qué ya no depende del sub-rol (Nico, 2026-08-31) ──────────────────
+ * Antes cada sub-rol caía en una pantalla distinta (ADMIN → la raíz del panel,
+ * que es el chat; AGENTE → pipeline; CONTADOR → cobros; VIEWER → dashboard).
+ * La decisión de producto es que «piloto automático siempre sea el inicio»:
+ * es la torre de control transversal y la primera fila del sidebar, así que
+ * abrir el panel en otra parte contradecía la navegación.
+ *
+ * Mandar ahí a los cuatro sub-roles es seguro porque el Piloto NO tiene gate
+ * de módulo (`module: null` en el sidebar, igual que el hub /ai): es visible
+ * para todo miembro activo, y cada widget se defiende solo — la bandeja
+ * esconde sus botones de acción cuando el rol es VIEWER (el micro le
+ * respondería 403) y cada endpoint es fail-soft por separado.
  */
-export function getAgencyHomeRoute(agencyRole: AgencyMemberRole | null | undefined): string {
-  switch (agencyRole) {
-    case 'AGENTE':
-      return '/panel/inmobiliaria/pipeline'
-    case 'CONTADOR':
-      return '/panel/inmobiliaria/cobros'
-    case 'VIEWER':
-      return '/panel/inmobiliaria/dashboard'
-    case 'ADMIN':
-    default:
-      return '/panel/inmobiliaria'
-  }
+export function getAgencyHomeRoute(_agencyRole?: AgencyMemberRole | null): string {
+  return AGENCY_HOME_ROUTE
 }
 
 /**
@@ -29,9 +31,9 @@ export function getAgencyHomeRoute(agencyRole: AgencyMemberRole | null | undefin
  * and LandingAuthCta's "Ir al panel" CTA — do not re-implement this switch
  * anywhere else.
  *
- * For agency users, pass `agencyRole` to land on the per-sub-role destination.
- * Omitting it (backward-compat) routes agency users to the safe default
- * '/panel/inmobiliaria' (Inicio), which every member can access.
+ * For agency users this is `AGENCY_HOME_ROUTE` (el Piloto automático), que
+ * todo miembro puede abrir — el `agencyRole` ya no cambia el destino, pero se
+ * mantiene en la firma porque lo pasan varios llamadores.
  */
 export function getRoleHomeRoute(
   role: UserRole | string | undefined,

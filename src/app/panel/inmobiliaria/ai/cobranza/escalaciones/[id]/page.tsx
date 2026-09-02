@@ -18,6 +18,7 @@ import { ArrowLeft, Phone, FileText, User } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
+import { escalationReasonLabel } from '@/lib/cobranza/call-vocab'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useEscalationDetail } from '@/lib/hooks/cobranza/use-escalation-detail'
@@ -123,7 +124,7 @@ function EscalationDetailContent() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-h2 font-heading text-foreground">
-            {data.debtor_id_masked ?? data.debtor_id}
+            {data.debtor_name ?? data.debtor_id_masked ?? data.debtor_id}
           </h1>
           <div className="mt-2 flex items-center gap-2">
             <Badge variant="secondary">
@@ -167,7 +168,7 @@ function EscalationDetailContent() {
           {t('inmobiliaria.ai.cobranza.escalaciones.detail.reason')}
         </MonoLabel>
         <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-          {data.reason}
+          {escalationReasonLabel(data.reason) ?? data.reason}
         </p>
       </section>
 

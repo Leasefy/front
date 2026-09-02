@@ -130,6 +130,15 @@ describe('queOfrece', () => {
       'de los intereses',
     )
   })
+
+  it('un porcentaje «sobre nada» (kind: none) no se enuncia como descuento', () => {
+    // Fila escrita a medias: 40% pero «sobre qué» dice que no hay descuento.
+    // Antes mentía «40% sobre intereses»; ahora la mitad que falta no se dice.
+    const frase = queOfrece(acuerdo({ discountPct: 40, discountKind: 'none' }))
+    expect(frase).not.toContain('40%')
+    expect(frase).not.toContain('descuento')
+    expect(frase).toBe('en hasta 3 cuotas, con 30% inicial')
+  })
 })
 
 describe('resumenAcuerdoGeneral', () => {

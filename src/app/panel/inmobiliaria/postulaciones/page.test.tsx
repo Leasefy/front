@@ -42,6 +42,15 @@ vi.mock('@/lib/api/applications.service', () => ({
   },
 }))
 
+// El cajón tiene su propia suite (pide evaluación, créditos, documentos…). Acá
+// sólo interesa que ESTA pantalla lo monte con la persona correcta, sin navegar.
+vi.mock('@/components/inmobiliaria/CandidateDrawer', () => ({
+  CandidateDrawer: ({ candidate }: { candidate: { tenantName?: string } | null }) =>
+    candidate
+      ? React.createElement('div', { 'data-testid': 'cajon-candidato' }, candidate.tenantName)
+      : null,
+}))
+
 // Auto-refresh is interval/focus-driven — irrelevant in unit tests.
 vi.mock('@/lib/hooks/use-auto-refresh', () => ({
   useAutoRefresh: () => undefined,
@@ -279,10 +288,11 @@ describe('PostulacionesPage', () => {
     expect(activeTile?.textContent).toContain('Pide info')
   })
 
-  it('al tocar una fila abre a ESA persona, no la lista de su propiedad', async () => {
-    // El encabezado promete "haz clic en una para revisarla y decidir". Sin
-    // `?candidato=` el clic dejaba en la lista de candidatos del inmueble y
-    // había que volver a buscar a la persona — parecía que no pasaba nada.
+  it('al tocar una fila abre el detalle ACÁ, sin cambiar de sección', async () => {
+    // Antes empujaba a `/inmuebles/<id>/candidatos?candidato=<id>`: el sidebar
+    // saltaba a «Inmuebles · portafolio», se cargaba la lista de candidatos de
+    // esa propiedad y encima de todo eso se abría el cajón. Tres pantallas para
+    // ver a una persona, y el «atrás» ya no volvía a Postulaciones.
     getAllCandidatesMock.mockResolvedValue(RESPONSE)
 
     await renderPage()
@@ -292,9 +302,9 @@ describe('PostulacionesPage', () => {
       firstRow.click()
     })
 
-    expect(pushMock).toHaveBeenCalledWith(
-      '/panel/inmobiliaria/inmuebles/prop-1/candidatos?candidato=app-1',
-    )
+    expect(pushMock).not.toHaveBeenCalled()
+    const cajon = container.querySelector('[data-testid="cajon-candidato"]')
+    expect(cajon?.textContent).toBe(RESPONSE.candidates[0].tenantName)
   })
 
   it('la fila se puede abrir con el teclado', async () => {
@@ -316,9 +326,7 @@ describe('PostulacionesPage', () => {
       )
     })
 
-    expect(pushMock).toHaveBeenCalledWith(
-      '/panel/inmobiliaria/inmuebles/prop-1/candidatos?candidato=app-1',
-    )
+    expect(container.querySelector('[data-testid="cajon-candidato"]')).toBeTruthy()
   })
 
   it('renders the empty state when there are no applications', async () => {

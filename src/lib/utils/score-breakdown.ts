@@ -17,7 +17,10 @@ import type { ScoreBreakdown, ScoreBreakdownFactor } from '@/lib/api/application
 /** Sub-components of `credito` — never rendered in the main dimensions grid. */
 export const CREDIT_SUBCOMPONENT_KEYS = ['bureau', 'asegurabilidad'] as const;
 
-/** Display order for the five real dimensions; unknown keys go after. */
+/**
+ * Desempate estable cuando dos dimensiones pesan lo mismo; las desconocidas
+ * van al final. El orden principal es por PESO — ver `partitionScoreBreakdown`.
+ */
 const MAIN_DIMENSION_ORDER = [
   'credito',
   'identidad',
@@ -43,12 +46,29 @@ export interface PartitionedScoreBreakdown {
 export function partitionScoreBreakdown(breakdown: ScoreBreakdown): PartitionedScoreBreakdown {
   const subKeys = CREDIT_SUBCOMPONENT_KEYS as readonly string[];
 
+  /*
+   * De mayor a menor PESO.
+   *
+   * El orden fijo anterior abría con `credito`, que pesa 30 pero suele ser el
+   * puntaje más bajo —y cuando el buró no responde baja a 13—, así que la
+   * lista empezaba con lo peor y daba una impresión más dura que el total. Por
+   * peso, arriba queda lo que de verdad mueve el score: con solvencia en 40 y
+   * en 100, un crédito flojo pesa lo que pesa y se lee en su lugar.
+   *
+   * A peso igual manda el orden conocido, y las dimensiones nuevas van al
+   * final: sin desempate estable, dos llaves con el mismo peso se cruzarían
+   * entre renders.
+   */
   const main = Object.entries(breakdown)
     .filter(([key]) => !subKeys.includes(key))
-    .sort(([a], [b]) => {
+    .sort(([a, fa], [b, fb]) => {
+      if (fb.weight !== fa.weight) return fb.weight - fa.weight;
       const ia = MAIN_DIMENSION_ORDER.indexOf(a);
       const ib = MAIN_DIMENSION_ORDER.indexOf(b);
-      return (ia === -1 ? MAIN_DIMENSION_ORDER.length : ia) - (ib === -1 ? MAIN_DIMENSION_ORDER.length : ib);
+      return (
+        (ia === -1 ? MAIN_DIMENSION_ORDER.length : ia) -
+        (ib === -1 ? MAIN_DIMENSION_ORDER.length : ib)
+      );
     });
 
   const bureau = breakdown.bureau ?? null;

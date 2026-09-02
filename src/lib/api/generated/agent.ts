@@ -2512,6 +2512,137 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/arco/gate-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ARCO two-key counsel-readiness gate state */
+        get: operations["getAgencyArcoGateStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/arco/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ARCO requests, grouped by type (acceso/rectificacion/cancelacion/oposicion) */
+        get: operations["getAgencyArcoRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/arco/requests/{requestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ARCO request detail (timeline + resolution payload) */
+        get: operations["getAgencyArcoRequestDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/arco/requests/{requestId}/triage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transition an ARCO request to in_progress (admin triage)
+         * @description Body: `{ notes?: string }` (max 1000 chars, optional). Validated manually (not via a static OpenAPI body schema) so the 400 validation-error envelope stays byte-identical to the pre-migration contract. Requires arco:resolve permission.
+         */
+        post: operations["postAgencyArcoRequestTriage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/arco/requests/{requestId}/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Grant a one-time SLA extension (Ley 1581 Arts. 14/15) and notify the requester
+         * @description Body: `{ days: number (1-8), reason: string (min 20 chars) }`. Validated manually (see triage endpoint note). Requires arco:resolve permission. Notifies the requester BEFORE persisting — if the email fails, nothing is saved (502).
+         */
+        post: operations["postAgencyArcoRequestExtend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/arco/requests/{requestId}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve an ARCO request (blocked by the two-key counsel-readiness gate)
+         * @description Body shape depends on the request TYPE (looked up server-side, not a client input) — `acceso`: `{ presigned_url: string (url), expires_at: string (datetime) }`; `rectificacion`: `{ affected_rows: number, fields_modified: string[] (min 1) }`; `cancelacion`/`oposicion`: any payload or empty body. Because the schema is data-dependent it cannot be expressed as a single static OpenAPI request body — validated manually inside the handler exactly as before this migration. Requires arco:resolve permission and the COTIZADOR_ARCO_ENABLED + compliance ACK two-key gate.
+         */
+        post: operations["postAgencyArcoRequestResolve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/arco/requests/{requestId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject an ARCO request
+         * @description Body: `{ reason?: string }` (max 1000 chars, optional). Validated manually (see triage endpoint note). Requires arco:resolve permission.
+         */
+        post: operations["postAgencyArcoRequestReject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cotizador/overview": {
         parameters: {
             query?: never;
@@ -3043,30 +3174,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/agency/{agencyId}/pre-scoring/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Config de pre-scoring de afianzamiento
-         * @description Ventana de espera de autorización + TTL de reutilización del estudio Tier-2. Sin fila guardada, devuelve los defaults 48h/48h. Requiere cotizador:view.
-         */
-        get: operations["getPreScoringConfig"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Editar la config de pre-scoring de afianzamiento (OWNER/ADMIN)
-         * @description Actualización parcial: lo que no se manda, no se toca. Requiere cotizador:configure.
-         */
-        patch: operations["updatePreScoringConfig"];
-        trace?: never;
-    };
     "/api/agency/{agencyId}/cartera/overview": {
         parameters: {
             query?: never;
@@ -3182,7 +3289,11 @@ export interface paths {
          */
         get: operations["getCobranzaDebtorMemos"];
         put?: never;
-        post?: never;
+        /**
+         * Create a manual debtor memo (nota del equipo)
+         * @description Manual operator note on a debtor — persisted as a DebtorMemo without a Call row. Requires cobranza:intervene.
+         */
+        post: operations["createCobranzaDebtorMemo"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3593,7 +3704,7 @@ export interface paths {
         };
         /**
          * Compliance audit log CSV export (PII-masked, server-rendered, BOM-prefixed)
-         * @description Returns a text/csv document with the audit_log rows for the calling agency, optionally narrowed by ISO datetime from/to and an action substring (kind). Cédulas, phones, and emails inside entity_id and payload JSON are server-side masked using the canonical `12•••67` format (first 2 + last 2 retained). UTF-8 BOM prefix so Excel opens the file in the correct encoding. cobranza:view permission required.
+         * @description Returns a text/csv document with the audit_log rows for the calling agency, optionally narrowed by from/to (either `YYYY-MM-DD` — a UTC calendar day, `to` inclusive — or a full ISO 8601 datetime) and an action substring (kind). Cédulas, phones, and emails inside entity_id and payload JSON are server-side masked using the canonical `12•••67` format (first 2 + last 2 retained). UTF-8 BOM prefix so Excel opens the file in the correct encoding. cobranza:view permission required.
          */
         get: operations["getAgencyCobranzaAuditLogCsv"];
         put?: never;
@@ -4532,6 +4643,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/ai-hub/agentes/{agente}/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** AI Hub per-agent overview (Sala) — KPIs, pipeline, activity feed */
+        get: operations["getAgencyAiHubAgentOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/work-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** AI Hub work-items queue for one agent (human-actionable backlog) */
+        get: operations["getAgencyAiHubWorkItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/work-items/{agente}/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** AI Hub work-item detail — contexto, traza and available actions for one case */
+        get: operations["getAgencyAiHubWorkItemDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/ai-hub/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** AI Hub per-agency metrics (JWT-gated sibling of the S2S /metrics endpoint) */
+        get: operations["getAgencyAiHubMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cartera/payment-plans/offer": {
         parameters: {
             query?: never;
@@ -4870,26 +5049,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/agency/{agencyId}/cartera/insurance-claims/{claimId}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Operator approve a siniestro filing — fan out PDF packet to selected insurers
-         * @description Triple-gated approval (Zod + Prisma constraint + cobranza:approve). Writes audit_log + automated_decisions(reviewable=true) inside prisma.$transaction BEFORE per-insurer Resend dispatch. Partial Resend failure is tolerated (sent=false in insurerResults).
-         */
-        post: operations["approveSiniestroInsuranceClaim"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/agency/{agencyId}/cartera/insurance-claims/{claimId}/packet.pdf": {
         parameters: {
             query?: never;
@@ -4941,26 +5100,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/agency/{agencyId}/cartera/legal-artifacts/{artifactId}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Operator approve a pre-judicial letter — uploads PDF + 7-day signed URL
-         * @description Triple-gated. audit_log + putAndSign live inside prisma.$transaction so S3 failure rolls back the audit row (T-32-04-06). NO email or WhatsApp dispatch — legal blocker. Returns presigned 7-day GET URL.
-         */
-        post: operations["approvePreJudicialArtifact"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/agency/{agencyId}/cartera/legal-artifacts/{artifactId}/pdf": {
         parameters: {
             query?: never;
@@ -4978,6 +5117,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cartera/insurance-claims/{claimId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Operator approve a siniestro filing — fan out PDF packet to selected insurers
+         * @description Triple-gated approval (Zod + Prisma constraint + cobranza:approve). Writes audit_log + automated_decisions(reviewable=true) inside prisma.$transaction BEFORE per-insurer Resend dispatch. Partial Resend failure is tolerated (sent=false in insurerResults).
+         */
+        post: operations["approveSiniestroInsuranceClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cartera/insurance-claims/{claimId}/reject": {
         parameters: {
             query?: never;
@@ -4989,6 +5148,26 @@ export interface paths {
         put?: never;
         /** Operator reject a siniestro filing — persists canned reason slug */
         post: operations["rejectSiniestroInsuranceClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cartera/legal-artifacts/{artifactId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Operator approve a pre-judicial letter — uploads PDF + 7-day signed URL
+         * @description Triple-gated. audit_log + putAndSign live inside prisma.$transaction so S3 failure rolls back the audit row (T-32-04-06). NO email or WhatsApp dispatch — legal blocker. Returns presigned 7-day GET URL.
+         */
+        post: operations["approvePreJudicialArtifact"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6957,6 +7136,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/mantenimiento/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fixi (mantenimiento) — KPIs operacionales del panel de triage
+         * @description Devuelve { kpis, generatedAt } — mirror exacto de MantenimientoOverviewEnvelope del front. Ships flag-OFF (MANTENIMIENTO_ENABLED).
+         */
+        get: operations["getAgencyMantenimientoOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/mantenimiento/inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fixi (mantenimiento) — bandeja priorizada de triage
+         * @description Devuelve la lista completa de tickets como tarjetas (mirror de MaintenanceTicketCard[] del front). El front aplica filtros/orden client-side. Ships flag-OFF (MANTENIMIENTO_ENABLED).
+         */
+        get: operations["getAgencyMantenimientoInbox"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/mantenimiento/tickets/{ticketId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fixi (mantenimiento) — detalle completo de un ticket
+         * @description Devuelve el ticket completo (mirror de MaintenanceTicketDetail del front): clasificación, proveedor recomendado, evidencia visual, gate de aprobación, eventos. Ships flag-OFF (MANTENIMIENTO_ENABLED).
+         */
+        get: operations["getAgencyMantenimientoTicket"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/{agencyId}/propietario/perfil": {
         parameters: {
             query?: never;
@@ -7760,6 +7999,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cotizador/consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Check whether an applicant has a GRANTED Habeas Data consent on file. The gate the Tier-2 evaluation flow (POST /api/cotizador/evaluate) enforces before any bureau/afianzadora call. */
+        get: operations["cotizadorConsentCheck"];
+        put?: never;
+        /** Record (or refresh) an applicant's Habeas Data authorization. A SINGLE consent covers every carrier in the registry (aseguradoras/README.md §11) — upsert keyed by (tenant_id, cedula_hash, authorization_version). */
+        post: operations["cotizadorConsentCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cotizador/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tier-2 evaluation status + consolidated result, looked up by evaluation_id or cedula. */
+        get: operations["cotizadorEvaluateStatus"];
+        put?: never;
+        /** Tier-2 applicant evaluation ("asegurabilidad de verdad"): verifies Habeas Data consent, persists a `started` evaluation row, and fires the durable Inngest workflow (Fianly study authorization → poll → execute + consolidation, all async). Poll GET /api/cotizador/evaluate for the result. */
+        post: operations["cotizadorEvaluateCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/cotizador/prescoring-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-tenant TTL config for "pre-scoring de afianzamiento" (authorizationWaitHours / resultReuseTtlHours). Consumed by the BACK admin module's backoffice proxy — never called directly by the front (which hits the back's /api/v1/admin/cotizador/prescoring-config). */
+        get: operations["cotizadorAdminPrescoringConfigGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Partial update of the tenant's pre-scoring TTL config. Merges over the current config — patching only one field leaves the other untouched. At least one field is required. */
+        patch: operations["cotizadorAdminPrescoringConfigUpdate"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -8441,6 +8734,127 @@ export interface components {
         SearchError: {
             error: string;
         };
+        ArcoGateStatus: {
+            blocked: boolean;
+        };
+        ArcoRequestsGrouped: {
+            acceso: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                agencyId: string;
+                type: string;
+                status: string;
+                requesterName: string | null;
+                requesterCedulaHash: string | null;
+                submittedAt: string;
+                auditLogIds: string[];
+                slaExtensionDays: number | null;
+                sla_remaining_days: number;
+                sla_business_days: number;
+            }[];
+            rectificacion: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                agencyId: string;
+                type: string;
+                status: string;
+                requesterName: string | null;
+                requesterCedulaHash: string | null;
+                submittedAt: string;
+                auditLogIds: string[];
+                slaExtensionDays: number | null;
+                sla_remaining_days: number;
+                sla_business_days: number;
+            }[];
+            cancelacion: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                agencyId: string;
+                type: string;
+                status: string;
+                requesterName: string | null;
+                requesterCedulaHash: string | null;
+                submittedAt: string;
+                auditLogIds: string[];
+                slaExtensionDays: number | null;
+                sla_remaining_days: number;
+                sla_business_days: number;
+            }[];
+            oposicion: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                agencyId: string;
+                type: string;
+                status: string;
+                requesterName: string | null;
+                requesterCedulaHash: string | null;
+                submittedAt: string;
+                auditLogIds: string[];
+                slaExtensionDays: number | null;
+                sla_remaining_days: number;
+                sla_business_days: number;
+            }[];
+        };
+        ArcoRequestDetail: {
+            /** Format: uuid */
+            id: string;
+            type: string;
+            status: string;
+            requesterName: string | null;
+            requesterEmail: string;
+            requesterCedulaHash: string | null;
+            subjectDescription: string | null;
+            sla_remaining_days: number;
+            sla_business_days: number;
+            slaExtensionDays: number | null;
+            slaExtensionReason: string | null;
+            slaExtendedAt: string | null;
+            resolutionPayload?: unknown;
+            auditLogIds: string[];
+            timeline: {
+                event: string;
+                at: string;
+            }[];
+        };
+        ArcoRequestFullRow: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            agencyId: string;
+            type: string;
+            status: string;
+            requesterEmail: string;
+            requesterCedulaHash: string | null;
+            requesterName: string | null;
+            subjectDescription: string | null;
+            submittedAt: string;
+            emailVerifiedAt: string | null;
+            triagedAt: string | null;
+            resolvedAt: string | null;
+            resolutionPayload?: unknown;
+            auditLogIds: string[];
+            emailVerificationToken: string | null;
+            slaExtensionDays: number | null;
+            slaExtensionReason: string | null;
+            slaExtendedAt: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        ArcoExtendResponse: components["schemas"]["ArcoRequestFullRow"] & {
+            sla_remaining_days: number;
+            sla_business_days: number;
+            answer_by: string;
+        };
+        ArcoTwoKeyGateBlocked: {
+            /** @enum {boolean} */
+            pending_counsel_review: true;
+            /** @enum {string} */
+            contact: "compliance@leasefy.co";
+        };
         CotizadorOverviewKpis: {
             quotesHoy: number;
             approvalRate: number;
@@ -8752,14 +9166,6 @@ export interface components {
         CobranzaCotizadorPdfError: {
             error: string;
         };
-        PreScoringConfig: {
-            authorizationWaitHours: number;
-            resultReuseTtlHours: number;
-        };
-        PreScoringConfigPatch: {
-            authorizationWaitHours?: number;
-            resultReuseTtlHours?: number;
-        };
         CarteraOverviewKpis: {
             deudoresActivos: number;
             pagadoHoyCop: number;
@@ -8950,6 +9356,21 @@ export interface components {
         CobranzaDebtorMemosError: {
             error: string;
         };
+        CobranzaDebtorMemoCreateBody: {
+            /** @example Habló al fijo de la oficina: promete pagar el viernes. */
+            body: string;
+        };
+        CobranzaDebtorCompromisoPaymentPromise: {
+            id: string;
+            status: string;
+            amount_cop: number;
+            due_date: string;
+            channel: string | null;
+            conditions: string | null;
+            call_id: string | null;
+            created_at: string;
+            resolved_at: string | null;
+        };
         CobranzaDebtorCompromisoPaymentPlan: {
             id: string;
             status: string;
@@ -8983,6 +9404,7 @@ export interface components {
             physical_send_method: string | null;
         };
         CobranzaDebtorCompromisosResponse: {
+            paymentPromises: components["schemas"]["CobranzaDebtorCompromisoPaymentPromise"][];
             paymentPlans: components["schemas"]["CobranzaDebtorCompromisoPaymentPlan"][];
             insuranceClaims: components["schemas"]["CobranzaDebtorCompromisoInsuranceClaim"][];
             legalArtifacts: components["schemas"]["CobranzaDebtorCompromisoLegalArtifact"][];
@@ -9011,10 +9433,10 @@ export interface components {
             error: string;
         };
         CallQaDimensions: {
-            rapport: number | null;
-            compliance: number | null;
-            resolution: number | null;
-            sentiment: number | null;
+            empatia: number | null;
+            claridad: number | null;
+            adherencia: number | null;
+            objeciones: number | null;
         };
         CallComplianceEvent: {
             id: string;
@@ -9038,7 +9460,6 @@ export interface components {
             unresolvedObjection: string | null;
         } | null;
         CallStateTraceRow: {
-            /** Format: uuid */
             id: string;
             fromStage: string | null;
             toStage: string;
@@ -9070,6 +9491,10 @@ export interface components {
             endedAt: string | null;
             durationSeconds: number | null;
             qaDimensions: components["schemas"]["CallQaDimensions"];
+            qaScore: number | null;
+            qaCompliance: boolean | null;
+            qaQuality: number | null;
+            qaViolations: string[];
             complianceEvents: components["schemas"]["CallComplianceEvent"][];
             summary: components["schemas"]["CobranzaCallSummaryDetail"];
             hasRecording: boolean;
@@ -9207,6 +9632,7 @@ export interface components {
         CobranzaEscalationCard: {
             id: string;
             debtor_id: string;
+            debtor_name: string | null;
             call_id: string | null;
             urgency: string;
             status: string;
@@ -9232,6 +9658,7 @@ export interface components {
             reason: string;
             state_trace_json?: unknown;
             debtor_id: string;
+            debtor_name: string | null;
             linked_call_id: string | null;
             assignee_user_id: string | null;
             assignee_email: string | null;
@@ -10121,6 +10548,8 @@ export interface components {
             altasAlEmbudo: number;
             /** @description Filas con monto pero sin fecha de vencimiento legible. Se importó el deudor, pero no entra a cobranza: sin vencimiento no hay días de mora, y una fecha inventada dispararía llamadas y una carta con cifras falsas. */
             sinVencimiento: number;
+            /** @description Índices de filas cuyo teléfono ya pertenece a OTRO deudor del tenant con una cédula distinta. Se importaron como deudor nuevo a propósito: dos codeudores comparten teléfono, y fusionarlos dejaría a uno debiendo los dos cánones. Revisá si son la misma persona; para fusionarlas está scripts/normalizar-telefonos-deudores.ts. */
+            conflictosTelefono: number[];
             vencimiento: components["schemas"]["CarteraImportVencimiento"];
             generatedAt: string;
         };
@@ -10289,6 +10718,129 @@ export interface components {
             /** @enum {string} */
             decision: "certified" | "rejected";
         };
+        AgentOverviewResponse: {
+            /** @enum {string} */
+            agente: "cobranza" | "cotizador" | "conciliacion" | "pagos" | "estudio" | "matching" | "avaluos";
+            kpis: {
+                id: string;
+                label: string;
+                value: number;
+                /** @enum {string} */
+                format: "number" | "percent" | "cop";
+            }[];
+            pipeline: {
+                /** @enum {string} */
+                estado: "detectado" | "sugerido" | "en_revision" | "aprobado" | "ejecutando" | "resuelto" | "rechazado" | "fallo";
+                count: number;
+            }[];
+            feed: {
+                id: string;
+                titulo: string;
+                detalle: string;
+                /** @enum {string} */
+                actorType: "user" | "agent" | "system";
+                occurredAt: string;
+            }[];
+            generatedAt: string;
+        };
+        WorkItem: {
+            id: string;
+            /** @enum {string} */
+            agente: "cobranza" | "cotizador" | "conciliacion" | "pagos" | "estudio" | "matching" | "avaluos";
+            tipo: string;
+            /** @enum {string} */
+            estado: "detectado" | "sugerido" | "en_revision" | "aprobado" | "ejecutando" | "resuelto" | "rechazado" | "fallo";
+            flags: ("necesita_humano" | "en_espera" | "t323")[];
+            /** @enum {string} */
+            ownerRole: "cobrador" | "analista_riesgo" | "contador" | "comercial";
+            /** @enum {string} */
+            severidad: "baja" | "media" | "alta" | "critica";
+            titulo: string;
+            accionSugerida: {
+                label: string;
+                confianza?: number;
+                razon: string;
+                evidencia?: {
+                    label: string;
+                    value: string;
+                }[];
+            };
+            actions: {
+                id: string;
+                label: string;
+                /** @enum {string} */
+                kind: "primary" | "danger" | "neutral";
+                /** @enum {string} */
+                method: "POST";
+                path: string;
+                bodyHint?: {
+                    [key: string]: "string" | "number" | "enum" | "empty";
+                };
+                requiresReason?: boolean;
+                perm?: string;
+            }[];
+            subject: {
+                kind: string;
+                id: string;
+                masked?: string;
+            };
+            amountCop?: number;
+            slaAt?: string;
+            createdAt: string;
+            decidedBy?: string | null;
+            decidedAt?: string | null;
+            source: {
+                endpoint: string;
+                entity: string;
+            };
+        };
+        AgentWorkItemsResponse: {
+            items: components["schemas"]["WorkItem"][];
+            total: number;
+            page: number;
+            pageSize: number;
+        };
+        WorkItemDetailResponse: {
+            item: components["schemas"]["WorkItem"];
+            contexto: {
+                title: string;
+                rows: {
+                    label: string;
+                    value: string;
+                }[];
+            }[];
+            traza: {
+                id: string;
+                action: string;
+                /** @enum {string} */
+                actorType: "user" | "agent" | "system";
+                actorId: string;
+                occurredAt: string;
+                details: {
+                    [key: string]: unknown;
+                };
+            }[];
+            generatedAt: string;
+        };
+        AiHubMetricsResponse: {
+            scoring: {
+                evaluationsThisMonth: number | null;
+                avgTimeMin: string | null;
+                escalationRate: string | null;
+                accuracyRate: string | null;
+            };
+            matching: {
+                suggestionsSent: number | null;
+                conversionRate: string | null;
+                candidatesRedirected: number | null;
+                avgCompatibility: string | null;
+            };
+            summary: {
+                actionsThisWeek: number | null;
+                hoursSavedThisMonth: string | null;
+            };
+            generatedAt: string;
+        };
         /** @enum {string} */
         CarteraStage: "S0" | "S1" | "S2" | "S3" | "S4" | "S5" | "SX";
         CarteraPaymentPlanInstallment: {
@@ -10416,17 +10968,6 @@ export interface components {
         CarteraInsuranceClaimError: {
             error: string;
         };
-        CarteraInsuranceClaimApproveResponse: {
-            /** Format: uuid */
-            claimId: string;
-            filed: boolean;
-            emailSent: boolean;
-            reason?: string;
-        };
-        CarteraInsuranceClaimApproveRequest: {
-            /** @enum {string} */
-            confirmation: "yes";
-        };
         CarteraLegalArtifactSummary: {
             /** Format: uuid */
             id: string;
@@ -10450,19 +10991,6 @@ export interface components {
         };
         CarteraLegalArtifactError: {
             error: string;
-        };
-        CarteraLegalArtifactApproveResponse: {
-            /** Format: uuid */
-            artifactId: string;
-            approved: boolean;
-            physicalSendMethod: string;
-        };
-        CarteraLegalArtifactApproveRequest: {
-            /** @enum {string} */
-            confirmation: "yes";
-            /** @enum {string} */
-            physicalSendMethod: "servicio_472" | "email_only" | "operator_manual";
-            sentToAddress: string;
         };
         CarteraSiniestroInsurerResult: {
             insurer: string;
@@ -10820,6 +11348,7 @@ export interface components {
             diagnostics: {
                 [key: string]: unknown;
             };
+            total: number;
         };
         RetencionOwnerProfile: {
             profile: {
@@ -10845,10 +11374,29 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        RetencionProposedPlan: {
-            plan?: unknown;
-            note?: string;
+        RetencionApiTask: {
+            code: string;
+            title: string;
+            description: string | null;
+            responsibleRole: string;
+            dueDate: string | null;
+            /** @enum {string} */
+            status: "pendiente" | "en_progreso" | "completada" | "cancelada";
         };
+        RetencionProposedPlan: {
+            caseId: string;
+            playbookId: string;
+            rootCauseKey: string;
+            objective: string;
+            responsibleRole: string;
+            expectedResult: string | null;
+            actualResult: string | null;
+            /** @enum {string} */
+            status: "activo" | "logrado" | "perdido" | "cancelado";
+            nextFollowUpAt: string | null;
+            tasks: components["schemas"]["RetencionApiTask"][];
+            proposed: boolean;
+        } | null;
         RetencionPlanMaterialized: {
             plan: {
                 [key: string]: unknown;
@@ -10890,17 +11438,22 @@ export interface components {
             generatedAt: string;
         };
         RetencionMensaje: {
-            draft?: unknown;
-            blocked: boolean;
-            blockReason: string | null;
-            guard: {
-                [key: string]: unknown;
-            };
-        };
+            /** @enum {string} */
+            channel: "whatsapp" | "email" | "guion";
+            /** @enum {string} */
+            tone: "neutral" | "formal";
+            subject: string | null;
+            body: string;
+            /** @enum {string} */
+            source: "template" | "llm";
+            barrierApplied: boolean;
+        } | null;
         RetencionGuardrails: {
-            guard: {
-                [key: string]: unknown;
-            };
+            canDraftMessage: boolean;
+            retentionRecommended: boolean;
+            escalateLegal: boolean;
+            financialDataConsistent: boolean;
+            reasons: string[];
         };
         RetencionDecisionRow: {
             id: string;
@@ -11785,6 +12338,102 @@ export interface components {
             ownerContactCadenceDays?: number;
             channelPriceTolerancePct?: number;
         };
+        MantenimientoKpis: {
+            ticketsAbiertos: number;
+            emergenciasActivas: number;
+            vencidos: number;
+            tiempoPrimeraRespuestaMin: number;
+            slaCumplidoPct: number;
+            reaperturas30dPct: number;
+            tiempoResolucionRealDias: number;
+            costoEstimadoAbiertoCop: number;
+            propietariosEnRiesgo: number;
+        };
+        MantenimientoOverviewResponse: {
+            kpis: components["schemas"]["MantenimientoKpis"];
+            /** Format: date-time */
+            generatedAt: string;
+        };
+        MantenimientoError: {
+            error: string;
+        };
+        MantenimientoTicketCard: {
+            id: string;
+            titulo: string;
+            inmueble: {
+                address: string;
+                unit?: string;
+            };
+            score: number;
+            /** @enum {string} */
+            bucket: "bajo" | "medio" | "alto" | "critico" | "emergencia";
+            /** @enum {string} */
+            categoria: "plomeria" | "electricidad" | "gas" | "humedad_filtracion" | "carpinteria" | "cerrajeria" | "electrodomesticos" | "pintura_acabados" | "pisos" | "vidrios_ventanas" | "estructural" | "zonas_comunes" | "preventivo";
+            /** @enum {string} */
+            severidad: "emergencia" | "alta" | "media" | "baja" | "informativa";
+            /** @enum {string} */
+            estado: "recibido" | "en_triage" | "informacion_incompleta" | "clasificado" | "requiere_aprobacion" | "proveedor_sugerido" | "proveedor_asignado" | "visita_programada" | "en_ejecucion" | "pendiente_cotizacion" | "pendiente_pago" | "resuelto" | "validado" | "cerrado" | "reabierto" | "escalado";
+            createdAt: string;
+            slaDeadlineAt: string;
+            proveedorSugerido?: string;
+            requiereAprobacion: boolean;
+            hasPhotos: boolean;
+            reabierto: boolean;
+            retencionRiesgo?: boolean;
+            costoEstimadoCop?: number;
+            /** @enum {string} */
+            responsableProbable: "propietario" | "inquilino" | "copropiedad" | "constructor" | "proveedor_anterior" | "aseguradora" | "no_determinado";
+        };
+        MantenimientoVisionAnalysis: {
+            safety_hold: boolean;
+            requires_human_inspection: boolean;
+            signals: string[];
+            photo_quality_score: number;
+            cannot_determine: string[];
+        };
+        MantenimientoTicketEvent: {
+            id: string;
+            at: string;
+            tipo: string;
+            descripcion: string;
+            /** @enum {string} */
+            actor: "agent" | "human";
+        };
+        MantenimientoTicketDetail: components["schemas"]["MantenimientoTicketCard"] & {
+            descripcion: string;
+            queEntendi: string;
+            clasificacion: {
+                /** @enum {string} */
+                categoria: "plomeria" | "electricidad" | "gas" | "humedad_filtracion" | "carpinteria" | "cerrajeria" | "electrodomesticos" | "pintura_acabados" | "pisos" | "vidrios_ventanas" | "estructural" | "zonas_comunes" | "preventivo";
+                /** @enum {string} */
+                severidad: "emergencia" | "alta" | "media" | "baja" | "informativa";
+                score: number;
+                /** @enum {string} */
+                bucket: "bajo" | "medio" | "alto" | "critico" | "emergencia";
+                rationale: string;
+            };
+            vision: components["schemas"]["MantenimientoVisionAnalysis"][];
+            proveedorRecomendado: {
+                principal: {
+                    nombre: string;
+                    rating?: number;
+                    etaHoras?: number;
+                    motivo?: string;
+                } | null;
+                backup: {
+                    nombre: string;
+                    rating?: number;
+                    etaHoras?: number;
+                    motivo?: string;
+                } | null;
+            };
+            aprobacion: {
+                capCop: number;
+                estimatedMaxCop: number;
+                requiresApproval: boolean;
+            };
+            eventos: components["schemas"]["MantenimientoTicketEvent"][];
+        };
         PortalPropietarioPerfil: {
             /** Format: uuid */
             ownerRef: string;
@@ -12187,9 +12836,81 @@ export interface components {
         PortalDanosDigestError: {
             error: string;
         };
+        PortalDigestNoticeOption: {
+            /** @enum {string} */
+            tipo: "prorroga_unilateral" | "causal_especial" | "plena_voluntad_4anios";
+            costoCop?: number;
+            caucionCop?: number;
+            disponible: boolean;
+            fundamento: string;
+        };
+        PortalDigestNoticeWindows: {
+            noticeDeadline: string;
+            daysToDeadline: number;
+            windowOpen: boolean;
+            contractYears: number;
+            options: components["schemas"]["PortalDigestNoticeOption"][];
+        };
+        PortalOwnerDigestPayload: {
+            periodo: string;
+            generadoEn: string;
+            recaudo: {
+                totalCop: number;
+                porInmueble: {
+                    propertyRef: string;
+                    label: string;
+                    amountCop: number;
+                }[];
+            };
+            ocupacion: {
+                totalProperties: number;
+                occupied: number;
+                vacant: number;
+                occupancyPct: number;
+            };
+            solicitudes: {
+                creadas: number;
+                resueltas: number;
+                abiertas: number;
+                nota: string;
+            };
+            danos: {
+                available: boolean;
+                resueltosCount: number;
+                resueltos: {
+                    propertyRef: string;
+                    category: string | null;
+                    severity: string | null;
+                    resolvedAt: string | null;
+                    costoFinalCop: number | null;
+                }[];
+            };
+            contratosPorVencer: {
+                propertyRef: string;
+                propertyLabel: string;
+                endDate: string;
+                daysLeft: number;
+                preaviso: components["schemas"]["PortalDigestNoticeWindows"];
+            }[];
+            actionItems: {
+                decisionesPendientes: {
+                    processId: string;
+                    propertyRef: string;
+                    label: string;
+                }[];
+                preavisos: {
+                    propertyRef: string;
+                    label: string;
+                    endDate: string;
+                    noticeDeadline: string;
+                    daysToDeadline: number;
+                    options: components["schemas"]["PortalDigestNoticeOption"][];
+                }[];
+            };
+        };
         PortalDigest: {
             periodo: string;
-            payload?: unknown;
+            payload: components["schemas"]["PortalOwnerDigestPayload"];
             generatedAt: string;
             deliveredAt: string | null;
             deliveryChannel: string | null;
@@ -12545,6 +13266,49 @@ export interface components {
             completed_at: string | null;
             result_uri: string | null;
             error_message: string | null;
+        };
+        /** @description A single Habeas Data consent row (carrier-agnostic, covers every carrier in the registry). */
+        CotizadorConsentRow: {
+            /** Format: uuid */
+            id: string;
+            cedula_hash: string;
+            authorization_version: string;
+            scope: string;
+            carriers_covered: string[];
+            consent_granted: boolean;
+            /** Format: date-time */
+            consented_at: string;
+        };
+        /** @description Error envelope shared by consent/evaluate/prescoring-config. `details` is present only for Zod validation failures (400) — the `.flatten()` shape. */
+        CotizadorConsentErrorResponse: {
+            /** @enum {boolean} */
+            success: false;
+            error: string;
+            details?: unknown;
+        };
+        /** @description Tier-2 applicant evaluation status row. `result` is the consolidated study output once available. */
+        CotizadorEvaluationRow: {
+            /** Format: uuid */
+            id: string;
+            status: string;
+            property_id: string | null;
+            study_id: string | null;
+            result?: unknown;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description Per-tenant TTL config for "pre-scoring de afianzamiento" (Fase 1). Bounds: 1-720 hours. */
+        PreScoringConfig: {
+            authorizationWaitHours: number;
+            resultReuseTtlHours: number;
+        };
+        CotizadorAdminPrescoringErrorResponse: {
+            /** @enum {boolean} */
+            success: false;
+            error: string;
+            details?: unknown;
         };
     };
     responses: never;
@@ -13104,6 +13868,583 @@ export interface operations {
             };
             /** @description proposed_policy must be a non-null plain object */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyArcoGateStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Gate state — blocked=true means POST resolve will 503. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoGateStatus"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyArcoRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Requests grouped by type, each row carrying sla_remaining_days/sla_business_days. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoRequestsGrouped"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyArcoRequestDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request detail. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoRequestDetail"];
+                };
+            };
+            /** @description requestId is not a UUID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description ARCO request not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    postAgencyArcoRequestTriage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated request row. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoRequestFullRow"];
+                };
+            };
+            /** @description Invalid requestId or body validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description ARCO request not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unexpected result (defensive, unreachable in practice) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    postAgencyArcoRequestExtend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Extension granted — updated row + recomputed SLA fields + answer_by. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoExtendResponse"];
+                };
+            };
+            /** @description Invalid requestId, body validation error, or extension exceeds the legal ceiling */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description ARCO request not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Request already closed, or already extended once */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Notice email failed to send — extension NOT recorded */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    postAgencyArcoRequestResolve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request resolved — updated row. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoRequestFullRow"];
+                };
+            };
+            /** @description Invalid requestId or invalid JSON body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description ARCO request not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Request already resolved or rejected */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Resolution payload validation error (per-type) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unexpected result (defensive, unreachable in practice) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Two-key counsel gate not satisfied, or database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoTwoKeyGateBlocked"] | {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    postAgencyArcoRequestReject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated request row. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArcoRequestFullRow"];
+                };
+            };
+            /** @description Invalid requestId or body validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description ARCO request not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unexpected result (defensive, unreachable in practice) */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13938,131 +15279,6 @@ export interface operations {
             };
         };
     };
-    getPreScoringConfig: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Config vigente del tenant (o defaults) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PreScoringConfig"];
-                };
-            };
-            /** @description Falta el bearer JWT o es inválido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Base de datos no disponible (stub mode) */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
-    };
-    updatePreScoringConfig: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PreScoringConfigPatch"];
-            };
-        };
-        responses: {
-            /** @description Config actualizada */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PreScoringConfig"];
-                };
-            };
-            /** @description Cuerpo malformado o fuera de rango */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Falta el bearer JWT o es inválido */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description agencyId cruzado / sin membresía / permiso insuficiente */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-            /** @description Base de datos no disponible (stub mode) */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                    };
-                };
-            };
-        };
-    };
     getCarteraOverview: {
         parameters: {
             query?: never;
@@ -14423,6 +15639,78 @@ export interface operations {
                 };
             };
             /** @description cobranza:view required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+            /** @description Debtor not found (or cross-tenant) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+        };
+    };
+    createCobranzaDebtorMemo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                debtorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaDebtorMemoCreateBody"];
+            };
+        };
+        responses: {
+            /** @description The created memo, in the same shape the list returns. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemoItem"];
+                };
+            };
+            /** @description Invalid body (empty or too long). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+            /** @description Missing / invalid bearer JWT */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaDebtorMemosError"];
+                };
+            };
+            /** @description cobranza:intervene required */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -19113,6 +20401,234 @@ export interface operations {
             };
         };
     };
+    getAgencyAiHubAgentOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                agente: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-agent overview (real data or an empty-but-valid structure) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentOverviewResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unknown `agente` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyAiHubWorkItems: {
+        parameters: {
+            query?: {
+                agente?: string;
+                status?: string;
+                page?: string;
+                pageSize?: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Work-items page (real data or an empty-but-valid page) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentWorkItemsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unknown or missing `agente` */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyAiHubWorkItemDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                agente: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Work-item detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkItemDetailResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Unknown `agente`, or the case does not exist for this tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getAgencyAiHubMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-agency AI Hub metrics (fields with no tenant-scoped data source are null) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiHubMetricsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
     approvePaymentPlan: {
         parameters: {
             query?: never;
@@ -19385,78 +20901,6 @@ export interface operations {
             };
         };
     };
-    approveSiniestroInsuranceClaim: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                claimId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CarteraSiniestroApproveRequest"];
-            };
-        };
-        responses: {
-            /** @description Approved — audit committed, Resend fan-out attempted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CarteraSiniestroApproveResponse"];
-                };
-            };
-            /** @description Invalid body (Zod gate) */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
-                };
-            };
-            /** @description cobranza:approve required (OPERATOR / VIEWER blocked) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
-                };
-            };
-            /** @description Claim not found OR cross-tenant */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
-                };
-            };
-            /** @description Audit / PDF assembly failed — transaction rolled back */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
-                };
-            };
-            /** @description Database unavailable (stub mode) */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
-                };
-            };
-        };
-    };
     getCarteraInsuranceClaimPacketPdf: {
         parameters: {
             query?: never;
@@ -19627,78 +21071,6 @@ export interface operations {
             };
         };
     };
-    approvePreJudicialArtifact: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-                artifactId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CarteraPreJudicialApproveRequest"];
-            };
-        };
-        responses: {
-            /** @description Approved + signed URL */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CarteraPreJudicialApproveResponse"];
-                };
-            };
-            /** @description Invalid body */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
-                };
-            };
-            /** @description cobranza:approve required */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
-                };
-            };
-            /** @description Artifact not found OR cross-tenant */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
-                };
-            };
-            /** @description S3 / audit / PDF failed — rolled back */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
-                };
-            };
-            /** @description Database unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
-                };
-            };
-        };
-    };
     getCarteraLegalArtifactPdf: {
         parameters: {
             query?: never;
@@ -19758,6 +21130,78 @@ export interface operations {
             };
         };
     };
+    approveSiniestroInsuranceClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                claimId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CarteraSiniestroApproveRequest"];
+            };
+        };
+        responses: {
+            /** @description Approved — audit committed, Resend fan-out attempted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraSiniestroApproveResponse"];
+                };
+            };
+            /** @description Invalid body (Zod gate) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description cobranza:approve required (OPERATOR / VIEWER blocked) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description Claim not found OR cross-tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description Audit / PDF assembly failed — transaction rolled back */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description Database unavailable (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+        };
+    };
     rejectSiniestroInsuranceClaim: {
         parameters: {
             query?: never;
@@ -19811,6 +21255,78 @@ export interface operations {
                 };
             };
             /** @description Audit failed — rolled back */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+        };
+    };
+    approvePreJudicialArtifact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CarteraPreJudicialApproveRequest"];
+            };
+        };
+        responses: {
+            /** @description Approved + signed URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraPreJudicialApproveResponse"];
+                };
+            };
+            /** @description Invalid body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description cobranza:approve required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description Artifact not found OR cross-tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarteraApprovalsOperatorError"];
+                };
+            };
+            /** @description S3 / audit / PDF failed — rolled back */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -22151,7 +23667,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Borrador + guard */
+            /** @description Borrador de mensaje (bare; null si el guard bloquea la redacción) */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -25222,6 +26738,127 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CalidadV2Error"];
+                };
+            };
+        };
+    };
+    getAgencyMantenimientoOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description KPIs de mantenimiento */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MantenimientoOverviewResponse"];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MantenimientoError"];
+                };
+            };
+            /** @description Rail S2S del back no disponible */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MantenimientoError"];
+                };
+            };
+        };
+    };
+    getAgencyMantenimientoInbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lista de tickets (tarjetas) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MantenimientoTicketCard"][];
+                };
+            };
+            /** @description Feature no habilitada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MantenimientoError"];
+                };
+            };
+            /** @description Rail S2S del back no disponible */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MantenimientoError"];
+                };
+            };
+        };
+    };
+    getAgencyMantenimientoTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ticket completo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MantenimientoTicketDetail"];
+                };
+            };
+            /** @description Feature no habilitada o ticket no encontrado / otro tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MantenimientoError"];
+                };
+            };
+            /** @description Rail S2S del back no disponible */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MantenimientoError"];
                 };
             };
         };
@@ -28353,6 +29990,390 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Arco503Response"];
+                };
+            };
+        };
+    };
+    cotizadorConsentCheck: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                cedula?: string;
+                cedula_hash?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Consent check result. `consent` is null when no row exists for this applicant. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        has_consent: boolean;
+                        consent: components["schemas"]["CotizadorConsentRow"] & (Record<string, never> | null);
+                    };
+                };
+            };
+            /** @description Missing/invalid tenant_id, or neither cedula nor cedula_hash provided in valid shape. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorConsentErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid AGENT_API_KEY. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorConsentErrorResponse"];
+                };
+            };
+            /** @description Database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorConsentErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorConsentCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    cedula: string;
+                    /** Format: uuid */
+                    tenant_id: string;
+                    authorization_version?: string;
+                    consent_granted?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Consent recorded (created or refreshed). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        consent: components["schemas"]["CotizadorConsentRow"];
+                    };
+                };
+            };
+            /** @description Invalid JSON body, or Zod validation failure (cedula/tenant_id shape). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorConsentErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid AGENT_API_KEY. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorConsentErrorResponse"];
+                };
+            };
+            /** @description Database unavailable (stub mode). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorConsentErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorEvaluateStatus: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                evaluation_id?: string;
+                cedula?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Evaluation status + result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        evaluation: components["schemas"]["CotizadorEvaluationRow"];
+                    };
+                };
+            };
+            /** @description Missing or invalid tenant_id. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorConsentErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid AGENT_API_KEY. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorConsentErrorResponse"];
+                };
+            };
+            /** @description No evaluation found for the given evaluation_id/cedula. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorConsentErrorResponse"];
+                };
+            };
+            /** @description Database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorConsentErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorEvaluateCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    cedula: string;
+                    ciudad: string;
+                    canon_mensual_cop: number;
+                    /** @enum {string} */
+                    tipo_inmueble: "apartamento" | "casa" | "local";
+                    /** Format: uuid */
+                    tenant_id: string;
+                    /** @default 0 */
+                    codeudores?: number;
+                    candidate: {
+                        names: string;
+                        surnames: string;
+                        /** Format: email */
+                        email: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Evaluation started — the durable workflow runs asynchronously. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        /** Format: uuid */
+                        evaluation_id: string;
+                        /** @enum {string} */
+                        status: "started";
+                        detail: string;
+                    };
+                };
+            };
+            /** @description Invalid JSON body, or Zod validation failure. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorConsentErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid AGENT_API_KEY. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorConsentErrorResponse"];
+                };
+            };
+            /** @description No granted Habeas Data consent on file — POST /api/cotizador/consent first. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: false;
+                        /** @enum {string} */
+                        error: "consent_required";
+                        detail: string;
+                    };
+                };
+            };
+            /** @description Database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorConsentErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorAdminPrescoringConfigGet: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current config (defaults if the tenant has none stored yet). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        config: components["schemas"]["PreScoringConfig"];
+                    };
+                };
+            };
+            /** @description Missing or invalid tenant_id. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorAdminPrescoringErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid COTIZADOR_ADMIN_API_KEY. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorAdminPrescoringErrorResponse"];
+                };
+            };
+            /** @description Database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorAdminPrescoringErrorResponse"];
+                };
+            };
+        };
+    };
+    cotizadorAdminPrescoringConfigUpdate: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    authorizationWaitHours?: number;
+                    resultReuseTtlHours?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated config. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        config: components["schemas"]["PreScoringConfig"];
+                    };
+                };
+            };
+            /** @description Missing/invalid tenant_id, invalid JSON body, or Zod validation failure (empty patch, out-of-bounds hours). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorAdminPrescoringErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid COTIZADOR_ADMIN_API_KEY. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorAdminPrescoringErrorResponse"];
+                };
+            };
+            /** @description Database unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizadorAdminPrescoringErrorResponse"];
                 };
             };
         };

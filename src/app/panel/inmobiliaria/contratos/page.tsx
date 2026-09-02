@@ -158,7 +158,11 @@ function ContratosContent() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      {/* Responsive (Nico, 2026-09-02): a anchos medios el título y las
+          acciones iban lado a lado desde `sm` y las acciones se partían en
+          dos filas contra el subtítulo. Ahora van apiladas hasta `lg`, y la
+          fila de acciones no se envuelve nunca: son dos controles. */}
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-1">
           <Eyebrow>{tx('Portafolio', 'Portfolio')}</Eyebrow>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">{tx('Contratos', 'Contracts')}</h1>
@@ -169,7 +173,7 @@ function ContratosContent() {
             )}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {/*
            * Nico (2026-09-02): «Migrar» y «Conceptos» no son acciones del
            * día a día — son configuración. Un engranaje con la jerarquía del
@@ -244,7 +248,9 @@ function ContratosContent() {
       ) : null}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Cuatro en fila desde tablet: a 900 px, con el menú escondido, sobra
+          ancho y las tarjetas en 2×2 salían enormes para un solo número. */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label={tx('Total', 'Total')} value={isLoading ? '—' : stats.total} dot="bg-fg-subtle" />
         <StatCard label={tx('Activos', 'Active')} value={isLoading ? '—' : stats.active} dot="bg-success" />
         <StatCard

@@ -188,12 +188,16 @@ export function ReglasDeMora() {
         <FalloDeCarga error={errorDeCarga} queEs="las reglas de mora" onReintentar={cargar} />
       ) : !reglas || reglas.length === 0 ? (
         <div className="space-y-5" data-testid="reglas-vacio">
-          <EmptyState
-            icon={Scales}
-            title="Todavía no hay reglas de mora"
-            description="Sin reglas, un cobro vencido no suma nada. Empezá con las dos que usa cualquier inmobiliaria, o armá la tuya."
-            action={puedeCrear ? { label: 'Crear una regla', onClick: abrirNueva } : undefined}
-          />
+          {/* El vacío es la tabla sin filas: va encerrado en la misma tarjeta
+              que la tabla, como todos los vacíos del panel (Nico, 2026-09-01). */}
+          <div className="rounded-xl border border-border bg-surface">
+            <EmptyState
+              icon={Scales}
+              title="Todavía no hay reglas de mora"
+              description="Sin reglas, un cobro vencido no suma nada. Empezá con las dos que usa cualquier inmobiliaria, o armá la tuya."
+              action={puedeCrear ? { label: 'Crear una regla', onClick: abrirNueva } : undefined}
+            />
+          </div>
           {puedeCrear && (
             <div className="grid gap-4 md:grid-cols-2">
               {PLANTILLAS.map((plantilla) => (

@@ -137,7 +137,9 @@ export function CompletarMandatosLoteDialog({
         <DialogHeader>
           <DialogTitle>{t('inmobiliaria.import.confirm.mandateBatch.title')}</DialogTitle>
           <DialogDescription>
-            {t('inmobiliaria.import.confirm.mandateBatch.subtitle', { count: inmuebles.length })}
+            {inmuebles.length === 1
+              ? t('inmobiliaria.import.confirm.mandateBatch.subtitleUno')
+              : t('inmobiliaria.import.confirm.mandateBatch.subtitle', { count: inmuebles.length })}
           </DialogDescription>
         </DialogHeader>
 

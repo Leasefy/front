@@ -208,23 +208,42 @@ export function StepConfirmImport({
   const [agentes, setAgentes] = useState<Agente[]>([]);
   const [ofrecerMandatos, setOfrecerMandatos] = useState(false);
 
-  const buscarSinMandato = useCallback(async () => {
+  /**
+   * Los `Property` que ESTE lote acaba de crear. `getSinConsignacion()`
+   * devuelve todos los inmuebles sin propietario de la agencia — medido en la
+   * agencia de QA, el diálogo ofrecía «guardar para todos» sobre 113
+   * inmuebles después de importar UNO. El propietario elegido acá es para lo
+   * que se acaba de traer, no para todo el portafolio.
+   */
+  const propertyIdsDelLote = useCallback(async (elLote: string): Promise<Set<string>> => {
+    const ids = new Set<string>();
+    for (let pagina = 1; pagina <= 50; pagina += 1) {
+      const p = await inmueblesImportacionApi.filas(elLote, { pagina, porPagina: 200, estado: 'ACTIVADO' });
+      for (const f of p.filas) if (f.propertyId) ids.add(f.propertyId);
+      if (p.filas.length < 200 || ids.size >= p.total) break;
+    }
+    return ids;
+  }, []);
+
+  const buscarSinMandato = useCallback(async (elLote: string) => {
     try {
-      const [inm, props, ags] = await Promise.all([
+      const [inm, props, ags, delLote] = await Promise.all([
         inmueblesApi.getSinConsignacion(),
         propietariosApi.getAll(),
         agentesApi.getAll(),
+        propertyIdsDelLote(elLote),
       ]);
-      setSinMandato(inm);
+      const soloDelLote = inm.filter((i) => delLote.has(i.propertyId));
+      setSinMandato(soloDelLote);
       setPropietarios(props);
       setAgentes(ags);
-      setOfrecerMandatos(inm.length > 0);
+      setOfrecerMandatos(soloDelLote.length > 0);
     } catch {
       // Que no se pueda ofrecer el mandato no puede ensuciar una importación
       // que salió bien: los inmuebles están creados y el mandato se completa
       // después desde el portafolio.
     }
-  }, []);
+  }, [propertyIdsDelLote]);
 
   /*
    * Aviso al muro mientras hay una operación larga en vuelo — la
@@ -450,7 +469,13 @@ export function StepConfirmImport({
       setResultadoActivacion(resultado);
       updateState({ importedCount: resultado.activados, importProgress: 100 });
       setIsComplete(true);
-      if (resultado.activados > 0) void buscarSinMandato();
+      // Adentro del muro NO se ofrece el diálogo de «mandato»: el dueño y la
+      // comisión de cada inmueble se asocian en el paso Contratos, contrato
+      // por contrato (y con un selector por fila). El diálogo pone UN
+      // propietario a todos los inmuebles del lote — para una migración de
+      // dueños distintos es la asociación equivocada, y «mandato» es una
+      // palabra que la inmobiliaria no usa (Nico, 2026-09-01).
+      if (resultado.activados > 0 && !onSalir) void buscarSinMandato(lote);
       if (resultado.omitidas.length > 0) {
         toast.warning("Importación parcial", {
           description: `${resultado.activados} activadas, ${resultado.omitidas.length} todavía con datos pendientes.`,
@@ -533,15 +558,24 @@ export function StepConfirmImport({
           {sinMandato.length > 0 && !ofrecerMandatos && (
             <p className="text-sm text-warning" data-testid="aviso-sin-mandato">
               {sinMandato.length === 1
-                ? '1 inmueble quedó sin mandato: hasta que lo tenga no se puede publicar ni aparece en el portafolio.'
-                : `${sinMandato.length} inmuebles quedaron sin mandato: hasta que lo tengan no se pueden publicar ni aparecen en el portafolio.`}{' '}
+                ? '1 inmueble quedó sin propietario: hasta que lo tenga no se puede publicar ni aparece en el portafolio.'
+                : `${sinMandato.length} inmuebles quedaron sin propietario: hasta que lo tengan no se pueden publicar ni aparecen en el portafolio.`}{' '}
               <button
                 type="button"
                 className="underline underline-offset-2"
                 onClick={() => setOfrecerMandatos(true)}
               >
-                Completar los mandatos
+                Asignar el propietario
               </button>
+            </p>
+          )}
+          {/* Adentro del muro, qué sigue con el dueño de cada inmueble — en
+              las palabras del muro, no en las del back. */}
+          {onSalir && (state.importedCount ?? 0) > 0 && (
+            <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="aviso-propietario-en-contratos">
+              El propietario y la comisión de cada inmueble los asociás en el paso
+              Contratos, contrato por contrato. Los inmuebles que no tengan contrato
+              los asociás después desde el portafolio.
             </p>
           )}
         </div>
@@ -554,8 +588,8 @@ export function StepConfirmImport({
             onClose={() => setOfrecerMandatos(false)}
             onDone={() => {
               setOfrecerMandatos(false);
-              // Relee: los que quedaron sin mandato siguen avisando.
-              void buscarSinMandato();
+              // Relee: los que quedaron sin propietario siguen avisando.
+              if (lote) void buscarSinMandato(lote);
             }}
           />
         )}

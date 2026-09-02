@@ -65,6 +65,28 @@ vi.mock('@/lib/api/inmuebles-importacion.service', async () => {
   return { ...actual, inmueblesImportacionApi: inmueblesImportacionApiMock };
 });
 
+const { inmobiliariaApiMock } = vi.hoisted(() => ({
+  inmobiliariaApiMock: {
+    getSinConsignacion: vi.fn(),
+    propietariosGetAll: vi.fn(),
+    agentesGetAll: vi.fn(),
+  },
+}));
+vi.mock('@/lib/api/inmobiliaria.service', () => ({
+  inmueblesApi: { getSinConsignacion: (...a: unknown[]) => inmobiliariaApiMock.getSinConsignacion(...a) },
+  propietariosApi: { getAll: (...a: unknown[]) => inmobiliariaApiMock.propietariosGetAll(...a) },
+  agentesApi: { getAll: (...a: unknown[]) => inmobiliariaApiMock.agentesGetAll(...a) },
+}));
+
+// El diálogo real necesita AuthProvider; acá sólo importa SI se abre.
+const { dialogoPropsMock } = vi.hoisted(() => ({ dialogoPropsMock: vi.fn() }));
+vi.mock('../CompletarMandatosLoteDialog', () => ({
+  CompletarMandatosLoteDialog: (props: { inmuebles: unknown[] }) => {
+    dialogoPropsMock(props);
+    return React.createElement('div', { 'data-testid': 'dialogo-propietario' });
+  },
+}));
+
 const { estadoLoteState } = vi.hoisted(() => ({
   estadoLoteState: { estado: null as unknown, agotado: false },
 }));
@@ -129,6 +151,9 @@ beforeEach(() => {
   estadoLoteState.agotado = false;
   geocodeImportRowMock.mockReset().mockResolvedValue({ lat: 4.6, lng: -74.1, source: 'geocoded' });
   Object.values(inmueblesImportacionApiMock).forEach((fn) => fn.mockReset());
+  inmobiliariaApiMock.getSinConsignacion.mockReset().mockResolvedValue([]);
+  inmobiliariaApiMock.propietariosGetAll.mockReset().mockResolvedValue([]);
+  inmobiliariaApiMock.agentesGetAll.mockReset().mockResolvedValue([]);
   updateState = vi.fn();
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -144,13 +169,13 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function render(state: ImportWizardState) {
+function render(state: ImportWizardState, props: { onSalir?: () => void } = {}) {
   act(() => {
     root.render(
       React.createElement(
         RanuraDelPie.Provider,
         { value: null },
-        React.createElement(StepConfirmImport, { state, updateState }),
+        React.createElement(StepConfirmImport, { state, updateState, ...props }),
       ),
     );
   });
@@ -555,5 +580,90 @@ describe('<StepConfirmImport> — recuperación de fallos del lote', () => {
       'Direcciones sin ubicar',
       expect.objectContaining({ description: expect.stringContaining('1 de 1') }),
     );
+  });
+});
+
+describe('<StepConfirmImport> — el dueño de cada inmueble después de activar', () => {
+  const inmueble = (propertyId: string, propertyTitle: string) => ({
+    propertyId, propertyTitle, propertyAddress: 'Carrera 28',
+    propertyCity: 'Zipaquirá', propertyZone: '', propertyType: 'apartment', propertyThumbnail: null,
+    monthlyRent: null, adminFee: null, status: 'draft', createdAt: '2026-09-01',
+  });
+  // Lo que devuelve el back: TODOS los inmuebles sin propietario de la
+  // agencia, no sólo los de este lote.
+  const sinConsignacion = [
+    inmueble('p1', 'Apartamento en Venta en Zipaquirá'),
+    inmueble('viejo-1', 'Apartamento en Provenza'),
+    inmueble('viejo-2', 'Casa en Pance'),
+  ];
+
+  beforeEach(() => {
+    searchParamsState.lote = 'lote-1';
+    estadoLoteState.estado = {
+      lote: 'lote-1', estado: 'LISTO', total: 1, procesadas: 1,
+      pendientes: 0, listos: 1, activados: 0, descartados: 0,
+    };
+    inmueblesImportacionApiMock.resumen.mockResolvedValue({
+      lote: 'lote-1', total: 1, pendientes: 0, listos: 1, activados: 0, descartados: 0,
+    });
+    // Las filas del lote: una sola, ya ACTIVADA, con su Property.
+    inmueblesImportacionApiMock.filas.mockImplementation(async (_lote: string, opciones?: { estado?: string }) =>
+      opciones?.estado === 'ACTIVADO'
+        ? {
+            filas: [{ id: 'f1', lote: 'lote-1', fila: 1, estado: 'ACTIVADO', faltantes: [], overrides: [], candidatos: [], propertyId: 'p1', datos: {} }],
+            total: 1, pagina: 1, porPagina: 200,
+          }
+        : { filas: [], total: 0, pagina: 1, porPagina: 25 },
+    );
+    inmueblesImportacionApiMock.activar.mockResolvedValue({ lote: 'lote-1', activados: 1, omitidas: [], restantes: 0 });
+    inmobiliariaApiMock.getSinConsignacion.mockResolvedValue(sinConsignacion);
+    dialogoPropsMock.mockClear();
+  });
+
+  async function activar(props: { onSalir?: () => void } = {}) {
+    render(baseState({ importedCount: 1 }), props);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const activarBtn = findButtonByText('Activar')!;
+    await act(async () => {
+      activarBtn.click();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
+
+  it('ADENTRO del muro no abre el diálogo de «mandato»: dice que el propietario va en Contratos', async () => {
+    // Ese diálogo pone UN propietario a todos los inmuebles del lote y habla
+    // de «mandato», una palabra que la inmobiliaria no usa (Nico, 2026-09-01).
+    // En la migración el dueño y la comisión se asocian contrato por contrato.
+    await activar({ onSalir: () => {} });
+
+    expect(inmobiliariaApiMock.getSinConsignacion).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-testid="aviso-propietario-en-contratos"]')?.textContent).toContain(
+      'paso Contratos',
+    );
+    expect(container.querySelector('[data-testid="aviso-sin-mandato"]')).toBeNull();
+    expect(container.querySelector('[data-testid="dialogo-propietario"]')).toBeNull();
+    expect(document.body.textContent).not.toContain('mandato');
+  });
+
+  it('FUERA del muro sí pregunta por los que quedaron sin propietario, en esas palabras', async () => {
+    await activar();
+
+    expect(inmobiliariaApiMock.getSinConsignacion).toHaveBeenCalled();
+    expect(container.querySelector('[data-testid="dialogo-propietario"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="aviso-propietario-en-contratos"]')).toBeNull();
+  });
+
+  it('el diálogo lista SÓLO los inmuebles que este lote creó, no los 113 sin propietario de la agencia', async () => {
+    // Medido en la agencia de QA: después de importar UN inmueble, el diálogo
+    // ofrecía «guardar para todos» sobre 113. El propietario elegido es para
+    // lo que se acaba de traer.
+    await activar();
+
+    const props = dialogoPropsMock.mock.calls.at(-1)?.[0] as { inmuebles: { propertyId: string }[] };
+    expect(props.inmuebles.map((i) => i.propertyId)).toEqual(['p1']);
   });
 });

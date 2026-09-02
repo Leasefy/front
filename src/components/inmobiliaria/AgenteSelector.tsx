@@ -127,6 +127,22 @@ export function AgenteSelector({
     return sortedAgentes[0]?.id === agenteId;
   };
 
+  // Sin agentes activos no hay nada que filtrar ni que elegir: la grilla
+  // quedaba con una sola tarjeta —«Sin agente asignado»— apretada en una
+  // columna de tres, con el texto cayendo palabra por palabra, debajo de dos
+  // filtros de «0 agentes disponibles» (Nico lo vio, 2026-09-01). Una línea
+  // que diga lo que pasa es todo lo que hay que mostrar.
+  if (activeAgentes.length === 0 && allowNoAgent) {
+    return (
+      <p
+        className={cn('text-sm text-fg-muted dark:text-fg-subtle', className)}
+        data-testid="agente-selector-sin-agentes"
+      >
+        {t('inmobiliaria.agente.sinAgentesTodavia')}
+      </p>
+    );
+  }
+
   return (
     <div className={cn('space-y-4', className)}>
       {/* Filters Row */}
@@ -168,7 +184,10 @@ export function AgenteSelector({
 
       {/* Agents Grid */}
       {sortedAgentes.length > 0 || allowNoAgent ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        // Columnas según el ANCHO DEL CONTENEDOR, no de la ventana: adentro de
+        // un diálogo de 512 px, `lg:grid-cols-3` partía el espacio en tres
+        // columnas de 150 px y las tarjetas quedaban ilegibles.
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
           {/* No Agent Option */}
           {allowNoAgent && (
             <motion.button

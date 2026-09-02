@@ -60,6 +60,14 @@ export interface MessagesWidgetProps {
    * y las i18n keys (namespace `messages.*` para tenant, `landlord.messages.*` para landlord/agency).
    */
   actor: MessagesActor;
+  /**
+   * La interfaz ocupa TODO el área de contenido —de borde a borde, hasta el
+   * sidebar y el header— sin título, sin bajada y sin la tarjeta que la
+   * encerraba. Nico (2026-09-01): «pantalla completa, respetando la sidebar
+   * y el header». Es el modo del panel de la inmobiliaria; los otros shells
+   * siguen con el marco hasta que se decida lo mismo para ellos.
+   */
+  pantallaCompleta?: boolean;
 }
 
 // ============================================================================
@@ -125,7 +133,7 @@ function MessagesSkeleton() {
 // Main widget
 // ============================================================================
 
-export function MessagesWidget({ actor }: MessagesWidgetProps) {
+export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidgetProps) {
   const { t, locale } = useI18n();
   const {
     conversations,
@@ -367,8 +375,15 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
 
   return (
     <div className="h-[calc(100vh-64px)] bg-bg overflow-hidden flex flex-col">
-      <div className="flex-1 flex flex-col max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full overflow-hidden">
-        {/* Header */}
+      <div
+        className={cn(
+          'flex-1 flex flex-col w-full overflow-hidden',
+          !pantallaCompleta && 'max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8',
+        )}
+      >
+        {/* Header — en pantalla completa no hay título ni bajada: el sidebar
+            ya dice «Mensajes» y el contador de no leídos vive en su badge. */}
+        {!pantallaCompleta && (
         <motion.header
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -393,13 +408,17 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
             )}
           </div>
         </motion.header>
+        )}
 
         {/* Chat Container */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: pantallaCompleta ? 0 : 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="rounded-xl border border-border bg-card overflow-hidden flex-1 min-h-0"
+          transition={{ delay: pantallaCompleta ? 0 : 0.1 }}
+          className={cn(
+            'bg-card overflow-hidden flex-1 min-h-0',
+            !pantallaCompleta && 'rounded-xl border border-border',
+          )}
         >
           <div className="h-full flex">
             {/* Conversations List */}

@@ -173,7 +173,9 @@ type PropietarioDelBack = Omit<Propietario, 'bankAccount' | 'propertyCount' | 'a
   propertyCount?: number;
   activeLeases?: number;
   totalMonthlyRent?: number;
+  totalCommission?: number;
   pendingBalance?: number;
+  lastPaymentDate?: string | null;
 };
 
 /** Minúsculas y sin tildes: «Banco de Bogota» e «Itau» (así llegan de una migración) tienen que dar con «Bogotá» e «Itaú». */
@@ -199,6 +201,7 @@ export function normalizePropietario(raw: PropietarioDelBack): Propietario {
     activeLeases: raw.activeLeases ?? 0,
     totalMonthlyRent: raw.totalMonthlyRent ?? 0,
     pendingBalance: raw.pendingBalance ?? 0,
+    lastPaymentDate: raw.lastPaymentDate ?? null,
     bankAccount: {
       bank: codigoDeBanco(bankName) as BankCode,
       ...(bankName ? { bankName } : {}),

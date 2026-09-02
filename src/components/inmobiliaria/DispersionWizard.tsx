@@ -30,7 +30,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { useDispersiones } from '@/lib/hooks/useInmobiliaria';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
 import { ComisionDesglose } from './ComisionDesglose';
-import { nombreDelMes } from '@/lib/utils/mes';
+import { mesEnTitulo } from '@/lib/utils/mes';
 
 interface DispersionWizardProps {
   initialMonth?: string;
@@ -118,7 +118,7 @@ function getRecentMonths(count: number): { value: string; label: string }[] {
  * Format month for display
  */
 function formatMonth(month: string): string {
-  return nombreDelMes(month);
+  return mesEnTitulo(month);
 }
 
 /**
@@ -430,7 +430,7 @@ export function DispersionWizard({
                   <RadioCard
                     key={month.value}
                     value={month.value}
-                    label={<span className="font-medium capitalize">{month.label}</span>}
+                    label={<span className="font-medium">{month.label}</span>}
                     badge={hasExisting ? <span className="w-2 h-2 rounded-full bg-foreground" /> : undefined}
                   />
                 );

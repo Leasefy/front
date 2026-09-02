@@ -19,6 +19,7 @@
  */
 
 import { useState } from 'react'
+import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { useRouter } from 'next/navigation'
 import { ArrowClockwise } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
@@ -59,21 +60,18 @@ export default function MantenimientoTicketsPage() {
         {/* List + error */}
         <section className="flex-1 min-w-0">
           {error && (
-            <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 mb-4 flex items-center justify-between">
-              <p className="text-sm text-red-700 dark:text-red-400">
-                {t('inmobiliaria.ai.mantenimiento.inbox.errorLoading')}: {error}
-              </p>
-              {/* C7-03 declares no `inbox.errorRetry` key (reported as a gap). Icon-only
-                  retry with an aria-label sourced from the existing cobranza retry key. */}
-              <button
-                type="button"
-                onClick={() => void refetch()}
-                aria-label={t('inmobiliaria.ai.cobranza.deudores.errorRetry')}
-                className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700"
-              >
-                <ArrowClockwise size={14} weight="bold" />
-              </button>
-            </div>
+            <AlertaAccionable
+              severidad="danger"
+              titulo={t('inmobiliaria.ai.mantenimiento.inbox.errorLoading')}
+              accion={{
+                label: t('inmobiliaria.ai.cobranza.deudores.errorRetry'),
+                onClick: () => void refetch(),
+                icon: <ArrowClockwise size={14} weight="bold" />,
+              }}
+              className="mb-4"
+            >
+              {error}
+            </AlertaAccionable>
           )}
 
           <InboxList

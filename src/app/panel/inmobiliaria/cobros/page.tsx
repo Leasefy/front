@@ -1,5 +1,6 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { mesEnTitulo } from '@/lib/utils/mes';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -359,9 +360,9 @@ function CobrosContent() {
   // `'YYYY-MM-01'` as a string is treated as UTC and shifts to the previous month
   // in negative-offset timezones (e.g. Colombia UTC-5 rendered July as "junio").
   const [monthDisplayYear, monthDisplayMonth] = filters.month.split('-').map(Number);
-  const monthDisplay = new Date(monthDisplayYear, monthDisplayMonth - 1, 1).toLocaleDateString(
-    locale === 'es' ? 'es-CL' : 'en-US',
-    { month: 'long', year: 'numeric' },
+  const monthDisplay = mesEnTitulo(
+    `${monthDisplayYear}-${String(monthDisplayMonth).padStart(2, '0')}`,
+    locale === 'en' ? 'en' : 'es',
   );
 
   return (
@@ -463,7 +464,7 @@ function CobrosContent() {
               >
                 <CaretLeft className="w-4 h-4" />
               </button>
-              <span className="text-sm font-medium text-fg capitalize text-center tabular-nums min-w-[7rem]">
+              <span className="text-sm font-medium text-fg text-center tabular-nums min-w-[7rem]">
                 {monthDisplay}
               </span>
               <button

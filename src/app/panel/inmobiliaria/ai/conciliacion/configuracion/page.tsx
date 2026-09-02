@@ -19,7 +19,8 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { FloppyDisk, Warning } from '@phosphor-icons/react'
+import { AlertaAccionable } from '@/components/ui/alerta-accionable'
+import { FloppyDisk } from '@phosphor-icons/react'
 
 import { Spinner } from '@/components/ui'
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -205,18 +206,14 @@ function PoliticaAutoMatch() {
 
       {/* Aviso fail-soft: backend no disponible */}
       {backendUnavailable && (
-        <div
-          className="rounded-lg border border-warning/30 bg-warning-soft text-warning p-3 flex items-start gap-2"
-          role="status"
+        <AlertaAccionable
+          severidad="warning"
+          titulo="La conciliación automática no está disponible en tu cuenta todavía"
           data-testid="conciliacion-automatch-backend-warning"
         >
-          <Warning weight="fill" className="h-4 w-4 mt-0.5 shrink-0" />
-          <p className="text-xs">
-            No se pudo leer la política de conciliación: esta función requiere el backend desplegado.
-            Se muestra el estado seguro por defecto (todo apagado, modo sombra) y no es posible
-            guardar cambios todavía.
-          </p>
-        </div>
+          Lo que ves es el estado seguro: todo apagado, en modo sugerencia. No se pueden guardar cambios
+          hasta que el servicio esté activo — mientras tanto, los movimientos se concilian a mano desde Cobros.
+        </AlertaAccionable>
       )}
 
       {/* Switches por dominio */}

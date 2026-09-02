@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { CaretLeft, WarningCircle, SealCheck, ArrowRight, Info } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { AlertaAccionable } from '@/components/ui/alerta-accionable';
+import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import { Spinner } from '@/components/ui';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { SignatureForm } from '@/components/contract/SignatureForm';
@@ -110,23 +112,18 @@ function FirmarContratoContent() {
   if (contract.status !== 'pending_landlord') {
     return (
       <div className="max-w-2xl mx-auto p-8 space-y-4">
-        <div className="rounded-xl border border-amber-600/30 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-900/15 p-5 flex items-start gap-3">
-          <WarningCircle className="w-5 h-5 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold text-amber-700 dark:text-amber-400">Este contrato no está pendiente de tu firma</p>
-            <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
-              Estado actual: <strong>{contract.status}</strong>.
-            </p>
-          </div>
-        </div>
-        <Button
-          onClick={() => router.push(`/panel/inmobiliaria/contratos/${contract.id}`)}
-          variant="link"
-          className="h-auto gap-1 px-0"
+        {/* El estado va traducido: antes salía el enum crudo del back
+            («pending_tenant») en la cara de la persona. */}
+        <AlertaAccionable
+          severidad="warning"
+          titulo="Este contrato no está pendiente de tu firma"
+          accion={{ label: 'Ver el contrato', href: `/panel/inmobiliaria/contratos/${contract.id}` }}
+          data-testid="firmar-no-pendiente"
         >
-          Ver detalle del contrato
-          <ArrowRight className="w-4 h-4" />
-        </Button>
+          Está en <strong>{CONTRACT_STATUS_LABELS[contract.status] ?? contract.status}</strong>.
+          {contract.status === 'pending_tenant' && ' Cuando el inquilino firme, te avisamos y volvés acá.'}
+          {contract.status === 'signed' && ' Ya firmaron las dos partes.'}
+        </AlertaAccionable>
       </div>
     );
   }

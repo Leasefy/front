@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { mesEnTitulo } from '@/lib/utils/mes';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
@@ -43,9 +44,7 @@ const STATUS_BORDER_COLORS: Record<DispersionStatus, string> = {
  * Format month string (2026-02) to Spanish display (Febrero 2026)
  */
 function formatMonth(month: string): string {
-  const [year, monthNum] = month.split('-');
-  const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-  return date.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+  return mesEnTitulo(month);
 }
 
 /**
@@ -109,7 +108,7 @@ export function DispersionCard({
           <p className="font-medium text-fg dark:text-white truncate text-sm">
             {dispersion.propietarioName}
           </p>
-          <p className="text-xs text-fg-muted dark:text-fg-subtle truncate capitalize">
+          <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">
             {formatMonth(dispersion.month)} · {dispersion.items.length}{' '}
             {dispersion.items.length === 1 ? 'propiedad' : 'propiedades'}
           </p>
@@ -162,7 +161,7 @@ export function DispersionCard({
                 {dispersion.propietarioName}
               </h3>
             </div>
-            <p className="text-sm text-fg-muted dark:text-fg-subtle capitalize">
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">
               {formatMonth(dispersion.month)}
             </p>
           </div>

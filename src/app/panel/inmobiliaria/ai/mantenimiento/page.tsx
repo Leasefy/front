@@ -1,6 +1,7 @@
 'use client'
 
 import { useI18n } from '@/lib/i18n'
+import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { useMantenimientoOverview } from '@/lib/hooks/mantenimiento/use-mantenimiento-overview'
 import { MantenimientoKpiStrip } from '@/components/inmobiliaria/mantenimiento/MantenimientoKpiStrip'
 
@@ -50,9 +51,9 @@ export default function MantenimientoOverviewPage() {
 
       {/* Error state */}
       {error && !isLoading && (
-        <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 text-sm text-red-600 dark:text-red-400">
-          {t('inmobiliaria.ai.mantenimiento.overview.errorLoading')}: {error}
-        </div>
+        <AlertaAccionable severidad="danger" titulo={t('inmobiliaria.ai.mantenimiento.overview.errorLoading')}>
+          {error}
+        </AlertaAccionable>
       )}
     </main>
   )

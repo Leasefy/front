@@ -19,6 +19,7 @@
  */
 
 import { useCallback } from 'react'
+import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { useParams } from 'next/navigation'
 import { Wrench } from '@phosphor-icons/react'
 import { Skeleton } from '@/components/ui'
@@ -75,10 +76,9 @@ export default function MantenimientoTicketDetailPage() {
   if (error || !data) {
     return (
       <main className="p-6 lg:p-8">
-        <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 text-sm text-red-600 dark:text-red-400">
-          {t(`${ROOT}.detalle.errorLoading`)}
-          {error ? `: ${error}` : ''}
-        </div>
+        <AlertaAccionable severidad="danger" titulo={t(`${ROOT}.detalle.errorLoading`)}>
+          {error ?? null}
+        </AlertaAccionable>
       </main>
     )
   }

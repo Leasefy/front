@@ -1125,7 +1125,9 @@
         "title": "Requiere atención",
         "latePayments": "{{count}} cobros en mora por {{amount}}",
         "viewPayments": "Ver cobros",
-        "pendingMaintenance": "{{count}} solicitudes de mantenimiento pendientes",
+        "pendingMaintenance": "{{count}} solicitudes de mantenimiento sin cerrar",
+        "latePaymentsDetalle": "Canon vencido que todavía no entró. Desde Cobros se registra el pago o se manda el recordatorio.",
+        "pendingMaintenanceDetalle": "Solicitudes abiertas o en curso. Asigná quién las atiende y cerralas cuando estén resueltas.",
         "viewRequests": "Ver solicitudes"
       },
       "financial": {
@@ -1603,6 +1605,11 @@
       "deleteOwner": "Eliminar propietario",
       "deleteConfirm": "¿Estás seguro de eliminar a {{name}}?",
       "deleteWarningProperties": "Este propietario tiene {{count}} propiedad(es) consignadas.",
+      "deleteBloqueado": {
+        "titulo": "No se puede eliminar: tiene {{count}} inmueble(s) consignado(s)",
+        "detalle": "Primero retirá o reasigná esos mandatos desde el portafolio; después sí se puede borrar la ficha.",
+        "accion": "Ir al portafolio"
+      },
       "noOwners": "No hay propietarios registrados",
       "noOwnersDesc": "Comienza agregando tu primer propietario",
       "notFound": "Propietario no encontrado",
@@ -1859,7 +1866,8 @@
         "daysLate": "{{count}} dias en mora",
         "preExpiry": "Pre-vencimiento",
         "overdue": "Mora",
-        "lastReminder": "Ultimo recordatorio:",
+        "lastReminder": "Último recordatorio:",
+        "remindersCount": "{{count}} recordatorio(s) enviado(s)",
         "noReminders": "No se han enviado recordatorios"
       },
       "registerModal": {
@@ -1930,17 +1938,6 @@
         "registerPayment": "Registrar pago",
         "paymentComplete": "Pago completo",
         "viewDetail": "Ver detalle"
-      },
-      "mora": {
-        "daysCompact": "dias",
-        "severeCritical": "Mora Critica",
-        "severityHigh": "Mora Alta",
-        "paymentOverdue": "Pago Vencido",
-        "daysOverdue": "dias de mora",
-        "interestLabel": "Interes: ",
-        "totalLabel": "Total: ",
-        "sendReminder": "Enviar recordatorio",
-        "viewHistory": "Ver historial"
       },
       "toasts": {
         "paymentRegistered": "Pago registrado correctamente",
@@ -4108,8 +4105,8 @@
       "cancel": "Cancelar",
       "creating": "Creando...",
       "createRequest": "Crear solicitud",
-      "emergencyWarning": "Las solicitudes de emergencia se atienden de inmediato. Un agente se comunicará contigo.",
-      "highPriorityWarning": "Las solicitudes de alta prioridad se atienden dentro de 24 horas.",
+      "emergencyWarning": "Emergencia: la solicitud sale primera en la lista de mantenimientos, marcada en rojo. Quien la atienda tiene que verla hoy.",
+      "highPriorityWarning": "Alta prioridad: la solicitud se ordena antes que las normales en la cola de mantenimiento.",
       "statusReported": "Reportada",
       "statusQuoted": "Cotizada",
       "statusApproved": "Aprobada",
@@ -4285,11 +4282,27 @@
         "available": "disponibles",
         "noProperties": "Sin propiedades",
         "vsPrevMonth": "vs mes ant.",
-        "pendingBalance": "Saldo pendiente",
-        "lastPayment": "Último pago",
-        "attentionRequired": "Atención requerida",
-        "pendingCollection": "Hay {{amount}} pendientes de cobro",
-        "lowOccupancy": "La ocupación está por debajo del 70%"
+        "pendingBalance": "Pendiente de girar",
+        "lastPayment": "Último giro"
+      },
+      "alertas": {
+        "sinCuenta": {
+          "titulo": "No tiene cuenta bancaria: no se le puede girar",
+          "detalle": "Tiene {{n}} inmueble(s) arrendado(s) y el canon recaudado no tiene a dónde ir. Cargá banco, tipo, número y titular.",
+          "accion": "Cargar cuenta bancaria"
+        },
+        "pendienteDeGiro": {
+          "titulo": "Hay {{monto}} pendientes de girarle",
+          "detalle": "Es canon ya recaudado que todavía no salió. Se gira desde Dispersiones, con el extracto del mes.",
+          "accion": "Ir a dispersiones"
+        },
+        "sinArrendar": {
+          "tituloUno": "«{{inmueble}}» está sin arrendar",
+          "titulo": "{{n}} de {{total}} inmuebles están sin arrendar",
+          "detalle": "Cada mes vacío es canon que el propietario no recibe. Revisá la publicación, el precio y los candidatos.",
+          "accionUno": "Ver el inmueble",
+          "accion": "Ver los inmuebles"
+        }
       },
       "table": {
         "searchPlaceholder": "Buscar por nombre, email, documento...",

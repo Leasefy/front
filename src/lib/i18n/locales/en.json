@@ -1124,7 +1124,9 @@
         "title": "Requires attention",
         "latePayments": "{{count}} overdue payments for {{amount}}",
         "viewPayments": "View payments",
-        "pendingMaintenance": "{{count}} pending maintenance requests",
+        "pendingMaintenance": "{{count}} maintenance requests still open",
+        "latePaymentsDetalle": "Overdue rent that has not come in yet. From Collections you record the payment or send the reminder.",
+        "pendingMaintenanceDetalle": "Open or in-progress requests. Assign who handles them and close them once resolved.",
         "viewRequests": "View requests"
       },
       "financial": {
@@ -1602,6 +1604,11 @@
       "deleteOwner": "Delete owner",
       "deleteConfirm": "Are you sure you want to delete {{name}}?",
       "deleteWarningProperties": "This owner has {{count}} consigned property(ies).",
+      "deleteBloqueado": {
+        "titulo": "Cannot delete: {{count}} consigned unit(s)",
+        "detalle": "Withdraw or reassign those mandates from the portfolio first; then the record can be deleted.",
+        "accion": "Go to the portfolio"
+      },
       "noOwners": "No owners registered",
       "noOwnersDesc": "Start by adding your first owner",
       "notFound": "Owner not found",
@@ -1859,6 +1866,7 @@
         "preExpiry": "Pre-expiry",
         "overdue": "Overdue",
         "lastReminder": "Last reminder:",
+        "remindersCount": "{{count}} reminder(s) sent",
         "noReminders": "No reminders have been sent"
       },
       "registerModal": {
@@ -1929,17 +1937,6 @@
         "registerPayment": "Register payment",
         "paymentComplete": "Payment complete",
         "viewDetail": "View detail"
-      },
-      "mora": {
-        "daysCompact": "days",
-        "severeCritical": "Critical Overdue",
-        "severityHigh": "High Overdue",
-        "paymentOverdue": "Payment Overdue",
-        "daysOverdue": "days overdue",
-        "interestLabel": "Interest: ",
-        "totalLabel": "Total: ",
-        "sendReminder": "Send reminder",
-        "viewHistory": "View history"
       },
       "toasts": {
         "paymentRegistered": "Payment registered successfully",
@@ -4107,8 +4104,8 @@
       "cancel": "Cancel",
       "creating": "Creating...",
       "createRequest": "Create request",
-      "emergencyWarning": "Emergency requests are handled immediately. An agent will contact you.",
-      "highPriorityWarning": "High priority requests are handled within 24 hours.",
+      "emergencyWarning": "Emergency: the request goes first in the maintenance list, marked in red. Whoever handles it has to see it today.",
+      "highPriorityWarning": "High priority: the request is ordered ahead of normal ones in the maintenance queue.",
       "statusReported": "Reported",
       "statusQuoted": "Quoted",
       "statusApproved": "Approved",
@@ -4284,11 +4281,27 @@
         "available": "available",
         "noProperties": "No properties",
         "vsPrevMonth": "vs prev. month",
-        "pendingBalance": "Pending balance",
-        "lastPayment": "Last payment",
-        "attentionRequired": "Attention required",
-        "pendingCollection": "{{amount}} pending collection",
-        "lowOccupancy": "Occupancy is below 70%"
+        "pendingBalance": "Pending payout",
+        "lastPayment": "Last payout"
+      },
+      "alertas": {
+        "sinCuenta": {
+          "titulo": "No bank account: payouts cannot be made",
+          "detalle": "{{n}} rented unit(s) and the collected rent has nowhere to go. Add bank, type, number and holder.",
+          "accion": "Add bank account"
+        },
+        "pendienteDeGiro": {
+          "titulo": "{{monto}} pending payout",
+          "detalle": "Rent already collected that has not been paid out yet. Pay it from Disbursements, with the month's statement.",
+          "accion": "Go to disbursements"
+        },
+        "sinArrendar": {
+          "tituloUno": "“{{inmueble}}” is not rented",
+          "titulo": "{{n}} of {{total}} units are not rented",
+          "detalle": "Every empty month is rent the owner does not receive. Check the listing, the price and the candidates.",
+          "accionUno": "View the unit",
+          "accion": "View the units"
+        }
       },
       "table": {
         "searchPlaceholder": "Search by name, email, document...",

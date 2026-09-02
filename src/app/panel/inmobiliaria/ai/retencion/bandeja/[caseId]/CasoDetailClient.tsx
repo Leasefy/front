@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { ChatText, ClipboardText, Buildings, Copy, Check } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { useRetencionCaso } from '@/lib/hooks/retencion/use-retencion'
@@ -294,18 +295,22 @@ function MensajeTab({ bundle }: { bundle: CaseBundle }) {
   if (!guard.canDraftMessage) {
     return (
       <Section title="Mensaje al propietario">
-        <p className="text-sm text-rose-600 dark:text-rose-400">
-          Bloqueado por guardrails {guard.reasons.length ? `(${guard.reasons.join(', ')})` : ''}. Revisa la consistencia de datos antes de redactar.
-        </p>
+        <AlertaAccionable severidad="danger" titulo="No se puede redactar el mensaje todavía">
+          {guard.reasons.length
+            ? `Los datos del caso no cuadran (${guard.reasons.join(', ')}). Revisalos antes de escribirle al propietario.`
+            : 'Los datos del caso no cuadran. Revisalos antes de escribirle al propietario.'}
+        </AlertaAccionable>
       </Section>
     )
   }
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-3 text-xs text-amber-800 dark:text-amber-300">
-        Revisión humana obligatoria — Laura nunca envía sola (v1). Revisa, ajusta y envía tú desde tu canal.
-      </div>
+      {/* Antes: «Laura nunca envía sola (v1)» — nombre interno y versión en la
+          cara de la inmobiliaria, en una caja ámbar fuera del sistema de tokens. */}
+      <AlertaAccionable severidad="info" titulo="El mensaje no se manda solo: lo revisás y lo enviás vos">
+        El asistente redacta el borrador de abajo. Ajustalo si hace falta, copialo y mandalo desde tu WhatsApp o correo.
+      </AlertaAccionable>
 
       <Section title="Borrador de mensaje">
         <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">

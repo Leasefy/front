@@ -9,7 +9,6 @@ import {
   EyeSlash,
   Copy,
   Check,
-  ShieldCheck,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { IconButton } from '@leasefy/cadence';
@@ -192,13 +191,9 @@ export function PropietarioBankInfo({
         </div>
       </div>
 
-      {/* Verification Badge */}
-      <div className="mt-4 pt-3 border-t border-border-faint dark:border-border-strong">
-        <div className="flex items-center gap-2 text-success">
-          <ShieldCheck className="w-4 h-4" />
-          <span className="text-xs font-medium">{t('inmobiliaria.propietario.bankInfo.verified')}</span>
-        </div>
-      </div>
+      {/* Acá había un sello «Datos verificados» permanente. Nadie verifica
+          nada: la cuenta es lo que alguien tipeó. Un sello que siempre está
+          no informa, y el día que haya verificación real se agrega con ella. */}
     </div>
   );
 }

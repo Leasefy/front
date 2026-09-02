@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import {
   Buildings,
   Users,
@@ -11,7 +12,6 @@ import {
   ChartLine,
   Kanban,
   UserCircle,
-  Wrench,
   Clock,
   Warning,
   CheckCircle,
@@ -272,10 +272,12 @@ export default function InmobiliariaDashboardPage() {
   };
 
   // Etiqueta del mes en curso (es-CO) para el resumen financiero.
-  const currentMonthLabel = new Intl.DateTimeFormat('es-CO', {
+  // Sólo la inicial en mayúscula: con `capitalize` de CSS salía «Septiembre De 2026».
+  const mesCrudo = new Intl.DateTimeFormat('es-CO', {
     month: 'long',
     year: 'numeric',
   }).format(new Date());
+  const currentMonthLabel = mesCrudo.charAt(0).toUpperCase() + mesCrudo.slice(1);
   const { agentes } = useAgentes({ skip: permLoading || !canAccess('agentes', 'view') });
   const { pipelineItems } = usePipelineItems({ skip: permLoading || !canAccess('pipeline', 'view') });
   const { cobros } = useCobros(undefined, { skip: permLoading || !canAccess('cobros', 'view') });
@@ -297,6 +299,7 @@ export default function InmobiliariaDashboardPage() {
   const pendingMaintenance = mantenimientos.filter(
     (m) => m.status !== 'completed' && m.status !== 'cancelled'
   );
+  const cobrosEnMora = pendingCobros.filter((c) => c.status === 'late');
 
   // First load: distinguish "loading" from "empty agency" so the panel never
   // renders silent zeros while the KPIs are still in flight.
@@ -479,55 +482,29 @@ export default function InmobiliariaDashboardPage() {
         </div>
       </div>
 
-      {/* Alerts Section */}
-      {(pendingCobros.filter(c => c.status === 'late').length > 0 || pendingMaintenance.length > 0) && (
-        <div className="rounded-xl border border-warning/30 bg-warning-soft p-6">
-          <div className="flex items-start gap-4">
-            <div className="rounded-md p-2 bg-warning-soft">
-              <Warning weight="duotone" className="h-5 w-5 text-warning" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-base font-semibold text-warning">{t('inmobiliaria.dashboard.alerts.title')}</h3>
-              <div className="mt-2 space-y-2">
-                {pendingCobros.filter(c => c.status === 'late').length > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-warning">
-                    <CurrencyDollar className="h-4 w-4" />
-                    <span>
-                      {t('inmobiliaria.dashboard.alerts.latePayments', {
-                        count: pendingCobros.filter(c => c.status === 'late').length,
-                        amount: formatCurrency(
-                          pendingCobros
-                            .filter(c => c.status === 'late')
-                            .reduce((sum, c) => sum + c.pendingAmount, 0)
-                        ),
-                      })}
-                    </span>
-                    <Link
-                      href="/panel/inmobiliaria/cobros?status=late"
-                      className="ml-auto font-medium hover:underline"
-                    >
-                      {t('inmobiliaria.dashboard.alerts.viewPayments')}
-                    </Link>
-                  </div>
-                )}
-                {pendingMaintenance.length > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-warning">
-                    <Wrench className="h-4 w-4" />
-                    <span>
-                      {t('inmobiliaria.dashboard.alerts.pendingMaintenance', { count: pendingMaintenance.length })}
-                    </span>
-                    <Link
-                      href="/panel/inmobiliaria/operaciones"
-                      className="ml-auto font-medium hover:underline"
-                    >
-                      {t('inmobiliaria.dashboard.alerts.viewRequests')}
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Alertas: una por asunto, cada una con el número, qué hacer y el botón. */}
+      {cobrosEnMora.length > 0 && (
+        <AlertaAccionable
+          severidad="warning"
+          titulo={t('inmobiliaria.dashboard.alerts.latePayments', {
+            count: cobrosEnMora.length,
+            amount: formatCurrency(cobrosEnMora.reduce((sum, c) => sum + c.pendingAmount, 0)),
+          })}
+          accion={{ label: t('inmobiliaria.dashboard.alerts.viewPayments'), href: '/panel/inmobiliaria/cobros?status=late' }}
+          data-testid="alerta-cobros-en-mora"
+        >
+          {t('inmobiliaria.dashboard.alerts.latePaymentsDetalle')}
+        </AlertaAccionable>
+      )}
+      {pendingMaintenance.length > 0 && (
+        <AlertaAccionable
+          severidad="info"
+          titulo={t('inmobiliaria.dashboard.alerts.pendingMaintenance', { count: pendingMaintenance.length })}
+          accion={{ label: t('inmobiliaria.dashboard.alerts.viewRequests'), href: '/panel/inmobiliaria/operaciones' }}
+          data-testid="alerta-mantenimientos"
+        >
+          {t('inmobiliaria.dashboard.alerts.pendingMaintenanceDetalle')}
+        </AlertaAccionable>
       )}
 
       {/* Financial Summary */}
@@ -535,7 +512,7 @@ export default function InmobiliariaDashboardPage() {
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="flex items-center gap-2 text-base font-semibold text-fg tracking-tight"><BrandDot />{t('inmobiliaria.dashboard.financial.title')}</h2>
-            <p className="text-sm text-fg-muted mt-0.5 capitalize">{currentMonthLabel}</p>
+            <p className="text-sm text-fg-muted mt-0.5">{currentMonthLabel}</p>
           </div>
           <Link
             href="/panel/inmobiliaria/reportes"

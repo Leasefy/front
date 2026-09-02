@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { mesEnTitulo } from '@/lib/utils/mes';
 import { motion } from 'framer-motion';
 import {
   HouseLine,
@@ -41,9 +42,7 @@ const STATUS_BORDER_COLORS: Record<CobroStatus, string> = {
  * Format month string (2026-02) to Spanish display (Febrero 2026)
  */
 function formatMonth(month: string): string {
-  const [year, monthNum] = month.split('-');
-  const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-  return date.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+  return mesEnTitulo(month);
 }
 
 /**
@@ -142,7 +141,7 @@ export function CobroCard({
                 {cobro.propertyTitle}
               </h3>
             </div>
-            <p className="text-sm text-fg-muted capitalize">
+            <p className="text-sm text-fg-muted">
               {formatMonth(cobro.month)}
             </p>
           </div>

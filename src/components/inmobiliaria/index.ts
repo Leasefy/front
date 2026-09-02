@@ -78,7 +78,6 @@ export type { CobroFiltersState } from './CobroFilters';
 export { RegistrarPagoModal } from './RegistrarPagoModal';
 export { DesgloseAdeudado } from './DesgloseAdeudado';
 export { RecibosDeCajaHistorial } from './RecibosDeCajaHistorial';
-export { MoraAlert, MoraAlertCompact } from './MoraAlert';
 export { CobroResumen, CobroResumenCompact } from './CobroResumen';
 export { RecordatorioConfig } from './RecordatorioConfig';
 export type { RecordatorioConfigData } from './RecordatorioConfig';

@@ -40,8 +40,17 @@ export interface Propietario {
   propertyCount: number;
   activeLeases: number;
   totalMonthlyRent: number;
+  /**
+   * Comisión mensual REAL de la agencia sobre los arrendados (Σ canon ×
+   * porcentaje de cada mandato), calculada en el back. Opcional porque un
+   * back viejo no la manda; sin ella no se estima nada (el «~10 %» que
+   * salía antes era inventado).
+   */
+  totalCommission?: number;
+  /** Lo que la inmobiliaria le debe: Σ neto de las dispersiones pendientes o en proceso. */
   pendingBalance: number;
-  lastPaymentDate?: string;
+  /** Última dispersión completada. */
+  lastPaymentDate?: string | null;
   notes?: string;
   tags?: string[];
   createdAt: string;

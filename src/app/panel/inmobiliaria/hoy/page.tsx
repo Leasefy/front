@@ -6,8 +6,6 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { getActiveAgents } from '@/lib/types/ai-agents';
-import { InsightsPanel } from '@/components/inmobiliaria/InsightsPanel';
-import { deriveInsights } from '@/lib/insights/engine';
 
 /** A link/row inside a system block. `soon` renders muted + "Pronto" pill. */
 interface BlockItem {
@@ -97,17 +95,6 @@ const BLOCKS: SystemBlock[] = [
 export default function HoyPage() {
   const { t, locale } = useI18n();
   const agents = getActiveAgents();
-  // Vista previa de insights (en prod: deriveInsights() sobre los datos reales de la operación).
-  const previewInsights = deriveInsights({
-    contratosPorVencer30d: 18,
-    contratosSinGestion: 6,
-    inquilinosEnMora: 42,
-    moraPrioritaria: 11,
-    montoPorDispersar: 84_000_000,
-    coberturaDispersarPct: 62,
-    propiedadesEstancadas7d: 0,
-    firmasPendientes: 0,
-  });
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
@@ -118,8 +105,10 @@ export default function HoyPage() {
         <p className="text-body text-muted-foreground max-w-2xl">{t('inmobiliaria.hoy.subtitle')}</p>
       </header>
 
-      {/* Insights & Alertas — real engine (v6-05); preview data until backend hooks wire in */}
-      <InsightsPanel insights={previewInsights} preview />
+      {/* Acá había un panel de «Insights & Alertas» con números escritos a
+          mano («42 inquilinos en mora», «$84.000.000 por dispersar») cuyos
+          botones llevaban a pantallas reales que no tenían nada de eso. Las
+          alertas reales viven en el Piloto (/panel/inmobiliaria/piloto). */}
 
       {/* Autopilot activo */}
       {agents.length > 0 && (

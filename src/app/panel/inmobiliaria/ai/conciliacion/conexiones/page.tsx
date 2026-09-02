@@ -27,6 +27,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { toast } from 'sonner'
 import { PlugsConnected, Plus } from '@phosphor-icons/react'
 
@@ -379,17 +380,14 @@ function ConciliacionConexiones() {
 
       {/* Aviso fail-soft: backend no disponible */}
       {!isLoading && backendUnavailable && (
-        <div
-          className="rounded-lg border border-warning/30 bg-warning-soft text-warning p-3"
-          role="status"
+        <AlertaAccionable
+          severidad="warning"
+          titulo="Las conexiones bancarias no están disponibles en tu cuenta todavía"
           data-testid="conexiones-backend-warning"
         >
-          <p className="text-xs">
-            No se pudieron cargar las conexiones: esta función requiere el backend de conciliación
-            desplegado. Podés ver el formulario, pero registrar o actualizar conexiones no estará
-            disponible hasta que el servicio esté activo.
-          </p>
-        </div>
+          Podés ver el formulario, pero no se puede registrar ni actualizar una conexión hasta que el
+          servicio esté activo. Mientras tanto, cargá el extracto del banco a mano desde Cobros.
+        </AlertaAccionable>
       )}
 
       {/* Registrar conexión */}

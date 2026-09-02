@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -401,10 +402,18 @@ export function DispersionDetail({
                 /* Un propietario sin cuenta es normal y hay que decirlo: sin
                    esto no se le puede girar, y en blanco parece un error de
                    carga en vez de un dato que falta pedirle. */
-                <p className="text-sm text-muted-foreground">
-                  Este propietario no tiene cuenta bancaria registrada. Hay que
-                  pedírsela antes de girarle.
-                </p>
+                <AlertaAccionable
+                  severidad="danger"
+                  titulo="Sin cuenta bancaria: no se le puede girar"
+                  accion={{
+                    label: 'Cargar cuenta bancaria',
+                    href: `/panel/inmobiliaria/propietarios/${dispersion.propietarioId}?volver=${encodeURIComponent('/panel/inmobiliaria/dispersiones')}`,
+                  }}
+                  data-testid="dispersion-sin-cuenta"
+                >
+                  Pedile al propietario banco, tipo, número y titular, y cargalos en su ficha. Hasta entonces
+                  este giro queda esperando.
+                </AlertaAccionable>
               ) : (
               <div className="grid grid-cols-2 gap-4">
                 <div>

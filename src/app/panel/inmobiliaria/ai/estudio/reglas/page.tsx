@@ -18,19 +18,18 @@
 import { useState } from 'react'
 import {
   Bell,
-  CheckCircle,
   ChatCircleText,
   ChatsCircle,
   Scales,
   ShieldCheck,
   UserFocus,
   Users,
-  WarningCircle,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { Button } from '@/components/ui/button'
+import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -183,7 +182,6 @@ function SwitchRow({
 function EstudioReglas() {
   const { t } = useI18n()
   const [reglas, setReglas] = useState<ReglasState>(INITIAL_STATE)
-  const [saved, setSaved] = useState(false)
 
   /** i18n con fallback — nunca muestra la clave cruda. */
   const tf = (key: string, fallback: string): string => {
@@ -193,16 +191,17 @@ function EstudioReglas() {
 
   const set = <K extends keyof ReglasState>(key: K, value: ReglasState[K]) => {
     setReglas((prev) => ({ ...prev, [key]: value }))
-    if (saved) setSaved(false)
   }
 
   /** Alterna un valor dentro de un array (chips multi-select). */
   const toggleInArray = <T,>(arr: T[], value: T): T[] =>
     arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]
 
+  // Sin backend no hay guardado: el botón va deshabilitado y no se finge un
+  // «guardado» verde. Antes decía «Vista previa… los cambios no se aplican»
+  // con un «Guardar reglas» activo justo debajo (Nico, 2026-09-02).
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setSaved(true)
   }
 
   /* ---- catálogos de opciones (con fallback es) ---- */
@@ -579,36 +578,20 @@ function EstudioReglas() {
           </div>
         </section>
 
-        {/* Confirmación inline (UX-only, sin backend) */}
-        {saved && (
-          <div
-            role="status"
-            className="flex items-start gap-3 rounded-xl border border-success/30 bg-success-soft p-4"
-          >
-            <CheckCircle className="w-5 h-5 text-success-700 shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
-            <p className="text-sm text-success-700">
-              {tf(
-                `${NS}.reglas.confirmacion`,
-                'Próximamente: estas reglas se guardarán y el agente las aplicará a los nuevos estudios.',
-              )}
-            </p>
-          </div>
-        )}
+        <AlertaAccionable
+          severidad="info"
+          titulo={tf(`${NS}.reglas.avisoTitulo`, 'Estas reglas todavía no se guardan')}
+          data-testid="reglas-no-se-guardan"
+        >
+          {tf(
+            `${NS}.reglas.aviso`,
+            'La pantalla muestra cómo se va a configurar el estudio; hoy el agente usa sus reglas por defecto. Cuando se conecte, lo que elijas acá se aplica a los estudios nuevos.',
+          )}
+        </AlertaAccionable>
 
-        {/* Aviso UX-only */}
-        <div className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning-soft p-4">
-          <WarningCircle className="w-5 h-5 text-warning-700 shrink-0 mt-0.5" weight="duotone" aria-hidden="true" />
-          <p className="text-sm text-warning-700">
-            {tf(
-              `${NS}.reglas.aviso`,
-              'Vista previa de configuración. Aún no se conecta con el agente: los cambios no se aplican.',
-            )}
-          </p>
-        </div>
-
-        {/* CTA primaria */}
+        {/* CTA primaria — deshabilitada hasta que exista el guardado. */}
         <div className="flex items-center justify-end gap-3 pt-1">
-          <Button type="submit" hideArrow>
+          <Button type="submit" hideArrow disabled title={tf(`${NS}.reglas.avisoTitulo`, 'Estas reglas todavía no se guardan')}>
             {tf(`${NS}.reglas.guardar`, 'Guardar reglas')}
           </Button>
         </div>

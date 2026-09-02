@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { mesEnTitulo } from '@/lib/utils/mes';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { conRegreso } from '@/lib/nav/ruta-de-regreso';
@@ -59,30 +60,6 @@ interface CobroDetailProps {
    * para la misma plata en la misma pantalla.
    */
   onCobroActualizado?: (cobro: CobroConDesglose) => void;
-}
-
-// Mock reminder history
-function getMockReminderHistory(cobro: Cobro) {
-  if (cobro.remindersSent === 0) return [];
-
-  const reminders = [];
-  const channels = ['email', 'whatsapp'];
-  const baseDate = new Date(cobro.dueDate);
-
-  for (let i = 0; i < cobro.remindersSent; i++) {
-    const reminderDate = new Date(baseDate);
-    reminderDate.setDate(baseDate.getDate() + (i < 2 ? -3 + i : i));
-
-    reminders.push({
-      id: `reminder-${i + 1}`,
-      date: reminderDate.toISOString(),
-      channel: channels[i % channels.length],
-      type: i < 2 ? 'pre' : 'mora',
-      status: 'sent',
-    });
-  }
-
-  return reminders;
 }
 
 /**
@@ -175,7 +152,7 @@ export function CobroDetail({
   onSendReminder,
   onCobroActualizado,
 }: CobroDetailProps) {
-  const { t, formatDate } = useI18n();
+  const { t, formatDate, locale } = useI18n();
   const [isSendingReminder, setIsSendingReminder] = React.useState(false);
   const { stop: stopLenis, start: startLenis } = useLenis();
 
@@ -229,11 +206,6 @@ export function CobroDetail({
     if (!cobro) return null;
     return consignaciones.find((c) => c.id === cobro.consignacionId) ?? null;
   }, [cobro, consignaciones]);
-
-  const reminderHistory = React.useMemo(() => {
-    if (!cobro) return [];
-    return getMockReminderHistory(cobro);
-  }, [cobro]);
 
   // Handle send reminder
   const handleSendReminder = async () => {
@@ -426,11 +398,8 @@ export function CobroDetail({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.detail.monthLabel')}</p>
-                  <p className="font-medium text-foreground capitalize">
-                    {formatDate(new Date(cobro.month + '-01'), {
-                      month: 'long',
-                      year: 'numeric',
-                    })}
+                  <p className="font-medium text-foreground">
+                    {mesEnTitulo(cobro.month, locale === 'en' ? 'en' : 'es')}
                   </p>
                 </div>
                 <div>
@@ -504,48 +473,30 @@ export function CobroDetail({
               <Bell className="w-4 h-4 text-primary" />
               {t('inmobiliaria.cobros.detail.remindersSection')} ({cobro.remindersSent})
             </h3>
-            {reminderHistory.length > 0 ? (
-              <div className="space-y-2">
-                {reminderHistory.map((reminder) => (
-                  <div
-                    key={reminder.id}
-                    className="p-3 rounded-xl border border-border bg-muted/30 flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center">
-                        {reminder.channel === 'email' ? (
-                          <Envelope className="w-4 h-4 text-primary" />
-                        ) : (
-                          <WhatsappLogo className="w-4 h-4 text-primary" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground capitalize">
-                          {reminder.channel}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {reminder.type === 'pre' ? t('inmobiliaria.cobros.detail.preExpiry') : t('inmobiliaria.cobros.detail.overdue')}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(new Date(reminder.date), {
+            {/* Lo que se sabe de verdad: cuántos salieron y cuándo fue el
+                último. Antes se INVENTABA una lista (fechas, canal email/
+                WhatsApp alternado, «pre-vencimiento»/«mora») a partir del
+                contador — recordatorios que nunca existieron, con fecha. */}
+            {cobro.remindersSent > 0 ? (
+              <div className="p-3 rounded-xl border border-border bg-muted/30 flex items-center gap-3" data-testid="recordatorios-resumen">
+                <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center">
+                  <Bell className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    {t('inmobiliaria.cobros.detail.remindersCount', { count: cobro.remindersSent })}
+                  </p>
+                  {cobro.lastReminderDate && (
+                    <p className="text-xs text-muted-foreground">
+                      {t('inmobiliaria.cobros.detail.lastReminder')}{' '}
+                      {formatDate(new Date(cobro.lastReminderDate), {
                         day: 'numeric',
                         month: 'short',
+                        year: 'numeric',
                       })}
-                    </span>
-                  </div>
-                ))}
-                {cobro.lastReminderDate && (
-                  <p className="text-xs text-muted-foreground">
-                    {t('inmobiliaria.cobros.detail.lastReminder')}{' '}
-                    {formatDate(new Date(cobro.lastReminderDate), {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </p>
-                )}
+                    </p>
+                  )}
+                </div>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground p-4 rounded-xl border border-dashed border-border text-center">

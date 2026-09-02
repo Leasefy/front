@@ -1,5 +1,6 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
+import { mesEnTitulo } from '@/lib/utils/mes';
 
 import { Suspense, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
@@ -19,7 +20,6 @@ import {
   Clock,
   CurrencyDollar,
   House,
-  Warning,
   CheckCircle,
   X,
   FileText,
@@ -37,6 +37,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
 import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
+import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import {
   DropdownList,
   DropdownListContent,
@@ -283,10 +284,9 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
     failed: t('inmobiliaria.dispersiones.status.failed'),
   };
 
-  const monthLabel = new Date(dispersion.month + '-01').toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
-    month: 'long',
-    year: 'numeric',
-  });
+  // `new Date('2026-08-01')` es medianoche UTC: en Colombia cae al 31 de julio
+  // y la fila decía «julio» sobre el giro de agosto. Ver lib/utils/mes.
+  const monthLabel = mesEnTitulo(dispersion.month, locale === 'en' ? 'en' : 'es');
 
   return (
     <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-card">
@@ -304,7 +304,7 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
           )}
         </div>
         <div>
-          <p className="text-sm font-medium text-foreground capitalize">
+          <p className="text-sm font-medium text-foreground">
             {monthLabel}
           </p>
           <p className="text-sm text-muted-foreground">
@@ -585,7 +585,12 @@ function PropietarioDetailContent() {
       </div>
 
       {/* Stats */}
-      <PropietarioStats propietario={propietario} variant="full" />
+      <PropietarioStats
+        propietario={propietario}
+        variant="full"
+        consignaciones={consignaciones}
+        onCargarCuenta={() => setShowEditModal(true)}
+      />
 
       {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -849,23 +854,27 @@ function PropietarioDetailContent() {
           <p className="text-sm text-muted-foreground">
             {t('inmobiliaria.propietarios.deleteConfirm', { name: propietario.name })}
           </p>
+          {/* Con inmuebles consignados el back no lo deja borrar: se dice
+              antes, con lo que hay que hacer, y el botón no se ofrece. */}
           {propietario.propertyCount > 0 && (
-            <div className="p-3 rounded-xl bg-warning-soft border border-warning/30">
-              <div className="flex items-center gap-2 text-warning">
-                <Warning className="w-4 h-4" />
-                <p className="text-sm">
-                  {t('inmobiliaria.propietarios.deleteWarningProperties', { count: propietario.propertyCount })}
-                </p>
-              </div>
-            </div>
+            <AlertaAccionable
+              severidad="danger"
+              titulo={t('inmobiliaria.propietarios.deleteBloqueado.titulo', { count: propietario.propertyCount })}
+              accion={{ label: t('inmobiliaria.propietarios.deleteBloqueado.accion'), href: '/panel/inmobiliaria/inmuebles' }}
+              data-testid="borrar-bloqueado"
+            >
+              {t('inmobiliaria.propietarios.deleteBloqueado.detalle')}
+            </AlertaAccionable>
           )}
           <div className="flex items-center gap-3 justify-end pt-4">
             <Button variant="secondary" hideArrow onClick={() => setShowDeleteModal(false)} disabled={isDeleting}>
               {t('inmobiliaria.common.cancel')}
             </Button>
-            <Button variant="destructive" hideArrow onClick={handleDelete} isLoading={isDeleting} disabled={isDeleting}>
-              {t('inmobiliaria.common.delete')}
-            </Button>
+            {propietario.propertyCount === 0 && (
+              <Button variant="destructive" hideArrow onClick={handleDelete} isLoading={isDeleting} disabled={isDeleting}>
+                {t('inmobiliaria.common.delete')}
+              </Button>
+            )}
           </div>
         </div>
       </Modal>

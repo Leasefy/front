@@ -117,22 +117,33 @@ function limpiarEncabezado(bruto: unknown): string {
   return String(bruto ?? '').replace(/\s+/g, ' ').trim();
 }
 
-export async function parseSpreadsheetFile(
-  file: File,
-  sheetName?: string
-): Promise<ParseResult> {
-  const XLSX = await import('xlsx');
+export interface ParseOptions {
+  /**
+   * Fila (0-based) donde están los encabezados. Por defecto la primera. Los
+   * extractos bancarios traen arriba el número de cuenta y el rango de fechas:
+   * el encabezado real puede estar en la fila 3 o 4. Ver
+   * `detectarFilaDeEncabezado` en `@/lib/cobros/extracto-bancario`.
+   */
+  filaDeEncabezado?: number;
+}
 
+/**
+ * Las primeras `n` filas de la planilla, como matrices de celdas (texto), sin
+ * asumir cuál es el encabezado. Para buscar dónde empieza la tabla de verdad.
+ */
+export async function leerPrimerasFilas(file: File, n = 40): Promise<string[][]> {
+  const XLSX = await import('xlsx');
+  const libro = await leerLibro(XLSX, file);
+  const hoja = libro.Sheets[libro.SheetNames[0]];
+  if (!hoja) return [];
+  const filas = XLSX.utils.sheet_to_json<unknown[]>(hoja, { header: 1, raw: false, defval: '' });
+  return filas.slice(0, n).map((f) => f.map((c) => (c === null || c === undefined ? '' : String(c))));
+}
+
+async function leerLibro(XLSX: typeof import('xlsx'), file: File): Promise<import('xlsx').WorkBook> {
   const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
   const esTexto = EXTENSIONES_DE_TEXTO.includes(ext);
   const buffer = await file.arrayBuffer();
-
-  // Los binarios (xlsx/xls/ods) traen su codificación adentro; los de texto
-  // no, y por eso hay que deducirla. El `codepage` sólo aplica a los .xls
-  // viejos (BIFF): Excel en español los escribe en Windows-1252.
-  // Un binario tiene firma: xlsx y ods son ZIP (PK\x03\x04), xls es CFB
-  // (D0 CF 11 E0). Un archivo dañado o renombrado no la tiene, y SheetJS, en
-  // vez de fallar, lo lee «como pueda» y devuelve basura con cara de planilla.
   if (!esTexto && ext !== 'fods') {
     const b = new Uint8Array(buffer.slice(0, 4));
     const esZip = b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
@@ -144,16 +155,11 @@ export async function parseSpreadsheetFile(
       );
     }
   }
-
-  let workbook: import('xlsx').WorkBook;
   try {
-    workbook = esTexto
+    return esTexto
       ? XLSX.read(decodificarTexto(buffer), { type: 'string' })
       : XLSX.read(
           buffer,
-          // `cellNF` trae el formato de cada celda (`cell.z`): sin él no se
-          // puede saber si un número ES una fecha, y la conversión a ISO de
-          // abajo no tendría con qué decidir.
           ext === 'xls'
             ? { type: 'array', codepage: 1252, cellNF: true }
             : { type: 'array', cellNF: true },
@@ -165,6 +171,19 @@ export async function parseSpreadsheetFile(
       { cause: e },
     );
   }
+}
+
+export async function parseSpreadsheetFile(
+  file: File,
+  sheetName?: string,
+  opciones: ParseOptions = {},
+): Promise<ParseResult> {
+  const XLSX = await import('xlsx');
+  const filaDeEncabezado = opciones.filaDeEncabezado ?? 0;
+
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+  const esTexto = EXTENSIONES_DE_TEXTO.includes(ext);
+  const workbook = await leerLibro(XLSX, file);
 
   const sheetNames = workbook.SheetNames;
   const targetSheet = sheetName && sheetNames.includes(sheetName)
@@ -181,7 +200,7 @@ export async function parseSpreadsheetFile(
     ? (XLSX.utils.sheet_to_json<unknown[]>(worksheet, {
         header: 1,
         raw: false,
-        range: 0,
+        range: filaDeEncabezado,
       })[0] ?? [])
     : [];
 
@@ -190,6 +209,7 @@ export async function parseSpreadsheetFile(
     ? XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, {
         defval: '',
         raw: false,
+        range: filaDeEncabezado,
       })
     : [];
 

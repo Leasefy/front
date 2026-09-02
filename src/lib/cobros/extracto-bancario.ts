@@ -13,7 +13,16 @@
 import { normalizarEncabezado } from '@/lib/migracion/columnas-de-tercero';
 import type { FilaDeExtracto } from '@/lib/api/conciliacion-bancaria.types';
 
-export type CampoDeExtracto = 'fecha' | 'valor' | 'credito' | 'debito' | 'descripcion' | 'referencia';
+export type CampoDeExtracto =
+  | 'fecha'
+  | 'valor'
+  | 'credito'
+  | 'debito'
+  | 'descripcion'
+  | 'referencia'
+  | 'documento'
+  | 'referencia2'
+  | 'canal';
 
 export interface ColumnaDeExtracto {
   campo: CampoDeExtracto;
@@ -83,28 +92,67 @@ export const COLUMNAS_DE_EXTRACTO: readonly ColumnaDeExtracto[] = [
       'observaciones',
       'detalle transaccion',
       'tipo de transaccion',
-      'referencia 1',
     ],
   },
   {
     campo: 'referencia',
     titulo: 'Referencia',
-    ayuda: 'El número del documento o comprobante, si el banco lo manda.',
+    ayuda: 'Lo que escribió quien pagó (Bancolombia: «Referencia 1»). Ahí suele venir el apartamento, el nombre o la cédula.',
     sinonimos: [
+      'referencia 1',
       'referencia',
+      'ref 1',
+      'ref',
+      'numero de referencia',
+      'referencia de pago',
+      'concepto de pago',
+      'codigo',
+    ],
+  },
+  {
+    campo: 'documento',
+    titulo: 'Documento',
+    ayuda: 'El documento del pagador o del comprobante, si viene aparte. Se suma a la descripción para el cruce.',
+    sinonimos: [
       'documento',
-      'numero',
       'numero de documento',
       'no documento',
       'no de documento',
       'nro documento',
       'num documento',
-      'referencia 2',
       'comprobante',
-      'codigo',
+      'numero',
     ],
   },
+  {
+    campo: 'referencia2',
+    titulo: 'Referencia 2',
+    ayuda: 'Si el banco manda una segunda referencia. Se suma a la descripción para el cruce.',
+    sinonimos: ['referencia 2', 'ref 2'],
+  },
+  {
+    campo: 'canal',
+    titulo: 'Sucursal / canal',
+    ayuda: 'Por dónde entró (PSE, app, oficina). Sólo informativo.',
+    sinonimos: ['sucursal canal', 'sucursal / canal', 'canal', 'sucursal', 'oficina'],
+  },
 ];
+
+/**
+ * ¿En qué fila están los encabezados? Los extractos traen arriba el número de
+ * cuenta y el rango («Movimientos del 01/09 al 30/09»); la tabla de verdad
+ * empieza más abajo. Es la primera fila (entre las primeras 40) que nombra
+ * una fecha y alguna forma de valor. `null` si ninguna sirve.
+ */
+export function detectarFilaDeEncabezado(filas: readonly (readonly string[])[]): number | null {
+  for (let i = 0; i < Math.min(filas.length, 40); i++) {
+    const celdas = filas[i].map((c) => String(c ?? ''));
+    if (celdas.filter((c) => c.trim() !== '').length < 2) continue;
+    const mapeo = mapearColumnasDeExtracto(celdas);
+    if (mapeo.fecha && (mapeo.valor || mapeo.credito || mapeo.debito)) return i;
+  }
+  return null;
+}
 
 /** Campo → encabezado del archivo. */
 export type MapeoDeExtracto = Partial<Record<CampoDeExtracto, string>>;
@@ -143,6 +191,13 @@ export function mapearColumnasDeExtracto(encabezados: string[]): MapeoDeExtracto
       mapeo[columna.campo] = elegido.encabezado;
       usados.add(elegido.encabezado);
     }
+  }
+
+  // Sin columna de referencia, el documento del comprobante hace de referencia:
+  // es lo que la pantalla muestra en esa columna y lo que el back guarda aparte.
+  if (!mapeo.referencia && mapeo.documento) {
+    mapeo.referencia = mapeo.documento;
+    delete mapeo.documento;
   }
 
   return mapeo;
@@ -293,7 +348,17 @@ export function armarFilasDeExtracto(
     }
 
     const referencia = mapeo.referencia ? texto(cruda[mapeo.referencia]).slice(0, 120) : '';
-    let descripcion = mapeo.descripcion ? texto(cruda[mapeo.descripcion]).slice(0, 300) : '';
+    // Lo que el banco manda en columnas aparte (documento del pagador,
+    // segunda referencia, canal) se pega a la descripción: el cruce con los
+    // cobros busca apellidos, cédulas y direcciones en ese texto, y una
+    // cédula en la columna «Documento» vale tanto como en la descripción.
+    const extras = (['documento', 'referencia2', 'canal'] as const)
+      .map((k) => (mapeo[k] ? texto(cruda[mapeo[k]!]) : ''))
+      .filter(Boolean);
+    let descripcion = [mapeo.descripcion ? texto(cruda[mapeo.descripcion]) : '', ...extras]
+      .filter(Boolean)
+      .join(' · ')
+      .slice(0, 300);
     if (!descripcion) descripcion = referencia;
     if (!descripcion) {
       descartadas.push({ fila: numero, motivo: 'Sin descripción ni referencia.' });

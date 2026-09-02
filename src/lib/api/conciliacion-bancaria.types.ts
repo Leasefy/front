@@ -19,6 +19,12 @@ export interface ResultadoDeCarga {
   repetidas: number;
   salidas: number;
   descartadas: number;
+  /** Líneas nuevas que ya estaban pagadas por la pasarela: quedan ignoradas con su motivo. */
+  yaPagadasPorPasarela: number;
+  /** Entradas pendientes de conciliar en la agencia, después de esta carga. */
+  pendientes: number;
+  /** De las pendientes, cuántas tienen exactamente un candidato seguro. */
+  seguras: number;
 }
 
 export interface CandidatoDeConciliacion {

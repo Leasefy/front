@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   armarFilasDeExtracto,
+  detectarFilaDeEncabezado,
   faltantesDelMapeo,
   mapearColumnasDeExtracto,
   parsearFechaDeExtracto,
@@ -131,5 +132,65 @@ describe('armarFilasDeExtracto', () => {
     );
     expect(r.filas.map((f) => f.valorCop)).toEqual([1800000, -45000]);
     expect(r.descartadas).toEqual([{ fila: 4, motivo: 'Valor ilegible.' }]);
+  });
+});
+
+/**
+ * Lo que de verdad baja de la Sucursal Virtual de Bancolombia (Movimientos →
+ * Descargar): FECHA · DESCRIPCIÓN · SUCURSAL / CANAL · REFERENCIA 1 ·
+ * REFERENCIA 2 · DOCUMENTO · VALOR, con el valor firmado y la fecha AAAA/MM/DD.
+ * Y lo que queda cuando alguien lo abre en Excel y lo vuelve a guardar: la
+ * cuenta y el rango arriba, `;` y `1.500.000,00`.
+ */
+describe('el archivo de Bancolombia tal como lo entrega el banco', () => {
+  const ENCABEZADO = ['FECHA', 'DESCRIPCIÓN', 'SUCURSAL / CANAL', 'REFERENCIA 1', 'REFERENCIA 2', 'DOCUMENTO', 'VALOR'];
+
+  it('mapea las siete columnas: Referencia 1 es LA referencia, no la descripción', () => {
+    const m = mapearColumnasDeExtracto(ENCABEZADO);
+    expect(m).toEqual({
+      fecha: 'FECHA',
+      descripcion: 'DESCRIPCIÓN',
+      canal: 'SUCURSAL / CANAL',
+      referencia: 'REFERENCIA 1',
+      referencia2: 'REFERENCIA 2',
+      documento: 'DOCUMENTO',
+      valor: 'VALOR',
+    });
+  });
+
+  it('el documento y el canal se suman a la descripción para el cruce; el valor firmado se respeta', () => {
+    const m = mapearColumnasDeExtracto(ENCABEZADO);
+    const fila = (v: string[]) => Object.fromEntries(ENCABEZADO.map((h, i) => [h, v[i]]));
+    const { filas, descartadas } = armarFilasDeExtracto(
+      [
+        fila(['2026/09/01', 'TRANSFERENCIA DESDE NEQUI', 'APP', 'ARR-2026-09-0412', '', '0001032456789', '1500000.00']),
+        fila(['2026/09/02', 'RETIRO CAJERO', 'CAJERO', '', '', '', '-200000.00']),
+        fila(['2026/09/02', 'ABONO INTERESES', '', '', '', '', '1234.56']),
+      ],
+      m,
+    );
+    expect(descartadas).toEqual([]);
+    expect(filas[0]).toEqual({
+      fecha: '2026-09-01',
+      valorCop: 1500000,
+      descripcion: 'TRANSFERENCIA DESDE NEQUI · 0001032456789 · APP',
+      referencia: 'ARR-2026-09-0412',
+    });
+    expect(filas[1]).toMatchObject({ valorCop: -200000, descripcion: 'RETIRO CAJERO · CAJERO' });
+    expect(filas[2]).toMatchObject({ valorCop: 1235 });
+  });
+
+  it('re-guardado por Excel: la fila de encabezado no es la primera y se encuentra', () => {
+    const matriz = [
+      ['Cuenta de ahorros', '123-456789-01', '', '', '', '', ''],
+      ['Movimientos del 01/09/2026 al 03/09/2026', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', ''],
+      ['Fecha', 'Descripción', 'Sucursal / Canal', 'Referencia 1', 'Referencia 2', 'Documento', 'Valor'],
+      ['01/09/2026', 'TRANSFERENCIA DESDE NEQUI', 'APP', 'ARR-0412', '', '', '1.500.000,00'],
+    ];
+    expect(detectarFilaDeEncabezado(matriz)).toBe(3);
+    expect(detectarFilaDeEncabezado([['Cuenta', '123'], ['Saldo', '1.000']])).toBeNull();
+    // Una fila con una sola celda no es un encabezado, aunque diga «fecha».
+    expect(detectarFilaDeEncabezado([['fecha'], ['01/09/2026']])).toBeNull();
   });
 });

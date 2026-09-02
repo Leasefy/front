@@ -13,12 +13,13 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/components/ui/toast';
-import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
+import { leerPrimerasFilas, parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
 import { conciliacionBancariaApi } from '@/lib/api/conciliacion-bancaria.service';
 import type { ResultadoDeCarga } from '@/lib/api/conciliacion-bancaria.types';
 import {
   COLUMNAS_DE_EXTRACTO,
   armarFilasDeExtracto,
+  detectarFilaDeEncabezado,
   faltantesDelMapeo,
   mapearColumnasDeExtracto,
   type CampoDeExtracto,
@@ -49,7 +50,11 @@ export function CargarExtracto({ onCargado }: Props) {
     setLeyendo(true);
     setResultado(null);
     try {
-      const r = await parseSpreadsheetFile(f);
+      // Los extractos traen arriba la cuenta y el rango de fechas: la fila
+      // de encabezados hay que buscarla, no asumir que es la primera.
+      const primeras = await leerPrimerasFilas(f);
+      const filaDeEncabezado = detectarFilaDeEncabezado(primeras) ?? 0;
+      const r = await parseSpreadsheetFile(f, undefined, { filaDeEncabezado });
       if (r.headers.length === 0) {
         toast.error('El archivo no tiene encabezados: no hay cómo saber qué columna es la fecha.');
         return;
@@ -80,10 +85,21 @@ export function CargarExtracto({ onCargado }: Props) {
       const r = await conciliacionBancariaApi.cargarExtracto(archivo.name, armadas.filas);
       setResultado(r);
       onCargado(r);
+      const detalle = [
+        r.yaPagadasPorPasarela > 0
+          ? `${r.yaPagadasPorPasarela} ya ${r.yaPagadasPorPasarela === 1 ? 'estaba pagado' : 'estaban pagados'} por la pasarela y ${r.yaPagadasPorPasarela === 1 ? 'quedó marcado' : 'quedaron marcados'}.`
+          : '',
+        r.pendientes > 0
+          ? `${r.pendientes} por conciliar${r.seguras > 0 ? `, ${r.seguras} con candidato seguro` : ''}.`
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
       toast.success(
         r.nuevas === 0
           ? 'Nada nuevo: todas las líneas ya estaban cargadas.'
           : `${r.nuevas} ${r.nuevas === 1 ? 'movimiento nuevo' : 'movimientos nuevos'} del extracto.`,
+        detalle ? { description: detalle } : undefined,
       );
       limpiar();
     } catch (error) {
@@ -138,7 +154,12 @@ export function CargarExtracto({ onCargado }: Props) {
       {resultado && (
         <Banner variant={resultado.nuevas > 0 ? 'success' : 'info'} title="Extracto cargado">
           {resultado.nuevas} nuevas · {resultado.repetidas} ya estaban · {resultado.salidas} salidas de plata
-          {resultado.descartadas > 0 ? ` · ${resultado.descartadas} descartadas por ilegibles` : ''}.
+          {resultado.descartadas > 0 ? ` · ${resultado.descartadas} descartadas por ilegibles` : ''}
+          {resultado.yaPagadasPorPasarela > 0
+            ? ` · ${resultado.yaPagadasPorPasarela} ya ${resultado.yaPagadasPorPasarela === 1 ? 'pagada' : 'pagadas'} por la pasarela`
+            : ''}
+          . Quedan {resultado.pendientes} por conciliar
+          {resultado.seguras > 0 ? `, ${resultado.seguras} con candidato seguro` : ''}.
         </Banner>
       )}
 

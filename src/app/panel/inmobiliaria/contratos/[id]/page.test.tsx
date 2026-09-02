@@ -21,7 +21,10 @@ void React // jsx-preserve
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { useContractMock } = vi.hoisted(() => ({ useContractMock: vi.fn() }))
+const { useContractMock, permisos } = vi.hoisted(() => ({
+  useContractMock: vi.fn(),
+  permisos: { puede: false },
+}))
 
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'contract-1' }),
@@ -42,7 +45,7 @@ vi.mock('@/lib/hooks/useContracts', () => ({
 }))
 
 vi.mock('@/lib/hooks/usePermissions', () => ({
-  usePermissions: () => ({ canAccess: () => false }),
+  usePermissions: () => ({ canAccess: () => permisos.puede }),
 }))
 
 vi.mock('@/lib/auth/useAgencyAccess', () => ({
@@ -105,6 +108,16 @@ vi.mock('@/components/contratos/ConceptosDelContrato', () => ({
 vi.mock('@/components/contratos/InvitarInquilino', () => ({
   InvitarInquilino: () =>
     React.createElement('div', { 'data-testid': 'invitar-inquilino' }),
+}))
+vi.mock('@/components/contratos/CobrosDelContrato', () => ({
+  CobrosDelContrato: () =>
+    React.createElement('div', { 'data-testid': 'cobros' }),
+}))
+vi.mock('@/components/contratos/VincularInmueble', () => ({
+  VincularInmueble: ({ puedeVincular }: { puedeVincular: boolean }) =>
+    puedeVincular
+      ? React.createElement('button', { 'data-testid': 'vincular-inmueble' }, 'Vincular inmueble')
+      : null,
 }))
 
 // ── Import page AFTER mocks ───────────────────────────────────────────────
@@ -186,5 +199,64 @@ describe('ContratoDetallePage — the header identifier', () => {
     expect(container.textContent).toContain(`ID: ${CONTRACT_ID}`)
     expect(container.textContent).not.toContain('#undefined')
     expect(container.textContent).not.toContain('Contrato #')
+  })
+})
+
+describe('ContratoDetallePage — la cuenta del contrato', () => {
+  /*
+   * Nico (2026-09-02): «sigo sin ver que yo le pueda sumar conceptos a un
+   * contrato y adicional que pueda ver los cobros que ha tenido ese
+   * contrato». Los conceptos estaban abajo del pliegue en la columna
+   * angosta; los cobros no estaban. Ahora los dos van en la columna ancha,
+   * antes que el documento cuando el contrato ya está activo.
+   */
+  it('en un contrato activo, conceptos y cobros van ANTES del documento', async () => {
+    withContract(contract({ status: 'active' }))
+
+    await renderPage()
+
+    const conceptos = container.querySelector('[data-testid="conceptos"]')
+    const cobros = container.querySelector('[data-testid="cobros"]')
+    const documento = Array.from(container.querySelectorAll('h3')).find(
+      (h) => h.textContent === 'Documento',
+    )
+    expect(conceptos).not.toBeNull()
+    expect(cobros).not.toBeNull()
+    expect(documento).toBeDefined()
+    // `compareDocumentPosition`: 4 = el otro nodo viene DESPUÉS.
+    expect(conceptos!.compareDocumentPosition(documento!) & 4).toBe(4)
+    expect(cobros!.compareDocumentPosition(documento!) & 4).toBe(4)
+  })
+
+  it('mientras se firma, el documento manda: va antes que la cuenta', async () => {
+    withContract(contract({ status: 'pending_tenant' }))
+
+    await renderPage()
+
+    const cobros = container.querySelector('[data-testid="cobros"]')!
+    const documento = Array.from(container.querySelectorAll('h3')).find(
+      (h) => h.textContent === 'Documento',
+    )!
+    expect(documento.compareDocumentPosition(cobros) & 4).toBe(4)
+  })
+
+  it('sin inmueble, la tarjeta Propiedad ofrece vincularlo y dice que no genera cobros', async () => {
+    withContract(contract({ propertyId: null }))
+    permisos.puede = true
+
+    await renderPage()
+    permisos.puede = false
+
+    expect(container.textContent).toContain('Sin inmueble vinculado: este contrato no genera cobros.')
+    expect(container.querySelector('[data-testid="vincular-inmueble"]')).not.toBeNull()
+  })
+
+  it('con inmueble, no hay nada que vincular', async () => {
+    withContract(contract({ propertyId: 'prop-1' }))
+
+    await renderPage()
+
+    expect(container.querySelector('[data-testid="vincular-inmueble"]')).toBeNull()
+    expect(container.textContent).not.toContain('Sin inmueble vinculado')
   })
 })

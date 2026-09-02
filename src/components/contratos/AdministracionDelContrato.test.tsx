@@ -204,3 +204,63 @@ describe('la perilla del arrendador', () => {
     expect(actualizar.mock.calls[0][1].arrendadorResponsableIva).toBe(true)
   })
 })
+
+/*
+ * Los términos de cobro por contrato (lo que Juan describió): el plazo antes
+ * de la mora y el prorrateo del primer mes. Estaban en el DTO de creación y
+ * no se veían ni se podían corregir en un contrato activo.
+ */
+describe('los términos de cobro del contrato', () => {
+  it('en lectura, dice el plazo propio o que hereda los días de la inmobiliaria', () => {
+    render(contrato({ diasDePlazo: null, prorratearPrimerMes: false }))
+    expect(container.textContent).toContain('Los días de la inmobiliaria')
+    expect(container.textContent).toContain('Mes completo')
+
+    act(() => root.unmount())
+    root = createRoot(container)
+    render(contrato({ diasDePlazo: 3, prorratearPrimerMes: true }))
+    expect(container.textContent).toContain('3 días')
+    expect(container.textContent).toContain('Se prorratea por los días ocupados')
+  })
+
+  it('guardar manda diasDePlazo (vacío = null) y prorratearPrimerMes', async () => {
+    actualizar.mockResolvedValue(contrato())
+    render(contrato({ diasDePlazo: null, prorratearPrimerMes: false }))
+    editar()
+
+    const plazo = container.querySelector<HTMLInputElement>('[data-testid="dias-de-plazo"]')!
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    act(() => {
+      setter.call(plazo, '7')
+      plazo.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    const prorratear = container.querySelector<HTMLButtonElement>('[data-testid="prorratear-primer-mes"]')!
+    act(() => prorratear.click())
+
+    await act(async () => {
+      boton('Guardar')!.click()
+    })
+
+    const [, dto] = actualizar.mock.calls[0]
+    expect(dto.diasDePlazo).toBe(7)
+    expect(dto.prorratearPrimerMes).toBe(true)
+  })
+
+  it('rechaza un plazo fuera de 0-60 sin llamar al back', async () => {
+    render(contrato())
+    editar()
+
+    const plazo = container.querySelector<HTMLInputElement>('[data-testid="dias-de-plazo"]')!
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    act(() => {
+      setter.call(plazo, '90')
+      plazo.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      boton('Guardar')!.click()
+    })
+
+    expect(actualizar).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('entre 0 y 60')
+  })
+})

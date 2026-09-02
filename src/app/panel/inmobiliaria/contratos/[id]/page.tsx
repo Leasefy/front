@@ -50,6 +50,8 @@ import type { ContractStatus } from '@/lib/types/contract';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { AdministracionDelContrato } from '@/components/contratos/AdministracionDelContrato';
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
+import { CobrosDelContrato } from '@/components/contratos/CobrosDelContrato';
+import { VincularInmueble } from '@/components/contratos/VincularInmueble';
 import { InvitarInquilino } from '@/components/contratos/InvitarInquilino';
 
 const PRE_SIGNED_STATES: ContractStatus[] = ['draft', 'pending_landlord', 'pending_tenant', 'rejected_pending_modifications'];
@@ -214,12 +216,13 @@ function ContratoDetalleContent() {
   // Gate por permisos: contratos usa canAccess ('contratos' ya es módulo del backend).
   // Chat todavía usa el fallback por rol porque 'mensajes' no existe como módulo aún.
   const canCancel = canEditContracts && PRE_SIGNED_STATES.includes(contract.status as ContractStatus);
+  const esPreFirma = PRE_SIGNED_STATES.includes(contract.status as ContractStatus);
   const chatHref = isManager && contract.applicationId
     ? `/panel/inmobiliaria/mensajes?applicationId=${contract.applicationId}`
     : null;
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -329,9 +332,22 @@ function ContratoDetalleContent() {
 
           <InfoCard title="Propiedad" icon={Buildings}>
             {contract.propertyId === null && (
-              <p className="text-sm text-muted-foreground">
-                Sin inmueble vinculado.
-              </p>
+              /* Sin inmueble no hay consignación, y sin consignación no hay
+                 cobros: todo lo demás de esta pantalla se queda escrito. El
+                 mismo permiso que exige el back (`contratos:create`). */
+              <div className="space-y-2 pb-1">
+                <p className="text-sm text-muted-foreground">
+                  Sin inmueble vinculado: este contrato no genera cobros.
+                </p>
+                <VincularInmueble
+                  contract={contract}
+                  puedeVincular={canInviteTenant}
+                  onActualizado={(c) => {
+                    setContract(c);
+                    toast.success('Inmueble vinculado. Los próximos cobros salen sobre su consignación.');
+                  }}
+                />
+              </div>
             )}
             <InfoRow label="Dirección" value={contract.propertyAddress} />
             <InfoRow label="Ciudad" value={contract.propertyCity} />
@@ -351,10 +367,6 @@ function ContratoDetalleContent() {
             puedeEditar={canEditContracts}
             onActualizado={(c) => setContract(c)}
           />
-
-          {/* Los conceptos que este contrato cobra además del canon. Los
-              recurrentes entran en el cobro de cada mes. */}
-          <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts} />
 
           {/* Paso 11: quién respalda este arriendo. Si no está, se dice — un
               contrato sin respaldo registrado no es un contrato sin respaldo,
@@ -389,8 +401,21 @@ function ContratoDetalleContent() {
           )}
         </div>
 
-        {/* Right — preview */}
-        <div className="lg:col-span-2">
+        {/*
+          Derecha — la cuenta del contrato. Antes esta columna era sólo el
+          documento, y para un contrato activo eso es un iframe vacío ocupando
+          dos tercios de la pantalla mientras lo que se cobra y lo que se
+          cobró vivían abajo del pliegue en la columna angosta. El documento
+          manda mientras se firma; una vez activo, manda la plata.
+        */}
+        <div className="lg:col-span-2 space-y-6">
+          {!esPreFirma && (
+            <>
+              <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts} />
+              <CobrosDelContrato key={contract.propertyId ?? 'sin-inmueble'} contract={contract} />
+            </>
+          )}
+
           <section className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
               <FileText className="w-4 h-4 text-muted-foreground" />
@@ -462,6 +487,13 @@ function ContratoDetalleContent() {
               )}
             </div>
           </section>
+
+          {esPreFirma && (
+            <>
+              <ConceptosDelContrato contract={contract} puedeEditar={canEditContracts} />
+              <CobrosDelContrato key={contract.propertyId ?? 'sin-inmueble'} contract={contract} />
+            </>
+          )}
         </div>
       </div>
     </div>

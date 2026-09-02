@@ -169,7 +169,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
         <div className="flex items-center gap-2">
           <Receipt className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-base font-semibold text-foreground">
-            Cobra además del canon
+            Conceptos del contrato
           </h3>
         </div>
         {puedeEditar && !agregando ? (
@@ -185,7 +185,8 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
       ) : conceptos.length === 0 && !agregando ? (
         <p className="text-sm text-muted-foreground">
           Sólo el canon. Si este contrato cobra administración, parqueadero o
-          alguna cuota, agregala acá y entra en el cobro de cada mes.
+          alguna cuota, agregala acá: los recurrentes entran en el cobro de
+          cada mes con su IVA y sus retenciones, y salen en la cuenta de cobro.
         </p>
       ) : null}
 

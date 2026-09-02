@@ -23,6 +23,8 @@ import type {
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 import type { Contract, ContractType, ContractStatus, SignatureStatus, ContractRejection } from '@/lib/types/contract';
+import type { CobroConDesglose } from './recibos-de-caja.types';
+import { normalizeCobro } from './inmobiliaria.service';
 import type { ContractAuditEvent, ContractAuditEventType, ContractAuditEventMetadata } from '@/lib/types/contract';
 
 // ============================================================================
@@ -548,6 +550,22 @@ export const contractsApi = {
   },
 
   /**
+   * GET /contracts/:id/cobros — los cobros que este contrato ha generado, con
+   * su desglose (canon, administración, conceptos, impuestos, mora) y los
+   * recibos de caja vivos. Más reciente primero.
+   *
+   * Un cobro sabe su contrato por `Cobro.contractId`; los anteriores a esa
+   * columna se rellenaron por el arriendo o por el inmueble.
+   */
+  async cobros(id: string): Promise<CobroConDesglose[]> {
+    const rows = await apiClient.get<CobroConDesglose[] | { data: CobroConDesglose[] }>(
+      `/contracts/${id}/cobros`,
+    );
+    const lista = Array.isArray(rows) ? rows : rows.data;
+    return lista.map(normalizeCobro);
+  },
+
+  /**
    * PATCH /contracts/:id/administracion — uso, periodicidad y comisión.
    *
    * Ruta aparte de `update` a propósito: aquélla invalida las firmas y sólo
@@ -577,6 +595,12 @@ export const contractsApi = {
       inquilinoRetenedorRenta?: boolean | null;
       inquilinoRetenedorIva?: boolean | null;
       inquilinoRetenedorIca?: boolean | null;
+      /**
+       * Términos de cobro. `diasDePlazo: null` = volver a heredar los de la
+       * inmobiliaria. La mora corre desde el día de pago + plazo.
+       */
+      diasDePlazo?: number | null;
+      prorratearPrimerMes?: boolean;
     },
   ): Promise<Contract> {
     const raw = await apiClient.patch<BackendContract>(

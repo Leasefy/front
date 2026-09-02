@@ -18,6 +18,7 @@ import { Receipt, WarningCircle } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -65,6 +66,18 @@ export function AdministracionDelContrato({
   )
 
   /*
+   * Cómo se le cobra a ESTE contrato (lo que Juan describió por contrato):
+   * los días de plazo tras la fecha de pago antes de que corra la mora
+   * —vacío = los de la inmobiliaria— y si el primer mes se prorratea por los
+   * días ocupados. Vivían en el DTO de creación y no se veían ni se podían
+   * corregir en un contrato activo.
+   */
+  const [diasDePlazo, setDiasDePlazo] = useState(
+    contract.diasDePlazo != null ? String(contract.diasDePlazo) : '',
+  )
+  const [prorratear, setProrratear] = useState(contract.prorratearPrimerMes ?? false)
+
+  /*
    * El perfil tributario del inquilino. Es el ÚNICO de los tres que vive en el
    * contrato: la misma persona puede arrendar a título propio y por su empresa.
    * El del propietario está en su ficha y el de la inmobiliaria en su config.
@@ -73,7 +86,6 @@ export function AdministracionDelContrato({
    * colapsaría los dos últimos y convertiría un vacío en la afirmación «no
    * retiene», que nadie hizo.
    */
-  const perfilGuardado = contract.perfilesTributarios?.inquilino ?? null
   const [tipoPersona, setTipoPersona] = useState<TipoPersona | ''>(
     contract.inquilinoTipoPersona ?? '',
   )
@@ -123,10 +135,18 @@ export function AdministracionDelContrato({
         setError('La comisión va entre 0 y 100.')
         return
       }
+      const plazo = diasDePlazo.trim() === '' ? null : Number(diasDePlazo)
+      if (plazo !== null && (!Number.isInteger(plazo) || plazo < 0 || plazo > 60)) {
+        setError('Los días de plazo van entre 0 y 60, sin decimales.')
+        return
+      }
       const actualizado = await contractsApi.actualizarAdministracion(contract.id, {
         usoInmueble: uso === '' ? undefined : uso,
         periodicidad: periodicidad === '' ? undefined : periodicidad,
         comisionPorcentaje: n,
+        // `null` = volver a heredar los días de la inmobiliaria.
+        diasDePlazo: plazo,
+        prorratearPrimerMes: prorratear,
         // `null` es una acción: «volvé a no saberlo». Distinto de no mandar el
         // campo, que lo deja como estaba.
         arrendadorResponsableIva: deTernario(arrendadorIva),
@@ -214,6 +234,42 @@ export function AdministracionDelContrato({
               descuenta al propietario.
             </p>
           </div>
+
+          <div className="space-y-1 border-t border-border pt-3">
+            <label className="text-xs text-muted-foreground">
+              Días de plazo antes de la mora
+            </label>
+            <Input
+              type="number"
+              step="1"
+              min="0"
+              max="60"
+              value={diasDePlazo}
+              onChange={(e) => setDiasDePlazo(e.target.value)}
+              placeholder="Los de la inmobiliaria"
+              data-testid="dias-de-plazo"
+            />
+            <p className="text-xs text-muted-foreground">
+              La mora corre desde el día de pago más este plazo. Vacío = los
+              días que tiene configurados la inmobiliaria.
+            </p>
+          </div>
+
+          <label className="flex cursor-pointer items-start gap-2 text-sm text-foreground">
+            <Checkbox
+              checked={prorratear}
+              onCheckedChange={(v) => setProrratear(v === true)}
+              className="mt-0.5"
+              data-testid="prorratear-primer-mes"
+            />
+            <span>
+              Prorratear el primer mes
+              <span className="block text-xs text-muted-foreground">
+                El primer cobro sale por los días ocupados, no por el mes
+                completo.
+              </span>
+            </span>
+          </label>
 
           <div className="space-y-1 border-t border-border pt-3">
             <SelectorTernario
@@ -336,15 +392,33 @@ export function AdministracionDelContrato({
             valor={deConsignacion != null ? `${deConsignacion}%` : null}
             ausente="Sin consignación: este inmueble no genera cobros"
           />
+          <Fila
+            etiqueta="Plazo antes de la mora"
+            valor={
+              contract.diasDePlazo != null
+                ? `${contract.diasDePlazo} ${contract.diasDePlazo === 1 ? 'día' : 'días'}`
+                : null
+            }
+            ausente="Los días de la inmobiliaria"
+          />
+          <Fila
+            etiqueta="Primer mes"
+            valor={contract.prorratearPrimerMes ? 'Se prorratea por los días ocupados' : 'Mes completo'}
+            ausente=""
+          />
 
+          {/* Lo GUARDADO en el contrato, no el perfil: `esPorDefecto` del perfil
+              es true mientras falte CUALQUIER campo (reteICA, IVA…), y con la
+              retención ya dicha la fila seguía diciendo «sin configurar — no
+              descuenta», que es falso. */}
           <Fila
             etiqueta="Retención del inquilino"
             valor={
-              perfilGuardado && !perfilGuardado.esPorDefecto
-                ? perfilGuardado.agenteRetenedorRenta
+              contract.inquilinoRetenedorRenta == null
+                ? null
+                : contract.inquilinoRetenedorRenta
                   ? 'Es agente retenedor'
                   : 'No retiene'
-                : null
             }
             ausente="Sin configurar — el cobro no descuenta retención"
           />

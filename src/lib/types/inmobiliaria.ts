@@ -51,6 +51,19 @@ export interface Propietario {
   pendingBalance: number;
   /** Última dispersión completada. */
   lastPaymentDate?: string | null;
+  /** Canon de los arrendados menos la comisión: lo que recibe al mes. Del back. */
+  netToOwner?: number;
+  /**
+   * Perfil tributario (2026-09-02). `null` = «no lo sabemos», que NO es «no»:
+   * con null se cobra con el perfil por defecto del tipo de persona, y la
+   * ficha lo dice. El tipo de persona sale de `documentType` (NIT = empresa).
+   */
+  responsableIva?: boolean | null;
+  agenteRetenedorRenta?: boolean | null;
+  agenteRetenedorIva?: boolean | null;
+  agenteRetenedorIca?: boolean | null;
+  /** El id que traía en el sistema del que se migró. Informativo, no es llave. */
+  externalId?: string | null;
   notes?: string;
   tags?: string[];
   createdAt: string;
@@ -70,6 +83,11 @@ export interface PropietarioFormData {
   accountNumber: string;
   accountHolder: string;
   notes?: string;
+  /** Perfil tributario; `null` = sin definir. Van al back tal cual. */
+  responsableIva?: boolean | null;
+  agenteRetenedorRenta?: boolean | null;
+  agenteRetenedorIva?: boolean | null;
+  agenteRetenedorIca?: boolean | null;
 }
 
 // ============================================================================

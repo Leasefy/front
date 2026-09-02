@@ -9,6 +9,7 @@ import {
   TrendUp,
   TrendDown,
 } from '@phosphor-icons/react';
+import { Stat, StatStrip } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
@@ -206,50 +207,51 @@ export function PropietarioStats({
     );
   }
 
-  // Full variant
+  // Full variant — la franja de la ficha (2026-09-02, mismo patrón que la
+  // ficha del contrato): cuatro números de un vistazo en vez de cuatro
+  // tarjetas con ícono de color. La ocupación no es un número propio: es el
+  // «2 de 3 arrendados» debajo de Inmuebles — con uno o tres inmuebles, un
+  // «0 %» grande no dice nada.
+  const neto = propietario.netToOwner ?? propietario.totalMonthlyRent - (comisionReal ?? 0);
+  const ultimoGiro = propietario.lastPaymentDate
+    ? new Date(propietario.lastPaymentDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { day: 'numeric', month: 'short' })
+    : null;
   return (
     <div className={cn('space-y-4', className)}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={Buildings}
-          label={t('inmobiliaria.propietario.stats.consignedProperties')}
-          value={propietario.propertyCount}
-          subValue={`${propietario.activeLeases} ${t('inmobiliaria.propietario.stats.rented')}`}
-          color="indigo"
-        />
-
-        <StatCard
-          icon={CurrencyDollar}
-          label={t('inmobiliaria.propietario.stats.totalMonthlyRent')}
-          value={formatCurrency(propietario.totalMonthlyRent)}
-          subValue={comisionReal != null ? `${formatCurrency(comisionReal)} ${t('inmobiliaria.propietario.stats.commission')}` : undefined}
-          color="emerald"
-        />
-
-        <StatCard
-          icon={ChartLineUp}
-          label={t('inmobiliaria.propietario.stats.occupancyRate')}
-          value={`${occupancyRate}%`}
-          subValue={propietario.propertyCount > 0
-            ? `${propietario.propertyCount - propietario.activeLeases} ${t('inmobiliaria.propietario.stats.available')}`
-            : t('inmobiliaria.propietario.stats.noProperties')
+      <StatStrip className="rounded-xl border border-border bg-card px-4" data-testid="resumen-del-propietario">
+        <Stat
+          label={t('inmobiliaria.propietario.stats.properties')}
+          value={String(propietario.propertyCount)}
+          delta={
+            propietario.propertyCount > 0
+              ? t('inmobiliaria.propietario.stats.ofTotalRented', { rentados: propietario.activeLeases, total: propietario.propertyCount })
+              : t('inmobiliaria.propietario.stats.sinPropiedades')
           }
-          // Sin historial de ocupación no hay «vs mes anterior»: el ±5 % que
-          // salía acá era inventado a partir del porcentaje de hoy.
-          color="purple"
+          deltaDirection={
+            propietario.propertyCount > 0 && propietario.activeLeases < propietario.propertyCount ? 'down' : 'neutral'
+          }
+          compact
         />
-
-        <StatCard
-          icon={hasPendingBalance ? Warning : CalendarCheck}
+        <Stat
+          label={t('inmobiliaria.propietario.stats.monthlyRent')}
+          value={formatCurrency(propietario.totalMonthlyRent)}
+          delta={comisionReal != null ? `${formatCurrency(comisionReal)} ${t('inmobiliaria.propietario.stats.commission')}` : undefined}
+          compact
+        />
+        <Stat
+          label={t('inmobiliaria.propietario.stats.netToOwner')}
+          value={formatCurrency(neto)}
+          delta={t('inmobiliaria.propietario.stats.netToOwnerHint')}
+          compact
+        />
+        <Stat
           label={t('inmobiliaria.propietario.stats.pendingBalance')}
           value={hasPendingBalance ? formatCurrency(propietario.pendingBalance) : t('inmobiliaria.propietario.stats.upToDate')}
-          subValue={propietario.lastPaymentDate
-            ? `${t('inmobiliaria.propietario.stats.lastPayment')}: ${new Date(propietario.lastPaymentDate).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', { month: 'short', day: 'numeric' })}`
-            : undefined
-          }
-          color={hasPendingBalance ? 'amber' : 'emerald'}
+          delta={ultimoGiro ? `${t('inmobiliaria.propietario.stats.lastPayment')}: ${ultimoGiro}` : undefined}
+          deltaDirection={hasPendingBalance ? 'down' : 'up'}
+          compact
         />
-      </div>
+      </StatStrip>
 
       {/* Alertas: qué pasó (con el número), qué hacer, y el botón que lo hace. */}
       {sinCuenta && propietario.activeLeases > 0 && (

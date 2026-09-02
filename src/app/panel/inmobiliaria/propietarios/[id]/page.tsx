@@ -38,6 +38,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
+import { PerfilTributarioDelPropietario } from '@/components/inmobiliaria/PerfilTributarioDelPropietario';
 import {
   DropdownList,
   DropdownListContent,
@@ -329,6 +330,53 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
  * Propietario Detail Page
  * Full profile view with properties, payments, and history
  */
+function FilaDeContacto({
+  etiqueta,
+  valor,
+  href,
+  onCopiar,
+  copiado,
+  etiquetaCopiar,
+  mono,
+}: {
+  etiqueta: string;
+  valor: string | null | undefined;
+  href?: string;
+  onCopiar?: () => void;
+  copiado?: boolean;
+  etiquetaCopiar?: string;
+  mono?: boolean;
+}) {
+  const texto = valor && valor.trim() ? valor : null;
+  return (
+    <div className="flex items-start justify-between gap-3 text-sm">
+      <span className="shrink-0 text-muted-foreground">{etiqueta}</span>
+      <span className="flex min-w-0 items-center justify-end gap-1 text-right">
+        {texto ? (
+          href ? (
+            <a href={href} className={cn('truncate font-medium text-foreground hover:text-primary transition-colors', mono && 'font-mono tabular-nums')}>
+              {texto}
+            </a>
+          ) : (
+            <span className={cn('font-medium text-foreground', mono && 'font-mono tabular-nums')}>{texto}</span>
+          )
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+        {texto && onCopiar ? (
+          <IconButton
+            variant="ghost"
+            size="sm"
+            onClick={onCopiar}
+            aria-label={etiquetaCopiar ?? 'Copiar'}
+            icon={copiado ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+          />
+        ) : null}
+      </span>
+    </div>
+  );
+}
+
 function PropietarioDetailContent() {
   const { t, locale } = useI18n();
   const params = useParams();
@@ -500,42 +548,48 @@ function PropietarioDetailContent() {
           pan en texto chico que no se leía como navegación. */}
       <BackButton href={rutaDeVuelta} label={etiquetaDeVuelta} />
 
-      {/* Header */}
+      {/* Header: quién es, de un vistazo. El nombre es el título; el
+          documento, el tipo de persona y las etiquetas van en chips; y una
+          línea dice cuántos inmuebles, dónde y desde cuándo. */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-        <div className="flex items-start gap-4">
-          {/* Avatar */}
+        <div className="flex items-start gap-4 min-w-0">
           <div className={cn(
-            'w-16 h-16 rounded-xl flex items-center justify-center shrink-0',
-            isCompany
-              ? 'bg-muted text-muted-foreground'
-              : 'bg-primary-soft text-primary'
+            'w-14 h-14 rounded-xl flex items-center justify-center shrink-0',
+            isCompany ? 'bg-muted text-muted-foreground' : 'bg-primary-soft text-primary'
           )}>
-            {isCompany ? <Buildings className="w-8 h-8" /> : <User className="w-8 h-8" />}
+            {isCompany ? <Buildings className="w-7 h-7" /> : <User className="w-7 h-7" />}
           </div>
-
-          {/* Info */}
-          <div className="space-y-1">
+          <div className="min-w-0 space-y-1.5">
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               {propietario.name}
             </h1>
-            <p className="text-sm text-muted-foreground">
-              {propietario.documentType}: {propietario.documentNumber}
+            <div className="flex flex-wrap items-center gap-1.5" data-testid="propietario-chips">
+              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs tabular-nums text-foreground">
+                {propietario.documentType} {propietario.documentNumber}
+              </span>
+              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
+                {t(isCompany ? 'inmobiliaria.propietarios.detail.personaJuridica' : 'inmobiliaria.propietarios.detail.personaNatural')}
+              </span>
+              {(propietario.tags ?? []).map((tag) => (
+                <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
+                  <Tag className="w-3 h-3" />
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground" data-testid="propietario-resumen">
+              {[
+                propietario.propertyCount === 1
+                  ? `1 ${t('inmobiliaria.propietario.stats.properties').toLowerCase().replace(/s$/, '')}`
+                  : `${propietario.propertyCount} ${t('inmobiliaria.propietario.stats.properties').toLowerCase()}`,
+                propietario.city || null,
+                t('inmobiliaria.propietarios.detail.desde', {
+                  fecha: new Date(propietario.createdAt).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { month: 'long', year: 'numeric' }),
+                }),
+              ]
+                .filter(Boolean)
+                .join(' · ')}
             </p>
-
-            {/* Tags */}
-            {propietario.tags && propietario.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {propietario.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-xs text-muted-foreground"
-                  >
-                    <Tag className="w-3 h-3" />
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         </div>
 
@@ -595,105 +649,57 @@ function PropietarioDetailContent() {
       {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Contact & Bank */}
-        <div className="space-y-6">
-          {/* Contact Info */}
-          <div className="p-5 rounded-xl border border-border bg-card">
-            <h3 className="text-base font-semibold text-foreground mb-4">
-              {t('inmobiliaria.propietarios.detail.contactInfo')}
-            </h3>
-
-            <div className="space-y-4">
-              {/* Email */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-                    <Envelope className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.email')}</p>
-                    {email ? (
-                      <a
-                        href={`mailto:${email}`}
-                        className="text-sm text-foreground hover:text-primary transition-colors"
-                      >
-                        {email}
-                      </a>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">—</p>
-                    )}
-                  </div>
-                </div>
-                {email && (
-                  <IconButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleCopy(email, 'email')}
-                    aria-label={t('inmobiliaria.propietarios.detail.copied')}
-                    icon={copiedEmail ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-                  />
-                )}
-              </div>
-
-              {/* Phone */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-                    <Phone className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.phone')}</p>
-                    {phone ? (
-                      <a
-                        href={`tel:${phone}`}
-                        className="text-sm text-foreground hover:text-primary transition-colors"
-                      >
-                        {phone}
-                      </a>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">—</p>
-                    )}
-                  </div>
-                </div>
-                {phone && (
-                  <IconButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleCopy(phone, 'phone')}
-                    aria-label={t('inmobiliaria.propietarios.detail.copied')}
-                    icon={copiedPhone ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
-                  />
-                )}
-              </div>
-
-              {/* Address */}
-              {propietario.address && (
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.detail.address')}</p>
-                    <p className="text-sm text-foreground">
-                      {propietario.address}
-                      {propietario.city && `, ${propietario.city}`}
-                    </p>
-                  </div>
-                </div>
-              )}
+        <div className="space-y-4">
+          {/* Contacto en filas compactas, como la ficha del contrato: antes
+              cada dato tenía su ícono en un cuadro de 40 px y la tarjeta
+              ocupaba media pantalla para tres líneas. */}
+          <section className="rounded-xl border border-border bg-card p-5 space-y-3" data-testid="contacto">
+            <div className="flex items-center gap-2">
+              <Envelope className="w-4 h-4 text-muted-foreground" />
+              <h3 className="text-base font-semibold text-foreground">
+                {t('inmobiliaria.propietarios.detail.contactInfo')}
+              </h3>
             </div>
-          </div>
+            <div className="space-y-2">
+              <FilaDeContacto
+                etiqueta={t('inmobiliaria.propietarios.email')}
+                valor={email}
+                href={email ? `mailto:${email}` : undefined}
+                onCopiar={email ? () => handleCopy(email, 'email') : undefined}
+                copiado={copiedEmail}
+                etiquetaCopiar={t('inmobiliaria.propietarios.detail.copied')}
+              />
+              <FilaDeContacto
+                etiqueta={t('inmobiliaria.propietarios.phone')}
+                valor={phone}
+                href={phone ? `tel:${phone}` : undefined}
+                onCopiar={phone ? () => handleCopy(phone, 'phone') : undefined}
+                copiado={copiedPhone}
+                etiquetaCopiar={t('inmobiliaria.propietarios.detail.copied')}
+              />
+              <FilaDeContacto
+                etiqueta={t('inmobiliaria.propietarios.detail.address')}
+                valor={[propietario.address, propietario.city].filter(Boolean).join(', ') || null}
+              />
+              {propietario.externalId ? (
+                <FilaDeContacto etiqueta={t('inmobiliaria.propietarios.detail.refExterna')} valor={propietario.externalId} mono />
+              ) : null}
+            </div>
+          </section>
+
+          <PerfilTributarioDelPropietario
+            propietario={propietario}
+            onActualizado={(p) => {
+              setPropietario(p);
+              toast.success(t('inmobiliaria.propietarios.toasts.updated'));
+            }}
+          />
 
           {/* Bank Info */}
           <PropietarioBankInfo
             bankAccount={propietario.bankAccount}
             onEdit={() => setShowEditModal(true)}
           />
-
-          {/* Timestamps */}
-          <div className="p-4 rounded-xl bg-muted/40 text-xs text-muted-foreground space-y-0.5">
-            <p>{t('inmobiliaria.propietarios.detail.createdAt')}: {new Date(propietario.createdAt).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', { dateStyle: 'long' })}</p>
-            <p>{t('inmobiliaria.propietarios.detail.updatedAt')}: {new Date(propietario.updatedAt).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', { dateStyle: 'long' })}</p>
-          </div>
         </div>
 
         {/* Right Column - Properties & Payments */}

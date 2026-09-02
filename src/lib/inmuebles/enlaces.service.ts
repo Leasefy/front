@@ -30,9 +30,19 @@ export type ResultadoDeEnlace = EnlaceLeido | EnlaceFallido;
  * Separa lo pegado en enlaces. Acepta uno por línea, separados por coma o por
  * espacios: la gente pega desde WhatsApp, desde un correo o desde una columna
  * de Excel, y las tres cosas se ven distinto.
+ *
+ * También corta donde empieza otro `http(s)://` SIN separador en el medio.
+ * Caso real (2026-09-01): tres enlaces de Fincaraíz pegados desde una lista
+ * llegaron con dos en la misma línea, pegados —`…/194195155https://www…`—,
+ * y ese «enlace» de dos enlaces se pidió tal cual y respondió 404. Un
+ * esquema en el medio de una URL nunca es parte de la URL.
  */
 export function separarEnlaces(pegado: string): string[] {
   const candidatos = pegado
+    // Sólo cuando el esquema viene pegado al FINAL de otra URL (una letra, un
+    // número, `-`, `_`, `.`): un `?url=https://…` o `&next=https://…` es un
+    // parámetro con otra URL adentro y sigue siendo un solo enlace.
+    .replace(/(?<=[A-Za-z0-9_\-.~%])(?=https?:\/\/)/gi, ' ')
     .split(/[\s,;]+/)
     .map((s) => s.trim().replace(/[.,;]+$/, ''))
     .filter(Boolean);

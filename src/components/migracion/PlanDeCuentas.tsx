@@ -28,6 +28,7 @@ import {
   CaretDown,
   CaretRight,
   CheckCircle,
+  FileArrowUp,
   Info,
   MagnifyingGlass,
   PencilSimple,
@@ -59,6 +60,7 @@ import {
 } from '@/lib/api/contabilidad.service';
 
 import { mensajeDeContabilidad } from './contabilidad-errores';
+import { ImportarCuentas } from './ImportarCuentas';
 
 export const RUTA_DEL_PASO_5 = '/panel/inmobiliaria/migracion/contables';
 
@@ -163,6 +165,12 @@ export function PlanDeCuentas({
   const [busqueda, setBusqueda] = useState('');
   const [cerradas, setCerradas] = useState<Set<string>>(new Set());
   const [formulario, setFormulario] = useState<Formulario | null>(null);
+  /**
+   * La importación desde archivo. Nico: «tanto el PUC como los registros
+   * contables, ellos tienden a tener un CSV para cada uno». Convive con la
+   * semilla y con crear a mano — son tres puertas al mismo plan.
+   */
+  const [importando, setImportando] = useState(false);
 
   const cargar = useCallback(async () => {
     const [a, p] = await Promise.allSettled([
@@ -289,6 +297,15 @@ export function PlanDeCuentas({
           sembrando={sembrando}
           onSembrar={sembrar}
           onAMano={() => setFormulario({ modo: 'crear', padre: null })}
+          onSubirArchivo={() => setImportando(true)}
+        />
+      ) : null}
+
+      {importando ? (
+        <ImportarCuentas
+          onImportado={() => void cargar()}
+          onCerrar={() => setImportando(false)}
+          onOcupado={onOcupado}
         />
       ) : null}
 
@@ -336,6 +353,16 @@ export function PlanDeCuentas({
                   data-testid="puc-buscar"
                 />
               </div>
+              <Button
+                size="sm"
+                variant="outline"
+                hideArrow
+                onClick={() => setImportando(true)}
+                data-testid="puc-subir-archivo"
+              >
+                <FileArrowUp className="mr-1.5 h-3.5 w-3.5" />
+                Subir archivo
+              </Button>
               <Button
                 size="sm"
                 variant="outline"
@@ -400,10 +427,12 @@ function SinPlan({
   sembrando,
   onSembrar,
   onAMano,
+  onSubirArchivo,
 }: {
   sembrando: boolean;
   onSembrar: () => void;
   onAMano: () => void;
+  onSubirArchivo: () => void;
 }) {
   return (
     <section
@@ -415,9 +444,11 @@ function SinPlan({
         Todavía no hay plan de cuentas
       </h2>
       <p className="mt-1 max-w-2xl text-sm text-fg-muted">
-        Podés arrancar con el plan base: las cuentas del Decreto 2650 que usa una inmobiliaria
-        —caja y bancos, la cartera de arrendamientos, lo que se le debe a los propietarios, las
-        comisiones, los gastos—. Son unas cien entre clases, grupos, cuentas y subcuentas.
+        Si ya tenés uno en tu sistema actual, subilo: entra con tus códigos, que son los que tu
+        contador conoce. Si no, arrancá con el plan base: las cuentas del Decreto 2650 que usa
+        una inmobiliaria —caja y bancos, la cartera de arrendamientos, lo que se le debe a los
+        propietarios, las comisiones, los gastos—. Son unas cien entre clases, grupos, cuentas y
+        subcuentas.
       </p>
       <ul className="mt-3 space-y-1 text-sm text-fg-muted">
         <li className="flex items-start gap-2">
@@ -434,11 +465,26 @@ function SinPlan({
         </li>
       </ul>
       <div className="mt-5 flex flex-wrap gap-2">
-        <Button onClick={onSembrar} isLoading={sembrando} hideArrow data-testid="puc-sembrar">
+        <Button
+          onClick={onSubirArchivo}
+          disabled={sembrando}
+          hideArrow
+          data-testid="puc-vacio-subir-archivo"
+        >
+          <FileArrowUp className="mr-1.5 h-4 w-4" />
+          Subir mi plan de cuentas
+        </Button>
+        <Button
+          variant="outline"
+          onClick={onSembrar}
+          isLoading={sembrando}
+          hideArrow
+          data-testid="puc-sembrar"
+        >
           Cargar el plan de cuentas base
         </Button>
-        <Button variant="outline" onClick={onAMano} disabled={sembrando} hideArrow>
-          Prefiero crear las cuentas a mano
+        <Button variant="ghost" onClick={onAMano} disabled={sembrando} hideArrow>
+          Crear las cuentas a mano
         </Button>
       </div>
     </section>

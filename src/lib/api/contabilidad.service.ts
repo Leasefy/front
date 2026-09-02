@@ -130,6 +130,50 @@ export const LARGO_MAXIMO_DE_CODIGO = 20;
 export const LARGO_MINIMO_DE_NOMBRE = 3;
 export const LARGO_MAXIMO_DE_NOMBRE = 200;
 
+// ── Importar el plan desde un archivo ──────────────────────────────────────
+
+/** `MAX_CUENTAS_POR_IMPORTACION` del back: un archivo más grande es 400. */
+export const MAX_CUENTAS_POR_IMPORTACION = 5_000;
+
+/**
+ * `CuentaImportadaDto`. Forma y nada más: el código puede venir con puntos o
+ * guiones, la naturaleza como «Débito»/«D»/«Debe», el imputable como «Sí»;
+ * qué significa cada cosa lo decide el back y lo devuelve en la revisión.
+ */
+export interface CuentaImportada {
+  codigo: string;
+  nombre: string;
+  naturaleza?: string;
+  imputable?: string | boolean;
+}
+
+export type VeredictoDeCuenta = 'NUEVA' | 'YA_EXISTE' | 'INVALIDA';
+
+/** `CuentaRevisada` en `puc-importacion.ts`. */
+export interface CuentaRevisada {
+  /** Fila en el archivo, desde 0 (en pantalla se muestra +2). */
+  indice: number;
+  codigoOriginal: string;
+  codigo: string;
+  nombre: string;
+  naturaleza: NaturalezaContable | null;
+  imputable: boolean;
+  veredicto: VeredictoDeCuenta;
+  motivo?: string;
+  nombreActual?: string;
+}
+
+export interface RevisionDeImportacionPuc {
+  filas: CuentaRevisada[];
+  nuevas: number;
+  existentes: number;
+  invalidas: number;
+}
+
+export interface ResultadoImportacionPuc extends RevisionDeImportacionPuc {
+  creadas: number;
+}
+
 // ── Asientos ───────────────────────────────────────────────────────────────
 
 export interface MovimientoContable {
@@ -615,6 +659,19 @@ export const contabilidadApi = {
 
     async crear(cuenta: CuentaNueva): Promise<CuentaPuc> {
       return apiClient.post<CuentaPuc>(`${BASE}/puc`, soloClaves(cuenta, CLAVES_DE_CREAR_CUENTA));
+    },
+
+    /**
+     * Qué pasaría si se importa este archivo. No escribe nada: dice, fila por
+     * fila, qué entra, qué ya existe y qué no se entendió.
+     */
+    async revisarImportacion(cuentas: CuentaImportada[]): Promise<RevisionDeImportacionPuc> {
+      return apiClient.post<RevisionDeImportacionPuc>(`${BASE}/puc/importar/revisar`, { cuentas });
+    },
+
+    /** Escribe las NUEVAS de la revisión. Idempotente: la segunda vez crea 0. */
+    async importar(cuentas: CuentaImportada[]): Promise<ResultadoImportacionPuc> {
+      return apiClient.post<ResultadoImportacionPuc>(`${BASE}/puc/importar`, { cuentas });
     },
 
     async actualizar(id: string, cambios: CambiosDeCuenta): Promise<CuentaPuc> {

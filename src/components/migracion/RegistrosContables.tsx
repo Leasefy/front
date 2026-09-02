@@ -261,10 +261,13 @@ export function RegistrosContables({
                 },
                 {
                   value: "historico",
+                  // «Subir» y no «migrar»: Nico pasó por acá y no vio que
+                  // el archivo se podía subir. El sustantivo del botón tiene
+                  // que ser el objeto que la persona tiene en la mano.
                   label: (
                     <span className="flex items-center gap-2">
                       <BookOpen className="h-4 w-4" />
-                      Migrar el histórico
+                      Subir el libro diario
                     </span>
                   ),
                 },
@@ -273,7 +276,7 @@ export function RegistrosContables({
             <p className="max-w-2xl text-sm text-fg-muted">
               {camino === "apertura"
                 ? "Lo más rápido: un asiento con los saldos a la fecha de corte y desde mañana operás acá. El detalle histórico queda en tu sistema anterior."
-                : "Todo el libro diario desde un archivo. Más trabajo, pero cada movimiento viejo queda acá, con su comprobante."}
+                : "El libro diario exportado de tu sistema actual, en Excel o CSV. Más trabajo, pero cada movimiento viejo queda acá, con su comprobante."}
             </p>
           </div>
 

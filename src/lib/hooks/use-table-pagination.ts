@@ -49,7 +49,13 @@ export interface UseTablePaginationResult<T> {
   pageSize: number
   setPage: (page: number) => void
   setPageSize: (size: number) => void
-  /** El pie sólo se monta si hay más de una página: un paginador que no pagina es ruido. */
+  /**
+   * El pie se monta siempre que haya filas (Nico, 2026-09-02: «esta tabla
+   * debe tener paginación», mirando una de tres filas). Con una sola página
+   * igual dice «Mostrando 1–3 de 3» y deja elegir cuántas filas ver: es lo
+   * que hace que una tabla se lea como tabla. Sin filas, no: el vacío ya lo
+   * dice la pantalla.
+   */
   shouldPaginate: boolean
 }
 
@@ -98,6 +104,6 @@ export function useTablePagination<T>(
     pageSize,
     setPage,
     setPageSize,
-    shouldPaginate: total > pageSize,
+    shouldPaginate: total > 0,
   }
 }

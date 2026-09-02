@@ -1475,6 +1475,52 @@ select:-webkit-autofill:active {
    Custom Scrollbar Utilities
    ============================================================================ */
 
+/*
+ * Scrollbars de TODA la app (Nico, 2026-09-02: «arregla esos scroll en
+ * Windows que son horribles»). En macOS el scroll es overlay y no se ve; en
+ * Windows/Linux Chrome pinta la barra clásica de 17 px con flechas, gris
+ * claro sobre el sidebar oscuro. Acá: fina, sin flechas, pista transparente
+ * y pulgar del color del texto atenuado — el mismo en claro y oscuro porque
+ * sale del token. `scrollbar-width`/`scrollbar-color` es el estándar
+ * (Firefox y Chrome ≥ 121); `::-webkit-scrollbar` cubre el resto.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.35) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.35);
+  border-radius: 999px;
+  /* Un borde del color de la pista deja el pulgar «flotando» a 4 px. */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.55);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Thin scrollbar utility class */
 .scrollbar-thin {
   scrollbar-width: thin;

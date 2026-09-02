@@ -320,7 +320,11 @@ export function ConsignacionTable({
             // contract.md T-0038 §3.2.5 — PORTFOLIO-only, but only the
             // `sinMandato` source (sin-consignacion) carries it on the wire
             // today; `GET /inmobiliaria/consignaciones` is unchanged.
-            const propertyCode = row.kind === 'sinMandato' ? row.code : undefined;
+            // El código lo traen las dos fuentes: `sin-consignacion` como
+            // `code`, y `GET /consignaciones` como `propertyCode` (T-0038
+            // WU-5). Antes las filas con mandato pintaban «—» aunque el back
+            // ya lo mandaba (Nico lo vio en su tabla, 2026-09-02).
+            const propertyCode = row.kind === 'sinMandato' ? row.code : (row.propertyCode ?? undefined);
 
             return (
               <motion.tr

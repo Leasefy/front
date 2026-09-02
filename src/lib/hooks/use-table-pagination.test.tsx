@@ -75,9 +75,10 @@ describe('useTablePagination', () => {
     expect(r.current?.pageItems).toEqual(['fila-21', 'fila-22', 'fila-23', 'fila-24'])
   })
 
-  it('con todo a la vista no hay que paginar', () => {
+  it('con todo a la vista el pie igual se monta: dice cuántas hay y deja elegir el tamaño', () => {
     const r = render(filas(7))
-    expect(r.current?.shouldPaginate).toBe(false)
+    expect(r.current?.shouldPaginate).toBe(true)
+    expect(r.current?.pageItems).toHaveLength(7)
   })
 
   it('cambiar el tamaño de página vuelve a la primera', () => {

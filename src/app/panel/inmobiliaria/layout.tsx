@@ -61,6 +61,7 @@ import { BotonNuevo } from '@/components/inmobiliaria/BotonNuevo';
 import { AgentHeaderBreadcrumb } from '@/components/inmobiliaria/ai/AgentHeaderBreadcrumb';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { usePostulacionesPendientes } from '@/lib/hooks/use-postulaciones-pendientes';
+import { useMigracionesPendientes } from '@/lib/hooks/use-migraciones-pendientes';
 import { usePilotoBadge } from '@/lib/hooks/piloto/use-piloto-badge';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { useAuth } from '@/lib/auth/use-auth';
@@ -138,6 +139,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // permission gate, an optional `roles` role gate, and `adminOnly`.
   // Paso 7: cuánta gente está esperando gestión, con dato real.
   const { pendientes: postulacionesPendientes } = usePostulacionesPendientes();
+  // Migración de contratos: lotes abiertos con pendientes (poll 5min;
+  // fail-soft a undefined ⇒ sin badge, ver use-migraciones-pendientes.ts).
+  const { pendientes: migracionesPendientes } = useMigracionesPendientes();
   // Piloto automático: total de la bandeja (poll 60s; fail-soft a undefined ⇒
   // sin badge — un cero afirmaría que no hay nada, que es lo que no sabemos).
   const { total: pilotoPendientes } = usePilotoBadge();
@@ -425,7 +429,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // Configuración → gated on 'configuracion': only ADMIN has it in the matrix
     // (AGENTE/CONTADOR/VIEWER all have configuracion:[]) ⇒ effectively admin-only.
     { label: t('inmobiliaria.nav.configuracion'), href: '/panel/inmobiliaria/configuracion', scope: 'general', icon: Gear,         module: 'configuracion', dataTourTarget: 'sidebar-configuraciones' },
-  ], [t, postulacionesPendientes, pilotoPendientes]);
+  ], [t, postulacionesPendientes, migracionesPendientes, pilotoPendientes]);
 
   const INMOBILIARIA_NAV_ITEMS: NavItem[] = useMemo(() => {
     // Filter by permission/role via the shared, unit-tested helper. While

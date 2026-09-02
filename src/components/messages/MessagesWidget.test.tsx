@@ -43,11 +43,35 @@ vi.mock('@leasefy/cadence', () => ({
   Input: React.forwardRef((props: Record<string, unknown>, ref: React.Ref<HTMLInputElement>) =>
     React.createElement('input', { ...props, ref }),
   ),
+  // El composer del piloto escribe en un Textarea (adaptador local sobre cadence).
+  Textarea: React.forwardRef((props: Record<string, unknown>, ref: React.Ref<HTMLTextAreaElement>) =>
+    React.createElement('textarea', { ...props, ref }),
+  ),
   Button: React.forwardRef((props: Record<string, unknown> & { children?: React.ReactNode }, ref: React.Ref<HTMLButtonElement>) => {
     const { children, ...rest } = props;
     return React.createElement('button', { ...rest, ref }, children);
   }),
 }));
+
+// El widget (desde el merge del piloto) confirma «reportar» con un AlertDialog
+// que el adaptador local re-exporta de cadence. El mock de cadence de arriba es
+// parcial a propósito, así que el adaptador se mockea aparte con pasamanos.
+vi.mock('@/components/ui/alert-dialog', () => {
+  const pasamanos = ({ children }: { children?: React.ReactNode }) =>
+    React.createElement('div', null, children);
+  const boton = ({ children, ...rest }: Record<string, unknown> & { children?: React.ReactNode }) =>
+    React.createElement('button', rest, children);
+  return {
+    AlertDialog: pasamanos,
+    AlertDialogContent: pasamanos,
+    AlertDialogHeader: pasamanos,
+    AlertDialogFooter: pasamanos,
+    AlertDialogTitle: pasamanos,
+    AlertDialogDescription: pasamanos,
+    AlertDialogAction: boton,
+    AlertDialogCancel: boton,
+  };
+});
 
 vi.mock('@phosphor-icons/react', () => ({
   Chat: () => null,

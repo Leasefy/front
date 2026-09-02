@@ -222,12 +222,8 @@ export function PropietarioStats({
             ? `${propietario.propertyCount - propietario.activeLeases} ${t('inmobiliaria.propietario.stats.available')}`
             : t('inmobiliaria.propietario.stats.noProperties')
           }
-          trend={occupancyRate >= 80
-            ? { value: 5, label: t('inmobiliaria.propietario.stats.vsPrevMonth'), positive: true }
-            : occupancyRate < 50
-              ? { value: -10, label: t('inmobiliaria.propietario.stats.vsPrevMonth'), positive: false }
-              : undefined
-          }
+          // Sin historial de ocupación no hay «vs mes anterior»: el ±5 % que
+          // salía acá era inventado a partir del porcentaje de hoy.
           color="purple"
         />
 

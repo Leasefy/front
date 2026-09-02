@@ -56,7 +56,7 @@ import type {
 import type { CobroConDesglose } from './recibos-de-caja.types';
 import { adaptarDispersion, type DispersionDelBack } from './dispersion-adapter';
 import type { InventoryItem, VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
-import type { BankCode, AccountType } from '@/lib/types/payment-accounts';
+import { COLOMBIAN_BANKS, type BankCode, type AccountType } from '@/lib/types/payment-accounts';
 
 const BASE = '/inmobiliaria';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
@@ -156,6 +156,53 @@ function mapBankCodeToWire(code: BankCode): string {
 }
 
 /** Translates a front account type to the backend's `AHORROS`/`CORRIENTE` enum. */
+/**
+ * La ficha del propietario tal como la manda el back: banco en cuatro campos
+ * planos (`bankName`, `bankAccountType` «Ahorros|Corriente», número, titular)
+ * y, desde 2026-09-02, los mismos totales que la lista. La pantalla espera
+ * `bankAccount` armado y los totales presentes: antes `getById` devolvía la
+ * fila cruda y la ficha reventaba con «Cannot read properties of undefined
+ * (reading 'bank')» — Nico buscó un propietario recién creado y vio «no
+ * encontrado» y después «esta sección se rompió».
+ */
+type PropietarioDelBack = Omit<Propietario, 'bankAccount' | 'propertyCount' | 'activeLeases' | 'totalMonthlyRent' | 'pendingBalance'> & {
+  bankName?: string | null;
+  bankAccountType?: string | null;
+  bankAccountNumber?: string | null;
+  bankAccountHolder?: string | null;
+  propertyCount?: number;
+  activeLeases?: number;
+  totalMonthlyRent?: number;
+  pendingBalance?: number;
+};
+
+/** «Bancolombia S.A.» → `bancolombia`; sin coincidencia queda vacío (nunca se inventa un banco). */
+export function codigoDeBanco(nombre: string | null | undefined): BankCode | '' {
+  const n = (nombre ?? '').trim().toLowerCase();
+  if (!n) return '';
+  const exacto = COLOMBIAN_BANKS.find((b) => b.name.toLowerCase() === n || b.shortName.toLowerCase() === n);
+  if (exacto) return exacto.code;
+  const parcial = COLOMBIAN_BANKS.find((b) => n.includes(b.shortName.toLowerCase()) || n.includes(b.code));
+  return parcial?.code ?? '';
+}
+
+export function normalizePropietario(raw: PropietarioDelBack): Propietario {
+  const { bankName, bankAccountType, bankAccountNumber, bankAccountHolder, ...rest } = raw;
+  return {
+    ...(rest as Omit<Propietario, 'bankAccount'>),
+    propertyCount: raw.propertyCount ?? 0,
+    activeLeases: raw.activeLeases ?? 0,
+    totalMonthlyRent: raw.totalMonthlyRent ?? 0,
+    pendingBalance: raw.pendingBalance ?? 0,
+    bankAccount: {
+      bank: codigoDeBanco(bankName) as BankCode,
+      accountType: (bankAccountType ?? '').toLowerCase().startsWith('corr') ? 'checking' : 'savings',
+      accountNumber: bankAccountNumber ?? '',
+      accountHolder: bankAccountHolder ?? '',
+    },
+  };
+}
+
 function mapAccountTypeToWire(type: AccountType): string {
   const wire = ACCOUNT_TYPE_TO_WIRE[type];
   if (!wire) {
@@ -213,7 +260,9 @@ export const propietariosApi = {
   },
 
   async getById(id: string): Promise<Propietario> {
-    return apiClient.get<Propietario>(`${BASE}/propietarios/${id}`);
+    return normalizePropietario(
+      await apiClient.get<PropietarioDelBack>(`${BASE}/propietarios/${id}`),
+    );
   },
 
   async create(data: PropietarioFormData): Promise<Propietario> {
@@ -417,7 +466,13 @@ export const consignacionesApi = {
     );
     // Backend returns a plain array; tolerate a { data } envelope too.
     const rows = Array.isArray(res) ? res : res.data;
-    return rows.map(normalizeConsignacion);
+    const todas = rows.map(normalizeConsignacion);
+    // El back no filtra por `propietarioId` (sólo por inmueble/estado/agente):
+    // la ficha del propietario decía «2 consignadas» y listaba las 12 de la
+    // agencia (2026-09-02). Se filtra acá hasta que el endpoint lo acepte.
+    return params?.propietarioId
+      ? todas.filter((c) => c.propietarioId === params.propietarioId)
+      : todas;
   },
 
   async getById(id: string): Promise<Consignacion> {

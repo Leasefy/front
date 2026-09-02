@@ -38,7 +38,46 @@ export function PropietarioBankInfo({
   const [showAccount, setShowAccount] = useState(showFullDetails);
   const [copied, setCopied] = useState(false);
 
-  const bank = COLOMBIAN_BANKS.find((b) => b.code === bankAccount.bank);
+  const bank = COLOMBIAN_BANKS.find((b) => b.code === bankAccount?.bank);
+  // Sin cuenta (propietario migrado o creado sin datos bancarios) no hay qué
+  // enmascarar: se dice y se ofrece cargarla. Antes reventaba con
+  // «reading 'bank'» de undefined (Nico, 2026-09-02 12:47).
+  if (!bankAccount || !bankAccount.accountNumber) {
+    return (
+      <div
+        className={cn(
+          'p-4 rounded-xl border border-dashed border-border bg-surface dark:bg-bg',
+          className
+        )}
+        data-testid="bank-info-vacio"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+              <Bank className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-fg dark:text-white">
+                {t('inmobiliaria.propietario.bankInfo.bankAccount')}
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                {t('inmobiliaria.propietario.bankInfo.sinCuenta')}
+              </p>
+            </div>
+          </div>
+          {onEdit ? (
+            <IconButton
+              variant="ghost"
+              size="md"
+              onClick={onEdit}
+              aria-label="Editar datos bancarios"
+              icon={<PencilSimple className="w-4 h-4" />}
+            />
+          ) : null}
+        </div>
+      </div>
+    );
+  }
   const accountTypeLabel = bankAccount.accountType === 'savings' ? t('inmobiliaria.propietario.bankInfo.savings') : t('inmobiliaria.propietario.bankInfo.checking');
 
   const maskAccount = (account: string) => {
@@ -175,7 +214,8 @@ export function PropietarioBankInfoCompact({
   className?: string;
 }) {
   const { t } = useI18n();
-  const bank = COLOMBIAN_BANKS.find((b) => b.code === bankAccount.bank);
+  const bank = COLOMBIAN_BANKS.find((b) => b.code === bankAccount?.bank);
+  if (!bankAccount || !bankAccount.accountNumber) return null;
   const accountTypeLabel = bankAccount.accountType === 'savings' ? t('inmobiliaria.propietario.bankInfo.savings') : t('inmobiliaria.propietario.bankInfo.checking');
 
   const maskAccount = (account: string) => {

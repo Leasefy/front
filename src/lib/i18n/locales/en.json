@@ -4309,7 +4309,8 @@
         "hide": "Hide",
         "show": "Show",
         "copy": "Copy",
-        "verified": "Data verified"
+        "verified": "Data verified",
+        "sinCuenta": "No bank account yet: payouts cannot be sent without it. Add it with the pencil."
       },
       "selector": {
         "searchPlaceholder": "Search owner by name, email or document...",

@@ -4310,7 +4310,8 @@
         "hide": "Ocultar",
         "show": "Mostrar",
         "copy": "Copiar",
-        "verified": "Datos verificados"
+        "verified": "Datos verificados",
+        "sinCuenta": "Sin cuenta bancaria: sin esto no se le puede girar. Cargala con el lápiz."
       },
       "selector": {
         "searchPlaceholder": "Buscar propietario por nombre, email o documento...",

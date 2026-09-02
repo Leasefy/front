@@ -38,6 +38,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Spinner } from '@/components/ui/spinner';
 import { SegmentedControl, IconButton } from '@leasefy/cadence';
 import {
   PropietarioStats,
@@ -327,7 +328,7 @@ function PropietarioDetailContent() {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
   // Fetch propietario and keep local state for updates
-  const { propietario: fetchedPropietario } = usePropietario(id);
+  const { propietario: fetchedPropietario, isLoading } = usePropietario(id);
   const [propietario, setPropietario] = useState(fetchedPropietario);
 
   // Update local state when fetched data changes
@@ -340,6 +341,19 @@ function PropietarioDetailContent() {
   // Fetch related data
   const { consignaciones } = useConsignaciones({ propietarioId: id });
   const { dispersiones } = useDispersiones({ propietarioId: id });
+
+  // Mientras carga no es «no encontrado»: ese cartel salía un instante en
+  // cada ficha y después llegaba el dato (Nico, 2026-09-02 12:47).
+  if (!propietario && isLoading) {
+    return (
+      <div className="p-6 lg:p-8" role="status" aria-live="polite" data-testid="propietario-cargando">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <Spinner size="sm" />
+          {t('common.loading')}
+        </div>
+      </div>
+    );
+  }
 
   if (!propietario) {
     return (

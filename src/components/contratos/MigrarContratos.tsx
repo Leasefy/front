@@ -86,6 +86,7 @@ import { propietariosApi } from "@/lib/api/inmobiliaria.service";
 import type { Propietario } from "@/lib/types/inmobiliaria";
 import { ResolucionMasiva } from "./ResolucionMasiva";
 import { CrearInmueblesFaltantes } from "./CrearInmueblesFaltantes";
+import { AlertaAccionable } from "@/components/ui/alerta-accionable";
 import { ProgresoDeLote } from "./ProgresoDeLote";
 import { Pagination } from "@/components/ui/pagination";
 
@@ -796,11 +797,18 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                     </span>
                   ) : (
                     <>
-                      {" · "}
-                      {l.pendientes}{" "}
-                      {l.pendientes === 1
-                        ? "fila pendiente"
-                        : "filas pendientes"}
+                      {/* «0 filas pendientes» sobre un lote que sigue acá
+                          por sus activados con deuda no dice nada: se calla. */}
+                      {l.pendientes > 0 ||
+                      !(l.activadosSinInmueble || l.activadosSinPropietario) ? (
+                        <>
+                          {" · "}
+                          {l.pendientes}{" "}
+                          {l.pendientes === 1
+                            ? "fila pendiente"
+                            : "filas pendientes"}
+                        </>
+                      ) : null}
                       {/*
                        * T-0035 — leía `l.listos`: con el modo sparse prendido
                        * eso daba SIEMPRE 0 en un lote real (todo quedaba
@@ -813,6 +821,22 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                       {l.activables > 0
                         ? ` · ${l.activables} para activar`
                         : ""}
+                      {/* 2026-09-02 — por qué un lote todo activado sigue
+                          acá: sus contratos existen y no cobran. */}
+                      {l.activadosSinInmueble ? (
+                        <span className="text-danger">
+                          {` · ${l.activadosSinInmueble} ${
+                            l.activadosSinInmueble === 1 ? "activado" : "activados"
+                          } sin inmueble`}
+                        </span>
+                      ) : null}
+                      {l.activadosSinPropietario ? (
+                        <span className="text-danger">
+                          {` · ${l.activadosSinPropietario} ${
+                            l.activadosSinPropietario === 1 ? "activado" : "activados"
+                          } sin propietario`}
+                        </span>
+                      ) : null}
                     </>
                   )}
                 </p>
@@ -827,6 +851,10 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                    * listar varios lotes y "Retomar" sigue siendo el click
                    * fácil, no éste.
                    */}
+                  {/* Un lote que sigue acá sólo por sus activados con
+                      deuda no tiene nada que descartar: «Se van a descartar
+                      0 filas» es un botón que miente. */}
+                  {l.pendientes + l.listos > 0 || procesando ? (
                   <Button
                     type="button"
                     variant="outline"
@@ -848,6 +876,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
                   >
                     Descartar
                   </Button>
+                  ) : null}
                   <Button
                     size="sm"
                     hideArrow
@@ -1197,9 +1226,22 @@ function ListaDeTrabajo({
   onSeleccionCambia: (s: Set<string>) => void;
 }) {
   const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
-  /** Las que todavía se pueden tocar: una activada ya es un contrato. */
+  /**
+   * Una activada con inmueble y sin propietario (2026-09-02): el contrato
+   * existe y no cobra. Es la única activada que todavía tiene algo por
+   * hacer acá — recibir su propietario, de a una o en masa.
+   */
+  const activadaSinPropietario = (f: FilaDeMigracion) =>
+    f.estado === "ACTIVADO" && Boolean(f.propertyId) && !f.propietario;
+  const activadasSinPropietarioEnPagina = filas.filter(activadaSinPropietario);
+  /**
+   * Las que todavía se pueden tocar: una activada ya es un contrato — salvo
+   * que no tenga propietario, que es lo único que se le puede dar desde acá.
+   */
   const editables = filas.filter(
-    (f) => f.estado !== "ACTIVADO" && f.estado !== "DESCARTADO",
+    (f) =>
+      (f.estado !== "ACTIVADO" && f.estado !== "DESCARTADO") ||
+      activadaSinPropietario(f),
   );
   const todasMarcadas =
     editables.length > 0 && editables.every((f) => seleccion.has(f.id));
@@ -1403,6 +1445,43 @@ function ListaDeTrabajo({
         />
 
         {/*
+         * Los activados con inmueble y sin propietario — el hueco que deja lo
+         * de arriba cuando el archivo no traía al propietario. Existen, tienen
+         * inquilino, y no cobran. El número lo trae el back; la acción es
+         * seleccionar los de esta página y darles el propietario en masa (o
+         * elegirlo fila por fila, que el selector ya está encendido).
+         */}
+        {resumen.activadosSinPropietario ? (
+          <AlertaAccionable
+            severidad="warning"
+            titulo={
+              resumen.activadosSinPropietario === 1
+                ? "1 contrato ya activado no tiene propietario: no genera cobros."
+                : `${resumen.activadosSinPropietario} contratos ya activados no tienen propietario: no generan cobros.`
+            }
+            accion={
+              activadasSinPropietarioEnPagina.length > 0
+                ? {
+                    label: `Seleccionar los ${activadasSinPropietarioEnPagina.length} de esta página`,
+                    onClick: () => {
+                      const s = new Set(seleccion);
+                      activadasSinPropietarioEnPagina.forEach((f) =>
+                        s.add(f.id),
+                      );
+                      onSeleccionCambia(s);
+                    },
+                  }
+                : undefined
+            }
+            data-testid="aviso-activados-sin-propietario"
+          >
+            El cobro sale de la consignación del inmueble y nadie dijo de quién
+            es. Elegí el propietario en cada fila, o seleccioná varias y usá
+            «Mismo propietario».
+          </AlertaAccionable>
+        ) : null}
+
+        {/*
          * T-0036 §3.2.C6 — visualmente separado de Activar: uno es el
          * camino feliz, el otro es irreversible. Sólo vive acá adentro,
          * nunca en la tarjeta "Retomar" (§11-L5) — descartar 1.365 filas de
@@ -1557,7 +1636,9 @@ function ListaDeTrabajo({
         <p className="mt-0.5 text-sm text-muted-foreground">
           {resumen.activables > 0
             ? "Cada uno con el propietario al que le vamos a consignar el inmueble y el porcentaje que le vamos a cobrar. Si alguno quedó con el propietario equivocado, cambialo acá — después de activar ya es un contrato y se edita desde el contrato."
-            : "Ya están activos. De acá en adelante se editan desde cada contrato, no desde la migración."}
+            : resumen.activadosSinPropietario
+              ? "Ya están activos. Los que no tienen propietario se consignan acá mismo; todo lo demás se edita desde cada contrato."
+              : "Ya están activos. De acá en adelante se editan desde cada contrato, no desde la migración."}
         </p>
       </div>
 

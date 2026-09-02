@@ -71,6 +71,12 @@ interface AvanceDePaso {
    */
   sinInmueble?: number;
   /**
+   * Sólo contratos: activados CON inmueble y SIN propietario — el inmueble
+   * no está consignado a nadie, así que tampoco cobran (2026-09-02).
+   * Ausente = no se pudo medir.
+   */
+  sinPropietario?: number;
+  /**
    * Sólo PUC: los asientos automáticos sin cuenta en el mapeo. Con cuentas
    * pero sin mapeo, ningún recibo ni giro se asienta — el paso no está
    * terminado mientras falte uno. Ausente = no se pudo medir.
@@ -165,6 +171,7 @@ export function SecuenciaDeMigracion() {
          */
         contratos.hechas = resumenContratos.value.activados;
         contratos.sinInmueble = resumenContratos.value.activadosSinInmueble;
+        contratos.sinPropietario = resumenContratos.value.activadosSinPropietario;
       }
 
       const puc: AvanceDePaso = { ...SIN_MEDIR };
@@ -300,10 +307,12 @@ function TarjetaDePaso({
   const { t } = useI18n();
 
   const sinInmueble = avance.sinInmueble ?? 0;
+  const sinPropietario = avance.sinPropietario ?? 0;
   const sinMapeo = avance.sinMapeo ?? 0;
-  // Un contrato activo sin inmueble no cobra, y un PUC sin mapeo no asienta:
-  // con uno solo de los dos, el paso no está hecho.
-  const hecho = (avance.hechas ?? 0) > 0 && sinInmueble === 0 && sinMapeo === 0;
+  // Un contrato activo sin inmueble o sin propietario no cobra, y un PUC sin
+  // mapeo no asienta: con uno solo de los tres, el paso no está hecho.
+  const hecho =
+    (avance.hechas ?? 0) > 0 && sinInmueble === 0 && sinPropietario === 0 && sinMapeo === 0;
   const enCurso = avance.porRevisar > 0;
 
   return (
@@ -338,6 +347,7 @@ function TarjetaDePaso({
                 hecho={hecho}
                 enCurso={enCurso}
                 sinInmueble={sinInmueble > 0}
+                sinPropietario={sinPropietario > 0}
                 midiendo={midiendo}
               />
             </div>
@@ -397,6 +407,25 @@ function TarjetaDePaso({
                 </p>
               </div>
             ) : null}
+            {sinPropietario > 0 && href ? (
+              /*
+               * Mismo rojo y misma razón: el contrato existe, tiene inmueble,
+               * y no cobra porque nadie dijo de quién es. Se resuelve en la
+               * fila de la migración (el selector está encendido).
+               */
+              <div
+                className="flex items-start gap-2 rounded-md border border-danger/30 bg-danger-soft p-2.5"
+                data-testid="contratos-sin-propietario"
+              >
+                <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" weight="fill" />
+                <p className="text-sm text-fg">
+                  {t('migracion.avance.sinPropietario', { n: sinPropietario })}{' '}
+                  <Link href={href} className="font-medium text-danger hover:underline">
+                    {t('migracion.avance.resolverSinPropietario')}
+                  </Link>
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -429,12 +458,14 @@ function EtiquetaDeEstado({
   hecho,
   enCurso,
   sinInmueble,
+  sinPropietario,
   midiendo,
 }: {
   disponible: boolean;
   hecho: boolean;
   enCurso: boolean;
   sinInmueble: boolean;
+  sinPropietario: boolean;
   midiendo: boolean;
 }) {
   const { t } = useI18n();
@@ -450,6 +481,14 @@ function EtiquetaDeEstado({
       <span className="inline-flex items-center gap-1 text-xs text-danger">
         <Warning className="h-3.5 w-3.5" weight="fill" />
         {t('migracion.estados.sinInmueble')}
+      </span>
+    );
+  }
+  if (sinPropietario) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-danger">
+        <Warning className="h-3.5 w-3.5" weight="fill" />
+        {t('migracion.estados.sinPropietario')}
       </span>
     );
   }

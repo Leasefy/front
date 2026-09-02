@@ -85,6 +85,17 @@ export function FilaDeRevision({
   const sinInmueble = !fila.propertyId;
   /** Sin consignación no hay dónde escribir el porcentaje. */
   const consignada = Boolean(fila.propietario);
+  /**
+   * Una fila YA activada con inmueble y sin propietario (2026-09-02): el
+   * contrato existe, tiene inquilino, y no cobra — el cobro sale de la
+   * consignación y nadie dijo de quién es el inmueble. Es lo que deja «Crear
+   * los N inmuebles que faltan» sobre un archivo sin propietario. Acá se le
+   * da su PRIMER propietario; cambiar uno que ya está sigue siendo cosa del
+   * inmueble, así que el selector se apaga apenas queda consignada.
+   */
+  const activadaSinPropietario = yaActivada && !sinInmueble && !consignada;
+  const puedeElegirPropietario = editable || activadaSinPropietario;
+  const seleccionable = editable || activadaSinPropietario;
   const otrosFaltantes = fila.faltantes.filter(
     (f) => !YA_RESUELTOS_ACA.includes(f),
   );
@@ -165,7 +176,7 @@ export function FilaDeRevision({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground">
-          {editable ? (
+          {seleccionable ? (
             <Checkbox
               checked={seleccionada}
               onCheckedChange={(c) => onSeleccion(c === true)}
@@ -212,7 +223,7 @@ export function FilaDeRevision({
             <SelectorDePropietario
               propietarios={propietarios}
               actualId={fila.propietario?.id ?? null}
-              disabled={!editable || guardando}
+              disabled={!puedeElegirPropietario || guardando}
               onElegir={(p) => void elegirPropietario(p)}
               testId={`propietario-fila-${fila.fila}`}
             />
@@ -233,6 +244,17 @@ export function FilaDeRevision({
       {!consignada && !sinInmueble && editable ? (
         <p className="text-xs text-muted-foreground">
           El porcentaje se puede poner cuando el inmueble esté consignado.
+        </p>
+      ) : null}
+
+      {activadaSinPropietario ? (
+        <p
+          className="text-xs text-warning"
+          data-testid="activada-sin-propietario"
+        >
+          Este contrato ya está activo y no tiene propietario: no genera cobros
+          hasta que el inmueble quede consignado. Elegilo acá, o seleccioná
+          varias filas y usá «Mismo propietario».
         </p>
       ) : null}
 
@@ -338,6 +360,16 @@ function CampoComision({
 }
 
 function EstadoDeLaFila({ fila }: { fila: FilaDeMigracion }) {
+  if (fila.estado === "ACTIVADO" && fila.propertyId && !fila.propietario)
+    return (
+      <span
+        className="inline-flex items-center gap-1 text-[11px] text-warning"
+        data-testid="pastilla-sin-propietario"
+      >
+        <Warning className="h-3.5 w-3.5" />
+        Activado · sin propietario
+      </span>
+    );
   if (fila.estado === "ACTIVADO")
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-fg-muted">

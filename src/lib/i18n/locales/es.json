@@ -10419,13 +10419,16 @@
       "noDisponible": "No disponible",
       "enCurso": "Sin terminar",
       "conDatos": "Con datos migrados",
-      "sinInmueble": "Sin inmueble"
+      "sinInmueble": "Sin inmueble",
+      "sinPropietario": "Sin propietario"
     },
     "avance": {
       "hechas": "{{n}} ya migrados",
       "porRevisar": "{{n}} por revisar en «{{lote}}»",
       "sinInmueble": "{{n}} activos sin inmueble: no generan cobros hasta que se les vincule su inmueble.",
       "resolverSinInmueble": "Crear o vincular los inmuebles",
+      "sinPropietario": "{{n}} activos sin propietario: el inmueble no está consignado a nadie y no generan cobros.",
+      "resolverSinPropietario": "Elegir el propietario de cada uno",
       "sinMapeo": "Faltan cuentas para {{n}} asientos automáticos: los recibos y giros pasan sin asiento hasta asignarlas.",
       "sinMapeoUno": "Falta la cuenta de 1 asiento automático: ese movimiento pasa sin asiento hasta asignarla.",
       "resolverSinMapeo": "Asignar las cuentas"

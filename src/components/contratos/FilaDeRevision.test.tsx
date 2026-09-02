@@ -363,4 +363,53 @@ describe('<FilaDeRevision> — una fila ya activada', () => {
         .disabled,
     ).toBe(true)
   })
+
+  /**
+   * 2026-09-02 — el hueco de «Crear los N inmuebles que faltan» sobre un
+   * archivo sin propietario: la fila queda activada, con inmueble, sin
+   * propietario, y el selector estaba apagado. El contrato existe y no cobra.
+   */
+  it('activada CON inmueble y SIN propietario: lo dice, deja elegirlo y lo registra (primer propietario)', async () => {
+    vi.mocked(contractsApi.migracion.registrarPropietario).mockResolvedValue(
+      fila({ estado: 'ACTIVADO', faltantes: [], contractId: 'ct-1', propietarioId: 'po-1' }),
+    )
+    const { onActualizada, onCambio } = montar({
+      estado: 'ACTIVADO',
+      faltantes: [],
+      contractId: 'ct-1',
+      propietario: null,
+    })
+
+    expect($('[data-testid="pastilla-sin-propietario"]')?.textContent).toContain('sin propietario')
+    expect($('[data-testid="activada-sin-propietario"]')?.textContent).toMatch(/no genera cobros/i)
+    // Se puede seleccionar para el masivo «Mismo propietario».
+    expect($('[role="checkbox"]')).not.toBeNull()
+    expect(
+      ($('[data-testid="propietario-fila-0-elegir-po-1"]') as HTMLButtonElement).disabled,
+    ).toBe(false)
+
+    await elegirAJorge()
+
+    // Primer propietario ⇒ registrar (crea o reusa la ficha), nunca corregir.
+    expect(contractsApi.migracion.registrarPropietario).toHaveBeenCalledWith(
+      'f-1',
+      expect.objectContaining({ nombre: 'Jorge Restrepo', documento: '71234567' }),
+    )
+    expect(contractsApi.migracion.corregirPropietario).not.toHaveBeenCalled()
+    expect(onActualizada).toHaveBeenCalledWith(
+      expect.objectContaining({
+        estado: 'ACTIVADO',
+        propietario: expect.objectContaining({ id: 'po-1' }),
+      }),
+    )
+    expect(onCambio).toHaveBeenCalled()
+  })
+
+  it('activada SIN inmueble no ofrece propietario: primero el inmueble', () => {
+    montar({ estado: 'ACTIVADO', faltantes: [], contractId: 'ct-1', propertyId: null, propietario: null })
+
+    expect($('[data-testid="propietario-sin-inmueble"]')).not.toBeNull()
+    expect($('[data-testid="activada-sin-propietario"]')).toBeNull()
+    expect($('[role="checkbox"]')).toBeNull()
+  })
 })

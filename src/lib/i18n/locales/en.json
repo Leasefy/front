@@ -10418,13 +10418,16 @@
       "noDisponible": "Unavailable",
       "enCurso": "Unfinished",
       "conDatos": "Data migrated",
-      "sinInmueble": "No property"
+      "sinInmueble": "No property",
+      "sinPropietario": "No owner"
     },
     "avance": {
       "hechas": "{{n}} already migrated",
       "porRevisar": "{{n}} to review in “{{lote}}”",
       "sinInmueble": "{{n}} active without a property: they will not bill until a property is linked.",
       "resolverSinInmueble": "Create or link the properties",
+      "sinPropietario": "{{n}} active without an owner: the property is not consigned to anyone, so they will not bill.",
+      "resolverSinPropietario": "Pick each one's owner",
       "sinMapeo": "{{n}} automatic entries have no account yet: receipts and payouts are not posted until you assign them.",
       "sinMapeoUno": "1 automatic entry has no account yet: that movement is not posted until you assign it.",
       "resolverSinMapeo": "Assign the accounts"

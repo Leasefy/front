@@ -294,6 +294,25 @@ describe('SecuenciaDeMigracion', () => {
     expect(container.querySelectorAll('[data-testid="contratos-sin-inmueble"]')).toHaveLength(1);
   });
 
+  it('contratos activos con inmueble y sin propietario: el paso NO está hecho, lo dice en rojo y manda a la migración', async () => {
+    /*
+     * El hueco que deja «Crear los N inmuebles que faltan» sobre un archivo
+     * sin propietario (2026-09-02): 90 activos con inmueble, 0 consignados,
+     * 0 cobros — y sin este aviso el paso decía «con datos migrados».
+     */
+    contratosMock.resumen.mockResolvedValue(
+      RESUMEN_CONTRATOS({ activados: 90, activadosSinInmueble: 0, activadosSinPropietario: 90 }),
+    );
+    await pintar();
+    const paso4 = container.querySelector('[data-testid="paso-4"]')!;
+    expect(paso4.textContent).not.toContain('migracion.estados.conDatos');
+    expect(paso4.textContent).toContain('migracion.estados.sinPropietario');
+    expect(paso4.querySelector('[data-testid="contratos-sin-inmueble"]')).toBeNull();
+    const aviso = paso4.querySelector('[data-testid="contratos-sin-propietario"]')!;
+    expect(aviso.textContent).toContain('migracion.avance.sinPropietario::{"n":90}');
+    expect(aviso.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/contratos/migrar');
+  });
+
   it('PUC con cuentas pero sin mapeo: el paso NO está hecho y manda a asignar las cuentas', async () => {
     /*
      * Medido el 2026-09-02: 140 cuentas, mapeo vacío, el paso decía «con

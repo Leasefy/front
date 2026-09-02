@@ -863,6 +863,13 @@ export interface LoteAbierto {
    * lote de 1.365 filas sin inmueble bajo el modo sparse.
    */
   activables: number;
+  /**
+   * 2026-09-02 — un lote TODO activado sigue abierto si le quedaron
+   * contratos sin inmueble o sin propietario: existen y no cobran, y lo que
+   * los arregla vive en la lista de trabajo. Un back viejo no los manda.
+   */
+  activadosSinInmueble?: number;
+  activadosSinPropietario?: number;
   estado?: EstadoLoteMigracion;
   total?: number;
   creadoEn?: string;
@@ -953,6 +960,14 @@ export interface ResumenLote {
    * `undefined` ⇒ no se afirma nada, nunca un `0`.
    */
   activadosSinInmueble?: number;
+  /**
+   * Contratos migrados ACTIVOS con inmueble y SIN propietario (2026-09-02):
+   * el inmueble no está consignado a nadie, así que no generan cobros. Se
+   * resuelve desde la misma fila (el selector de propietario se enciende en
+   * una fila activada sin propietario) o en masa con «Mismo propietario».
+   * Un back viejo no lo manda: `undefined` ⇒ no se afirma nada.
+   */
+  activadosSinPropietario?: number;
 }
 
 /**

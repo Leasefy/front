@@ -1214,6 +1214,71 @@ describe('<MigrarContratos> — «Crear los N inmuebles que faltan» vive en el 
   })
 })
 
+describe('<MigrarContratos> — activados sin propietario (2026-09-02)', () => {
+  /**
+   * El hueco que deja «Crear los N inmuebles que faltan» sobre un archivo sin
+   * propietario: contratos activos, con inmueble e inquilino, que no cobran.
+   * El número lo trae el back en el resumen; la lista lo dice con la acción.
+   */
+  async function conActivadosSinPropietario(n: number, enPagina: number) {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo()
+    vi.mocked(contractsApi.migracion.resumen).mockResolvedValue({
+      lote: 'lote-1',
+      total: 30,
+      pendientes: 0,
+      listos: 0,
+      activados: 30,
+      descartados: 0,
+      activables: 0,
+      activadosSinPropietario: n,
+    })
+    vi.mocked(contractsApi.migracion.filas).mockResolvedValue({
+      filas: Array.from({ length: 25 }, (_, i) =>
+        filaDeMigracion({
+          fila: i,
+          estado: 'ACTIVADO',
+          faltantes: [],
+          contractId: `ct-${i}`,
+          propietario:
+            i < enPagina ? null : { id: 'po-1', nombre: 'Jorge', documento: '712' },
+        }),
+      ),
+      total: 30,
+      pagina: 1,
+      porPagina: 25,
+    })
+  }
+
+  it('el aviso dice cuántos, por qué no cobran, y selecciona los de la página', async () => {
+    await conActivadosSinPropietario(90, 3)
+    // Forzar el refresco: la lista se vuelve a pedir al cambiar de página y volver.
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Go to next page"]')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Go to previous page"]')?.click()
+      for (let i = 0; i < 3; i++) await new Promise((r) => setTimeout(r, 0))
+    })
+
+    const aviso = container.querySelector('[data-testid="aviso-activados-sin-propietario"]')
+    expect(aviso?.textContent).toContain('90 contratos ya activados no tienen propietario')
+    expect(aviso?.textContent).toMatch(/no generan cobros/i)
+
+    await act(async () => {
+      boton('Seleccionar los 3 de esta página')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    // La masiva aparece con exactamente esas tres.
+    expect(container.textContent).toContain('3 filas seleccionadas')
+    // Las activadas que YA tienen propietario no entran en «seleccionar la página».
+    const label = labelConTexto('de esta página')
+    expect(label?.textContent).toContain('Seleccionar las 3 de esta página')
+  })
+})
+
 describe('<MigrarContratos> — activar apaga la lista', () => {
   const activarTodo = async (activables: number) => {
     render()

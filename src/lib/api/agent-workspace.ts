@@ -97,13 +97,17 @@ export interface VallaItem {
 }
 
 export interface AgentAutonomiaResponse {
-  agente: AgenteId
+  agente: string
   modo: AutonomiaModo
   modosDisponibles: AutonomiaModo[]
   valla: VallaItem[]
   t323: boolean
-  nota: string
-  generatedAt: string
+  /** De dónde salió el modo: fila del panel, política de cobranza, o default. */
+  origen?: 'piloto' | 'politica' | 'default'
+  /** Qué significa HOY este modo para ESTE agente, en una frase (micro, honesto). */
+  efectoReal?: string
+  nota?: string
+  generatedAt?: string
 }
 
 // ── Analítica (superficie 6) ────────────────────────────────────────────────
@@ -215,7 +219,10 @@ export function fetchAgentAnalitica(
 
 export function fetchAgentAutonomia(
   agencyId: string,
-  agente: AgenteId,
+  // `string` y no `AgenteId`: desde 2026-08-31 el endpoint acepta también los
+  // agentes GOBERNADOS (retencion, calidad, prospectos, aprobaciones,
+  // mantenimiento) — el micro valida el roster, acá no se duplica.
+  agente: string,
   signal?: AbortSignal,
 ): Promise<AgentWorkspaceFetchResult<AgentAutonomiaResponse>> {
   return getJson<AgentAutonomiaResponse>(

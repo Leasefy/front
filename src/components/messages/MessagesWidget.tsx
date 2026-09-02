@@ -28,10 +28,25 @@ import { useI18n } from '@/lib/i18n';
 import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 import { useConversations, useChat } from '@/lib/hooks/useMessages';
+import { messagesApi } from '@/lib/api/messages.service';
+import { agentContactApi } from '@/lib/api/agent-contact.service';
 import type { ChatConversation } from '@/lib/api/messages.types';
+import { PQRS_SLA_BUSINESS_DAYS } from '@/lib/constants/response-sla';
 
 // ============================================================================
 // Widget props
@@ -136,9 +151,18 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [showOptionsList, setShowOptionsList] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [isReporting, setIsReporting] = useState(false);
+  // COMU-03: WhatsApp is a first-class channel but ROUTED BY THE AGENT — the
+  // frontend never dispatches it. This flag is fed ONLY by the agent's
+  // contact-ledger gate (agentContactApi.canContact), which returns
+  // `allowed: false` today, so the WhatsApp affordance stays disabled.
+  const [whatsappRoutingAllowed, setWhatsappRoutingAllowed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const optionsListRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { messages, isLoading: isLoadingMessages, isSending, sendMessage, markAsRead } = useChat(selectedConversationId);
 
@@ -186,6 +210,26 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
 
+  // COMU-03: ask the agent's contact-ledger whether WhatsApp routing is
+  // permitted for this thread (tenant only). The frontend never dispatches —
+  // it only reflects the gate. Today canContact resolves `allowed:false`
+  // (endpoint not live → 'unavailable'), so the affordance stays disabled.
+  const selectedConvId = selectedConversation?.id;
+  const selectedConvLeaseId = selectedConversation?.leaseId;
+  useEffect(() => {
+    if (!isTenant || !selectedConvId) {
+      setWhatsappRoutingAllowed(false);
+      return;
+    }
+    let active = true;
+    agentContactApi.canContact('whatsapp', selectedConvLeaseId).then((res) => {
+      if (active) setWhatsappRoutingAllowed(res.allowed);
+    });
+    return () => {
+      active = false;
+    };
+  }, [isTenant, selectedConvId, selectedConvLeaseId]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (optionsListRef.current && !optionsListRef.current.contains(event.target as Node)) {
@@ -217,29 +261,109 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
     refetchConversations();
   }, [messageText, isSending, sendMessage, refetchConversations]);
 
-  // Acciones placeholder (backend no las soporta aún — mantenemos alert con copy i18n).
-  const handleArchive = () => {
-    setShowOptionsList(false);
-    alert(
-      locale === 'es'
-        ? `Conversacion con ${selectedConversation?.name ?? ''} archivada`
-        : `Conversation with ${selectedConversation?.name ?? ''} archived`,
-    );
-  };
+  // Attachments (COMU-02): the file picker is REAL, the SEND is honestly pending.
+  // Reuse one hidden <input>; set `accept` per button before opening it.
+  const openAttachmentPicker = useCallback((accept: string) => {
+    const input = fileInputRef.current;
+    if (!input) return;
+    input.accept = accept;
+    input.click();
+  }, []);
 
-  const handleMute = () => {
-    setShowOptionsList(false);
-    alert(
-      locale === 'es'
-        ? `Notificaciones de ${selectedConversation?.name ?? ''} silenciadas`
-        : `Notifications from ${selectedConversation?.name ?? ''} muted`,
-    );
-  };
+  const handleAttachmentSelected = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      // Reset so re-selecting the SAME file fires onChange again.
+      e.target.value = '';
+      if (!file || !selectedConversation) return;
 
-  const handleReport = () => {
+      const MAX_BYTES = 10 * 1024 * 1024; // 10 MB size cap
+      if (file.size > MAX_BYTES) {
+        toast.error(
+          locale === 'es'
+            ? 'El archivo supera el límite de 10 MB.'
+            : 'The file exceeds the 10 MB limit.',
+        );
+        return;
+      }
+
+      // Contract stub: no chat-attachment endpoint + no message attachment field
+      // yet, so this resolves `null`. Show an HONEST "Próximamente" — never a fake
+      // "enviado", never an orphaned upload to the documents store from the chat.
+      await messagesApi.sendAttachment(selectedConversation.id, file);
+      toast.info(
+        locale === 'es'
+          ? 'El envío de adjuntos estará disponible pronto.'
+          : 'Sending attachments will be available soon.',
+      );
+    },
+    [selectedConversation, locale],
+  );
+
+  // Conversation actions (COMU-02) — SHARED by tenant + landlord/agency. The
+  // endpoints are not live yet, so each degrades to an honest "Próximamente"
+  // toast via the typed service ('unavailable' on 404/403/0) — never `alert`,
+  // never a fabricated success. `report` is a safety action → AlertDialog confirm.
+  const handleArchive = useCallback(async () => {
     setShowOptionsList(false);
-    alert(locale === 'es' ? 'Conversacion reportada' : 'Conversation reported');
-  };
+    if (!selectedConversation) return;
+    const result = await messagesApi.archiveConversation(selectedConversation.id);
+    if (result === 'ok') {
+      toast.success(locale === 'es' ? 'Conversación archivada' : 'Conversation archived');
+      // Optimistically drop the archived thread from view, then re-sync.
+      setSelectedApplicationId(null);
+      setShowMobileChat(false);
+      refetchConversations();
+    } else {
+      toast.info(
+        locale === 'es'
+          ? 'Archivar conversaciones estará disponible próximamente.'
+          : 'Archiving conversations will be available soon.',
+      );
+    }
+  }, [selectedConversation, locale, refetchConversations]);
+
+  const handleMute = useCallback(async () => {
+    setShowOptionsList(false);
+    if (!selectedConversation) return;
+    const result = await messagesApi.muteConversation(selectedConversation.id);
+    if (result === 'ok') {
+      toast.success(locale === 'es' ? 'Notificaciones silenciadas' : 'Notifications muted');
+    } else {
+      toast.info(
+        locale === 'es'
+          ? 'Silenciar estará disponible próximamente.'
+          : 'Muting will be available soon.',
+      );
+    }
+  }, [selectedConversation, locale]);
+
+  const handleReport = useCallback(() => {
+    setShowOptionsList(false);
+    setReportOpen(true);
+  }, []);
+
+  const confirmReport = useCallback(async () => {
+    if (!selectedConversation) return;
+    setIsReporting(true);
+    const trimmed = reportReason.trim();
+    const result = await messagesApi.reportConversation(
+      selectedConversation.id,
+      trimmed.length > 0 ? trimmed : undefined,
+    );
+    setIsReporting(false);
+    setReportOpen(false);
+    setReportReason('');
+    if (result === 'ok') {
+      toast.success(locale === 'es' ? 'Conversación reportada' : 'Conversation reported');
+    } else {
+      toast.info(
+        locale === 'es'
+          ? 'Reportar estará disponible próximamente.'
+          : 'Reporting will be available soon.',
+      );
+    }
+  }, [selectedConversation, reportReason, locale]);
 
   return (
     <div className="h-[calc(100vh-64px)] bg-bg overflow-hidden flex flex-col">
@@ -505,6 +629,32 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                   <div className="flex-1 flex overflow-hidden">
                     {/* Messages Area */}
                     <div className={cn('flex-1 flex flex-col', showInfoPanel && 'hidden lg:flex')}>
+                      {/*
+                        Tenant-only arriendo context header (COMU-01). Ties the chat
+                        VISUALLY to the arriendo NOW using the REAL `property` field —
+                        never a fabricated arriendo. Renders nothing when `property`
+                        is empty; landlord/agency (actor!=='tenant') see NOTHING new
+                        (byte-identical). No presence/liveness indicators anywhere.
+                      */}
+                      {isTenant && selectedConversation.property && (
+                        <div className="flex items-start gap-3 px-6 py-3 border-b border-border bg-muted/40">
+                          <div className="w-8 h-8 rounded-md bg-card flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <House className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {locale === 'es'
+                                ? `Sobre tu arriendo — ${selectedConversation.property}`
+                                : `About your rental — ${selectedConversation.property}`}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {locale === 'es'
+                                ? 'Estamos conectando cada chat a su arriendo; el hilo por arriendo llega próximamente.'
+                                : "We're tying each chat to its rental; per-rental threads are coming soon."}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex-1 overflow-y-auto p-6 bg-muted/30">
                         {isLoadingMessages ? (
                           <MessagesSkeleton />
@@ -569,15 +719,24 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                       {/* Message Input */}
                       <div className="px-6 py-4 border-t border-border bg-card">
                         <div className="flex items-center gap-3">
+                          {/* Hidden picker reused by both buttons (accept set per button). */}
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            className="hidden"
+                            onChange={handleAttachmentSelected}
+                          />
                           <div className="flex items-center gap-1">
                             <IconButton
                               variant="ghost"
+                              onClick={() => openAttachmentPicker('image/*,application/pdf')}
                               className="rounded-full text-muted-foreground hover:text-foreground"
                               aria-label={locale === 'es' ? 'Adjuntar archivo' : 'Attach file'}
                               icon={<Paperclip className="w-5 h-5" />}
                             />
                             <IconButton
                               variant="ghost"
+                              onClick={() => openAttachmentPicker('image/*')}
                               className="rounded-full text-muted-foreground hover:text-foreground"
                               aria-label={locale === 'es' ? 'Enviar imagen' : 'Send image'}
                               icon={<Image className="w-5 h-5" />}
@@ -612,6 +771,24 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                             <PaperPlaneTilt className="w-5 h-5" />
                           </Button>
                         </div>
+
+                        {/*
+                          Static expected-response hint (COMU-04, tenant only).
+                          Neutral and consistent with the PQRS SLA (Ley 1480/2011
+                          art. 58 → 15 días hábiles). It MUST NOT imply an instant
+                          human reply and is NOT a live countdown — the real SLA
+                          clock is v7-06. landlord/agency see nothing new.
+                        */}
+                        {isTenant && (
+                          <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
+                            <Info className="w-3.5 h-3.5 flex-shrink-0 mt-px" aria-hidden="true" />
+                            <span>
+                              {locale === 'es'
+                                ? `Respondemos en horario hábil. Los reclamos formales tienen respuesta en hasta ${PQRS_SLA_BUSINESS_DAYS} días hábiles.`
+                                : `We reply during business hours. Formal claims are answered within ${PQRS_SLA_BUSINESS_DAYS} business days.`}
+                            </span>
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -692,6 +869,28 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
                                 {locale === 'es' ? 'Acciones rapidas' : 'Quick actions'}
                               </MonoLabel>
                               <div className="space-y-2">
+                                {/*
+                                  WhatsApp — first-class channel but ROUTED BY THE
+                                  AGENT (COMU-03). Disabled affordance (tenant only),
+                                  never a send button: its state is wired to the
+                                  agent's contact-ledger via canContact, which
+                                  returns allowed:false today → stays "Próximamente".
+                                  No portal-side reminder counter, no dispatch.
+                                */}
+                                {isTenant && (
+                                  <div
+                                    aria-disabled={!whatsappRoutingAllowed}
+                                    title={locale === 'es' ? 'Aún no disponible' : 'Not available yet'}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-muted-foreground bg-muted/50 rounded-xl select-none cursor-not-allowed"
+                                  >
+                                    <ChatCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                                    <span>
+                                      {locale === 'es'
+                                        ? 'WhatsApp — ruteado por tu inmobiliaria · Próximamente'
+                                        : 'WhatsApp — routed by your agency · Coming soon'}
+                                    </span>
+                                  </div>
+                                )}
                                 <button
                                   onClick={handleMute}
                                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted rounded-xl transition-colors"
@@ -719,6 +918,63 @@ export function MessagesWidget({ actor }: MessagesWidgetProps) {
           </div>
         </motion.div>
       </div>
+
+      {/*
+        Report confirm — Radix AlertDialog (role="alertdialog", focus-trapped, no
+        outside-dismiss). The reason is a SINGLE OPTIONAL free-text field: never
+        required and never a suggested reason-for-non-payment prompt (Ley 2300
+        art. 7). Shared by tenant + landlord/agency.
+      */}
+      <AlertDialog
+        open={reportOpen}
+        onOpenChange={(open) => {
+          setReportOpen(open);
+          if (!open) setReportReason('');
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {locale === 'es' ? '¿Reportar esta conversación?' : 'Report this conversation?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {locale === 'es'
+                ? 'Nuestro equipo revisará esta conversación. Si querés, contanos qué pasó.'
+                : 'Our team will review this conversation. If you want, tell us what happened.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-2">
+            <label htmlFor="report-reason" className="text-sm text-muted-foreground">
+              {locale === 'es' ? 'Cuéntanos qué pasó (opcional)' : 'Tell us what happened (optional)'}
+            </label>
+            <Textarea
+              id="report-reason"
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              placeholder={locale === 'es' ? 'Escribe aquí (opcional)' : 'Write here (optional)'}
+              maxLength={500}
+              rows={3}
+            />
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isReporting}>
+              {locale === 'es' ? 'Cancelar' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                // Handle the report ourselves; the toast fires after the call.
+                e.preventDefault();
+                confirmReport();
+              }}
+              disabled={isReporting}
+            >
+              {locale === 'es' ? 'Reportar conversación' : 'Report conversation'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

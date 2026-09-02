@@ -199,6 +199,21 @@ function EscalacionesContent() {
       {/* Header — DESIGN.md §3 typography */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
+          {/* Se llega acá desde el caso («Escalaciones →») o desde el tablero
+              del Resumen, y no había forma de devolverse. `router.back()`
+              regresa a donde estabas; sin historial (pestaña nueva) cae al
+              Resumen de Cobranza. */}
+          <button
+            type="button"
+            onClick={() => {
+              if (window.history.length > 1) router.back()
+              else router.push('/panel/inmobiliaria/ai/cobranza')
+            }}
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground hover:underline"
+            data-testid="escalaciones-volver"
+          >
+            ← Volver
+          </button>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {t('inmobiliaria.ai.cobranza.escalaciones.pageTitle')}
           </h1>

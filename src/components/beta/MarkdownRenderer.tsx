@@ -52,7 +52,7 @@ const markdownComponents: Components = {
       return (
         <code
           className={cn(
-            'bg-muted/70 dark:bg-muted/50 p-3 rounded-md text-[13px] font-mono',
+            'bg-muted/70 dark:bg-muted/50 p-3 rounded-md text-[14px] font-mono',
             'overflow-x-auto block',
             className
           )}
@@ -65,7 +65,7 @@ const markdownComponents: Components = {
     // Inline code
     return (
       <code
-        className="bg-muted/70 dark:bg-muted/50 px-1.5 py-0.5 rounded text-[13px] font-mono"
+        className="bg-muted/70 dark:bg-muted/50 px-1.5 py-0.5 rounded text-[14px] font-mono"
         {...props}
       >
         {children}
@@ -77,7 +77,7 @@ const markdownComponents: Components = {
   ),
   table: ({ children }) => (
     <div className="mb-2 last:mb-0 overflow-x-auto">
-      <table className="border-collapse w-full text-[13px]">{children}</table>
+      <table className="border-collapse w-full text-[14px]">{children}</table>
     </div>
   ),
   thead: ({ children }) => (
@@ -100,13 +100,13 @@ const markdownComponents: Components = {
     <hr className="border-border my-3" />
   ),
   h1: ({ children }) => (
-    <h3 className="font-semibold text-[15px] mb-1">{children}</h3>
+    <h3 className="font-semibold text-[17.5px] mb-1.5">{children}</h3>
   ),
   h2: ({ children }) => (
-    <h3 className="font-semibold text-[15px] mb-1">{children}</h3>
+    <h3 className="font-semibold text-[17px] mb-1.5">{children}</h3>
   ),
   h3: ({ children }) => (
-    <h3 className="font-semibold text-[14px] mb-1">{children}</h3>
+    <h3 className="font-semibold text-[16px] mb-1">{children}</h3>
   ),
 };
 
@@ -126,22 +126,31 @@ export function MarkdownRenderer({
   return (
     <div
       className={cn(
-        'prose prose-sm dark:prose-invert max-w-none',
+        'prose dark:prose-invert max-w-none',
         // Override prose defaults for chat context
         'prose-p:my-0 prose-headings:my-0',
         'prose-ul:my-0 prose-ol:my-0 prose-li:my-0',
         'prose-pre:my-0 prose-table:my-0',
         'prose-blockquote:my-0',
-        'text-[14px] leading-relaxed',
+        // 16px ES el tamaño del cuerpo de las respuestas (Nico, 2026-08-27).
+        // Vivía en los contenedores (AssistantBubble, ResponseCard) y NO se
+        // veía: acá adentro `prose-sm` + `text-[14px]` lo pisaban, porque el
+        // texto lo dibuja este componente, no el div de afuera. El tamaño
+        // vive ahora en un solo lugar — el que renderiza — y `className`
+        // sigue pudiendo cambiarlo puntualmente (tailwind-merge deduplica).
+        'text-[16px] leading-[1.6]',
         className
       )}
     >
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
         {content}
       </ReactMarkdown>
-      {isStreaming && (
-        <span className="inline-block w-0.5 h-4 bg-primary ml-0.5 align-middle animate-pulse" />
-      )}
+      {/* Sin cursor de streaming (Nico, 2026-08-27: «esa barra azul que da como
+          abajo no debería ir ahí, se ve súper raro»). Era un `inline-block`
+          agregado DESPUÉS del markdown, y como el markdown cierra en un <p> de
+          bloque, el cursor caía a una línea propia: una rayita azul suelta con
+          su renglón de aire debajo del texto. Además ya no hace falta — el
+          orbe del avatar dice que se está generando, y lo dice mejor. */}
     </div>
   );
 }

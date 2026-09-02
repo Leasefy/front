@@ -201,3 +201,27 @@ describe('filterAgencyNav — el agente no contestó ≠ no tenés permiso', () 
     expect(v).not.toContain('cotizador')
   })
 })
+
+describe('filterAgencyNav — «Piloto» (ítem sin gate, como el hub /ai)', () => {
+  // El ítem nuevo del Piloto automático va con `module: null` (mismo gate que
+  // las superficies del hub /ai): visible a todo miembro, y sobrevive la
+  // ventana fail-closed de carga de permisos porque no tiene módulo que gatear.
+  const NAV_PILOTO: NavItemWithModule[] = [
+    { label: 'inicio', module: null },
+    { label: 'piloto', module: null },
+    { label: 'cobranza', module: 'cobranza' },
+  ].map((r) => ({ href: '/x', icon: House, ...r }))
+
+  it('visible para TODOS los roles', () => {
+    for (const role of ['ADMIN', 'AGENTE', 'CONTADOR', 'VIEWER'] as const) {
+      const v = filterAgencyNav(NAV_PILOTO, ctxFor(role)).map((i) => i.label)
+      expect(v).toContain('piloto')
+    }
+  })
+
+  it('sobrevive mientras cargan los permisos (el fail-closed solo gatea módulos)', () => {
+    const v = filterAgencyNav(NAV_PILOTO, ctxFor(null)).map((i) => i.label)
+    expect(v).toContain('piloto')
+    expect(v).not.toContain('cobranza')
+  })
+})

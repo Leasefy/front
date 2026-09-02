@@ -31,14 +31,19 @@ export interface BackendLastMessage {
  */
 export interface BackendConversation {
   id: string;
-  /** NEW. Absent on an older back build → treat as `'APPLICATION'` (every
-   * thread it can return is one). Present but not in the enum → throw (C19). */
-  kind?: string;
-  /** BREAKING: was `string`. `null` on a PROPERTY_INQUIRY thread. */
-  applicationId: string | null;
-  /** NEW top-level field. Absent on an older build → fall back to
-   * `property.id`, which has always been there. */
-  propertyId?: string;
+  applicationId: string;
+  /**
+   * Lease this conversation belongs to. OPTIONAL — the current backend groups
+   * chat by `applicationId` only and does NOT return this yet (COMU-01 external
+   * dep: NestJS lease-scoped `messages.service.ts`). Present only once the
+   * server groups by lease; never derived from `applicationId` client-side.
+   */
+  leaseId?: string;
+  /**
+   * Caso this conversation belongs to. OPTIONAL — same external dep as
+   * `leaseId`; carried through only when the backend returns it.
+   */
+  caseId?: string;
   property: { id: string; title: string };
   otherParticipant: BackendParticipant;
   lastMessage: BackendLastMessage | null;
@@ -50,6 +55,13 @@ export interface BackendConversationsResponse {
   conversations: BackendConversation[];
 }
 
+/**
+ * A single chat message as the backend returns it TODAY. NOTE: there is no
+ * `attachment` field — in-thread attachments are a backend seam (COMU-02, see
+ * `ChatMessageAttachment` + `messagesApi.sendAttachment`). Do NOT add one
+ * client-side and do NOT fabricate an attachment bubble; the picker discloses an
+ * honest "Próximamente" until the server both accepts and returns attachments.
+ */
 export interface BackendChatMessage {
   id: string;
   conversationId: string;
@@ -72,11 +84,51 @@ export interface BackendChatMessage {
  */
 export interface BackendConversationWithMessages {
   id: string;
-  kind?: string;
-  applicationId: string | null;
-  propertyId?: string;
+  applicationId: string;
+  /** Lease this thread belongs to — OPTIONAL (COMU-01 external dep; see `BackendConversation.leaseId`). */
+  leaseId?: string;
+  /** Caso this thread belongs to — OPTIONAL (COMU-01 external dep; see `BackendConversation.caseId`). */
+  caseId?: string;
   messages: BackendChatMessage[];
 }
+
+// ============================================================================
+// Chat attachments + conversation actions — CONTRACT ONLY (COMU-02)
+//
+// Two backend gaps block real in-thread attachments today (RESEARCH §2):
+//   1. No chat-attachment endpoint (no POST bound to the conversation).
+//   2. `BackendChatMessage` has NO attachment field — the server never returns
+//      one, so the UI cannot render an in-thread attachment bubble.
+// Until BOTH land, the composer's file picker is REAL but the SEND resolves to an
+// honest "Próximamente" (see `messagesApi.sendAttachment`). These types are the
+// forward contract; they are intentionally NOT wired into `BackendChatMessage`
+// (the backend seam) so nothing fabricates a persisted attachment.
+// ============================================================================
+
+/** A file the user picked in the chat composer, pending a real attachment endpoint. */
+export interface ChatAttachmentDraft {
+  file: File;
+}
+
+/**
+ * Shape of an attachment once the backend returns one in-thread (FUTURE). Declared
+ * here so the eventual `BackendChatMessage.attachment` has a typed target; it is
+ * intentionally NOT added to `BackendChatMessage` yet (backend seam). Any future
+ * bytes retrieval MUST go through `documentsApi.getSignedUrl` (no raw URL — IDOR).
+ */
+export interface ChatMessageAttachment {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+}
+
+/**
+ * Result of a conversation action (archive/mute/report): `'ok'` when the endpoint
+ * answered, `'unavailable'` when the route is not live yet (404/403/0) — the UI
+ * then shows an honest "Próximamente", never a fabricated success.
+ */
+export type ConversationActionResult = 'ok' | 'unavailable';
 
 // ============================================================================
 // Frontend mapped types
@@ -88,9 +140,11 @@ export interface ChatConversation {
   /** contract-addendum-2.md §B.3 — the identity. Selection MUST key on this,
    * never on `applicationId` (which is `null` on many rows). */
   id: string;
-  kind: ConversationKind;
-  /** Display / deep-link hint only. Always null-guard — never a selection key. */
-  applicationId: string | null;
+  applicationId: string;
+  /** Lease id — OPTIONAL, carried through only when the backend returns it (COMU-01 external dep). */
+  leaseId?: string;
+  /** Caso id — OPTIONAL, carried through only when the backend returns it (COMU-01 external dep). */
+  caseId?: string;
   name: string;
   role: string;
   email: string;
@@ -165,6 +219,10 @@ export function mapToConversation(backend: BackendConversation): ChatConversatio
     // `applicationId` passes straight through — `null` is a real, valid
     // value (a PROPERTY_INQUIRY thread), never coerced to `''`/`'null'`.
     applicationId: backend.applicationId,
+    // Passthrough ONLY when the backend returns them (COMU-01 external dep) —
+    // stays `undefined` today; never fabricated or derived from applicationId.
+    leaseId: backend.leaseId,
+    caseId: backend.caseId,
     name: formatName(otherParticipant.firstName, otherParticipant.lastName),
     role: formatRole(otherParticipant.role),
     email: otherParticipant.email,

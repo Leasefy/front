@@ -98,6 +98,50 @@ export interface AgentActivityBlock {
   startedAt: Date;
 }
 
+// ── Pasos del turno (lo que se ve en «Progreso de la tarea») ────────────────
+
+export type TurnStepStatus = 'pending' | 'running' | 'done' | 'failed';
+
+/**
+ * Un paso REAL del turno en curso.
+ *
+ * Nico, 2026-08-27: «dejaste solo como 3 tareas siempre y ya, nada
+ * inteligente; quiero que muestre según el contexto las diferentes tareas».
+ *
+ * El plan no se inventa ni se adivina de la pregunta: se ARMA con los eventos
+ * que manda el backend en el mismo turno (`snapshot`, `dispatch_start`,
+ * `dispatch_result`, `action_proposal`), así que cambia según lo que el
+ * asistente de verdad hace. Preguntar por la cartera y pedir una cotización
+ * producen planes distintos porque despachan agentes distintos.
+ *
+ * `label` es texto del backend (la tarea tal cual la escribió el orquestador,
+ * intraducible); `labelKey` es para las fases fijas, que sí se traducen.
+ */
+export interface TurnStep {
+  id: string;
+  kind: 'entender' | 'cartera' | 'agente' | 'herramienta' | 'propuesta' | 'redactar';
+  /** Texto real del backend. Gana sobre `labelKey` cuando está. */
+  label?: string;
+  /** Clave i18n de una fase fija del turno. */
+  labelKey?: string;
+  /** Sub-línea con contenido real (el resumen que devolvió el agente). */
+  detail?: string;
+  /** Sub-línea traducible, con variables (las cifras del snapshot). */
+  detailKey?: string;
+  detailVars?: Record<string, string | number>;
+  agentType?: AgentType;
+  /**
+   * Cuántas veces seguidas ocurrió el MISMO paso. El especialista vuelve a
+   * llamar a una herramienta con otros parámetros (visto en vivo: calculó el
+   * plan de cuotas dos veces); seis filas con repetidos se leen como ruido, y
+   * borrar las repeticiones sería mentir por omisión. Se cuentan.
+   */
+  repeticiones?: number;
+  status: TurnStepStatus;
+  startedAt?: Date;
+  completedAt?: Date;
+}
+
 /** Type of response for display routing */
 export type ResponseType = 'informative' | 'actionable';
 
@@ -105,7 +149,19 @@ export type ResponseType = 'informative' | 'actionable';
 export interface ResponseAction {
   id: string;
   label: string;
-  /** Route within the app (e.g. '/panel/propiedades') */
+  /**
+   * Lo que se le pregunta al asistente al tocar la acción.
+   *
+   * Es el comportamiento PRINCIPAL (Nico, 2026-08-27: «todas estas acciones
+   * deben verse reflejadas en el chat, porque para eso es ese chat, no para
+   * que lo lleves a otro lado»). Cuando falta, se usa el `label`, que ya viene
+   * redactado como una petición («Ver resumen de cobranza de hoy»).
+   */
+  prompt?: string;
+  /**
+   * Sección de la app relacionada. Deja de ser lo que hace el botón y pasa a
+   * ser una salida SECUNDARIA, para cuando de verdad querés ir a la pantalla.
+   */
   href?: string;
   /** Phosphor icon name */
   icon: string;
@@ -223,6 +279,15 @@ export interface ChatMessage {
   actionProposals?: ActionProposal[];
   /** "Estado de hoy" KPI snapshot from the backend (rendered as a data card). */
   snapshot?: ChatSnapshot;
+  /**
+   * Valoración del usuario sobre esta respuesta (pulgar arriba/abajo).
+   *
+   * Se guarda en el mensaje —y por lo tanto sobrevive el localStorage, que
+   * serializa el mensaje entero— para que el pulgar quede marcado al volver a
+   * la conversación. HOY NO SALE DE ACÁ: no existe endpoint de feedback, así
+   * que es memoria local, no una señal que llegue a nadie.
+   */
+  feedback?: 'up' | 'down' | null;
 }
 
 export interface Conversation {

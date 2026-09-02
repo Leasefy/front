@@ -10,6 +10,7 @@ import {
   ClipboardText,
   CreditCard,
   FolderOpen,
+  Scales,
   UsersThree,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
@@ -225,9 +226,23 @@ export default function CobranzaOverviewPage() {
           Resultado del trabajo automático. Es información, no acción: por eso
           va DESPUÉS de lo que te toca, y sin botones que compitan. */}
       <section className="space-y-4" aria-labelledby="cobranza-agente">
-        <h2 id="cobranza-agente" className="text-lg font-semibold text-fg">
-          Lo que hizo el agente
-        </h2>
+        {/* Título y botón en LA MISMA fila. El botón vivía dentro de
+            CobranzaResultadosKpis en una fila propia `justify-end`: quedaba
+            una franja casi vacía entre el título y las tarjetas, como si a la
+            sección le faltara algo (screenshot de Nico, 2026-08-25). */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <h2 id="cobranza-agente" className="text-lg font-semibold text-fg">
+            Lo que hizo el agente
+          </h2>
+          {/* Solo el reporte diario: la analítica se fusionó en esta misma
+              pantalla, así que enlazarla sería mandar a la gente a donde ya está. */}
+          <Button asChild variant="secondary" size="sm" hideArrow>
+            <Link href="/panel/inmobiliaria/ai/cobranza/reporte">
+              <Scales className="w-4 h-4" aria-hidden="true" />
+              Ver reporte diario
+            </Link>
+          </Button>
+        </div>
         <CobranzaResultadosKpis overview={data} />
         {/* Se monta solo con analítica de verdad (≥5 llamadas en 30 días). */}
         <CobranzaAnaliticaResumen />

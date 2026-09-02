@@ -53,6 +53,30 @@ afterEach(() => {
 })
 
 describe('<HeatmapGrid24x7>', () => {
+  it('la leyenda explica los colores y las horas van en formato legible', () => {
+    act(() => {
+      root.render(
+        <HeatmapGrid24x7
+          data={{ populated: true, cells: FULL_168_CELLS, maxCount: MAX_COUNT }}
+        />
+      )
+    })
+
+    // Leyenda: el gris es «sin llamadas», el oscuro es la mejor hora.
+    const leyenda = container.querySelector('[data-testid="heatmap-leyenda"]')
+    expect(leyenda).not.toBeNull()
+    expect(leyenda?.textContent).toContain('Sin llamadas')
+    expect(leyenda?.textContent).toContain('la mejor hora')
+
+    // Horas legibles arriba: «6 a.m.», «12 p.m.», «6 p.m.» — no «06/12/18».
+    const headers = [...container.querySelectorAll('[role="columnheader"]')]
+      .map((el) => el.textContent)
+    expect(headers).toContain('6 a.m.')
+    expect(headers).toContain('12 p.m.')
+    expect(headers).toContain('6 p.m.')
+    expect(headers).not.toContain('06')
+  })
+
   it('renders exactly 168 gridcell elements when populated=true', () => {
     act(() => {
       root.render(

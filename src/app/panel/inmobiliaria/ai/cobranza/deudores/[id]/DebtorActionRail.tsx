@@ -26,6 +26,7 @@ import { useI18n } from '@/lib/i18n'
 import { Button, Badge } from '@/components/ui'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { stageDisplayName } from '@/lib/cartera'
+import { channelLabel } from '@/lib/cobranza/call-vocab'
 import type { DebtorDetailResponse } from '@/lib/hooks/cobranza/use-debtor-detail'
 import { PauseModal } from '@/components/inmobiliaria/cobranza/intervention/PauseModal'
 import { ForceStageModal } from '@/components/inmobiliaria/cobranza/intervention/ForceStageModal'
@@ -150,8 +151,9 @@ export function DebtorActionRail({
         {nextAction ? (
           <>
             <div className="mt-2 space-y-1">
-              <p className="text-sm font-medium text-fg capitalize">
-                {nextAction.channel}
+              <p className="text-sm font-medium text-fg">
+                {/* «Voz», no «voice» con capitalize. */}
+                {channelLabel(nextAction.channel)}
               </p>
               <p className="text-xs text-primary tabular-nums">
                 {formatPlannedTime(nextAction.plannedFor, locale)} ·{' '}

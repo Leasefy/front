@@ -61,12 +61,12 @@ describe('<LandingAuthCta>', () => {
     expect(anchor.getAttribute('href')).toBe('/auth')
   })
 
-  it('renders "Ir al panel" -> /panel/inmobiliaria for an authenticated agency user', () => {
+  it('renders "Ir al panel" -> /panel/inmobiliaria/piloto for an authenticated agency user', () => {
     mockUseAuth.mockReturnValue({ user: { role: 'agency' }, isAuthenticated: true, isLoading: false })
     render({ variant: 'header' })
     const anchor = container.querySelector('a')!
     expect(anchor.textContent).toBe('Ir al panel')
-    expect(anchor.getAttribute('href')).toBe('/panel/inmobiliaria')
+    expect(anchor.getAttribute('href')).toBe('/panel/inmobiliaria/piloto')
     expect(anchor.getAttribute('target')).toBeNull()
   })
 

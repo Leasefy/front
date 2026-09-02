@@ -28,6 +28,10 @@ import { formatCurrency } from '@/lib/format';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { ChatThread } from '@/components/messages/ChatThread';
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
+import {
+  partitionScoreBreakdown,
+  type PartitionedScoreBreakdown,
+} from '@/lib/utils/score-breakdown';
 import { useContractByApplication } from '@/lib/hooks/useContracts';
 import { getAccessToken, ApiError } from '@/lib/api/client';
 import type { DocumentItem } from '@/lib/api/documents.service';
@@ -92,7 +96,8 @@ const LEVEL_DESCRIPTIONS: Record<string, string> = {
 
 const RECOMMENDATION_LABELS: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
   approve: { label: 'Aprobar', color: 'text-success', icon: CheckCircle },
-  preapprove: { label: 'Pre-aprobar', color: 'text-primary', icon: ShieldCheck },
+  // El back aún emite 'preapprove' como recomendación; se muestra con palabra viva (docs/VOCABULARIO.md).
+  preapprove: { label: 'Pasar a revisión', color: 'text-primary', icon: ShieldCheck },
   needs_info: { label: 'Pedir más información', color: 'text-warning', icon: Info },
   reject: { label: 'Rechazar', color: 'text-danger', icon: XCircle },
 };
@@ -107,11 +112,21 @@ const INTEGRITY_FLAG_MESSAGES: Record<string, string> = {
   credit_score_discrepancy: 'El reporte de crédito adjunto difiere del score verificado',
 };
 
+/**
+ * Los factores del score, con el nombre que usa quien los lee.
+ *
+ * Sin entrada acá se pinta la llave cruda del agente: en el panel real salían
+ * «bureau» y «asegurabilidad» en minúscula, mezclados entre etiquetas bien
+ * escritas. La llave es contrato con el agente; el rótulo es nuestro.
+ */
 const SCORE_BREAKDOWN_LABELS: Record<string, string> = {
   solvencia: 'Solvencia',
   credito: 'Crédito',
+  bureau: 'Buró de crédito',
+  asegurabilidad: 'Asegurabilidad',
   estabilidad_laboral: 'Estabilidad laboral',
   consistencia_cruzada: 'Consistencia',
+  consistencia: 'Consistencia',
   identidad: 'Identidad',
 };
 
@@ -131,6 +146,9 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   contrato_laboral: 'Contrato laboral',
   nomina: 'Nómina',
   reporte_credito: 'Reporte de crédito',
+  // No es un documento: es un cruce ENTRE documentos. Sin esta entrada se
+  // pintaba la llave cruda —«cross_validation»— donde va el nombre del papel.
+  cross_validation: 'Entre documentos',
 };
 
 // ============================================================================
@@ -285,11 +303,35 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
   const levelColor = level ? LEVEL_COLORS[level] : null;
   const recommendation = evaluation?.recommendation ? RECOMMENDATION_LABELS[evaluation.recommendation] : null;
 
+  /**
+   * Las 5 dimensiones reales, con las mitades del crédito aparte.
+   *
+   * `main.length > 0` y no `Object.keys(...)`: un desglose que sólo trajera
+   * `bureau` y `asegurabilidad` dejaría `main` vacío y pintaría el título
+   * «Cómo se compone» sobre la nada.
+   */
+  const particion =
+    evaluation?.score_breakdown && Object.keys(evaluation.score_breakdown).length > 0
+      ? partitionScoreBreakdown(evaluation.score_breakdown)
+      : null;
+  const desglose = particion && particion.main.length > 0 ? particion : null;
+
   const requiresManualReview = evaluation?.requires_manual_review === true;
   const isOpenForDecision = candidate.status === 'SUBMITTED' || candidate.status === 'UNDER_REVIEW';
-  const canApprove = candidate.status === 'UNDER_REVIEW' && !requiresManualReview;
+  /*
+   * Aprobar sólo desde «en revisión»: la máquina de estados no permite saltar
+   * de SUBMITTED a APPROVED (application-state-machine.ts).
+   *
+   * Y el botón **nunca** sale apagado por la revisión manual: las alertas de
+   * integridad se anuncian a la vista, junto al botón, y la confirmación las
+   * nombra. La decisión sigue siendo de la persona, que es de quien siempre
+   * fue. (Antes el motivo del bloqueo vivía en un `title=` — un tooltip; un
+   * botón apagado sin decir por qué no es una salvaguarda, es un callejón.)
+   */
+  const canApprove = candidate.status === 'UNDER_REVIEW';
   const canReject = isOpenForDecision;
   const canRequestInfo = isOpenForDecision;
+  const hayAcciones = canApprove || canReject || canRequestInfo;
 
   return (
     <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -460,66 +502,106 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
               </div>
             ) : (
               <>
-                {/* Score display */}
+                {/* El score, con el color del nivel sólo en su ficha. */}
                 {level && totalScore !== undefined && levelColor && (
                   <div className="flex items-center gap-4">
-                    <div className={cn('w-16 h-16 rounded-xl flex flex-col items-center justify-center', levelColor.bg, levelColor.border, 'border-2')}>
-                      <span className={cn('text-2xl font-bold uppercase tracking-wide font-mono', levelColor.text)}>
+                    <div
+                      className={cn(
+                        'flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border',
+                        levelColor.bg,
+                        levelColor.border,
+                      )}
+                    >
+                      <span className={cn('font-mono text-2xl font-bold', levelColor.text)}>
                         {level}
                       </span>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-3xl font-bold text-foreground">{totalScore}<span className="text-sm font-normal text-fg-muted">/100</span></p>
-                      <p className="text-xs text-fg-muted mt-0.5">{LEVEL_DESCRIPTIONS[level]}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-mono text-3xl font-semibold leading-none text-foreground tabular-nums">
+                        {totalScore}
+                        <span className="ml-0.5 text-sm font-normal text-fg-muted">/100</span>
+                      </p>
+                      <p className="mt-1.5 text-xs text-fg-muted">{LEVEL_DESCRIPTIONS[level]}</p>
                     </div>
                   </div>
                 )}
 
-                {/* Requires manual review banner */}
+                {/* La misma advertencia va también al pie, junto a los botones.
+                    Acá se dice corto: el detalle está en las alertas de abajo. */}
                 {requiresManualReview && (
-                  <div className="rounded-xl bg-danger-soft border border-danger/30 p-3 flex items-start gap-2">
-                    <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-semibold text-danger">
-                        Revisión manual requerida
-                      </p>
-                      <p className="text-xs text-danger mt-0.5">
-                        Esta evaluación requiere revisión manual antes de tomar una decisión.
-                        Se detectaron inconsistencias que deben ser verificadas.
-                      </p>
+                  <p className="flex items-start gap-2 rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger">
+                    <WarningCircle className="mt-px h-4 w-4 flex-shrink-0" />
+                    <span>
+                      <span className="font-semibold">Pide revisión manual.</span> El agente
+                      encontró inconsistencias entre los documentos — están listadas abajo.
+                    </span>
+                  </p>
+                )}
+
+                {/*
+                  * Cómo se compone el score.
+                  *
+                  * Antes se pintaban las SIETE llaves del agente en una grilla
+                  * pareja, y los pesos sumaban **130%**: `bureau` y
+                  * `asegurabilidad` no son dimensiones, son las dos mitades de
+                  * `credito` (credito = (bureau + asegurabilidad) / 2). Ponerlas
+                  * al lado contaba el crédito dos veces.
+                  *
+                  * `partitionScoreBreakdown` existía desde antes, con su test,
+                  * y no lo usaba nadie: separarlas era el motivo por el que se
+                  * escribió.
+                  */}
+                {desglose && (
+                  <div className="space-y-3">
+                    <p className="text-overline text-fg-subtle">Cómo se compone</p>
+                    <div className="space-y-2.5">
+                      {desglose.main.map(([key, factor]) => (
+                        <FactorDelScore
+                          key={key}
+                          etiqueta={SCORE_BREAKDOWN_LABELS[key] ?? key}
+                          valor={factor.value}
+                          peso={factor.weight}
+                          detalle={
+                            key === 'credito' && desglose.creditDetail ? (
+                              <DetalleDeCredito detalle={desglose.creditDetail} />
+                            ) : null
+                          }
+                        />
+                      ))}
                     </div>
                   </div>
                 )}
 
-                {/* Score breakdown */}
-                {evaluation?.score_breakdown && Object.keys(evaluation.score_breakdown).length > 0 && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {Object.entries(evaluation.score_breakdown).map(([key, factor]) => (
-                      <SubscoreBar
-                        key={key}
-                        label={SCORE_BREAKDOWN_LABELS[key] ?? key}
-                        value={factor.value}
-                        weight={factor.weight}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {/* Fallback: legacy subscores */}
-                {!evaluation?.score_breakdown && evaluation?.subscores && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {evaluation.subscores.financialStability !== undefined && (
-                      <SubscoreBar label="Estabilidad financiera" value={evaluation.subscores.financialStability} />
-                    )}
-                    {evaluation.subscores.rentalHistory !== undefined && (
-                      <SubscoreBar label="Historial de arriendo" value={evaluation.subscores.rentalHistory} />
-                    )}
-                    {evaluation.subscores.documentVerification !== undefined && (
-                      <SubscoreBar label="Verificación de docs" value={evaluation.subscores.documentVerification} />
-                    )}
-                    {evaluation.subscores.personalProfile !== undefined && (
-                      <SubscoreBar label="Perfil personal" value={evaluation.subscores.personalProfile} />
-                    )}
+                {/* Respaldo: evaluaciones viejas, sin `score_breakdown`. */}
+                {!desglose && evaluation?.subscores && (
+                  <div className="space-y-3">
+                    <p className="text-overline text-fg-subtle">Cómo se compone</p>
+                    <div className="space-y-2.5">
+                      {evaluation.subscores.financialStability !== undefined && (
+                        <FactorDelScore
+                          etiqueta="Estabilidad financiera"
+                          valor={evaluation.subscores.financialStability}
+                        />
+                      )}
+                      {evaluation.subscores.rentalHistory !== undefined && (
+                        <FactorDelScore
+                          etiqueta="Historial de arriendo"
+                          valor={evaluation.subscores.rentalHistory}
+                        />
+                      )}
+                      {evaluation.subscores.documentVerification !== undefined && (
+                        <FactorDelScore
+                          etiqueta="Verificación de documentos"
+                          valor={evaluation.subscores.documentVerification}
+                        />
+                      )}
+                      {evaluation.subscores.personalProfile !== undefined && (
+                        <FactorDelScore
+                          etiqueta="Perfil personal"
+                          valor={evaluation.subscores.personalProfile}
+                        />
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -765,47 +847,64 @@ export function CandidateDrawer({ candidate, onClose, onAction }: CandidateDrawe
             <ChatThread applicationId={candidate.id} />
           </section>
 
-          {/* Actions */}
-          <section className="rounded-xl border border-border bg-card p-5 space-y-3">
-            <h3 className="font-semibold text-sm text-foreground">Acciones</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {candidate.status === 'UNDER_REVIEW' && (
-                // success/green: Cadence Button has no success variant (logged gap) — real
-                // Button keeps all DS states; only the fill is overridden for the missing tone.
+        </div>
+
+        {/*
+          * Las acciones, al pie y siempre visibles.
+          *
+          * Estaban al FINAL del cuerpo con scroll, después del scoring, los
+          * documentos y el chat: para decidir había que recorrer el cajón
+          * entero. Decidir es a lo que se viene, así que no se scrollea.
+          */}
+        {hayAcciones && (
+          <div className="flex-none border-t border-border bg-background px-6 py-4 space-y-3">
+            {requiresManualReview && (
+              // El motivo, a la vista. Antes vivía en un `title=`: el botón se
+              // veía apagado y nadie podía saber por qué.
+              <p className="flex items-start gap-2 text-xs text-danger">
+                <WarningCircle className="w-4 h-4 flex-shrink-0 mt-px" />
+                <span>
+                  El análisis marcó inconsistencias en los documentos. Revisá las alertas de
+                  integridad antes de decidir.
+                </span>
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {canReject && (
                 <Button
+                  variant="destructive"
                   hideArrow
-                  onClick={() => !requiresManualReview && onAction('approve', candidate)}
-                  disabled={requiresManualReview}
-                  title={requiresManualReview ? 'Revisa las alertas de integridad antes de aprobar' : undefined}
-                  className="bg-success text-white hover:bg-success/90 disabled:opacity-40 disabled:cursor-not-allowed"
+                  onClick={() => onAction('reject', candidate)}
+                  className="flex-1 min-w-[8rem]"
                 >
-                  Aprobar
+                  Rechazar
                 </Button>
               )}
               {canRequestInfo && (
-                // warning/amber: Cadence Button has no warning variant (logged gap) — real
-                // Button keeps all DS states; only the fill is overridden for the missing tone.
                 <Button
+                  variant="secondary"
                   hideArrow
                   onClick={() => onAction('request-info', candidate)}
-                  className="bg-warning text-white hover:bg-warning/90"
+                  className="flex-1 min-w-[8rem]"
                 >
                   Pedir info
                 </Button>
               )}
-              {canReject && (
-                <Button variant="destructive" hideArrow onClick={() => onAction('reject', candidate)}>
-                  Rechazar
+              {/* Aprobar, SIEMPRE la última: es la acción que cierra el paso. */}
+              {canApprove && (
+                // success/green: Cadence Button has no success variant (logged gap) — real
+                // Button keeps all DS states; only the fill is overridden for the missing tone.
+                <Button
+                  hideArrow
+                  onClick={() => onAction('approve', candidate)}
+                  className="flex-1 min-w-[8rem] bg-success text-white hover:bg-success/90"
+                >
+                  Aprobar
                 </Button>
               )}
-              {!isOpenForDecision && !canApprove && !canReject && !canRequestInfo && (
-                <p className="col-span-2 text-xs text-fg-muted text-center py-2">
-                  No hay acciones disponibles para este estado.
-                </p>
-              )}
             </div>
-          </section>
-        </div>
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   );
@@ -925,65 +1024,315 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
   );
 }
 
-function SubscoreBar({ label, value, weight }: { label: string; value: number; weight?: number }) {
-  const color = value >= 75 ? 'bg-success' : value >= 50 ? 'bg-warning' : 'bg-danger';
+function colorDeValor(value: number): string {
+  return value >= 75 ? 'bg-success' : value >= 50 ? 'bg-warning' : 'bg-danger';
+}
+
+/**
+ * Una dimensión del score, en fila. (El merge con develop había fusionado el
+ * encabezado del SubscoreBar de HEAD —muerto, sin usos— con este cuerpo.)
+ */
+function FactorDelScore({
+  etiqueta,
+  valor,
+  peso,
+  detalle,
+}: {
+  etiqueta: string;
+  valor: number;
+  peso?: number;
+  detalle?: React.ReactNode;
+}) {
   return (
-    <div className="rounded-md bg-surface-muted p-2 border border-border">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] text-fg-muted truncate">{label}</span>
-        <div className="flex items-center gap-1.5">
-          {weight !== undefined && (
-            <span className="text-[10px] text-fg-subtle tabular-nums">{weight}%</span>
-          )}
-          <span className="text-xs font-semibold text-foreground tabular-nums">{value}</span>
-        </div>
+    <div>
+      <div className="flex items-baseline gap-3">
+        <span className="min-w-0 flex-1 truncate text-xs text-foreground">{etiqueta}</span>
+        {peso !== undefined && (
+          <span className="shrink-0 text-[11px] text-fg-subtle">
+            pesa <span className="font-mono tabular-nums">{peso}%</span>
+          </span>
+        )}
+        <span className="w-9 shrink-0 text-right font-mono text-sm font-semibold text-foreground tabular-nums">
+          {valor}
+        </span>
       </div>
-      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-        <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${value}%` }} />
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-muted">
+        <div
+          className={cn('h-full rounded-full transition-all', colorDeValor(valor))}
+          style={{ width: `${Math.max(0, Math.min(100, valor))}%` }}
+        />
       </div>
+      {detalle}
     </div>
   );
+}
+
+/**
+ * Las dos mitades del crédito, colgando de su dimensión.
+ *
+ * Y sobre todo: **un buró que no contestó no es un buró que dio cero.** El
+ * agente marca `source: 'experian_via_fianly_unavailable'` justo para eso, y
+ * la pantalla lo pintaba como un 0 que arrastra el crédito a la mitad. Un cero
+ * inventado le baja el score a una persona por una falla nuestra.
+ */
+function DetalleDeCredito({
+  detalle,
+}: {
+  detalle: NonNullable<PartitionedScoreBreakdown['creditDetail']>;
+}) {
+  const { bureau, asegurabilidad, bureauUnavailable } = detalle;
+  return (
+    <div className="mt-2 ml-3 space-y-1.5 border-l border-border pl-3">
+      {bureau && (
+        <div className="flex items-baseline gap-2">
+          <span className="min-w-0 flex-1 truncate text-[11px] text-fg-muted">Buró de crédito</span>
+          {bureauUnavailable ? (
+            <span className="shrink-0 rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning">
+              Sin dato — el buró no respondió
+            </span>
+          ) : (
+            <span className="shrink-0 font-mono text-[11px] tabular-nums text-foreground">
+              {bureau.value}
+            </span>
+          )}
+        </div>
+      )}
+      {asegurabilidad && (
+        <div className="flex items-baseline gap-2">
+          <span className="min-w-0 flex-1 truncate text-[11px] text-fg-muted">Asegurabilidad</span>
+          <span className="shrink-0 font-mono text-[11px] tabular-nums text-foreground">
+            {asegurabilidad.value}
+          </span>
+        </div>
+      )}
+      {bureauUnavailable && (
+        <p className="text-[11px] leading-snug text-warning">
+          El crédito se calculó con la mitad de la información, así que este puntaje está por
+          debajo de lo que le corresponde.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** `"3.625.317,5"` (colombiano) → `3625317.5`. */
+function numeroColombiano(s: string): number {
+  return Number(s.replace(/\./g, '').replace(',', '.'));
+}
+
+/** Qué se contrasta, con las dos cifras enfrentadas. */
+export interface CaraACara {
+  izqRotulo: string;
+  izqValor: string;
+  derRotulo: string;
+  derValor: string;
+  brecha?: string;
+}
+
+export interface AlertaExplicada {
+  texto: string;
+  caraACara?: CaraACara;
+}
+
+/**
+ * Traduce el detalle técnico de una alerta a algo que se pueda leer.
+ *
+ * El agente devuelve el hallazgo tal como lo midió, y está bien que lo haga:
+ *
+ *     "ModDate posterior a CreationDate por 1623 día(s). Producer: 'pdf-lib…'"
+ *     "Diferencia de salario entre contrato (6.419.000) y nómina/certificado
+ *      (3.625.317,5) es del 43.5%, supera el umbral del 10%."
+ *
+ * Lo que no está bien es que eso sea lo único que se lee. La primera nombra
+ * campos internos de un PDF; la segunda **sí** trae las dos cifras, pero
+ * enterradas en una frase de sesenta palabras — y el titular de arriba decía
+ * sólo «difiere más del 10%», sin decir de cuánto a cuánto.
+ *
+ * Devuelve `null` cuando no sabe traducir. Quien renderiza debe entonces
+ * mostrar el detalle crudo **a la vista**: esconder lo que no reemplazamos
+ * sería perder el dato.
+ */
+export function explicarAlerta(flag: IntegrityFlag): AlertaExplicada | null {
+  const d = flag.detail ?? '';
+
+  // ── Salario: el contrato dice una cosa y la nómina otra ──────────────────
+  const salario = d.match(
+    /entre\s+(.+?)\s*\(([\d.,]+)\)\s*y\s+(.+?)(?:\s*\(([\d.,]+)\)|:\s*([\d.,]+))\s*es del\s*([\d.,]+)\s*%/i,
+  );
+  if (salario) {
+    const [, rotA, montoA, rotB, montoBpar, montoBdp, pct] = salario;
+    const montoB = montoBpar ?? montoBdp;
+    const umbral = d.match(/umbral del\s*([\d.,]+)\s*%/i)?.[1];
+    const diferencia = pct.replace('.', ',');
+    return {
+      texto: umbral
+        ? `Las dos cifras se llevan un ${diferencia}%, y el tope aceptado es ${umbral.replace('.', ',')}%. Pedí el soporte que las concilie antes de decidir.`
+        : `Las dos cifras se llevan un ${diferencia}%. Pedí el soporte que las concilie antes de decidir.`,
+      caraACara: {
+        izqRotulo: rotA.trim(),
+        izqValor: formatCurrency(numeroColombiano(montoA)),
+        derRotulo: rotB.trim(),
+        derValor: formatCurrency(numeroColombiano(montoB)),
+        brecha: `${diferencia}% de diferencia`,
+      },
+    };
+  }
+
+  // ── Nombre: mismo humano escrito distinto, o dos humanos distintos ───────
+  const nombre = d.match(
+    /Nombre en\s+(.+?)\s*\('([^']+)'\)\s*no coincide con\s+(.+?)\s*\('([^']+)'\)/i,
+  );
+  if (nombre) {
+    const [, fuenteA, nombreA, fuenteB, nombreB] = nombre;
+    const palabras = (s: string) =>
+      s
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .sort()
+        .join(' ');
+    const mismasPalabras = palabras(nombreA) === palabras(nombreB);
+    return {
+      texto: mismasPalabras
+        ? 'Son las mismas palabras en otro orden —apellidos primero—, no dos personas distintas. Suele pasar cuando la nómina se exporta del sistema de la empresa.'
+        : 'Los nombres no coinciden. Verificá que los documentos sean de la misma persona antes de decidir.',
+      caraACara: {
+        izqRotulo: fuenteA.trim(),
+        izqValor: nombreA,
+        derRotulo: fuenteB.trim(),
+        derValor: nombreB,
+      },
+    };
+  }
+
+  // ── Metadatos del PDF ────────────────────────────────────────────────────
+  const dias = d.match(/ModDate posterior a CreationDate por\s+(\d+)\s+d/i)?.[1];
+  const herramienta = d.match(/Producer:\s*'([^'(]+)/i)?.[1]?.trim();
+
+  if (dias) {
+    const n = Number(dias);
+    const cuando =
+      n >= 365
+        ? `${Math.floor(n / 365)} año${Math.floor(n / 365) === 1 ? '' : 's'} después`
+        : n >= 30
+          ? `${Math.floor(n / 30)} mes${Math.floor(n / 30) === 1 ? '' : 'es'} después`
+          : `${n} día${n === 1 ? '' : 's'} después`;
+    return {
+      texto: herramienta
+        ? `El archivo se guardó otra vez ${cuando} de haberse creado, con ${herramienta}. No prueba que lo hayan alterado, pero conviene pedir el original.`
+        : `El archivo se guardó otra vez ${cuando} de haberse creado. No prueba que lo hayan alterado, pero conviene pedir el original.`,
+    };
+  }
+
+  if (herramienta) {
+    return {
+      texto: `El archivo pasó por ${herramienta}, una herramienta de edición de PDF. Conviene pedir el original al emisor.`,
+    };
+  }
+
+  return null;
 }
 
 function IntegrityFlagCard({ flag }: { flag: IntegrityFlag }) {
   const message = INTEGRITY_FLAG_MESSAGES[flag.code] ?? flag.detail;
   const docLabel = flag.doc_type ? (DOC_TYPE_LABELS[flag.doc_type] ?? flag.doc_type) : null;
+  const explicacion = explicarAlerta(flag);
+  const hayDetalleCrudo = Boolean(flag.detail) && flag.detail !== message;
 
-  if (flag.severity === 'high') {
-    return (
-      <div className="rounded-md bg-danger-soft border border-danger/30 px-3 py-2">
-        <p className="text-xs font-semibold text-danger flex items-center gap-1.5">
-          <WarningCircle className="w-3.5 h-3.5 flex-shrink-0" />
-          {message}
-          {docLabel && <span className="ml-auto font-normal text-danger">— {docLabel}</span>}
-        </p>
-        {flag.detail !== message && (
-          <p className="text-xs text-danger mt-0.5 ml-5">{flag.detail}</p>
-        )}
-      </div>
-    );
-  }
-  if (flag.severity === 'medium') {
-    return (
-      <div className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2">
-        <p className="text-xs font-semibold text-warning flex items-center gap-1.5">
-          <WarningCircle className="w-3.5 h-3.5 flex-shrink-0" />
-          {message}
-          {docLabel && <span className="ml-auto font-normal text-warning">— {docLabel}</span>}
-        </p>
-        {flag.detail !== message && (
-          <p className="text-xs text-warning mt-0.5 ml-5">{flag.detail}</p>
-        )}
-      </div>
-    );
-  }
+  const tono =
+    flag.severity === 'high'
+      ? { caja: 'bg-danger-soft border-danger/30', texto: 'text-danger', icono: WarningCircle }
+      : flag.severity === 'medium'
+        ? { caja: 'bg-warning-soft border-warning/30', texto: 'text-warning', icono: WarningCircle }
+        : { caja: 'bg-muted border-border', texto: 'text-fg-muted', icono: Info };
+  const Icono = tono.icono;
+
   return (
-    <div className="rounded-md bg-muted border border-border px-3 py-2">
-      <p className="text-xs text-fg-muted flex items-center gap-1.5">
-        <Info className="w-3.5 h-3.5 flex-shrink-0" />
-        {message}
-        {docLabel && <span className="ml-auto">— {docLabel}</span>}
+    <div className={cn('rounded-md border px-3 py-2.5', tono.caja)}>
+      <p className={cn('flex items-start gap-1.5 text-xs font-semibold', tono.texto)}>
+        <Icono className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
+        <span className="flex-1">{message}</span>
+        {docLabel && <span className="font-normal whitespace-nowrap">— {docLabel}</span>}
       </p>
+
+      {/* Las dos cifras enfrentadas: el titular decía «difiere más del 10%» sin
+          decir nunca de cuánto a cuánto, que es lo único con lo que se puede
+          hacer algo (llamar al empleador, pedir el desprendible que falta). */}
+      {explicacion?.caraACara && (
+        <div className="mt-2 ml-5 flex flex-wrap items-stretch gap-2">
+          <ValorEnfrentado
+            rotulo={explicacion.caraACara.izqRotulo}
+            valor={explicacion.caraACara.izqValor}
+            tono={tono.texto}
+          />
+          <ValorEnfrentado
+            rotulo={explicacion.caraACara.derRotulo}
+            valor={explicacion.caraACara.derValor}
+            tono={tono.texto}
+          />
+          {explicacion.caraACara.brecha && (
+            <span
+              className={cn(
+                'self-center rounded-full border px-2 py-0.5 text-[11px] font-semibold tabular-nums',
+                tono.texto,
+                'border-current/30',
+              )}
+            >
+              {explicacion.caraACara.brecha}
+            </span>
+          )}
+        </div>
+      )}
+
+      {explicacion && (
+        <p className={cn('mt-1.5 ml-5 text-xs font-normal opacity-90', tono.texto)}>
+          {explicacion.texto}
+        </p>
+      )}
+
+      {/* El crudo se esconde SÓLO si arriba se dijo lo mismo en cristiano. Sin
+          traducción se muestra tal cual: tapar lo que no reemplazamos sería
+          perder el dato. */}
+      {hayDetalleCrudo &&
+        (explicacion ? (
+          <details className="mt-1 ml-5">
+            <summary
+              className={cn(
+                'cursor-pointer list-none text-[11px] underline underline-offset-2 opacity-70',
+                tono.texto,
+              )}
+            >
+              Ver detalle técnico
+            </summary>
+            <p className={cn('mt-1 font-mono text-[11px] leading-relaxed opacity-80', tono.texto)}>
+              {flag.detail}
+            </p>
+          </details>
+        ) : (
+          <p className={cn('mt-1 ml-5 text-xs font-normal opacity-90', tono.texto)}>{flag.detail}</p>
+        ))}
+    </div>
+  );
+}
+
+/** Una de las dos cifras que se contrastan. */
+function ValorEnfrentado({
+  rotulo,
+  valor,
+  tono,
+}: {
+  rotulo: string;
+  valor: string;
+  tono: string;
+}) {
+  return (
+    <div className={cn('rounded-md border border-current/20 bg-surface/60 px-2.5 py-1.5', tono)}>
+      {/* Sin `uppercase`: el agente manda rótulos largos («nómina quincenal
+          normalizada a mensual») y en mayúscula con tracking ocupan el doble. */}
+      <p className="text-[10px] leading-tight opacity-70 first-letter:uppercase">{rotulo}</p>
+      <p className="text-xs font-semibold tabular-nums">{valor}</p>
     </div>
   );
 }

@@ -26,6 +26,16 @@ export type PqrsCanal = 'whatsapp' | 'email' | 'web' | 'telefono' | 'presencial'
 
 export type PqrsSolicitanteTipo = 'inquilino' | 'propietario' | 'tercero';
 
+/**
+ * Responsable del costo de una reparación (Ley 820/2003).
+ *
+ * `dueno` = reparación necesaria/no locativa (arrendador); `inquilino` = reparación
+ * locativa por uso/culpa (arrendatario); `compartido` = conveniencia de producto para
+ * el caso ambiguo/split. El valor lo determina la agencia/backend — NUNCA se decide en
+ * el cliente. Campo aditivo/opcional para el lado inquilino (SOLI-04).
+ */
+export type CostoResponsable = 'dueno' | 'inquilino' | 'compartido';
+
 /** Una solicitud/PQRS con su ciclo de vida completo. */
 export interface SolicitudPqrs {
   id: string;
@@ -50,6 +60,12 @@ export interface SolicitudPqrs {
   updatedAt: string;           // ISO
   resueltaAt?: string;         // ISO
   slaVenceAt?: string;         // ISO — SLA que calculará el motor (M1)
+  /** Aditivo/opcional — responsabilidad de costo Ley 820, fijada server-side (SOLI-04). */
+  costoResponsable?: CostoResponsable;
+  /** Aditivo/opcional — monto de la cotización en COP, provisto por el backend (SOLI-04). */
+  cotizacionMonto?: number;
+  /** Aditivo/opcional — ISO, fijado server-side cuando el inquilino aprueba la cotización (SOLI-04). */
+  cotizacionAprobadaAt?: string;
 }
 
 /** Conteos por estado para el resumen del ciclo PQRS. */

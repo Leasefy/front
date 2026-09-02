@@ -4,49 +4,49 @@
  * CobranzaAnaliticaResumen — el «por qué» detrás de los números, dentro del
  * Resumen de Cobranza.
  *
- * `/cobranza/analitica` traía cinco widgets. Se fusionan los tres que le sirven
- * a la inmobiliaria y se dejan fuera dos, por razones distintas:
+ * `/cobranza/analitica` trae cinco widgets. Se montan CUATRO:
  *
- *   ✅ Costo por peso recuperado — cuánto cuesta cobrar. Es LA cifra unitaria
- *      del servicio y cabe en una tarjeta.
  *   ✅ Tasa de recuperación — cuánto se recupera y cómo evoluciona.
  *   ✅ Top objeciones — por qué no pagan. Sale de `debtor_memos`, no de calls.
+ *   ✅ Mix de canal — por qué canal responde tu cartera y con qué desenlace.
+ *   ✅ Mapa 24×7 — a qué horas contesta la gente y cuándo sale bien.
+ *
+ *   Los dos de cadencia estuvieron FUERA por decisión de diseño («eso lo
+ *   afinamos nosotros, no la inmobiliaria») hasta que Nico la reversó el
+ *   2026-08-25: con solo objeciones la sección «no dice mucho» y dejaba media
+ *   pantalla vacía. Verificado antes de montarlos que la fuente es real: 630
+ *   llamadas en 30 días, 3 canales, 20 horas distintas en la base dev.
  *
  *   ❌ Top scripts — MUERTO. El SQL hace `JOIN agent.script_templates`, tabla
- *      que está vacía y que nada llena; además ninguna llamada trae
- *      `script_template_id`. Un INNER JOIN contra una tabla vacía no devuelve
- *      nada nunca. Es la cara analítica del mismo hueco que sacó a Playbooks
- *      del panel.
- *   ❌ Cadencia (mix de canal + mapa 24×7) — sirve para afinar CUÁNDO y POR QUÉ
- *      canal contacta el agente, y eso lo afinamos nosotros, no la
- *      inmobiliaria: mismo criterio que se aplicó a los guiones. Lo que a ella
- *      sí le toca de horarios —si se contactó fuera de la ventana de Ley 2300—
- *      ya vive en Cumplimiento.
+ *      que está vacía y que nada llena; un INNER JOIN contra una tabla vacía
+ *      no devuelve nada nunca.
+ *   ❌ Costo por peso recuperado — regla de Nico (2026-08-24): los costos del
+ *      servicio NO se muestran a los usuarios. Misma razón por la que el
+ *      detalle de llamada perdió su panel de costos.
  *
  * Compuertas — son DOS, y hay que respetar las dos:
  *
  *   1. La del backend: ≥5 llamadas en 30 días para que la analítica signifique
- *      algo. Antes, no cumplirla era una pantalla entera dedicada a un cartel de
- *      «Sin datos aún» (con el número de fase interna a la vista, además).
+ *      algo.
  *   2. La de cada widget: `populated`. Cada uno se alimenta de una tabla
- *      distinta —recuperación de `cartera_stage_transitions` + `payments`,
- *      objeciones de `debtor_memos`, costo de `billing_events`—, así que la
- *      primera compuerta puede abrir con las tres vacías. Sembrando solo
- *      llamadas se veía exactamente eso: tres tarjetas diciendo «Sin datos
- *      suficientes todavía» una al lado de la otra.
+ *      distinta, así que la primera compuerta puede abrir con todas vacías.
  *
- * Se monta widget por widget, y si no sobrevive ninguno la sección desaparece:
- * misma regla que `CobranzaResultadosKpis`, lo que no puede decir nada no ocupa
- * lugar.
+ * Se monta widget por widget, y si no sobrevive ninguno la sección desaparece.
+ * Cuando sobrevive UNO solo, ocupa el ancho completo (`only-child`): una
+ * tarjeta a media pantalla con la otra mitad vacía se lee como una sección
+ * rota, no como una sección honesta.
  *
  * Los títulos los pone cada widget — repetirlos acá los duplicaba en pantalla.
  */
+
+import { useMemo } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { useCobranzaAnalytics } from '@/lib/hooks/cobranza/use-cobranza-analytics'
 import { RecoveryRateChart } from '@/components/inmobiliaria/cobranza/RecoveryRateChart'
 import { TopObjectionsTable } from '@/components/inmobiliaria/cobranza/TopObjectionsTable'
-import { CostPerPesoKpi } from '@/components/inmobiliaria/cobranza/CostPerPesoKpi'
+import { CadenceChannelMixChart } from '@/components/inmobiliaria/cobranza/CadenceChannelMixChart'
+import { HeatmapGrid24x7 } from '@/components/inmobiliaria/cobranza/HeatmapGrid24x7'
 
 /** Mínimo de llamadas en 30 días que el backend exige para que haya analítica. */
 const MIN_LLAMADAS_30D = 5
@@ -61,8 +61,19 @@ export function CobranzaAnaliticaResumen() {
     (gate?.calls_30d ?? 0) >= MIN_LLAMADAS_30D
 
   const hayRecuperacion = Boolean(data?.recovery?.populated)
-  const hayCosto = Boolean(data?.costPerPeso?.populated)
   const hayObjeciones = Boolean(data?.objections?.populated)
+  const hayMixDeCanal = Boolean(
+    data?.cadence?.populated && data.cadence.channelMix?.populated,
+  )
+  const hayMapa = Boolean(data?.cadence?.populated && data.cadence.heatmap?.populated)
+
+  // El componente del mapa pide `maxCount` para escalar el color; el hook no
+  // lo trae, así que se deriva de las celdas una sola vez.
+  const celdasMapa = data?.cadence?.heatmap?.cells ?? []
+  const maxCount = useMemo(
+    () => celdasMapa.reduce((m, c) => Math.max(m, c.call_count), 0),
+    [celdasMapa],
+  )
 
   /*
    * Desaparecer y fallar son cosas distintas.
@@ -92,7 +103,10 @@ export function CobranzaAnaliticaResumen() {
     )
   }
 
-  if (!compuertaAbierta || (!hayRecuperacion && !hayCosto && !hayObjeciones)) {
+  if (
+    !compuertaAbierta ||
+    (!hayRecuperacion && !hayObjeciones && !hayMixDeCanal && !hayMapa)
+  ) {
     return null
   }
 
@@ -100,7 +114,7 @@ export function CobranzaAnaliticaResumen() {
     <section aria-label="Cómo lo está logrando" className="space-y-3">
       <h2 className="text-base font-semibold text-fg">Cómo lo está logrando</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 [&>*:only-child]:md:col-span-2">
         {hayRecuperacion && (
           <div className="rounded-xl border border-border bg-card p-6 space-y-4 md:col-span-2">
             <RecoveryRateChart
@@ -116,15 +130,6 @@ export function CobranzaAnaliticaResumen() {
           </div>
         )}
 
-        {hayCosto && (
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-            <CostPerPesoKpi
-              data={(data?.costPerPeso ?? null) as never}
-              isLoading={isLoading}
-            />
-          </div>
-        )}
-
         {hayObjeciones && (
           <div className="rounded-xl border border-border bg-card p-6 space-y-4">
             <TopObjectionsTable
@@ -134,6 +139,20 @@ export function CobranzaAnaliticaResumen() {
                 reason: data?.objections?.reason,
               }}
             />
+          </div>
+        )}
+
+        {hayMixDeCanal && (
+          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+            <CadenceChannelMixChart
+              data={{ populated: true, rows: data?.cadence?.channelMix?.rows ?? [] }}
+            />
+          </div>
+        )}
+
+        {hayMapa && (
+          <div className="rounded-xl border border-border bg-card p-6 space-y-4 md:col-span-2">
+            <HeatmapGrid24x7 data={{ populated: true, cells: celdasMapa, maxCount }} />
           </div>
         )}
       </div>

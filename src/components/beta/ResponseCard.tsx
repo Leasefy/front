@@ -15,6 +15,7 @@ import {
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { Button, Badge } from '@/components/ui';
+import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { ResponseMeta, ResponseAction } from '@/lib/types/beta-chat';
@@ -87,31 +88,56 @@ function TypeBadge({ type }: { type: 'informative' | 'actionable' }) {
   );
 }
 
-function ActionButton({ action }: { action: ResponseAction }) {
+/**
+ * Una acción sugerida se responde EN EL CHAT.
+ *
+ * ── Qué hacía antes (Nico, 2026-08-27) ─────────────────────────────────────
+ *
+ * «Todas estas acciones deben verse reflejadas en el chat, porque para eso es
+ * ese chat, no para que lo lleves a otro lado.»
+ *
+ * Con `href` renderizaba un `<a>` y te sacaba de la conversación; SIN `href`
+ * renderizaba un `<button>` sin un solo `onClick` — muerto. O sea que ninguna
+ * de las dos ramas hacía lo que el botón prometía.
+ *
+ * Ahora el clic le PREGUNTA al asistente (`prompt`, que por defecto es el
+ * label — el back ya lo redacta como petición: «Ver resumen de cobranza de
+ * hoy»). La sección sigue alcanzable, pero como salida secundaria al lado, no
+ * como el botón entero: ir a la pantalla es una opción, no el destino
+ * obligatorio de cada respuesta.
+ */
+function ActionButton({
+  action,
+  onAsk,
+  disabled,
+}: {
+  action: ResponseAction;
+  onAsk: (prompt: string) => void;
+  disabled: boolean;
+}) {
   const ActionIcon = ICON_MAP[action.icon];
   // primary → DS primary pill (drops the old mono-uppercase anti-pattern);
   // secondary → outline; ghost → ghost.
   const variant =
     action.variant === 'primary' ? 'default' : action.variant === 'secondary' ? 'outline' : 'ghost';
 
-  const content = (
-    <>
+  // Sin la salida secundaria a la sección. La primera versión dejaba un
+  // iconito de «abrir» al lado de cada pastilla y Nico lo vio enseguida:
+  // «no se entiende ese botón, se siente muy raro». Tres iconos huérfanos en
+  // fila se leen como ruido, no como opción. La sección sigue a un clic en la
+  // barra lateral; acá el botón hace UNA cosa: preguntarle al asistente.
+  return (
+    <Button
+      type="button"
+      variant={variant}
+      size="sm"
+      hideArrow
+      disabled={disabled}
+      onClick={() => onAsk(action.prompt ?? action.label)}
+      className="gap-1.5 rounded-md shrink-0"
+    >
       {ActionIcon && <ActionIcon className="w-3.5 h-3.5" weight="duotone" />}
       {action.label}
-    </>
-  );
-
-  if (action.href) {
-    return (
-      <Button asChild variant={variant} size="sm" hideArrow className="gap-1.5 rounded-md shrink-0">
-        <a href={action.href}>{content}</a>
-      </Button>
-    );
-  }
-
-  return (
-    <Button type="button" variant={variant} size="sm" hideArrow className="gap-1.5 rounded-md shrink-0">
-      {content}
     </Button>
   );
 }
@@ -138,6 +164,14 @@ export function ResponseCard({
   streamingContent,
   className,
 }: ResponseCardProps) {
+  // El chat es el destino de estas acciones, así que la tarjeta habla con él
+  // directamente en vez de pedirle al padre que le pase un callback: vive
+  // dentro del provider, y hacerlo prop obligaba a cablearlo en cada sitio
+  // donde se monta una tarjeta.
+  const { sendMessage, isThinking, isStreaming: streamingTurno, isAgentsRunning } =
+    useBetaChatContext();
+  const ocupado = isThinking || streamingTurno || isAgentsRunning;
+
   const agentColor = meta.primaryAgent
     ? AGENT_METADATA[meta.primaryAgent]?.color ?? 'indigo'
     : 'indigo';
@@ -191,7 +225,11 @@ export function ResponseCard({
             'rounded-xl',
             'bg-neutral-50 dark:bg-neutral-800/40',
             'border border-neutral-100 dark:border-neutral-800',
-            'px-4 py-3'
+            'px-4 py-3',
+            // Mismo cuerpo que la respuesta simple (Nico: «el texto que se
+            // responde en 16px»), para que no cambie de tamaño según venga
+            // en tarjeta o en burbuja.
+            'text-[16px] leading-[1.6]'
           )}
         >
           <MarkdownRenderer
@@ -210,7 +248,12 @@ export function ResponseCard({
           )}
         >
           {meta.actions.map((action) => (
-            <ActionButton key={action.id} action={action} />
+            <ActionButton
+              key={action.id}
+              action={action}
+              onAsk={sendMessage}
+              disabled={ocupado}
+            />
           ))}
         </div>
       )}

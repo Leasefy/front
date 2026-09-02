@@ -917,7 +917,122 @@
       "hintRevision": "revisión",
       "hintEgresos": "a propietarios",
       "recorrido": "Recorrido",
-      "soportes": "Soportes de candidatos"
+      "soportes": "Soportes de candidatos",
+      "piloto": "Inicio",
+      "chat": "Chat"
+    },
+    "piloto": {
+      "titulo": "Piloto automático",
+      "descripcion": "Lo que tus agentes hicieron y lo que necesitan de ti, en un solo lugar.",
+      "kpis": {
+        "pendientes": "Esperan tu decisión",
+        "actividadHoy": "Actividad de hoy",
+        "recuperadoMes": "Recuperado este mes",
+        "atrasadas": "{{n}} hace más de una semana",
+        "autonomos": "Agentes autónomos",
+        "autonomosHint": "trabajan sin preguntarte"
+      },
+      "bandeja": {
+        "titulo": "Bandeja",
+        "verCaso": "Ver caso",
+        "vacia": "No hay nada esperando por ti",
+        "vaciaHint": "Cuando un agente necesite tu decisión, aparece aquí.",
+        "error": "No se pudo cargar la bandeja: {{error}}",
+        "toastOk": "{{label}} · listo",
+        "toastFail": "No se pudo: {{error}}",
+        "contador": "{{total}} en total",
+        "contadorFiltrado": "{{visibles}} de {{total}}",
+        "filtrarPorTipo": "Filtrar por tipo de decisión",
+        "limpiar": "Ver todo",
+        "decisiones": "decisiones",
+        "decidir": "Decidir",
+        "sinFuente": "No pudimos consultar la bandeja",
+        "sinFuenteHint": "La fuente no respondió, así que no sabemos si hay decisiones esperando."
+      },
+      "feed": {
+        "titulo": "Actividad en vivo",
+        "vacio": "Sin actividad todavía",
+        "vacioHint": "Aquí ves lo que tus agentes van haciendo.",
+        "error": "No se pudo cargar la actividad: {{error}}",
+        "ver": "Ver",
+        "actividad": "actividad",
+        "verMas": "Ver {{n}} más",
+        "sinFuente": "No pudimos consultar la actividad",
+        "sinFuenteHint": "La fuente no respondió; esto no significa que no haya pasado nada."
+      },
+      "autonomia": {
+        "titulo": "Autonomía",
+        "hint": "Define cuánto puede hacer cada agente sin ti.",
+        "soloAdmin": "Solo un administrador puede cambiar el modo.",
+        "vacia": "Ningún agente reporta su autonomía todavía",
+        "vaciaHint": "Cuando un agente publique su modo, lo controlas desde aquí.",
+        "error": "No se pudo cargar la autonomía: {{error}}",
+        "grupoAria": "Modo de autonomía de {{agente}}",
+        "toastOk": "{{agente}} ahora en modo {{modo}}",
+        "toastFail": "No se pudo cambiar el modo: {{error}}",
+        "modo": {
+          "sombra": "Sombra",
+          "copiloto": "Copiloto",
+          "autonomo": "Autónomo"
+        },
+        "mudos": "{{n}} agentes no reportaron su modo: no sabemos cuánto pueden hacer solos."
+      },
+      "pulso": {
+        "titulo": "Pulso del piloto",
+        "ahora": "En curso",
+        "ahoraVacio": "No hay nada en curso en este momento.",
+        "alertas": "Alertas",
+        "alertasVacio": "Nada que requiera tu atención.",
+        "hoyLlamadas": "Llamadas",
+        "hoyChats": "Chats",
+        "hoyResueltas": "Resueltas",
+        "hoyPlaneados": "Agendados",
+        "estado": {
+          "ok": "Todo bajo control",
+          "atencion": "Requiere tu atención",
+          "critico": "Necesita acción ya",
+          "desconocido": "Estado no reconocido"
+        }
+      },
+      "cajon": {
+        "cargandoTitulo": "Abriendo el caso…",
+        "subtituloVacio": "Todo lo que sabemos de este caso",
+        "esperando": "esperando {{tiempo}}",
+        "cerrar": "Cerrar",
+        "errorTitulo": "No se pudo abrir el caso",
+        "errorTexto": "{{error}}. Puedes reintentar sin perder lo que estabas haciendo.",
+        "reintentar": "Reintentar",
+        "sinFuenteTitulo": "Este caso ya no está",
+        "sinFuenteTexto": "Puede que alguien lo haya resuelto mientras lo tenías en pantalla. Cierra y vuelve a mirar la lista.",
+        "traza": "Línea de tiempo",
+        "enlaces": "Dónde seguir",
+        "verDetalle": "Ver el detalle",
+        "casos": "Los casos detrás de este número",
+        "sinCasos": "Esta alerta cuenta casos que no se pudieron listar acá. El número del título sí se midió; ábrelo en su pantalla para verlos.",
+        "abrirPantalla": "Abrir la pantalla completa",
+        "volver": "Volver"
+      },
+      "preparacion": {
+        "boton": "Preparación",
+        "titulo": "¿Ya opera sola?",
+        "descripcion": "Lo que hace falta para que los agentes trabajen sin ti.",
+        "listo": "Todo listo: los agentes pueden operar solos.",
+        "noListo": "Falta {{n}} cosa para que opere sola.",
+        "bloquea": "Bloquea",
+        "sinFuente": "No pudimos revisar la preparación",
+        "sinFuenteHint": "El servicio de agentes no respondió, así que no sabemos si está listo. No es lo mismo que «no está listo».",
+        "listoConPeros": "Puede operar sola. Queda {{n}} cosa por revisar que no la frena.",
+        "listoConPerosPlural": "Puede operar sola. Quedan {{n}} cosas por revisar que no la frenan.",
+        "noListoPlural": "Faltan {{n}} cosas para que opere sola."
+      },
+      "gobierno": {
+        "activo": "Activa",
+        "inactivo": "Apagada para tu inmobiliaria",
+        "apagadoServidor": "Apagada en el servidor",
+        "switchAria": "Encender o apagar {agente} para tu inmobiliaria",
+        "toastOn": "{agente} encendida para tu inmobiliaria",
+        "toastOff": "{agente} apagada para tu inmobiliaria"
+      }
     },
     "mobileNav": {
       "moreButton": "Más",
@@ -5736,11 +5851,23 @@
           "qa": {
             "title": "Calidad de la llamada",
             "overall": "General",
-            "rapport": "Trato",
-            "compliance": "Cumplimiento",
-            "resolution": "Resolución",
-            "sentiment": "Sentimiento",
-            "empty": "QA pendiente."
+            "empatia": "Empatía",
+            "claridad": "Claridad",
+            "adherencia": "Adherencia al guion",
+            "objeciones": "Manejo de objeciones",
+            "empty": "QA pendiente.",
+            "cappedNote": "Puntaje general capado por incumplimiento:",
+            "quality": "Calidad conversacional",
+            "violations": {
+              "habeas_data_noticed": "Aviso de Habeas Data no dado",
+              "ai_disclosed": "No se avisó que es un sistema de IA",
+              "consent_to_record": "No se avisó la grabación",
+              "schedule_violations_zero": "Llamada fuera del horario legal",
+              "frequency_violations_zero": "Tope de contactos del día excedido",
+              "opt_out_respected": "No se respetó la solicitud de exclusión",
+              "actor_type_saas_orchestrator": "Actor no autorizado en la gestión"
+            },
+            "cappedUnknown": "regla no registrada (llamada anterior al detalle)"
           },
           "stateTrace": {
             "title": "Trazabilidad de estado",
@@ -6817,7 +6944,13 @@
           "pagos": "Pagos a proveedores",
           "estudio": "Evaluación de candidatos",
           "matching": "Matching",
-          "avaluos": "Avalúos"
+          "avaluos": "Avalúos",
+          "gerente": "Gerente",
+          "retencion": "Retención",
+          "calidad": "Calidad de publicación",
+          "prospectos": "Prospectos",
+          "aprobaciones": "Aprobaciones del propietario",
+          "mantenimiento": "Mantenimiento"
         },
         "rol": {
           "cobrador": "Cobrador",
@@ -9480,8 +9613,9 @@
       "emptySearch": "Sin resultados",
       "messages": "mensajes",
       "message": "mensaje",
-      "confirmDelete": "Confirmar eliminar",
-      "deleteConversation": "Eliminar conversacion"
+      "confirmDelete": "¿Eliminar esta conversación?",
+      "deleteConversation": "Eliminar conversacion",
+      "deleted": "Conversación borrada"
     },
     "agents": {
       "dispatching": "Despachando agentes...",
@@ -9622,11 +9756,15 @@
         "candidatos_desc": "Muestra los candidatos pre-filtrados",
         "reportes": "Reportes",
         "reportes_desc": "Genera un reporte financiero del mes"
-      }
+      },
+      "historyLabel": "Conversaciones recientes",
+      "historyEmpty": "Todavía no tienes conversaciones guardadas. Las que empieces van a aparecer acá para que puedas retomarlas.",
+      "historyEmptyCta": "Ver plantillas para empezar"
     },
     "response": {
       "actionable": "Accionable",
-      "informative": "Informativo"
+      "informative": "Informativo",
+      "openSection": "Abrir la sección"
     },
     "workspace": {
       "stepsTitle": "Pasos del analisis",
@@ -9646,6 +9784,62 @@
       "chatPanel": "Panel de chat",
       "noSteps": "Sin pasos definidos",
       "stepsProgress": "{{completed}} de {{total}} completados"
+    },
+    "templates": {
+      "button": "Plantillas",
+      "title": "Plantillas"
+    },
+    "conversation": {
+      "end": "Terminar conversación",
+      "endConfirm": "¿Terminar y empezar otra?",
+      "endYes": "Terminar",
+      "endCancel": "Cancelar"
+    },
+    "actions": {
+      "copy": "Copiar respuesta",
+      "copied": "Respuesta copiada",
+      "copyError": "No pude copiar. Selecciona el texto y usa Cmd+C.",
+      "regenerate": "Volver a generar",
+      "regenerating": "Generando de nuevo…",
+      "busy": "Espera a que termine la respuesta en curso.",
+      "like": "Respuesta útil",
+      "dislike": "Respuesta poco útil",
+      "feedbackUp": "Gracias — marcada como útil",
+      "feedbackDown": "Gracias — marcada como poco útil",
+      "feedbackRemoved": "Valoración quitada"
+    },
+    "tasks": {
+      "thinking": "Pensando en tu pregunta…",
+      "finishing": "Redactando la respuesta…",
+      "progress": "Progreso de la tarea",
+      "workingAs": "Consultando con el agente de {{agent}}…",
+      "phase": {
+        "reading": "Leyendo tu pregunta",
+        "deciding": "Decidiendo cómo resolverla",
+        "longer": "Sigo en ello"
+      },
+      "hint": {
+        "reading": "Entendiendo qué necesitas y con qué datos cuento.",
+        "deciding": "Eligiendo qué agentes consultar y en qué orden.",
+        "longer": "Está tomando más de lo normal — no se perdió nada, sigo trabajando."
+      },
+      "fact": {
+        "history": "Leyendo el contexto de la conversación ({{n}} mensajes).",
+        "snapshot": "Estado de hoy recibido: {{deudores}} deudores activos, {{escalaciones}} escalaciones pendientes.",
+        "agents": "Agentes disponibles: {{agentes}}."
+      },
+      "plan": {
+        "understand": "Entender la pregunta",
+        "consult": "Consultar a los agentes",
+        "write": "Redactar la respuesta",
+        "snapshot": "Revisar el estado de tu cartera",
+        "consultAgent": "Consultar al especialista de {{agent}}"
+      },
+      "detail": {
+        "cartera": "{{deudores}} deudores en gestión · {{escalaciones}} escalaciones · {{prejuridico}} en prejurídico",
+        "carteraVacia": "Sin datos de cartera para esta agencia",
+        "toolRunning": "Consultando {{herramienta}}"
+      }
     }
   },
   "landlordProfile": {

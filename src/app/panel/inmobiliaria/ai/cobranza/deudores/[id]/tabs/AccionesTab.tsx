@@ -40,6 +40,42 @@ type OpenModal = 'pause' | 'forceStage' | 'manualWA' | 'manualCall' | null
 type ActorDeAuditoria = Pick<DebtorAuditEntry, 'actor_type' | 'actor_id' | 'actor_role'>
 
 /**
+ * La acción en palabras, no el slug.
+ *
+ * El renglón decía `precall.scheduled` o `force_stage` en font-mono: una
+ * traza para desarrolladores en la pantalla de una inmobiliaria. El
+ * vocabulario sale de los slugs REALES de `agent.audit_log` (medidos en la
+ * base dev 2026-08-25: precall.scheduled ×730, dialer.call_placed ×598, …) +
+ * los cuatro de las intervenciones (AUDIT_ACTIONS del agente). Un slug que no
+ * conocemos se muestra crudo: es una traza, y equivocarse acá es peor que
+ * verse feo.
+ */
+const ACCION_LABEL: Record<string, string> = {
+  'precall.scheduled': 'Llamada programada',
+  'dialer.call_placed': 'Llamada marcada',
+  'dialer.call_skipped': 'Llamada omitida',
+  'qa.scored': 'Llamada calificada (QA)',
+  'followup.scheduled_voice': 'Seguimiento programado por voz',
+  'cartera.cadence.planned': 'Cadencia planificada',
+  'cartera.daily_report.dispatched': 'Reporte diario enviado',
+  force_stage: 'Etapa forzada',
+  manual_wa_send: 'WhatsApp manual enviado',
+  manual_call_trigger: 'Llamada manual disparada',
+  pii_reveal: 'Dato personal revelado',
+  escalated_to_human: 'Escalado a una persona',
+  'cobranza.memo.manual_create': 'Nota del equipo creada',
+}
+
+export function describirAccion(e: Pick<DebtorAuditEntry, 'action' | 'metadata'>): string {
+  // `pause` cubre pausar Y reanudar; el payload dice cuál fue.
+  if (e.action === 'pause') {
+    const meta = e.metadata as { resumed?: boolean } | null | undefined
+    return meta?.resumed ? 'Cobranza reanudada' : 'Cobranza pausada'
+  }
+  return ACCION_LABEL[e.action] ?? e.action
+}
+
+/**
  * Quién hizo la acción, para poder rastrearla.
  *
  * Antes acá salía `actor_type` a secas: «user». Eso dice la CATEGORÍA del
@@ -155,7 +191,26 @@ export function AccionesTab({
         <h3 className="text-sm font-semibold text-fg mb-2">
           {t('inmobiliaria.ai.cobranza.detail.acciones.auditTitle')}
         </h3>
-        {audit.isLoading && !audit.data ? (
+        {audit.error && !audit.data && !audit.isLoading ? (
+          /* Cargando, falló y «no hay» son tres cosas distintas: el fallo
+             mostraba «Sin actividad reciente» — un vacío deshonesto sobre una
+             bitácora que sí existe. */
+          <div
+            role="alert"
+            className="rounded-md border border-warning/30 bg-warning-soft p-3 flex items-center justify-between gap-3"
+          >
+            <p className="text-xs text-warning">
+              No pudimos cargar el historial. <span className="opacity-80">{audit.error}</span>
+            </p>
+            <button
+              type="button"
+              onClick={() => void audit.refetch()}
+              className="text-xs text-warning underline shrink-0"
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : audit.isLoading && !audit.data ? (
           <div className="space-y-1">
             {Array.from({ length: 3 }, (_, i) => (
               <div
@@ -175,8 +230,8 @@ export function AccionesTab({
                 key={e.id}
                 className="flex items-center justify-between text-xs px-2 py-1 rounded bg-surface-muted border border-border"
               >
-                <span className="font-mono text-fg-muted">
-                  {e.action}
+                <span className={ACCION_LABEL[e.action] || e.action === 'pause' ? 'text-fg' : 'font-mono text-fg-muted'}>
+                  {describirAccion(e)}
                 </span>
                 <span className="text-fg-muted">
                   {describirActor(e, t)} ·{' '}

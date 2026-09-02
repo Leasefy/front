@@ -41,7 +41,7 @@ function formatTimestamp(timestamp: Date | string): string {
   if (diffHours < 24) return `Hace ${diffHours}h`;
   if (diffDays < 7) return `Hace ${diffDays}d`;
 
-  return date.toLocaleDateString('es-CL', {
+  return date.toLocaleDateString('es-CO', {
     day: 'numeric',
     month: 'short',
   });

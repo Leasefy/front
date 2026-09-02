@@ -37,17 +37,26 @@ vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k, locale: 'es' }),
 }));
 
-vi.mock('@leasefy/cadence', () => ({
-  IconButton: (props: Record<string, unknown>) => React.createElement('button', { 'aria-label': props['aria-label'] }),
-  MonoLabel: ({ children }: { children?: React.ReactNode }) => React.createElement('span', null, children),
-  Input: React.forwardRef((props: Record<string, unknown>, ref: React.Ref<HTMLInputElement>) =>
-    React.createElement('input', { ...props, ref }),
-  ),
-  Button: React.forwardRef((props: Record<string, unknown> & { children?: React.ReactNode }, ref: React.Ref<HTMLButtonElement>) => {
-    const { children, ...rest } = props;
-    return React.createElement('button', { ...rest, ref }, children);
-  }),
-}));
+// `importOriginal` keeps everything else from the real package (notably the
+// AlertDialog family — archive/mute/report confirm — which MessagesWidget
+// uses via `@/components/ui/alert-dialog`; see the plain-Radix precedent in
+// `cobranza/plantillas/[id]/page.test.tsx`, which doesn't mock cadence at
+// all). Only the 4 components this suite actually stubs get replaced.
+vi.mock('@leasefy/cadence', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@leasefy/cadence')>();
+  return {
+    ...actual,
+    IconButton: (props: Record<string, unknown>) => React.createElement('button', { 'aria-label': props['aria-label'] }),
+    MonoLabel: ({ children }: { children?: React.ReactNode }) => React.createElement('span', null, children),
+    Input: React.forwardRef((props: Record<string, unknown>, ref: React.Ref<HTMLInputElement>) =>
+      React.createElement('input', { ...props, ref }),
+    ),
+    Button: React.forwardRef((props: Record<string, unknown> & { children?: React.ReactNode }, ref: React.Ref<HTMLButtonElement>) => {
+      const { children, ...rest } = props;
+      return React.createElement('button', { ...rest, ref }, children);
+    }),
+  };
+});
 
 vi.mock('@phosphor-icons/react', () => ({
   Chat: () => null,

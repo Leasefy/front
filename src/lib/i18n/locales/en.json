@@ -1679,6 +1679,7 @@
         "updatedAt": "Updated",
         "statusInProcess": "In process",
         "tenant": "Tenant",
+        "saleCommission": "Sale commission",
         "propertiesCount": "property(ies)"
       }
     },
@@ -2654,6 +2655,7 @@
         "viewDetail": "View detail",
         "perMonth": "/mo",
         "admin": "admin",
+        "saleCommission": "sale commission",
         "viewDetailTitle": "View detail",
         "editTitle": "Edit"
       },
@@ -2672,6 +2674,11 @@
       "views": {
         "table": "Table",
         "cards": "Cards"
+      },
+      "degradedNotice": {
+        "title": "We couldn't load imported properties without a mandate",
+        "description": "Your portfolio is still showing what did load. A recent property may be missing.",
+        "retry": "Retry"
       },
       "detail": {
         "title": "Property Details",
@@ -2842,6 +2849,28 @@
         "toast": {
           "successTitle": "Import successful",
           "successDesc": "{{count}} properties imported successfully"
+        },
+        "mandateBatch": {
+          "title": "Assign mandate",
+          "subtitle": "{{count}} properties are missing a mandate. Complete it now for all of them at once, or do it later from the portfolio.",
+          "propertiesListLabel": "Properties",
+          "propietarioLabel": "Owner",
+          "commissionLabel": "Agency commission",
+          "contractDateLabel": "Contract date",
+          "agenteLabel": "Assigned agent (optional)",
+          "skip": "Do it later",
+          "confirm": "Assign mandate to all",
+          "toasts": {
+            "allSucceededTitle": "Mandates completed",
+            "allSucceededDesc": "{{count}} properties now have a mandate and commission.",
+            "partialTitle": "Partial mandate",
+            "partialDesc": "{{succeeded}} properties got a mandate, {{failed}} did not. Complete them from the portfolio.",
+            "allFailedTitle": "Couldn't assign the mandate",
+            "allFailedDesc": "No property got a mandate. Complete them from the portfolio whenever you want.",
+            "publishPartialTitle": "Mandate saved; some are still unpublished",
+            "publishPartialDesc": "{{count}} properties got a mandate but couldn't be published. Open them from the portfolio and publish them whenever you want — don't upload them again.",
+            "errorDesc": "We couldn't save the owner. Try again in a moment."
+          }
         }
       },
       "software": {
@@ -2942,6 +2971,7 @@
       },
       "header": {
         "commission": "commission",
+        "saleCommission": "sale commission",
         "consignacion": "Consignment",
         "perMonth": "/mo",
         "admin": "admin",
@@ -2995,6 +3025,7 @@
         "monthlyRent": "Monthly rent",
         "administration": "Admin fee",
         "administrationCommission": "Management commission",
+        "saleCommission": "Sale commission",
         "estimatedPerMonth": "≈ {{amount}}/mo",
         "contractTerms": "Contract terms",
         "assignedAgent": "Assigned agent",
@@ -3016,14 +3047,17 @@
           "zoneRequired": "Zone is required",
           "rentPositive": "Monthly rent must be greater than 0",
           "commissionPositive": "Commission must be greater than 0",
+          "saleCommissionPositive": "Sale commission must be greater than 0",
           "agentRequired": "You must select an agent",
           "startDateRequired": "Start date is required"
         }
       },
       "table": {
+        "code": "Code",
         "property": "Property",
         "zone": "Zone",
         "rent": "Rent",
+        "saleTag": "(sale)",
         "commission": "Commission",
         "owner": "Owner",
         "agent": "Agent",
@@ -3032,7 +3066,29 @@
         "edit": "Edit",
         "emptyTitle": "No properties found",
         "emptyDescription": "Adjust the filters or add a new consignment",
-        "adminFee": "+ {{amount}} admin"
+        "adminFee": "+ {{amount}} admin",
+        "missingMandate": "Missing mandate"
+      },
+      "mandateDialog": {
+        "title": "Complete the mandate",
+        "subtitle": "Finish consigning \"{{title}}\": we already have the property's data, only the mandate is missing.",
+        "propietarioLabel": "Owner",
+        "commissionLabel": "Agency commission",
+        "saleCommissionLabel": "Sale commission",
+        "contractDateLabel": "Contract date",
+        "agenteLabel": "Assigned agent (optional)",
+        "saleListingNotice": "This property is for sale: the mandate carries no monthly rent, only the sale commission.",
+        "cancel": "Cancel",
+        "confirm": "Complete mandate",
+        "toasts": {
+          "successTitle": "Mandate completed",
+          "successDesc": "\"{{title}}\" now has a mandate and commission, and was published.",
+          "alreadyExistsTitle": "That mandate already existed — we refreshed your portfolio.",
+          "publishErrorTitle": "The mandate was saved; the property is still unpublished",
+          "publishErrorDesc": "{{reason}} Open it from the portfolio and publish it whenever you want — don't upload it again.",
+          "publishErrorFallbackReason": "We couldn't publish it.",
+          "errorDesc": "We couldn't complete the mandate. Try again in a moment."
+        }
       },
       "detail": {
         "propertyInfo": "Property Information",
@@ -3053,6 +3109,7 @@
         "agentTitle": "Assigned Agent",
         "noAgentAssigned": "No agent assigned",
         "commissionDistribution": "Commission distribution",
+        "commissionSplitNotAvailableForSale": "A sale mandate does not split commission between agent and agency at this time.",
         "agentShare": "Agent",
         "agencyShare": "Agency",
         "reassignAgent": "Reassign agent",
@@ -3079,6 +3136,7 @@
           "commission": "Commission",
           "agent": "Agent",
           "inventory": "Inventory",
+          "photos": "Photos",
           "confirm": "Confirm"
         },
         "mobileProgress": "Step {{current}} of {{total}}: {{label}}",
@@ -3124,8 +3182,15 @@
           "cityPlaceholder": "Bogota",
           "zoneLabel": "Zone/Neighborhood",
           "zonePlaceholder": "Chapinero Alto",
+          "departmentLabel": "Department",
+          "departmentPlaceholder": "Select a department",
+          "listingTypeLabel": "Listing type",
+          "listingTypeRent": "For rent",
+          "listingTypeSale": "For sale",
           "monthlyRentLabel": "Monthly rent",
           "monthlyRentPlaceholder": "2,500,000",
+          "salePriceLabel": "Sale price",
+          "salePricePlaceholder": "350,000,000",
           "adminFeeLabel": "Admin fee (optional)",
           "adminFeePlaceholder": "450,000",
           "bedroomsLabel": "Bedrooms",
@@ -3134,12 +3199,16 @@
           "descriptionLabel": "Description",
           "descriptionPlaceholder": "Describe the property: layout, finishes, condition, nearby places...",
           "descriptionCounter": "{{count}}/{{max}} characters (minimum {{min}})",
+          "consignedAtLabel": "Consignment date (optional)",
+          "consignedAtHint": "Only your agency sees this — it never appears on the public listing.",
           "validation": {
             "titleRequired": "Title is required",
             "addressRequired": "Address is required",
             "cityRequired": "City is required",
             "zoneRequired": "Zone is required",
+            "departmentRequired": "Department is required",
             "rentRequired": "Monthly rent is required",
+            "salePriceRequired": "Sale price is required",
             "bedroomsRequired": "Bedrooms must be between 0 and 20",
             "bathroomsRequired": "Bathrooms must be between 1 and 10",
             "areaRequired": "Area must be between 10 and 10,000 m2",
@@ -3151,6 +3220,8 @@
           "subtitle": "Define the consignment contract conditions",
           "commissionLabel": "Commission percentage",
           "commissionHelper": "Enter the commission percentage the agency will charge",
+          "saleCommissionLabel": "Sale commission",
+          "saleCommissionHelper": "Enter the commission percentage on the sale price",
           "monthlySummary": "Monthly summary",
           "monthlyRent": "Monthly rent",
           "agencyCommission": "Agency commission ({{percent}}%)",
@@ -3170,6 +3241,8 @@
         "step5": {
           "title": "Handover Report",
           "subtitle": "Register the property inventory and condition",
+          "titleSale": "Property Photos",
+          "subtitleSale": "Add the photos that will be published with this property.",
           "inventoryTitle": "Property inventory",
           "addItem": "Add item",
           "itemNamePlaceholder": "Item name (e.g.: 4-burner stove)",
@@ -3197,6 +3270,9 @@
           "new": "New",
           "notSelected": "Not selected",
           "noTitle": "No title",
+          "noSalePrice": "No sale price",
+          "noTermsForSale": "This property is for sale: no rental commission or minimum term applies.",
+          "saleCommission": "Sale commission",
           "perMonth": "/mo",
           "admin": "admin",
           "commission": "Commission",

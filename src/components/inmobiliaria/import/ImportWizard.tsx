@@ -137,10 +137,23 @@ export function ImportWizard() {
         if (wizardState.method === 'enlaces') return wizardState.properties.length > 0;
         return wizardState.rawRows.length > 0;
       case 3: {
-        // All required TARGET_FIELDS must be mapped
+        // All required TARGET_FIELDS must be mapped.
+        //
+        // T-0038 §3.8/C13 — `monthlyRent` stays `required: true` in
+        // TARGET_FIELDS (the overwhelming common case is a rent-only file,
+        // and catching a forgotten "Canon" column here beats catching it
+        // per-row at the final submit). But a SALE-only file has no canon
+        // column at all — its price is `salePrice`. Treating the two as
+        // alternatives (at least one mapped) is what makes a sale-only
+        // import possible; every other required field stays mandatory.
         const mappings = wizardState.columnMappings;
+        const isMapped = (key: string) => mappings.some((m) => m.targetField === key);
         const requiredKeys = TARGET_FIELDS.filter((f) => f.required).map((f) => f.key);
-        return requiredKeys.every((key) => mappings.some((m) => m.targetField === key));
+        const priceAlternativeOk = isMapped('monthlyRent') || isMapped('salePrice');
+        return (
+          priceAlternativeOk &&
+          requiredKeys.filter((key) => key !== 'monthlyRent').every(isMapped)
+        );
       }
       case 4:
         // Valid when analysis is done and at least 1 property is selected

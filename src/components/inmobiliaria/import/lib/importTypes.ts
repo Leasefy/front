@@ -28,8 +28,19 @@ export interface ImportProperty {
   propertyAddress?: string;
   propertyCity?: string;
   propertyZone?: string;
+  /** contract.md T-0038 §3.2.1 — optional on write; free text from the file, not constrained to COLOMBIAN_DEPARTMENTS at import time (C13: origin governs validation). */
+  propertyDepartment?: string;
   propertyType?: string;
+  /**
+   * contract.md T-0038 §3.2.2 — raw string as read from the file (e.g.
+   * "Arriendo"/"Venta"), NOT yet normalized to the wire's RENT/SALE. C13:
+   * every field is optional at ingestion; completeness (including a
+   * recognised listingType) is enforced at activation, not here.
+   */
+  listingType?: string;
   monthlyRent?: number;
+  /** contract.md T-0038 §3.2.3 — required at activation when listingType resolves to SALE. */
+  salePrice?: number;
   adminFee?: number;
   commissionPercent?: number;
   propertyArea?: number;
@@ -39,6 +50,8 @@ export interface ImportProperty {
   ownerPhone?: string;
   status?: string;
   notes?: string;
+  /** contract.md T-0038 §3.2.6 (D5, R6) — "YYYY-MM-DD", agency-only. */
+  consignedAt?: string;
   suggestions: AISuggestion[];
   selected: boolean;
   hasErrors: boolean;
@@ -49,6 +62,13 @@ export interface ImportProperty {
   enlaceOrigen?: string;
   /** URLs de las fotos en el CDN de origen; se suben tras crear el inmueble. */
   imagenes?: string[];
+  /**
+   * `propertyAddress` no es la dirección exacta: es una referencia que da el
+   * aviso, o el municipio, porque el portal no publica la calle. La fila
+   * sigue necesitando poder corregirse a mano — por eso el input manual
+   * tiene que seguir alcanzable aunque el campo ya no esté vacío.
+   */
+  direccionAproximada?: boolean;
   /**
    * De dónde salió cada campo: `'json-ld'` es un dato que el sitio declara,
    * `'texto'` es algo leído de una frase. La pantalla lo muestra para que la
@@ -75,13 +95,19 @@ export interface ImportWizardState {
 }
 
 // Target fields that columns can map to
+// T-0038 §3.8: department/listingType/salePrice/consignedAt added.
+// `required: false` for all four — C13 ("origin governs validation"): every
+// field is optional at ingestion, completeness is enforced at activation.
 export const TARGET_FIELDS = [
   { key: 'propertyTitle', label: 'Título', required: false },
   { key: 'propertyAddress', label: 'Dirección', required: true },
   { key: 'propertyCity', label: 'Ciudad', required: true },
   { key: 'propertyZone', label: 'Barrio / Zona', required: false },
+  { key: 'propertyDepartment', label: 'Departamento', required: false },
   { key: 'propertyType', label: 'Tipo de inmueble', required: true },
+  { key: 'listingType', label: 'Tipo de operación (arriendo/venta)', required: false },
   { key: 'monthlyRent', label: 'Canon mensual', required: true },
+  { key: 'salePrice', label: 'Precio de venta', required: false },
   { key: 'adminFee', label: 'Administración', required: false },
   { key: 'commissionPercent', label: 'Comisión %', required: false },
   { key: 'propertyArea', label: 'Área (m²)', required: false },
@@ -91,4 +117,5 @@ export const TARGET_FIELDS = [
   { key: 'ownerPhone', label: 'Teléfono propietario', required: false },
   { key: 'status', label: 'Estado', required: false },
   { key: 'notes', label: 'Observaciones', required: false },
+  { key: 'consignedAt', label: 'Fecha de consignación', required: false },
 ] as const;

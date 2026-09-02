@@ -113,13 +113,19 @@ export async function parseSpreadsheetFile(
 export async function downloadTemplate(): Promise<void> {
   const XLSX = await import('xlsx');
 
+  // T-0038 §3.8 — Departamento/Tipo de Negocio/Precio de Venta/Fecha de
+  // Consignación added. Headers are positionally aligned with exampleRow —
+  // '!cols' below derives its width array from `headers.length`.
   const headers = [
     'Título',
     'Dirección',
     'Ciudad',
     'Barrio',
+    'Departamento',
     'Tipo Inmueble',
+    'Tipo de Negocio',
     'Canon Mensual',
+    'Precio de Venta',
     'Administración',
     'Comisión %',
     'Área m2',
@@ -129,6 +135,7 @@ export async function downloadTemplate(): Promise<void> {
     'Tel Propietario',
     'Estado',
     'Observaciones',
+    'Fecha de Consignación',
   ];
 
   // Create a worksheet with a header row and two example rows
@@ -137,8 +144,11 @@ export async function downloadTemplate(): Promise<void> {
     'Calle 123 # 45-67',
     'Bogotá',
     'El Prado',
+    'Cundinamarca',
     'Apartamento',
+    'Arriendo',
     '2500000',
+    '',
     '350000',
     '10',
     '85',
@@ -148,6 +158,7 @@ export async function downloadTemplate(): Promise<void> {
     '3101234567',
     'Disponible',
     'Parqueadero incluido',
+    '',
   ];
 
   const worksheetData = [headers, exampleRow];

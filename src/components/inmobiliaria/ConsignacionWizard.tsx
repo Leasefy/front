@@ -9,6 +9,7 @@ import {
   Percent,
   UserCircle,
   ClipboardText,
+  Camera,
   CheckCircle,
   CaretLeft,
   CaretRight,
@@ -73,11 +74,19 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
   const [formData, setFormData] = useState<Partial<WizardFormData>>({
     propertyType: 'apartment',
     commissionPercent: 10,
+    // contract-addendum-2.md §A.3 — a distinct field, only used on the sale
+    // branch (step 3 renders one or the other, never both, §A.8).
+    saleCommissionPercent: 3,
     minimumTerm: 12,
     inventoryItems: [],
     inventoryNotes: '',
     contractStartDate: new Date().toISOString().split('T')[0],
     photos: [],
+    // contract.md T-0038 §3.2.2/§3.2.6 (D5, R6) — same today-default pattern
+    // as contractStartDate, but a DIFFERENT field: consignedAt is the new
+    // property-level column, contractStartDate stays the mandate's date.
+    listingType: 'rent',
+    consignedAt: new Date().toISOString().split('T')[0],
   });
 
   // Update form data helper
@@ -91,17 +100,24 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
       case 1:
         // Must have selected or created a propietario
         return Boolean(formData.propietarioId);
-      case 2:
+      case 2: {
         // Must have property details — thresholds mirror CreatePropertyDto
         // (contract.md §3.2): bedrooms 0-20, bathrooms 1-10, area 10-10000 m²,
-        // description 20-5000 chars.
+        // description 20-5000 chars. T-0038: department is required in this
+        // UI (§3.2.1), and the price field is conditional on listingType
+        // (§3.2.2/§3.2.4) — a sale listing validates salePrice, not monthlyRent.
+        const isSaleListing = formData.listingType === 'sale';
+        const priceValid = isSaleListing
+          ? Boolean(formData.salePrice && formData.salePrice > 0)
+          : Boolean(formData.monthlyRent && formData.monthlyRent > 0);
         return Boolean(
           formData.propertyTitle &&
           formData.propertyAddress &&
           formData.propertyCity &&
           formData.propertyZone &&
+          formData.department &&
           formData.propertyType &&
-          formData.monthlyRent && formData.monthlyRent > 0 &&
+          priceValid &&
           formData.bedrooms != null && formData.bedrooms >= 0 && formData.bedrooms <= 20 &&
           formData.bathrooms != null && formData.bathrooms >= 1 && formData.bathrooms <= 10 &&
           formData.area != null && formData.area >= 10 && formData.area <= 10000 &&
@@ -109,6 +125,7 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
           formData.propertyDescription.length >= 20 &&
           formData.propertyDescription.length <= 5000
         );
+      }
       case 3:
         // Commission terms always valid with defaults
         return true;
@@ -128,23 +145,31 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
           formData.propertyTitle &&
           formData.propertyAddress &&
           formData.propertyCity &&
-          formData.propertyZone
+          formData.propertyZone &&
+          formData.department
         );
       default:
         return false;
     }
   }, [currentStep, formData]);
 
-  // Navigation helpers — agents skip step 4
+  // Navigation helpers — agents skip step 4. Step 5 used to be skipped
+  // entirely for a sale listing (contract-addendum-2.md §A.8 — "5 ·
+  // Inventario / acta de entrega — Skipped, the owner ruled it out");
+  // T-0042 amends that (ledger.md §2/§3): a sale listing now reaches step
+  // 5, which renders photos-only (see StepActaEntrega). Only the
+  // agent-role skip remains here.
+  const isSaleListing = formData.listingType === 'sale';
+
   const getNextStep = useCallback((step: number) => {
-    const next = step + 1;
-    if (isAgentRole && next === 4) return 5;
+    let next = step + 1;
+    if (isAgentRole && next === 4) next = 5;
     return next;
   }, [isAgentRole]);
 
   const getPrevStep = useCallback((step: number) => {
-    const prev = step - 1;
-    if (isAgentRole && prev === 4) return 3;
+    let prev = step - 1;
+    if (isAgentRole && prev === 4) prev = 3;
     return prev;
   }, [isAgentRole]);
 
@@ -267,6 +292,13 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         );
       }
 
+      // contract.md T-0038 §3.2.2/§3.2.4 — a SALE listing sends
+      // `monthlyRent: null` and `salePrice`; a RENT listing sends
+      // `monthlyRent` and no `salePrice`. Never `monthlyRent: 0` on a sale
+      // (C6) — this replaces the previous `formData.monthlyRent ?? 0`, which
+      // was a live C6 violation on this exact path.
+      const isSaleListing = formData.listingType === 'sale';
+
       const property = await propertiesApi.create({
         title:        formData.propertyTitle ?? '',
         description:  formData.propertyDescription ?? '',
@@ -276,7 +308,11 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         address:      formData.propertyAddress ?? '',
         latitude:     formData.propertyLatitude,
         longitude:    formData.propertyLongitude,
-        monthlyRent:  formData.monthlyRent ?? 0,
+        department:   formData.department,
+        listingType:  formData.listingType ?? 'rent',
+        monthlyRent:  isSaleListing ? null : (formData.monthlyRent ?? 0),
+        salePrice:    isSaleListing ? (formData.salePrice ?? null) : null,
+        consignedAt:  formData.consignedAt,
         bedrooms:     formData.bedrooms ?? 0,
         bathrooms:    formData.bathrooms ?? 1,
         area:         formData.area ?? 10,
@@ -319,6 +355,21 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
         await propertiesApi.assignAgent(property.id, selectedAgente.email);
       }
 
+      /**
+       * contract-addendum-2.md §A — the owner's ruling on W3-a reversed
+       * WU-3's shipped behaviour: a sale listing DOES carry a mandate, in
+       * reduced form (propietario + consignedAt + sale commission). No
+       * canon, no minimumTerm, no adminFee, no acta de entrega — step 5
+       * renders photos-only on this path (T-0042, ledger.md §3), so there
+       * is no inventory/acta content to carry into the mandate.
+       *
+       * `saleCommissionPercent` is a DISTINCT field from `commissionPercent`
+       * (§A.3) — never reused. `commissionPercent` is still required by the
+       * DTO and is sent as `0` on a sale mandate, which is not a C6
+       * violation because the row carries an explicit `listingType`
+       * discriminator (derived server-side, never sent by this call).
+       */
+
       // El mandato. `agenteUserId` es un User.id: el `Agente.id` del front es
       // un AgencyMember.id y mandarlo acá no falla, asigna a nadie.
       //
@@ -338,11 +389,25 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
           propertyCity: formData.propertyCity ?? '',
           propertyZone: formData.propertyZone ?? '',
           propertyType: formData.propertyType ?? 'apartment',
-          monthlyRent: formData.monthlyRent ?? 0,
-          ...(formData.adminFee != null ? { adminFee: formData.adminFee } : {}),
-          commissionPercent: formData.commissionPercent ?? 0,
-          contractDate: formData.contractStartDate ?? new Date().toISOString().split('T')[0],
-          ...(formData.minimumTerm != null ? { minimumTerm: formData.minimumTerm } : {}),
+          // §A.7/§A.8 — monthlyRent/adminFee/minimumTerm are OMITTED on a
+          // sale mandate (never null-with-a-value, never 0, R2/C6). A rent
+          // mandate is unaffected — `isStepValid` already blocks step 2 from
+          // advancing without a positive `monthlyRent`, so no `?? 0`
+          // sentinel is needed here any more (the twin of the one WU-3
+          // already removed from the property-create path).
+          ...(isSaleListing
+            ? { saleCommissionPercent: formData.saleCommissionPercent ?? 0 }
+            : {
+                monthlyRent: formData.monthlyRent as number,
+                ...(formData.adminFee != null ? { adminFee: formData.adminFee } : {}),
+                ...(formData.minimumTerm != null ? { minimumTerm: formData.minimumTerm } : {}),
+              }),
+          commissionPercent: isSaleListing ? 0 : (formData.commissionPercent ?? 0),
+          // §A.2 — the sale mandate's contractDate is the SAME value sent as
+          // Property.consignedAt above; the rent mandate keeps its own date.
+          contractDate: isSaleListing
+            ? (formData.consignedAt ?? new Date().toISOString().split('T')[0])
+            : (formData.contractStartDate ?? new Date().toISOString().split('T')[0]),
           agenteId: formData.agenteId ?? '',
         });
       } catch (error) {
@@ -461,8 +526,18 @@ export function ConsignacionWizard({ propietarios, agentes }: ConsignacionWizard
     return 'upcoming';
   };
 
-  // Visible steps depend on role
-  const visibleSteps = isAgentRole ? STEPS.filter((s) => s.id !== 4) : STEPS;
+  // Visible steps depend on role only (agents skip "Agent"). Step 5 stays
+  // visible for both listing types — T-0042 relabels it "Photos" and swaps
+  // its icon for a sale listing, since it renders photos-only there
+  // (StepActaEntrega).
+  const visibleSteps = STEPS.filter((s) => {
+    if (isAgentRole && s.id === 4) return false;
+    return true;
+  }).map((s) =>
+    s.id === 5 && isSaleListing
+      ? { ...s, labelKey: 'inmobiliaria.consignaciones.wizard.steps.photos', icon: Camera }
+      : s
+  );
   const totalVisible = visibleSteps.length;
   // Position of current step among visible steps (1-based)
   const currentVisibleIndex = visibleSteps.findIndex((s) => s.id === currentStep);

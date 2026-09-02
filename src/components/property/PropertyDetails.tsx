@@ -100,9 +100,16 @@ export function PropertyDetails({
 
       {/* Price section */}
       <Card className="rounded-lg p-4">
+        {/*
+          T-0038 §3.2.4 — `monthlyRent` is `null` on a SALE listing (C6:
+          never fabricate a `$ 0`). This component has no current caller
+          (superseded by `PropertyDetailView`), so a plain "Sin dato" — not
+          the full sale-price treatment `PropertyAccordion` gives — keeps it
+          compiling correctly without over-building a dead surface.
+        */}
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-bold text-foreground font-mono tabular-nums">
-            {formatCurrency(monthlyRent)}
+            {monthlyRent != null ? formatCurrency(monthlyRent) : 'Sin dato'}
           </span>
           <span className="text-muted-foreground">/mes</span>
         </div>
@@ -122,7 +129,7 @@ export function PropertyDetails({
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total mensual estimado</span>
               <span className="font-bold font-mono tabular-nums">
-                {formatCurrency(monthlyRent + adminFee)}
+                {monthlyRent != null ? formatCurrency(monthlyRent + adminFee) : 'Sin dato'}
               </span>
             </div>
           </div>

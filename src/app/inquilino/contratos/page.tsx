@@ -7,7 +7,7 @@ import { Handshake, MapPin, Calendar, CurrencyDollar, PenNib, Clock, CheckCircle
 import { useContracts } from '@/lib/hooks/useContracts';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatCanon, formatDate } from './format';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Spinner } from '@/components/ui/spinner';
@@ -69,11 +69,13 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
           </div>
           <div className="min-w-0">
             <h3 className="font-semibold text-fg truncate">
-              {contract.propertyAddress}
+              {contract.propertyId === null ? 'Sin inmueble' : contract.propertyAddress}
             </h3>
-            <p className="text-sm text-fg-muted">
-              {contract.propertyCity}
-            </p>
+            {contract.propertyCity && (
+              <p className="text-sm text-fg-muted">
+                {contract.propertyCity}
+              </p>
+            )}
           </div>
         </div>
         <span className={cn(
@@ -92,7 +94,7 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
             {locale === 'es' ? 'Canon mensual' : 'Monthly rent'}
           </p>
           <p className="text-sm font-semibold text-fg">
-            {formatCurrency(contract.monthlyRent)}
+            {formatCanon(contract.monthlyRent) ?? '—'}
           </p>
         </div>
         <div>
@@ -100,7 +102,7 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
             {locale === 'es' ? 'Inicio' : 'Start'}
           </p>
           <p className="text-sm font-medium text-fg">
-            {formatDate(contract.startDate)}
+            {formatDate(contract.startDate) ?? '—'}
           </p>
         </div>
         <div>
@@ -108,7 +110,7 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
             {locale === 'es' ? 'Fin' : 'End'}
           </p>
           <p className="text-sm font-medium text-fg">
-            {formatDate(contract.endDate)}
+            {formatDate(contract.endDate) ?? '—'}
           </p>
         </div>
       </div>

@@ -4,6 +4,7 @@
  */
 
 import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
+import { resolveListingType } from '@/lib/api/properties.mapper';
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
 import type {
   AgencyProfile,
@@ -14,6 +15,8 @@ import type {
   AgenteFormData,
   Consignacion,
   ConsignacionFormData,
+  BackendInmuebleSinConsignacion,
+  InmuebleSinConsignacion,
   PipelineItem,
   PipelineStage,
   Cobro,
@@ -304,13 +307,19 @@ export const agentesApi = {
  */
 type RawConsignacion = Omit<
   Consignacion,
-  'status' | 'availability' | 'propertyType' | 'agenteId'
+  'status' | 'availability' | 'propertyType' | 'agenteId' | 'listingType'
 > & {
   status?: string | null;
   availability?: string | null;
   propertyType?: string | null;
   agenteUserId?: string | null;
   agenteId?: string | null;
+  /**
+   * contract-addendum-2.md §A.1/§A.9.1 — UPPER_SNAKE on the wire, absent on
+   * an older back build (degrades to RENT). Same wire field name and shape
+   * as `Property.listingType` — reuses `resolveListingType` below.
+   */
+  listingType?: string;
 };
 
 export function normalizeConsignacion(raw: RawConsignacion): Consignacion {
@@ -321,6 +330,15 @@ export function normalizeConsignacion(raw: RawConsignacion): Consignacion {
     availability: (lower(raw.availability) || 'available') as Consignacion['availability'],
     propertyType: (lower(raw.propertyType) || 'apartment') as Consignacion['propertyType'],
     agenteId: raw.agenteId ?? raw.agenteUserId ?? '',
+    // contract-addendum-2.md §A.1 — throw-on-unknown (C19), never a silent
+    // default to a wrong listing type.
+    listingType: resolveListingType(raw.listingType),
+    // §A.2/§A.9.1 — `null` on a rent mandate (normal) and on a pre-addendum
+    // sale row. Never fabricate, never coalesce to `0`.
+    saleCommissionPercent: raw.saleCommissionPercent ?? null,
+    // §A.9.1 — NEW, closes W3-c. `null` when the mandate has no linked
+    // property (a migrated cartera row).
+    propertyCode: raw.propertyCode ?? null,
   };
 }
 
@@ -356,6 +374,9 @@ export type ConsignacionUpdateInput = Partial<ConsignacionFormData> & {
 
 function toConsignacionPayload(data: ConsignacionUpdateInput): Record<string, unknown> {
   // Strip front-only keys the backend whitelist would reject (see note above).
+  // `listingType` is deliberately absent from `ConsignacionUpdateInput` /
+  // `ConsignacionFormData` (contract-addendum-2.md §A.1 — derived
+  // server-side, forbidNonWhitelisted 400s it). Do not add it to either type.
   const { agenteId: _agenteId, propertyType, status, availability, ...rest } = data;
   void _agenteId;
   const payload: Record<string, unknown> = { ...rest };
@@ -476,6 +497,60 @@ export const consignacionesApi = {
 };
 
 // ============================================================================
+// Inmuebles sin consignación (T-0030) — read-only, second source of the
+// portfolio table. Contract.md T-0030 §3.1/§3.2/§4.1: hand-mirrored, NOT
+// typed from generated/back.ts.
+// ============================================================================
+
+/**
+ * `GET /inmobiliaria/inmuebles/sin-consignacion` returns raw UPPER_SNAKE
+ * enums, same convention as `RawConsignacion` above.
+ */
+export function normalizeInmuebleSinConsignacion(
+  raw: BackendInmuebleSinConsignacion,
+): InmuebleSinConsignacion {
+  const lower = (v: string) => v.toLowerCase();
+  // contract.md T-0038 §3.2.6 — absent vs. explicit `null` are different
+  // contracts for `consignedAt`; spreading only when the raw key exists
+  // preserves that distinction instead of collapsing both to `undefined`.
+  const consignedAt: { consignedAt?: string | null } =
+    'propertyConsignedAt' in raw ? { consignedAt: raw.propertyConsignedAt } : {};
+  return {
+    propertyId: raw.propertyId,
+    propertyTitle: raw.propertyTitle,
+    propertyAddress: raw.propertyAddress,
+    propertyCity: raw.propertyCity,
+    propertyZone: raw.propertyZone,
+    propertyType: lower(raw.propertyType) as InmuebleSinConsignacion['propertyType'],
+    propertyThumbnail: raw.propertyThumbnail,
+    monthlyRent: raw.monthlyRent,
+    adminFee: raw.adminFee,
+    status: lower(raw.status) as InmuebleSinConsignacion['status'],
+    createdAt: raw.createdAt,
+    // T-0038 §3.2 — same degradation rules as `mapBackendProperty` (C19: no
+    // silent coercion on an unrecognised listingType).
+    department: raw.propertyDepartment ?? null,
+    listingType: resolveListingType(raw.propertyListingType),
+    salePrice: raw.propertySalePrice ?? null,
+    code: raw.propertyCode,
+    ...consignedAt,
+  };
+}
+
+export const inmueblesApi = {
+  /**
+   * No query params, no pagination (contract §3.1.2) — the portfolio page
+   * filters/paginates entirely client-side, same as `consignacionesApi.getAll`.
+   */
+  async getSinConsignacion(): Promise<InmuebleSinConsignacion[]> {
+    const raw = await apiClient.get<BackendInmuebleSinConsignacion[]>(
+      `${BASE}/inmuebles/sin-consignacion`,
+    );
+    return raw.map(normalizeInmuebleSinConsignacion);
+  },
+};
+
+// ============================================================================
 // Pipeline
 // ============================================================================
 
@@ -521,7 +596,19 @@ export interface PipelineStats {
 }
 
 /** Boundary mapper: backend item (UPPER stage + nested consignacion) → flat front shape. */
-function normalizePipelineItem(raw: BackendPipelineItem): PipelineItem {
+/**
+ * Boundary mapper: backend item (UPPER stage + nested consignacion) -> flat
+ * front shape.
+ *
+ * ⚠ `monthlyRent` carries `null` through deliberately. A SALE mandate has no
+ * canon (T-0038), and a pipeline item can be attached to one: neither the
+ * manual create path nor the Imana intake checks `listingType`. The `?? 0`
+ * that used to be here rendered `$ 0/mes` on the card and the detail — a
+ * prohibited sentinel (C6), because a `monthlyRent: 0` sentinel has already
+ * produced real $0 billing on this platform. Display only here, but the rule
+ * does not bend for display.
+ */
+export function normalizePipelineItem(raw: BackendPipelineItem): PipelineItem {
   return {
     id: raw.id,
     consignacionId: raw.consignacionId,
@@ -530,7 +617,7 @@ function normalizePipelineItem(raw: BackendPipelineItem): PipelineItem {
     agenteId: raw.agenteUserId ?? '',
     propertyTitle: raw.consignacion?.propertyTitle ?? '',
     propertyAddress: raw.consignacion?.propertyAddress ?? '',
-    monthlyRent: raw.consignacion?.monthlyRent ?? 0,
+    monthlyRent: raw.consignacion?.monthlyRent ?? null,
     candidateName: raw.candidateName,
     candidateEmail: raw.candidateEmail ?? '',
     candidatePhone: raw.candidatePhone ?? '',

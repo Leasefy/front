@@ -39,6 +39,14 @@ export type NotificationType =
   | 'CONTRACT_LANDLORD_SIGNED'
   | 'CONTRACT_TENANT_SIGNED'
   | 'CONTRACT_COMPLETED'
+  /**
+   * T-0031, contrato §3.2.C — un lote de migración de cartera terminó.
+   * `deriveCategoryFromTemplateCode()` (`notifications.types.ts`) la manda a
+   * `category: 'contract'` por contener "CONTRACT" — a propósito, no
+   * casualidad: no lleva "PAYMENT"/"APPLICATION"/"VISIT" antes, así que cae
+   * en la categoría correcta sin tocar la función de derivación.
+   */
+  | 'CONTRACT_MIGRATION_COMPLETED'
   // Leases
   | 'LEASE_EXPIRING_SOON'
   | 'LEASE_EXPIRED';
@@ -396,6 +404,8 @@ export function getNotificationIcon(type: string): string {
     CONTRACT_LANDLORD_SIGNED: 'PenNib',
     CONTRACT_TENANT_SIGNED: 'PenNib',
     CONTRACT_COMPLETED: 'CheckCircle',
+    // T-0031 — ícono frozen por contrato (§3.2.C2).
+    CONTRACT_MIGRATION_COMPLETED: 'FileArrowUp',
     // Leases
     LEASE_EXPIRING_SOON: 'Clock',
     LEASE_EXPIRED: 'Warning',

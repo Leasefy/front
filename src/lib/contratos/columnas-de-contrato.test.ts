@@ -12,8 +12,9 @@ import { describe, it, expect } from 'vitest'
 
 import {
   mapearColumnas,
-  faltantes,
-  OBLIGATORIOS,
+  remapear,
+  sinMapear,
+  CAMPOS_CLAVE,
   type CampoDeContrato,
 } from './columnas-de-contrato'
 
@@ -103,20 +104,24 @@ describe('siempre dice por qué', () => {
   })
 })
 
-describe('qué falta para poder importar', () => {
-  it('el uso del inmueble es obligatorio: sin él no se puede liquidar', () => {
-    expect(OBLIGATORIOS).toContain('uso')
+describe('qué no se mapeó — informativo, ya NO bloquea el import', () => {
+  // Cualquier archivo se puede importar («no puedo exigir un archivo
+  // estándar porque todos los clientes pueden subir Excel diferentes»,
+  // palabras del owner). `sinMapear` ya no es un gate: es la lista que arma
+  // el aviso no bloqueante — la persona la completa fila por fila después.
+  it('el uso del inmueble sigue siendo un campo clave: sin él no se puede liquidar', () => {
+    expect(CAMPOS_CLAVE).toContain('uso')
   })
 
-  it('lista lo que falta, no sólo dice que falta algo', () => {
+  it('lista lo que no se mapeó, no sólo dice que falta algo', () => {
     const m = mapearColumnas(['Inquilino', 'Canon'])
-    const f = faltantes(m)
+    const f = sinMapear(m)
     expect(f).toContain('uso')
     expect(f).toContain('fechaInicio')
     expect(f).not.toContain('canon')
   })
 
-  it('no falta nada cuando el archivo trae todo', () => {
+  it('no queda nada sin mapear cuando el archivo trae todos los campos clave', () => {
     const m = mapearColumnas([
       'Dirección del inmueble',
       'Nombre del inquilino',
@@ -127,6 +132,56 @@ describe('qué falta para poder importar', () => {
       'Día de pago',
       'Uso del inmueble',
     ])
-    expect(faltantes(m)).toEqual([])
+    expect(sinMapear(m)).toEqual([])
+  })
+})
+
+describe('remapeo manual', () => {
+  // Puerto de la interacción de StepColumnMapping.tsx (importador de
+  // inmuebles), pero apuntando a `CampoDeContrato`/`MapeoDeColumna` — NO a
+  // `ColumnMapping`/`TARGET_FIELDS`, que son un diccionario deliberadamente
+  // distinto (bloquea palabras de inquilino que acá son justo lo que se
+  // necesita).
+  it('una columna que el auto-mapeo dejó "Sin usar" se puede asignar a mano', () => {
+    const auto = mapearColumnas(['Propiedad']) // excluida a propósito del auto-mapeo
+    expect(auto[0].campo).toBeNull()
+
+    const manual = remapear(auto, 'Propiedad', 'direccionInmueble')
+    expect(manual[0].campo).toBe('direccionInmueble')
+    expect(manual[0].isManual).toBe(true)
+  })
+
+  it('si dos columnas reclaman el mismo campo, la segunda se lo quita a la primera', () => {
+    const auto = mapearColumnas(['Nombre del inquilino', 'Otra columna'])
+    const manual = remapear(auto, 'Otra columna', 'inquilinoNombre')
+
+    const primera = manual.find((m) => m.columna === 'Nombre del inquilino')
+    const segunda = manual.find((m) => m.columna === 'Otra columna')
+    expect(segunda?.campo).toBe('inquilinoNombre')
+    expect(primera?.campo).toBeNull()
+    expect(primera?.isManual).toBe(true)
+  })
+
+  it('elegir "Ignorar" limpia el campo de esa columna', () => {
+    const auto = mapearColumnas(['Canon de arrendamiento'])
+    const manual = remapear(auto, 'Canon de arrendamiento', null)
+    expect(manual[0].campo).toBeNull()
+    expect(manual[0].isManual).toBe(true)
+  })
+
+  it('no toca las demás columnas', () => {
+    const auto = mapearColumnas(['Dirección del inmueble', 'Canon de arrendamiento'])
+    const manual = remapear(auto, 'Dirección del inmueble', null)
+    expect(manual.find((m) => m.columna === 'Canon de arrendamiento')?.campo).toBe('canon')
+  })
+
+  it('restablecer vuelve a correr el auto-mapeo desde los encabezados originales', () => {
+    const encabezados = ['Propiedad', 'Canon de arrendamiento']
+    const manual = remapear(mapearColumnas(encabezados), 'Propiedad', 'direccionInmueble')
+    expect(manual[0].campo).toBe('direccionInmueble')
+
+    const restablecido = mapearColumnas(encabezados)
+    expect(restablecido[0].campo).toBeNull()
+    expect(restablecido[0].isManual).toBeUndefined()
   })
 })

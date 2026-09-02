@@ -281,7 +281,17 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     { kind: 'section', label: t('inmobiliaria.nav.secAdministracion'), href: '#sec-administracion', scope: 'administracion', icon: FilePlus, module: null },
     // 'contratos' is its own AGENCY_MODULES key (all roles have contratos:['view']);
     // gating it on 'portafolio' wrongly hid it from CONTADOR (portafolio: []).
-    { label: t('inmobiliaria.nav.contratos'),    href: '/panel/inmobiliaria/contratos', scope: 'administracion',    icon: FilePlus,      module: 'contratos' },
+    {
+      label: t('inmobiliaria.nav.contratos'),
+      href: '/panel/inmobiliaria/contratos',
+      scope: 'administracion',
+      icon: FilePlus,
+      module: 'contratos',
+      // T-0031 WU-4: contratos migrados con filas por completar. Sale de
+      // `GET /contracts/migrar/lotes` (mismo dato que la tarjeta "Retomar"
+      // del importador) — `undefined` si falla, nunca un cero inventado.
+      badge: migracionesPendientes,
+    } as NavItemWithModule,
     { label: t('inmobiliaria.nav.renovaciones'), href: '/panel/inmobiliaria/renovaciones', scope: 'administracion', icon: ArrowsClockwise, module: 'operaciones' },
     { label: t('inmobiliaria.nav.propietarios'), href: '/panel/inmobiliaria/propietarios', scope: 'administracion', icon: UserCircle,    module: 'propietarios' },
     { label: t('inmobiliaria.nav.operaciones'),  href: '/panel/inmobiliaria/operaciones', scope: 'administracion',  icon: Wrench,        module: 'operaciones', ai: true },

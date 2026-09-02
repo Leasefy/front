@@ -4,7 +4,7 @@
  */
 
 import { apiClient, getAccessToken, ApiError } from './client';
-import { mapBackendProperty, mapBackendAgencyProperty, TYPE_TO_BACKEND } from './properties.mapper';
+import { mapBackendProperty, mapBackendAgencyProperty, TYPE_TO_BACKEND, LISTING_TYPE_TO_BACKEND } from './properties.mapper';
 import type { BackendProperty, PaginatedResponse, PropertyFiltersParams } from './properties.types';
 import type { Property, AgencyProperty } from '@/lib/types/property';
 import type { PaginationMeta } from './properties.types';
@@ -88,7 +88,13 @@ export const propertiesApi = {
     city: string;
     neighborhood: string;
     address: string;
-    monthlyRent: number;
+    /**
+     * contract.md T-0038 §3.2.4 — `number | null`, was `number`. A SALE
+     * listing sends `null` (or omits the key), never `0` (C6). Kept required
+     * (not `?`) so every call site states its intent explicitly instead of
+     * silently omitting it.
+     */
+    monthlyRent: number | null;
     bedrooms: number;
     bathrooms: number;
     area: number;
@@ -102,10 +108,24 @@ export const propertiesApi = {
     stratum?: number;
     yearBuilt?: number;
     amenities?: string[];
+    /** contract.md T-0038 §3.2.1 — optional on write; `@IsIn` on the back. */
+    department?: string;
+    /** contract.md T-0038 §3.2.2 — optional, server-defaults to RENT. */
+    listingType?: 'rent' | 'sale';
+    /** contract.md T-0038 §3.2.3 — required when `listingType === 'sale'`, never `0`. */
+    salePrice?: number | null;
+    /** contract.md T-0038 §3.2.6 — `"YYYY-MM-DD"`, agency-only, optional. */
+    consignedAt?: string;
   }): Promise<Property> {
     const body = {
       ...data,
       type: TYPE_TO_BACKEND[data.type as keyof typeof TYPE_TO_BACKEND] ?? data.type,
+      // contract.md T-0038 §3.2.2 — wire is UPPER_SNAKE. Only sent when the
+      // caller passed one: `forbidNonWhitelisted: true` on the back means an
+      // `undefined` key must not survive JSON.stringify as `listingType:
+      // undefined` — it doesn't (JSON drops `undefined` values), but this
+      // keeps the mapping explicit rather than relying on that.
+      ...(data.listingType ? { listingType: LISTING_TYPE_TO_BACKEND[data.listingType] } : {}),
     };
     const bp = await apiClient.post<BackendProperty>('/properties', body);
     return mapBackendProperty(bp);

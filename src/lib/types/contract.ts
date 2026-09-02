@@ -253,9 +253,31 @@ export interface PerfilesDelContrato {
 export interface Contract {
   id: string;
   applicationId?: string;
-  propertyId: string;
-  tenantId: string;
+  /**
+   * `null` cuando el contrato es un MIGRADO al que la inmobiliaria decidió
+   * no importarle el inmueble (T-0033). Es la fuente de verdad de "¿tiene
+   * inmueble?" — clave todo render de "Sin inmueble" en esto, nunca en
+   * `propertyAddress` vacío.
+   */
+  propertyId: string | null;
+  /**
+   * `null` en un contrato MIGRADO (T-0031) sin correo de inquilino — existe
+   * como `Contract` igual, sin usuario inquilino asociado. No es un dato
+   * ausente por error: es el estado real de una cartera migrada a medias.
+   */
+  tenantId: string | null;
   landlordId: string;
+  /**
+   * Número consecutivo del contrato (T-0040). Asignado por el servidor,
+   * arranca en 1 por inmobiliaria — o por propietario cuando el contrato no
+   * tiene inmobiliaria. Independiente del código de inmueble.
+   *
+   * Misma forma que `BackendProperty.code` y que el dominio `Property.code`:
+   * un solo shape para un solo concepto en todo el front. Ausente sólo cuando
+   * el `back` es anterior a T-0040; en ese caso **no se renderiza nada**
+   * (nunca `—`, nunca `#0`). Guardá con `!= null`.
+   */
+  code?: number;
   status: ContractStatus;
 
   // Snapshot fields (Opción A — capturados al crear el contrato, inmutables).
@@ -270,12 +292,19 @@ export interface Contract {
   landlordEmail: string;
   landlordDocument: string;
 
-  // Contract terms
-  monthlyRent: number;
+  /**
+   * `null` en un contrato MIGRADO sin ese dato (T-0031, D6 — nunca `0`/una
+   * fecha inventada como sentinela de "desconocido"). Un renderizador que
+   * recibe `null` acá DEBE mostrarlo como ausente — nunca formatear un
+   * valor por default (`formatCurrency`/`formatDate` de `@/lib/format`
+   * NO son null-safe en el sentido correcto para estos campos: resuelven a
+   * "$ 0"/epoch, indistinguible de un dato real).
+   */
+  monthlyRent: number | null;
   adminFee: number;
-  startDate: string;      // ISO date
-  endDate: string;        // ISO date
-  paymentDueDay: number;  // 1-28
+  startDate: string | null;      // ISO date
+  endDate: string | null;        // ISO date
+  paymentDueDay: number | null;  // 1-28
 
   // ─── Administración ───────────────────────────────────────────────────────
   // No viajan en el documento firmado: corregirlos no invalida ninguna firma.

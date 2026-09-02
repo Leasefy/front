@@ -21,6 +21,7 @@ import {
   propietariosApi,
   agentesApi,
   consignacionesApi,
+  inmueblesApi,
   pipelineApi,
   cobrosApi,
   avaluosApi,
@@ -44,6 +45,7 @@ import type {
   Propietario,
   Agente,
   Consignacion,
+  InmuebleSinConsignacion,
   PipelineItem,
   Cobro,
   CobroSummary,
@@ -362,6 +364,30 @@ export function useConsignaciones(params?: Parameters<typeof consignacionesApi.g
     ['consignaciones'],
   );
   return { consignaciones: data ?? (SIN_DATOS as never[]), ...rest };
+}
+
+/**
+ * Segunda fuente del portafolio (T-0030): propiedades sin mandato — nunca
+ * salen en `GET /inmobiliaria/consignaciones` porque ese endpoint sólo lee
+ * `Consignacion`. Se arma con `useApiData`, así que un fallo acá queda
+ * capturado en `errorCrudo`/`error` de ESTE hook — nunca se relanza — y
+ * `data ?? []` deja `inmuebles: []` mientras tanto. Es a propósito
+ * (contract.md T-0030 §3.3: "Degrade, do not blank" — el fallo de esta fuente
+ * NO puede tumbar el portafolio que ya andaba).
+ *
+ * Recurso `'consignaciones'`: crear un mandato invalida ese recurso (y, por
+ * `TAMBIEN_TOCA`, también `properties`/`propiedades`), así que esta lista se
+ * refresca sola en cuanto la fila deja de estar acá y pasa a la otra.
+ */
+export function useInmueblesSinConsignacion() {
+  const { data, ...rest } = useApiData(
+    () => inmueblesApi.getSinConsignacion(),
+    [],
+    false,
+    0,
+    ['consignaciones'],
+  );
+  return { inmuebles: data ?? (SIN_DATOS as never[] as InmuebleSinConsignacion[]), ...rest };
 }
 
 /**

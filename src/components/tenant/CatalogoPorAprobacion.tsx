@@ -50,7 +50,14 @@ export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }
    * siguiente acción es postularse: ofrecer algo que ya se arrendó es prometer
    * una puerta cerrada, y encima inflaría la cuenta de "cuántas van contigo".
    */
-  const disponibles = properties.filter((p) => p.status !== 'rented')
+  /*
+   * T-0038: esta pantalla promete "lo que puedes tomar" contra un tope de
+   * arriendo (`referencia.valorCop`, más abajo) — una propiedad en venta no
+   * tiene canon (contract.md §3.2.4) y no aplica acá. Se excluye explícito
+   * en vez de dejar que `monthlyRent === null` la saque por un `<=` fallido
+   * (§3.7 — deliberado, no efecto secundario silencioso).
+   */
+  const disponibles = properties.filter((p) => p.status !== 'rented' && p.listingType !== 'sale')
 
   /*
    * Acá SÍ se filtra por el tope, y es la diferencia con el resto del sitio.
@@ -61,11 +68,14 @@ export function CatalogoPorAprobacion({ aprobacion }: { aprobacion: Aprobacion }
    * tomar*; mostrar algo que no puede tomar la contradice y encima le enseña
    * una puerta cerrada. Quien quiera ver todo tiene Explorar, a un clic.
    */
+  // `?? 0` here is a type-safety net, not a real-data path: `disponibles`
+  // already excluded every SALE listing above, so `monthlyRent` is never
+  // actually null in this array.
   const dentroDelTope = referencia
-    ? disponibles.filter((p) => p.monthlyRent <= referencia.valorCop)
+    ? disponibles.filter((p) => (p.monthlyRent ?? 0) <= referencia.valorCop)
     : disponibles
 
-  const ordenadas = [...dentroDelTope].sort((a, b) => a.monthlyRent - b.monthlyRent)
+  const ordenadas = [...dentroDelTope].sort((a, b) => (a.monthlyRent ?? 0) - (b.monthlyRent ?? 0))
 
   /*
    * Ocultamos, pero lo decimos — misma regla que `/inquilino/para-ti`.

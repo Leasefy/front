@@ -41,9 +41,13 @@ export default function PropiedadesPage() {
   const totalProperties = myProperties.length;
   const availableCount = myProperties.filter(p => p.status === 'available').length;
   const rentedCount = myProperties.filter(p => p.status === 'rented').length;
+  // `?? 0` here is a type-safety fallback, not a real-data path: a property
+  // with `status === 'rented'` was, by definition, leased — a SALE listing
+  // (whose `monthlyRent` is `null`, contract.md §3.2.4) never reaches this
+  // status (there is no `SOLD` member yet, contract.md §8.2).
   const totalMonthlyIncome = myProperties
     .filter(p => p.status === 'rented')
-    .reduce((sum, p) => sum + p.monthlyRent + p.adminFee, 0);
+    .reduce((sum, p) => sum + (p.monthlyRent ?? 0) + p.adminFee, 0);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -226,10 +230,13 @@ export default function PropiedadesPage() {
                       {/* Footer */}
                       <div className="flex items-center justify-between pt-4 border-t border-border-faint">
                         <div>
+                          {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
                           <p className="text-lg font-bold text-fg tabular-nums">
-                            {i18nFormatCurrency(property.monthlyRent)}
+                            {property.monthlyRent != null ? i18nFormatCurrency(property.monthlyRent) : '—'}
                           </p>
-                          <p className="text-xs text-fg-subtle">/{t('landlord.properties.perMonth')}</p>
+                          {property.monthlyRent != null && (
+                            <p className="text-xs text-fg-subtle">/{t('landlord.properties.perMonth')}</p>
+                          )}
                         </div>
                         {candidateCount > 0 && (
                           <span className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-soft rounded-full text-sm font-medium text-primary">
@@ -297,10 +304,13 @@ export default function PropiedadesPage() {
 
                     {/* Price */}
                     <div className="text-right">
+                      {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
                       <p className="text-lg font-bold text-fg tabular-nums">
-                        {i18nFormatCurrency(property.monthlyRent)}
+                        {property.monthlyRent != null ? i18nFormatCurrency(property.monthlyRent) : '—'}
                       </p>
-                      <p className="text-xs text-fg-subtle">/{t('landlord.properties.perMonth')}</p>
+                      {property.monthlyRent != null && (
+                        <p className="text-xs text-fg-subtle">/{t('landlord.properties.perMonth')}</p>
+                      )}
                     </div>
 
                     {/* Candidates */}

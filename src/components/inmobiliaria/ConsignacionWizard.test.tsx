@@ -38,6 +38,7 @@ const {
   propietariosApiMock,
   uploadPropertyPhotosMock,
   stepFivePhotosHolder,
+  stepTwoOverridesHolder,
 } = vi.hoisted(() => ({
     authState: {
       user: { id: 'user-1', email: 'user1@test.com', name: 'Test User' } as
@@ -65,6 +66,10 @@ const {
     // the whole file, same constraint step1/step2's self-fill pattern
     // already works around).
     stepFivePhotosHolder: { photos: [] as File[] },
+    // Same pattern as stepFivePhotosHolder — lets a SALE-listing test
+    // override step 2's self-filled defaults (listingType/salePrice)
+    // without a per-test vi.mock (T-0038).
+    stepTwoOverridesHolder: { overrides: {} as Record<string, unknown> },
   }))
 
 vi.mock('@/lib/i18n', () => ({
@@ -175,11 +180,17 @@ vi.mock('./ConsignacionWizardSteps', () => ({
         propertyCity: 'Bogota',
         propertyZone: 'Chapinero',
         propertyType: 'apartment',
+        // T-0038 §3.2.1/§3.2.2 — department is required in the wizard UI;
+        // listingType defaults to 'rent' (already the wizard's initial state).
+        department: 'Cundinamarca',
         monthlyRent: 1000000,
         bedrooms: 2,
         bathrooms: 1,
         area: 50,
         propertyDescription: 'Descripcion suficientemente larga para pasar la validacion del paso 2.',
+        // T-0038: a SALE-listing test overrides listingType/monthlyRent/
+        // salePrice here — see stepTwoOverridesHolder.
+        ...stepTwoOverridesHolder.overrides,
       })
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
@@ -246,6 +257,7 @@ beforeEach(() => {
   propietariosApiMock.update.mockReset()
   uploadPropertyPhotosMock.mockReset().mockResolvedValue({ uploaded: 0, failed: [] })
   stepFivePhotosHolder.photos = []
+  stepTwoOverridesHolder.overrides = {}
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -411,6 +423,95 @@ describe('<ConsignacionWizard> — publishes the property after the mandate (T-0
   })
 })
 
+/**
+ * <ConsignacionWizard> — contract-addendum-2.md §A: a SALE listing carries a
+ * REDUCED Consignacion mandate (propietario + consignedAt + sale commission).
+ *
+ * This REVERSES the WU-3 behaviour (SALE skipped the mandate and published
+ * directly) per the owner's ruling on W3-a. No canon, no minimumTerm, no
+ * adminFee, no acta de entrega. Step 5 used to be skipped entirely for a
+ * sale listing; T-0042 (ledger.md §2/§3) amends that — it now renders
+ * photos-only (see `StepActaEntrega` in ConsignacionWizardSteps.tsx) and is
+ * reached like any other step (see `getNextStep` in ConsignacionWizard.tsx).
+ */
+describe('<ConsignacionWizard> — SALE listing carries a reduced mandate (contract-addendum-2.md §A)', () => {
+  async function driveToStep6ThenSubmitAsSale() {
+    stepTwoOverridesHolder.overrides = {
+      listingType: 'sale',
+      salePrice: 400_000_000,
+      monthlyRent: null,
+    }
+    await renderWizard(AGENTE_LIST)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5 (photos-only, T-0042)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    const submitBtn = findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment')
+    await clickButton(submitBtn)
+  }
+
+  it('creates the property with listingType sale, salePrice, and monthlyRent: null — never 0 (C6)', async () => {
+    await driveToStep6ThenSubmitAsSale()
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    const payload = propertiesApiMock.create.mock.calls[0][0]
+    expect(payload.listingType).toBe('sale')
+    expect(payload.salePrice).toBe(400_000_000)
+    expect(payload.monthlyRent).toBeNull()
+  })
+
+  it('creates a reduced sale mandate: saleCommissionPercent sent, monthlyRent/minimumTerm/adminFee omitted', async () => {
+    await driveToStep6ThenSubmitAsSale()
+
+    expect(consignacionesApiMock.create).toHaveBeenCalledTimes(1)
+    const payload = consignacionesApiMock.create.mock.calls[0][0]
+    expect(payload.saleCommissionPercent).toBe(3) // wizard default
+    expect(payload.commissionPercent).toBe(0)
+    expect('monthlyRent' in payload).toBe(false)
+    expect('minimumTerm' in payload).toBe(false)
+    expect('adminFee' in payload).toBe(false)
+  })
+
+  it('sends the mandate contractDate as the SAME value sent as Property.consignedAt (§A.2)', async () => {
+    await driveToStep6ThenSubmitAsSale()
+
+    const propertyPayload = propertiesApiMock.create.mock.calls[0][0]
+    const mandatePayload = consignacionesApiMock.create.mock.calls[0][0]
+    expect(mandatePayload.contractDate).toBe(propertyPayload.consignedAt)
+  })
+
+  it('publishes only after the mandate succeeds (mandate first, publish second)', async () => {
+    await driveToStep6ThenSubmitAsSale()
+
+    expect(consignacionesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(propertiesApiMock.update).toHaveBeenCalledWith('property-1', { status: 'AVAILABLE' })
+    expect(toast.success).toHaveBeenCalled()
+    expect(toast.error).not.toHaveBeenCalled()
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
+  })
+
+  it('never publishes when the mandate call fails', async () => {
+    consignacionesApiMock.create.mockRejectedValueOnce(new ApiError(400, 'Propietario invalido'))
+
+    await driveToStep6ThenSubmitAsSale()
+
+    expect(propertiesApiMock.update).not.toHaveBeenCalled()
+    expect(toast.error).toHaveBeenCalled()
+  })
+
+  it('surfaces a publish failure honestly instead of claiming success', async () => {
+    const backendMessage = 'No se pudo publicar la propiedad.'
+    propertiesApiMock.update.mockRejectedValueOnce(new ApiError(500, backendMessage))
+
+    await driveToStep6ThenSubmitAsSale()
+
+    expect(toast.success).not.toHaveBeenCalled()
+    expect(toast.error).toHaveBeenCalledTimes(1)
+    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
+  })
+})
+
 describe('<ConsignacionWizard> — property photos (T-0017)', () => {
   // Admin path: goes through all 6 steps (step 4 isn't skipped), picking no
   // agent — same setup as the "agent assignment is optional" tests above.
@@ -483,5 +584,133 @@ describe('<ConsignacionWizard> — property photos (T-0017)', () => {
     // never read as a failed consignment.
     expect(consignacionesApiMock.create).toHaveBeenCalledTimes(1)
     expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles')
+  })
+})
+
+/**
+ * <ConsignacionWizard> — step 5 reachable on the sale path (T-0042).
+ *
+ * Root cause (ledger.md §2): photos are staged into `formData.photos` by
+ * the UI that lives inside step 5 ("Inventario / acta de entrega"), but a
+ * sale listing used to skip step 5 entirely (contract-addendum-2.md §A.8),
+ * so `formData.photos` stayed `[]` and nothing ever reached
+ * `uploadPropertyPhotos`. This section locks: step 5 is reached (correctly
+ * labeled and counted) across all four role x listing-type combinations,
+ * and a sale listing's staged photos actually reach the upload call — not
+ * just that the section renders.
+ */
+describe('<ConsignacionWizard> — step 5 reachable on the sale path (T-0042)', () => {
+  function visibleStepLabels(): string[] {
+    return Array.from(container.querySelectorAll('span.text-xs.font-medium')).map(
+      (el) => el.textContent ?? '',
+    )
+  }
+
+  it('rent + agent role: 5 visible steps labeled "inventory", step 4 skipped, step 5 reachable', async () => {
+    permissionsState.isAdmin = false
+    authState.user = { id: 'agent-user-1', email: 'agente1@test.com', name: 'Agente Uno' }
+    await renderWizard(AGENTE_LIST)
+
+    expect(visibleStepLabels()).toEqual([
+      'inmobiliaria.consignaciones.wizard.steps.owner',
+      'inmobiliaria.consignaciones.wizard.steps.property',
+      'inmobiliaria.consignaciones.wizard.steps.commission',
+      'inmobiliaria.consignaciones.wizard.steps.inventory',
+      'inmobiliaria.consignaciones.wizard.steps.confirm',
+    ])
+
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 5 (step 4 skipped)
+
+    expect(container.querySelector('[data-testid="step-4"]')).toBeFalsy()
+    expect(container.querySelector('[data-testid="step-5"]')).toBeTruthy()
+  })
+
+  it('rent + no agent role (admin): 6 visible steps labeled "inventory", sequential 1..6', async () => {
+    await renderWizard(AGENTE_LIST) // beforeEach sets permissionsState.isAdmin = true
+
+    expect(visibleStepLabels()).toEqual([
+      'inmobiliaria.consignaciones.wizard.steps.owner',
+      'inmobiliaria.consignaciones.wizard.steps.property',
+      'inmobiliaria.consignaciones.wizard.steps.commission',
+      'inmobiliaria.consignaciones.wizard.steps.agent',
+      'inmobiliaria.consignaciones.wizard.steps.inventory',
+      'inmobiliaria.consignaciones.wizard.steps.confirm',
+    ])
+
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
+    expect(container.querySelector('[data-testid="step-4"]')).toBeTruthy()
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
+    expect(container.querySelector('[data-testid="step-5"]')).toBeTruthy()
+  })
+
+  it('sale + agent role: 5 visible steps labeled "photos", step 4 skipped, step 5 reachable', async () => {
+    stepTwoOverridesHolder.overrides = { listingType: 'sale', salePrice: 400_000_000, monthlyRent: null }
+    permissionsState.isAdmin = false
+    authState.user = { id: 'agent-user-1', email: 'agente1@test.com', name: 'Agente Uno' }
+    await renderWizard(AGENTE_LIST)
+
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2 (step 2 mounts, sets listingType: sale)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+
+    expect(visibleStepLabels()).toEqual([
+      'inmobiliaria.consignaciones.wizard.steps.owner',
+      'inmobiliaria.consignaciones.wizard.steps.property',
+      'inmobiliaria.consignaciones.wizard.steps.commission',
+      'inmobiliaria.consignaciones.wizard.steps.photos',
+      'inmobiliaria.consignaciones.wizard.steps.confirm',
+    ])
+
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 5 (step 4 skipped)
+    expect(container.querySelector('[data-testid="step-4"]')).toBeFalsy()
+    expect(container.querySelector('[data-testid="step-5"]')).toBeTruthy()
+
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    expect(container.querySelector('[data-testid="step-6"]')).toBeTruthy()
+  })
+
+  it('sale + no agent role (admin): 6 visible steps labeled "photos", sequential 1..6, step 5 reachable', async () => {
+    stepTwoOverridesHolder.overrides = { listingType: 'sale', salePrice: 400_000_000, monthlyRent: null }
+    await renderWizard(AGENTE_LIST)
+
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2 (step 2 mounts, sets listingType: sale)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+
+    expect(visibleStepLabels()).toEqual([
+      'inmobiliaria.consignaciones.wizard.steps.owner',
+      'inmobiliaria.consignaciones.wizard.steps.property',
+      'inmobiliaria.consignaciones.wizard.steps.commission',
+      'inmobiliaria.consignaciones.wizard.steps.agent',
+      'inmobiliaria.consignaciones.wizard.steps.photos',
+      'inmobiliaria.consignaciones.wizard.steps.confirm',
+    ])
+
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
+    expect(container.querySelector('[data-testid="step-4"]')).toBeTruthy()
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5
+    expect(container.querySelector('[data-testid="step-5"]')).toBeTruthy()
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    expect(container.querySelector('[data-testid="step-6"]')).toBeTruthy()
+  })
+
+  it('uploads a sale listing\'s staged photos: uploadPropertyPhotos called with the new property id and the staged files', async () => {
+    stepTwoOverridesHolder.overrides = { listingType: 'sale', salePrice: 400_000_000, monthlyRent: null }
+    const photos = [new File(['a'], 'a.jpg', { type: 'image/jpeg' })]
+    stepFivePhotosHolder.photos = photos
+    uploadPropertyPhotosMock.mockResolvedValue({ uploaded: 1, failed: [] })
+
+    await renderWizard(AGENTE_LIST)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 1 -> 2
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 2 -> 3
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 3 -> 4
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 4 -> 5 (photos-only step, now reachable)
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.next')) // 5 -> 6
+    await clickButton(findButtonByText('inmobiliaria.consignaciones.wizard.confirmConsignment'))
+
+    expect(propertiesApiMock.create).toHaveBeenCalledTimes(1)
+    expect(uploadPropertyPhotosMock).toHaveBeenCalledWith('property-1', photos)
   })
 })

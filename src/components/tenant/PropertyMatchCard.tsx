@@ -60,7 +60,8 @@ export function PropertyMatchCard({
             {property.title}
           </h4>
           <p className="text-xs text-plan-muted mt-0.5">
-            {formatCurrency(property.monthlyRent)}/mes
+            {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
+            {property.monthlyRent != null ? `${formatCurrency(property.monthlyRent)}/mes` : '—'}
           </p>
         </div>
 
@@ -155,8 +156,15 @@ export function PropertyMatchCard({
           </span>
         </div>
         <p className="text-lg font-bold text-white">
-          {formatCurrency(property.monthlyRent)}
-          <span className="text-sm font-normal text-white/70">/mes</span>
+          {/* A sale listing has no canon. `—`, never `$ 0` (C6). */}
+          {property.monthlyRent != null ? (
+            <>
+              {formatCurrency(property.monthlyRent)}
+              <span className="text-sm font-normal text-white/70">/mes</span>
+            </>
+          ) : (
+            '—'
+          )}
         </p>
       </div>
     </>

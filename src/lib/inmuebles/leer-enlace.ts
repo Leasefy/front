@@ -50,6 +50,13 @@ export interface InmuebleDesdeEnlace {
   banos?: DatoLeido<number>;
   /** URLs absolutas, sin repetidos, en el orden en que aparecen. */
   imagenes: string[];
+  /**
+   * `direccion` no es la dirección exacta: es una referencia que da el
+   * aviso, o directamente el municipio. La pantalla tiene que poder
+   * distinguirlo — si no, el dato se ve tan sólido como uno exacto y nadie
+   * lo revisa (T-0034 WU-1, Slice B).
+   */
+  direccionAproximada?: boolean;
   /** Se leen aunque hoy el inmueble no los pueda guardar. Ver la nota al pie. */
   videos: string[];
 }
@@ -306,6 +313,33 @@ const CIUDADES = new Set(
 );
 
 /**
+ * Los 32 departamentos de Colombia (+ Bogotá D.C., aunque esa ya está en
+ * CIUDADES). Existe para el mismo motivo que CIUDADES pero al revés: un valor
+ * que ES un departamento NUNCA es plausible como barrio, y antes de esto se
+ * asignaba igual — T-0030 WU-3, defecto real: una ficha con
+ * `addressRegion: "Antioquia"` + `addressLocality: "Itagüí"` dejaba
+ * `neighborhood: "Antioquia"` en el inmueble creado.
+ */
+const DEPARTAMENTOS = new Set(
+  [
+    'amazonas', 'antioquia', 'arauca', 'atlantico', 'bolivar', 'boyaca',
+    'caldas', 'caqueta', 'casanare', 'cauca', 'cesar', 'choco', 'cordoba',
+    'cundinamarca', 'guainia', 'guaviare', 'huila', 'la guajira', 'magdalena',
+    'meta', 'narino', 'norte de santander', 'putumayo', 'quindio',
+    'risaralda', 'san andres y providencia', 'santander', 'sucre', 'tolima',
+    'valle del cauca', 'vaupes', 'vichada',
+  ],
+);
+
+function normalizarNombre(nombre: string): string {
+  return nombre
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+/**
  * Nomenclatura colombiana: `Calle 39A # 25-14`, `Cra. 13 No. 53-20`,
  * `Diagonal 40 # 20-15`, `Kr 13 # 45 - 11`.
  *
@@ -324,14 +358,40 @@ const CIUDADES = new Set(
 const DIRECCION_COLOMBIANA =
   /\b(?:calles?|cll?\.?|carreras?|cra\.?|kra\.?|kr\.?|diagonal|dg\.?|transversal|tv\.?|avenida|av\.?|autopista)\s*\.?\s*\d{1,3}[a-z]?(?:\s+bis)?(?:\s+(?:sur|norte|este|oeste))?\s*(?:#|n[oº°]\.?|nro\.?|num\.?)\s*\d{1,3}[a-z]?\s*-\s*\d{1,3}[a-z]?\b/i;
 
+/**
+ * Una referencia locacional: no una calle con número, sino cómo la gente
+ * describe DÓNDE queda algo — «cerca al tránsito de itagui», «frente al
+ * centro comercial X», «a dos cuadras del parque». Es lo segundo mejor
+ * cuando el portal no publica la dirección exacta (T-0034 WU-1, Slice B).
+ *
+ * El marcador (`cerca de`, `frente a`, …) es general — no depende del sitio.
+ * El corte es en `.`, `,`, `;` o salto de línea: sin él, «cerca al tránsito
+ * de itagui, estación del metro, rutas integradas» se guardaría entero, una
+ * frase corrida y no una referencia legible.
+ */
+const REFERENCIA_LOCACIONAL =
+  /\b(?:cerca\s+(?:de|al?)|frente\s+a|junto\s+a|al\s+lado\s+de|a\s+\d+\s*(?:cuadras?|min(?:utos)?)\s+de|diagonal\s+a)\b[^.,;\n]{0,60}/i;
+
+function referenciaLocacional(texto: string): string | undefined {
+  const m = texto.match(REFERENCIA_LOCACIONAL);
+  if (!m) return undefined;
+  const limpia = m[0].replace(/\s+/g, ' ').trim();
+  return limpia || undefined;
+}
+
 function esCiudad(nombre: string | undefined): boolean {
   if (!nombre) return false;
-  const normalizado = nombre
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim();
-  return CIUDADES.has(normalizado);
+  return CIUDADES.has(normalizarNombre(nombre));
+}
+
+/**
+ * Un departamento no es un barrio, nunca. Se usa para vetar la asignación
+ * "lo que sobra es barrio" cuando lo que sobra es en realidad el
+ * departamento — ver DEPARTAMENTOS arriba.
+ */
+function esDepartamento(nombre: string | undefined): boolean {
+  if (!nombre) return false;
+  return DEPARTAMENTOS.has(normalizarNombre(nombre));
 }
 
 /**
@@ -352,6 +412,56 @@ function conEtiqueta(
     if (m) return { fragmento: m[0].trim(), numero: m[3] };
   }
   return undefined;
+}
+
+/**
+ * Muchos portales no sirven la foto real: la pasan por su propio proxy de
+ * redimensionado — `/api/nuby/image-proxy?url=<real>&w=800&q=75`, o el de
+ * Next.js, `/_next/image?url=<real>&w=…`. El wrapper es ruido: dos tamaños
+ * del mismo archivo son la MISMA foto, y compararlos como strings distintos
+ * duplicaría la galería. Se desenvuelve ANTES de comparar y de deduplicar.
+ *
+ * Es una propiedad general del patrón `?url=…`, no de un proxy en particular
+ * ni de un dominio: cualquier imagen servida detrás de un parámetro `url`
+ * (absoluto o relativo a la raíz) se desenvuelve igual.
+ */
+function desenvolverProxy(cruda: string): string {
+  const m = cruda.match(/[?&]url=([^&]+)/);
+  if (!m) return cruda;
+  let interior: string;
+  try {
+    interior = decodeURIComponent(m[1]);
+  } catch {
+    return cruda;
+  }
+  // Sólo cuenta si adentro hay de verdad otra ruta — si no, `url=` podía ser
+  // cualquier otro parámetro sin relación con un proxy de imágenes.
+  if (/^https?:\/\//i.test(interior) || interior.startsWith('/')) return interior;
+  return cruda;
+}
+
+/**
+ * Nombres de archivo que casi nunca son una foto del inmueble: son el activo
+ * genérico del sitio — el que Open Graph sirve cuando la ficha no tiene fotos
+ * propias, el logo, el ícono. Es un patrón de NOMBRE, no de dominio: un
+ * portal que sirve sus fotos reales desde su propio dominio no cae acá,
+ * porque sus archivos de fotos no se llaman así.
+ *
+ * Caso real (T-0034): la ficha 2929 de portofinopropiedadraiz.com no tiene
+ * fotos propias — es un cascarón — y lo único declarado es `og-image.png`,
+ * el logo del sitio. Sin este filtro esa sería la ÚNICA imagen que se
+ * importa: el logo quedaría de portada del inmueble.
+ */
+const NOMBRE_DE_ACTIVO_GENERICO =
+  /(?:^|[-_/])(og[-_]?image|default[-_]?(?:og|share|image)|share[-_]?image|placeholder|logo|favicon|banner|avatar)(?:[-_.]|$)/i;
+
+function esActivoGenerico(url: string): boolean {
+  try {
+    const nombre = new URL(url).pathname.split('/').pop() ?? '';
+    return NOMBRE_DE_ACTIVO_GENERICO.test(nombre);
+  } catch {
+    return false;
+  }
 }
 
 /** Todas las imágenes declaradas: og:image (repetible), twitter, JSON-LD. */
@@ -379,7 +489,104 @@ function imagenesDelHtml(html: string, jsonLd: Record<string, unknown>[], base: 
     }
   }
 
-  return normalizarUrls(urls, base);
+  // El logo/ícono/og-image genérico NUNCA es una foto del inmueble, aunque el
+  // sitio lo declare como og:image — filtra ANTES de que se vuelva el ancla
+  // de la que cuelga todo lo demás.
+  return normalizarUrls(urls, base).filter((u) => !esActivoGenerico(u));
+}
+
+/**
+ * `<img>`/`<picture><source>` que la página ya renderiza, en orden de
+ * documento — `src` y cada URL del `srcSet` (el descriptor `Nw`/`Nx` no
+ * importa, sólo la URL).
+ */
+function etiquetasImg(html: string): string[] {
+  const urls: string[] = [];
+  const etiquetas = html.match(/<(?:img|source)\b[^>]*>/gi) ?? [];
+
+  for (const etiqueta of etiquetas) {
+    const src = etiqueta.match(/\bsrc\s*=\s*["']([^"']+)["']/i)?.[1];
+    if (src) urls.push(src);
+
+    const srcset = etiqueta.match(/\bsrcset\s*=\s*["']([^"']+)["']/i)?.[1];
+    if (srcset) {
+      for (const parte of srcset.split(',')) {
+        const u = parte.trim().split(/\s+/)[0];
+        if (u) urls.push(u);
+      }
+    }
+  }
+
+  return urls.map((u) => decodificarEntidades(u.trim()));
+}
+
+function carpetaDe(u: URL): string {
+  return u.pathname.slice(0, u.pathname.lastIndexOf('/') + 1);
+}
+
+/**
+ * Mismo archivo salvo el número de la secuencia: separa el ÚLTIMO tramo de
+ * dígitos del nombre y compara lo que queda. `foto_1.jpg` y `foto_8.jpg`
+ * comparten `foto_.jpg` con el número afuera — son la misma serie. Sin
+ * ningún dígito en el nombre no hay serie que probar.
+ */
+function mismoPatronDeArchivo(a: URL, b: URL): boolean {
+  const nombreDe = (u: URL) => u.pathname.slice(u.pathname.lastIndexOf('/') + 1);
+  const nombreA = nombreDe(a);
+  const nombreB = nombreDe(b);
+  if (nombreA === nombreB) return true;
+  if (!/\d/.test(nombreA) || !/\d/.test(nombreB)) return false;
+  const sinNumero = (nombre: string) => nombre.replace(/\d+(?!.*\d)/, '');
+  return sinNumero(nombreA) === sinNumero(nombreB);
+}
+
+/**
+ * La galería que la página RENDERIZA como `<img>`/`<picture>`, pero sólo la
+ * parte que se puede probar que es del mismo inmueble que la foto declarada
+ * (el ancla, ya cierta con certeza).
+ *
+ * ⚠️ Esto es un camino APARTE de `galeriaDelMismoInmueble` — no relaja su
+ * guarda de la carpeta con id numérico (línea ~456 más abajo), que sigue
+ * intacta y sigue siendo necesaria para su propio caso: un grep sobre TODO
+ * el HTML crudo, sin saber si lo que encuentra es una etiqueta `<img>` de
+ * verdad o un estado embebido de "similares".
+ *
+ * Acá la fuente ya es más angosta —sólo elementos `<img>`/`<source>` que el
+ * navegador de verdad pintaría— pero portales reales embeben carruseles de
+ * "similares" como `<img>` también, así que la prueba sigue haciendo falta:
+ * la carpeta (una vez desenvuelto el proxy) tiene que ser la MISMA que la
+ * del ancla, y el nombre de archivo tiene que compartir su patrón numerado.
+ * Un logo, un avatar o el ícono del WhatsApp casi nunca cumplen ninguna de
+ * las dos — y si por casualidad comparten carpeta, casi nunca comparten el
+ * patrón de nombre con el ancla (que si es él mismo el activo genérico, ya
+ * fue descartado antes de llegar acá).
+ */
+function galeriaDeImgs(html: string, declaradas: string[], base: string): string[] {
+  if (declaradas.length === 0) return [];
+
+  let anclaUrl: URL;
+  try {
+    anclaUrl = new URL(declaradas[0]);
+  } catch {
+    return [];
+  }
+  const carpetaAncla = carpetaDe(anclaUrl);
+
+  const salida: string[] = [];
+  for (const cruda of etiquetasImg(html)) {
+    const desenvuelta = desenvolverProxy(cruda);
+    let u: URL;
+    try {
+      u = new URL(desenvuelta, base);
+    } catch {
+      continue;
+    }
+    if (u.origin !== anclaUrl.origin) continue;
+    if (carpetaDe(u) !== carpetaAncla) continue;
+    if (!mismoPatronDeArchivo(anclaUrl, u)) continue;
+    salida.push(u.toString());
+  }
+  return salida;
 }
 
 /**
@@ -468,7 +675,8 @@ function normalizarUrls(urls: string[], base: string): string[] {
   for (const cruda of urls) {
     let absoluta: string;
     try {
-      absoluta = new URL(decodificarEntidades(cruda.trim()), base).toString();
+      const desenvuelta = desenvolverProxy(decodificarEntidades(cruda.trim()));
+      absoluta = new URL(desenvuelta, base).toString();
     } catch {
       continue;
     }
@@ -487,9 +695,18 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
   const jsonLd = bloquesJsonLd(html);
   const texto = textoVisible(html);
 
+  const declaradas = imagenesDelHtml(html, jsonLd, url);
   const leido: InmuebleDesdeEnlace = {
     url,
-    imagenes: galeriaDelMismoInmueble(html, imagenesDelHtml(html, jsonLd, url), url),
+    // Dos caminos que se complementan y no se pisan: el whitelist por
+    // carpeta+id de `galeriaDelMismoInmueble` (sin tocar su guarda), y la
+    // galería que la página ya renderiza como <img>, probada por patrón de
+    // nombre de archivo (Slice A, T-0034 WU-1). La portada declarada va
+    // primero en los dos, así que queda primera acá también.
+    imagenes: normalizarUrls(
+      [...galeriaDelMismoInmueble(html, declaradas, url), ...galeriaDeImgs(html, declaradas, url)],
+      url,
+    ),
     videos: videosDelHtml(html, jsonLd, url),
   };
 
@@ -520,13 +737,18 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
       const region = comoTexto(d.addressRegion);
 
       // Cuál de los dos es la ciudad se decide mirando el VALOR, no el nombre
-      // del campo. El otro, si lo hay, es el barrio.
+      // del campo. El otro, SI ES PLAUSIBLE que sea un barrio, es el barrio —
+      // un departamento (`esDepartamento`) nunca lo es (T-0030 WU-3: una
+      // ficha real con addressRegion="Antioquia" dejaba
+      // `neighborhood: "Antioquia"` sin esta guarda).
       if (esCiudad(region) && !esCiudad(localidad)) {
         leido.ciudad ??= conFuente(region, 'address.addressRegion');
-        leido.barrio ??= conFuente(localidad, 'address.addressLocality');
+        if (!esDepartamento(localidad)) leido.barrio ??= conFuente(localidad, 'address.addressLocality');
       } else {
         leido.ciudad ??= conFuente(localidad, 'address.addressLocality');
-        if (!esCiudad(region)) leido.barrio ??= conFuente(region, 'address.addressRegion');
+        if (!esCiudad(region) && !esDepartamento(region)) {
+          leido.barrio ??= conFuente(region, 'address.addressRegion');
+        }
       }
     } else if (typeof direccion === 'string') {
       leido.direccion ??= conFuente(direccion.trim(), 'address');
@@ -629,11 +851,14 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
     if (clave) leido.tipo = { valor: clave, fuente: 'texto', textoOriginal: desde.slice(0, 80) };
   }
 
+  // ⚠️ Sólo en la descripción y el título del inmueble, NUNCA en el texto
+  // suelto de la página: el pie de página trae la dirección de la
+  // inmobiliaria, y meterla acá sería ponerle al inmueble la casa de otro.
+  // Los dos intentos de abajo (dirección exacta y referencia) comparten esta
+  // misma fuente por la misma razón.
+  const propio = [leido.titulo?.valor, leido.descripcion?.valor].filter(Boolean).join(' · ');
+
   if (!leido.direccion) {
-    // ⚠️ Sólo en la descripción y el título del inmueble, NUNCA en el texto
-    // suelto de la página: el pie de página trae la dirección de la
-    // inmobiliaria, y meterla acá sería ponerle al inmueble la casa de otro.
-    const propio = [leido.titulo?.valor, leido.descripcion?.valor].filter(Boolean).join(' · ');
     const m = propio.match(DIRECCION_COLOMBIANA);
     if (m) {
       leido.direccion = {
@@ -641,6 +866,26 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
         fuente: 'texto',
         textoOriginal: m[0].trim(),
       };
+    }
+  }
+
+  // ── Sin dirección exacta: la cadena de resguardo del dueño del producto ──
+  // «si no hay dirección exacta pone una referencia si la propiedad la tiene
+  // o al menos el municipio donde se encuentre» — nunca bloquear el import
+  // por esto, pero la fila SIGUE necesitando poder corregirse, así que se
+  // marca `direccionAproximada` en los dos casos de abajo.
+  if (!leido.direccion) {
+    const referencia = referenciaLocacional(propio);
+    if (referencia) {
+      leido.direccion = { valor: referencia, fuente: 'texto', textoOriginal: referencia };
+      leido.direccionAproximada = true;
+    } else if (leido.ciudad?.valor) {
+      leido.direccion = {
+        valor: leido.ciudad.valor,
+        fuente: leido.ciudad.fuente,
+        textoOriginal: 'municipio (el portal no publica dirección ni referencia)',
+      };
+      leido.direccionAproximada = true;
     }
   }
 

@@ -228,6 +228,13 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
               const falta = faltaDe(p);
               const leFaltaDireccion = falta.includes('dirección');
               const otrosFaltantes = falta.filter((f) => f !== 'dirección');
+              // La dirección puede venir rellena y AUN ASÍ necesitar corrección:
+              // el portal no publicó la calle y se usó una referencia o el
+              // municipio (T-0034 WU-1, Slice B). Si el campo manual sólo
+              // apareciera cuando `propertyAddress` está vacío, ese relleno lo
+              // volvería incorregible — peor que el defecto que se arregla acá.
+              const direccionEsAproximada = !!p.direccionAproximada;
+              const mostrarCampoDireccion = leFaltaDireccion || direccionEsAproximada;
 
               return (
                 <li key={p._rowIndex} className="p-3 flex items-start gap-3 bg-surface">
@@ -260,18 +267,30 @@ export function StepPasteLinks({ state, updateState }: ImportStepProps) {
                           falta {otrosFaltantes.join(', ')}
                         </span>
                       )}
+                      {/* No falta, pero tampoco es de fiar: la calle no vino y
+                          se completó con una referencia o el municipio. */}
+                      {direccionEsAproximada && !leFaltaDireccion && (
+                        <span className="text-xs text-warning" data-testid={`direccion-aproximada-${p._rowIndex}`}>
+                          dirección aproximada
+                        </span>
+                      )}
                     </div>
 
                     {/* Los portales reservan la dirección. Es el único dato que
                         casi nunca viene, y sin él el inmueble no se importa —
-                        así que se escribe acá y no en un callejón sin salida. */}
-                    {leFaltaDireccion && (
+                        así que se escribe acá y no en un callejón sin salida.
+                        Sigue apareciendo cuando la dirección es aproximada: si
+                        se escondiera al rellenarla con una referencia o el
+                        municipio, quedaría incorregible. */}
+                    {mostrarCampoDireccion && (
                       <div className="mt-2">
                         <label
                           className="block text-xs text-warning mb-1"
                           htmlFor={`direccion-${p._rowIndex}`}
                         >
-                          El portal no publica la dirección. Escribila para poder importarlo:
+                          {leFaltaDireccion
+                            ? 'El portal no publica la dirección. Escribila para poder importarlo:'
+                            : 'El portal no publica la dirección exacta — usamos una aproximación. Escribí la dirección real si la tenés:'}
                         </label>
                         <Input
                           id={`direccion-${p._rowIndex}`}

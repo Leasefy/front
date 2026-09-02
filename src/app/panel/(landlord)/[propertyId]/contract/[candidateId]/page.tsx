@@ -278,7 +278,10 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 
   // Handle contract creation via API
   const handleCreateContract = async () => {
-    if (!selectedType || !property) return;
+    // `property.monthlyRent == null` — same SALE-listing guard as the
+    // "not found" render branch below; kept here too since this closure is
+    // defined before that narrowing in source order (contract.md §3.2.4, C6).
+    if (!selectedType || !property || property.monthlyRent == null) return;
 
     // TODO (paso 2): reemplazar por un form real que capture fechas, depósito y día de pago.
     // Hoy usamos defaults razonables derivados de la propiedad.
@@ -358,7 +361,12 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
   }
 
   // Not found state
-  if (!property || !candidate) {
+  // `property.monthlyRent == null` — T-0038: a SALE listing has no canon
+  // (contract.md §3.2.4). A candidate/Application only exists for a RENT
+  // listing (postulación against SALE is a 409, §3.3), so this branch is not
+  // expected in practice — treated the same as "not found" rather than
+  // creating a contract with a fabricated $0 rent (C6).
+  if (!property || !candidate || property.monthlyRent == null) {
     return (
       <div className="min-h-screen bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -635,7 +643,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                           <InsuranceSelector
                             selected={selectedInsurance}
                             onSelect={setSelectedInsurance}
-                            monthlyRent={contract.monthlyRent}
+                            monthlyRent={contract.monthlyRent ?? undefined}
                           />
                         </div>
                       )}

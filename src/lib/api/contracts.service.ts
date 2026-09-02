@@ -77,13 +77,25 @@ function aNumero(v: number | string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function mapBackendContract(bc: BackendContract): Contract {
+/**
+ * Exportado (T-0036 contract.md §3.2.B6) — la pantalla del detalle de
+ * contrato lo llama directo sobre `res.contrato` después de invitar al
+ * inquilino, sin pasar por un segundo `getById`. `invitarInquilino()` de
+ * abajo devuelve el `ResultadoInvitacion` CRUDO (sin mapear `contrato`)
+ * porque `invitado`/`tenantId` viajan junto a él y no hay un segundo shape.
+ */
+export function mapBackendContract(bc: BackendContract): Contract {
   return {
     id: bc.id,
     applicationId: bc.applicationId,
     propertyId: bc.propertyId,
     tenantId: bc.tenantId,
     landlordId: bc.landlordId,
+    // T-0040 — passthrough puro. NADA de `?? 0`, `?? null` ni `Number(...)`:
+    // `undefined` tiene que sobrevivir el mapper para que la opcionalidad del
+    // tipo signifique algo, y un `0` coalescido sería un código válido a la
+    // vista (los códigos arrancan en 1).
+    code: bc.code,
     // Deprecated: backend no modela template/type. Solo para compat del tipo.
     templateId: bc.templateId ?? '',
     type: (bc.type ? (CONTRACT_TYPE_MAP[bc.type] ?? bc.type) : 'custom') as ContractType,
@@ -183,6 +195,20 @@ export const contractsApi = {
   },
 
   /**
+   * PATCH /contracts/:id/inmueble — vincula un inmueble a un contrato
+   * migrado que se activó sin uno (T-0033 contract.md §3.2.D2). Sólo llena
+   * un `propertyId` nulo — no existe "desvincular". Devuelve el mismo shape
+   * que `getById`, así que reusa `mapBackendContract` sin un segundo mapper.
+   */
+  async asignarInmueble(id: string, propertyId: string): Promise<Contract> {
+    const raw = await apiClient.patch<BackendContract>(
+      `/contracts/${id}/inmueble`,
+      { propertyId },
+    );
+    return mapBackendContract(raw);
+  },
+
+  /**
    * GET /contracts/by-application/:applicationId — returns the contract tied
    * to the given application, or null if none exists.
    */
@@ -231,11 +257,29 @@ export const contractsApi = {
    * siempre falta algo.
    */
   migracion: {
-    /** 1. Deja las filas listas para revisar. NO crea contratos. */
-    async preparar(contratos: FilaAMigrar[], lote?: string): Promise<ResumenLote> {
-      return apiClient.post<ResumenLote>('/contracts/migrar/preparar', {
+    /**
+     * 1. Deja las filas listas para revisar. NO crea contratos.
+     *
+     * Encola un job — `202` con `EstadoDeLote`, no `201` con `ResumenLote`
+     * (contrato §3.2.A). El `lote` de la respuesta es SIEMPRE del servidor.
+     *
+     * `idempotencyKey` es lo que hace que un doble click o un reintento tras
+     * una conexión caída no dupliquen el lote: la MISMA fila del archivo,
+     * dos veces, cae en el mismo lote. Se genera una vez por archivo leído
+     * (ver `generarIdempotencyKey` en `MigrarContratos.tsx`) y se reusa en
+     * cada reintento de ESE archivo.
+     *
+     * `lote` sigue existiendo en el request a propósito (§11-J5 del
+     * contrato): el back lo acepta e ignora, para que un front viejo que
+     * todavía lo manda no choque contra `forbidNonWhitelisted`. Este front
+     * ya no genera un id acá — lo hacía colisionar entre dos archivos
+     * parecidos (N2).
+     */
+    async preparar(contratos: FilaAMigrar[], idempotencyKey?: string): Promise<EstadoDeLote> {
+      return apiClient.post<EstadoDeLote>('/contracts/migrar/preparar', {
         contratos,
-        lote,
+        lote: undefined,
+        idempotencyKey,
       });
     },
 
@@ -277,12 +321,27 @@ export const contractsApi = {
           telefono?: string;
           comisionPorcentaje?: number;
         };
+        /** El bulk exit de N12 (contract.md §3.2.B5). */
+        paymentDay?: number;
       },
     ): Promise<ResultadoMasivo> {
       return apiClient.patch<ResultadoMasivo>('/contracts/migrar/filas', {
         ids,
         ...cambios,
       });
+    },
+
+    /**
+     * "Seleccionar las {total} del lote" (contract.md §3.2.G1) — todos los
+     * ids de un lote, en el MISMO orden que `filas()`, para que el front los
+     * troceé en `CHUNK_MASIVA = 100` y se los mande a `resolverMasivo` sin
+     * traer el `datos` JSON completo de cada fila. `lote` es obligatorio: un
+     * volcado de ids de toda la agencia no es un flujo de trabajo.
+     */
+    async idsDeFilas(lote: string, estado?: EstadoMigracion): Promise<IdsDeFilas> {
+      const q = new URLSearchParams({ lote });
+      if (estado) q.set('estado', estado);
+      return apiClient.get<IdsDeFilas>(`/contracts/migrar/filas/ids?${q.toString()}`);
     },
 
     async resumen(lote?: string): Promise<ResumenLote> {
@@ -297,6 +356,17 @@ export const contractsApi = {
      */
     async lotesAbiertos(): Promise<LoteAbierto[]> {
       return apiClient.get<LoteAbierto[]>('/contracts/migrar/lotes');
+    },
+
+    /**
+     * 1-bis. El estado de UN lote — contrato §3.2.A2. Misma forma que el
+     * `202` de `preparar()`; ésta es la ruta que se sondea mientras
+     * `estado ∈ {ENCOLADO, PROCESANDO}` (§11-J9: cada 3s, techo de 10min).
+     * El sondeo es una conveniencia mientras la pestaña sigue abierta —
+     * nunca el mecanismo de finalización (`use-estado-de-lote.ts`).
+     */
+    async estadoDeLote(lote: string): Promise<EstadoDeLote> {
+      return apiClient.get<EstadoDeLote>(`/contracts/migrar/lotes/${encodeURIComponent(lote)}`);
     },
 
     /** Corregir una fila. Pasa sola a LISTO cuando ya no le falta nada. */
@@ -334,6 +404,17 @@ export const contractsApi = {
 
     async descartar(id: string): Promise<FilaDeMigracion> {
       return apiClient.delete<FilaDeMigracion>(`/contracts/migrar/filas/${id}`);
+    },
+
+    /**
+     * Descarta un lote entero de una sola vez (contract.md §3.2.C). El
+     * `lote` se codifica igual que `estadoDeLote` — los lotes generados
+     * antes de que el servidor los emitiera no están garantizados URL-safe.
+     */
+    async descartarLote(lote: string): Promise<DescarteDeLote> {
+      return apiClient.delete<DescarteDeLote>(
+        `/contracts/migrar/lotes/${encodeURIComponent(lote)}`,
+      );
     },
 
     /** 3. Convierte en contratos las filas LISTO. Sólo esas. */
@@ -389,6 +470,18 @@ export const contractsApi = {
   async activate(id: string): Promise<Contract> {
     const raw = await apiClient.post<BackendContract>(`/contracts/${id}/activate`);
     return mapBackendContract(raw);
+  },
+
+  /**
+   * POST /contracts/:id/invitar-inquilino — invita (o vincula) al inquilino
+   * de un contrato migrado que se activó sin uno (T-0036 contract.md §3.2.B).
+   * Sin body — el back no lo espera (§0.2 no aplica: no hay DTO en esta
+   * tarea). Devuelve el wire CRUDO — `contrato` es `BackendContract` sin
+   * mapear, porque `invitado`/`tenantId` viajan junto a él y no hay un
+   * segundo shape. El caller mapea con `mapBackendContract(res.contrato)`.
+   */
+  async invitarInquilino(id: string): Promise<ResultadoInvitacion> {
+    return apiClient.post<ResultadoInvitacion>(`/contracts/${id}/invitar-inquilino`, {});
   },
 
   /**
@@ -521,15 +614,24 @@ function mapBackendContractRejection(br: BackendContractRejection): ContractReje
 // Migración de cartera
 // ============================================================================
 
-/** Una fila del archivo, como viene. La dirección, no nuestro uuid. */
+/**
+ * Una fila del archivo, como viene. La dirección, no nuestro uuid.
+ *
+ * Casi todo es opcional A PROPÓSITO, igual que en `MigrarContratoDto`
+ * (`back/src/contracts/dto/migrar-contrato.dto.ts`): el archivo del owner
+ * puede no traer una columna, y lo que falta se manda ausente, nunca un
+ * default inventado (`armar-fila.ts` es donde se decide eso). `direccion` e
+ * `inquilino` son la excepción — el DTO los exige siempre presentes, aunque
+ * vacíos.
+ */
 export interface FilaAMigrar {
   direccion: string;
   inquilino: { nombre: string; correo: string; telefono?: string; documento?: string };
-  startDate: string;
-  endDate: string;
-  monthlyRent: number;
+  startDate?: string;
+  endDate?: string;
+  monthlyRent?: number;
   deposit?: number;
-  paymentDay: number;
+  paymentDay?: number;
   /** Sin esto no se puede liquidar: vivienda va sin IVA, comercial con IVA. */
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
   periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
@@ -553,7 +655,8 @@ export type Faltante =
   | 'inquilino_nombre'
   | 'fechas'
   | 'canon'
-  | 'uso';
+  | 'uso'
+  | 'dia_de_pago';
 
 export interface InmuebleCandidato {
   id: string;
@@ -575,6 +678,13 @@ export interface FilaDeMigracion {
   estado: EstadoMigracion;
   faltantes: Faltante[];
   contractId: string | null;
+  /**
+   * Decisiones explícitas del usuario que anulan un chequeo automático.
+   * Ausente/`undefined` se trata como `[]` — nunca indexar sin default
+   * (contract.md §3.2.B6). Hoy el único valor posible es
+   * `'inmueble_ocupado'`.
+   */
+  overrides?: string[];
 }
 
 export interface CambiosDeFila {
@@ -586,6 +696,8 @@ export interface CambiosDeFila {
   startDate?: string;
   endDate?: string;
   paymentDay?: number;
+  /** "Sé que está ocupado, seguir igual" — contract.md §3.2.B4/J7. */
+  permitirInmuebleOcupado?: boolean;
 }
 
 /**
@@ -608,11 +720,31 @@ export interface ConceptoDelContrato {
   recurrente: boolean;
 }
 
-/** Un lote a medio migrar, para poder retomarlo. */
+/**
+ * Un lote a medio migrar, para poder retomarlo.
+ *
+ * F1 (contract.md §3.2.A3, §5 P10) — `estado`/`total`/`creadoEn` son
+ * **opcionales, nuevos**: un lote anterior a T-0031 no tiene fila
+ * `MigracionLote` y legítimamente los omite (`lotesAbiertos()` hace
+ * left-join). Ausencia ⇒ el front asume `estado: 'LISTO'` (ya no encolado,
+ * simplemente sin `MigracionLote` que lo diga) y `total` cae a
+ * `pendientes + listos`.
+ */
 export interface LoteAbierto {
   lote: string;
   pendientes: number;
   listos: number;
+  /**
+   * T-0035 (contract.md T-0035 §1) — misma proyección y misma razón de ser
+   * que `ResumenLote.activables`. La tarjeta "Tenés una migración sin
+   * terminar" debe leer ESTE campo para decidir qué mostrar, nunca `listos`
+   * solo — mirar `listos` es exactamente el bug que dejaba invisible un
+   * lote de 1.365 filas sin inmueble bajo el modo sparse.
+   */
+  activables: number;
+  estado?: EstadoLoteMigracion;
+  total?: number;
+  creadoEn?: string;
 }
 
 export interface PaginaDeFilas {
@@ -623,11 +755,32 @@ export interface PaginaDeFilas {
   porPagina: number;
 }
 
+/**
+ * `GET migrar/filas/ids` (contract.md §3.2.G1) — los ids de todo un lote, en
+ * el MISMO orden que `filas()`, para "seleccionar las {total} del lote" sin
+ * traer el `datos` JSON completo de cada fila.
+ */
+export interface IdsDeFilas {
+  ids: string[];
+  /** El total real que matchea el filtro — `=== ids.length` salvo `truncado`. */
+  total: number;
+  /** `true` cuando el lote superó el tope del back y `ids` quedó recortado.
+   *  Ausente ⇒ se trata como `false` (back viejo). */
+  truncado?: boolean;
+}
+
 /** Qué pasó con cada fila de una resolución masiva, una por una. */
 export interface ResultadoMasivo {
   pedidas: number;
   aplicadas: number;
   fallidas: Array<{ id: string; fila: number | null; motivo: string }>;
+  /**
+   * Filas saltadas por una razón estructural que reintentar no arregla
+   * (contract.md §3.2.G3) — hoy exactamente: se pidió `propietario` y la
+   * fila no tiene inmueble. Ausente/`undefined` ⇒ se trata como `[]` (back
+   * viejo). Una fila que cae acá NUNCA cae también en `fallidas`.
+   */
+  omitidas?: Array<{ id: string; fila: number | null; motivo: string }>;
 }
 
 export interface ResumenLote {
@@ -637,6 +790,60 @@ export interface ResumenLote {
   listos: number;
   activados: number;
   descartados: number;
+  /**
+   * T-0035 — cuántas de `pendientes` + `listos` activaría `POST
+   * migrar/activar` AHORA MISMO, con el estado actual del flag del back
+   * (`MIGRACION_CONTRATOS_SPARSE`). Con el flag apagado es igual a
+   * `listos` (comportamiento de siempre); con el flag prendido también
+   * cuenta `pendientes`, porque el back las toma. El front decide si
+   * ofrecer el botón de activar mirando ESTE campo, nunca `listos` solo —
+   * el back es quien conoce su propia política, no hay que reimplementarla
+   * acá ni inferirla del nombre del flag.
+   */
+  activables: number;
+}
+
+/**
+ * `DELETE migrar/lotes/:lote` (contract.md §3.2.C3) — resultado de
+ * descartar un lote entero. Los cuatro campos son obligatorios: es un tipo
+ * nuevo, no hay productor viejo contra el que degradar.
+ */
+export interface DescarteDeLote {
+  lote: string;
+  /** Filas que ESTA llamada movió PENDIENTE|LISTO → DESCARTADO. */
+  descartadas: number;
+  /** Filas ya ACTIVADO. Intactas — la mitad honesta de la respuesta. */
+  activadas: number;
+  /** Filas que ya estaban DESCARTADO antes de esta llamada. */
+  yaDescartadas: number;
+}
+
+export type EstadoLoteMigracion = 'ENCOLADO' | 'PROCESANDO' | 'LISTO' | 'FALLIDO';
+
+/**
+ * Superset estructural de `ResumenLote` — mismos nombres y significado en
+ * `total/pendientes/listos/activados/descartados` (contrato §3.2.A2), a
+ * propósito: es lo que hace que un front viejo no reviente al recibir esta
+ * forma en vez de `ResumenLote`, aunque quede mostrando un lote vacío.
+ *
+ * `POST /contracts/migrar/preparar` devuelve esto con `202`. El `lote` es
+ * SIEMPRE del servidor — el id armado en el cliente (`lote-${filas.length}-…`)
+ * podía colisionar entre dos archivos parecidos.
+ */
+export interface EstadoDeLote {
+  lote: string;
+  estado: EstadoLoteMigracion;
+  total: number;
+  procesadas: number;
+  pendientes: number;
+  listos: number;
+  activados: number;
+  descartados: number;
+  /** Sólo diagnóstico — nunca condicionar comportamiento a esto. */
+  jobId?: string | null;
+  /** Sólo cuando `estado === 'FALLIDO'`. Español, para mostrar tal cual. */
+  error?: string | null;
+  creadoEn?: string;
 }
 
 export interface ResultadoDeFila {
@@ -644,6 +851,13 @@ export interface ResultadoDeFila {
   estado: 'creado' | 'fallido';
   contratoId?: string;
   inquilinoInvitado: boolean;
+  /**
+   * T-0036 §3.2.A4 — `true` sólo cuando esta fila tenía un correo válido y
+   * quedó sin cuenta (activación con `invitar:false`, sin usuario
+   * existente). Ausente ⇒ se trata como `false` (back viejo). Mirrors
+   * `inquilinoInvitado` exactamente.
+   */
+  inquilinoPendienteDeInvitar?: boolean;
   motivo?: string;
 }
 
@@ -652,5 +866,34 @@ export interface ResumenActivacion {
   activadas: number;
   fallidas: number;
   invitados: number;
+  /**
+   * T-0036 §3.2.A4 — cuántas filas retuvieron un correo sin invitar a
+   * nadie. Ausente ⇒ NO renderizar nada — nunca `0`. Un back viejo que
+   * todavía no manda este campo no puede afirmar un conteo que no tiene.
+   */
+  porInvitar?: number;
   resultados: ResultadoDeFila[];
+}
+
+/**
+ * `POST /contracts/:id/invitar-inquilino` (contract.md §3.2.B3, T-0036) —
+ * resultado de invitar (o vincular) al inquilino de un contrato migrado que
+ * se activó sin uno. Los tres campos son obligatorios: tipo nuevo, no hay
+ * productor viejo contra el que degradar.
+ */
+export interface ResultadoInvitacion {
+  /**
+   * `true` = se mandó una invitación por correo. `false` = la persona ya
+   * tenía cuenta en Leasefy y sólo se vinculó — no se mandó nada. Las dos
+   * son un `200`: sin este campo la pantalla no puede distinguirlas.
+   */
+  invitado: boolean;
+  /** El usuario que quedó vinculado al contrato. Nunca null en un 200. */
+  tenantId: string;
+  /**
+   * El contrato completo, releído después del write. Mismo shape que
+   * `GET /contracts/:id` — `BackendContract`, SIN mapear. No se introduce
+   * un tercer shape.
+   */
+  contrato: BackendContract;
 }

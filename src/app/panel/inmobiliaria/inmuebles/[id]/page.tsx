@@ -393,6 +393,7 @@ function ConsignacionDetailContent() {
             <AgenteSection
               agente={agente ?? undefined}
               commissionPercent={consignacion.commissionPercent}
+              isSaleListing={consignacion.listingType === 'sale'}
               onReassign={handleReassignAgent}
             />
           </motion.div>

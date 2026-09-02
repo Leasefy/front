@@ -90,7 +90,7 @@ export function AISearchInput({
     [handleSubmit]
   );
 
-  const formatPrice = (price?: number) => {
+  const formatPrice = (price?: number | null) => {
     if (!price) return '$--';
     if (price >= 1000000) {
       return `$${(price / 1000000).toFixed(1)}M`;
@@ -307,7 +307,7 @@ export function AISearchInput({
                           </p>
                           <div className="flex items-baseline gap-1.5 mt-1.5">
                             <span className="text-[14px] font-bold text-foreground font-mono tabular-nums">
-                              {formatPrice(property.monthlyRent)}
+                              {formatPrice(property.listingType === 'sale' ? property.salePrice : property.monthlyRent)}
                             </span>
                             <span className="text-[10px] text-muted-foreground">
                               /mes

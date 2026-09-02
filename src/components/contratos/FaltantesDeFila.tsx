@@ -114,9 +114,18 @@ export function celdaDelFaltante(
 interface Props {
   fila: FilaDeMigracion;
   onResuelta: (f: FilaDeMigracion) => void;
+  /**
+   * Faltantes que la pantalla que la contiene ya resuelve por su cuenta.
+   *
+   * Nace de la revisión de contratos: ahí el propietario tiene su propio
+   * selector con buscador en la misma fila, así que pintar además el
+   * formulario de «El inmueble no está consignado» daba DOS controles para lo
+   * mismo, con formas distintas y a un centímetro de distancia.
+   */
+  omitir?: string[];
 }
 
-export function FaltantesDeFila({ fila, onResuelta }: Props) {
+export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -134,7 +143,9 @@ export function FaltantesDeFila({ fila, onResuelta }: Props) {
 
   return (
     <div className="space-y-3">
-      {fila.faltantes.map((f) => (
+      {fila.faltantes
+        .filter((f) => !omitir?.includes(f))
+        .map((f) => (
         <div key={f} className="rounded-lg border border-border p-3">
           <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
             <Warning className="h-4 w-4 text-warning" />

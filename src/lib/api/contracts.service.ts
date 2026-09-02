@@ -409,6 +409,25 @@ export const contractsApi = {
       );
     },
 
+    /**
+     * Corregir a quién quedó consignada la fila, y con qué comisión.
+     *
+     * Distinto de `registrarPropietario`: aquél hace el PRIMER enlace desde
+     * el nombre y el documento del archivo; éste corrige uno que ya existe y
+     * quedó mal. Por eso el propietario viaja como **id de una ficha
+     * elegida** — escribir un nombre distinto encima de uno equivocado sólo
+     * crea una tercera ficha.
+     */
+    async corregirPropietario(
+      id: string,
+      cambios: { propietarioId?: string; comisionPorcentaje?: number },
+    ): Promise<FilaDeMigracion> {
+      return apiClient.patch<FilaDeMigracion>(
+        `/contracts/migrar/filas/${id}/propietario`,
+        cambios,
+      );
+    },
+
     async descartar(id: string): Promise<FilaDeMigracion> {
       return apiClient.delete<FilaDeMigracion>(`/contracts/migrar/filas/${id}`);
     },
@@ -690,6 +709,20 @@ export interface FilaDeMigracion {
   estado: EstadoMigracion;
   faltantes: Faltante[];
   contractId: string | null;
+  /**
+   * A QUIÉN quedó consignado el inmueble de esta fila, con nombre.
+   *
+   * `propietarioId` solo no alcanza para revisar nada: un uuid no dice si el
+   * contrato de la señora del 802 quedó pegado a su propietario o al del
+   * 1003. Lo arma el back en la misma consulta de la página (nunca una
+   * petición por fila). `null` = todavía sin consignar.
+   */
+  propietario?: { id: string; nombre: string; documento: string } | null;
+  /**
+   * El % que se le cobra al propietario, **el de la consignación** — que es
+   * el que efectivamente va a facturar, no el que traía el archivo.
+   */
+  comisionPorcentaje?: number | null;
   /**
    * Decisiones explícitas del usuario que anulan un chequeo automático.
    * Ausente/`undefined` se trata como `[]` — nunca indexar sin default

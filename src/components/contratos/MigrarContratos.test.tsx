@@ -107,6 +107,25 @@ function checkboxDentroDe(el: Element | undefined) {
   return el?.querySelector('button[role="checkbox"]') as HTMLButtonElement | undefined
 }
 
+/**
+ * Tilda «Revisé estos contratos».
+ *
+ * El bloque de activación entero (invitar, avisos, botón) vive detrás de este
+ * check desde que la revisión existe: activar crea los contratos y las
+ * consignaciones de verdad, y antes bastaba un click sin haber mirado una
+ * sola fila. Los tests de activación tienen que pasar por acá, igual que una
+ * persona.
+ */
+async function confirmarRevision() {
+  const check = container.querySelector(
+    '[data-testid="confirmar-revision"]',
+  ) as HTMLButtonElement | null
+  await act(async () => {
+    check?.click()
+    await new Promise((r) => setTimeout(r, 0))
+  })
+}
+
 /** Una `FilaDeMigracion` mínima, para las pruebas de selección (§3.2.G). */
 function filaDeMigracion(over: Partial<FilaDeMigracion> = {}): FilaDeMigracion {
   const n = over.fila ?? 0
@@ -389,7 +408,9 @@ describe('<MigrarContratos> — selección across pages (§3.2.G)', () => {
       await new Promise((r) => setTimeout(r, 0))
     })
 
-    expect(contractsApi.migracion.idsDeFilas).toHaveBeenCalledWith('lote-1', 'PENDIENTE')
+    // Sin filtro de estado: la lista visible es TODO el lote (la revisión),
+    // así que «seleccionar todo» tiene que traer lo mismo que se está viendo.
+    expect(contractsApi.migracion.idsDeFilas).toHaveBeenCalledWith('lote-1')
     expect(
       container.querySelector('[data-testid="resolucion-masiva"]')?.textContent,
     ).toContain('30 filas seleccionadas')
@@ -442,6 +463,7 @@ describe('<MigrarContratos> — activables, el botón de activar (T-0035)', () =
     render()
     await esperar()
     await avanzarAListaDeTrabajo(30)
+    await confirmarRevision()
 
     const btn = boton('Activar 30 contratos')
     expect(btn).toBeTruthy()
@@ -454,6 +476,7 @@ describe('<MigrarContratos> — activables, el botón de activar (T-0035)', () =
     render()
     await esperar()
     await avanzarAListaDeTrabajo(30)
+    await confirmarRevision()
 
     const aviso = container.querySelector('[data-testid="aviso-incompletos"]')
     expect(aviso).toBeTruthy()
@@ -508,6 +531,8 @@ describe('<MigrarContratos> — activables, el botón de activar (T-0035)', () =
       b?.click()
       for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0))
     })
+
+    await confirmarRevision()
 
     expect(boton('Activar 5 contratos')).toBeTruthy()
     expect(container.querySelector('[data-testid="aviso-incompletos"]')).toBeNull()
@@ -941,6 +966,7 @@ describe('<MigrarContratos> — invitar:false ya no crea nada, y el resumen lo d
     render()
     await esperar()
     await avanzarAListaDeTrabajo(30)
+    await confirmarRevision()
 
     const label = labelConTexto('Invitar a los inquilinos al portal')
     const checkbox = checkboxDentroDe(label)
@@ -970,6 +996,7 @@ describe('<MigrarContratos> — invitar:false ya no crea nada, y el resumen lo d
     render()
     await esperar()
     await avanzarAListaDeTrabajo(1)
+    await confirmarRevision()
     vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
       intentadas: 1,
       activadas: 1,

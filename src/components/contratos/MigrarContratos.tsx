@@ -81,7 +81,7 @@ import {
   type ResumenLote,
 } from "@/lib/api/contracts.service";
 import { useEstadoDeLote } from "@/lib/hooks/use-estado-de-lote";
-import { FaltantesDeFila } from "./FaltantesDeFila";
+import { FilaDeRevision } from "./FilaDeRevision";
 import { ResolucionMasiva } from "./ResolucionMasiva";
 import { ProgresoDeLote } from "./ProgresoDeLote";
 import { Pagination } from "@/components/ui/pagination";
@@ -178,8 +178,9 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   const [error, setError] = useState<string | null>(null);
   const [lote, setLote] = useState<string | null>(null);
   const [resumen, setResumen] = useState<ResumenLote | null>(null);
-  const [pendientes, setPendientes] = useState<FilaDeMigracion[]>([]);
-  const [totalPendientes, setTotalPendientes] = useState(0);
+  /** Las filas del lote — todas, no sólo las pendientes: esto es la revisión. */
+  const [filasDelLote, setFilasDelLote] = useState<FilaDeMigracion[]>([]);
+  const [totalDelLote, setTotalDelLote] = useState(0);
   const [pagina, setPagina] = useState(1);
   const [seleccion, setSeleccion] = useState<Set<string>>(new Set());
   const [activacion, setActivacion] = useState<ResumenActivacion | null>(null);
@@ -219,6 +220,25 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   // La consignación automática corre un loop largo de peticiones: es una
   // operación en vuelo como cualquier otra y el muro tiene que saberlo.
   const [consignando, setConsignando] = useState(false);
+  /**
+   * Qué está haciendo la asociación automática, EN LA PÁGINA.
+   *
+   * Antes esto era un `toast.loading` que decía «Consignando con el
+   * propietario del archivo… 13 de 90», arriba a la derecha, sin decir qué es
+   * consignar ni por qué hay 90. Nico lo leyó así, textual: «no se entiende
+   * si tú estás colocando todos los propietarios y asociándolos o qué estás
+   * haciendo». Un aviso flotante no es el lugar para explicar el trabajo
+   * principal de un paso.
+   */
+  const [asociando, setAsociando] = useState<{
+    hechas: number;
+    total: number;
+    fallidas: number;
+  } | null>(null);
+  const [resumenAsociacion, setResumenAsociacion] = useState<{
+    hechas: number;
+    fallidas: number;
+  } | null>(null);
 
   /*
    * Aviso al muro mientras HAY una operación en vuelo — preparar, el job del
@@ -284,11 +304,18 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
   });
 
   /**
-   * Trae UNA página de pendientes.
+   * Trae UNA página del lote — TODAS las filas, no sólo las pendientes.
    *
-   * El filtro por estado va en la consulta, no acá: filtrar la página después
-   * de recibirla daría páginas vacías —las primeras 50 de 1.200 pueden ser
-   * todas LISTO— y parecería que no queda nada por resolver.
+   * Antes esta consulta iba filtrada a `estado: "PENDIENTE"`, y ése era el
+   * origen de la experiencia que Nico describió como «rarísima»: mientras la
+   * asociación automática iba resolviendo filas, la lista se VACIABA (una
+   * fila resuelta deja de ser pendiente), y al terminar no quedaba nada en
+   * pantalla salvo un botón que decía «Activar 90 contratos». Los 90
+   * contratos nunca se veían.
+   *
+   * Ahora la lista es la REVISIÓN: están las 90, cada una con su propietario
+   * y su porcentaje, y las que además necesitan algo lo dicen en su fila. Es
+   * una sola lista en vez de dos, que es la otra mitad de lo que confundía.
    */
   const refrescar = useCallback(async (elLote: string, pag = 1) => {
     const [r, p] = await Promise.all([
@@ -296,12 +323,11 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
       contractsApi.migracion.filas(elLote, {
         pagina: pag,
         porPagina: POR_PAGINA,
-        estado: "PENDIENTE",
       }),
     ]);
     setResumen(r);
-    setPendientes(p.filas);
-    setTotalPendientes(p.total);
+    setFilasDelLote(p.filas);
+    setTotalDelLote(p.total);
     setPagina(p.pagina);
     // T-0033 §3.2.G4 — antes reseteaba `seleccion` acá, así que cambiar de
     // página (o refrescar tras resolver una fila) borraba la selección. La
@@ -376,9 +402,7 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
         setConsignando(false);
         return;
       }
-      const aviso = toast.loading(
-        `Consignando con el propietario del archivo… 0 de ${candidatas.length}`,
-      );
+      setAsociando({ hechas: 0, total: candidatas.length, fallidas: 0 });
       let hechas = 0;
       let fallidas = 0;
       for (const f of candidatas) {
@@ -395,20 +419,13 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
           fallidas += 1;
         }
         hechas += 1;
-        toast.loading(
-          `Consignando con el propietario del archivo… ${hechas} de ${candidatas.length}`,
-          { id: aviso },
-        );
+        setAsociando({ hechas, total: candidatas.length, fallidas });
       }
-      toast.dismiss(aviso);
-      if (fallidas === 0)
-        toast.success(
-          `${hechas} inmuebles consignados con el propietario del archivo`,
-        );
-      else
-        toast.warning(
-          `${hechas - fallidas} consignados; ${fallidas} quedaron para revisar a mano`,
-        );
+      setAsociando(null);
+      // El resultado se queda EN la pantalla, arriba de la lista que hay que
+      // revisar. Un toast de éxito que se va solo en tres segundos no le
+      // sirve a nadie que esté por activar noventa contratos.
+      setResumenAsociacion({ hechas, fallidas });
       setConsignando(false);
       // Si el refresco falla, lo consignado ya está consignado: se avisa y
       // el paginador o recargar traen la lista fresca.
@@ -690,8 +707,10 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
       <ListaDeTrabajo
         lote={lote}
         resumen={resumen}
-        pendientes={pendientes}
-        totalPendientes={totalPendientes}
+        filas={filasDelLote}
+        total={totalDelLote}
+        asociando={asociando}
+        resumenAsociacion={resumenAsociacion}
         pagina={pagina}
         seleccion={seleccion}
         activacion={activacion}
@@ -715,6 +734,14 @@ export function MigrarContratos({ onOcupado }: MigrarContratosProps = {}) {
           )
         }
         onSeleccionCambia={setSeleccion}
+        // La fila ya viene actualizada del back: se reemplaza en el sitio, sin
+        // esperar un viaje más. Los contadores del lote sí se vuelven a pedir
+        // (`onCambio`), porque el estado del lote sí cambió.
+        onFilaActualizada={(f) =>
+          setFilasDelLote((actuales) =>
+            actuales.map((x) => (x.id === f.id ? f : x)),
+          )
+        }
         onFilaResuelta={() =>
           refrescar(lote, pagina).catch((e) =>
             setError(
@@ -1120,8 +1147,10 @@ function DialogoDescartarLote({
 function ListaDeTrabajo({
   lote,
   resumen,
-  pendientes,
-  totalPendientes,
+  filas,
+  total,
+  asociando,
+  resumenAsociacion,
   pagina,
   seleccion,
   activacion,
@@ -1132,6 +1161,7 @@ function ListaDeTrabajo({
   onActivar,
   descartando,
   onDescartarLote,
+  onFilaActualizada,
   onFilaResuelta,
   onOtroArchivo,
   onPaginaCambia,
@@ -1139,8 +1169,12 @@ function ListaDeTrabajo({
 }: {
   lote: string;
   resumen: ResumenLote;
-  pendientes: FilaDeMigracion[];
-  totalPendientes: number;
+  /** TODAS las filas de la página, no sólo las pendientes: esto es la revisión. */
+  filas: FilaDeMigracion[];
+  total: number;
+  asociando: { hechas: number; total: number; fallidas: number } | null;
+  resumenAsociacion: { hechas: number; fallidas: number } | null;
+  onFilaActualizada: (f: FilaDeMigracion) => void;
   pagina: number;
   seleccion: Set<string>;
   activacion: ResumenActivacion | null;
@@ -1157,9 +1191,28 @@ function ListaDeTrabajo({
   onPaginaCambia: (p: number) => void;
   onSeleccionCambia: (s: Set<string>) => void;
 }) {
-  const totalPaginas = Math.max(1, Math.ceil(totalPendientes / POR_PAGINA));
+  const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
+  /** Las que todavía se pueden tocar: una activada ya es un contrato. */
+  const editables = filas.filter(
+    (f) => f.estado !== "ACTIVADO" && f.estado !== "DESCARTADO",
+  );
   const todasMarcadas =
-    pendientes.length > 0 && pendientes.every((f) => seleccion.has(f.id));
+    editables.length > 0 && editables.every((f) => seleccion.has(f.id));
+
+  /**
+   * «Revisé estos contratos» — el paso que faltaba.
+   *
+   * El botón de activar aparecía solo, apenas la asociación automática
+   * terminaba. Activar crea noventa contratos y noventa consignaciones de
+   * verdad: es la operación menos reversible del muro, y hasta ahora bastaba
+   * un click sin haber mirado una sola fila. Ahora hay que decir que se
+   * revisó, y recién ahí aparece el botón.
+   *
+   * Vive en estado local y no en el back a propósito: no es un dato del lote,
+   * es un acto de esta persona en esta sesión. Cambiar de página no lo borra
+   * —la revisión es del lote, no de la página— pero recargar sí, y está bien.
+   */
+  const [confirmado, setConfirmado] = useState(false);
 
   // T-0033 §3.2.G1 — "Seleccionar las {total} del lote": trae todo el
   // conjunto de ids vía `GET migrar/filas/ids`, sin descargar el `datos` JSON
@@ -1179,7 +1232,9 @@ function ListaDeTrabajo({
     setSeleccionandoTodo(true);
     setNotaSeleccion(null);
     try {
-      const r = await contractsApi.migracion.idsDeFilas(lote, "PENDIENTE");
+      // Sin filtro de estado: la lista visible tampoco lo tiene, y
+      // «seleccionar todo» tiene que seleccionar lo mismo que se está viendo.
+      const r = await contractsApi.migracion.idsDeFilas(lote);
       onSeleccionCambia(new Set(r.ids));
       // §3.2.G1 — un lote más grande que `MAX_IDS_MASIVA` nunca se aplica en
       // silencio a un subconjunto: se dice explícitamente cuántas de cuántas.
@@ -1212,87 +1267,62 @@ function ListaDeTrabajo({
         </div>
 
         {/*
-         * T-0035 — este bloque leía `resumen.listos`, que es exactamente lo
-         * que `activar()` toma con el modo sparse APAGADO. Con el modo
-         * sparse PRENDIDO (el default desde T-0033 WU-3), `activar()`
-         * también toma las filas PENDIENTE — y un lote real donde todas las
-         * filas quedaron sin inmueble tiene `listos: 0` con las 1.365
-         * igualmente activables. Mirar `listos` acá era el bug: el botón
-         * jamás aparecía aunque el back sí podía activarlas. `activables`
-         * (contract T-0035 §1) es la cuenta real, sea cual sea el flag —
-         * el front no necesita saber su nombre ni su valor.
+         * Qué está pasando, en palabras. El paso hace un trabajo real —buscar
+         * a cada propietario del archivo y consignarle su inmueble— y hasta
+         * ahora eso vivía en un toast que decía «Consignando… 13 de 90».
          */}
-        {resumen.activables > 0 ? (
-          <>
-            <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3">
-              <Checkbox
-                id="invitar-inquilinos"
-                checked={invitar}
-                onCheckedChange={(c) => setInvitar(c === true)}
-                className="mt-0.5"
+        {asociando ? (
+          <div
+            className="rounded-lg border border-border bg-surface-muted p-4"
+            data-testid="progreso-asociacion"
+          >
+            <p className="text-sm font-medium text-foreground">
+              Asociando cada contrato con su propietario…
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Tomamos el propietario que trae cada fila del archivo y le
+              consignamos su inmueble. Sin consignación no hay cobros, así que
+              esto es lo que hace que la cartera exista.
+            </p>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-border">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{
+                  width: `${Math.round((asociando.hechas / Math.max(asociando.total, 1)) * 100)}%`,
+                }}
               />
-              <span className="text-sm text-foreground/80">
-                Invitar a los inquilinos al portal
-                <span className="block text-xs text-muted-foreground">
-                  Se manda por tandas, no todo de golpe.
-                </span>
-              </span>
-            </label>
-
-            {/*
-             * T-0036 §3.2.A6 — destildado, esta línea antes no decía nada de
-             * lo que en realidad pasa. Surface A dejó de crear una cuenta
-             * silenciosa (I1): sin invitar, el contrato se crea igual y el
-             * correo queda guardado, pero nadie se entera hasta que alguien
-             * invite desde el contrato. Frozen: no puede insinuar nada de
-             * cobros — `CobrosService.generate` factura desde
-             * `Consignacion.monthlyRent`, no depende de un `Lease`.
-             */}
-            {!invitar ? (
-              <p
-                className="text-xs text-muted-foreground"
-                data-testid="aviso-sin-invitar"
-              >
-                No se crea ninguna cuenta: el correo del inquilino queda
-                guardado en cada contrato, y podés invitarlo cuando quieras
-                desde ahí.
-              </p>
-            ) : null}
-
-            {/*
-             * `resumen.listos` son las que no les falta NADA. Todo lo que
-             * `activables` suma por encima de eso son filas PENDIENTE que
-             * el modo sparse va a activar igual, con lo que les falte —
-             * la advertencia es honesta sobre qué va a pasar, no presenta
-             * el lote como si ya estuviera resuelto (T-0035 brief, punto 2).
-             */}
-            {resumen.activables > resumen.listos ? (
-              <p
-                className="text-xs text-muted-foreground"
-                data-testid="aviso-incompletos"
-              >
-                {resumen.activables - resumen.listos} de estos contratos todavía
-                tienen algo pendiente — por ejemplo, sin inmueble asignado. Se
-                van a crear igual, van a decir «Sin inmueble» (o lo que les
-                falte), y vas a poder completarlos después.
-              </p>
-            ) : null}
-
-            <Button
-              onClick={onActivar}
-              disabled={cargando}
-              isLoading={cargando}
-              hideArrow
-            >
-              Activar {resumen.activables} contratos
-            </Button>
-          </>
+            </div>
+            <p className="mt-1.5 font-mono text-xs tabular-nums text-fg-subtle">
+              {asociando.hechas} de {asociando.total}
+              {asociando.fallidas > 0
+                ? ` · ${asociando.fallidas} quedaron para revisar`
+                : ""}
+            </p>
+          </div>
         ) : null}
 
-        {resumen.activables === 0 && resumen.pendientes > 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Ninguno se puede activar todavía. Resolvé lo de abajo y van pasando
-            a listos solos.
+        {/* El resultado se queda: quien vuelve a la pestaña tiene que poder
+            saber qué pasó sin haber estado mirando. */}
+        {!asociando && resumenAsociacion ? (
+          <p
+            className="text-sm text-muted-foreground"
+            data-testid="resumen-asociacion"
+          >
+            {resumenAsociacion.fallidas === 0 ? (
+              <>
+                Asociamos {resumenAsociacion.hechas}{" "}
+                {resumenAsociacion.hechas === 1 ? "contrato" : "contratos"} con
+                el propietario que traía el archivo. Revisá abajo que cada uno
+                haya quedado con el suyo.
+              </>
+            ) : (
+              <>
+                Asociamos {resumenAsociacion.hechas - resumenAsociacion.fallidas}{" "}
+                de {resumenAsociacion.hechas}. Las {resumenAsociacion.fallidas}{" "}
+                que no pudimos quedaron abajo sin propietario — elegilo a mano
+                en su fila.
+              </>
+            )}
           </p>
         ) : null}
 
@@ -1337,9 +1367,16 @@ function ListaDeTrabajo({
         <Card className="space-y-2 p-6" data-testid="resultado-activacion">
           <p className="flex items-center gap-2 text-sm font-medium text-foreground">
             <CheckCircle className="h-4 w-4 text-success" weight="fill" />
-            {activacion.activadas} contratos activados
+            {activacion.activadas}{" "}
+            {activacion.activadas === 1
+              ? "contrato activado"
+              : "contratos activados"}
             {activacion.invitados > 0
-              ? ` · ${activacion.invitados} inquilinos invitados`
+              ? ` · ${activacion.invitados} ${
+                  activacion.invitados === 1
+                    ? "inquilino invitado"
+                    : "inquilinos invitados"
+                }`
               : ""}
           </p>
           {/*
@@ -1375,7 +1412,28 @@ function ListaDeTrabajo({
         </Card>
       ) : null}
 
-      {pendientes.length > 0 ? (
+      {/* ── La revisión ────────────────────────────────────────────────── */}
+      {/*
+       * Con todo activado ya no hay nada que revisar, y seguir diciendo
+       * «revisá antes de activarlos» sobre cinco filas que dicen «Ya
+       * activado» manda a buscar un botón que no existe.
+       */}
+      <div>
+        <h3 className="text-sm font-medium text-foreground">
+          {resumen.activables > 0
+            ? `Revisá los ${resumen.total} ${
+                resumen.total === 1 ? "contrato" : "contratos"
+              } antes de activarlos`
+            : "Los contratos de este archivo"}
+        </h3>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          {resumen.activables > 0
+            ? "Cada uno con el propietario al que le vamos a consignar el inmueble y el porcentaje que le vamos a cobrar. Si alguno quedó con el propietario equivocado, cambialo acá — después de activar ya es un contrato y se edita desde el contrato."
+            : "Ya están activos. De acá en adelante se editan desde cada contrato, no desde la migración."}
+        </p>
+      </div>
+
+      {editables.length > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
@@ -1387,16 +1445,16 @@ function ListaDeTrabajo({
                   // lo elegido en otras páginas; ahora sólo agrega/quita las
                   // de ESTA página, sin tocar el resto.
                   const s = new Set(seleccion);
-                  if (c === true) pendientes.forEach((f) => s.add(f.id));
-                  else pendientes.forEach((f) => s.delete(f.id));
+                  if (c === true) editables.forEach((f) => s.add(f.id));
+                  else editables.forEach((f) => s.delete(f.id));
                   onSeleccionCambia(s);
                 }}
               />
-              Seleccionar las {pendientes.length} de esta página
+              Seleccionar las {editables.length} de esta página
             </label>
             {/* Sólo tiene sentido si hay más de lo que cabe en una página —
                 si ya está todo a la vista, el control de arriba alcanza. */}
-            {totalPendientes > pendientes.length ? (
+            {total > filas.length ? (
               <Button
                 type="button"
                 variant="link"
@@ -1407,13 +1465,13 @@ function ListaDeTrabajo({
                 onClick={() => void seleccionarTodoElLote()}
                 className="text-xs"
               >
-                Seleccionar las {totalPendientes} del lote
+                Seleccionar las {total} del lote
               </Button>
             ) : null}
           </div>
-          {/* El total viene del back: contar lo recibido diría «quedan 25». */}
+          {/* El total viene del back: contar lo recibido diría «hay 25». */}
           <p className="text-xs text-muted-foreground">
-            {totalPendientes} pendientes en total
+            {total} {total === 1 ? "fila" : "filas"} en el archivo
           </p>
         </div>
       ) : null}
@@ -1430,31 +1488,25 @@ function ListaDeTrabajo({
       {seleccion.size > 0 ? (
         <ResolucionMasiva
           ids={Array.from(seleccion)}
-          seleccionadas={pendientes.filter((f) => seleccion.has(f.id))}
+          seleccionadas={filas.filter((f) => seleccion.has(f.id))}
           onListo={onFilaResuelta}
         />
       ) : null}
 
-      {pendientes.map((f) => (
-        <Card key={f.id} className="space-y-3 p-5">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground">
-              <Checkbox
-                checked={seleccion.has(f.id)}
-                onCheckedChange={(c) => {
-                  const s = new Set(seleccion);
-                  if (c === true) s.add(f.id);
-                  else s.delete(f.id);
-                  onSeleccionCambia(s);
-                }}
-              />
-              {/* +2: en el archivo la primera fila de datos es la 2. */}
-              Fila {f.fila + 2} · {f.datos.inquilino?.nombre || "sin nombre"}
-            </label>
-            <p className="text-xs text-muted-foreground">{f.datos.direccion}</p>
-          </div>
-          <FaltantesDeFila fila={f} onResuelta={onFilaResuelta} />
-        </Card>
+      {filas.map((f) => (
+        <FilaDeRevision
+          key={f.id}
+          fila={f}
+          seleccionada={seleccion.has(f.id)}
+          onSeleccion={(v) => {
+            const s = new Set(seleccion);
+            if (v) s.add(f.id);
+            else s.delete(f.id);
+            onSeleccionCambia(s);
+          }}
+          onActualizada={onFilaActualizada}
+          onCambio={onFilaResuelta}
+        />
       ))}
 
       {totalPaginas > 1 ? (
@@ -1464,6 +1516,109 @@ function ListaDeTrabajo({
           onPageChange={onPaginaCambia}
         />
       ) : null}
+
+      {/* ── Activar ────────────────────────────────────────────────────── */}
+      <Card className="space-y-4 p-6" data-testid="bloque-de-activacion">
+        {resumen.activables > 0 ? (
+          <>
+            <label className="flex cursor-pointer items-start gap-3">
+              <Checkbox
+                id="revisado"
+                checked={confirmado}
+                onCheckedChange={(c) => setConfirmado(c === true)}
+                className="mt-0.5"
+                data-testid="confirmar-revision"
+              />
+              <span className="text-sm text-foreground">
+                Revisé estos contratos: cada uno está con su propietario y su
+                porcentaje.
+                <span className="block text-xs text-muted-foreground">
+                  Activar crea los contratos y las consignaciones de verdad.
+                  Después se corrige desde cada contrato, no desde acá.
+                </span>
+              </span>
+            </label>
+
+            {confirmado ? (
+              <>
+                <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3">
+                  <Checkbox
+                    id="invitar-inquilinos"
+                    checked={invitar}
+                    onCheckedChange={(c) => setInvitar(c === true)}
+                    className="mt-0.5"
+                  />
+                  <span className="text-sm text-foreground/80">
+                    Invitar a los inquilinos al portal
+                    <span className="block text-xs text-muted-foreground">
+                      Se manda por tandas, no todo de golpe.
+                    </span>
+                  </span>
+                </label>
+
+                {/*
+                 * T-0036 §3.2.A6 — destildado, esta línea antes no decía nada
+                 * de lo que en realidad pasa. Surface A dejó de crear una
+                 * cuenta silenciosa (I1): sin invitar, el contrato se crea
+                 * igual y el correo queda guardado, pero nadie se entera hasta
+                 * que alguien invite desde el contrato. Frozen: no puede
+                 * insinuar nada de cobros — `CobrosService.generate` factura
+                 * desde `Consignacion.monthlyRent`, no depende de un `Lease`.
+                 */}
+                {!invitar ? (
+                  <p
+                    className="text-xs text-muted-foreground"
+                    data-testid="aviso-sin-invitar"
+                  >
+                    No se crea ninguna cuenta: el correo del inquilino queda
+                    guardado en cada contrato, y podés invitarlo cuando quieras
+                    desde ahí.
+                  </p>
+                ) : null}
+
+                {/*
+                 * `resumen.listos` son las que no les falta NADA. Todo lo que
+                 * `activables` suma por encima de eso son filas PENDIENTE que
+                 * el modo sparse va a activar igual, con lo que les falte —
+                 * la advertencia es honesta sobre qué va a pasar, no presenta
+                 * el lote como si ya estuviera resuelto (T-0035 brief, punto 2).
+                 */}
+                {resumen.activables > resumen.listos ? (
+                  <p
+                    className="text-xs text-muted-foreground"
+                    data-testid="aviso-incompletos"
+                  >
+                    {resumen.activables - resumen.listos} de estos contratos
+                    todavía{" "}
+                    {resumen.activables - resumen.listos === 1
+                      ? "tiene"
+                      : "tienen"}{" "}
+                    algo pendiente — por ejemplo, sin inmueble asignado. Se van
+                    a crear igual, van a decir «Sin inmueble» (o lo que les
+                    falte), y vas a poder completarlos después.
+                  </p>
+                ) : null}
+
+                <Button
+                  onClick={onActivar}
+                  disabled={cargando}
+                  isLoading={cargando}
+                  hideArrow
+                >
+                  Activar {resumen.activables} contratos
+                </Button>
+              </>
+            ) : null}
+          </>
+        ) : null}
+
+        {resumen.activables === 0 && resumen.pendientes > 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Ninguno se puede activar todavía. Resolvé lo de arriba y van pasando
+            a listos solos.
+          </p>
+        ) : null}
+      </Card>
 
       <Button variant="outline" onClick={onOtroArchivo} hideArrow>
         Subir otro archivo

@@ -82,6 +82,8 @@ import {
 } from "@/lib/api/contracts.service";
 import { useEstadoDeLote } from "@/lib/hooks/use-estado-de-lote";
 import { FilaDeRevision } from "./FilaDeRevision";
+import { propietariosApi } from "@/lib/api/inmobiliaria.service";
+import type { Propietario } from "@/lib/types/inmobiliaria";
 import { ResolucionMasiva } from "./ResolucionMasiva";
 import { ProgresoDeLote } from "./ProgresoDeLote";
 import { Pagination } from "@/components/ui/pagination";
@@ -1214,6 +1216,50 @@ function ListaDeTrabajo({
    */
   const [confirmado, setConfirmado] = useState(false);
 
+  /**
+   * Los propietarios de la agencia, UNA vez para toda la pantalla.
+   *
+   * El selector de cada fila filtra sobre esta lista en memoria. La versión
+   * anterior buscaba contra el back por cada tecla y por cada fila: veinticinco
+   * buscadores independientes disparando peticiones sobre el mismo catálogo.
+   * `GET /inmobiliaria/propietarios` no pagina — devuelve todos los de la
+   * agencia — así que una sola llamada alcanza.
+   */
+  const [propietarios, setPropietarios] = useState<Propietario[]>([]);
+  const [falloPropietarios, setFalloPropietarios] = useState(false);
+  useEffect(() => {
+    let vigente = true;
+    propietariosApi
+      .getAll()
+      .then((l) => {
+        if (vigente) {
+          setPropietarios(l);
+          setFalloPropietarios(false);
+        }
+      })
+      .catch(() => {
+        // Un fallo acá no puede parecer «esta agencia no tiene propietarios»:
+        // con la lista vacía el selector queda apagado y hay que decir por qué.
+        if (vigente) setFalloPropietarios(true);
+      });
+    return () => {
+      vigente = false;
+    };
+  }, []);
+
+  /**
+   * Ya se activó: la lista de revisión no tiene nada más que hacer.
+   *
+   * Nico, mirando la pantalla después de activar: «si el usuario le da activar
+   * contratos, ¿ya para qué la lista?». Tiene razón — noventa filas con sus
+   * casillas de selección, algunas marcadas y otras no, sobre contratos que ya
+   * existen y que desde acá no se pueden tocar. Lo único que queda por mostrar
+   * es el resultado; la lista vuelve sólo si alguien quiere ver las que NO
+   * entraron, que es la única razón real para volver a mirarla.
+   */
+  const [verLaListaIgual, setVerLaListaIgual] = useState(false);
+  const listaVisible = !activacion || verLaListaIgual;
+
   // T-0033 §3.2.G1 — "Seleccionar las {total} del lote": trae todo el
   // conjunto de ids vía `GET migrar/filas/ids`, sin descargar el `datos` JSON
   // de cada fila. Estado local: sólo le importa a este control.
@@ -1302,8 +1348,10 @@ function ListaDeTrabajo({
         ) : null}
 
         {/* El resultado se queda: quien vuelve a la pestaña tiene que poder
-            saber qué pasó sin haber estado mirando. */}
-        {!asociando && resumenAsociacion ? (
+            saber qué pasó sin haber estado mirando. Una vez activado deja de
+            tener sentido —manda a revisar una lista que ya no está— y lo que
+            vale es el resumen de la activación. */}
+        {!asociando && resumenAsociacion && !activacion ? (
           <p
             className="text-sm text-muted-foreground"
             data-testid="resumen-asociacion"
@@ -1412,6 +1460,35 @@ function ListaDeTrabajo({
         </Card>
       ) : null}
 
+      {/* ── Después de activar la lista se va ───────────────────────────
+       * Lo único que queda por decir es qué pasó. Si sobró algo sin activar,
+       * se puede volver a abrir — es la única razón para mirarla de nuevo.
+       */}
+      {activacion && !verLaListaIgual ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm text-muted-foreground">
+            {resumen.activables > 0
+              ? `Quedaron ${resumen.activables} sin activar.`
+              : "No quedó ninguna fila por activar."}
+          </p>
+          {resumen.activables > 0 ? (
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              hideArrow
+              className="text-xs"
+              onClick={() => setVerLaListaIgual(true)}
+              data-testid="ver-lista-igual"
+            >
+              Ver las que faltan
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {listaVisible ? (
+        <>
       {/* ── La revisión ────────────────────────────────────────────────── */}
       {/*
        * Con todo activado ya no hay nada que revisar, y seguir diciendo
@@ -1485,6 +1562,14 @@ function ListaDeTrabajo({
         </p>
       ) : null}
 
+      {falloPropietarios ? (
+        <p className="text-xs text-warning" data-testid="fallo-propietarios">
+          No pudimos traer la lista de propietarios, así que los selectores
+          quedaron apagados. Recargá la página — lo que ya está consignado no se
+          perdió.
+        </p>
+      ) : null}
+
       {seleccion.size > 0 ? (
         <ResolucionMasiva
           ids={Array.from(seleccion)}
@@ -1497,6 +1582,7 @@ function ListaDeTrabajo({
         <FilaDeRevision
           key={f.id}
           fila={f}
+          propietarios={propietarios}
           seleccionada={seleccion.has(f.id)}
           onSeleccion={(v) => {
             const s = new Set(seleccion);
@@ -1516,8 +1602,14 @@ function ListaDeTrabajo({
           onPageChange={onPaginaCambia}
         />
       ) : null}
+        </>
+      ) : null}
 
-      {/* ── Activar ────────────────────────────────────────────────────── */}
+      {/* ── Activar ──────────────────────────────────────────────────────
+       * Con todo activado esta tarjeta no tiene nada que decir, y una tarjeta
+       * vacía en pantalla se lee como algo que falta cargar.
+       */}
+      {resumen.activables > 0 || resumen.pendientes > 0 ? (
       <Card className="space-y-4 p-6" data-testid="bloque-de-activacion">
         {resumen.activables > 0 ? (
           <>
@@ -1619,6 +1711,7 @@ function ListaDeTrabajo({
           </p>
         ) : null}
       </Card>
+      ) : null}
 
       <Button variant="outline" onClick={onOtroArchivo} hideArrow>
         Subir otro archivo

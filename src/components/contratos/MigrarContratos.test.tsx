@@ -1082,6 +1082,62 @@ describe('<MigrarContratos> — invitar:false ya no crea nada, y el resumen lo d
  * Los casos de error del flujo — cada fallo tiene que verse y tener salida
  * EN EL LUGAR, sin recargar la página ni pedir soporte.
  */
+/**
+ * Después de activar, la lista de revisión no tiene nada más que hacer.
+ *
+ * Nico, mirando la pantalla recién activada: «si el usuario le da activar
+ * contratos, ¿ya para qué la lista?». Quedaban noventa filas con sus casillas
+ * de selección —algunas marcadas, otras no— sobre contratos que ya existían y
+ * que desde ahí no se podían tocar.
+ */
+describe('<MigrarContratos> — activar apaga la lista', () => {
+  const activarTodo = async (activables: number) => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(activables)
+    await confirmarRevision()
+    vi.mocked(contractsApi.migracion.activar).mockResolvedValue({
+      intentadas: activables,
+      activadas: activables,
+      fallidas: 0,
+      invitados: activables,
+      resultados: [],
+    })
+    await act(async () => {
+      boton(`Activar ${activables} contratos`)?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  it('con todo activado la lista desaparece y sólo queda el resultado', async () => {
+    // `resumen` sigue mockeado con activables=30, así que la rama honesta es
+    // la de "quedaron 30 sin activar" — lo que importa acá es que las FILAS
+    // ya no están.
+    await activarTodo(30)
+
+    expect(container.querySelector('[data-testid="resultado-activacion"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="fila-revision-0"]')).toBeNull()
+    expect(container.textContent).not.toContain('Seleccionar las')
+  })
+
+  it('si quedó algo sin activar lo dice, y deja volver a la lista', async () => {
+    await activarTodo(30)
+
+    const volver = container.querySelector(
+      '[data-testid="ver-lista-igual"]',
+    ) as HTMLButtonElement | null
+    expect(volver).toBeTruthy()
+    expect(container.textContent).toMatch(/quedaron 30 sin activar/i)
+
+    await act(async () => {
+      volver?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    expect(container.querySelector('[data-testid="fila-revision-0"]')).toBeTruthy()
+  })
+})
+
 describe('<MigrarContratos> — errores visibles y recuperables', () => {
   it('un job FALLIDO ofrece volver al cargador, y el botón funciona', async () => {
     render()

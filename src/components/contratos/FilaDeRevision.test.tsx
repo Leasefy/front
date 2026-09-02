@@ -51,8 +51,42 @@ vi.mock('@/lib/api/contracts.service', async () => {
   }
 })
 
+/**
+ * El selector es el `Combobox` del DS (Radix Popover adentro). Lo que se
+ * prueba acá no es cómo se despliega un popover —eso es del design system—
+ * sino a QUÉ endpoint manda esta fila según su estado, que es donde estuvo el
+ * bug. Así que se cambia por un botón por propietario: el mismo contrato
+ * (`onElegir(p)`), sin depender de las tripas de Radix en happy-dom.
+ */
+vi.mock('./SelectorDePropietario', () => ({
+  SelectorDePropietario: ({
+    propietarios,
+    onElegir,
+    disabled,
+    testId,
+  }: {
+    propietarios: Array<{ id: string; name: string }>
+    onElegir: (p: unknown) => void
+    disabled?: boolean
+    testId?: string
+  }) => (
+    <div data-testid={testId}>
+      {propietarios.map((p) => (
+        <button
+          key={p.id}
+          type="button"
+          disabled={disabled}
+          data-testid={`${testId}-elegir-${p.id}`}
+          onClick={() => onElegir(p)}
+        >
+          {p.name}
+        </button>
+      ))}
+    </div>
+  ),
+}))
+
 import { contractsApi, type FilaDeMigracion } from '@/lib/api/contracts.service'
-import { propietariosApi } from '@/lib/api/inmobiliaria.service'
 import type { Propietario } from '@/lib/types/inmobiliaria'
 import { FilaDeRevision } from './FilaDeRevision'
 
@@ -109,6 +143,7 @@ function montar(over: Partial<FilaDeMigracion> = {}, props = {}) {
     root.render(
       <FilaDeRevision
         fila={fila(over)}
+        propietarios={[JORGE]}
         seleccionada={false}
         onSeleccion={() => {}}
         onActualizada={onActualizada}
@@ -123,25 +158,9 @@ function montar(over: Partial<FilaDeMigracion> = {}, props = {}) {
 const $ = (sel: string) => container.querySelector(sel) as HTMLElement | null
 
 async function elegirAJorge() {
-  vi.mocked(propietariosApi.getAll).mockResolvedValue([JORGE])
+  const btn = $('[data-testid="propietario-fila-0-elegir-po-1"]') as HTMLButtonElement
   await act(async () => {
-    $('[data-testid="propietario-fila-0"]')?.click()
-  })
-  const input = $('[data-testid="propietario-fila-0-buscar"]') as HTMLInputElement
-  await act(async () => {
-    const setter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype,
-      'value',
-    )!.set!
-    setter.call(input, 'jor')
-    input.dispatchEvent(new Event('input', { bubbles: true }))
-    await new Promise((r) => setTimeout(r, 400))
-  })
-  const opcion = container.querySelector(
-    '[data-testid="propietario-fila-0-opciones"] button',
-  ) as HTMLButtonElement
-  await act(async () => {
-    opcion.click()
+    btn.click()
     await new Promise((r) => setTimeout(r, 0))
   })
 }
@@ -281,7 +300,13 @@ describe('<FilaDeRevision> — la comisión', () => {
     })
   })
 
-  it('un valor imposible se descarta y vuelve al que estaba', async () => {
+  it('un porcentaje imposible se descarta y vuelve al que estaba', async () => {
+    // 🔴 El clamp del DS no corre acá: `PercentInput` hace el spread de
+    // `...props` DESPUÉS de sus manejadores, así que nuestro `onBlur`
+    // reemplaza al suyo. Sin esta validación propia, escribir 150 guardaba
+    // 150 — un ciento cincuenta por ciento de comisión, escrito de verdad en
+    // la consignación. Se DESCARTA en vez de topar: un 150 mal tecleado no es
+    // una intención de cobrar el 100%.
     montar({
       propietario: { id: 'po-1', nombre: 'Jorge', documento: '712' },
       comisionPorcentaje: 9,
@@ -295,6 +320,19 @@ describe('<FilaDeRevision> — la comisión', () => {
     expect(
       ($('[data-testid="comision-fila-0"]') as HTMLInputElement).value,
     ).toBe('9')
+  })
+
+  it('salir del campo sin cambiar nada no manda nada', async () => {
+    montar({
+      propietario: { id: 'po-1', nombre: 'Jorge', documento: '712' },
+      comisionPorcentaje: 9,
+      faltantes: [],
+      estado: 'LISTO',
+    })
+
+    await escribirComision('9')
+
+    expect(contractsApi.migracion.corregirPropietario).not.toHaveBeenCalled()
   })
 
   it('está apagada mientras el inmueble no esté consignado', () => {
@@ -321,7 +359,8 @@ describe('<FilaDeRevision> — una fila ya activada', () => {
       ($('[data-testid="comision-fila-0"]') as HTMLInputElement).disabled,
     ).toBe(true)
     expect(
-      ($('[data-testid="propietario-fila-0"]') as HTMLButtonElement).disabled,
+      ($('[data-testid="propietario-fila-0-elegir-po-1"]') as HTMLButtonElement)
+        .disabled,
     ).toBe(true)
   })
 })

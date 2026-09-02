@@ -34,12 +34,12 @@
  *    filas, es un error que nadie vio.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle, Warning } from "@phosphor-icons/react";
 
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { PercentInput } from "@/components/ui/percent-input";
 import { formatCurrency } from "@/lib/format";
 import {
   contractsApi,
@@ -58,6 +58,8 @@ const YA_RESUELTOS_ACA = ["propietario"];
 
 export interface FilaDeRevisionProps {
   fila: FilaDeMigracion;
+  /** Todos los propietarios de la agencia, cargados una vez por la pantalla. */
+  propietarios: readonly Propietario[];
   seleccionada: boolean;
   onSeleccion: (v: boolean) => void;
   /** La fila ya actualizada, para que el padre la refleje sin refetch. */
@@ -68,6 +70,7 @@ export interface FilaDeRevisionProps {
 
 export function FilaDeRevision({
   fila,
+  propietarios,
   seleccionada,
   onSeleccion,
   onActualizada,
@@ -207,7 +210,8 @@ export function FilaDeRevision({
             </p>
           ) : (
             <SelectorDePropietario
-              actual={fila.propietario ?? null}
+              propietarios={propietarios}
+              actualId={fila.propietario?.id ?? null}
               disabled={!editable || guardando}
               onElegir={(p) => void elegirPropietario(p)}
               testId={`propietario-fila-${fila.fila}`}
@@ -257,11 +261,28 @@ export function FilaDeRevision({
 }
 
 /**
- * El campo del porcentaje, con borrador propio.
+ * El campo del porcentaje.
  *
- * Escribe al salir del campo (o con Enter) y no en cada tecla: guardar por
- * tecla manda una petición por dígito, y «12» pasa por «1» — un uno por
- * ciento guardado de verdad en la consignación, aunque sea por un instante.
+ * Es el `PercentInput` de cadence, que ancla el `%` adentro del campo y mide
+ * lo mismo que el disparador del `Combobox` de al lado (44 px). Antes era un
+ * `<input type="number">` pelado: la unidad quedaba sólo en la etiqueta de
+ * arriba, y un porcentaje sin su signo es exactamente el número que alguien
+ * lee como pesos.
+ *
+ * Guarda al SALIR del campo, no en cada tecla: el `PercentInput` dispara
+ * `onChange` por tecla —lo cual está bien, es el borrador— pero mandarlo al
+ * back así haría una petición por dígito, y «12» pasaría por «1»: un uno por
+ * ciento escrito de verdad en la consignación, aunque sea por un instante.
+ *
+ * El último valor se lee de un `ref` y no del estado: en el `onBlur` del
+ * render actual, el `setBorrador` de la última tecla todavía no se aplicó.
+ *
+ * 🔴 **El clamp del DS NO corre acá.** `PercentInput` hace el spread de
+ * `...props` DESPUÉS de sus propios manejadores, así que el `onBlur` que se le
+ * pasa reemplaza al suyo — y con él, el topado a 0–100. Verificado con un
+ * test: escribir 150 mandaba 150. El rango se valida de este lado, y un valor
+ * imposible se DESCARTA en vez de topárse: convertir un 150 mal tecleado en un
+ * 100% de comisión es peor que no guardar nada.
  */
 function CampoComision({
   valor,
@@ -274,38 +295,43 @@ function CampoComision({
   onGuardar: (v: number) => void;
   testId: string;
 }) {
-  const [borrador, setBorrador] = useState(valor == null ? "" : String(valor));
+  const [borrador, setBorrador] = useState<number | undefined>(
+    valor ?? undefined,
+  );
+  const ultimo = useRef<number | undefined>(valor ?? undefined);
 
   // El valor puede cambiar por afuera (se consignó recién, o se corrigió en
   // masiva): el borrador tiene que seguirlo mientras nadie lo esté editando.
   useEffect(() => {
-    setBorrador(valor == null ? "" : String(valor));
+    setBorrador(valor ?? undefined);
+    ultimo.current = valor ?? undefined;
   }, [valor]);
 
-  const confirmar = () => {
-    const n = Number(borrador);
-    if (borrador.trim() === "" || Number.isNaN(n) || n < 0 || n > 100) {
-      setBorrador(valor == null ? "" : String(valor));
-      return;
-    }
-    if (n === valor) return;
-    onGuardar(n);
-  };
-
   return (
-    <Input
-      type="number"
-      inputMode="decimal"
-      min={0}
-      max={100}
+    <PercentInput
       value={borrador}
       disabled={deshabilitado}
-      onChange={(e) => setBorrador(e.target.value)}
-      onBlur={confirmar}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") e.currentTarget.blur();
+      /*
+       * Sin placeholder. El del DS es «0», y en un campo apagado —el de una
+       * fila que todavía no está consignada— un cero gris se lee como una
+       * comisión del cero por ciento, que es un dato, no un campo vacío.
+       */
+      placeholder=""
+      onChange={(n) => {
+        const v = Number.isNaN(n) ? undefined : n;
+        ultimo.current = v;
+        setBorrador(v);
       }}
-      className="text-right tabular-nums"
+      onBlur={() => {
+        const v = ultimo.current;
+        const imposible = v === undefined || v < 0 || v > 100;
+        if (imposible || v === valor) {
+          setBorrador(valor ?? undefined);
+          ultimo.current = valor ?? undefined;
+          return;
+        }
+        onGuardar(v);
+      }}
       data-testid={testId}
     />
   );

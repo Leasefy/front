@@ -180,6 +180,9 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   const [progreso, setProgreso] = useState<ProgresoDeAplicacion | null>(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Qué hizo la última masiva, EN la página: un cambio silencioso en los
+   *  contadores se lee como «apareció de la nada». */
+  const [avisoMasivo, setAvisoMasivo] = useState<string | null>(null);
 
   /*
    * `useMemo` y no `plantilla?.columnas ?? []` suelto: ese `[]` es un array
@@ -528,6 +531,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         aplicacion={aplicacion}
         cargando={cargando}
         error={error}
+        avisoMasivo={avisoMasivo}
         onSeleccionCambia={setSeleccion}
         onPaginaCambia={(p) => void cambiarPagina(p)}
         onActualizar={() => void cambiarPagina(pagina)}
@@ -568,6 +572,14 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               setError(resumenDeFallidas(r));
             } else {
               setSeleccion(new Set());
+              const n = r.aplicadas;
+              setAvisoMasivo(
+                cambios.vincularAExistente
+                  ? `${n} ${n === 1 ? 'fila vinculada' : 'filas vinculadas'} con las personas que ya existían: salieron de esta lista y quedaron listas para crear con el botón de arriba.`
+                  : cambios.descartar
+                    ? `${n} ${n === 1 ? 'fila descartada' : 'filas descartadas'}.`
+                    : `Se aplicó el cambio a ${n} ${n === 1 ? 'fila' : 'filas'}.`,
+              );
             }
           }, 'No pudimos aplicar el cambio a las filas seleccionadas.')
         }
@@ -989,6 +1001,7 @@ function ListaDeTrabajo({
   aplicacion,
   cargando,
   error,
+  avisoMasivo = null,
   onSeleccionCambia,
   onPaginaCambia,
   onActualizar,
@@ -1014,6 +1027,7 @@ function ListaDeTrabajo({
   aplicacion: ResumenDeAplicacion | null;
   cargando: boolean;
   error: string | null;
+  avisoMasivo?: string | null;
   onSeleccionCambia: (s: Set<string>) => void;
   onPaginaCambia: (p: number) => void;
   /** Reintenta la lectura de la página actual — la salida de un refresco caído. */
@@ -1099,6 +1113,13 @@ function ListaDeTrabajo({
         {resumen.listos === 0 && resumen.requierenAtencion > 0 ? (
           <p className="text-sm text-fg-muted">
             Todavía no hay ninguna lista. Resolvé lo de abajo y van pasando solas.
+          </p>
+        ) : null}
+
+        {avisoMasivo && !error ? (
+          <p className="flex items-center gap-2 text-sm text-fg" data-testid="aviso-masivo">
+            <CheckCircle className="h-4 w-4 shrink-0 text-success" weight="fill" />
+            {avisoMasivo}
           </p>
         ) : null}
 
@@ -1319,6 +1340,8 @@ function ResolucionMasiva({
   }) => void;
   onLimpiar: () => void;
 }) {
+  /** Qué botón de abajo se apretó, para que gire ése y no los tres. */
+  const [enVuelo, setEnVuelo] = useState<'vincular' | 'descartar' | null>(null);
   const [campo, setCampo] = useState<string>('');
   const [valor, setValor] = useState('');
 
@@ -1417,12 +1440,23 @@ function ResolucionMasiva({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+        {/*
+         * Nico, con 25 filas marcadas: «no mostró carga de nada y luego
+         * apareció el botón de la nada». La masiva tardaba unos segundos y
+         * los botones sólo se apagaban: nada decía que algo estaba pasando.
+         * El que se apretó gira, y una línea dice qué se está haciendo.
+         */}
         <Button
           size="sm"
           variant="outline"
           hideArrow
           disabled={cargando}
-          onClick={() => onAplicar({ vincularAExistente: true })}
+          isLoading={cargando && enVuelo === 'vincular'}
+          onClick={() => {
+            setEnVuelo('vincular');
+            onAplicar({ vincularAExistente: true });
+          }}
+          data-testid="masivo-vincular"
         >
           Son las mismas personas que ya existen
         </Button>
@@ -1431,11 +1465,22 @@ function ResolucionMasiva({
           variant="outline"
           hideArrow
           disabled={cargando}
+          isLoading={cargando && enVuelo === 'descartar'}
           className="text-danger hover:bg-danger-soft hover:text-danger"
-          onClick={() => onAplicar({ descartar: true })}
+          onClick={() => {
+            setEnVuelo('descartar');
+            onAplicar({ descartar: true });
+          }}
         >
           No traer ninguna de estas
         </Button>
+        {cargando && enVuelo ? (
+          <p className="basis-full text-xs text-fg-muted" data-testid="masivo-progreso">
+            {enVuelo === 'vincular'
+              ? `Vinculando ${cantidad} ${cantidad === 1 ? 'fila' : 'filas'} con las personas que ya existen… al terminar salen de esta lista y quedan listas para crear.`
+              : `Descartando ${cantidad} ${cantidad === 1 ? 'fila' : 'filas'}…`}
+          </p>
+        ) : null}
         <span className="flex-1" />
         <Button size="sm" variant="link" hideArrow className="text-xs" onClick={onLimpiar}>
           Quitar la selección

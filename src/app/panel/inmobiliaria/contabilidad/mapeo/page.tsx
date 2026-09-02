@@ -9,7 +9,7 @@ import { MapeoContable } from '@/components/contabilidad/mapeo/MapeoContable';
 
 export default function MapeoContablePage() {
   return (
-    <PageGuard module="configuracion">
+    <PageGuard module="reportes">
       <div className="space-y-6 p-6 lg:p-8">
         <header className="space-y-1.5">
           <Link

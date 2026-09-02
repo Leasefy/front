@@ -9,7 +9,7 @@ import { LibroDeAsientos } from '@/components/contabilidad/asientos/LibroDeAsien
 
 export default function AsientosPage() {
   return (
-    <PageGuard module="configuracion">
+    <PageGuard module="reportes">
       <div className="space-y-6 p-6 lg:p-8">
         <header className="space-y-1.5">
           <Link

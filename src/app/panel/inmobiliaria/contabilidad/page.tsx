@@ -3,11 +3,14 @@
 /**
  * Contabilidad — la portada.
  *
- * Guard por `module="configuracion"` y `view`, igual que las pantallas del
- * PUC en la migración: el back no tiene módulo `contabilidad` en la matriz de
- * permisos todavía (`ContabilidadEscrituraGuard` explica por qué). Leer puede
- * cualquier miembro; escribir lo decide el back (ADMIN o CONTADOR) y las
- * pantallas muestran ese 403 en palabras.
+ * Guard por `module="reportes"` y `view`: el back no tiene módulo
+ * `contabilidad` en la matriz de permisos todavía (`ContabilidadEscrituraGuard`
+ * explica por qué), y «reportes» es el módulo financiero que tienen ADMIN y
+ * CONTADOR y no tiene el AGENTE. 🔴 Antes era `configuracion`, que el
+ * CONTADOR NO tiene (`role-defaults.ts`): el único rol no-ADMIN al que el back
+ * deja escribir asientos no podía ni abrir la pantalla (auditoría 2026-09-01).
+ * Escribir lo decide el back (ADMIN o CONTADOR) y las pantallas muestran ese
+ * 403 en palabras.
  */
 
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -16,7 +19,7 @@ import { HubDeContabilidad } from '@/components/contabilidad/HubDeContabilidad';
 
 export default function ContabilidadPage() {
   return (
-    <PageGuard module="configuracion">
+    <PageGuard module="reportes">
       <div className="space-y-6 p-6 lg:p-8">
         <header className="space-y-1.5">
           <SectionLabel>Finanzas</SectionLabel>

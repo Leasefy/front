@@ -44,6 +44,13 @@ function ultimoDiaDelMesAnterior(ahora: Date = new Date()): string {
   return aTextoDeDia(new Date(ahora.getFullYear(), ahora.getMonth(), 0));
 }
 
+/** «2025-12-31» → «2026-01-31»: el último día del mes que sigue. */
+function finDelMesSiguiente(dia: string): string {
+  const [y, m] = dia.split('-').map(Number);
+  // Día 0 del mes m+2 (1-based) = último día del mes m+1.
+  return aTextoDeDia(new Date(y, m + 1, 0));
+}
+
 export function CierreDePeriodo({ cierre, cargando = false, onCerrado }: CierreDePeriodoProps) {
   const id = useId();
   const cerradaHasta = cierre?.cerradaHasta ?? null;
@@ -80,9 +87,16 @@ export function CierreDePeriodo({ cierre, cargando = false, onCerrado }: CierreD
       const r = await contabilidadApi.asientos.cerrar(hasta);
       toast.success(`Contabilidad cerrada hasta el ${diaLegible(r.hasta)}`, {
         description:
-          r.cerrados === 1 ? '1 asiento quedó bloqueado.' : `${r.cerrados} asientos quedaron bloqueados.`,
+          r.cerrados === 1
+            ? '1 asiento quedó bloqueado.'
+            : `${r.cerrados.toLocaleString('es-CO')} asientos quedaron bloqueados.`,
       });
       setConfirmando(false);
+      // La fecha del control avanza al fin del mes siguiente al cierre. Si se
+      // quedara en la fecha recién cerrada, `problema` diría en rojo «Ya está
+      // cerrada hasta X» sobre un cierre que acaba de salir bien (auditoría
+      // 2026-09-01).
+      setHasta(finDelMesSiguiente(r.hasta));
       onCerrado?.(r);
     } catch (e) {
       setError(mensajeDeContabilidad(e, 'No se pudo cerrar el período.'));

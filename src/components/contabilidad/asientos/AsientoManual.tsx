@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { generarIdempotencyKey } from '@/lib/contratos/idempotencia';
 import { toast } from 'sonner';
 import { Plus, Trash } from '@phosphor-icons/react';
 import { Banner, CurrencyInput } from '@leasefy/cadence';
@@ -73,6 +74,8 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
   const id = useId();
   const [fecha, setFecha] = useState(hoy());
   const [descripcion, setDescripcion] = useState('');
+  // Una por apertura del formulario (ver el `crear` de abajo).
+  const [claveIdempotencia] = useState(() => generarIdempotencyKey());
   const [lineas, setLineas] = useState<LineaDelFormulario[]>(lineasIniciales);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -127,6 +130,11 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
         fecha,
         descripcion: descripcion.trim(),
         movimientos,
+        // Una llave por formulario abierto: si la red se corta después de
+        // que el back escribió y la persona reintenta, el back devuelve el
+        // MISMO asiento en vez de crear un duplicado. `AsientoDeApertura` ya
+        // la mandaba; acá faltaba (auditoría 2026-09-01).
+        claveIdempotencia,
       });
       toast.success(`Asiento n.º ${creado.numero} creado`, {
         description: `${lineas.length} líneas por ${veredicto.totales.debitos.toLocaleString('es-CO')} COP.`,
@@ -138,7 +146,7 @@ export function AsientoManual({ abierto, onCerrar, onCreado, cuentas, cerradaHas
     } finally {
       setEnviando(false);
     }
-  }, [listo, lineas, fecha, descripcion, veredicto.totales.debitos, onCreado, onCerrar]);
+  }, [listo, lineas, fecha, descripcion, veredicto.totales.debitos, onCreado, onCerrar, claveIdempotencia]);
 
   const { diferencia } = veredicto.totales;
 

@@ -265,3 +265,41 @@ describe('un pendiente que ya no está activo', () => {
     expect(fila?.querySelectorAll('button')).toHaveLength(0);
   });
 });
+
+describe('editar dos cuentas seguidas', () => {
+  it('🔴 abrir «Editar» en B con el formulario ya abierto en A NO manda los datos de A a B', async () => {
+    // Auditoría 2026-09-01: el formulario se montaba sin `key` y sus useState
+    // se inicializaban una sola vez; con A abierta, «Editar» en B cambiaba el
+    // título pero el PATCH iba a B con nombre/naturaleza/activa de A.
+    pucMock.arbol.mockResolvedValue(ARBOL_SEMBRADO);
+    pucMock.semillaPendientes.mockResolvedValue({ total: 0, cuentas: [] });
+    pucMock.actualizar.mockImplementation(async (id: string, cambios: Record<string, unknown>) => ({
+      id, ...cambios,
+    }));
+    await pintar();
+
+    const editar = (codigo: string) =>
+      Array.from(container.querySelectorAll('button')).find((b) =>
+        b.getAttribute('aria-label')?.startsWith(`Editar ${codigo} `),
+      ) as HTMLButtonElement;
+
+    await act(async () => editar('110505').click());
+    expect((q('puc-nombre') as HTMLInputElement).value).toBe('Caja general');
+
+    await act(async () => editar('511580').click());
+    expect((q('puc-nombre') as HTMLInputElement).value).toBe('Gravamen a los movimientos financieros');
+
+    // Un cambio en B guarda SOBRE B con los datos de B.
+    const nombre = q('puc-nombre') as HTMLInputElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(nombre, 'GMF 4x1000');
+      nombre.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => (q('puc-guardar') as HTMLButtonElement).click());
+
+    expect(pucMock.actualizar).toHaveBeenCalledTimes(1);
+    const [id, cambios] = pucMock.actualizar.mock.calls[0] as [string, { nombre?: string }];
+    expect(id).toBe(ARBOL_SEMBRADO[1].hijas[0].hijas[0].hijas[0].id);
+    expect(cambios.nombre).toBe('GMF 4x1000');
+  });
+});

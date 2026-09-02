@@ -311,6 +311,12 @@ export function PlanDeCuentas({
 
       {formulario ? (
         <FormularioDeCuenta
+          // 🔴 La `key` remonta el formulario al cambiar de cuenta. Sin ella,
+          // con el formulario abierto en A, «Editar» en B cambiaba el título
+          // pero los `useState` del formulario seguían con los datos de A: el
+          // PATCH iba a B con nombre/naturaleza/activa de A (auditoría
+          // 2026-09-01).
+          key={formulario.modo === 'editar' ? formulario.cuenta.id : `crear:${formulario.padre?.id ?? 'raiz'}`}
           formulario={formulario}
           cuentas={plano}
           onCancelar={() => setFormulario(null)}

@@ -345,6 +345,35 @@ export function PlanDeCuentas({
       ) : null}
 
       {hayCuentas ? (
+        /*
+         * Qué cuenta recibe cada asiento automático. Vive acá, en el paso del
+         * PUC, porque es lo que le falta al plan para que el motor asiente:
+         * antes estaba sólo en Contabilidad → Mapeo, nadie lo abría, y con el
+         * mapeo vacío cada recibo pasaba sin asiento (2026-09-02).
+         *
+         * Va ANTES del árbol de cuentas: es lo que decide si el paso está
+         * hecho, y debajo de 99 cuentas nadie lo encontraba — Nico se quedó
+         * en el paso 5 sin saber por qué no avanzaba (2026-09-02 12:42).
+         */
+        <section
+          className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+          aria-labelledby="puc-mapeo-titulo"
+          data-testid="puc-mapeo"
+        >
+          <div className="mb-4">
+            <h2 id="puc-mapeo-titulo" className="font-medium text-fg">
+              Cuentas de los asientos automáticos
+            </h2>
+            <p className="text-sm text-fg-muted">
+              A qué cuenta va cada cobro, recibo y giro. Sin esto, el plan existe pero nada se
+              asienta solo.
+            </p>
+          </div>
+          <MapeoContable />
+        </section>
+      ) : null}
+
+      {hayCuentas ? (
         <section
           className="rounded-lg border border-border bg-surface p-6 shadow-sm"
           aria-labelledby="puc-arbol-titulo"
@@ -414,31 +443,6 @@ export function PlanDeCuentas({
         </section>
       ) : null}
 
-      {hayCuentas ? (
-        /*
-         * Qué cuenta recibe cada asiento automático. Vive acá, en el paso del
-         * PUC, porque es lo que le falta al plan para que el motor asiente:
-         * antes estaba sólo en Contabilidad → Mapeo, nadie lo abría, y con el
-         * mapeo vacío cada recibo pasaba sin asiento (2026-09-02).
-         */
-        <section
-          className="rounded-lg border border-border bg-surface p-6 shadow-sm"
-          aria-labelledby="puc-mapeo-titulo"
-          data-testid="puc-mapeo"
-        >
-          <div className="mb-4">
-            <h2 id="puc-mapeo-titulo" className="font-medium text-fg">
-              Cuentas de los asientos automáticos
-            </h2>
-            <p className="text-sm text-fg-muted">
-              A qué cuenta va cada cobro, recibo y giro. Sin esto, el plan existe pero nada se
-              asienta solo.
-            </p>
-          </div>
-          <MapeoContable />
-        </section>
-      ) : null}
-
       {hayCuentas && !sinPaso5 ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4">
           <p className="text-sm text-fg-muted">
@@ -446,13 +450,13 @@ export function PlanDeCuentas({
           </p>
           {onContinuar ? (
             <Button hideArrow onClick={onContinuar} data-testid="puc-continuar">
-              Continuar al paso 5
+              Continuar al paso 6
               <ArrowRight className="ml-1.5 h-4 w-4" />
             </Button>
           ) : (
             <Button asChild hideArrow>
               <Link href={RUTA_DEL_PASO_5} data-testid="puc-continuar">
-                Continuar al paso 5
+                Continuar al paso 6
                 <ArrowRight className="ml-1.5 h-4 w-4" />
               </Link>
             </Button>

@@ -10342,6 +10342,7 @@
       "subtitulo": "Todo pasa acá adentro: cargá lo que ya tenés en tu sistema actual, en orden — cada paso necesita al anterior.",
       "progreso": "Progreso de la migración",
       "hecho": "Listo",
+      "falta": "Falta: {{detalle}}",
       "enEspera": "En espera",
       "noDisponible": "No disponible ahora. No te frena.",
       "primero": "Primero terminá {{paso}}",

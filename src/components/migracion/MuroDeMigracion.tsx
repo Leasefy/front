@@ -778,6 +778,20 @@ function PasoEnFoco({
             <Check className="h-3.5 w-3.5" weight="bold" />
             {paso.detalle ?? t("migracion.muro.hecho")}
           </p>
+        ) : paso.estado === "pendiente" && paso.detalle ? (
+          /*
+           * El back ya dice qué le falta al paso («99 cuentas · faltan cuentas
+           * para 3 asientos automáticos»). Antes ese detalle sólo se pintaba
+           * cuando el paso estaba hecho: pendiente, la persona veía «Ahora» y
+           * nada más — Nico se quedó en el paso 5 sin saber por qué no
+           * avanzaba (2026-09-02 12:42).
+           */
+          <p
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1.5 font-mono text-xs tabular-nums text-warning"
+            data-testid="muro-paso-falta"
+          >
+            {t("migracion.muro.falta", { detalle: paso.detalle })}
+          </p>
         ) : null}
       </div>
 

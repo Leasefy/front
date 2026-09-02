@@ -389,6 +389,32 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
     expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('inquilinos');
   });
 
+  it('un paso pendiente con detalle del back dice QUÉ falta (no sólo «Ahora»)', async () => {
+    /*
+     * Nico, 2026-09-02 12:42, parado en el paso 5 con 99 cuentas cargadas:
+     * «de ese paso no pasa al siguiente, es raro». El back decía «99 cuentas ·
+     * faltan cuentas para 3 asientos automáticos» y la pantalla lo callaba.
+     */
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [
+        paso('propietarios', 'listo', 60, '60 propietarios'),
+        paso('inquilinos', 'listo', 90, '90 inquilinos'),
+        paso('propiedades', 'listo', 3, '3 inmuebles'),
+        paso('contratos', 'listo', 90, '90 contratos · 90 sin inmueble'),
+        paso('puc', 'pendiente', 99, '99 cuentas · faltan cuentas para 3 asientos automáticos'),
+        paso('contables', 'pendiente'),
+      ],
+    });
+
+    await pintar();
+
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('puc');
+    expect(q('muro-paso-listo')).toBeNull();
+    expect(q('muro-paso-falta')?.textContent).toContain('faltan cuentas para 3 asientos automáticos');
+  });
+
   it('el paso 6 (registros contables) espera al 5 (plan de cuentas)', async () => {
     estadoMock.estado.mockResolvedValue({
       bloquea: true,

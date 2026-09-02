@@ -10341,6 +10341,7 @@
       "subtitulo": "Everything happens in here: load what you already have in your current system, in order — each step needs the previous one.",
       "progreso": "Migration progress",
       "hecho": "Done",
+      "falta": "Missing: {{detalle}}",
       "enEspera": "Waiting",
       "noDisponible": "Unavailable right now. Won't hold you back.",
       "primero": "Finish {{paso}} first",

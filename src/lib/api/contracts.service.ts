@@ -126,6 +126,7 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // compara textos y un 9% saldría mayor que un 10%.
     comisionPorcentaje: aNumero(bc.comisionPorcentaje),
     comisionDeConsignacion: aNumero(bc.comisionDeConsignacion),
+    propietarioDeLaConsignacion: bc.propietarioDeLaConsignacion,
     // Quién retiene qué. Puede faltar en respuestas viejas: null significa
     // «no vino», y la pantalla cae a los perfiles por defecto diciéndolo.
     perfilesTributarios: bc.perfilesTributarios ?? null,

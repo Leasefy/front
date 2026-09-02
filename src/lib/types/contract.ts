@@ -358,6 +358,17 @@ export interface Contract {
    * desacuerdo cuando las dos no coinciden, en vez de elegir un número.
    */
   comisionDeConsignacion?: number | null;
+  /**
+   * El propietario de verdad: la ficha de la consignación del inmueble.
+   * `landlordName` en un contrato de inmobiliaria es el usuario que lo creó
+   * o migró — no el dueño. `null` = sin inmueble o sin consignación;
+   * `undefined` = el back no lo mandó (lista, respuesta vieja).
+   */
+  propietarioDeLaConsignacion?: {
+    id: string;
+    name: string;
+    documentNumber: string;
+  } | null;
 
   /**
    * Quién retiene qué. La retención la practica **quien paga**, así que sin

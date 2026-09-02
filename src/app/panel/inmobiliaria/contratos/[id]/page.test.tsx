@@ -262,6 +262,50 @@ describe('ContratoDetallePage — la cuenta del contrato', () => {
 
     expect(container.querySelector('[data-testid="vincular-inmueble"]')).toBeNull()
     expect(container.textContent).not.toContain('Sin inmueble vinculado')
+    expect(container.querySelector('[data-testid="ver-inmueble"]')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/inmuebles/prop-1',
+    )
+  })
+})
+
+describe('ContratoDetallePage — el propietario', () => {
+  it('es el de la consignación (ficha con documento), nunca landlordName', async () => {
+    withContract(
+      contract({
+        contractOrigin: 'MIGRATED',
+        landlordName: 'victor ortiz',
+        propietarioDeLaConsignacion: { id: 'po-9', name: 'Jorge Restrepo', documentNumber: '71234567' },
+      }),
+    )
+
+    await renderPage()
+
+    const ficha = container.querySelector('[data-testid="propietario-ficha"]')
+    expect(ficha?.textContent).toBe('Jorge Restrepo')
+    expect(ficha?.getAttribute('href')).toBe('/panel/inmobiliaria/propietarios/po-9')
+    expect(container.textContent).toContain('71234567')
+    expect(container.textContent).not.toContain('victor ortiz')
+  })
+
+  it('un contrato migrado sin consignación lo dice en vez de mostrar al usuario que migró', async () => {
+    withContract(
+      contract({ contractOrigin: 'MIGRATED', landlordName: 'victor ortiz', propertyId: null, propietarioDeLaConsignacion: null }),
+    )
+
+    await renderPage()
+
+    expect(container.querySelector('[data-testid="propietario-sin-consignacion"]')?.textContent).toBe(
+      'Se vincula con el inmueble.',
+    )
+    expect(container.textContent).not.toContain('victor ortiz')
+  })
+
+  it('un contrato nativo sin consignación sigue mostrando landlordName', async () => {
+    withContract(contract({ contractOrigin: 'GENERATED', landlordName: 'Luis Pérez', propietarioDeLaConsignacion: null }))
+
+    await renderPage()
+
+    expect(container.textContent).toContain('Luis Pérez')
   })
 })
 

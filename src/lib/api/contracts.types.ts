@@ -109,6 +109,16 @@ export interface BackendContract {
   /** La de la consignación — la que de verdad liquida. Sólo la devuelve GET /:id. */
   comisionDeConsignacion?: number | null;
   /**
+   * El dueño según la consignación del inmueble (la ficha `Propietario` de
+   * la inmobiliaria). `landlordName` NO es eso en un contrato migrado: es el
+   * usuario que corrió la migración. Sólo lo devuelve GET /:id.
+   */
+  propietarioDeLaConsignacion?: {
+    id: string;
+    name: string;
+    documentNumber: string;
+  } | null;
+  /**
    * Quién retiene qué, por parte. Sólo lo devuelven GET /:id y
    * PATCH /:id/administracion — las dos con la MISMA forma, a propósito: una
    * respuesta sin el campo se leería como «no hay perfiles» justo después de

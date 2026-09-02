@@ -24,13 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service'
 import { contractsApi } from '@/lib/api/contracts.service'
 import type { Consignacion } from '@/lib/types/inmobiliaria'
@@ -40,6 +34,18 @@ interface Props {
   contract: Contract
   puedeVincular: boolean
   onActualizado: (contract: Contract) => void
+}
+
+/** Código, título y dirección juntos: es lo que hace buscable cada uno. */
+export function etiquetaDeInmueble(c: Consignacion): string {
+  return [
+    c.propertyCode != null ? `#${c.propertyCode}` : null,
+    c.propertyTitle,
+    c.propertyAddress || null,
+    c.availability === 'rented' ? 'arrendado' : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 export function VincularInmueble({ contract, puedeVincular, onActualizado }: Props) {
@@ -71,8 +77,14 @@ export function VincularInmueble({ contract, puedeVincular, onActualizado }: Pro
    * Primero los que están libres; los arrendados van al final y marcados,
    * porque un inmueble con otro contrato vivo casi nunca es el que se busca —
    * pero un contrato migrado a veces ES ese contrato vivo.
+   *
+   * Es el `Combobox` de cadence (el mismo de propietarios y del PUC), no un
+   * `Select`: una inmobiliaria con doscientos inmuebles no encuentra el suyo
+   * bajando una lista. Su filtro mira sólo `label`, así que el código, el
+   * título y la dirección van juntos ahí adentro — es lo que hace que se
+   * pueda buscar por «#144», por «Provenza» o por «Carrera 63».
    */
-  const opciones = useMemo(() => {
+  const opciones = useMemo<ComboboxOption[]>(() => {
     const lista = [...(consignaciones ?? [])]
     lista.sort((a, b) => {
       const ra = a.availability === 'rented' ? 1 : 0
@@ -80,7 +92,7 @@ export function VincularInmueble({ contract, puedeVincular, onActualizado }: Pro
       if (ra !== rb) return ra - rb
       return a.propertyTitle.localeCompare(b.propertyTitle)
     })
-    return lista
+    return lista.map((c) => ({ value: c.propertyId, label: etiquetaDeInmueble(c) }))
   }, [consignaciones])
 
   async function vincular() {
@@ -136,20 +148,19 @@ export function VincularInmueble({ contract, puedeVincular, onActualizado }: Pro
                 Inmuebles y consignarlo.
               </p>
             ) : opciones.length === 0 ? null : (
-              <Select value={elegido} onValueChange={setElegido}>
-                <SelectTrigger data-testid="vincular-inmueble-select">
-                  <SelectValue placeholder="Elegí el inmueble" />
-                </SelectTrigger>
-                <SelectContent className="max-h-72">
-                  {opciones.map((c) => (
-                    <SelectItem key={c.propertyId} value={c.propertyId}>
-                      {c.propertyTitle}
-                      {c.propertyAddress ? ` · ${c.propertyAddress}` : ''}
-                      {c.availability === 'rented' ? ' · arrendado' : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div data-testid="vincular-inmueble-select">
+                <Combobox
+                  value={elegido || undefined}
+                  // Volver a elegir el mismo devuelve `undefined`: se destilda.
+                  onChange={(id) => setElegido(id ?? '')}
+                  options={opciones}
+                  placeholder="Elegí el inmueble"
+                  searchPlaceholder="Código, nombre o dirección…"
+                  // El Dialog vive en z-[300]; la lista del DS abre en z-50 y
+                  // quedaba DETRÁS del modal — se veía como si no abriera.
+                  contentClassName="z-[400]"
+                />
+              </div>
             )}
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
           </div>

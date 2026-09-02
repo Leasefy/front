@@ -69,14 +69,14 @@ export function PropietarioSelector({
   }, [propietarios, search]);
 
   const handleSelectPropietario = (propietario: Propietario) => {
-    // If selecting the same propietario, do nothing
-    if (value === propietario.id) return;
-
     // Close new form if open
     setShowNewForm(false);
 
-    // Select propietario
-    onChange(propietario.id);
+    // Tocar el que ya está elegido lo suelta. Antes «no hacía nada»: una vez
+    // elegido un propietario no había forma de quedarse sin ninguno (Nico,
+    // 2026-09-01). `''` es lo que los formularios ya leen como «sin
+    // propietario» — es lo mismo que manda «Agregar nuevo» al empezar.
+    onChange(value === propietario.id ? '' : propietario.id);
   };
 
   const handleStartNewPropietario = () => {

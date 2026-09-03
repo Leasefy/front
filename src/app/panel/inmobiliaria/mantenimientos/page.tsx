@@ -38,6 +38,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from '@/components/ui/sheet';
 import type {
   Renovacion,
@@ -837,8 +838,15 @@ function OperacionesContent() {
       {/* Mantenimiento Form Sheet */}
       <Sheet open={isMantenimientoFormOpen} onOpenChange={setIsMantenimientoFormOpen}>
         <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{t('inmobiliaria.operaciones.maintenance.newRequest')}</SheetTitle>
+          {/* Cabecera del tamaño de los demás drawers (`text-lg`), no el título
+              gigante por defecto del DS (Nico, 2026-09-03). */}
+          <SheetHeader className="space-y-1 border-b border-border pb-4">
+            <SheetTitle className="text-lg font-semibold text-fg">
+              {t('inmobiliaria.operaciones.maintenance.newRequest')}
+            </SheetTitle>
+            <SheetDescription className="text-sm text-fg-muted">
+              {t('inmobiliaria.operaciones.maintenance.newRequestDesc')}
+            </SheetDescription>
           </SheetHeader>
           <div className="mt-4">
             <MantenimientoForm

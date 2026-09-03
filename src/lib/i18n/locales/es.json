@@ -2369,6 +2369,7 @@
         "kanbanView": "Vista Kanban",
         "listView": "Vista Lista",
         "activeRequests": "solicitudes activas",
+        "newRequestDesc": "Elegí el inmueble y contá qué pasa; el resto lo completás después.",
         "newRequest": "Nueva solicitud de mantenimiento"
       },
       "renewals": {
@@ -4412,6 +4413,7 @@
       "property": "Propiedad",
       "change": "Cambiar",
       "searchProperty": "Buscar propiedad...",
+      "noRentedProperties": "Todavía no tenés inmuebles arrendados: el mantenimiento se reporta sobre un inmueble con contrato vigente.",
       "noPropertiesFound": "No se encontraron propiedades",
       "maintenanceType": "Tipo de mantenimiento",
       "priorityLabel": "Prioridad",

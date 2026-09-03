@@ -2368,6 +2368,7 @@
         "kanbanView": "Kanban View",
         "listView": "List View",
         "activeRequests": "active requests",
+        "newRequestDesc": "Pick the property and describe the issue; the rest can come later.",
         "newRequest": "New maintenance request"
       },
       "renewals": {
@@ -4411,6 +4412,7 @@
       "property": "Property",
       "change": "Change",
       "searchProperty": "Search property...",
+      "noRentedProperties": "No rented properties yet: maintenance is reported on a property with an active lease.",
       "noPropertiesFound": "No properties found",
       "maintenanceType": "Maintenance type",
       "priorityLabel": "Priority",
